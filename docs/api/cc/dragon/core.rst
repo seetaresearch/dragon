@@ -9,7 +9,7 @@ dragon/core
   `class CPUContext <core/CPUContext.html>`_
   : The cpu device context.
 
-  `class CUDAContext <core/CPUContext.html>`_
+  `class CUDAContext <core/CUDAContext.html>`_
   : The cuda device context.
 
   `class Graph <core/Graph.html>`_

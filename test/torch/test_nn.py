@@ -97,12 +97,12 @@ class TestModule(unittest.TestCase):
         m.apply(lambda m: m.train())
         self.assertEqual(m.training, True)
         logging.set_verbosity('FATAL')
-        m.load_state_dict(m.state_dict(), verbose=True)
+        m.load_state_dict(m.state_dict())
         logging.set_verbosity('INFO')
         m.load_state_dict(m.state_dict(to_numpy=True))
         try:
             m.load_state_dict({'!@#$%^&*()': 1})
-        except KeyError:
+        except RuntimeError:
             pass
         (m.sub3.weight + 1).sum().backward()
         m.zero_grad()
@@ -156,10 +156,9 @@ class TestModule(unittest.TestCase):
 class TestModules(OpTestCase):
     """Test the nn module class."""
 
-    def test_affine(self):
+    def test_affine_channel(self):
         data1 = arange((2, 3, 4, 5))
         data2, data3 = arange((1, 3, 1, 1)), arange((1, 3, 1, 1))
-        x = new_tensor(data1)
         w, b = new_tensor(data2.flatten()), new_tensor(data3.flatten())
         entries = [(True, False, False),
                    (True, True, False),
@@ -167,8 +166,9 @@ class TestModules(OpTestCase):
                    (False, False, False),
                    (False, True, False)]
         for bias, fix_weight, fix_bias in entries:
+            x = new_tensor(data1)
             try:
-                m = torch.nn.Affine(
+                m = torch.nn.AffineChannel(
                     num_features=3,
                     bias=bias,
                     fix_weight=fix_weight,
@@ -176,7 +176,7 @@ class TestModules(OpTestCase):
                     inplace=True,
                 )
             except ValueError:
-                m = torch.nn.Affine(
+                m = torch.nn.AffineChannel(
                     num_features=3,
                     bias=bias,
                     fix_weight=fix_weight,

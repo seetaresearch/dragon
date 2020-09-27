@@ -14,7 +14,6 @@ from __future__ import absolute_import as _absolute_import
 from __future__ import division as _division
 from __future__ import print_function as _print_function
 
-from dragon.vm.torch.core.nn.functional import affine
 from dragon.vm.torch.core.nn.functional import avg_pool2d
 from dragon.vm.torch.core.nn.functional import batch_norm
 from dragon.vm.torch.core.nn.functional import binary_cross_entropy_with_logits

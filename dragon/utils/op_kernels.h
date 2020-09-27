@@ -231,10 +231,18 @@ void ArgMin(
     int64_t* y,
     Context* ctx);
 
-/* array.cast */
+/* array.channel_affine */
 
-template <typename Tx, typename Ty, class Context>
-void Cast(const int count, const Tx* x, Ty* y, Context* ctx);
+template <typename T, class Context>
+void ChannelAffine(
+    const int outer_dim,
+    const int axis_dim,
+    const int inner_dim,
+    const T* x,
+    const T* w,
+    const T* b,
+    T* y,
+    Context* ctx);
 
 /* array.channel_normalize */
 
@@ -344,8 +352,6 @@ void Flagged(
     const uint8_t* mask,
     IndexType* index,
     int* num_selected,
-    void* scratch,
-    size_t& scratch_size,
     Context* ctx);
 
 template <typename IndexType, typename CoordType, class Context>
@@ -574,7 +580,7 @@ void ReduceLoss(
     const int num_masks,
     const float normalizer,
     const T* x,
-    const int* mask,
+    const T* mask,
     T* y,
     Context* ctx);
 
@@ -584,7 +590,7 @@ void ReduceLossGrad(
     const int num_masks,
     const float normalizer,
     const T* dy,
-    const int* mask,
+    const T* mask,
     T* dx,
     Context* ctx);
 
@@ -608,7 +614,7 @@ void NLLLoss(
     const LogitType* log_prob,
     const TargetType* target,
     LogitType* loss,
-    int* mask,
+    LogitType* mask,
     Context* ctx);
 
 template <typename LogitType, typename TargetType, class Context>
@@ -620,7 +626,7 @@ void NLLLossGrad(
     const LogitType* log_prob,
     const TargetType* target,
     LogitType* dx,
-    int* mask,
+    LogitType* mask,
     Context* ctx);
 
 /* loss.sigmoid_ce_loss */
@@ -631,7 +637,7 @@ void SigmoidCrossEntropy(
     const T* logit,
     const T* target,
     T* loss,
-    int* mask,
+    T* mask,
     Context* ctx);
 
 template <typename T, class Context>
@@ -640,7 +646,7 @@ void SigmoidCrossEntropyGrad(
     const T* logit,
     const T* target,
     T* dlogit,
-    int* mask,
+    T* mask,
     Context* ctx);
 
 /* loss.sigmoid_focal_loss */
@@ -657,7 +663,7 @@ void SigmoidFocalLoss(
     const LogitType* logit,
     const TargetType* target,
     LogitType* loss,
-    int* mask,
+    LogitType* mask,
     Context* ctx);
 
 template <typename LogitType, typename TargetType, class Context>
@@ -672,7 +678,7 @@ void SigmoidFocalLossGrad(
     const LogitType* logit,
     const TargetType* target,
     LogitType* dlogit,
-    int* mask,
+    LogitType* mask,
     Context* ctx);
 
 /* loss.smooth_l1_loss */
@@ -714,7 +720,7 @@ void SparseSoftmaxCrossEntropy(
     const LogitType* prob,
     const TargetType* target,
     LogitType* loss,
-    int* mask,
+    LogitType* mask,
     Context* ctx);
 
 template <typename LogitType, typename TargetType, class Context>
@@ -726,26 +732,13 @@ void SparseSoftmaxCrossEntropyGrad(
     const LogitType* prob,
     const TargetType* target,
     LogitType* dx,
-    int* mask,
+    LogitType* mask,
     Context* ctx);
 
 /* math.abs */
 
 template <typename T, class Context>
 void AbsGrad(const int count, const T* x, const T* dy, T* dx, Context* ctx);
-
-/* math.affine */
-
-template <typename T, class Context>
-void Affine(
-    const int outer_dim,
-    const int axis_dim,
-    const int inner_dim,
-    const T* x,
-    const T* w,
-    const T* b,
-    T* y,
-    Context* ctx);
 
 /* math.clip */
 
@@ -1043,19 +1036,6 @@ void SGDUpdate(
     T* g,
     T* m,
     Context* ctx);
-
-/* training.mixed_prec_update */
-
-template <typename T, class Context>
-void MixedPrecL2Penalty(
-    const int count,
-    const float alpha,
-    const T* x,
-    float* dx,
-    Context* ctx);
-
-template <typename T, class Context>
-void MixedPrecUpdate(const int count, const float* dx, T* x, Context* ctx);
 
 /* vision.bias_add */
 

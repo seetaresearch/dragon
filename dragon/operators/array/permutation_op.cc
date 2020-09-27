@@ -11,7 +11,7 @@ void PermutationOp<Context>::DoRunWithType() {
   kernel::Permutation(
       Y->count(),
       Y->template mutable_data<T, Context>(),
-      ws()->template data<uint32_t, Context>({Y->count()})[0],
+      ctx()->workspace()->template data<uint32_t, Context>({Y->count()})[0],
       ctx());
 }
 

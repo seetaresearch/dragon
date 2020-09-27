@@ -13,19 +13,19 @@ void _SigmoidCrossEntropy(
     const T* logit,
     const T* target,
     T* loss,
-    int* mask) {
+    T* mask) {
 #ifdef USE_OPENMP
 #pragma omp parallel for num_threads(OMP_THREADS(count))
 #endif
   for (int i = 0; i < count; ++i) {
     if (target[i] < 0) {
-      loss[i] = mask[i] = 0;
+      loss[i] = mask[i] = T(0);
     } else {
       loss[i] =
           std::log(
               T(1) + std::exp(logit[i] - T(2) * logit[i] * (logit[i] >= 0))) +
           logit[i] * ((logit[i] >= 0) - target[i]);
-      mask[i] = 1;
+      mask[i] = T(1);
     }
   }
 }
@@ -36,16 +36,16 @@ void _SigmoidCrossEntropyGrad(
     const T* logit,
     const T* target,
     T* dx,
-    int* mask) {
+    T* mask) {
 #ifdef USE_OPENMP
 #pragma omp parallel for num_threads(OMP_THREADS(count))
 #endif
   for (int i = 0; i < count; ++i) {
     if (target[i] < 0) {
-      dx[i] = mask[i] = 0;
+      dx[i] = mask[i] = T(0);
     } else {
       dx[i] = T(1) / (T(1) + std::exp(-logit[i])) - target[i];
-      mask[i] = 1;
+      mask[i] = T(1);
     }
   }
 }
@@ -61,7 +61,7 @@ void _SigmoidCrossEntropyGrad(
       const T* logit,                          \
       const T* target,                         \
       T* loss,                                 \
-      int* mask,                               \
+      T* mask,                                 \
       CPUContext* ctx) {                       \
     _##name(count, logit, target, loss, mask); \
   }

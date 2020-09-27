@@ -20,33 +20,6 @@ from dragon.vm.torch.core.nn import _reduction
 from dragon.vm.torch.core.nn.modules import utils
 
 
-def affine(input, weight, bias=None):
-    r"""Apply the affine transformation to input.
-
-    .. math:: y = Ax + b
-
-    Parameters
-    ----------
-    input : dragon.vm.torch.Tensor
-        The input tensor.
-    weight : dragon.vm.torch.Tensor
-        The weight tensor.
-    bias : dragon.vm.torch.Tensor, optional
-        The optional bias.
-
-    Returns
-    -------
-    dragon.vm.torch.Tensor
-        The output tensor.
-
-    See Also
-    --------
-    `torch.nn.Affine(...)`_
-
-    """
-    return _functions.Affine.instantiate(input.device).apply(input, weight, bias)
-
-
 def avg_pool2d(
     input,
     kernel_size,

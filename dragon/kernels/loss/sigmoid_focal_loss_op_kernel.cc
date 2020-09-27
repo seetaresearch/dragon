@@ -19,7 +19,7 @@ void _SigmoidFocalLoss(
     const LogitType* logit,
     const TargetType* target,
     LogitType* loss,
-    int* mask) {
+    LogitType* mask) {
   std::array<int, 3> idx = {0, 0, 0};
   std::array<int, 3> dims = {outer_dim, axis_dim, inner_dim};
   const int count = dims[0] * dims[1] * dims[2];
@@ -64,7 +64,7 @@ void _SigmoidFocalLossGrad(
     const LogitType* logit,
     const TargetType* target,
     LogitType* dx,
-    int* mask) {
+    LogitType* mask) {
   std::array<int, 3> idx = {0, 0, 0};
   std::array<int, 3> dims = {outer_dim, axis_dim, inner_dim};
   const int count = dims[0] * dims[1] * dims[2];
@@ -117,7 +117,7 @@ void _SigmoidFocalLossGrad(
       const LogitType* logit,                               \
       const TargetType* target,                             \
       LogitType* loss,                                      \
-      int* mask,                                            \
+      LogitType* mask,                                      \
       CPUContext* ctx) {                                    \
     _##name(                                                \
         outer_dim,                                          \

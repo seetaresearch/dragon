@@ -139,7 +139,7 @@ class DRAGON_API OperatorBase {
   }
 
   /*! \brief Return the parent workspace */
-  Workspace* ws() const {
+  Workspace* workspace() const {
     return ws_;
   }
 
@@ -219,7 +219,7 @@ class DRAGON_API Operator : public OperatorBase {
     ctx()->SwitchToDevice(stream);
     SwitchToDevice();
     RunOnDevice();
-    if (do_sync_ || stream > 0) {
+    if (do_sync_) {
       ctx()->FinishDeviceComputation();
     }
     Release();
@@ -262,7 +262,7 @@ OperatorBase* NewOperator(const OperatorDef&, Workspace*);
   using OperatorBase::data_format;           \
   using OperatorBase::handle;                \
   using OperatorBase::def;                   \
-  using OperatorBase::ws
+  using OperatorBase::workspace
 
 #define USE_OPERATOR_FUNCTIONS \
   USE_OPERATOR_BASE_FUNCTIONS; \
@@ -274,7 +274,7 @@ OperatorBase* NewOperator(const OperatorDef&, Workspace*);
         ->set_meta(Input(i).meta()))
 
 #define RESTORE_INPUT_SPEC(i) \
-  *(ws()->GetTensor(          \
+  *(workspace()->GetTensor(   \
       "/share/buffer/" + handle() + "/X_spec:" + std::to_string(i)))
 
 /* Dispatchers */
@@ -341,7 +341,7 @@ DEFINE_TENSOR_TYPES_DISPATCHER(DoRunWithType);
 
 #define TENSOR_FILL_WITH_TYPE(tensor, shape, type)                        \
   if (tensor.count() == 0) {                                              \
-    auto* filler_info = ws()->GetFillerInfo(tensor.name());               \
+    auto* filler_info = workspace()->GetFillerInfo(tensor.name());        \
     CHECK(filler_info) << "\nTensor(" << tensor.name() << ") is empty.\n" \
                        << "May be specify a filler for it?";              \
     tensor.Reshape(shape);                                                \
@@ -362,7 +362,7 @@ DEFINE_TENSOR_TYPES_DISPATCHER(DoRunWithType);
 
 #define TENSOR_FILL(tensor, shape)                                        \
   if (tensor.count() == 0) {                                              \
-    auto* filler_info = ws()->GetFillerInfo(tensor.name());               \
+    auto* filler_info = workspace()->GetFillerInfo(tensor.name());        \
     CHECK(filler_info) << "\nTensor(" << tensor.name() << ") is empty.\n" \
                        << "May be specify a filler for it?";              \
     tensor.Reshape(shape);                                                \
@@ -413,7 +413,7 @@ DEFINE_TENSOR_TYPES_DISPATCHER(DoRunWithType);
   template <class Context>                                        \
   type classname<Context>::arg() {                                \
     if (arg##_desc_.empty()) return arg##_;                       \
-    auto* arg##_tensor = ws()->GetTensor(                         \
+    auto* arg##_tensor = workspace()->GetTensor(                  \
         str::replace_first(arg##_desc_, "${HANDLE}", handle()));  \
     CHECK_EQ(arg##_tensor->count(), 1)                            \
         << "\nThe argument <" << #arg << "> should be a scalar."; \
@@ -423,35 +423,35 @@ DEFINE_TENSOR_TYPES_DISPATCHER(DoRunWithType);
     return arg##_tensor->template data<type, CPUContext>()[0];    \
   }
 
-#define DEFINE_OP_REPEATED_ARG_WITH_DESC(type, classname, arg)              \
-  template <class Context>                                                  \
-  type classname<Context>::arg(int i, int* num) {                           \
-    const type* data;                                                       \
-    string desc;                                                            \
-    if (!arg##_desc_.empty()) {                                             \
-      desc = arg##_desc_;                                                   \
-    } else if (!arg##_descs_.empty()) {                                     \
-      desc = arg##_descs_[i];                                               \
-    }                                                                       \
-    if (!desc.empty()) {                                                    \
-      auto* arg##_tensor =                                                  \
-          ws()->GetTensor(str::replace_first(desc, "${HANDLE}", handle())); \
-      CHECK(arg##_tensor->template IsType<type>())                          \
-          << "\nThe type of argument <" << #arg << "> should be "           \
-          << types::to_string<type>() << ".";                               \
-      data = arg##_tensor->template data<type, CPUContext>();               \
-      if (num != nullptr) {                                                 \
-        *num = arg##_desc_.empty() ? (int)arg##_descs_.size()               \
-                                   : (int)arg##_tensor->size();             \
-      }                                                                     \
-    } else {                                                                \
-      data = arg##_.data();                                                 \
-      if (num != nullptr) {                                                 \
-        *num = (int)arg##_.size();                                          \
-      }                                                                     \
-    }                                                                       \
-    if (num != nullptr && (*num) == 0) return type(0);                      \
-    return arg##_descs_.empty() ? data[i] : data[0];                        \
+#define DEFINE_OP_REPEATED_ARG_WITH_DESC(type, classname, arg)    \
+  template <class Context>                                        \
+  type classname<Context>::arg(int i, int* num) {                 \
+    const type* data;                                             \
+    string desc;                                                  \
+    if (!arg##_desc_.empty()) {                                   \
+      desc = arg##_desc_;                                         \
+    } else if (!arg##_descs_.empty()) {                           \
+      desc = arg##_descs_[i];                                     \
+    }                                                             \
+    if (!desc.empty()) {                                          \
+      auto* arg##_tensor = workspace()->GetTensor(                \
+          str::replace_first(desc, "${HANDLE}", handle()));       \
+      CHECK(arg##_tensor->template IsType<type>())                \
+          << "\nThe type of argument <" << #arg << "> should be " \
+          << types::to_string<type>() << ".";                     \
+      data = arg##_tensor->template data<type, CPUContext>();     \
+      if (num != nullptr) {                                       \
+        *num = arg##_desc_.empty() ? (int)arg##_descs_.size()     \
+                                   : (int)arg##_tensor->size();   \
+      }                                                           \
+    } else {                                                      \
+      data = arg##_.data();                                       \
+      if (num != nullptr) {                                       \
+        *num = (int)arg##_.size();                                \
+      }                                                           \
+    }                                                             \
+    if (num != nullptr && (*num) == 0) return type(0);            \
+    return arg##_descs_.empty() ? data[i] : data[0];              \
   }
 
 #define CANONICALIZE_AXIS_WITH_TENSOR_AND_OFFSET(tensor, offset)         \

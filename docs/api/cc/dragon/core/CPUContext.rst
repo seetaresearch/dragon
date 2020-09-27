@@ -69,6 +69,10 @@ stream
 ######
 .. doxygenfunction:: dragon::CPUContext::stream
 
+workspace
+#########
+.. doxygenfunction:: dragon::CPUContext::workspace
+
 .. raw:: html
 
   <style>

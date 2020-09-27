@@ -8,7 +8,7 @@ namespace kernel {
 namespace {
 
 template <typename T>
-void _Affine(
+void _ChannelAffine(
     const int outer_dim,
     const int axis_dim,
     const T* x,
@@ -29,7 +29,7 @@ void _Affine(
 }
 
 template <typename T>
-void _Affine(
+void _ChannelAffine(
     const int outer_dim,
     const int axis_dim,
     const int inner_dim,
@@ -57,7 +57,7 @@ void _Affine(
 /* ------------------- Launcher Separator ------------------- */
 
 template <>
-void Affine<float16, CPUContext>(
+void ChannelAffine<float16, CPUContext>(
     const int outer_dim,
     const int axis_dim,
     const int inner_dim,
@@ -69,22 +69,22 @@ void Affine<float16, CPUContext>(
   CPU_FP16_NOT_SUPPORTED;
 }
 
-#define DEFINE_KERNEL_LAUNCHER(T)                          \
-  template <>                                              \
-  void Affine<T, CPUContext>(                              \
-      const int outer_dim,                                 \
-      const int axis_dim,                                  \
-      const int inner_dim,                                 \
-      const T* x,                                          \
-      const T* w,                                          \
-      const T* b,                                          \
-      T* y,                                                \
-      CPUContext* ctx) {                                   \
-    if (inner_dim == 1) {                                  \
-      _Affine(outer_dim, axis_dim, x, w, b, y);            \
-    } else {                                               \
-      _Affine(outer_dim, axis_dim, inner_dim, x, w, b, y); \
-    }                                                      \
+#define DEFINE_KERNEL_LAUNCHER(T)                                 \
+  template <>                                                     \
+  void ChannelAffine<T, CPUContext>(                              \
+      const int outer_dim,                                        \
+      const int axis_dim,                                         \
+      const int inner_dim,                                        \
+      const T* x,                                                 \
+      const T* w,                                                 \
+      const T* b,                                                 \
+      T* y,                                                       \
+      CPUContext* ctx) {                                          \
+    if (inner_dim == 1) {                                         \
+      _ChannelAffine(outer_dim, axis_dim, x, w, b, y);            \
+    } else {                                                      \
+      _ChannelAffine(outer_dim, axis_dim, inner_dim, x, w, b, y); \
+    }                                                             \
   }
 
 DEFINE_KERNEL_LAUNCHER(int8_t);
@@ -93,7 +93,6 @@ DEFINE_KERNEL_LAUNCHER(int);
 DEFINE_KERNEL_LAUNCHER(int64_t);
 DEFINE_KERNEL_LAUNCHER(float);
 DEFINE_KERNEL_LAUNCHER(double);
-
 #undef DEFINE_KERNEL_LAUNCHER
 
 } // namespace kernel

@@ -14,6 +14,8 @@ from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
 
+import atexit
+
 from dragon import backend as _b
 from dragon.core.util import nest
 from dragon.core.util import six
@@ -278,8 +280,10 @@ def _maybe_initialize():
 class _MPIContext(object):
     """Context to finalize mpi under destruction."""
 
-    def __del__(self):
-        _b.mpiFinalize()
+    def __init__(self):
+        # Register a callback to finalize MPI
+        # on program exit.
+        atexit.register(lambda: _b.mpiFinalize())
 
 
 _GLOBAL_MPI_CONTEXT = None

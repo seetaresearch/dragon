@@ -30,6 +30,9 @@ dragon
   `cast(...) <dragon/cast.html>`_
   : Cast the data type of input.
 
+  `channel_affine(...) <dragon/channel_affine.html>`_
+  : Apply affine transformation along the channels.
+
   `channel_normalize(...) <dragon/channel_normalize.html>`_
   : Normalize channels with mean and standard deviation.
 
@@ -171,6 +174,7 @@ dragon
   dragon/assign
   dragon/broadcast_to
   dragon/cast
+  dragon/channel_affine
   dragon/channel_normalize
   dragon/channel_shuffle
   dragon/concat

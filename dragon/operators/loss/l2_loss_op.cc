@@ -18,7 +18,7 @@ void L2LossOp<Context>::DoRunWithType() {
   }
 
   // Allocate a temporal error buffer
-  auto* x_error = ws()->template data<T, Context>({X.count()})[0];
+  auto* x_error = ctx()->workspace()->template data<T, Context>({X.count()})[0];
 
   // Compute the error of inputs
   if (InputSize() > 1) {
@@ -55,7 +55,7 @@ void L2LossOp<Context>::DoRunWithType() {
         0,
         normalizer,
         x_error,
-        nullptr,
+        (T*)nullptr,
         Y->Reshape({})->template mutable_data<T, Context>(),
         ctx());
   }
@@ -98,7 +98,7 @@ void L2LossGradientOp<Context>::DoRunWithType() {
       normalizer *= dX->count();
     }
     kernel::ReduceLossGrad(
-        dX->count(), 0, float(normalizer) * 0.5f, dy, nullptr, dx, ctx());
+        dX->count(), 0, float(normalizer) * 0.5f, dy, (T*)nullptr, dx, ctx());
   }
 
   // Gradient w.r.t. the second input

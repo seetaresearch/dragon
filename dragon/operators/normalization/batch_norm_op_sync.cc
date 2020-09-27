@@ -88,9 +88,9 @@ void SyncBatchNormOp<Context>::TrainingImpl() {
 
   // Compute affine transformation
   if (data_format() == "NCHW") {
-    kernel::Affine(N_, C_, S_, x, scale, bias, y, ctx());
+    kernel::ChannelAffine(N_, C_, S_, x, scale, bias, y, ctx());
   } else if (data_format() == "NHWC") {
-    kernel::Affine(N_ * S_, C_, 1, x, scale, bias, y, ctx());
+    kernel::ChannelAffine(N_ * S_, C_, 1, x, scale, bias, y, ctx());
   }
 }
 
@@ -99,7 +99,7 @@ void SyncBatchNormOp<Context>::RunOnDevice() {
   DetermineBaseArguments();
 
   // Get the recomputing flag
-  auto* flag = ws()->GetTensor("/share/flag/recomputing");
+  auto* flag = workspace()->GetTensor("/share/flag/recomputing");
   is_recomputing_ = flag->template data<bool, CPUContext>()[0] ? 1 : 0;
 
   // Dispatch the training or inference impl

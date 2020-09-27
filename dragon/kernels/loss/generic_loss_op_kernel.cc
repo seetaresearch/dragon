@@ -23,17 +23,42 @@ void _BroadcastLossGrad(
   }
 }
 
+} // namespace
+
 template <>
-void _BroadcastLossGrad<float16>(
+void ReduceLoss<float16, CPUContext>(
+    const int count,
+    const int num_masks,
+    const float normalizer,
+    const float16* x,
+    const float16* mask,
+    float16* y,
+    CPUContext* ctx) {
+  CPU_FP16_NOT_SUPPORTED;
+}
+
+template <>
+void ReduceLossGrad<float16, CPUContext>(
+    const int count,
+    const int num_masks,
+    const float normalizer,
+    const float16* dy,
+    const float16* mask,
+    float16* dx,
+    CPUContext* ctx) {
+  CPU_FP16_NOT_SUPPORTED;
+}
+
+template <>
+void BroadcastLossGrad<float16, CPUContext>(
     const int outer_dim,
     const int axis_dim,
     const int inner_dim,
     const float16* dy,
-    float16* dx) {
+    float16* dx,
+    CPUContext* ctx) {
   CPU_FP16_NOT_SUPPORTED;
-} // BroadcastLossGrad
-
-} // namespace
+}
 
 #define DEFINE_KERNEL_LAUNCHER(T)                         \
   template <>                                             \
@@ -42,11 +67,11 @@ void _BroadcastLossGrad<float16>(
       const int num_masks,                                \
       const float normalizer,                             \
       const T* x,                                         \
-      const int* mask,                                    \
+      const T* mask,                                      \
       T* y,                                               \
       CPUContext* ctx) {                                  \
     float inv_scale = std::max(                           \
-        1e-5F,                                            \
+        1.f,                                              \
         num_masks > 0 && normalizer < 0.f                 \
             ? (float)math::Sum(num_masks, 1.f, mask, ctx) \
             : normalizer);                                \
@@ -60,11 +85,11 @@ void _BroadcastLossGrad<float16>(
       const int num_masks,                                               \
       const float normalizer,                                            \
       const T* dy,                                                       \
-      const int* mask,                                                   \
+      const T* mask,                                                     \
       T* dx,                                                             \
       CPUContext* ctx) {                                                 \
     float inv_scale = std::max(                                          \
-        1e-5F,                                                           \
+        0.5f,                                                            \
         num_masks > 0 && normalizer < 0.f                                \
             ? (float)math::Sum(num_masks, 1.f, mask, ctx)                \
             : normalizer);                                               \
@@ -81,11 +106,9 @@ void _BroadcastLossGrad<float16>(
     _BroadcastLossGrad(outer_dim, axis_dim, inner_dim, dy, dx);          \
   }
 
-DEFINE_KERNEL_LAUNCHER(float16);
 DEFINE_KERNEL_LAUNCHER(float);
 DEFINE_KERNEL_LAUNCHER(double);
 
-DEFINE_GRAD_KERNEL_LAUNCHER(float16);
 DEFINE_GRAD_KERNEL_LAUNCHER(float);
 DEFINE_GRAD_KERNEL_LAUNCHER(double);
 

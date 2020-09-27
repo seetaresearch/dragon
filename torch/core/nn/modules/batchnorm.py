@@ -20,7 +20,7 @@ from dragon.core import distributed
 from dragon.vm.torch.core.nn import functional as F
 from dragon.vm.torch.core.nn.modules.module import Module
 from dragon.vm.torch.core.nn.parameter import Parameter
-from dragon.vm.torch.core.ops.init import functional as init
+from dragon.vm.torch.core.ops.init import functional as init_funcs
 from dragon.vm.torch.core.tensor import Tensor
 
 
@@ -43,10 +43,10 @@ class _BatchNorm(Module):
             self.weight = Parameter(Tensor(num_features))
             self.bias = Parameter(Tensor(num_features))
         else:
-            self.register_buffer('weight', init.ones(num_features))
-            self.register_buffer('bias', init.zeros(num_features))
-        self.register_buffer('running_mean', init.zeros(num_features))
-        self.register_buffer('running_var', init.ones(num_features))
+            self.register_buffer('weight', init_funcs.ones(num_features))
+            self.register_buffer('bias', init_funcs.zeros(num_features))
+        self.register_buffer('running_mean', init_funcs.zeros(num_features))
+        self.register_buffer('running_var', init_funcs.ones(num_features))
         self.inputs = [self.running_mean, self.running_var, self.weight, self.bias]
         self.reset_parameters()
 

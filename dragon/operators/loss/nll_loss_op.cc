@@ -18,12 +18,12 @@ void NLLLossOp<Context>::DoRunWithType() {
   CHECK_EQ(num_preds, Input(1).count())
       << "\nNumber of preds must match the number of targets.";
 
-  auto scratches = ws()->template data<Context>({
-      num_preds * sizeof(LogitType), // loss
-      num_preds * sizeof(int), // mask
+  auto scratches = ctx()->workspace()->template data<Context>({
+      (size_t)num_preds * sizeof(LogitType), // loss
+      (size_t)num_preds * sizeof(LogitType) + sizeof(LogitType), // mask
   });
   auto* loss = static_cast<LogitType*>(scratches[0]);
-  auto* mask = static_cast<int*>(scratches[1]);
+  auto* mask = static_cast<LogitType*>(scratches[1]);
 
   kernel::NLLLoss(
       outer_dim,
@@ -101,9 +101,10 @@ void NLLLossGradientOp<Context>::DoRunWithType() {
   auto inner_dim = dX->count(axis + 1);
   auto num_preds = outer_dim * inner_dim;
 
-  auto* mask = ws()->template data<int, Context>({num_preds})[0];
   auto* dy = dY.template data<LogitType, Context>();
   auto* dx = dX->template mutable_data<LogitType, Context>();
+  auto* mask =
+      ctx()->workspace()->template data<LogitType, Context>({num_preds + 1})[0];
   math::Set(dX->count(), cast::to<LogitType>(0.f), dx, ctx());
 
   kernel::NLLLossGrad(

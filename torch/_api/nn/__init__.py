@@ -30,7 +30,6 @@ from dragon.vm.torch.core.nn.modules.activation import SELU
 from dragon.vm.torch.core.nn.modules.activation import Sigmoid
 from dragon.vm.torch.core.nn.modules.activation import Softmax
 from dragon.vm.torch.core.nn.modules.activation import Tanh
-from dragon.vm.torch.core.nn.modules.affine import Affine
 from dragon.vm.torch.core.nn.modules.batchnorm import BatchNorm1d
 from dragon.vm.torch.core.nn.modules.batchnorm import BatchNorm2d
 from dragon.vm.torch.core.nn.modules.batchnorm import BatchNorm3d
@@ -55,6 +54,7 @@ from dragon.vm.torch.core.nn.modules.loss import NLLLoss
 from dragon.vm.torch.core.nn.modules.loss import SigmoidFocalLoss
 from dragon.vm.torch.core.nn.modules.loss import SmoothL1Loss
 from dragon.vm.torch.core.nn.modules.module import Module
+from dragon.vm.torch.core.nn.modules.normalization import AffineChannel
 from dragon.vm.torch.core.nn.modules.normalization import GroupNorm
 from dragon.vm.torch.core.nn.modules.normalization import LocalResponseNorm
 from dragon.vm.torch.core.nn.modules.padding import ConstantPad1d

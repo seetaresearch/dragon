@@ -97,6 +97,14 @@ stream
 ######
 .. doxygenfunction:: dragon::CUDAContext::stream
 
+workspace
+#########
+.. doxygenfunction:: dragon::CUDAContext::workspace()
+
+workspace
+#########
+.. doxygenfunction:: dragon::CUDAContext::workspace(int device, int stream)
+
 .. raw:: html
 
   <style>

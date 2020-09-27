@@ -22,7 +22,7 @@ void CuDNNDropoutOp<Context>::DoRunWithType() {
       CUDNN_CHECK(
           cudnnDropoutGetStatesSize(ctx()->cudnn_handle(), &states_size));
       std::lock_guard<std::mutex> lk(CUDAContext::mutex());
-      auto* X_states = ws()->CreateTensor(
+      auto* X_states = workspace()->CreateTensor(
           "/share/cudnn/dropout:" + str::to(rng_seed_) + "/states");
       if (X_states->count() > 0) {
         CUDNN_CHECK(cudnnRestoreDropoutDescriptor(
@@ -80,7 +80,7 @@ void CuDNNDropoutGradientOp<Context>::DoRunWithType() {
       CUDNN_CHECK(
           cudnnDropoutGetStatesSize(ctx()->cudnn_handle(), &states_size));
       std::lock_guard<std::mutex> lk(CUDAContext::mutex());
-      auto* X_states = ws()->CreateTensor(
+      auto* X_states = workspace()->CreateTensor(
           "/share/cudnn/dropout:" + str::to(rng_seed_) + "/states");
       if (X_states->count() > 0) {
         CUDNN_CHECK(cudnnRestoreDropoutDescriptor(

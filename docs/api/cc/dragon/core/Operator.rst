@@ -95,9 +95,9 @@ phase
 #####
 .. doxygenfunction:: dragon::Operator::phase
 
-ws
-##
-.. doxygenfunction:: dragon::Operator::ws
+workspace
+#########
+.. doxygenfunction:: dragon::Operator::workspace
 
 .. raw:: html
 

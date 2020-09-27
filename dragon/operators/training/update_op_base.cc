@@ -12,8 +12,9 @@ Tensor* UpdateOpBase<Context>::Slot(const string& name) {
 
 template <class Context>
 float UpdateOpBase<Context>::Parameter(const string& name) const {
-  auto* P = ws()->GetTensor("/share/hyper/" + handle() + "/" + name);
-  return P->template mutable_data<float, CPUContext>()[0];
+  return workspace()
+      ->GetTensor("/share/hyper/" + handle() + "/" + name)
+      ->template mutable_data<float, CPUContext>()[0];
 }
 
 template <class Context>
@@ -36,42 +37,25 @@ void UpdateOpBase<Context>::AdjustGradient(Tensor* dX, Tensor* X) {
   }
   // Penalty
   auto weight_decay = Parameter("weight_decay");
-  if (weight_decay > 0.f) {
-    if (X->template IsType<float16>()) {
-      kernel::MixedPrecL2Penalty(
-          X->count(),
-          weight_decay * decay_mult_,
-          X->template data<float16, Context>(),
-          dX->template mutable_data<float, Context>(),
-          ctx());
-    } else {
-      math::Axpy(
-          X->count(),
-          weight_decay * decay_mult_,
-          X->template data<T, Context>(),
-          dX->template mutable_data<T, Context>(),
-          ctx());
-    }
+  if (weight_decay > 0.f && decay_mult_ > 0.f) {
+    math::Axpy(
+        X->count(),
+        weight_decay * decay_mult_,
+        X->template data<T, Context>(),
+        dX->template mutable_data<T, Context>(),
+        ctx());
   }
 }
 
 template <class Context>
 template <typename T>
 void UpdateOpBase<Context>::ApplyUpdate(Tensor* dX, Tensor* X) {
-  if (X->template IsType<float16>()) {
-    kernel::MixedPrecUpdate(
-        X->count(),
-        dX->template data<float, Context>(),
-        X->template mutable_data<float16, Context>(),
-        ctx());
-  } else {
-    math::Sub(
-        X->count(),
-        X->template data<T, Context>(),
-        dX->template data<T, Context>(),
-        X->template mutable_data<T, Context>(),
-        ctx());
-  }
+  math::Sub(
+      X->count(),
+      X->template data<T, Context>(),
+      dX->template data<T, Context>(),
+      X->template mutable_data<T, Context>(),
+      ctx());
 }
 
 template <class Context>
@@ -90,15 +74,28 @@ void UpdateOpBase<Context>::RunOnDevice() {
     ComputeUpdate(&dX);
     ApplyUpdate<float>(&dX, X);
   } else if (dX.template IsType<float16>()) {
-    auto* dX_cast = ws()->CreateTensor(dX.name() + "[float32]");
-    kernel::Cast(
+    auto* X_master = workspace()->CreateTensor(X->name() + "[float32]");
+    auto* dX_copy = ctx()->workspace()->CreateTensor("/share/data");
+    if (X_master->count() != X->count()) {
+      math::Cast(
+          X->count(),
+          X->template data<float16, Context>(),
+          X_master->ReshapeLike(*X)->template mutable_data<float, Context>(),
+          ctx());
+    }
+    math::Cast(
         dX.count(),
         dX.template data<float16, Context>(),
-        dX_cast->ReshapeLike(dX)->template mutable_data<float, Context>(),
+        dX_copy->ReshapeLike(dX)->template mutable_data<float, Context>(),
         ctx());
-    AdjustGradient<float>(dX_cast, X);
-    ComputeUpdate(dX_cast);
-    ApplyUpdate<float>(dX_cast, X);
+    AdjustGradient<float>(dX_copy, X_master);
+    ComputeUpdate(dX_copy);
+    ApplyUpdate<float>(dX_copy, X_master);
+    math::Cast(
+        X->count(),
+        X_master->template data<float, Context>(),
+        X->template mutable_data<float16, Context>(),
+        ctx());
   } else {
     LOG(FATAL) << MessageForUnsupported(
         types::to_string(dX.meta()), {"float16", "float32"});

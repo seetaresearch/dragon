@@ -94,6 +94,26 @@ class Cast(function.Function):
         return self.dispatch([input], [self.alloc()])
 
 
+class ChannelAffine(function.Function):
+    def __init__(self, key, dev, **kwargs):
+        super(ChannelAffine, self).__init__(key, dev, **kwargs)
+        self.axis = kwargs.get('axis', 1)
+        self.num_axes = kwargs.get('num_axes', 1)
+
+    def attributes(self):
+        return {
+            'op_type': 'ChannelAffine',
+            'arguments': {
+                'axis': self.axis,
+                'num_axes': self.num_axes,
+            }
+        }
+
+    def forward(self, input, weight, bias=None, out=None):
+        inputs = [input, weight] + ([bias] if bias else [])
+        return self.dispatch(inputs, [self.alloc(out)])
+
+
 class ChannelNormalize(function.Function):
     def __init__(self, key, dev, **kwargs):
         super(ChannelNormalize, self).__init__(key, dev, **kwargs)

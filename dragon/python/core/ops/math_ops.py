@@ -88,45 +88,6 @@ def add(inputs, **kwargs):
         return op_lib.blend('Add', **args)
 
 
-@OpSchema.num_inputs(2, 3)
-def affine(inputs, axis=1, num_axes=1, **kwargs):
-    r"""Compute the affine transformation along the given axes.
-
-    .. math:: y = Wx + b
-
-    The range of axes is defined as:
-
-    .. math:: [\text{Axis}, \text{Axis} + \text{NumAxes})
-
-    Set ``axis`` to specific the start axis.
-
-    Set ``num_axes`` to -1 will scale all remained axes.
-
-    Parameters
-    ----------
-    inputs : Sequence[dragon.Tensor]
-        The tensor **x**, **W** and **b**.
-    axis : int, optional, default=1
-        The start axis, can be negative.
-    num_axes : int, optional, default=1
-        The number of axes to compute.
-
-    Returns
-    -------
-    dragon.Tensor
-        The output tensor.
-
-    """
-    args = parse_args(locals())
-    op_lib = math_ops_lib.Affine
-    if context.executing_eagerly():
-        return op_lib \
-            .instantiate(axis=axis, num_axes=num_axes) \
-            .apply(inputs)
-    else:
-        return op_lib.blend(**args)
-
-
 @OpSchema.num_inputs(1)
 def axpby(inputs, outputs=None, alpha=1., beta=1., **kwargs):
     r"""Compute the element-wise addition from input to output.

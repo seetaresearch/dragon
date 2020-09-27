@@ -18,16 +18,16 @@ __global__ void _NLLLoss(
     const LogitType* log_prob,
     const TargetType* target,
     LogitType* loss,
-    int* mask) {
+    LogitType* mask) {
   CUDA_1D_KERNEL_LOOP(yi, nthreads) {
     const int i = yi / inner_dim;
     const int j = yi % inner_dim;
     const int label = target[i * inner_dim + j];
     if (label == ignore_index) {
-      loss[yi] = mask[yi] = 0;
+      loss[yi] = mask[yi] = LogitType(0);
     } else {
       loss[yi] = -log_prob[(i * axis_dim + label) * inner_dim + j];
-      mask[yi] = 1;
+      mask[yi] = LogitType(1);
     }
   }
 }
@@ -41,16 +41,16 @@ __global__ void _NLLLossGrad(
     const LogitType* log_prob,
     const TargetType* target,
     LogitType* dx,
-    int* mask) {
+    LogitType* mask) {
   CUDA_1D_KERNEL_LOOP(yi, nthreads) {
     const int i = yi / inner_dim;
     const int j = yi % inner_dim;
     const int label = target[i * inner_dim + j];
     if (label == ignore_index) {
-      mask[yi] = 0;
+      mask[yi] = LogitType(0);
     } else {
       dx[(i * axis_dim + label) * inner_dim + j] = LogitType(-1);
-      mask[yi] = 1;
+      mask[yi] = LogitType(1);
     }
   }
 }
@@ -69,7 +69,7 @@ __global__ void _NLLLossGrad(
       const LogitType* log_prob,                                             \
       const TargetType* target,                                              \
       LogitType* loss,                                                       \
-      int* mask,                                                             \
+      LogitType* mask,                                                       \
       CUDAContext* ctx) {                                                    \
     auto nthreads = outer_dim * inner_dim;                                   \
     _##name<<<CUDA_BLOCKS(nthreads), CUDA_THREADS, 0, ctx->cuda_stream()>>>( \

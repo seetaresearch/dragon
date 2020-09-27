@@ -6,8 +6,8 @@ vm.torch.nn
   Classes
   -------
 
-  `class Affine <nn/Affine.html>`_
-  : Apply the affine transformation over input.
+  `class AffineChannel <nn/AffineChannel.html>`_
+  : Apply affine transformation along the channels.
 
   `class AvgPool2d <nn/AvgPool2d.html>`_
   : Apply the 2d average pooling.
@@ -197,7 +197,7 @@ vm.torch.nn
 .. toctree::
   :hidden:
 
-  nn/Affine
+  nn/AffineChannel
   nn/AvgPool2d
   nn/BatchNorm1d
   nn/BatchNorm2d

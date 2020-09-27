@@ -15,10 +15,10 @@ from __future__ import division
 from __future__ import print_function
 
 import collections
+import itertools
 import numpy
 
 from dragon.core.framework import config
-from dragon.core.util import logging
 from dragon.core.util import string
 from dragon.vm.torch.core.nn.parameter import Parameter
 from dragon.vm.torch.core.tensor import Tensor
@@ -231,7 +231,7 @@ class Module(object):
             if t.is_floating_point() else t,
         )
 
-    def load_state_dict(self, state_dict, strict=True, verbose=False):
+    def load_state_dict(self, state_dict, strict=True):
         """Load the state dict from other module.
 
         Typically, states can only loaded from the same module class:
@@ -255,49 +255,36 @@ class Module(object):
             The state dict.
         strict : bool, optional, default=True
             **True** to verify the names strictly.
-        verbose : bool, optional, default=False
-            **True** to print the state info.
 
         """
-        if verbose:
-            logging.info('Load the state dict.')
-        unexpected = []
-        own_state = self.state_dict()
-        for name, param in state_dict.items():
-            if name in own_state:
-                state_shape = own_state[name].shape
-                param_shape = param.shape
-                if state_shape != param_shape:
-                    raise ValueError(
-                        'Size of state({}) is ({}), while load from: ({}).'
-                        .format(name, ', '.join(
-                            [str(d) for d in state_shape]),
-                            ', '.join([str(d) for d in param_shape])))
-                if isinstance(param, Tensor):
-                    own_state[name].copy_(param)
-                elif isinstance(param, numpy.ndarray):
-                    own_state[name]._impl.FromNumpy(param.copy())
-                else:
-                    raise ValueError(
-                        'Excepted the type of source state is either '
-                        'torch.Tensor or numpy.ndarray, got {}.'.format(type(param)))
-                if verbose:
-                    logging.info(
-                        'Tensor({}) loaded, size: ({})'
-                        .format(name, ', '.join([str(d) for d in param_shape])))
-            else:
-                unexpected.append(name)
+        missing_keys = []
+        unexpected_keys = []
+        error_msgs = []
+
+        def load(module, prefix=''):
+            module._load_from_state_dict(
+                state_dict, prefix, True,
+                missing_keys, unexpected_keys, error_msgs)
+            for name, child in module._modules.items():
+                if child is not None:
+                    load(child, prefix + name + '.')
+
+        load(self)
+
         if strict:
-            missing = set(own_state.keys()) - set(state_dict.keys())
-            error_msg = ''
-            if len(unexpected) > 0:
-                error_msg += 'Unexpected key(s) in state_dict: {}.\n'.format(
-                    ', '.join('"{}"'.format(k) for k in unexpected))
-            if len(missing) > 0:
-                error_msg += 'Missing key(s) in state_dict: {}.'.format(
-                    ', '.join('"{}"'.format(k) for k in missing))
-            if len(error_msg) > 0:
-                raise KeyError(error_msg)
+            if len(unexpected_keys) > 0:
+                error_msgs.insert(
+                    0, 'Unexpected key(s) in state_dict: {}. '
+                    .format(', '.join('"{}"'.format(k) for k in unexpected_keys)))
+            if len(missing_keys) > 0:
+                error_msgs.insert(
+                    0, 'Missing key(s) in state_dict: {}. '
+                    .format(', '.join('"{}"'.format(k) for k in missing_keys)))
+
+        if len(error_msgs) > 0:
+            raise RuntimeError(
+                'Error(s) in loading state_dict for {}:\n\t{}'
+                .format(self.__class__.__name__, "\n\t".join(error_msgs)))
 
     def modules(self):
         """Return an iterator over all modules.
@@ -576,6 +563,51 @@ class Module(object):
     def _get_name(self):
         """Return the class name."""
         return self.__class__.__name__
+
+    def _load_from_state_dict(
+        self,
+        state_dict,
+        prefix,
+        strict,
+        missing_keys,
+        unexpected_keys,
+        error_msgs,
+    ):
+        """Load buffers and parameters from the state dict for this module only."""
+        local_name_params = itertools.chain(
+            self._parameters.items(), self._buffers.items())
+        local_state = {k: v for k, v in local_name_params if v is not None}
+
+        for name, param in local_state.items():
+            key = prefix + name
+            if key in state_dict:
+                input_param = state_dict[key]
+                if input_param.shape != param.shape:
+                    error_msgs.append(
+                        'Size of param({}) is ({}), while load from: ({}).'
+                        .format(name, ', '.join(
+                            [str(d) for d in param.shape]),
+                            ', '.join([str(d) for d in input_param.shape])))
+                if isinstance(input_param, Tensor):
+                    param.copy_(input_param)
+                elif isinstance(input_param, numpy.ndarray):
+                    param._impl.FromNumpy(input_param.copy())
+                else:
+                    error_msgs.append(
+                        'Excepted the input param is either '
+                        'torch.Tensor or numpy.ndarray, got {}.'
+                        .format(type(input_param)))
+            elif strict:
+                missing_keys.append(key)
+
+        if strict:
+            for key in state_dict.keys():
+                if key.startswith(prefix):
+                    input_name = key[len(prefix):]
+                    input_name = input_name.split('.', 1)[0]
+                    if input_name not in self._modules \
+                            and input_name not in local_state:
+                        unexpected_keys.append(key)
 
     def _named_members(self, getter, prefix='', recurse=True):
         """Return the named members."""

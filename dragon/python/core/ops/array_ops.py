@@ -204,6 +204,46 @@ def cast(inputs, dtype, **kwargs):
         return op_lib.blend(**args)
 
 
+@OpSchema.num_inputs(2, 3)
+def channel_affine(inputs, axis=1, num_axes=1, **kwargs):
+    r"""Apply affine transformation along the channels.
+
+    .. math:: \text{out} = \text{weight} * \text{input} + \text{bias}
+
+    The range of channels to transform is given by:
+
+    .. math:: [\text{axis}, \text{axis} + \text{num\_axes})
+
+    Set ``axis`` to specific the start axis.
+
+    Set ``num_axes`` to -1 will transform all remained axes.
+
+    Parameters
+    ----------
+    inputs : Sequence[dragon.Tensor]
+        The input, weight and optional bias tensor.
+    axis : int, optional, default=1
+        The start axis, can be negative.
+    num_axes : int, optional, default=1
+        The number of axes to transform.
+
+    Returns
+    -------
+    dragon.Tensor
+        The output tensor.
+
+    """
+    args = parse_args(locals())
+    inplace = args.pop('inplace') if 'inplace' in args else False
+    op_lib = array_ops_lib.ChannelAffine
+    if context.executing_eagerly():
+        return op_lib \
+            .instantiate(axis=axis, num_axes=num_axes) \
+            .apply(inputs, inplace=inplace)
+    else:
+        return op_lib.blend(**args)
+
+
 @OpSchema.num_inputs(1)
 @ArgHelper.repeated_desc('perm')
 def channel_normalize(

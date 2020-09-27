@@ -25,6 +25,7 @@ DRAGON_API void ReduceMax(
     const int* dims,
     const int num_axes,
     const int* axes,
+    const float scale,
     const T* x,
     T* y,
     Context* ctx);
@@ -35,6 +36,7 @@ DRAGON_API void ReduceMin(
     const int* dims,
     const int num_axes,
     const int* axes,
+    const float scale,
     const T* x,
     T* y,
     Context* ctx);

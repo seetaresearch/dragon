@@ -451,6 +451,32 @@ class TestArrayOps(OpTestCase):
         with dragon.device('cuda'):
             self.test_cast()
 
+    def test_channel_affine(self):
+        for execution in ('EAGER_MODE', 'GRAPH_MODE'):
+            with execution_context().mode(execution):
+                data1 = arange((2, 3, 4, 5))
+                data2, data3 = arange((3, 4)), arange((3, 4))
+                data4 = arange(data1.shape)
+                grad1 = data4 * np.expand_dims(data2, -1)
+                grad2 = np.sum(data4 * data1, (0, 3))
+                grad3 = np.sum(data4, (0, 3))
+                x, w, b = new_tensor(data1), new_tensor(data2), new_tensor(data3)
+                with dragon.GradientTape() as tape:
+                    tape.watch([x, w, b])
+                    y = dragon.channel_affine([x, w, b], axis=1, num_axes=2)
+                dy = new_tensor(data4)
+                dx, dw, db = tape.gradient(y, [x, w, b], output_gradients=[dy])
+                self.assertEqual(
+                    [y, dx, dw, db],
+                    [data1 * np.expand_dims(data2, -1) +
+                     np.expand_dims(data3, -1),
+                     grad1, grad2, grad3])
+
+    @unittest.skipIf(not TEST_CUDA, 'CUDA unavailable')
+    def test_channel_affine_cuda(self):
+        with dragon.device('cuda'):
+            self.test_channel_affine()
+
     def test_channel_normalize(self):
         entries = [((2, 3, 4), [(1., 2., 3.), (3., 2., 1.), 1], {'perm': (0, 1, 2)}),
                    ((2, 3, 4), [(1., 2., 3.), (3., 2., 1.), 2], {'perm': (0, 2, 1)})]
@@ -1447,32 +1473,6 @@ class TestMathOps(OpTestCase):
     def test_add_cuda(self):
         with dragon.device('cuda'):
             self.test_add()
-
-    def test_affine(self):
-        for execution in ('EAGER_MODE', 'GRAPH_MODE'):
-            with execution_context().mode(execution):
-                data1 = arange((2, 3, 4, 5))
-                data2, data3 = arange((3, 4)), arange((3, 4))
-                data4 = arange(data1.shape)
-                grad1 = data4 * np.expand_dims(data2, -1)
-                grad2 = np.sum(data4 * data1, (0, 3))
-                grad3 = np.sum(data4, (0, 3))
-                x, w, b = new_tensor(data1), new_tensor(data2), new_tensor(data3)
-                with dragon.GradientTape() as tape:
-                    tape.watch([x, w, b])
-                    y = dragon.math.affine([x, w, b], axis=1, num_axes=2)
-                dy = new_tensor(data4)
-                dx, dw, db = tape.gradient(y, [x, w, b], output_gradients=[dy])
-                self.assertEqual(
-                    [y, dx, dw, db],
-                    [data1 * np.expand_dims(data2, -1) +
-                     np.expand_dims(data3, -1),
-                     grad1, grad2, grad3])
-
-    @unittest.skipIf(not TEST_CUDA, 'CUDA unavailable')
-    def test_affine_cuda(self):
-        with dragon.device('cuda'):
-            self.test_affine()
 
     def test_argmax(self):
         entries = [(0, True), (0, False), (1, True), (1, False)]

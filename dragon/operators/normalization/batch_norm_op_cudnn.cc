@@ -73,7 +73,7 @@ void CuDNNBatchNormOp<Context>::RunOnDevice() {
   DetermineBaseArguments();
 
   // Get the recomputing flag
-  auto* flag = ws()->GetTensor("/share/flag/recomputing");
+  auto* flag = workspace()->GetTensor("/share/flag/recomputing");
   is_recomputing_ = flag->template data<bool, CPUContext>()[0] ? 1 : 0;
 
   // Dispatch the training or inference impl

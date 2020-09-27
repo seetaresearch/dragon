@@ -6,9 +6,6 @@ vm.torch.nn.functional
   Functions
   ---------
 
-  `affine(...) <functional/affine.html>`_
-  : Apply the affine transformation to input.
-
   `avg_pool2d(...) <functional/avg_pool2d.html>`_
   : Apply the 2d average pooling to input.
 
@@ -132,7 +129,6 @@ vm.torch.nn.functional
 .. toctree::
   :hidden:
 
-  functional/affine
   functional/avg_pool2d
   functional/batch_norm
   functional/binary_cross_entropy_with_logits

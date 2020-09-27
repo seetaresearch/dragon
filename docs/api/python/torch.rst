@@ -60,6 +60,9 @@ vm.torch
   `ceil(...) <torch/ceil.html>`_
   : Compute the smallest integer not less than input.
 
+  `channel_affine(...) <torch/channel_affine.html>`_
+  : Apply affine transformation along the channels.
+
   `channel_normalize(...) <torch/channel_normalize.html>`_
   : Normalize channels with mean and standard deviation.
 
@@ -263,6 +266,7 @@ vm.torch
   torch/bitwise_xor
   torch/cat
   torch/ceil
+  torch/channel_affine
   torch/channel_normalize
   torch/channel_shuffle
   torch/chunk

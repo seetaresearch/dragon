@@ -96,7 +96,7 @@ MATH_UTILS_DECL T Cube(const T x) {
 }
 
 #if defined(__CUDACC__)
-MATH_UTILS_DECL bool IsInf(half x) {
+inline __device__ bool IsInf(half x) {
 #if __CUDA_ARCH__ >= 530
   return __hisinf(x);
 #else
@@ -105,7 +105,7 @@ MATH_UTILS_DECL bool IsInf(half x) {
 #endif
 }
 
-MATH_UTILS_DECL bool IsNaN(half x) {
+inline __device__ bool IsNaN(half x) {
 #if __CUDA_ARCH__ >= 530
   return __hisnan(x);
 #else
@@ -113,7 +113,7 @@ MATH_UTILS_DECL bool IsNaN(half x) {
 #endif
 }
 
-MATH_UTILS_DECL half Square(half x) {
+inline __device__ half Square(half x) {
 #if __CUDA_ARCH__ >= 530
   return __hmul(x, x);
 #else
@@ -121,7 +121,7 @@ MATH_UTILS_DECL half Square(half x) {
 #endif
 }
 
-MATH_UTILS_DECL half2 Square(half2 x) {
+inline __device__ half2 Square(half2 x) {
 #if __CUDA_ARCH__ >= 530
   return __hmul2(x, x);
 #else
@@ -130,7 +130,7 @@ MATH_UTILS_DECL half2 Square(half2 x) {
 #endif
 }
 
-MATH_UTILS_DECL half Cube(half x) {
+inline __device__ half Cube(half x) {
 #if __CUDA_ARCH__ >= 530
   return __hmul(__hmul(x, x), x);
 #else
@@ -138,7 +138,7 @@ MATH_UTILS_DECL half Cube(half x) {
 #endif
 }
 
-MATH_UTILS_DECL half2 Cube(half2 x) {
+inline __device__ half2 Cube(half2 x) {
 #if __CUDA_ARCH__ >= 530
   return __hmul2(__hmul2(x, x), x);
 #else

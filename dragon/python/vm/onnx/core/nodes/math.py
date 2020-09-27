@@ -31,21 +31,6 @@ def add_exporter(op_def, shape_dict, ws):
     return node, const_tensors
 
 
-@exporter.register('Affine')
-def affine_exporter(op_def, shape_dict, ws):
-    node, const_tensors = exporter.translate(**locals())
-    node.op_type = 'ATen'  # Currently not supported in ai.onnx
-    helper.add_attribute(node, 'op_type', 'Affine')
-    for arg in op_def.arg:
-        if arg.name == 'axis':
-            helper.add_attribute(node, 'axis', arg.i)
-        elif arg.name == 'num_axes':
-            helper.add_attribute(node, 'num_axes', arg.i)
-    # Weights and biases
-    const_tensors = [helper.from_tensor(e, ws) for e in op_def.input[1:]]
-    return node, const_tensors
-
-
 @exporter.register('Div')
 def div_exporter(op_def, shape_dict, ws):
     node, const_tensors = exporter.translate(**locals())

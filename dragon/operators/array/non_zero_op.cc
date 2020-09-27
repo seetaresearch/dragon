@@ -19,17 +19,6 @@ void NonZeroOp<Context>::DoRunWithType() {
       (bool*)X_mask->template mutable_data<uint8_t, Context>(),
       ctx());
 
-  // Determine the scratch requirement
-  size_t scratch_size = 0;
-  kernel::Flagged(
-      X.count(),
-      X_mask->template mutable_data<uint8_t, Context>(),
-      X_index->template mutable_data<int, Context>(),
-      nullptr,
-      nullptr,
-      scratch_size,
-      ctx());
-
   // Select the index of values matching the criteria
   // The first ``num_selected`` indices are valid
   int num_selected;
@@ -38,8 +27,6 @@ void NonZeroOp<Context>::DoRunWithType() {
       X_mask->template mutable_data<uint8_t, Context>(),
       X_index->template mutable_data<int, Context>(),
       &num_selected,
-      ws()->template data<Context>({scratch_size})[0],
-      scratch_size,
       ctx());
 
   // Convert the flat indices into n-dimension coordinates

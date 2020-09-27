@@ -50,6 +50,7 @@ from dragon.vm.torch.core.ops.array.functional import argmax
 from dragon.vm.torch.core.ops.array.functional import argmin
 from dragon.vm.torch.core.ops.array.functional import assign
 from dragon.vm.torch.core.ops.array.functional import cat
+from dragon.vm.torch.core.ops.array.functional import channel_affine
 from dragon.vm.torch.core.ops.array.functional import channel_normalize
 from dragon.vm.torch.core.ops.array.functional import channel_shuffle
 from dragon.vm.torch.core.ops.array.functional import chunk

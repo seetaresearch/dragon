@@ -33,7 +33,7 @@ void MomentsOp<Context>::DoRunWithType() {
   }
 
   if (X.count() == 1) {
-    kernel::Cast(
+    math::Cast(
         1,
         X.template data<Tx, Context>(),
         Y1->Reshape(Y_shape)->template mutable_data<Ty, Context>(),

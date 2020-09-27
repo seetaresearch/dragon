@@ -17,25 +17,6 @@ from __future__ import print_function
 from dragon.core.framework.ops import Operator
 
 
-class Affine(Operator):
-    def __init__(self, key, dev, **kwargs):
-        super(Affine, self).__init__(key, dev, **kwargs)
-        self.axis = kwargs.get('axis', 1)
-        self.num_axes = kwargs.get('num_axes', 1)
-
-    def attributes(self):
-        return {
-            'op_type': 'Affine',
-            'arguments': {
-                'axis': self.axis,
-                'num_axes': self.num_axes,
-            }
-        }
-
-    def forward(self, inputs):
-        return self.dispatch(inputs, [self.alloc()])
-
-
 class Axpby(Operator):
     def __init__(self, key, dev, **kwargs):
         super(Axpby, self).__init__(key, dev, **kwargs)

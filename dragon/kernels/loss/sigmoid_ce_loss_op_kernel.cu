@@ -15,14 +15,14 @@ __global__ void _SigmoidCrossEntropy(
     const T* logit,
     const T* target,
     T* loss,
-    int* mask) {
+    T* mask) {
   CUDA_1D_KERNEL_LOOP(i, nthreads) {
     if (target[i] < 0) {
-      loss[i] = mask[i] = 0;
+      loss[i] = mask[i] = T(0);
     } else {
       loss[i] = log(T(1) + exp(logit[i] - T(2) * logit[i] * (logit[i] >= 0))) +
           logit[i] * ((logit[i] >= 0) - target[i]);
-      mask[i] = 1;
+      mask[i] = T(1);
     }
   }
 }
@@ -33,13 +33,13 @@ __global__ void _SigmoidCrossEntropyGrad(
     const T* logit,
     const T* target,
     T* dx,
-    int* mask) {
+    T* mask) {
   CUDA_1D_KERNEL_LOOP(i, nthreads) {
     if (target[i] < 0) {
-      dx[i] = mask[i] = 0;
+      dx[i] = mask[i] = T(0);
     } else {
       dx[i] = T(1) / (T(1) + exp(-logit[i])) - target[i];
-      mask[i] = 1;
+      mask[i] = T(1);
     }
   }
 }
@@ -55,7 +55,7 @@ __global__ void _SigmoidCrossEntropyGrad(
       const T* logit,                                                     \
       const T* target,                                                    \
       T* loss,                                                            \
-      int* mask,                                                          \
+      T* mask,                                                            \
       CUDAContext* ctx) {                                                 \
     _##name<<<CUDA_BLOCKS(count), CUDA_THREADS, 0, ctx->cuda_stream()>>>( \
         count, logit, target, loss, mask);                                \

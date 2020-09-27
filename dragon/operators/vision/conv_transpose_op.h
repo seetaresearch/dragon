@@ -142,10 +142,11 @@ class CuDNNConvTranspose2dGradientOp final
     CuDNNCreateTensorDesc(&input2b_desc_);
     CUDNN_CHECK(cudnnCreateFilterDescriptor(&filter_desc_));
     CUDNN_CHECK(cudnnCreateConvolutionDescriptor(&conv_desc_));
-    if (data_format() == "NCHW")
+    if (data_format() == "NCHW") {
       format_ = CUDNN_TENSOR_NCHW;
-    else if (data_format() == "NHWC")
+    } else if (data_format() == "NHWC") {
       format_ = CUDNN_TENSOR_NHWC;
+    }
   }
   USE_OPERATOR_FUNCTIONS;
   USE_CONVOLUTION_FUNCTIONS;

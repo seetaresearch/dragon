@@ -89,9 +89,9 @@ class DRAGON_API Workspace {
   template <class Context>
   vector<void*> data(const vector<size_t>& segments) {
     vector<void*> group(segments.size());
-    auto total_bytes = std::accumulate(segments.begin(), segments.end(), 0);
     group[0] = CreateTensor("/share/data")
-                   ->Reshape({(int64_t)total_bytes})
+                   ->Reshape({(int64_t)std::accumulate(
+                       segments.begin(), segments.end(), size_t(0))})
                    ->template mutable_data<uint8_t, Context>();
     for (int i = 1; i < segments.size(); ++i) {
       group[i] = (uint8_t*)group[i - 1] + segments[i - 1];

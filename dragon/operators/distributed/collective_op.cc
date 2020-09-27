@@ -27,7 +27,7 @@ void CollectiveOp<Context>::AllReduceMPI() {
   auto from = (comm_rank_ - 1 + comm_size_) % comm_size_;
 
   auto* data = src_tensor_->template mutable_data<T, Context>();
-  auto* scratch = ws()->template data<T, Context>({sizes[0]})[0];
+  auto* scratch = ctx()->workspace()->template data<T, Context>({sizes[0]})[0];
 
   // Scatter-Reduce
   MPI_Request recv_req;
@@ -129,25 +129,10 @@ void CollectiveOp<Context>::RunOnDevice() {
   // Otherwise, data corruption will happen through GPUDirect(UVA)
   // during executing collectives asynchronously.
   ctx()->FinishDeviceComputation();
-#ifdef USE_NCCL
-#if NCCL_VERSION_MIN(2, 2, 0)
-  if (enable_nccl_ && InputSize() <= 2048) {
-    this->nccl_comm(); // Ensure the comm created
-    NCCL_CHECK(ncclGroupStart());
-  }
-#endif
-#endif
   for (int i = 0; i < InputSize(); i++) {
     src_tensor_ = &Input(i);
     DispatchHelper<NumericalTensorTypes>::Call(this, *src_tensor_);
   }
-#ifdef USE_NCCL
-#if NCCL_VERSION_MIN(2, 2, 0)
-  if (enable_nccl_ && InputSize() <= 2048) {
-    NCCL_CHECK(ncclGroupEnd());
-  }
-#endif
-#endif
   src_tensor_ = nullptr;
   for (int i = 0; i < InputSize(); i++) {
     dest_tensor_ = &Input(i);

@@ -33,7 +33,8 @@ void PowGradientOp<Context>::DoRunWithType() {
             dB->template mutable_data<T, Context>(),
             ctx());
       } else {
-        scratch = ws()->template data<T, Context>({dY.count()})[0];
+        scratch =
+            ctx()->workspace()->template data<T, Context>({dY.count()})[0];
         math::Log(A.count(), A.template data<T, Context>(), scratch, ctx());
         math::Mul(
             A.ndim(),
@@ -53,13 +54,14 @@ void PowGradientOp<Context>::DoRunWithType() {
           ctx());
     } else {
       if (A_broadcast_axes.empty()) {
-        scratch = ws()->template data<T, Context>({dY.count()})[0];
+        scratch =
+            ctx()->workspace()->template data<T, Context>({dY.count()})[0];
         math::Log(A.count(), A.template data<T, Context>(), scratch, ctx());
         math::Mul(
             Y.count(), scratch, Y.template data<T, Context>(), scratch, ctx());
       } else {
-        auto scratches =
-            ws()->template data<T, Context>({dY.count(), A.count()});
+        auto scratches = ctx()->workspace()->template data<T, Context>(
+            {dY.count(), A.count()});
         scratch = scratches[0];
         math::Log(
             A.count(), A.template data<T, Context>(), scratches[1], ctx());
@@ -127,7 +129,8 @@ void PowGradientOp<Context>::DoRunWithType() {
           ctx());
     } else {
       if (scratch == nullptr) {
-        scratch = ws()->template data<T, Context>({dY.count()})[0];
+        scratch =
+            ctx()->workspace()->template data<T, Context>({dY.count()})[0];
       }
       math::Div(
           Y.ndim(),

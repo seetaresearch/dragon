@@ -1,5 +1,6 @@
 #include "dragon/operators/vision/resize_op.h"
 #include "dragon/core/workspace.h"
+#include "dragon/utils/math_functions.h"
 #include "dragon/utils/op_kernels.h"
 
 namespace dragon {
@@ -175,7 +176,8 @@ template <typename T>
 void ResizeGradientOp<Context>::DoRunWithTypeAndCast() {
   auto* dy = Input(0).template data<T, Context>();
   auto* dx = Output(0)->template mutable_data<T, Context>();
-  auto* scratch = ws()->template data<float, Context>({Output(0)->count()})[0];
+  auto* scratch = ctx()->workspace()->template data<float, Context>(
+      {Output(0)->count()})[0];
   if (mode_ == "NEAREST") {
     NearestImpl(dy, scratch);
   } else if (mode_ == "LINEAR") {
@@ -183,7 +185,7 @@ void ResizeGradientOp<Context>::DoRunWithTypeAndCast() {
   } else {
     LOG(FATAL) << "Unknown interpolation mode: " << mode_;
   }
-  kernel::Cast(Output(0)->count(), scratch, dx, ctx());
+  math::Cast(Output(0)->count(), scratch, dx, ctx());
 }
 
 template <class Context>

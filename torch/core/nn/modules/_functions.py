@@ -98,24 +98,6 @@ class _PoolNd(function.Function):
         return self.dispatch([input], [self.alloc()])
 
 
-class Affine(function.Function):
-    def __init__(self, key, dev, **kwargs):
-        super(Affine, self).__init__(key, dev, **kwargs)
-
-    def attributes(self):
-        return {
-            'op_type': 'Affine',
-            'arguments': {
-                'axis': 1,
-                'num_axes': 1,
-            }
-        }
-
-    def forward(self, input, weight, bias=None):
-        inputs = [input, weight] + ([bias] if bias else [])
-        return self.dispatch(inputs, [self.alloc()])
-
-
 class BatchNorm(function.Function):
     def __init__(self, key, dev, **kwargs):
         super(BatchNorm, self).__init__(key, dev, **kwargs)

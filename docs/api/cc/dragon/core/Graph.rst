@@ -43,9 +43,9 @@ phase
 #####
 .. doxygenfunction:: dragon::Graph::phase
 
-ws
-##
-.. doxygenfunction:: dragon::Graph::ws
+workspace
+#########
+.. doxygenfunction:: dragon::Graph::workspace
 
 .. raw:: html
 

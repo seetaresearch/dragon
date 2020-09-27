@@ -60,6 +60,9 @@ DRAGON_API void Rsqrt(const int n, const T* x, T* y, Context* ctx);
 template <typename T, class Context>
 DRAGON_API void Set(const int n, const T value, T* y, Context* ctx);
 
+template <typename Tx, typename Ty, class Context>
+DRAGON_API void Cast(const int n, const Tx* x, Ty* y, Context* ctx);
+
 template <typename T, class Context>
 DRAGON_API void Sign(const int n, const T* x, T* y, Context* ctx);
 

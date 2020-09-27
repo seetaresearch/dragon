@@ -21,7 +21,7 @@ __global__ void _SigmoidFocalLoss(
     const LogitType* logit,
     const TargetType* target,
     LogitType* loss,
-    int* mask) {
+    LogitType* mask) {
   CUDA_1D_KERNEL_LOOP(yi, nthreads) {
     const int j = yi % inner_dim;
     const int k = (yi / inner_dim) % axis_dim;
@@ -62,7 +62,7 @@ __global__ void _SigmoidFocalLossGrad(
     const LogitType* logit,
     const TargetType* target,
     LogitType* dx,
-    int* mask) {
+    LogitType* mask) {
   CUDA_1D_KERNEL_LOOP(xi, nthreads) {
     const int j = xi % inner_dim;
     const int k = (xi / inner_dim) % axis_dim;
@@ -111,7 +111,7 @@ __global__ void _SigmoidFocalLossGrad(
       const LogitType* logit,                                                \
       const TargetType* target,                                              \
       LogitType* loss,                                                       \
-      int* mask,                                                             \
+      LogitType* mask,                                                       \
       CUDAContext* ctx) {                                                    \
     const int nthreads = outer_dim * axis_dim * inner_dim;                   \
     _##name<<<CUDA_BLOCKS(nthreads), CUDA_THREADS, 0, ctx->cuda_stream()>>>( \

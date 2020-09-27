@@ -17,6 +17,8 @@
 
 namespace dragon {
 
+class Workspace;
+
 /*!
  * \brief The cpu device context.
  */
@@ -93,6 +95,9 @@ class DRAGON_API CPUContext {
 
   /*! \brief Wait for the dispatched computation to complete */
   void FinishDeviceComputation() {}
+
+  /*! \brief Return the current workspace */
+  Workspace* workspace();
 
   /*! \brief Return the device index */
   int device() const {

@@ -83,7 +83,7 @@ void DivGradientOp<Context>::DoRunWithType() {
             ctx());
       }
     } else {
-      scratch = ws()->template data<T, Context>({dY.count()})[0];
+      scratch = ctx()->workspace()->template data<T, Context>({dY.count()})[0];
       if (B_broadcast_axes.empty()) {
         math::Div(
             B_ref.count(),
@@ -136,7 +136,8 @@ void DivGradientOp<Context>::DoRunWithType() {
       }
     } else {
       if (scratch == nullptr) {
-        scratch = ws()->template data<T, Context>({dY.count()})[0];
+        scratch =
+            ctx()->workspace()->template data<T, Context>({dY.count()})[0];
       }
       if (A_broadcast_axes.empty()) {
         math::Mul(

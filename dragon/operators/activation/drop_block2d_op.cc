@@ -40,7 +40,7 @@ void DropBlock2dOp<Context>::DoRunWithType() {
     auto* scale = Buffer("scale")
                       ->Reshape({})
                       ->template mutable_data<float, CPUContext>();
-    auto scratches = ws()->template data<Context>({
+    auto scratches = ctx()->workspace()->template data<Context>({
         X.dim(0) * seed_h * seed_w * sizeof(uint32_t), // seed points
         X.count() * sizeof(int), // int32 mask for seed growing
     });
@@ -61,7 +61,7 @@ void DropBlock2dOp<Context>::DoRunWithType() {
         (int*)scratches[1],
         ctx());
     // Convert to uint8 mask
-    kernel::Cast(X.count(), (int*)scratches[1], mask, ctx());
+    math::Cast(X.count(), (int*)scratches[1], mask, ctx());
     // Count the number of zeros to compute scale factor
     float normalizer = math::Sum(X.count(), 1.f, (int*)scratches[1], ctx());
     scale[0] = (float)X.count() / std::max(normalizer, 1.f);

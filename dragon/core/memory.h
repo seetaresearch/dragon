@@ -147,7 +147,7 @@ class DRAGON_API UnifiedMemory {
   /*! \brief Set to use an external block of cpu data */
   void set_cpu_data(void* cpu_ptr, size_t size);
 
-  /*! \brief Set to use an extenral block of cuda data */
+  /*! \brief Set to use an external block of cuda data */
   void set_cuda_data(void* cuda_ptr, size_t size, int device);
 
  private:

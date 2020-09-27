@@ -56,6 +56,7 @@ from dragon.core.ops import tensorbind_eager as _
 from dragon.core.ops import tensorbind_symbol as _
 from dragon.core.ops.array_ops import broadcast_to
 from dragon.core.ops.array_ops import cast
+from dragon.core.ops.array_ops import channel_affine
 from dragon.core.ops.array_ops import channel_normalize
 from dragon.core.ops.array_ops import channel_shuffle
 from dragon.core.ops.array_ops import concat

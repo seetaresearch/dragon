@@ -18,17 +18,17 @@ __global__ void _SparseSoftmaxCrossEntropy(
     const LogitType* prob,
     const TargetType* target,
     LogitType* loss,
-    int* mask) {
+    LogitType* mask) {
   CUDA_1D_KERNEL_LOOP(yi, nthreads) {
     const int i = yi / inner_dim;
     const int j = yi % inner_dim;
     const int label = target[i * inner_dim + j];
     if (label == ignore_index) {
-      loss[yi] = mask[yi] = 0;
+      loss[yi] = mask[yi] = LogitType(0);
     } else {
       loss[yi] = -log(max(
           prob[(i * axis_dim + label) * inner_dim + j], LogitType(FLT_MIN)));
-      mask[yi] = 1;
+      mask[yi] = LogitType(1);
     }
   }
 }
@@ -42,7 +42,7 @@ __global__ void _SparseSoftmaxCrossEntropyGrad(
     const LogitType* prob,
     const TargetType* target,
     LogitType* dx,
-    int* mask) {
+    LogitType* mask) {
   CUDA_1D_KERNEL_LOOP(yi, nthreads) {
     const int i = yi / inner_dim;
     const int j = yi % inner_dim;
@@ -53,10 +53,10 @@ __global__ void _SparseSoftmaxCrossEntropyGrad(
         (*offset_dx) = LogitType(0);
         offset_dx += inner_dim;
       }
-      mask[yi] = 0;
+      mask[yi] = LogitType(0);
     } else {
       dx[(i * axis_dim + label) * inner_dim + j] -= LogitType(1);
-      mask[yi] = 1;
+      mask[yi] = LogitType(1);
     }
   }
 }
@@ -75,7 +75,7 @@ __global__ void _SparseSoftmaxCrossEntropyGrad(
       const LogitType* prob,                                                 \
       const TargetType* target,                                              \
       LogitType* loss,                                                       \
-      int* mask,                                                             \
+      LogitType* mask,                                                       \
       CUDAContext* ctx) {                                                    \
     const int nthreads = outer_dim * inner_dim;                              \
     _##name<<<CUDA_BLOCKS(nthreads), CUDA_THREADS, 0, ctx->cuda_stream()>>>( \

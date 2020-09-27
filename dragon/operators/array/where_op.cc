@@ -66,7 +66,7 @@ void WhereGradientOp<Context>::DoRunWithType() {
   }
 
   if (scratch_size > 0) {
-    scratch = ws()->template data<T, Context>({scratch_size})[0];
+    scratch = ctx()->workspace()->template data<T, Context>({scratch_size})[0];
     zeros = scratch + (scratch_size - 1);
     math::Set(1, cast::to<T>(0.f), zeros, ctx());
   }

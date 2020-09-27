@@ -52,7 +52,8 @@ void CuDNNCTCLossOp<Context>::DoRunWithType() {
       ctc_desc_,
       &workspace_size_));
 
-  auto* scratch = (uint8_t*)ws()->template data<Context>({workspace_size_})[0];
+  auto* scratch = (uint8_t*)ctx()->workspace()->template data<Context>(
+      {workspace_size_})[0];
 
   auto* g = Buffer("grad")
                 ->ReshapeLike(Input(0))

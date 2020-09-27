@@ -24,7 +24,7 @@ from dragon.vm.torch.core.nn import functional as F
 from dragon.vm.torch.core.nn.modules import _functions as nn_funcs
 from dragon.vm.torch.core.nn.modules.module import Module
 from dragon.vm.torch.core.nn.parameter import Parameter
-from dragon.vm.torch.core.ops.init import functional as init
+from dragon.vm.torch.core.ops.init import functional as init_funcs
 from dragon.vm.torch.core.tensor import Tensor
 
 
@@ -141,8 +141,8 @@ class RNNBase(Module):
         num_cols = shape[-1]
         flat_shape = (num_cols, num_rows) if num_rows < num_cols \
             else (num_rows, num_cols)
-        W = numpy.random.randn(*flat_shape)
-        q, r = numpy.linalg.qr(W)
+        w = numpy.random.randn(*flat_shape)
+        q, r = numpy.linalg.qr(w)
         # Make Q uniform
         d = numpy.diag(r)
         q *= numpy.sign(d)
@@ -423,7 +423,7 @@ class LSTMCell(RNNCellBase):
 
     def forward(self, input, hx=None):
         if hx is None:
-            zeros = init.zeros(
+            zeros = init_funcs.zeros(
                 input.size(0),
                 self.hidden_size,
                 dtype=input.dtype,

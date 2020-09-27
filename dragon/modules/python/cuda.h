@@ -94,11 +94,12 @@ void RegisterModule(py::module& m) {
   });
 
   /*! \brief Activate the CuDNN engine */
-  m.def("cudaEnableDNN", [](bool enabled, bool benchmark) {
+  m.def("cudaEnableDNN", [](bool enabled, bool benchmark, bool allow_tf32) {
 #ifdef USE_CUDA
     auto& cuda_objects = CUDAContext::objects();
     cuda_objects.cudnn_enabled_ = enabled;
     cuda_objects.cudnn_benchmark_ = benchmark;
+    cuda_objects.cudnn_allow_tf32_ = allow_tf32;
 #endif
   });
 

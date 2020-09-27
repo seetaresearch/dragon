@@ -13,12 +13,12 @@ void SigmoidCrossEntropyOp<Context>::DoRunWithType() {
   CHECK_EQ(X.count(), Input(1).count())
       << "\nNumber of preds must match the number of targets.";
 
-  auto scratches = ws()->template data<Context>({
-      X.count() * sizeof(T), // loss
-      X.count() * sizeof(int), // mask
+  auto scratches = ctx()->workspace()->template data<Context>({
+      X.size() * sizeof(T), // loss
+      X.size() * sizeof(T) + sizeof(T), // mask
   });
   auto* loss = static_cast<T*>(scratches[0]);
-  auto* mask = static_cast<int*>(scratches[1]);
+  auto* mask = static_cast<T*>(scratches[1]);
 
   kernel::SigmoidCrossEntropy(
       X.count(),
@@ -64,9 +64,10 @@ template <typename T>
 void SigmoidCrossEntropyGradientOp<Context>::DoRunWithType() {
   auto &X = Input(0), &dY = Input(-1), *dX = Output(0);
 
-  auto* mask = ws()->template data<int, Context>({dX->count()})[0];
   auto* dy = dY.template data<T, Context>();
   auto* dx = dX->template mutable_data<T, Context>();
+  auto* mask =
+      ctx()->workspace()->template data<T, Context>({dX->count() + 1})[0];
 
   kernel::SigmoidCrossEntropyGrad(
       dX->count(),

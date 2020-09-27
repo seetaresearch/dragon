@@ -71,7 +71,7 @@ Tensor* OperatorBase::Output(int i, const vec32_t& inputs) {
 }
 
 Tensor* OperatorBase::Buffer(const string& name) {
-  return ws()->CreateTensor("/share/buffer/" + handle_ + "/" + name);
+  return workspace()->CreateTensor("/share/buffer/" + handle_ + "/" + name);
 }
 
 string OperatorBase::MessageForUnsupported(
@@ -94,10 +94,10 @@ OperatorBase* OperatorBase::UpdateFrom(const OperatorDef& def) {
   inputs_.resize(def.input_size());
   outputs_.resize(def.output_size());
   for (int i = 0; i < inputs_.size(); i++) {
-    inputs_[i] = ws()->GetTensor(def.input(i));
+    inputs_[i] = workspace()->GetTensor(def.input(i));
   }
   for (int i = 0; i < outputs_.size(); i++) {
-    outputs_[i] = ws()->CreateTensor(def.output(i));
+    outputs_[i] = workspace()->CreateTensor(def.output(i));
   }
   return this;
 }
@@ -113,7 +113,7 @@ void Operator<Context>::Prepare() {
       LOG(DEBUG) << "Excepted version of Tensor(" + Input(i).name() + ") "
                  << "is " << version << ", got " << Input(i).version()
                  << ". Recompute.";
-      Tensor* flag = ws()->GetTensor("/share/flag/recomputing");
+      Tensor* flag = workspace()->GetTensor("/share/flag/recomputing");
       flag->mutable_data<bool, CPUContext>()[0] = true;
       vector<OperatorBase*>& chain = subgraph()[name];
       for (auto* op : chain) {

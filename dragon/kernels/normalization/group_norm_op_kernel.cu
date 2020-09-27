@@ -9,8 +9,13 @@ namespace dragon {
 
 namespace kernel {
 
+#if __CUDA_ARCH__ >= 350
 #define L(x, i) __ldg(x + i)
 #define LF(x, i) __half2float(__ldg(x + i))
+#else
+#define L(x, i) x[i]
+#define LF(x, i) __half2float(x[i])
+#endif
 
 namespace {
 
@@ -28,25 +33,14 @@ __global__ void _GroupNormFusedParams(
   const int outer_dim = N * G;
   CUDA_2D_KERNEL_LOOP1(i, outer_dim) {
     const int g = i % G;
-#if __CUDA_ARCH__ >= 350
     const T mu_val = L(mu, i);
     const T rsig_val = L(rsig, i);
-#else
-    const T mu_val = mu[i];
-    const T rsig_val = rsig[i];
-#endif
     CUDA_2D_KERNEL_LOOP2(j, D) {
       const int wi = i * D + j;
       const int gi = g * D + j;
-#if __CUDA_ARCH__ >= 350
       const T w = L(gamma, gi) * rsig_val;
       scale[wi] = w;
-      bias[wi] = L(beta, gi) - w * mu_val;
-#else
-      const T w = gamma[gi] * rsig_val;
-      scale[wi] = w;
-      bias[wi] = beta[gi] - w * mu_val;
-#endif
+      bias[wi] = fma(-w, mu_val, L(beta, gi));
     }
   }
 }
@@ -62,20 +56,11 @@ __global__ void _GroupNormForwardNCHW(
     Tx* y) {
   const int outer_dim = N * C;
   CUDA_2D_KERNEL_LOOP1(i, outer_dim) {
-#if __CUDA_ARCH__ >= 350
     const Tp w = L(scale, i);
     const Tp b = L(bias, i);
-#else
-    const Tp w = scale[i];
-    const Tp b = bias[i];
-#endif
     CUDA_2D_KERNEL_LOOP2(j, S) {
       const int xi = i * S + j;
-#if __CUDA_ARCH__ >= 350
-      y[xi] = L(x, xi) * w + b;
-#else
-      y[xi] = x[xi] * w + b;
-#endif
+      y[xi] = fma(L(x, xi), w, b);
     }
   }
 }
@@ -89,17 +74,15 @@ __global__ void _GroupNormForwardNCHW<half, float>(
     const float* scale,
     const float* bias,
     half* y) {
-#if __CUDA_ARCH__ >= 530
   const int outer_dim = N * C;
   CUDA_2D_KERNEL_LOOP1(i, outer_dim) {
     const float w = L(scale, i);
     const float b = L(bias, i);
     CUDA_2D_KERNEL_LOOP2(j, S) {
       const int xi = i * S + j;
-      y[xi] = __float2half(LF(x, xi) * w + b);
+      y[xi] = __float2half(fmaf(LF(x, xi), w, b));
     }
   }
-#endif
 }
 
 template <typename Tx, typename Tp>
@@ -117,11 +100,7 @@ __global__ void _GroupNormForwardNHWC(
     CUDA_2D_KERNEL_LOOP2(j, C) {
       const int xi = i * C + j;
       const int wi = n * C + j;
-#if __CUDA_ARCH__ >= 350
-      y[xi] = L(x, xi) * L(scale, wi) + L(bias, wi);
-#else
-      y[xi] = x[xi] * scale[wi] + bias[wi];
-#endif
+      y[xi] = fma(L(x, xi), L(scale, wi), L(bias, wi));
     }
   }
 }
@@ -135,17 +114,15 @@ __global__ void _GroupNormForwardNHWC<half, float>(
     const float* scale,
     const float* bias,
     half* y) {
-#if __CUDA_ARCH__ >= 530
   const int outer_dim = N * S;
   CUDA_2D_KERNEL_LOOP1(i, outer_dim) {
     const int n = i / S;
     CUDA_2D_KERNEL_LOOP2(j, C) {
       const int xi = i * C + j;
       const int wi = n * C + j;
-      y[xi] = __float2half(LF(x, xi) * L(scale, wi) + L(bias, wi));
+      y[xi] = __float2half(fmaf(LF(x, xi), L(scale, wi), L(bias, wi)));
     }
   }
-#endif
 }
 
 template <typename Tx, typename Tp, StorageOrder kOrder>
@@ -172,13 +149,8 @@ __global__ void _GroupNormWGrad(
           ? (n * outer_dim + i) * S + j % S
           : j * outer_dim + i;
       const int mi = n * G + i / D;
-#if __CUDA_ARCH__ >= 350
       dg_val += L(dy, xi) * (L(x, xi) - L(mu, mi)) * L(rsig, mi);
       db_val += L(dy, xi);
-#else
-      dg_val += dy[xi] * (x[xi] - mu[mi]) * rsig[mi];
-      db_val += dy[xi];
-#endif
     }
     dg_val = BlockReduce<Tp>(dg_storage).Reduce(dg_val, cub::Sum());
     db_val = BlockReduce<Tp>(db_storage).Reduce(db_val, cub::Sum());
@@ -201,7 +173,6 @@ __global__ void _GroupNormWGradHalf(
     const half* dy,
     float* dgamma,
     float* dbeta) {
-#if __CUDA_ARCH__ >= 530
   const int outer_dim = G * D;
   const int inner_dim = N * S;
   __shared__ typename BlockReduce<float>::TempStorage dg_storage;
@@ -224,7 +195,6 @@ __global__ void _GroupNormWGradHalf(
       dbeta[i] = db_val;
     }
   }
-#endif
 }
 
 template <typename Tx, typename Tp, StorageOrder kOrder>
@@ -249,13 +219,8 @@ __global__ void _GroupNormInternalGrad(
       const int xi = kOrder == StorageOrder::NCHW
           ? i * inner_dim + j
           : (i / G * S + j % S) * G * D + gi;
-#if __CUDA_ARCH__ >= 350
       ds_val += L(gamma, gi) * L(dy, xi) * L(x, xi);
       db_val += L(gamma, gi) * L(dy, xi);
-#else
-      ds_val += gamma[gi] * dy[xi] * x[xi];
-      db_val += gamma[gi] * dy[xi];
-#endif
     }
     ds_val = BlockReduce<Tp>(ds_storage).Reduce(ds_val, cub::Sum());
     db_val = BlockReduce<Tp>(db_storage).Reduce(db_val, cub::Sum());
@@ -277,7 +242,6 @@ __global__ void _GroupNormInternalGradHalf(
     const half* dy,
     float* ds,
     float* db) {
-#if __CUDA_ARCH__ >= 530
   const int outer_dim = N * G;
   const int inner_dim = D * S;
   __shared__ typename BlockReduce<float>::TempStorage ds_storage;
@@ -299,7 +263,6 @@ __global__ void _GroupNormInternalGradHalf(
       db[i] = db_val;
     }
   }
-#endif
 }
 
 template <typename Tx, typename Tp, StorageOrder kOrder>
@@ -322,17 +285,10 @@ __global__ void _GroupNormGrad(
     const int mi = kOrder == StorageOrder::NCHW ? i / (D * S)
                                                 : i / (C * S) * G + (i / D % G);
     const int gi = kOrder == StorageOrder::NCHW ? (i / S) % C : i % C;
-#if __CUDA_ARCH__ >= 350
-    const Tp u = (L(db, mi) * L(mu, mi) - L(ds, mi)) * (L(x, i) - L(mu, mi)) *
+    const Tp u = fma(L(db, mi), L(mu, mi), -L(ds, mi)) * (L(x, i) - L(mu, mi)) *
         utils::math::Cube(L(rsig, mi));
     const Tp v = L(db, mi) * L(rsig, mi);
     dx[i] = L(gamma, gi) * L(dy, i) * L(rsig, mi) + (u - v) * denom;
-#else
-    const Tp u = (db[mi] * mu[mi] - ds[mi]) * (x[i] - mu[mi]) *
-        utils::math::Cube(rsig[mi]);
-    const Tp v = db[mi] * rsig[mi];
-    dx[i] = gamma[gi] * dy[i] * rsig[mi] + (u - v) * denom;
-#endif
   }
 }
 
@@ -350,20 +306,18 @@ __global__ void _GroupNormGradHalf(
     const float* db,
     const half* dy,
     half* dx) {
-#if __CUDA_ARCH__ >= 530
   const int C = G * D;
   const float denom = 1.f / float(D * S);
   CUDA_1D_KERNEL_LOOP(i, nthreads) {
     const int mi = kOrder == StorageOrder::NCHW ? i / (D * S)
                                                 : i / (C * S) * G + (i / D % G);
     const int gi = kOrder == StorageOrder::NCHW ? (i / S) % C : i % C;
-    const float u = (L(db, mi) * L(mu, mi) - L(ds, mi)) *
+    const float u = fmaf(L(db, mi), L(mu, mi), -L(ds, mi)) *
         (LF(x, i) - L(mu, mi)) * utils::math::Cube(L(rsig, mi));
     const float v = L(db, mi) * L(rsig, mi);
     dx[i] =
         __float2half(L(gamma, gi) * LF(dy, i) * L(rsig, mi) + (u - v) * denom);
   }
-#endif
 }
 
 } // namespace

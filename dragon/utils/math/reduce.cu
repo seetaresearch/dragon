@@ -1,6 +1,9 @@
 #ifdef USE_CUDA
 
+#include "dragon/core/workspace.h"
 #include "dragon/utils/device/common_cub.h"
+#include "dragon/utils/device/common_thrust.h"
+#include "dragon/utils/math/blas.h"
 #include "dragon/utils/math/reduce.h"
 #include "dragon/utils/math/utils.h"
 
@@ -26,7 +29,9 @@ __global__ void _RowwiseReduce(
       val = reducer(val, x[j * cols + i]);
     }
     val = BlockReduce<T>(storage).Reduce(val, reducer);
-    if (threadIdx.x == 0) y[i] = val * scale;
+    if (threadIdx.x == 0) {
+      y[i] = val * scale;
+    }
   }
 }
 
@@ -35,18 +40,24 @@ __global__ void _RowwiseReduce(
     const int rows,
     const int cols,
     const Reducer reducer,
-    const float init,
-    const float scale,
+    const half init,
+    const half scale,
     const half* x,
     half* y) {
-  __shared__ typename BlockReduce<float>::TempStorage storage;
+  __shared__ typename BlockReduce<half>::TempStorage storage;
   CUDA_2D_KERNEL_LOOP1(i, cols) {
-    float val = init;
+    half val = init;
     CUDA_2D_KERNEL_LOOP2(j, rows) {
-      val = reducer(val, __half2float(x[j * cols + i]));
+      val = reducer(val, x[j * cols + i]);
     }
-    val = BlockReduce<float>(storage).Reduce(val, reducer);
-    if (threadIdx.x == 0) y[i] = __float2half(val * scale);
+    val = BlockReduce<half>(storage).Reduce(val, reducer);
+    if (threadIdx.x == 0) {
+#if __CUDA_ARCH__ >= 530
+      y[i] = __hmul(val, scale);
+#else
+      y[i] = __float2half(__half2float(val) * __half2float(scale));
+#endif
+    }
   }
 }
 
@@ -66,7 +77,9 @@ __global__ void _ColwiseReduce(
       val = reducer(val, x[i * cols + j]);
     }
     val = BlockReduce<T>(storage).Reduce(val, reducer);
-    if (threadIdx.x == 0) y[i] = val * scale;
+    if (threadIdx.x == 0) {
+      y[i] = val * scale;
+    }
   }
 }
 
@@ -75,18 +88,24 @@ __global__ void _ColwiseReduce(
     const int rows,
     const int cols,
     const Reducer reducer,
-    const float init,
-    const float scale,
+    const half init,
+    const half scale,
     const half* x,
     half* y) {
-  __shared__ typename BlockReduce<float>::TempStorage storage;
+  __shared__ typename BlockReduce<half>::TempStorage storage;
   CUDA_2D_KERNEL_LOOP1(i, rows) {
-    float val = init;
+    half val = init;
     CUDA_2D_KERNEL_LOOP2(j, cols) {
-      val = reducer(val, __half2float(x[i * cols + j]));
+      val = reducer(val, x[i * cols + j]);
     }
-    val = BlockReduce<float>(storage).Reduce(val, reducer);
-    if (threadIdx.x == 0) y[i] = __float2half(val * scale);
+    val = BlockReduce<half>(storage).Reduce(val, reducer);
+    if (threadIdx.x == 0) {
+#if __CUDA_ARCH__ >= 530
+      y[i] = __hmul(val, scale);
+#else
+      y[i] = __float2half(__half2float(val) * __half2float(scale));
+#endif
+    }
   }
 }
 
@@ -115,7 +134,9 @@ __global__ void _GenericReduce(
       val = reducer(val, x[xi]);
     }
     val = BlockReduce<T>(storage).Reduce(val, reducer);
-    if (threadIdx.x == 0) y[i] = val * scale;
+    if (threadIdx.x == 0) {
+      y[i] = val * scale;
+    }
   }
 }
 
@@ -127,13 +148,13 @@ __global__ void _GenericReduce(
     const SimpleArray<int, D> x_dims,
     const SimpleArray<int, D> x_strides,
     const Reducer reducer,
-    const float init,
-    const float scale,
+    const half init,
+    const half scale,
     const half* x,
     half* y) {
-  __shared__ typename BlockReduce<float>::TempStorage storage;
+  __shared__ typename BlockReduce<half>::TempStorage storage;
   CUDA_2D_KERNEL_LOOP1(i, rows) {
-    float val = init;
+    half val = init;
     CUDA_2D_KERNEL_LOOP2(j, cols) {
       int xi = 0, c = i * cols + j;
       for (int d = num_dims - 1; d >= 0; --d) {
@@ -141,26 +162,56 @@ __global__ void _GenericReduce(
         FIXED_DIVISOR_DIV_MOD(x_dims.data[d], c, &c, &r);
         xi += r * x_strides.data[d];
       }
-      val = reducer(val, __half2float(x[xi]));
+      val = reducer(val, x[xi]);
     }
-    val = BlockReduce<float>(storage).Reduce(val, reducer);
-    if (threadIdx.x == 0) y[i] = __float2half(val * scale);
+    val = BlockReduce<half>(storage).Reduce(val, reducer);
+    if (threadIdx.x == 0) {
+#if __CUDA_ARCH__ >= 530
+      y[i] = __hmul(val, scale);
+#else
+      y[i] = __float2half(__half2float(val) * __half2float(scale));
+#endif
+    }
   }
 }
 
 #define DEFINE_REDUCE_FUNCTION(name)                                           \
-  template <typename Tx, typename Tp, class Reducer>                           \
-  void _Reduce##name(                                                          \
+  template <typename T, class Reducer>                                         \
+  int _Reduce##name(                                                           \
       const int num_dims,                                                      \
       const int* dims,                                                         \
       const int num_axes,                                                      \
       const int* axes,                                                         \
       const Reducer reducer,                                                   \
-      const Tp init,                                                           \
-      const Tp scale,                                                          \
-      const Tx* x,                                                             \
-      Tx* y,                                                                   \
+      const T init,                                                            \
+      const float scale,                                                       \
+      const T* x,                                                              \
+      T* y,                                                                    \
       CUDAContext* ctx) {                                                      \
+    const int count =                                                          \
+        std::accumulate(dims, dims + num_dims, 1, std::multiplies<int>());     \
+    if (num_dims == num_axes && count > 10000) {                               \
+      size_t ws_nbytes = 0;                                                    \
+      cub::DeviceReduce::Reduce(                                               \
+          nullptr,                                                             \
+          ws_nbytes,                                                           \
+          x,                                                                   \
+          y,                                                                   \
+          count,                                                               \
+          reducer,                                                             \
+          cast::to<T>(init),                                                   \
+          ctx->cuda_stream());                                                 \
+      cub::DeviceReduce::Reduce(                                               \
+          ctx->workspace()->data<CUDAContext>({ws_nbytes})[0],                 \
+          ws_nbytes,                                                           \
+          x,                                                                   \
+          y,                                                                   \
+          count,                                                               \
+          reducer,                                                             \
+          cast::to<T>(init),                                                   \
+          ctx->cuda_stream());                                                 \
+      return 0;                                                                \
+    }                                                                          \
     int rows, cols;                                                            \
     vec32_t y_dims(dims, dims + num_dims);                                     \
     for (int i = 0; i < num_axes; ++i)                                         \
@@ -172,8 +223,9 @@ __global__ void _GenericReduce(
           CUDA_2D_BLOCKS(cols),                                                \
           CUDA_THREADS,                                                        \
           0,                                                                   \
-          ctx->cuda_stream()>>>(rows, cols, reducer, init, scale, x, y);       \
-      return;                                                                  \
+          ctx->cuda_stream()>>>(                                               \
+          rows, cols, reducer, init, cast::to<T>(scale), x, y);                \
+      return 1;                                                                \
     }                                                                          \
     /*! Case #2: Colwise Reduce */                                             \
     if (utils::math::IsColwiseReduce(                                          \
@@ -182,8 +234,9 @@ __global__ void _GenericReduce(
           CUDA_2D_BLOCKS(rows),                                                \
           CUDA_THREADS,                                                        \
           0,                                                                   \
-          ctx->cuda_stream()>>>(rows, cols, reducer, init, scale, x, y);       \
-      return;                                                                  \
+          ctx->cuda_stream()>>>(                                               \
+          rows, cols, reducer, init, cast::to<T>(scale), x, y);                \
+      return 2;                                                                \
     }                                                                          \
     /*! Case #3: Generic Reduce */                                             \
     CUDA_TENSOR_DIMS_CHECK(num_dims);                                          \
@@ -204,7 +257,17 @@ __global__ void _GenericReduce(
         CUDA_THREADS,                                                          \
         0,                                                                     \
         ctx->cuda_stream()>>>(                                                 \
-        rows, cols, num_dims, dimsT, stridesT, reducer, init, scale, x, y);    \
+        rows,                                                                  \
+        cols,                                                                  \
+        num_dims,                                                              \
+        dimsT,                                                                 \
+        stridesT,                                                              \
+        reducer,                                                               \
+        init,                                                                  \
+        cast::to<T>(scale),                                                    \
+        x,                                                                     \
+        y);                                                                    \
+    return 3;                                                                  \
   }
 
 DEFINE_REDUCE_FUNCTION(Max);
@@ -216,85 +279,54 @@ DEFINE_REDUCE_FUNCTION(Sum);
 
 /* ------------------- Launcher Separator ------------------- */
 
-template <>
-void ReduceMax<float16, CUDAContext>(
-    const int num_dims,
-    const int* dims,
-    const int num_axes,
-    const int* axes,
-    const float16* x,
-    float16* y,
-    CUDAContext* ctx) {
-  _ReduceMax(
-      num_dims,
-      dims,
-      num_axes,
-      axes,
-      cub::Max(),
-      std::numeric_limits<float>::lowest(),
-      1.f,
-      reinterpret_cast<const half*>(x),
-      reinterpret_cast<half*>(y),
-      ctx);
-}
+#define DEFINE_KERNEL_LAUNCHER(name, Reducer, kInit) \
+  template <>                                        \
+  void Reduce##name<float16, CUDAContext>(           \
+      const int num_dims,                            \
+      const int* dims,                               \
+      const int num_axes,                            \
+      const int* axes,                               \
+      const float scale,                             \
+      const float16* x,                              \
+      float16* y,                                    \
+      CUDAContext* ctx) {                            \
+    auto kind = _Reduce##name(                       \
+        num_dims,                                    \
+        dims,                                        \
+        num_axes,                                    \
+        axes,                                        \
+        Reducer(),                                   \
+        cast::to<half>(kInit),                       \
+        scale,                                       \
+        reinterpret_cast<const half*>(x),            \
+        reinterpret_cast<half*>(y),                  \
+        ctx);                                        \
+    if (kind == 0) {                                 \
+      math::Scale(1, scale, y, y, ctx);              \
+    }                                                \
+  }
 
-template <>
-void ReduceMin<float16, CUDAContext>(
-    const int num_dims,
-    const int* dims,
-    const int num_axes,
-    const int* axes,
-    const float16* x,
-    float16* y,
-    CUDAContext* ctx) {
-  _ReduceMin(
-      num_dims,
-      dims,
-      num_axes,
-      axes,
-      cub::Min(),
-      std::numeric_limits<float>::max(),
-      1.f,
-      reinterpret_cast<const half*>(x),
-      reinterpret_cast<half*>(y),
-      ctx);
-}
+DEFINE_KERNEL_LAUNCHER(Max, cub::MaxHalf, -HFLT_MAX);
+DEFINE_KERNEL_LAUNCHER(Min, cub::MinHalf, HFLT_MAX);
+DEFINE_KERNEL_LAUNCHER(Sum, cub::SumHalf, 0.f);
+#undef DEFINE_KERNEL_LAUNCHER
 
-template <>
-void ReduceSum<float16, CUDAContext>(
-    const int num_dims,
-    const int* dims,
-    const int num_axes,
-    const int* axes,
-    const float scale,
-    const float16* x,
-    float16* y,
-    CUDAContext* ctx) {
-  _ReduceMin(
-      num_dims,
-      dims,
-      num_axes,
-      axes,
-      cub::Sum(),
-      0.f,
-      scale,
-      reinterpret_cast<const half*>(x),
-      reinterpret_cast<half*>(y),
-      ctx);
-}
-
-#define DEFINE_KERNEL_LAUNCHER(name, T, Reducer, kInit)                     \
-  template <>                                                               \
-  void Reduce##name<T, CUDAContext>(                                        \
-      const int num_dims,                                                   \
-      const int* dims,                                                      \
-      const int num_axes,                                                   \
-      const int* axes,                                                      \
-      const T* x,                                                           \
-      T* y,                                                                 \
-      CUDAContext* ctx) {                                                   \
-    _Reduce##name(                                                          \
-        num_dims, dims, num_axes, axes, Reducer(), kInit, T(1), x, y, ctx); \
+#define DEFINE_KERNEL_LAUNCHER(name, T, Reducer, kInit)                      \
+  template <>                                                                \
+  void Reduce##name<T, CUDAContext>(                                         \
+      const int num_dims,                                                    \
+      const int* dims,                                                       \
+      const int num_axes,                                                    \
+      const int* axes,                                                       \
+      const float scale,                                                     \
+      const T* x,                                                            \
+      T* y,                                                                  \
+      CUDAContext* ctx) {                                                    \
+    auto kind = _Reduce##name(                                               \
+        num_dims, dims, num_axes, axes, Reducer(), kInit, scale, x, y, ctx); \
+    if (kind == 0) {                                                         \
+      math::Scale(1, scale, y, y, ctx);                                      \
+    }                                                                        \
   }
 
 DEFINE_KERNEL_LAUNCHER(
@@ -345,32 +377,6 @@ DEFINE_KERNEL_LAUNCHER(
     double,
     cub::Min,
     std::numeric_limits<double>::max());
-#undef DEFINE_KERNEL_LAUNCHER
-
-#define DEFINE_KERNEL_LAUNCHER(name, T, Reducer, kInit) \
-  template <>                                           \
-  void Reduce##name<T, CUDAContext>(                    \
-      const int num_dims,                               \
-      const int* dims,                                  \
-      const int num_axes,                               \
-      const int* axes,                                  \
-      const float scale,                                \
-      const T* x,                                       \
-      T* y,                                             \
-      CUDAContext* ctx) {                               \
-    _Reduce##name(                                      \
-        num_dims,                                       \
-        dims,                                           \
-        num_axes,                                       \
-        axes,                                           \
-        Reducer(),                                      \
-        kInit,                                          \
-        (T)scale,                                       \
-        x,                                              \
-        y,                                              \
-        ctx);                                           \
-  }
-
 DEFINE_KERNEL_LAUNCHER(Sum, int8_t, cub::Sum, int8_t(0));
 DEFINE_KERNEL_LAUNCHER(Sum, uint8_t, cub::Sum, uint8_t(0));
 DEFINE_KERNEL_LAUNCHER(Sum, int, cub::Sum, int(0));
@@ -384,18 +390,7 @@ DEFINE_KERNEL_LAUNCHER(Sum, double, cub::Sum, 0.);
   DRAGON_API void Sum<T, CUDAContext>(                                      \
       const int n, const float alpha, const T* x, T* y, CUDAContext* ctx) { \
     vec32_t dims = {n}, axes = {0};                                         \
-    ReduceSum(1, dims.data(), 1, axes.data(), alpha, x, y, ctx);            \
-  }                                                                         \
-  template <>                                                               \
-  DRAGON_API T Sum<T, CUDAContext>(                                         \
-      const int n, const float alpha, const T* x, CUDAContext* ctx) {       \
-    T val, *y = (T*)ctx->New(sizeof(T));                                    \
-    Sum(n, alpha, x, y, ctx);                                               \
-    CUDA_CHECK(cudaMemcpyAsync(                                             \
-        &val, y, sizeof(T), cudaMemcpyDeviceToHost, ctx->cuda_stream()));   \
-    ctx->FinishDeviceComputation();                                         \
-    ctx->Delete(y);                                                         \
-    return val;                                                             \
+    math::ReduceSum(1, dims.data(), 1, axes.data(), alpha, x, y, ctx);      \
   }
 
 DEFINE_SUM_FUNC(int8_t);
@@ -403,6 +398,23 @@ DEFINE_SUM_FUNC(uint8_t);
 DEFINE_SUM_FUNC(int);
 DEFINE_SUM_FUNC(int64_t);
 DEFINE_SUM_FUNC(float16);
+DEFINE_SUM_FUNC(float);
+DEFINE_SUM_FUNC(double);
+#undef DEFINE_SUM_FUNC
+
+#define DEFINE_SUM_FUNC(T)                                            \
+  template <>                                                         \
+  DRAGON_API T Sum<T, CUDAContext>(                                   \
+      const int n, const float alpha, const T* x, CUDAContext* ctx) { \
+    auto policy = thrust::cuda::par.on(ctx->cuda_stream());           \
+    auto val = thrust::reduce(policy, x, x + n) * alpha;              \
+    return static_cast<T>(val);                                       \
+  }
+
+DEFINE_SUM_FUNC(int8_t);
+DEFINE_SUM_FUNC(uint8_t);
+DEFINE_SUM_FUNC(int);
+DEFINE_SUM_FUNC(int64_t);
 DEFINE_SUM_FUNC(float);
 DEFINE_SUM_FUNC(double);
 #undef DEFINE_SUM_FUNC

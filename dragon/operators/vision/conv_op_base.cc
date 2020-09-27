@@ -77,7 +77,8 @@ template <typename T>
 void ConvOpBase<Context>::Wx(const T* x, const T* w, T* y, bool skip) {
   auto* col = x;
   if (!is_1x1_) {
-    auto* scratch = ws()->template data<T, Context>({col_dim_})[0];
+    auto* scratch =
+        ctx()->workspace()->template data<T, Context>({col_dim_})[0];
     if (!skip) Im2Col(x, scratch);
     col = scratch;
   }
@@ -127,7 +128,9 @@ void ConvOpBase<Context>::Pb(const T* bias, T* y) {
 template <class Context>
 template <typename T>
 void ConvOpBase<Context>::Dx(const T* dy, const T* w, T* dx) {
-  auto* col = is_1x1_ ? dx : ws()->template data<T, Context>({col_dim_})[0];
+  auto* col = is_1x1_
+      ? dx
+      : ctx()->workspace()->template data<T, Context>({col_dim_})[0];
   for (int g = 0; g < group_; g++) {
     if (data_format() == "NCHW") {
       math::Gemm(
@@ -165,7 +168,8 @@ template <typename T>
 void ConvOpBase<Context>::Dw(const T* dy, const T* x, T* dw, bool accum) {
   auto* col = x;
   if (!is_1x1_) {
-    auto* scratch = ws()->template data<T, Context>({col_dim_})[0];
+    auto* scratch =
+        ctx()->workspace()->template data<T, Context>({col_dim_})[0];
     Im2Col(x, scratch);
     col = scratch;
   }

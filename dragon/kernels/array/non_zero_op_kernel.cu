@@ -1,6 +1,7 @@
 #ifdef USE_CUDA
 
 #include "dragon/core/context_cuda.h"
+#include "dragon/core/workspace.h"
 #include "dragon/utils/device/common_cub.h"
 #include "dragon/utils/math_functions.h"
 #include "dragon/utils/op_kernels.h"
@@ -31,48 +32,44 @@ __global__ void _UnravelIndex(
 
 /* ------------------- Launcher Separator ------------------- */
 
-#define DEFINE_KERNEL_LAUNCHER(IndexType)     \
-  template <>                                 \
-  void Flagged<IndexType, CUDAContext>(       \
-      const int count,                        \
-      const uint8_t* mask,                    \
-      IndexType* index,                       \
-      int* num_selected,                      \
-      void* scratch,                          \
-      size_t& scratch_size,                   \
-      CUDAContext* ctx) {                     \
-    cub::CountingInputIterator<int> itr(0);   \
-    if (scratch_size <= 0) {                  \
-      cub::DeviceSelect::Flagged(             \
-          scratch,                            \
-          scratch_size,                       \
-          itr,                                \
-          mask,                               \
-          index,                              \
-          static_cast<int64_t*>(nullptr),     \
-          count,                              \
-          ctx->cuda_stream());                \
-    } else {                                  \
-      auto* num_selected_dev = index + count; \
-      cub::DeviceSelect::Flagged(             \
-          scratch,                            \
-          scratch_size,                       \
-          itr,                                \
-          mask,                               \
-          index,                              \
-          num_selected_dev,                   \
-          count,                              \
-          ctx->cuda_stream());                \
-      IndexType num_selected_host;            \
-      CUDA_CHECK(cudaMemcpyAsync(             \
-          &num_selected_host,                 \
-          num_selected_dev,                   \
-          sizeof(IndexType),                  \
-          cudaMemcpyDefault,                  \
-          ctx->cuda_stream()));               \
-      ctx->FinishDeviceComputation();         \
-      num_selected[0] = num_selected_host;    \
-    }                                         \
+#define DEFINE_KERNEL_LAUNCHER(IndexType)                             \
+  template <>                                                         \
+  void Flagged<IndexType, CUDAContext>(                               \
+      const int count,                                                \
+      const uint8_t* mask,                                            \
+      IndexType* index,                                               \
+      int* num_selected,                                              \
+      CUDAContext* ctx) {                                             \
+    IndexType num_selected_host;                                      \
+    auto* num_selected_dev = index + count;                           \
+    size_t ws_nbytes = 0;                                             \
+    cub::CountingInputIterator<int> itr(0);                           \
+    cub::DeviceSelect::Flagged(                                       \
+        nullptr,                                                      \
+        ws_nbytes,                                                    \
+        itr,                                                          \
+        mask,                                                         \
+        index,                                                        \
+        static_cast<int64_t*>(nullptr),                               \
+        count,                                                        \
+        ctx->cuda_stream());                                          \
+    cub::DeviceSelect::Flagged(                                       \
+        ctx->workspace()->template data<CUDAContext>({ws_nbytes})[0], \
+        ws_nbytes,                                                    \
+        itr,                                                          \
+        mask,                                                         \
+        index,                                                        \
+        num_selected_dev,                                             \
+        count,                                                        \
+        ctx->cuda_stream());                                          \
+    CUDA_CHECK(cudaMemcpyAsync(                                       \
+        &num_selected_host,                                           \
+        num_selected_dev,                                             \
+        sizeof(IndexType),                                            \
+        cudaMemcpyDefault,                                            \
+        ctx->cuda_stream()));                                         \
+    ctx->FinishDeviceComputation();                                   \
+    num_selected[0] = num_selected_host;                              \
   }
 
 DEFINE_KERNEL_LAUNCHER(int);

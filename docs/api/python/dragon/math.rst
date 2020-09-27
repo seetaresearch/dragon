@@ -12,9 +12,6 @@ dragon.math
   `add(...) <math/add.html>`_
   : Compute the element-wise addition.
 
-  `affine(...) <math/affine.html>`_
-  : Compute the affine transformation along the given axes.
-
   `argmax(...) <math/argmax.html>`_
   : Compute the index of maximum elements along the given axis.
 
@@ -149,7 +146,6 @@ dragon.math
 
   math/abs
   math/add
-  math/affine
   math/argmax
   math/argmin
   math/axpby

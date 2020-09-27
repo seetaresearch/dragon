@@ -22,12 +22,15 @@ namespace dragon {
 
 #ifdef USE_CUDA
 
+class Workspace;
+
 class CUDAObjects {
  public:
   /*! \brief Default Constructor */
   CUDAObjects() {
     for (int i = 0; i < CUDA_MAX_DEVICES; i++) {
       cuda_streams_[i] = vector<cudaStream_t>();
+      cuda_workspaces_[i] = vector<Workspace*>();
       cublas_handles_[i] = vector<cublasHandle_t>();
 #ifdef USE_CUDNN
       cudnn_handles_[i] = vector<cudnnHandle_t>();
@@ -39,38 +42,7 @@ class CUDAObjects {
   }
 
   /*! \brief Destructor */
-  ~CUDAObjects() {
-    for (int i = 0; i < CUDA_MAX_DEVICES; i++) {
-#ifdef USE_NCCL
-      for (auto& comm_iter : nccl_comms_[i]) {
-        if (comm_iter.second) {
-          NCCL_CHECK(ncclCommDestroy(comm_iter.second));
-        }
-      }
-#endif
-#ifdef USE_CUDNN
-      for (auto& handle : cudnn_handles_[i]) {
-        /*!
-         * Temporarily disable the handle destroying,
-         * to avoid the segmentation fault in CUDNN v8.
-         *
-         * if (handle) CUDNN_CHECK(cudnnDestroy(handle));
-         */
-      }
-#endif
-      for (auto& handle : cublas_handles_[i]) {
-        if (handle) CUBLAS_CHECK(cublasDestroy(handle));
-      }
-      for (int j = 0; j < cuda_streams_[i].size(); j++) {
-        auto& stream = cuda_streams_[i][j];
-        /*!
-         * Do not check the stream destroying,
-         * error code 29 (driver shutting down) is inevitable.
-         */
-        if (stream) cudaStreamDestroy(stream);
-      }
-    }
-  }
+  ~CUDAObjects();
 
   /*! \brief Return the specified cublas handle */
   cublasHandle_t cublas_handle(int device_id, int stream_id) {
@@ -142,8 +114,9 @@ class CUDAObjects {
   /*! \brief Return the specified cuda stream */
   cudaStream_t stream(int device_id, int stream_id) {
     auto& streams = cuda_streams_[device_id];
-    if (streams.size() <= (unsigned)stream_id)
+    if (streams.size() <= (unsigned)stream_id) {
       streams.resize(stream_id + 1, nullptr);
+    }
     if (!streams[stream_id]) {
       CUDADeviceGuard guard(device_id);
       unsigned int flags =
@@ -153,18 +126,36 @@ class CUDAObjects {
     return streams[stream_id];
   }
 
+  /*! \brief Return the workspace for specified cuda stream */
+  Workspace* workspace(int device_id, int stream_id);
+
+  /*! \brief The cached CUDA streams of each device */
   vector<cudaStream_t> cuda_streams_[CUDA_MAX_DEVICES];
+
+  /*! \brief The cached CUDA workspaces of each device */
+  vector<Workspace*> cuda_workspaces_[CUDA_MAX_DEVICES];
+
+  /*! \brief The cached cuBLAS handles of each device */
   vector<cublasHandle_t> cublas_handles_[CUDA_MAX_DEVICES];
+
 #ifdef USE_CUDNN
+  /*! \brief The cached cuDNN handles of each device */
   vector<cudnnHandle_t> cudnn_handles_[CUDA_MAX_DEVICES];
 #endif
 
 #ifdef USE_NCCL
+  /*! \brief The cached NCCL comms of each device */
   Map<string, ncclComm_t> nccl_comms_[CUDA_MAX_DEVICES];
 #endif
 
+  /*! \brief The flag that alllows cuDNN or not */
   bool cudnn_enabled_ = true;
+
+  /*! \brief The flag that allows cuDNN benchmark or not */
   bool cudnn_benchmark_ = false;
+
+  /*! \brief The flag thats allow cuDNN TF32 math type or not */
+  bool cudnn_allow_tf32_ = false;
 
  private:
   DISABLE_COPY_AND_ASSIGN(CUDAObjects);
@@ -190,11 +181,19 @@ class DRAGON_API CUDAContext {
     CHECK_EQ(option.device_type(), PROTO_CUDA);
   }
 
-  /*! \brief Allocate a block of memory */
+  /*! \brief Allocate a block of device memory */
   static void* New(size_t size) {
     void* data;
     cudaMalloc(&data, size);
-    CHECK(data) << "\nAllocate cuda memory with " << size << " bytes failed.";
+    CHECK(data) << "\nAllocate device memory with " << size << " bytes failed.";
+    return data;
+  }
+
+  /*! \brief Allocate a block of host memory */
+  static void* NewHost(size_t size) {
+    void* data;
+    cudaMallocHost(&data, size);
+    CHECK(data) << "\nAllocate host memory with " << size << " bytes failed.";
     return data;
   }
 
@@ -237,9 +236,14 @@ class DRAGON_API CUDAContext {
     CHECK_EQ(err, cudaSuccess) << "\nCUDA Error: " << cudaGetErrorString(err);
   }
 
-  /*! \brief Deallocate a memory block */
+  /*! \brief Deallocate a device memory block */
   static void Delete(void* ptr) {
     cudaFree(ptr);
+  }
+
+  /*! \brief Deallocate a host memory block */
+  static void DeleteHost(void* ptr) {
+    cudaFreeHost(ptr);
   }
 
   /*! \brief Switch to the device in current thread */
@@ -265,9 +269,19 @@ class DRAGON_API CUDAContext {
     SynchronizeStream(cuda_stream());
   }
 
-  /*! \brief Return the cuda stream */
+  /*! \brief Return the current workspace */
+  Workspace* workspace() {
+    return objects().workspace(device_id_, stream_id_);
+  }
+
+  /*! \brief Return the specified workspace */
+  Workspace* workspace(int device, int stream) {
+    return objects().workspace(device, stream);
+  }
+
+  /*! \brief Return the current cuda stream */
   cudaStream_t cuda_stream() {
-    return cuda_stream(device_id_, stream_id_);
+    return objects().stream(device_id_, stream_id_);
   }
 
   /*! \brief Return the specified cuda stream */
@@ -359,8 +373,14 @@ class DRAGON_API CUDAContext {
     CUDA_NOT_COMPILED;
   }
 
-  /*! \brief Allocate a block of memory */
+  /*! \brief Allocate a block of device memory */
   static void* New(size_t nbytes) {
+    CUDA_NOT_COMPILED;
+    return nullptr;
+  }
+
+  /*! \brief Allocate a block of host memory */
+  static void* NewHost(size_t nbytes) {
     CUDA_NOT_COMPILED;
     return nullptr;
   }
@@ -387,8 +407,13 @@ class DRAGON_API CUDAContext {
     CUDA_NOT_COMPILED;
   }
 
-  /*! \brief Deallocate a memory block */
+  /*! \brief Deallocate a device memory block */
   static void Delete(void* ptr) {
+    CUDA_NOT_COMPILED;
+  }
+
+  /*! \brief Deallocate a host memory block */
+  static void DeleteHost(void* ptr) {
     CUDA_NOT_COMPILED;
   }
 

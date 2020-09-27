@@ -18,17 +18,6 @@ void MaskedSelectOp<Context>::DoRunWithType() {
   STORE_INPUT_SPEC(0);
   auto* X_index = Buffer("X_index")->Reshape({X.count() + 1});
 
-  // Determine the scratch requirement
-  size_t scratch_size = 0;
-  kernel::Flagged(
-      X.count(),
-      (const uint8_t*)X_mask.template raw_data<Context>(),
-      X_index->template mutable_data<int, Context>(),
-      nullptr,
-      nullptr,
-      scratch_size,
-      ctx());
-
   // Select the index of values matching the criteria
   // The first ``num_selected`` indices are valid
   int num_selected;
@@ -37,8 +26,6 @@ void MaskedSelectOp<Context>::DoRunWithType() {
       (const uint8_t*)X_mask.template raw_data<Context>(),
       X_index->template mutable_data<int, Context>(),
       &num_selected,
-      ws()->template data<Context>({scratch_size})[0],
-      scratch_size,
       ctx());
 
   // Select the values according to the flat indices

@@ -1,30 +1,30 @@
 #include "dragon/operators/array/cast_op.h"
 #include "dragon/core/workspace.h"
 #include "dragon/utils/math_functions.h"
-#include "dragon/utils/op_kernels.h"
 
 namespace dragon {
 
 #define ELIGIBLE_TENSOR_TYPES \
   { "bool", "int8", "uint8", "int32", "int64", "float16", "float32", "float64" }
 
-#define DISPATCH_TYPE_TO(InputType, OutputType)                          \
-  if (dtype() == types::to_string<OutputType>()) {                       \
-    if (InputSize() != 0) {                                              \
-      Output(0)->ReshapeLike(Input(0));                                  \
-      auto* x = Input(0).template data<InputType, Context>();            \
-      auto* y = Output(0)->template mutable_data<OutputType, Context>(); \
-      kernel::Cast(Input(0).count(), x, y, ctx());                       \
-    } else {                                                             \
-      auto n = Output(0)->count();                                       \
-      auto* x = Output(0)->template data<InputType, Context>();          \
-      auto* scratch = ws()->template data<OutputType, Context>({n})[0];  \
-      kernel::Cast(n, x, scratch, ctx());                                \
-      ctx()->FinishDeviceComputation();                                  \
-      auto* y = Output(0)->template mutable_data<OutputType, Context>(); \
-      math::Copy(n, scratch, y, ctx());                                  \
-    }                                                                    \
-    return;                                                              \
+#define DISPATCH_TYPE_TO(InputType, OutputType)                           \
+  if (dtype() == types::to_string<OutputType>()) {                        \
+    if (InputSize() != 0) {                                               \
+      Output(0)->ReshapeLike(Input(0));                                   \
+      auto* x = Input(0).template data<InputType, Context>();             \
+      auto* y = Output(0)->template mutable_data<OutputType, Context>();  \
+      math::Cast(Input(0).count(), x, y, ctx());                          \
+    } else {                                                              \
+      auto n = Output(0)->count();                                        \
+      auto* x = Output(0)->template data<InputType, Context>();           \
+      auto* scratch =                                                     \
+          ctx()->workspace()->template data<OutputType, Context>({n})[0]; \
+      math::Cast(n, x, scratch, ctx());                                   \
+      ctx()->FinishDeviceComputation();                                   \
+      auto* y = Output(0)->template mutable_data<OutputType, Context>();  \
+      math::Copy(n, scratch, y, ctx());                                   \
+    }                                                                     \
+    return;                                                               \
   }
 
 #define DISPATCH_TYPE_TO_ALL(InputType) \

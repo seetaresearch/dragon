@@ -42,12 +42,12 @@ void TileGradientOp<Context>::DoRunWithType() {
   const T* dy;
   T* dx;
   if (src_ == &nav_) {
-    dy = ws()->template data<T, Context>({src_->count()})[0];
+    dy = ctx()->workspace()->template data<T, Context>({src_->count()})[0];
   } else {
     dy = src_->template data<T, Context>();
   }
   if (dest_ == &nav_) {
-    dx = ws()->template data<T, Context>({dest_->count()})[0];
+    dx = ctx()->workspace()->template data<T, Context>({dest_->count()})[0];
   } else {
     dx = dest_->template mutable_data<T, Context>();
   }

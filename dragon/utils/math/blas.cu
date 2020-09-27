@@ -39,11 +39,18 @@ __global__ void _Axpby<half>(
     const half* x,
     const half beta,
     half* y) {
-  CUDA_1D_KERNEL_LOOP(i, n) {
 #if __CUDA_ARCH__ >= 530
-    y[i] = __hadd(__hmul(alpha, x[i]), __hmul(beta, y[i]));
-#endif
+  CUDA_1D_KERNEL_LOOP(i, n) {
+    y[i] = __hfma(alpha, x[i], __hmul(beta, y[i]));
   }
+#else
+  const float alpha_val = __half2float(alpha);
+  const float beta_val = __half2float(beta);
+  CUDA_1D_KERNEL_LOOP(i, n) {
+    y[i] = __float2half(
+        fmaf(alpha_val, __half2float(x[i]), beta_val * __half2float(y[i])));
+  }
+#endif
 }
 
 template <>
@@ -53,10 +60,44 @@ __global__ void _Axpby<half2>(
     const half2* x,
     const half2 beta,
     half2* y) {
-  CUDA_1D_KERNEL_LOOP(i, n) {
 #if __CUDA_ARCH__ >= 530
-    y[i] = __hadd2(__hmul2(alpha, x[i]), __hmul2(beta, y[i]));
+  CUDA_1D_KERNEL_LOOP(i, n) {
+    y[i] = __hfma2(alpha, x[i], __hmul2(beta, y[i]));
+  }
+#else
+  const float2 alpha_val = __half22float2(alpha);
+  const float2 beta_val = __half22float2(beta);
+  CUDA_1D_KERNEL_LOOP(i, n) {
+    const float2 v1 = __half22float2(x[i]);
+    const float2 v2 = __half22float2(y[i]);
+    y[i] = __floats2half2_rn(
+        fmaf(alpha_val.x, v1.x, beta_val.x * v2.x),
+        fmaf(alpha_val.y, v1.y, beta_val.y * v2.y));
+  }
 #endif
+}
+
+template <>
+__global__ void _Axpby<float>(
+    const int n,
+    const float alpha,
+    const float* x,
+    const float beta,
+    float* y) {
+  CUDA_1D_KERNEL_LOOP(i, n) {
+    y[i] = fmaf(alpha, x[i], beta * y[i]);
+  }
+}
+
+template <>
+__global__ void _Axpby<double>(
+    const int n,
+    const double alpha,
+    const double* x,
+    const double beta,
+    double* y) {
+  CUDA_1D_KERNEL_LOOP(i, n) {
+    y[i] = fma(alpha, x[i], beta * y[i]);
   }
 }
 
@@ -68,8 +109,7 @@ __global__ void _Axpby<half2>(
   template <>                                                               \
   DRAGON_API void Scale<T, CUDAContext>(                                    \
       const int n, const float alpha, const T* x, T* y, CUDAContext* ctx) { \
-    T _alpha_ = (T)alpha;                                                   \
-    if (_alpha_ == T(1)) {                                                  \
+    if (alpha != 1.f) {                                                     \
       if (x != y) {                                                         \
         cudaMemcpyAsync(                                                    \
             y,                                                              \
@@ -81,7 +121,7 @@ __global__ void _Axpby<half2>(
       return;                                                               \
     }                                                                       \
     _Scale<<<CUDA_BLOCKS(n), CUDA_THREADS, 0, ctx->cuda_stream()>>>(        \
-        n, _alpha_, x, y);                                                  \
+        n, static_cast<T>(alpha), x, y);                                    \
   }
 
 DEFINE_SCALE_FUNC(int8_t);
@@ -99,10 +139,10 @@ DEFINE_SCALE_FUNC(int64_t);
           y, x, sizeof(T) * n, cudaMemcpyDeviceToDevice, ctx->cuda_stream())); \
     }                                                                          \
     if (alpha != 1.f) {                                                        \
-      T scale = (T)alpha;                                                      \
+      T alpha_val = static_cast<T>(alpha);                                     \
       CUBLAS_CHECK(cublasSetPointerMode(                                       \
           ctx->cublas_handle(), CUBLAS_POINTER_MODE_HOST));                    \
-      CUBLAS_CHECK(cublas_func(ctx->cublas_handle(), n, &scale, y, 1));        \
+      CUBLAS_CHECK(cublas_func(ctx->cublas_handle(), n, &alpha_val, y, 1));    \
     }                                                                          \
   }
 
@@ -165,7 +205,7 @@ DEFINE_COPY_FUNC(double);
   DRAGON_API void Axpy<T, CUDAContext>(                                     \
       const int n, const float alpha, const T* x, T* y, CUDAContext* ctx) { \
     _Axpy<<<CUDA_BLOCKS(n), CUDA_THREADS, 0, ctx->cuda_stream()>>>(         \
-        n, (T)alpha, x, y);                                                 \
+        n, static_cast<T>(alpha), x, y);                                    \
   }
 
 DEFINE_AXPY_FUNC(int8_t);
@@ -178,10 +218,11 @@ DEFINE_AXPY_FUNC(int64_t);
   template <>                                                                  \
   DRAGON_API void Axpy<T, CUDAContext>(                                        \
       const int n, const float alpha, const T* x, T* y, CUDAContext* ctx) {    \
-    T scale = (T)alpha;                                                        \
+    T alpha_val = static_cast<T>(alpha);                                       \
     CUBLAS_CHECK(                                                              \
         cublasSetPointerMode(ctx->cublas_handle(), CUBLAS_POINTER_MODE_HOST)); \
-    CUBLAS_CHECK(cublas_func(ctx->cublas_handle(), n, &scale, x, 1, y, 1));    \
+    CUBLAS_CHECK(                                                              \
+        cublas_func(ctx->cublas_handle(), n, &alpha_val, x, 1, y, 1));         \
   }
 
 template <>
@@ -221,7 +262,7 @@ DEFINE_AXPY_FUNC(double, cublasDaxpy);
       T* y,                                                          \
       CUDAContext* ctx) {                                            \
     _Axpby<<<CUDA_BLOCKS(n), CUDA_THREADS, 0, ctx->cuda_stream()>>>( \
-        n, (T)alpha, x, (T)beta, y);                                 \
+        n, static_cast<T>(alpha), x, static_cast<T>(beta), y);       \
   }
 
 template <>
@@ -268,11 +309,11 @@ DEFINE_AXPBY_FUNC(double);
   template <>                                                                  \
   DRAGON_API T Dot<T, CUDAContext>(                                            \
       const int n, const T* a, const T* b, CUDAContext* ctx) {                 \
-    T y_host;                                                                  \
+    T ret;                                                                     \
     CUBLAS_CHECK(                                                              \
         cublasSetPointerMode(ctx->cublas_handle(), CUBLAS_POINTER_MODE_HOST)); \
-    CUBLAS_CHECK(cublas_func(ctx->cublas_handle(), n, a, 1, b, 1, &y_host));   \
-    return y_host;                                                             \
+    CUBLAS_CHECK(cublas_func(ctx->cublas_handle(), n, a, 1, b, 1, &ret));      \
+    return ret;                                                                \
   }
 
 template <>
@@ -313,11 +354,11 @@ DEFINE_DOT_FUNC(double, cublasDdot);
   template <>                                                                  \
   DRAGON_API T ASum<T, CUDAContext>(                                           \
       const int n, const T* x, CUDAContext* ctx) {                             \
-    T y_host;                                                                  \
+    T ret;                                                                     \
     CUBLAS_CHECK(                                                              \
         cublasSetPointerMode(ctx->cublas_handle(), CUBLAS_POINTER_MODE_HOST)); \
-    cublas_func(ctx->cublas_handle(), n, x, 1, &y_host);                       \
-    return y_host;                                                             \
+    cublas_func(ctx->cublas_handle(), n, x, 1, &ret);                          \
+    return ret;                                                                \
   }
 
 DEFINE_ASUM_FUNC(float, cublasSasum);
@@ -409,8 +450,8 @@ DRAGON_API void Gemv<float16, CUDAContext>(
         LDC));
 #endif
   } else if (math_type == "float16") {
-    const half alpha_half = cast::to<half>(alpha);
-    const half beta_half = cast::to<half>(beta);
+    const half alpha_val = cast::to<half>(alpha);
+    const half beta_val = cast::to<half>(beta);
 #if CUDA_VERSION >= 9000
     if (TENSOR_CORE_AVAILABLE()) {
       // GEMV + MATH16 + TENSOR-CORE
@@ -421,14 +462,14 @@ DRAGON_API void Gemv<float16, CUDAContext>(
           m,
           1,
           k,
-          &alpha_half,
+          &alpha_val,
           A,
           CUDA_R_16F,
           LDA,
           x,
           CUDA_R_16F,
           k,
-          &beta_half,
+          &beta_val,
           y,
           CUDA_R_16F,
           LDC,
@@ -443,12 +484,12 @@ DRAGON_API void Gemv<float16, CUDAContext>(
           m,
           1,
           k,
-          &alpha_half,
+          &alpha_val,
           reinterpret_cast<const half*>(A),
           LDA,
           reinterpret_cast<const half*>(x),
           k,
-          &beta_half,
+          &beta_val,
           reinterpret_cast<half*>(y),
           LDC));
     }
@@ -460,12 +501,12 @@ DRAGON_API void Gemv<float16, CUDAContext>(
         m,
         1,
         k,
-        &alpha_half,
+        &alpha_val,
         reinterpret_cast<const half*>(A),
         LDA,
         reinterpret_cast<const half*>(x),
         k,
-        &beta_half,
+        &beta_val,
         reinterpret_cast<half*>(y),
         LDC));
 #endif
@@ -506,8 +547,8 @@ DRAGON_API void Gemv<double, CUDAContext>(
     CUDAContext* ctx,
     const string math_type) {
   auto cuTransA = TransA == CblasNoTrans ? CUBLAS_OP_T : CUBLAS_OP_N;
-  const auto alpha64 = static_cast<double>(alpha);
-  const auto beta64 = static_cast<double>(beta);
+  const auto alpha_val = static_cast<double>(alpha);
+  const auto beta_val = static_cast<double>(beta);
   CUBLAS_CHECK(
       cublasSetPointerMode(ctx->cublas_handle(), CUBLAS_POINTER_MODE_HOST));
   CUBLAS_CHECK(cublasDgemv(
@@ -515,12 +556,12 @@ DRAGON_API void Gemv<double, CUDAContext>(
       cuTransA,
       N,
       M,
-      &alpha64,
+      &alpha_val,
       A,
       N,
       x,
       1,
-      &beta64,
+      &beta_val,
       y,
       1));
 }
@@ -611,8 +652,8 @@ DRAGON_API void Gemm<float16, CUDAContext>(
         N));
 #endif
   } else if (math_type == "float16") {
-    const half alpha_half = cast::to<half>(alpha);
-    const half beta_half = cast::to<half>(beta);
+    const half alpha_val = cast::to<half>(alpha);
+    const half beta_val = cast::to<half>(beta);
 #if CUDA_VERSION >= 9000
     if (TENSOR_CORE_AVAILABLE()) {
       // GEMM + MATH16 + TENSOR-CORE
@@ -623,14 +664,14 @@ DRAGON_API void Gemm<float16, CUDAContext>(
           N,
           M,
           K,
-          &alpha_half,
+          &alpha_val,
           B,
           CUDA_R_16F,
           ldb,
           A,
           CUDA_R_16F,
           lda,
-          &beta_half,
+          &beta_val,
           C,
           CUDA_R_16F,
           N,
@@ -645,12 +686,12 @@ DRAGON_API void Gemm<float16, CUDAContext>(
           N,
           M,
           K,
-          &alpha_half,
+          &alpha_val,
           reinterpret_cast<const half*>(B),
           ldb,
           reinterpret_cast<const half*>(A),
           lda,
-          &beta_half,
+          &beta_val,
           reinterpret_cast<half*>(C),
           N));
     }
@@ -662,12 +703,12 @@ DRAGON_API void Gemm<float16, CUDAContext>(
         N,
         M,
         K,
-        &alpha_half,
+        &alpha_val,
         reinterpret_cast<const half*>(B),
         ldb,
         reinterpret_cast<const half*>(A),
         lda,
-        &beta_half,
+        &beta_val,
         reinterpret_cast<half*>(C),
         N));
 #endif
@@ -731,8 +772,8 @@ DRAGON_API void Gemm<double, CUDAContext>(
   int ldb = (TransB == CblasNoTrans) ? N : K;
   auto cuTransA = TransA == CblasNoTrans ? CUBLAS_OP_N : CUBLAS_OP_T;
   auto cuTransB = TransB == CblasNoTrans ? CUBLAS_OP_N : CUBLAS_OP_T;
-  const auto alpha64 = static_cast<double>(alpha);
-  const auto beta64 = static_cast<double>(beta);
+  const auto alpha_val = static_cast<double>(alpha);
+  const auto beta_val = static_cast<double>(beta);
   CUBLAS_CHECK(
       cublasSetPointerMode(ctx->cublas_handle(), CUBLAS_POINTER_MODE_HOST));
   CUBLAS_CHECK(cublasDgemm(
@@ -742,12 +783,12 @@ DRAGON_API void Gemm<double, CUDAContext>(
       N,
       M,
       K,
-      &alpha64,
+      &alpha_val,
       B,
       ldb,
       A,
       lda,
-      &beta64,
+      &beta_val,
       C,
       N));
 }

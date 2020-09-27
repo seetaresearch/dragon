@@ -21,7 +21,7 @@ void MinimumGradientOp<Context>::DoRunWithType() {
   T* scratch = nullptr;
 
   if (dA->has_name()) {
-    auto scratches = ws()->template data<Context>(
+    auto scratches = ctx()->workspace()->template data<Context>(
         {dY.size() * sizeof(T), dY.size() * sizeof(bool)});
     mask = (bool*)scratches[1], scratch = (T*)scratches[0];
     if (A_broadcast_axes.empty()) {
@@ -43,7 +43,7 @@ void MinimumGradientOp<Context>::DoRunWithType() {
             mask,
             ctx());
       }
-      kernel::Cast(dY.count(), mask, scratch, ctx());
+      math::Cast(dY.count(), mask, scratch, ctx());
       math::Mul(
           dY.count(),
           dY.template data<T, Context>(),
@@ -60,7 +60,7 @@ void MinimumGradientOp<Context>::DoRunWithType() {
           B.template data<T, Context>(),
           mask,
           ctx());
-      kernel::Cast(dY.count(), mask, scratch, ctx());
+      math::Cast(dY.count(), mask, scratch, ctx());
       math::Mul(
           dY.count(), dY.template data<T, Context>(), scratch, scratch, ctx());
       math::ReduceSum(
@@ -77,7 +77,7 @@ void MinimumGradientOp<Context>::DoRunWithType() {
 
   if (dB->has_name()) {
     if (mask == nullptr) {
-      auto scratches = ws()->template data<Context>(
+      auto scratches = ctx()->workspace()->template data<Context>(
           {dY.size() * sizeof(T), dY.size() * sizeof(bool)});
       mask = (bool*)scratches[1], scratch = (T*)scratches[0];
     }
@@ -100,7 +100,7 @@ void MinimumGradientOp<Context>::DoRunWithType() {
             mask,
             ctx());
       }
-      kernel::Cast(dY.count(), mask, scratch, ctx());
+      math::Cast(dY.count(), mask, scratch, ctx());
       math::Mul(
           dY.count(),
           dY.template data<T, Context>(),
@@ -117,7 +117,7 @@ void MinimumGradientOp<Context>::DoRunWithType() {
           B.template data<T, Context>(),
           mask,
           ctx());
-      kernel::Cast(dY.count(), mask, scratch, ctx());
+      math::Cast(dY.count(), mask, scratch, ctx());
       math::Mul(
           dY.count(), dY.template data<T, Context>(), scratch, scratch, ctx());
       math::ReduceSum(

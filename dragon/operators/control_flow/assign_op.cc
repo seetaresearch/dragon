@@ -49,8 +49,8 @@ void AssignOp<Context>::DoRunWithType() {
           << Tensor::DimString(X_dims);
       utils::math::ComputeBinaryBroadcastDims(X.dims(), X_dims, dims1, dims2);
       if (dims1 != dims2) {
-        auto* scratch =
-            ws()->template data<T, Context>({X_broadcast.count()})[0];
+        auto* scratch = ctx()->workspace()->template data<T, Context>(
+            {X_broadcast.count()})[0];
         math::Set(
             X.ndim(),
             X.dims().data(),

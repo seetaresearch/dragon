@@ -11,11 +11,19 @@ namespace {
 
 template <typename T>
 __global__ void
-_NesterovUpdate(const int nthreads, const T lr, const T momentum, T* g, T* m) {
+_NesterovUpdate(const int nthreads, const T lr, const T momentum, T* g, T* m);
+
+template <>
+__global__ void _NesterovUpdate<float>(
+    const int nthreads,
+    const float lr,
+    const float momentum,
+    float* g,
+    float* m) {
   CUDA_1D_KERNEL_LOOP(i, nthreads) {
-    T mi = m[i];
-    T mi_new = m[i] = momentum * mi + lr * g[i];
-    g[i] = (1 + momentum) * mi_new - momentum * mi;
+    float mi = m[i];
+    float mi_new = m[i] = momentum * mi + lr * g[i];
+    g[i] = fmaf(momentum, mi_new - mi, mi_new);
   }
 }
 

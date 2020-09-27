@@ -69,7 +69,7 @@ class DRAGON_API GraphBase {
   }
 
   /*! \brief Return the parent workspace */
-  Workspace* ws() const {
+  Workspace* workspace() const {
     return ws_;
   }
 

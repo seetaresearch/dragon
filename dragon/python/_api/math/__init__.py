@@ -26,7 +26,6 @@ from dragon.core.ops.array_ops import sum
 from dragon.core.ops.array_ops import top_k
 from dragon.core.ops.math_ops import abs
 from dragon.core.ops.math_ops import add
-from dragon.core.ops.math_ops import affine
 from dragon.core.ops.math_ops import axpby
 from dragon.core.ops.math_ops import ceil
 from dragon.core.ops.math_ops import clip

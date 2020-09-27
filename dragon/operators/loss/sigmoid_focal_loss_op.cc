@@ -17,12 +17,12 @@ void SigmoidFocalLossOp<Context>::DoRunWithType() {
   CHECK_EQ(outer_dim * inner_dim, Input(1).count())
       << "\nNumber of preds must match the number of targets.";
 
-  auto scratches = ws()->template data<Context>({
-      X.count() * sizeof(LogitType), // loss
-      X.count() * sizeof(int), // mask
+  auto scratches = ctx()->workspace()->template data<Context>({
+      X.size() * sizeof(LogitType), // loss
+      X.size() * sizeof(LogitType) + sizeof(LogitType), // mask
   });
   auto* loss = static_cast<LogitType*>(scratches[0]);
-  auto* mask = static_cast<int*>(scratches[1]);
+  auto* mask = static_cast<LogitType*>(scratches[1]);
 
   kernel::SigmoidFocalLoss(
       outer_dim,
@@ -100,9 +100,10 @@ void SigmoidFocalLossGradientOp<Context>::DoRunWithType() {
   auto outer_dim = dX->count(0, axis);
   auto inner_dim = dX->count(axis + 1);
 
-  auto* mask = ws()->template data<int, Context>({dX->count()})[0];
   auto* dy = dY.template data<LogitType, Context>();
   auto* dx = dX->template mutable_data<LogitType, Context>();
+  auto* mask = ctx()->workspace()->template data<LogitType, Context>(
+      {dX->count() + 1})[0];
 
   kernel::SigmoidFocalLossGrad(
       outer_dim,

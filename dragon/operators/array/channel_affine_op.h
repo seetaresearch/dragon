@@ -10,17 +10,17 @@
  * ------------------------------------------------------------
  */
 
-#ifndef DRAGON_OPERATORS_MATH_AFFINE_OP_H_
-#define DRAGON_OPERATORS_MATH_AFFINE_OP_H_
+#ifndef DRAGON_OPERATORS_ARRAY_CHANNEL_AFFINE_OP_H_
+#define DRAGON_OPERATORS_ARRAY_CHANNEL_AFFINE_OP_H_
 
 #include "dragon/core/operator.h"
 
 namespace dragon {
 
 template <class Context>
-class AffineOp final : public Operator<Context> {
+class ChannelAffineOp final : public Operator<Context> {
  public:
-  SIMPLE_CTOR_DTOR(AffineOp);
+  SIMPLE_CTOR_DTOR(ChannelAffineOp);
   USE_OPERATOR_FUNCTIONS;
 
   void RunOnDevice() override;
@@ -30,9 +30,9 @@ class AffineOp final : public Operator<Context> {
 };
 
 template <class Context>
-class AffineGradientOp final : public Operator<Context> {
+class ChannelAffineGradientOp final : public Operator<Context> {
  public:
-  SIMPLE_CTOR_DTOR(AffineGradientOp);
+  SIMPLE_CTOR_DTOR(ChannelAffineGradientOp);
   USE_OPERATOR_FUNCTIONS;
 
   void RunOnDevice() override;
@@ -43,4 +43,4 @@ class AffineGradientOp final : public Operator<Context> {
 
 } // namespace dragon
 
-#endif // DRAGON_OPERATORS_MATH_AFFINE_OP_H_
+#endif // DRAGON_OPERATORS_ARRAY_CHANNEL_AFFINE_OP_H_

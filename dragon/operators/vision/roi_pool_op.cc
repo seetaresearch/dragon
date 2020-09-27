@@ -68,7 +68,8 @@ void RoiPoolGradientOp<Context>::DoRunWithTypeAndCast() {
   auto &RoI = Input(0), &dY = Input(1);
   auto* dX = Output(0)->ReshapeLike(RESTORE_INPUT_SPEC(0));
 
-  auto* scratch = ws()->template data<float, Context>({dX->count()})[0];
+  auto* scratch =
+      ctx()->workspace()->template data<float, Context>({dX->count()})[0];
   math::Set(dX->count(), 0.f, scratch, ctx());
 
   kernel::RoiPoolGrad(
@@ -85,7 +86,7 @@ void RoiPoolGradientOp<Context>::DoRunWithTypeAndCast() {
       scratch,
       ctx());
 
-  kernel::Cast(
+  math::Cast(
       dX->count(), scratch, dX->template mutable_data<T, Context>(), ctx());
 }
 

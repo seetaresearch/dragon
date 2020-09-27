@@ -57,7 +57,8 @@ class CuDNNRecurrentOpBase : public Operator<Context> {
         hidden_size_(OP_SINGLE_ARG(int64_t, "hidden_size", 0)),
         bidirectional_(OP_SINGLE_ARG(int64_t, "bidirectional", 0)),
         dropout_ratio_(OP_SINGLE_ARG(float, "dropout_ratio", 1.f)),
-        rng_seed_(def.device_option().random_seed()) {
+        rng_seed_(def.device_option().random_seed()),
+        enable_tensor_core_(TENSOR_CORE_AVAILABLE() ? 1 : 0) {
     // Determine the rnn direction
     rnn_direction_ =
         bidirectional_ ? CUDNN_BIDIRECTIONAL : CUDNN_UNIDIRECTIONAL;
@@ -111,11 +112,13 @@ class CuDNNRecurrentOpBase : public Operator<Context> {
  public:
   float dropout_ratio_;
   unsigned long long rng_seed_;
+  int64_t enable_tensor_core_;
   int64_t bidirectional_, states_initialized_;
   int64_t seq_length_, hidden_size_, num_layers_;
   vec64_t input_dims_, output_dims_, hidden_dims_;
   size_t workspace_size_, reserve_size_, states_size_;
 
+  cudnnDataType_t compute_type_;
   cudnnRNNMode_t rnn_mode_;
   cudnnRNNDescriptor_t rnn_desc_;
   cudnnDirectionMode_t rnn_direction_;

@@ -9,17 +9,25 @@ namespace math {
 
 namespace {
 
+#define DEFINE_GLOBAL_REDUCE_FUNC(name, expr)                                  \
+  template <typename T>                                                        \
+  void _GlobalReduce##name(const int n, const float scale, const T* x, T* y) { \
+    *y = ConstEigenVectorMap<T>(x, n).expr();                                  \
+    if (scale != 1.f) y[0] *= T(scale);                                        \
+  }
+
+DEFINE_GLOBAL_REDUCE_FUNC(Max, maxCoeff);
+DEFINE_GLOBAL_REDUCE_FUNC(Min, minCoeff);
+DEFINE_GLOBAL_REDUCE_FUNC(Sum, sum);
+#undef DEFINE_GLOBAL_REDUCE_FUNC
+
 #define DEFINE_ROWWISE_REDUCE_FUNC(name, expr)                               \
   template <typename T>                                                      \
   void _RowwiseReduce##name(                                                 \
-      const int rows, const int cols, const T* scale, const T* x, T* y) {    \
-    if (scale != nullptr) {                                                  \
-      EigenVectorMap<T>(y, cols) =                                           \
-          ConstEigenMatrixMap<T>(x, cols, rows).rowwise().expr() * (*scale); \
-    } else {                                                                 \
-      EigenVectorMap<T>(y, cols) =                                           \
-          ConstEigenMatrixMap<T>(x, cols, rows).rowwise().expr();            \
-    }                                                                        \
+      const int rows, const int cols, const float scale, const T* x, T* y) { \
+    EigenVectorMap<T>(y, cols) =                                             \
+        ConstEigenMatrixMap<T>(x, cols, rows).rowwise().expr();              \
+    if (scale != 1.f) EigenVectorMap<T>(y, cols) *= T(scale);                \
   }
 
 DEFINE_ROWWISE_REDUCE_FUNC(Max, maxCoeff);
@@ -30,14 +38,10 @@ DEFINE_ROWWISE_REDUCE_FUNC(Sum, sum);
 #define DEFINE_COLWISE_REDUCE_FUNC(name, expr)                               \
   template <typename T>                                                      \
   void _ColwiseReduce##name(                                                 \
-      const int rows, const int cols, const T* scale, const T* x, T* y) {    \
-    if (scale != nullptr) {                                                  \
-      EigenVectorMap<T>(y, rows) =                                           \
-          ConstEigenMatrixMap<T>(x, cols, rows).colwise().expr() * (*scale); \
-    } else {                                                                 \
-      EigenVectorMap<T>(y, rows) =                                           \
-          ConstEigenMatrixMap<T>(x, cols, rows).colwise().expr();            \
-    }                                                                        \
+      const int rows, const int cols, const float scale, const T* x, T* y) { \
+    EigenVectorMap<T>(y, rows) =                                             \
+        ConstEigenMatrixMap<T>(x, cols, rows).colwise().expr();              \
+    if (scale != 1.f) EigenVectorMap<T>(y, rows) *= T(scale);                \
   }
 
 DEFINE_COLWISE_REDUCE_FUNC(Max, maxCoeff);
@@ -52,7 +56,7 @@ void _GenericReduceMax(
     const int num_dims,
     const int* x_dims,
     const int* x_strides,
-    const T* scale,
+    const float scale,
     const T* x,
     T* y) {
 #ifdef USE_OPENMP
@@ -70,7 +74,11 @@ void _GenericReduceMax(
       }
       val = std::max(x[xi], val);
     }
-    y[i] = val;
+    if (scale != 1.f) {
+      y[i] = static_cast<T>(static_cast<float>(val) * scale);
+    } else {
+      y[i] = val;
+    }
   }
 }
 
@@ -81,7 +89,7 @@ void _GenericReduceMin(
     const int num_dims,
     const int* x_dims,
     const int* x_strides,
-    const T* scale,
+    const float scale,
     const T* x,
     T* y) {
 #ifdef USE_OPENMP
@@ -99,7 +107,11 @@ void _GenericReduceMin(
       }
       val = std::min(x[xi], val);
     }
-    y[i] = val;
+    if (scale != 1.f) {
+      y[i] = static_cast<T>(static_cast<float>(val) * scale);
+    } else {
+      y[i] = val;
+    }
   }
 }
 
@@ -110,7 +122,7 @@ void _GenericReduceSum(
     const int num_dims,
     const int* x_dims,
     const int* x_strides,
-    const T* scale,
+    const float scale,
     const T* x,
     T* y) {
 #ifdef USE_OPENMP
@@ -128,56 +140,62 @@ void _GenericReduceSum(
       }
       val += x[xi];
     }
-    if (scale != nullptr) {
-      y[i] = val * (*scale);
+    if (scale != 1.f) {
+      y[i] = static_cast<T>(static_cast<float>(val) * scale);
     } else {
       y[i] = val;
     }
   }
 }
 
-#define DEFINE_REDUCE_FUNC(name)                                           \
-  template <typename T>                                                    \
-  void _Reduce##name(                                                      \
-      const int num_dims,                                                  \
-      const int* dims,                                                     \
-      const int num_axes,                                                  \
-      const int* axes,                                                     \
-      const T* scale,                                                      \
-      const T* x,                                                          \
-      T* y) {                                                              \
-    int rows, cols;                                                        \
-    vec32_t y_dims(dims, dims + num_dims);                                 \
-    for (int i = 0; i < num_axes; ++i)                                     \
-      y_dims[axes[i]] = 1;                                                 \
-    /* Case #1: Rowwise Reduce */                                          \
-    if (utils::math::IsRowwiseReduce(                                      \
-            num_dims, dims, y_dims.data(), &rows, &cols)) {                \
-      _RowwiseReduce##name(rows, cols, scale, x, y);                       \
-      return;                                                              \
-    }                                                                      \
-    /* Case #2: Colwise Reduce */                                          \
-    if (utils::math::IsColwiseReduce(                                      \
-            num_dims, dims, y_dims.data(), &rows, &cols)) {                \
-      _ColwiseReduce##name(rows, cols, scale, x, y);                       \
-      return;                                                              \
-    }                                                                      \
-    /* Case #3: Generic Reduce */                                          \
-    vec32_t axesT(num_dims), stridesT(num_dims), dimsT(num_dims);          \
-    utils::math::TransposeAxesForReduce(                                   \
-        num_dims, num_axes, axes, axesT.data());                           \
-    utils::math::ComputeTransposeStrides(                                  \
-        num_dims, dims, axesT.data(), stridesT.data());                    \
-    rows = cols = 1;                                                       \
-    const int pivot = num_dims - num_axes;                                 \
-    for (int i = 0; i < pivot; ++i)                                        \
-      rows *= dims[axesT[i]];                                              \
-    for (int i = pivot; i < num_dims; ++i)                                 \
-      cols *= dims[axesT[i]];                                              \
-    for (int i = 0; i < num_dims; ++i)                                     \
-      dimsT[i] = dims[axesT[i]];                                           \
-    _GenericReduce##name(                                                  \
-        rows, cols, num_dims, dimsT.data(), stridesT.data(), scale, x, y); \
+#define DEFINE_REDUCE_FUNC(name)                                             \
+  template <typename T>                                                      \
+  void _Reduce##name(                                                        \
+      const int num_dims,                                                    \
+      const int* dims,                                                       \
+      const int num_axes,                                                    \
+      const int* axes,                                                       \
+      const float scale,                                                     \
+      const T* x,                                                            \
+      T* y) {                                                                \
+    if (num_dims == num_axes) {                                              \
+      const int count =                                                      \
+          std::accumulate(dims, dims + num_dims, 1, std::multiplies<int>()); \
+      _GlobalReduce##name(count, scale, x, y);                               \
+      return;                                                                \
+    }                                                                        \
+    int rows, cols;                                                          \
+    vec32_t y_dims(dims, dims + num_dims);                                   \
+    for (int i = 0; i < num_axes; ++i)                                       \
+      y_dims[axes[i]] = 1;                                                   \
+    /* Case #1: Rowwise Reduce */                                            \
+    if (utils::math::IsRowwiseReduce(                                        \
+            num_dims, dims, y_dims.data(), &rows, &cols)) {                  \
+      _RowwiseReduce##name(rows, cols, scale, x, y);                         \
+      return;                                                                \
+    }                                                                        \
+    /* Case #2: Colwise Reduce */                                            \
+    if (utils::math::IsColwiseReduce(                                        \
+            num_dims, dims, y_dims.data(), &rows, &cols)) {                  \
+      _ColwiseReduce##name(rows, cols, scale, x, y);                         \
+      return;                                                                \
+    }                                                                        \
+    /* Case #3: Generic Reduce */                                            \
+    vec32_t axesT(num_dims), stridesT(num_dims), dimsT(num_dims);            \
+    utils::math::TransposeAxesForReduce(                                     \
+        num_dims, num_axes, axes, axesT.data());                             \
+    utils::math::ComputeTransposeStrides(                                    \
+        num_dims, dims, axesT.data(), stridesT.data());                      \
+    rows = cols = 1;                                                         \
+    const int pivot = num_dims - num_axes;                                   \
+    for (int i = 0; i < pivot; ++i)                                          \
+      rows *= dims[axesT[i]];                                                \
+    for (int i = pivot; i < num_dims; ++i)                                   \
+      cols *= dims[axesT[i]];                                                \
+    for (int i = 0; i < num_dims; ++i)                                       \
+      dimsT[i] = dims[axesT[i]];                                             \
+    _GenericReduce##name(                                                    \
+        rows, cols, num_dims, dimsT.data(), stridesT.data(), scale, x, y);   \
   }
 
 DEFINE_REDUCE_FUNC(Max);
@@ -189,42 +207,24 @@ DEFINE_REDUCE_FUNC(Sum);
 
 /* ------------------- Launcher Separator ------------------- */
 
-template <>
-void ReduceMax<float16, CPUContext>(
-    const int num_dims,
-    const int* dims,
-    const int num_axes,
-    const int* axes,
-    const float16* x,
-    float16* y,
-    CPUContext* ctx) {
-  CPU_FP16_NOT_SUPPORTED;
-}
+#define DEFINE_KERNEL_LAUNCHER(name)      \
+  template <>                             \
+  void Reduce##name<float16, CPUContext>( \
+      const int num_dims,                 \
+      const int* dims,                    \
+      const int num_axes,                 \
+      const int* axes,                    \
+      const float scale,                  \
+      const float16* x,                   \
+      float16* y,                         \
+      CPUContext* ctx) {                  \
+    CPU_FP16_NOT_SUPPORTED;               \
+  }
 
-template <>
-void ReduceMin<float16, CPUContext>(
-    const int num_dims,
-    const int* dims,
-    const int num_axes,
-    const int* axes,
-    const float16* x,
-    float16* y,
-    CPUContext* ctx) {
-  CPU_FP16_NOT_SUPPORTED;
-}
-
-template <>
-void ReduceSum<float16, CPUContext>(
-    const int num_dims,
-    const int* dims,
-    const int num_axes,
-    const int* axes,
-    const float scale,
-    const float16* x,
-    float16* y,
-    CPUContext* ctx) {
-  CPU_FP16_NOT_SUPPORTED;
-}
+DEFINE_KERNEL_LAUNCHER(Max);
+DEFINE_KERNEL_LAUNCHER(Min);
+DEFINE_KERNEL_LAUNCHER(Sum);
+#undef DEFINE_KERNEL_LAUNCHER
 
 template <>
 DRAGON_API void Sum<float16, CPUContext>(
@@ -246,17 +246,18 @@ DRAGON_API float16 Sum<float16, CPUContext>(
   return float16();
 }
 
-#define DEFINE_KERNEL_LAUNCHER(name, T)                               \
-  template <>                                                         \
-  void Reduce##name<T, CPUContext>(                                   \
-      const int num_dims,                                             \
-      const int* dims,                                                \
-      const int num_axes,                                             \
-      const int* axes,                                                \
-      const T* x,                                                     \
-      T* y,                                                           \
-      CPUContext* ctx) {                                              \
-    _Reduce##name(num_dims, dims, num_axes, axes, (T*)nullptr, x, y); \
+#define DEFINE_KERNEL_LAUNCHER(name, T)                         \
+  template <>                                                   \
+  void Reduce##name<T, CPUContext>(                             \
+      const int num_dims,                                       \
+      const int* dims,                                          \
+      const int num_axes,                                       \
+      const int* axes,                                          \
+      const float scale,                                        \
+      const T* x,                                               \
+      T* y,                                                     \
+      CPUContext* ctx) {                                        \
+    _Reduce##name(num_dims, dims, num_axes, axes, scale, x, y); \
   }
 
 DEFINE_KERNEL_LAUNCHER(Max, int8_t);
@@ -271,23 +272,6 @@ DEFINE_KERNEL_LAUNCHER(Min, int);
 DEFINE_KERNEL_LAUNCHER(Min, int64_t);
 DEFINE_KERNEL_LAUNCHER(Min, float);
 DEFINE_KERNEL_LAUNCHER(Min, double);
-#undef DEFINE_KERNEL_LAUNCHER
-
-#define DEFINE_KERNEL_LAUNCHER(name, T)                      \
-  template <>                                                \
-  void Reduce##name<T, CPUContext>(                          \
-      const int num_dims,                                    \
-      const int* dims,                                       \
-      const int num_axes,                                    \
-      const int* axes,                                       \
-      const float scale,                                     \
-      const T* x,                                            \
-      T* y,                                                  \
-      CPUContext* ctx) {                                     \
-    T s = static_cast<T>(scale);                             \
-    _Reduce##name(num_dims, dims, num_axes, axes, &s, x, y); \
-  }
-
 DEFINE_KERNEL_LAUNCHER(Sum, int8_t);
 DEFINE_KERNEL_LAUNCHER(Sum, uint8_t);
 DEFINE_KERNEL_LAUNCHER(Sum, int);
@@ -301,13 +285,13 @@ DEFINE_KERNEL_LAUNCHER(Sum, double);
   DRAGON_API void Sum<T, CPUContext>(                                      \
       const int n, const float scale, const T* x, T* y, CPUContext* ctx) { \
     T val = ConstEigenVectorArrayMap<T>(x, n).sum();                       \
-    *y = val * scale;                                                      \
+    *y = val * T(scale);                                                   \
   }                                                                        \
   template <>                                                              \
   T Sum<T, CPUContext>(                                                    \
       const int n, const float scale, const T* x, CPUContext* ctx) {       \
     T val = ConstEigenVectorArrayMap<T>(x, n).sum();                       \
-    return val * scale;                                                    \
+    return val * T(scale);                                                 \
   }
 
 DEFINE_SUM_FUNC(int8_t);

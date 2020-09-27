@@ -19,7 +19,7 @@ void SoftmaxCrossEntropyOp<Context>::DoRunWithType() {
       << "\nNumber of preds must match the number of targets.";
   Buffer("prob")->ReshapeLike(X);
 
-  auto* loss = ws()->template data<T, Context>({X.count()})[0];
+  auto* loss = ctx()->workspace()->template data<T, Context>({X.count()})[0];
   auto* prob = Buffer("prob")->template mutable_data<T, Context>();
 
   kernel::Softmax(
@@ -59,7 +59,7 @@ void SoftmaxCrossEntropyOp<Context>::DoRunWithType() {
         0,
         normalizer,
         loss,
-        nullptr,
+        (T*)nullptr,
         Y->Reshape({})->template mutable_data<T, Context>(),
         ctx());
   }
@@ -98,7 +98,8 @@ void SoftmaxCrossEntropyGradientOp<Context>::DoRunWithType() {
     } else if (reduction_ == "MEAN") {
       normalizer = num_preds;
     }
-    kernel::ReduceLossGrad(dX->count(), 0, normalizer, dy, nullptr, dx, ctx());
+    kernel::ReduceLossGrad(
+        dX->count(), 0, normalizer, dy, (T*)nullptr, dx, ctx());
   }
 }
 

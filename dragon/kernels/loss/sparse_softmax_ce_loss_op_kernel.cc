@@ -16,18 +16,18 @@ void _SparseSoftmaxCrossEntropy(
     const LogitType* prob,
     const TargetType* target,
     LogitType* loss,
-    int* mask) {
+    LogitType* mask) {
   std::array<int, 2> idx = {0, 0};
   std::array<int, 2> dims = {outer_dim, inner_dim};
   int count = dims[0] * dims[1], k;
   for (int i = 0; i < count; ++i) {
     const int label = (int)target[i];
     if (label == ignore_index) {
-      loss[i] = mask[i] = 0;
+      loss[i] = mask[i] = LogitType(0);
     } else {
       k = (idx[0] * axis_dim + label) * inner_dim + idx[1];
       loss[i] = -std::log(std::max(prob[k], LogitType(FLT_MIN)));
-      mask[i] = 1;
+      mask[i] = LogitType(1);
     }
     utils::math::IncreaseIndexInDims(2, dims.data(), idx.data());
   }
@@ -42,7 +42,7 @@ void _SparseSoftmaxCrossEntropyGrad(
     const LogitType* prob,
     const TargetType* target,
     LogitType* dx,
-    int* mask) {
+    LogitType* mask) {
   std::array<int, 2> idx = {0, 0};
   std::array<int, 2> dims = {outer_dim, inner_dim};
   int count = dims[0] * dims[1], k;
@@ -54,11 +54,11 @@ void _SparseSoftmaxCrossEntropyGrad(
         (*offset_dx) = LogitType(0);
         offset_dx += inner_dim;
       }
-      mask[i] = 0;
+      mask[i] = LogitType(0);
     } else {
       k = (idx[0] * axis_dim + label) * inner_dim + idx[1];
       dx[k] -= LogitType(1);
-      mask[i] = 1;
+      mask[i] = LogitType(1);
     }
     utils::math::IncreaseIndexInDims(2, dims.data(), idx.data());
   }
@@ -78,7 +78,7 @@ void _SparseSoftmaxCrossEntropyGrad(
       const LogitType* prob,                                \
       const TargetType* target,                             \
       LogitType* loss,                                      \
-      int* mask,                                            \
+      LogitType* mask,                                      \
       CPUContext* ctx) {                                    \
     _##name(                                                \
         outer_dim,                                          \

@@ -55,7 +55,7 @@ void ReduceMeanOp<Context>::DoRunWithType() {
 template <class Context>
 void ReduceMeanOp<Context>::RunOnDevice() {
   STORE_INPUT_SPEC(0);
-  DispatchHelper<NumericalTensorTypes>::Call(this, Input(0));
+  DispatchHelper<FloatingTensorTypes>::Call(this, Input(0));
 }
 
 template <class Context>

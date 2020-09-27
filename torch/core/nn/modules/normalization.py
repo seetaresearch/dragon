@@ -19,8 +19,96 @@ import inspect
 from dragon.vm.torch.core.nn import functional as F
 from dragon.vm.torch.core.nn.modules.module import Module
 from dragon.vm.torch.core.nn.parameter import Parameter
-from dragon.vm.torch.core.ops.init import functional as init
+from dragon.vm.torch.core.ops.array import functional as array_funcs
+from dragon.vm.torch.core.ops.init import functional as init_funcs
 from dragon.vm.torch.core.tensor import Tensor
+
+
+class AffineChannel(Module):
+    """Apply affine transformation along the channels.
+
+    Affine is often taken as a post-processing of normalization.
+
+    Examples:
+
+    ```python
+    m = torch.nn.AffineChannel(5)
+
+    # Apply a 2d transformation
+    x2d = torch.ones(3, 5)
+    y2d = m(x2d)
+
+    # Apply a 3d transformation
+    x3d = torch.ones(3, 5, 4)
+    y3d = m(x3d)
+
+    # Apply a 4d transformation
+    x4d = torch.ones(3, 5, 2, 2)
+    y4d = m(x4d)
+    ```
+
+    See Also
+    --------
+    `torch.channel_affine(...)`_
+
+    """
+
+    def __init__(
+        self,
+        num_features,
+        bias=True,
+        fix_weight=False,
+        fix_bias=False,
+        inplace=False,
+    ):
+        """Create an ``Affine`` module.
+
+        Parameters
+        ----------
+        num_features : int
+            The number of channels.
+        bias : bool, optional, default=True
+            **True** to attach a bias.
+        fix_weight : bool, optional, default=False
+            **True** to frozen the ``weight``.
+        fix_bias : bool, optional, default=False
+            **True** to frozen the ``bias``.
+        inplace : bool, optional, default=False
+            Whether to do the operation in-place.
+
+        """
+        super(AffineChannel, self).__init__()
+        self.num_features = num_features
+        self.inplace = inplace
+        if not fix_weight:
+            self.weight = Parameter(init_funcs.ones(num_features))
+            if inplace:
+                raise ValueError('In-place operation requires fixed weight.')
+        else:
+            self.register_buffer('weight', init_funcs.ones(num_features))
+        if bias:
+            if not fix_bias:
+                self.bias = Parameter(init_funcs.zeros(num_features))
+            else:
+                self.register_buffer('bias', init_funcs.zeros(num_features))
+        else:
+            self.bias = None
+
+    def extra_repr(self):
+        s = '{num_features}, ' \
+            'inplace={inplace}'.format(**self.__dict__)
+        if self.bias is None:
+            s += ', bias=False'
+        return s
+
+    def forward(self, input):
+        return array_funcs.channel_affine(
+            input,
+            self.weight,
+            self.bias,
+            dim=1,
+            out=input if self.inplace else None,
+        )
 
 
 class GroupNorm(Module):
@@ -76,8 +164,8 @@ class GroupNorm(Module):
             self.weight = Parameter(Tensor(num_channels))
             self.bias = Parameter(Tensor(num_channels))
         else:
-            self.register_buffer('weight', init.ones(num_channels))
-            self.register_buffer('bias', init.zeros(num_channels))
+            self.register_buffer('weight', init_funcs.ones(num_channels))
+            self.register_buffer('bias', init_funcs.zeros(num_channels))
         self.inputs = [self.weight, self.bias]
         self.reset_parameters()
 

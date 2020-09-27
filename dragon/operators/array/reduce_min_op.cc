@@ -39,6 +39,7 @@ void ReduceMinOp<Context>::DoRunWithType() {
         X_dims.data(),
         reduce_axes.size(),
         reduce_axes.data(),
+        1.f,
         X.template data<T, Context>(),
         Y->Reshape(Y_shape)->template mutable_data<T, Context>(),
         ctx());

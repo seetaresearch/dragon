@@ -57,6 +57,26 @@ class Cast(Operator):
         return self.dispatch(inputs, [self.alloc()])
 
 
+class ChannelAffine(Operator):
+    def __init__(self, key, dev, **kwargs):
+        super(ChannelAffine, self).__init__(key, dev, **kwargs)
+        self.axis = kwargs.get('axis', 1)
+        self.num_axes = kwargs.get('num_axes', 1)
+
+    def attributes(self):
+        return {
+            'op_type': 'ChannelAffine',
+            'arguments': {
+                'axis': self.axis,
+                'num_axes': self.num_axes,
+            }
+        }
+
+    def forward(self, inputs, inplace=False):
+        outputs = [self.alloc(inputs[0]) if inplace else self.alloc()]
+        return self.dispatch(inputs, outputs)
+
+
 class ChannelNormalize(Operator):
     def __init__(self, key, dev, **kwargs):
         super(ChannelNormalize, self).__init__(key, dev, **kwargs)

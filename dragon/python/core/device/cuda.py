@@ -62,7 +62,7 @@ def current_device():
     return backend.cudaGetDevice()
 
 
-def enable_cudnn(enabled=True, benchmark=False):
+def enable_cudnn(enabled=True, benchmark=False, allow_tf32=False):
     """Enable backend to use the cuDNN library.
 
     Parameters
@@ -71,9 +71,11 @@ def enable_cudnn(enabled=True, benchmark=False):
         Use cuDNN library or not.
     benchmark : bool, optional, default=False
         Select algorithms according to the benchmark or not.
+    allow_tf32 : bool, optional, default=False
+        Allow TF32 Tensor core operation or not.
 
     """
-    return backend.cudaEnableDNN(enabled, benchmark)
+    return backend.cudaEnableDNN(enabled, benchmark, allow_tf32)
 
 
 def get_device_capability(device_index=None):

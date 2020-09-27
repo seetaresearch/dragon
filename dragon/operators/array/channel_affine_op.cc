@@ -1,4 +1,4 @@
-#include "dragon/operators/math/affine_op.h"
+#include "dragon/operators/array/channel_affine_op.h"
 #include "dragon/core/workspace.h"
 #include "dragon/utils/math_functions.h"
 #include "dragon/utils/op_kernels.h"
@@ -19,7 +19,7 @@ namespace dragon {
 
 template <class Context>
 template <typename T>
-void AffineOp<Context>::DoRunWithType() {
+void ChannelAffineOp<Context>::DoRunWithType() {
   auto &X = Input(0), &W = Input(1), *Y = Output(0, {0});
   CANONICALIZE_AXES_WITH_TENSOR(X);
 
@@ -37,7 +37,7 @@ void AffineOp<Context>::DoRunWithType() {
         << ", got " << Input(2).DimString() << ".";
   }
 
-  kernel::Affine(
+  kernel::ChannelAffine(
       X.count(0, axis),
       X.count(axis, axis + num_axes),
       X.count(axis + num_axes),
@@ -49,21 +49,22 @@ void AffineOp<Context>::DoRunWithType() {
 }
 
 template <class Context>
-void AffineOp<Context>::RunOnDevice() {
+void ChannelAffineOp<Context>::RunOnDevice() {
   DispatchHelper<NumericalTensorTypes>::Call(this, Input(0));
 }
 
 template <class Context>
 template <typename T>
-void AffineGradientOp<Context>::DoRunWithType() {
+void ChannelAffineGradientOp<Context>::DoRunWithType() {
   auto &X = Input(0), &W = Input(1), &dY = Input(2);
   auto *dX = Output(0), *dW = Output(1), *dB = Output(2);
   CANONICALIZE_AXES_WITH_TENSOR(X);
 
   // Reduce parameters for weight and bias
-  vec32_t dims = {(int)X.count(0, axis),
-                  (int)X.count(axis, axis + num_axes),
-                  (int)X.count(axis + num_axes)};
+  vec32_t dims = {
+      (int)X.count(0, axis),
+      (int)X.count(axis, axis + num_axes),
+      (int)X.count(axis + num_axes)};
   vec32_t axes = {0, 2};
 
   // dW = dY * X
@@ -79,7 +80,8 @@ void AffineGradientOp<Context>::DoRunWithType() {
           dW->ReshapeLike(W)->template mutable_data<T, Context>(),
           ctx());
     } else {
-      T* scratch = ws()->template data<T, Context>({X.count()})[0];
+      T* scratch =
+          ctx()->workspace()->template data<T, Context>({X.count()})[0];
       math::Mul(
           X.count(),
           dY.template data<T, Context>(),
@@ -118,7 +120,7 @@ void AffineGradientOp<Context>::DoRunWithType() {
   // dX = dY * W
   if (dX->has_name()) {
     Output(0)->ReshapeLike(Input(-1));
-    kernel::Affine(
+    kernel::ChannelAffine(
         X.count(0, axis),
         X.count(axis, axis + num_axes),
         X.count(axis + num_axes),
@@ -131,21 +133,21 @@ void AffineGradientOp<Context>::DoRunWithType() {
 }
 
 template <class Context>
-void AffineGradientOp<Context>::RunOnDevice() {
+void ChannelAffineGradientOp<Context>::RunOnDevice() {
   DispatchHelper<FloatingTensorTypes>::Call(this, Input(0));
 }
 
-DEPLOY_CPU_OPERATOR(Affine);
+DEPLOY_CPU_OPERATOR(ChannelAffine);
 #ifdef USE_CUDA
-DEPLOY_CUDA_OPERATOR(Affine);
+DEPLOY_CUDA_OPERATOR(ChannelAffine);
 #endif
 
-DEPLOY_CPU_OPERATOR(AffineGradient);
+DEPLOY_CPU_OPERATOR(ChannelAffineGradient);
 #ifdef USE_CUDA
-DEPLOY_CUDA_OPERATOR(AffineGradient);
+DEPLOY_CUDA_OPERATOR(ChannelAffineGradient);
 #endif
 
-OPERATOR_SCHEMA(Affine)
+OPERATOR_SCHEMA(ChannelAffine)
     /* X, W, B */
     .NumInputs(2, 3)
     /* Y */
@@ -153,7 +155,7 @@ OPERATOR_SCHEMA(Affine)
     /* X => Y */
     .AllowInplace({{0, 0}});
 
-OPERATOR_SCHEMA(AffineGradient)
+OPERATOR_SCHEMA(ChannelAffineGradient)
     /* X, W, dY */
     .NumInputs(3)
     /* dX, dW, dB */
@@ -177,7 +179,7 @@ class GradientMaker final : public GradientMakerBase {
 
 } // namespace
 
-REGISTER_GRADIENT(Affine, GradientMaker);
+REGISTER_GRADIENT(ChannelAffine, GradientMaker);
 
 #undef CANONICALIZE_AXES_WITH_TENSOR
 

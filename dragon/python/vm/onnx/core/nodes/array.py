@@ -51,6 +51,21 @@ def cast_exporter(op_def, shape_dict, ws):
     return node, const_tensors
 
 
+@exporter.register('ChannelAffine')
+def channel_affine_exporter(op_def, shape_dict, ws):
+    node, const_tensors = exporter.translate(**locals())
+    node.op_type = 'ATen'  # Currently not supported in ai.onnx
+    helper.add_attribute(node, 'op_type', 'ChannelAffine')
+    for arg in op_def.arg:
+        if arg.name == 'axis':
+            helper.add_attribute(node, 'axis', arg.i)
+        elif arg.name == 'num_axes':
+            helper.add_attribute(node, 'num_axes', arg.i)
+    # Weights and biases
+    const_tensors = [helper.from_tensor(e, ws) for e in op_def.input[1:]]
+    return node, const_tensors
+
+
 @exporter.register('ChannelNormalize')
 def channel_normalize_exporter(op_def, shape_dict, ws):
     node, const_tensors = exporter.translate(**locals())

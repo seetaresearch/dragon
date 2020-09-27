@@ -150,6 +150,36 @@ def cat(seq, dim=0, out=None):
         .apply(seq, out)
 
 
+def channel_affine(input, weight, bias=None, dim=0, out=None):
+    """Apply affine transformation along the channels.
+
+    Parameters
+    ----------
+    input : dragon.vm.torch.Tensor
+        The input tensor.
+    weight : dragon.vm.torch.Tensor
+        The weight tensor.
+    bias : dragon.vm.torch.Tensor, optional
+        The optional bias.
+    dim : int, optional, default=0
+        The start dimension to transform.
+    out : dragon.vm.torch.Tensor, optional
+        The optional output tensor.
+
+    Returns
+    -------
+    dragon.vm.torch.Tensor
+        The output tensor.
+
+    """
+    return _functions.ChannelAffine \
+        .instantiate(
+            input.device,
+            axis=dim,
+            num_axes=weight.ndimension(),
+        ).apply(input, weight, bias, out)
+
+
 def channel_normalize(
     input,
     mean,

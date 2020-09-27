@@ -11,6 +11,7 @@ template <typename T>
 void CuDNNRecurrentOpBase<Context>::ResetDesc() {
   input_dims_ = Input(0).dims();
   seq_length_ = Input(0).dim(0);
+  auto input_type = TypeMeta::Id<T>();
   auto batch_size = Input(0).dim(1);
   auto x_dim = Input(0).dim(2);
   auto ndirections = bidirectional_ ? 2 : 1;
@@ -24,7 +25,7 @@ void CuDNNRecurrentOpBase<Context>::ResetDesc() {
       CUDNN_CHECK(
           cudnnDropoutGetStatesSize(ctx()->cudnn_handle(), &states_size_));
       std::lock_guard<std::mutex> lk(CUDAContext::mutex());
-      auto* states_tensor = ws()->CreateTensor(
+      auto* states_tensor = workspace()->CreateTensor(
           "/share/cudnn/dropout:" + str::to(rng_seed_) + "/states");
       if (states_tensor->count() > 0) {
         auto* states = states_tensor->template mutable_data<uint8_t, Context>();
@@ -53,6 +54,13 @@ void CuDNNRecurrentOpBase<Context>::ResetDesc() {
   }
 
   // Setup RNN
+  if (input_type == TypeMeta::Id<float16>()) {
+    compute_type_ = CUDNN_DATA_FLOAT;
+  } else if (input_type == TypeMeta::Id<float>()) {
+    compute_type_ = CUDNN_DATA_FLOAT;
+  } else if (input_type == TypeMeta::Id<double>()) {
+    compute_type_ = CUDNN_DATA_DOUBLE;
+  }
 #if CUDNN_VERSION_MIN(7, 0, 0)
   CUDNN_CHECK(cudnnSetRNNDescriptor_v6(
       ctx()->cudnn_handle(),
@@ -64,7 +72,7 @@ void CuDNNRecurrentOpBase<Context>::ResetDesc() {
       rnn_direction_,
       rnn_mode_,
       CUDNN_RNN_ALGO_STANDARD,
-      CuDNNType<T>::type));
+      compute_type_));
 #else
   CUDNN_CHECK(cudnnSetRNNDescriptor(
       rnn_desc_,
@@ -74,7 +82,25 @@ void CuDNNRecurrentOpBase<Context>::ResetDesc() {
       rnn_input_mode_,
       rnn_direction_,
       rnn_mode_,
-      CuDNNType<T>::type));
+      compute_type_));
+#endif
+
+  // Setup TensorCore
+#if CUDNN_VERSION_MIN(7, 0, 0)
+  if (enable_tensor_core_ > 0) {
+    cudnnMathType_t math_type;
+    if (input_type == TypeMeta::Id<float16>()) {
+      math_type = CUDNN_TENSOR_OP_MATH;
+    } else {
+      math_type = CUDNN_DEFAULT_MATH;
+#if CUDNN_VERSION_MIN(8, 0, 0)
+      if (!CUDAContext::objects().cudnn_allow_tf32_) {
+        math_type = CUDNN_FMA_MATH;
+      }
+#endif
+    }
+    CUDNN_CHECK(cudnnSetRNNMatrixMathType(rnn_desc_, math_type));
+  }
 #endif
 
   // Setup X and Y
@@ -151,7 +177,8 @@ void CuDNNRecurrentOp<Context>::DoRunWithType() {
     return Output(i)->template mutable_data<T, Context>();
   };
 
-  auto* scratch = ws()->template data<Context>({workspace_size_})[0];
+  auto* scratch =
+      ctx()->workspace()->template data<Context>({workspace_size_})[0];
 
   if (phase() == "TRAIN") {
     CUDNN_CHECK(cudnnGetRNNTrainingReserveSize(
@@ -235,7 +262,8 @@ void CuDNNRecurrentGradientOp<Context>::DoRunWithType() {
     return Output(i)->template mutable_data<T, Context>();
   };
 
-  auto* scratch = ws()->template data<Context>({workspace_size_})[0];
+  auto* scratch =
+      ctx()->workspace()->template data<Context>({workspace_size_})[0];
 
   // Check the ReserveSpace
   CUDNN_CHECK(cudnnGetRNNTrainingReserveSize(

@@ -41,8 +41,19 @@ void CuDNNConv2dOp<Context>::SetConvDesc() {
 #endif
 #if CUDNN_VERSION_MIN(7, 0, 0)
   CUDNN_CHECK(cudnnSetConvolutionGroupCount(conv_desc_, group_));
-  if (enable_tensor_core_) {
-    CUDNN_CHECK(cudnnSetConvolutionMathType(conv_desc_, CUDNN_TENSOR_OP_MATH));
+  if (enable_tensor_core_ > 0) {
+    cudnnMathType_t math_type;
+    if (input_type == TypeMeta::Id<float16>()) {
+      math_type = CUDNN_TENSOR_OP_MATH;
+    } else {
+      math_type = CUDNN_DEFAULT_MATH;
+#if CUDNN_VERSION_MIN(8, 0, 0)
+      if (!CUDAContext::objects().cudnn_allow_tf32_) {
+        math_type = CUDNN_FMA_MATH;
+      }
+#endif
+    }
+    CUDNN_CHECK(cudnnSetConvolutionMathType(conv_desc_, math_type));
   }
 #endif
 }
@@ -148,8 +159,8 @@ void CuDNNConv2dOp<Context>::DoRunWithType() {
 
   // Find the appropriate algorithm if necessary
   if (exhaustive_search_) {
-    scratch =
-        ws()->template data<Context>({CUDNN_CONV_WORKSPACE_LIMIT_BYTES})[0];
+    scratch = ctx()->workspace()->template data<Context>(
+        {CUDNN_CONV_WORKSPACE_LIMIT_BYTES})[0];
     auto algo = algo_cache_.get(X.dims(), W.dims(), compute_type_, [&]() {
       int num_valid_algos;
       constexpr int num_algos = CUDNN_CONV_NUM_FWD_ALGOS;
@@ -188,7 +199,7 @@ void CuDNNConv2dOp<Context>::DoRunWithType() {
 
   // Alloc the memory for workspace data
   if (cudnn_ws_nbytes_ > 0) {
-    scratch = ws()->template data<Context>({cudnn_ws_nbytes_})[0];
+    scratch = ctx()->workspace()->template data<Context>({cudnn_ws_nbytes_})[0];
   }
 
   for (int g = 0; g < cudnn_group_; g++) {
@@ -279,8 +290,19 @@ void CuDNNConv2dGradientOp<Context>::SetConvDesc() {
 #endif
 #if CUDNN_VERSION_MIN(7, 0, 0)
   CUDNN_CHECK(cudnnSetConvolutionGroupCount(conv_desc_, group_));
-  if (enable_tensor_core_) {
-    CUDNN_CHECK(cudnnSetConvolutionMathType(conv_desc_, CUDNN_TENSOR_OP_MATH));
+  if (enable_tensor_core_ > 0) {
+    cudnnMathType_t math_type;
+    if (input_type == TypeMeta::Id<float16>()) {
+      math_type = CUDNN_TENSOR_OP_MATH;
+    } else {
+      math_type = CUDNN_DEFAULT_MATH;
+#if CUDNN_VERSION_MIN(8, 0, 0)
+      if (!CUDAContext::objects().cudnn_allow_tf32_) {
+        math_type = CUDNN_FMA_MATH;
+      }
+#endif
+    }
+    CUDNN_CHECK(cudnnSetConvolutionMathType(conv_desc_, math_type));
   }
 #endif
 }
@@ -418,8 +440,8 @@ void CuDNNConv2dGradientOp<Context>::DoRunWithType() {
 
   // Find the appropriate algorithm if necessary
   if (dW->has_name() && exhaustive_search_filter_) {
-    scratch =
-        ws()->template data<Context>({CUDNN_CONV_WORKSPACE_LIMIT_BYTES})[0];
+    scratch = ctx()->workspace()->template data<Context>(
+        {CUDNN_CONV_WORKSPACE_LIMIT_BYTES})[0];
     x = X.template data<T, Context>();
     dw = dW->template mutable_data<T, Context>();
     auto algo =
@@ -448,8 +470,8 @@ void CuDNNConv2dGradientOp<Context>::DoRunWithType() {
   }
 
   if (dX->has_name() && exhaustive_search_data_) {
-    scratch =
-        ws()->template data<Context>({CUDNN_CONV_WORKSPACE_LIMIT_BYTES})[0];
+    scratch = ctx()->workspace()->template data<Context>(
+        {CUDNN_CONV_WORKSPACE_LIMIT_BYTES})[0];
     w = W.template data<T, Context>();
     dx = dX->template mutable_data<T, Context>();
     auto algo = data_algo_cache_.get(X.dims(), W.dims(), compute_type_, [&]() {
@@ -500,7 +522,7 @@ void CuDNNConv2dGradientOp<Context>::DoRunWithType() {
 
   // Alloc the memory for workspace data
   if (cudnn_ws_nbytes_ > 0) {
-    scratch = ws()->template data<Context>({cudnn_ws_nbytes_})[0];
+    scratch = ctx()->workspace()->template data<Context>({cudnn_ws_nbytes_})[0];
   }
 
   if (Output(2)->has_name()) {
