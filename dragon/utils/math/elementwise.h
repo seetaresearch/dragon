@@ -23,6 +23,9 @@ template <typename T, class Context>
 DRAGON_API void Abs(const int n, const T* x, T* y, Context* ctx);
 
 template <typename T, class Context>
+DRAGON_API void Neg(const int n, const T* x, T* y, Context* ctx);
+
+template <typename T, class Context>
 DRAGON_API void Ceil(const int n, const T* x, T* y, Context* ctx);
 
 template <typename T, class Context>

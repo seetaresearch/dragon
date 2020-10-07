@@ -112,6 +112,8 @@ from dragon.vm.tensorflow.core.ops.math_ops import square
 from dragon.vm.tensorflow.core.ops.math_ops import subtract
 from dragon.vm.tensorflow.core.ops.math_ops import tanh
 from dragon.vm.tensorflow.core.ops.gradients_impl import gradients
+from dragon.vm.tensorflow.core.ops.sort_ops import argsort
+from dragon.vm.tensorflow.core.ops.sort_ops import sort
 from dragon.vm.tensorflow.core.ops.variables import Variable
 
 # Attributes

@@ -138,6 +138,9 @@ dragon
   `slice(...) <dragon/slice.html>`_
   : Select the elements according to the given sections.
 
+  `sort(...) <dragon/sort.html>`_
+  : Return the sorted elements along the given axis.
+
   `split(...) <dragon/split.html>`_
   : Split the input into chunks along the given axis.
 
@@ -171,6 +174,10 @@ dragon
 .. toctree::
   :hidden:
 
+  dragon/EagerTensor
+  dragon/GradientTape
+  dragon/Tensor
+  dragon/Workspace
   dragon/assign
   dragon/broadcast_to
   dragon/cast
@@ -182,7 +189,6 @@ dragon
   dragon/copy
   dragon/create_function
   dragon/device
-  dragon/EagerTensor
   dragon/eager_mode
   dragon/eager_scope
   dragon/expand_dims
@@ -193,7 +199,6 @@ dragon
   dragon/function
   dragon/get_workspace
   dragon/gradients
-  dragon/GradientTape
   dragon/graph_mode
   dragon/index_select
   dragon/load_library
@@ -212,16 +217,15 @@ dragon
   dragon/reshape
   dragon/shape
   dragon/slice
+  dragon/sort
   dragon/split
   dragon/squeeze
   dragon/stack
   dragon/stop_gradient
-  dragon/Tensor
   dragon/tile
   dragon/transpose
   dragon/unique
   dragon/where
-  dragon/Workspace
   dragon/zeros
   dragon/zeros_like
 

@@ -12,7 +12,7 @@
 #     <https://github.com/tensorflow/tensorflow/blob/master/tensorflow/python/ops/bitwise_ops.py>
 #
 # ------------------------------------------------------------
-"""The bitwise ops."""
+"""Bitwise ops."""
 
 from __future__ import absolute_import
 from __future__ import division

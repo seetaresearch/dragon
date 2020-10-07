@@ -72,9 +72,8 @@ void SubGradientOp<Context>::DoRunWithType() {
 
   if (dB->has_name()) {
     if (B_broadcast_axes.empty()) {
-      math::Scale(
+      math::Neg(
           B.count(),
-          -1.f,
           dY.template data<T, Context>(),
           dB->ReshapeLike(B)->template mutable_data<T, Context>(),
           ctx());

@@ -857,6 +857,20 @@ def softmax_loss_spec(args, inputs, outputs):
     return outputs
 
 
+@register('Sort')
+def sort_spec(args, inputs, outputs):
+    _ = locals()
+    outputs[0].dtype = inputs[0].dtype
+    outputs[1].dtype = 'int64'
+    try:
+        out_shape = list(inputs[0].shape[:])
+        outputs[0].shape = out_shape[:]
+        outputs[1].shape = out_shape[:]
+    except (TypeError, IndexError):
+        pass
+    return outputs
+
+
 @register('SpaceToDepth')
 def space_to_depth_spec(args, inputs, outputs):
     outputs[0].dtype = inputs[0].dtype
@@ -1029,8 +1043,8 @@ def top_k_spec(args, inputs, outputs):
     try:
         out_shape = list(inputs[0].shape[:])
         out_shape[axis] = k
-        outputs[0].shape = out_shape
-        outputs[1].shape = out_shape
+        outputs[0].shape = out_shape[:]
+        outputs[1].shape = out_shape[:]
     except (TypeError, IndexError):
         pass
     return outputs

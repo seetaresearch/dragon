@@ -18,8 +18,8 @@ vm.tensorflow.dtypes
 .. toctree::
   :hidden:
 
-  dtypes/as_dtype
   dtypes/DType
+  dtypes/as_dtype
 
 .. raw:: html
 

@@ -113,6 +113,9 @@ dragon.nn
 .. toctree::
   :hidden:
 
+  nn/GRU
+  nn/LSTM
+  nn/RNN
   nn/batch_norm
   nn/bias_add
   nn/conv2d
@@ -125,18 +128,15 @@ dragon.nn
   nn/elu
   nn/fully_connected
   nn/group_norm
-  nn/GRU
   nn/instance_norm
   nn/layer_norm
   nn/leaky_relu
   nn/local_response_norm
   nn/log_softmax
-  nn/LSTM
   nn/pool2d
   nn/prelu
   nn/relu
   nn/relu6
-  nn/RNN
   nn/selu
   nn/softmax
   nn/space_to_depth

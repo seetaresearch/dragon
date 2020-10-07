@@ -102,6 +102,29 @@ DEFINE_UNARY_FUNC(Sign, double, [](double x) {
 });
 #undef DEFINE_UNARY_FUNC
 
+template <>
+#define DEFINE_NEG_FUNC(T)                                             \
+  template <>                                                          \
+  DRAGON_API void Neg<T, CPUContext>(                                  \
+      const int n, const T* x, T* y, CPUContext* ctx) {                \
+    EigenVectorArrayMap<T>(y, n) = -ConstEigenVectorArrayMap<T>(x, n); \
+  }
+
+DRAGON_API void Neg<float16, CPUContext>(
+    const int n,
+    const float16* x,
+    float16* y,
+    CPUContext* ctx) {
+  CPU_FP16_NOT_SUPPORTED;
+}
+
+DEFINE_NEG_FUNC(int8_t);
+DEFINE_NEG_FUNC(int);
+DEFINE_NEG_FUNC(int64_t);
+DEFINE_NEG_FUNC(float);
+DEFINE_NEG_FUNC(double);
+#undef DEFINE_NEG_FUNC
+
 /* y = value */
 
 #define DEFINE_SET_FUNC(T)                                 \

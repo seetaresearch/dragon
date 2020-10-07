@@ -110,54 +110,28 @@ inline float to<float, float16>(float16 val) {
 #ifdef USE_CUDA
 
 template <>
+inline float16 to<float16, half>(half val) {
+  return float16{__half_raw(val).x};
+}
+
+template <>
 inline half to<half, float>(float val) {
-#if CUDA_VERSION_MIN(9, 0, 0)
-  __half_raw fp16_raw;
-  fp16_raw.x = cast::to<float16>(val).x;
-  return half(fp16_raw);
-#else
-  half fp16;
-  fp16.x = dragon_cast<float16, float>(val).x;
-  return fp16;
-#endif
-}
-
-template <>
-inline half2 to<half2, float>(float val) {
-#if CUDA_VERSION_MIN(9, 0, 0)
-  half fp16 = cast::to<half>(val);
-  return half2(fp16, fp16);
-#else
-  half2 fp32;
-  fp32.x = cast::to<float32>(val).x;
-  return fp32;
-#endif
-}
-
-template <>
-inline half2 to<half2, float16>(float16 val) {
-#if CUDA_VERSION_MIN(9, 0, 0)
-  __half_raw fp16_raw;
-  fp16_raw.x = val.x;
-  return half2(half(fp16_raw), half(fp16_raw));
-#else
-  half2 fp32;
-  fp32.x = dragon_cast<float32, float16>(val).x;
-  return fp32;
-#endif
+  return __float2half(val);
 }
 
 template <>
 inline half to<half, float16>(float16 val) {
-#if CUDA_VERSION_MIN(9, 0, 0)
-  __half_raw fp16_raw;
-  fp16_raw.x = val.x;
-  return fp16_raw;
-#else
-  half fp16;
-  fp16.x = val.x;
-  return fp16;
-#endif
+  return __half_raw{val.x};
+}
+
+template <>
+inline half2 to<half2, float>(float val) {
+  return __float2half2_rn(val);
+}
+
+template <>
+inline half2 to<half2, float16>(float16 val) {
+  return half2(__half2_raw{val.x, val.x});
 }
 
 #endif // USE_CUDA

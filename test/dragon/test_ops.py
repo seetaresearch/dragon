@@ -810,6 +810,28 @@ class TestArrayOps(OpTestCase):
         with dragon.device('cuda'):
             self.test_slice()
 
+    def test_sort(self):
+        entries = [(None, True),
+                   (0, True),
+                   (-1, True),
+                   (0, False),
+                   (-1, False)]
+        for execution in ('EAGER_MODE', 'GRAPH_MODE'):
+            with execution_context().mode(execution):
+                for axis, descending in entries:
+                    data = uniform((5, 10))
+                    x = new_tensor(data)
+                    y = dragon.sort(x, axis=axis, descending=descending)
+                    axis = axis if axis is not None else -1
+                    result = np.argsort(-data if descending else data, axis=axis)
+                    result = np.take(result, np.arange(data.shape[axis]), axis=axis)
+                    self.assertEqual(y[1], result)
+
+    @unittest.skipIf(not TEST_CUDA, 'CUDA unavailable')
+    def test_sort_cuda(self):
+        with dragon.device('cuda'):
+            self.test_sort()
+
     def test_split(self):
         entries = [(2, 1, None), ((2, 1), 1, None), (2, 1, (2,))]
         for execution in ('EAGER_MODE', 'GRAPH_MODE'):

@@ -25,11 +25,11 @@ struct SmallestComp {
 };
 
 template <typename T, class Comp>
-void _TopK(
+void _TopSelect(
     const int outer_dim,
     const int inner_dim,
     const int axis_dim,
-    const int top_k,
+    const int select_dim,
     const int largest,
     const T* x,
     T* value,
@@ -38,8 +38,8 @@ void _TopK(
     for (int j = 0; j < inner_dim; ++j) {
       auto* offset_x = x + (i * axis_dim * inner_dim + j);
       vector<std::pair<T, int64_t>> head_data;
-      head_data.reserve(top_k);
-      for (int k = 0; k < top_k && k < axis_dim; ++k) {
+      head_data.reserve(select_dim);
+      for (int k = 0; k < select_dim && k < axis_dim; ++k) {
         head_data.emplace_back(*offset_x, k);
         offset_x += inner_dim;
       }
@@ -49,7 +49,7 @@ void _TopK(
           Comp>
           pq(Comp(), std::move(head_data));
       if (largest > 0) {
-        for (int k = top_k; k < axis_dim; ++k) {
+        for (int k = select_dim; k < axis_dim; ++k) {
           if (pq.top().first < *offset_x) {
             pq.pop();
             pq.emplace(*offset_x, k);
@@ -57,7 +57,7 @@ void _TopK(
           offset_x += inner_dim;
         }
       } else {
-        for (int k = top_k; k < axis_dim; ++k) {
+        for (int k = select_dim; k < axis_dim; ++k) {
           if (pq.top().first > *offset_x) {
             pq.pop();
             pq.emplace(*offset_x, k);
@@ -65,7 +65,8 @@ void _TopK(
           offset_x += inner_dim;
         }
       }
-      auto y_offset = i * top_k * inner_dim + j + (top_k - 1) * inner_dim;
+      auto y_offset =
+          i * select_dim * inner_dim + j + (select_dim - 1) * inner_dim;
       while (!pq.empty()) {
         const auto& p = pq.top();
         value[y_offset] = p.first;
@@ -82,11 +83,11 @@ void _TopK(
 /* ------------------- Launcher Separator ------------------- */
 
 template <>
-void TopK<float16, CPUContext>(
+void TopSelect<float16, CPUContext>(
     const int outer_dim,
     const int inner_dim,
     const int axis_dim,
-    const int top_k,
+    const int select_dim,
     const int largest,
     const float16* x,
     float16* value,
@@ -95,25 +96,39 @@ void TopK<float16, CPUContext>(
   CPU_FP16_NOT_SUPPORTED;
 }
 
-#define DEFINE_KERNEL_LAUNCHER(T)                                           \
-  template <>                                                               \
-  void TopK<T, CPUContext>(                                                 \
-      const int outer_dim,                                                  \
-      const int inner_dim,                                                  \
-      const int axis_dim,                                                   \
-      const int top_k,                                                      \
-      const int largest,                                                    \
-      const T* x,                                                           \
-      T* value,                                                             \
-      int64_t* index,                                                       \
-      CPUContext* ctx) {                                                    \
-    if (largest > 0) {                                                      \
-      _TopK<T, LargestComp<T>>(                                             \
-          outer_dim, inner_dim, axis_dim, top_k, largest, x, value, index); \
-    } else {                                                                \
-      _TopK<T, SmallestComp<T>>(                                            \
-          outer_dim, inner_dim, axis_dim, top_k, largest, x, value, index); \
-    }                                                                       \
+#define DEFINE_KERNEL_LAUNCHER(T)     \
+  template <>                         \
+  void TopSelect<T, CPUContext>(      \
+      const int outer_dim,            \
+      const int inner_dim,            \
+      const int axis_dim,             \
+      const int select_dim,           \
+      const int largest,              \
+      const T* x,                     \
+      T* value,                       \
+      int64_t* index,                 \
+      CPUContext* ctx) {              \
+    if (largest > 0) {                \
+      _TopSelect<T, LargestComp<T>>(  \
+          outer_dim,                  \
+          inner_dim,                  \
+          axis_dim,                   \
+          select_dim,                 \
+          largest,                    \
+          x,                          \
+          value,                      \
+          index);                     \
+    } else {                          \
+      _TopSelect<T, SmallestComp<T>>( \
+          outer_dim,                  \
+          inner_dim,                  \
+          axis_dim,                   \
+          select_dim,                 \
+          largest,                    \
+          x,                          \
+          value,                      \
+          index);                     \
+    }                                 \
   }
 
 DEFINE_KERNEL_LAUNCHER(int8_t);

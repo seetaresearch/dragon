@@ -179,9 +179,8 @@ void DivGradientOp<Context>::DoRunWithType() {
         B.template data<T, Context>(),
         dB->template mutable_data<T, Context>(),
         ctx());
-    math::Scale(
+    math::Neg(
         B_ref.count(),
-        -1.f,
         dB->template data<T, Context>(),
         dB->template mutable_data<T, Context>(),
         ctx());

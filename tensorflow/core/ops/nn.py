@@ -8,8 +8,7 @@
 #     <https://opensource.org/licenses/BSD-2-Clause>
 #
 # ------------------------------------------------------------
-
-"""The nn components."""
+"""NN components."""
 
 from __future__ import absolute_import
 from __future__ import division

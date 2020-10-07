@@ -40,18 +40,6 @@ __global__ void _ComputeCounts(
 
 /* ------------------- Launcher Separator ------------------- */
 
-template <>
-void Unique<float16, CUDAContext>(
-    const int dim,
-    const float16* x,
-    float16* y,
-    int64_t* inverse_index,
-    int64_t* counts,
-    int* num,
-    CUDAContext* ctx) {
-  LOG(FATAL) << "FP16 is unsupported for CUDAContext.";
-}
-
 #define DEFINE_KERNEL_LAUNCHER(T)                                              \
   template <>                                                                  \
   void Unique<T, CUDAContext>(                                                 \
@@ -67,8 +55,10 @@ void Unique<float16, CUDAContext>(
     thrust::device_vector<int> order1(dim), order2(dim);                       \
     thrust::sequence(policy, order1.begin(), order1.end());                    \
     thrust::sequence(policy, order2.begin(), order2.end());                    \
-    thrust::sort_by_key(policy, y, y + dim, order1.begin());                   \
-    auto last = thrust::unique_by_key(policy, y, y + dim, order2.begin());     \
+    thrust::sort_by_key(                                                       \
+        policy, y, y + dim, order1.begin(), math::LessFunctor<T>());           \
+    auto last = thrust::unique_by_key(                                         \
+        policy, y, y + dim, order2.begin(), math::EqualFunctor<T>());          \
     int n = num[0] = last.first - y;                                           \
     if (inverse_index) {                                                       \
       _RemapInverse<<<CUDA_BLOCKS(n), CUDA_THREADS, 0, ctx->cuda_stream()>>>(  \
@@ -84,6 +74,7 @@ DEFINE_KERNEL_LAUNCHER(int8_t);
 DEFINE_KERNEL_LAUNCHER(uint8_t);
 DEFINE_KERNEL_LAUNCHER(int);
 DEFINE_KERNEL_LAUNCHER(int64_t);
+DEFINE_KERNEL_LAUNCHER(float16);
 DEFINE_KERNEL_LAUNCHER(float);
 DEFINE_KERNEL_LAUNCHER(double);
 #undef DEFINE_KERNEL_LAUNCHER

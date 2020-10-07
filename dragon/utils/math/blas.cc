@@ -50,6 +50,31 @@ DEFINE_COPY_FUNC(float);
 DEFINE_COPY_FUNC(double);
 #undef DEFINE_COPY_FUNC
 
+#define DEFINE_COPY_FUNC(T)                                               \
+  template <>                                                             \
+  DRAGON_API void Copy<T, CPUContext>(                                    \
+      const int n,                                                        \
+      const int incx,                                                     \
+      const int incy,                                                     \
+      const T* x,                                                         \
+      T* y,                                                               \
+      CPUContext* ctx) {                                                  \
+    if (x != y && n > 0) {                                                \
+      EigenStridedVectorMap<T>(y, 1, n, EigenInnerStride(incy)) =         \
+          ConstEigenStridedVectorMap<T>(x, 1, n, EigenInnerStride(incx)); \
+    }                                                                     \
+  }
+
+DEFINE_COPY_FUNC(bool);
+DEFINE_COPY_FUNC(int8_t);
+DEFINE_COPY_FUNC(uint8_t);
+DEFINE_COPY_FUNC(int);
+DEFINE_COPY_FUNC(int64_t);
+DEFINE_COPY_FUNC(float16);
+DEFINE_COPY_FUNC(float);
+DEFINE_COPY_FUNC(double);
+#undef DEFINE_COPY_FUNC
+
 template <>
 DRAGON_API void Axpy<float16, CPUContext>(
     const int n,

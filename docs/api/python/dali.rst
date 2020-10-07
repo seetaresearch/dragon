@@ -27,11 +27,11 @@ vm.dali
 .. toctree::
   :hidden:
 
+  dali/Iterator
+  dali/Pipeline
   dali/device
   dali/get_device_type
   dali/get_distributed_info
-  dali/Iterator
-  dali/Pipeline
 
 .. raw:: html
 

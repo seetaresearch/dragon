@@ -18,8 +18,8 @@ vm.torch.autograd
 .. toctree::
   :hidden:
 
-  autograd/backward
   autograd/Function
+  autograd/backward
 
 .. raw:: html
 

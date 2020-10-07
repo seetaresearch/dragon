@@ -1513,6 +1513,29 @@ def sin(self):
     return math_funcs.sin(self)
 
 
+def sort(self, dim=-1, descending=False):
+    """Return the sorted elements.
+
+    Parameters
+    ----------
+    dim : int, optional, default=-1
+        The dimension to sort elements.
+    descending : bool, optional, default=False
+        Sort in the descending order or not.
+
+    Returns
+    -------
+    Sequence[dragon.vm.torch.Tensor]
+        The value and index tensor.
+
+    See Also
+    --------
+    `torch.sort(...)`_
+
+    """
+    return array_funcs.sort(self, dim, descending)
+
+
 def sqrt(self):
     r"""Compute the square root.
 
@@ -1660,18 +1683,18 @@ def sub_(self, other):
     return math_funcs.sub(self, other, self)
 
 
-def topk(self, k, dim=None, largest=True, sorted=True):
+def topk(self, k, dim=-1, largest=True, sorted=True):
     """Return the top-K largest or smallest elements.
 
     Parameters
     ----------
     k : int
         The number of top elements to select.
-    dim : int, optional
-        The dimension to reduce.
-    largest : bool, optional
+    dim : int, optional, default=-1
+        The dimension to select elements.
+    largest : bool, optional, default=True
         Return largest or smallest elements.
-    sorted : bool, optional
+    sorted : bool, optional, default=True
         Whether to return in the sorted order.
 
     Returns
@@ -1939,6 +1962,7 @@ Tensor.rsqrt_ = rsqrt_
 Tensor.sign = sign
 Tensor.sign_ = sign_
 Tensor.sin = sin
+Tensor.sort = sort
 Tensor.sqrt = sqrt
 Tensor.sqrt_ = sqrt_
 Tensor.squeeze = squeeze

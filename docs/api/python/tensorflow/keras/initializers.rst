@@ -46,7 +46,6 @@ initializers
   :hidden:
 
   initializers/Constant
-  initializers/get
   initializers/GlorotNormal
   initializers/GlorotUniform
   initializers/Initializer
@@ -56,6 +55,7 @@ initializers
   initializers/TruncatedNormal
   initializers/VarianceScaling
   initializers/Zeros
+  initializers/get
 
 .. raw:: html
 

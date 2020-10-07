@@ -795,6 +795,50 @@ def slice(input, starts, sizes):
         .apply(input, starts, sizes)
 
 
+def sort(input, dim=-1, descending=False, out=None):
+    """Return the sorted elements along the given dimension.
+
+    By default, the last dimension is chosen:
+
+    ```python
+    x = torch.tensor([[1, 2, 3], [3, 2, 1]])
+    value1, index1 = torch.sort(x)
+    value2, index2 = torch.sort(x, dim=1)  # Equivalent
+    ```
+
+    Sort in the descending order if ``descending`` is ``True``:
+
+    ```python
+    x = torch.tensor([1, 2, 3])
+    _, index1 = torch.sort(-x)
+    _, index2 = torch.sort(x, descending=True)  # Equivalent
+    ```
+
+    Parameters
+    ----------
+    input : dragon.vm.torch.Tensor
+        The input tensor.
+    dim : int, optional, default=-1
+         The dimension to sort elements.
+    descending : bool, optional, default=False
+        Sort in the descending order or not.
+    out : Sequence[dragon.vm.torch.Tensor], optional
+        The optional output value and index.
+
+    Returns
+    -------
+    Sequence[dragon.vm.torch.Tensor]
+        The value and index tensor.
+
+    """
+    return _functions.Sort \
+        .instantiate(
+            input.device,
+            axis=dim,
+            descending=descending,
+        ).apply(input, out if out else (None, None))
+
+
 def split(tensor, split_size_or_sections, dim=0):
     """Split input into chunks along the given dimension.
 
@@ -960,10 +1004,10 @@ def sum(input, dim=None, keepdim=False, out=None):
     return _reduce(input, 'Sum', dim, keepdim, out)
 
 
-def topk(input, k, dim=None, largest=True, sorted=True, out=None):
+def topk(input, k, dim=-1, largest=True, sorted=True, out=None):
     """Return the top-K largest or smallest elements along the given dimension.
 
-    If ``dim`` is not given, the last dimension is chosen:
+    By default, the last dimension is chosen:
 
     ```python
     x = torch.tensor([[1, 2, 3], [3, 2, 1]])
@@ -974,9 +1018,9 @@ def topk(input, k, dim=None, largest=True, sorted=True, out=None):
     If ``largest`` is ``False``, the k smallest elements are returned:
 
     ```python
-    x = torch.tensor([[1, 2, 3], [3, 2, 1]])
-    _, index1 = torch.topk(x, 1, largest=False)
-    _, index2 = torch.topk(-x, 1, largest=True)  # Equivalent
+    x = torch.tensor([1, 2, 3])
+    _, index1 = torch.topk(-x, 1)
+    _, index2 = torch.topk(x, 1, largest=False)  # Equivalent
     ```
 
     Parameters
@@ -985,8 +1029,8 @@ def topk(input, k, dim=None, largest=True, sorted=True, out=None):
         The input tensor.
     k : int
         The number of top elements to select.
-    dim : int, optional
-         The dimension to reduce.
+    dim : int, optional, default=-1
+         The dimension to select elements.
     largest : bool, optional
         Return largest or smallest elements.
     sorted : bool, optional
@@ -1000,8 +1044,6 @@ def topk(input, k, dim=None, largest=True, sorted=True, out=None):
         The value and index tensor.
 
     """
-    if dim is None:
-        dim = input.ndimension() - 1
     return _functions.TopK \
         .instantiate(
             input.device,

@@ -483,6 +483,21 @@ class TestTensorOps(OpTestCase):
         x = new_tensor(data)
         self.assertEqual(x.sin(), np.sin(data))
 
+    def test_sort(self):
+        entries = [(None, True),
+                   (0, True),
+                   (-1, True),
+                   (0, False),
+                   (-1, False)]
+        for axis, descending in entries:
+            data = uniform((5, 10))
+            x = new_tensor(data)
+            y = x.sort(axis, descending)[1]
+            axis = axis if axis is not None else -1
+            result = np.argsort(-data if descending else data, axis=axis)
+            result = np.take(result, np.arange(data.shape[axis]), axis=axis)
+            self.assertEqual(y, result)
+
     def test_sqrt(self):
         data = np.array([4., 9., 16], 'float32')
         x = new_tensor(data)

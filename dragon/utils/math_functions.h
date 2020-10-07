@@ -16,6 +16,7 @@
 #include "dragon/utils/math/blas.h"
 #include "dragon/utils/math/broadcast.h"
 #include "dragon/utils/math/elementwise.h"
+#include "dragon/utils/math/functional.h"
 #include "dragon/utils/math/random.h"
 #include "dragon/utils/math/reduce.h"
 #include "dragon/utils/math/utils.h"

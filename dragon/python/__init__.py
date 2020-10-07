@@ -72,6 +72,7 @@ from dragon.core.ops.array_ops import repeat
 from dragon.core.ops.array_ops import reshape
 from dragon.core.ops.array_ops import shape
 from dragon.core.ops.array_ops import slice
+from dragon.core.ops.array_ops import sort
 from dragon.core.ops.array_ops import split
 from dragon.core.ops.array_ops import squeeze
 from dragon.core.ops.array_ops import stack

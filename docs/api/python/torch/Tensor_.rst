@@ -397,6 +397,10 @@ size
 ####
 .. automethod:: dragon.vm.torch.Tensor.size
 
+sort
+####
+.. automethod:: dragon.vm.torch.Tensor.sort
+
 sqrt
 ####
 .. automethod:: dragon.vm.torch.Tensor.sqrt
@@ -503,6 +507,7 @@ zero\_
 .. _torch.rsqrt(...): rsqrt.html
 .. _torch.sign(...): sign.html
 .. _torch.sin(...): sin.html
+.. _torch.sort(...): sort.html
 .. _torch.sqrt(...): sqrt.html
 .. _torch.squeeze(...): squeeze.html
 .. _torch.sub(...): sub.html

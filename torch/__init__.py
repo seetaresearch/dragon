@@ -69,6 +69,7 @@ from dragon.vm.torch.core.ops.array.functional import one_hot
 from dragon.vm.torch.core.ops.array.functional import permute
 from dragon.vm.torch.core.ops.array.functional import repeat
 from dragon.vm.torch.core.ops.array.functional import reshape
+from dragon.vm.torch.core.ops.array.functional import sort
 from dragon.vm.torch.core.ops.array.functional import split
 from dragon.vm.torch.core.ops.array.functional import squeeze
 from dragon.vm.torch.core.ops.array.functional import stack

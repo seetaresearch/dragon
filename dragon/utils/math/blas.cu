@@ -18,6 +18,14 @@ __global__ void _Scale(const int n, const T alpha, const T* x, T* y) {
 }
 
 template <typename T>
+__global__ void
+_Copy(const int n, const int incx, const int incy, const T* x, T* y) {
+  CUDA_1D_KERNEL_LOOP(i, n) {
+    y[i * incy] = x[i * incx];
+  }
+}
+
+template <typename T>
 __global__ void _Axpy(const int n, const T alpha, const T* x, T* y) {
   CUDA_1D_KERNEL_LOOP(i, n) {
     y[i] += (alpha * x[i]);
@@ -198,6 +206,47 @@ DEFINE_COPY_FUNC(int64_t);
 DEFINE_COPY_FUNC(float16);
 DEFINE_COPY_FUNC(float);
 DEFINE_COPY_FUNC(double);
+#undef DEFINE_COPY_FUNC
+
+#define DEFINE_COPY_FUNC(T)                                           \
+  template <>                                                         \
+  DRAGON_API void Copy<T, CUDAContext>(                               \
+      const int n,                                                    \
+      const int incx,                                                 \
+      const int incy,                                                 \
+      const T* x,                                                     \
+      T* y,                                                           \
+      CUDAContext* ctx) {                                             \
+    if (x != y && n > 0) {                                            \
+      _Copy<<<CUDA_BLOCKS(n), CUDA_THREADS, 0, ctx->cuda_stream()>>>( \
+          n, incx, incy, x, y);                                       \
+    }                                                                 \
+  }
+
+DEFINE_COPY_FUNC(bool);
+DEFINE_COPY_FUNC(int8_t);
+DEFINE_COPY_FUNC(uint8_t);
+DEFINE_COPY_FUNC(int);
+DEFINE_COPY_FUNC(int64_t);
+DEFINE_COPY_FUNC(float16);
+#undef DEFINE_COPY_FUNC
+
+#define DEFINE_COPY_FUNC(T, cublas_func)                      \
+  template <>                                                 \
+  DRAGON_API void Copy<T, CUDAContext>(                       \
+      const int n,                                            \
+      const int incx,                                         \
+      const int incy,                                         \
+      const T* x,                                             \
+      T* y,                                                   \
+      CUDAContext* ctx) {                                     \
+    if (x != y && n > 0) {                                    \
+      cublas_func(ctx->cublas_handle(), n, x, incx, y, incy); \
+    }                                                         \
+  }
+
+DEFINE_COPY_FUNC(float, cublasScopy);
+DEFINE_COPY_FUNC(double, cublasDcopy);
 #undef DEFINE_COPY_FUNC
 
 #define DEFINE_AXPY_FUNC(T)                                                 \

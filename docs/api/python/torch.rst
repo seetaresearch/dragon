@@ -214,6 +214,9 @@ vm.torch
   `sin(...) <torch/sin.html>`_
   : Compute the sin of input.
 
+  `sort(...) <torch/sort.html>`_
+  : Return the sorted elements along the given dimension.
+
   `split(...) <torch/split.html>`_
   : Split input into chunks along the given dimension.
 
@@ -256,6 +259,8 @@ vm.torch
 .. toctree::
   :hidden:
 
+  torch/Size
+  torch/Tensor_
   torch/abs
   torch/add
   torch/arange
@@ -322,14 +327,13 @@ vm.torch
   torch/set_grad_enabled
   torch/sign
   torch/sin
-  torch/Size
+  torch/sort
   torch/split
   torch/sqrt
   torch/squeeze
   torch/stack
   torch/sub
   torch/sum
-  torch/Tensor_
   torch/tensor
   torch/topk
   torch/unique

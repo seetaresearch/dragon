@@ -1273,6 +1273,54 @@ def slice(inputs, starts, sizes, **kwargs):
 
 
 @OpSchema.num_inputs(1)
+def sort(inputs, axis=-1, descending=False, **kwargs):
+    """Return the sorted elements along the given axis.
+
+    By default, the last axis is chosen:
+
+    ```python
+    x = dragon.constant([[1, 2, 3], [3, 2, 1]])
+    value1, index1 = dragon.sort(x)
+    value2, index2 = dragon.sort(x, axis=1)  # Equivalent
+    ```
+
+    Sort in the inverse order if ``descending`` is **True**:
+
+    ```python
+    x = dragon.constant([1, 2, 3])
+    _, index1 = dragon.sort(-x)
+    _, index2 = dragon.sort(x, descending=True)  # Equivalent
+    ```
+
+    Parameters
+    ----------
+    inputs : dragon.Tensor
+        The input tensor.
+    axis : int, optional, default=-1
+        The axis to sort elements.
+    descending : bool, optional, default=False
+        Sort in the descending order or not.
+
+    Returns
+    -------
+    Sequence[dragon.vm.torch.Tensor]
+        The value and index tensor.
+
+    """
+    args = parse_args(locals())
+    op_lib = array_ops_lib.Sort
+    if context.executing_eagerly():
+        return op_lib \
+            .instantiate(
+                axis=axis,
+                descending=descending,
+            ).apply([inputs])
+    else:
+        args['num_outputs'] = 2
+        return op_lib.blend(**args)
+
+
+@OpSchema.num_inputs(1)
 def split(
     inputs,
     num_or_size_splits,
@@ -1548,10 +1596,10 @@ def transpose(inputs, perm=None, **kwargs):
 
 
 @OpSchema.num_inputs(1)
-def top_k(inputs, k=1, axis=None, largest=True, sorted=True, **kwargs):
+def top_k(inputs, k=1, axis=-1, largest=True, sorted=True, **kwargs):
     """Return the top-K largest or smallest elements along the given axis.
 
-    If ``axis`` is not given, the last axis is chosen:
+    By default, the last axis is chosen:
 
     ```python
     x = dragon.constant([[1, 2, 3], [3, 2, 1]])
@@ -1562,9 +1610,9 @@ def top_k(inputs, k=1, axis=None, largest=True, sorted=True, **kwargs):
     If ``largest`` is **False**, the k smallest elements are returned:
 
     ```python
-    x = dragon.constant([[1, 2, 3], [3, 2, 1]])
-    _, index1 = dragon.math.top_k(x, largest=False)
-    _, index2 = dragon.math.top_k(-x, largest=True)  # Equivalent
+    x = dragon.constant([1, 2, 3])
+    _, index1 = dragon.math.top_k(-x)
+    _, index2 = dragon.math.top_k(x, largest=False)  # Equivalent
     ```
 
     Parameters
@@ -1573,11 +1621,11 @@ def top_k(inputs, k=1, axis=None, largest=True, sorted=True, **kwargs):
         The input tensor.
     k : int, optional, default=1
         The number of top elements to select.
-    axis : int, optional
-        The axis to reduce.
+    axis : int, optional, default=-1
+        The axis to select elements.
     largest : bool, optional, default=True
         Return largest or smallest elements.
-    sorted : bool, optional
+    sorted : bool, optional, default=True
         Whether to return in the sorted order.
 
     Returns

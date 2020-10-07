@@ -49,16 +49,16 @@ losses
   :hidden:
 
   losses/BinaryCrossentropy
-  losses/binary_crossentropy
   losses/CategoricalCrossentropy
-  losses/categorical_crossentropy
-  losses/get
   losses/Loss
   losses/MeanAbsoluteError
   losses/MeanSquaredError
+  losses/SparseCategoricalCrossentropy
+  losses/binary_crossentropy
+  losses/categorical_crossentropy
+  losses/get
   losses/mean_absolute_error
   losses/mean_squared_error
-  losses/SparseCategoricalCrossentropy
   losses/sparse_categorical_crossentropy
 
 .. raw:: html

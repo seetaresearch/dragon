@@ -7,9 +7,8 @@ template <class Context>
 template <typename T>
 void NegOp<Context>::DoRunWithType() {
   auto &X = Input(0), *Y = Output(0);
-  math::Scale(
+  math::Neg(
       X.count(),
-      -1.f,
       X.template data<T, Context>(),
       Y->ReshapeLike(X)->template mutable_data<T, Context>(),
       ctx());
@@ -25,9 +24,8 @@ template <class Context>
 template <typename T>
 void NegGradientOp<Context>::DoRunWithType() {
   auto &dY = Input(0), *dX = Output(0);
-  math::Scale(
+  math::Neg(
       dY.count(),
-      -1.f,
       dY.template data<T, Context>(),
       dX->ReshapeLike(dY)->template mutable_data<T, Context>(),
       ctx());

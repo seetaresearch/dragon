@@ -30,12 +30,12 @@ regularizers
 .. toctree::
   :hidden:
 
-  regularizers/get
   regularizers/L1
   regularizers/L1L2
-  regularizers/l1_l2
   regularizers/L2
   regularizers/Regularizer
+  regularizers/get
+  regularizers/l1_l2
 
 .. raw:: html
 

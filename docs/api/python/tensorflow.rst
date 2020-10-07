@@ -18,6 +18,9 @@ vm.tensorflow
   Functions
   #########
 
+  `argsort(...) <tensorflow/argsort.html>`_
+  : Return the index of sorted elements along the given axis.
+
   `broadcast_to(...) <dragon/broadcast_to.html>`_
   : Broadcast input according to a given shape.
 
@@ -84,6 +87,9 @@ vm.tensorflow
   `slice(...) <tensorflow/slice.html>`_
   : Select the elements according to the given sections.
 
+  `sort(...) <tensorflow/sort.html>`_
+  : Return the sorted elements along the given axis.
+
   `split(...) <tensorflow/split.html>`_
   : Split input into chunks along the given axis.
 
@@ -108,6 +114,10 @@ vm.tensorflow
 .. toctree::
   :hidden:
 
+  tensorflow/GradientTape
+  tensorflow/TensorShape
+  tensorflow/TensorSpec
+  tensorflow/argsort
   tensorflow/broadcast_to
   tensorflow/cast
   tensorflow/clip_by_value
@@ -120,7 +130,6 @@ vm.tensorflow
   tensorflow/function
   tensorflow/gather
   tensorflow/gradients
-  tensorflow/GradientTape
   tensorflow/identity
   tensorflow/name_scope
   tensorflow/ones
@@ -131,10 +140,9 @@ vm.tensorflow
   tensorflow/reshape
   tensorflow/shape
   tensorflow/slice
+  tensorflow/sort
   tensorflow/split
   tensorflow/squeeze
-  tensorflow/TensorShape
-  tensorflow/TensorSpec
   tensorflow/transpose
   tensorflow/unique
   tensorflow/unique_with_counts

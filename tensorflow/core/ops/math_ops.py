@@ -12,7 +12,7 @@
 #     <https://github.com/tensorflow/tensorflow/blob/master/tensorflow/python/ops/math_ops.py>
 #
 # ------------------------------------------------------------
-"""The math ops."""
+"""Math ops."""
 
 from __future__ import absolute_import
 from __future__ import division

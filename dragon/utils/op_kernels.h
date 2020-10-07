@@ -308,7 +308,7 @@ void IndexSelect(
     const int outer_dim,
     const int inner_dim,
     const int axis_dim,
-    const int num_indices,
+    const int select_dim,
     const int64_t* indices,
     const T* x,
     T* y,
@@ -319,7 +319,7 @@ void IndexSelectGrad(
     const int outer_dim,
     const int inner_dim,
     const int axis_dim,
-    const int num_indices,
+    const int select_dim,
     const int64_t* index,
     const T* dy,
     T* dx,
@@ -539,11 +539,11 @@ void TransposeGrad(
 /* array.top_k */
 
 template <typename T, class Context>
-void TopK(
+void TopSelect(
     const int outer_dim,
     const int inner_dim,
     const int axis_dim,
-    const int top_k,
+    const int topk,
     const int largest,
     const T* x,
     T* value,
@@ -551,6 +551,7 @@ void TopK(
     Context* ctx);
 
 /* array.unique */
+
 template <typename T, class Context>
 void Unique(
     const int dim,
@@ -562,6 +563,7 @@ void Unique(
     Context* ctx);
 
 /* control_flow.assgin */
+
 template <typename T, class Context>
 void Assign(
     const int num_dims,

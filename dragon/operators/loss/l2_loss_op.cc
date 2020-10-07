@@ -103,12 +103,10 @@ void L2LossGradientOp<Context>::DoRunWithType() {
 
   // Gradient w.r.t. the second input
   if (OutputSize() > 1 && Output(1)->has_name()) {
-    Output(1)->ReshapeLike(Input(1));
-    math::Scale(
+    math::Neg(
         dX->count(),
-        -1.f,
         dx,
-        Output(1)->template mutable_data<T, Context>(),
+        Output(1)->ReshapeLike(Input(1))->template mutable_data<T, Context>(),
         ctx());
   }
 }

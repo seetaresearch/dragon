@@ -1668,6 +1668,27 @@ class Tensor(object):
         s = cpp.Size(self._impl.dims)
         return s[axis] if axis is not None else s
 
+    def sort(self, dim=-1, descending=False):
+        """Return the sorted elements.
+
+        Parameters
+        ----------
+        dim : int, optional, default=-1
+            The dimension to sort elements.
+        descending : bool, optional, default=False
+            Sort in the descending order or not.
+
+        Returns
+        -------
+        Sequence[dragon.vm.torch.Tensor]
+            The value and index tensor.
+
+        See Also
+        --------
+        `torch.sort(...)`_
+
+        """
+
     def sqrt(self):
         r"""Compute the square root.
 
@@ -1849,15 +1870,15 @@ class Tensor(object):
             return self.type(dtype)
         return self
 
-    def topk(self, k, dim=None, largest=True, sorted=True):
+    def topk(self, k, dim=-1, largest=True, sorted=True):
         """Return the top-K largest or smallest elements.
 
         Parameters
         ----------
         k : int
             The number of top elements to select.
-        dim : int, optional
-            The dimension to reduce.
+        dim : int, optional, default=-1
+            The dimension to select elements.
         largest : bool, optional
             Return largest or smallest elements.
         sorted : bool, optional

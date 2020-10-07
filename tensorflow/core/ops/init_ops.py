@@ -12,7 +12,7 @@
 #     <https://github.com/tensorflow/tensorflow/blob/master/tensorflow/python/ops/init_ops.py>
 #
 # ------------------------------------------------------------
-"""The init ops."""
+"""Init ops."""
 
 from __future__ import absolute_import
 from __future__ import division

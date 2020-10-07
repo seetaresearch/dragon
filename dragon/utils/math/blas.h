@@ -32,6 +32,15 @@ template <typename T, class Context>
 DRAGON_API void Copy(const int n, const T* x, T* y, Context* ctx);
 
 template <typename T, class Context>
+DRAGON_API void Copy(
+    const int n,
+    const int incx,
+    const int incy,
+    const T* x,
+    T* y,
+    Context* ctx);
+
+template <typename T, class Context>
 DRAGON_API void
 Axpy(const int n, const float alpha, const T* x, T* y, Context* ctx);
 

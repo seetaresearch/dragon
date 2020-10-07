@@ -12,7 +12,7 @@
 #     <https://github.com/tensorflow/tensorflow/blob/master/tensorflow/python/ops/array_ops.py>
 #
 # ------------------------------------------------------------
-"""The array ops."""
+"""Array ops."""
 
 from __future__ import absolute_import
 from __future__ import division

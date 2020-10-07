@@ -14,17 +14,17 @@ __global__ void _IndexSelect(
     const int nthreads,
     const int inner_dim,
     const int axis_dim,
-    const int num_indices,
+    const int select_dim,
     const int64_t* indices,
     const T* x,
     T* y) {
   CUDA_1D_KERNEL_LOOP(yi, nthreads) {
     const int j = yi % inner_dim;
-    const int i = yi / inner_dim / num_indices;
+    const int i = yi / inner_dim / select_dim;
 #if __CUDA_ARCH__ >= 350
-    int index = __ldg(indices + ((yi / inner_dim) % num_indices));
+    int index = __ldg(indices + ((yi / inner_dim) % select_dim));
 #else
-    int index = indices[(yi / inner_dim) % num_indices];
+    int index = indices[(yi / inner_dim) % select_dim];
 #endif
     index = index >= 0 ? index : index + axis_dim;
     y[yi] = x[(i * axis_dim + index) * inner_dim + j];
@@ -36,7 +36,7 @@ __global__ void _IndexSelectGrad(
     const int nthreads,
     const int inner_dim,
     const int axis_dim,
-    const int num_indices,
+    const int select_dim,
     const int64_t* indices,
     const T* dy,
     T* dx) {
@@ -44,8 +44,8 @@ __global__ void _IndexSelectGrad(
     const int i = ti / inner_dim;
     const int j = ti % inner_dim;
     const int c = i * axis_dim * inner_dim + j;
-    const T* offset_dy = dy + i * num_indices * inner_dim + j;
-    for (int k = 0; k < num_indices; ++k) {
+    const T* offset_dy = dy + i * select_dim * inner_dim + j;
+    for (int k = 0; k < select_dim; ++k) {
 #if __CUDA_ARCH__ >= 350
       int index = __ldg(indices + k);
 #else
@@ -63,7 +63,7 @@ __global__ void _IndexSelectGrad<half>(
     const int nthreads,
     const int inner_dim,
     const int axis_dim,
-    const int num_indices,
+    const int select_dim,
     const int64_t* indices,
     const half* dy,
     half* dx) {
@@ -72,8 +72,8 @@ __global__ void _IndexSelectGrad<half>(
     const int i = ti / inner_dim;
     const int j = ti % inner_dim;
     const int c = i * axis_dim * inner_dim + j;
-    const half* offset_dy = dy + i * num_indices * inner_dim + j;
-    for (int k = 0; k < num_indices; ++k) {
+    const half* offset_dy = dy + i * select_dim * inner_dim + j;
+    for (int k = 0; k < select_dim; ++k) {
       int index = __ldg(indices + j);
       index = index >= 0 ? index : index + axis_dim;
       index = c + index * inner_dim;
@@ -93,7 +93,7 @@ void IndexSelectGrad<float16, CUDAContext>(
     const int outer_dim,
     const int inner_dim,
     const int axis_dim,
-    const int num_indices,
+    const int select_dim,
     const int64_t* indices,
     const float16* dy,
     float16* dx,
@@ -107,50 +107,50 @@ void IndexSelectGrad<float16, CUDAContext>(
       nthreads,
       inner_dim,
       axis_dim,
-      num_indices,
+      select_dim,
       indices,
       reinterpret_cast<const half*>(dy),
       reinterpret_cast<half*>(dx));
 } // IndexSelectGrad
 
-#define DEFINE_KERNEL_LAUNCHER(T)                                   \
-  template <>                                                       \
-  void IndexSelect<T, CUDAContext>(                                 \
-      const int outer_dim,                                          \
-      const int inner_dim,                                          \
-      const int axis_dim,                                           \
-      const int num_indices,                                        \
-      const int64_t* indices,                                       \
-      const T* x,                                                   \
-      T* y,                                                         \
-      CUDAContext* ctx) {                                           \
-    const int nthreads = outer_dim * num_indices * inner_dim;       \
-    _IndexSelect<<<                                                 \
-        CUDA_BLOCKS(nthreads),                                      \
-        CUDA_THREADS,                                               \
-        0,                                                          \
-        ctx->cuda_stream()>>>(                                      \
-        nthreads, inner_dim, axis_dim, num_indices, indices, x, y); \
+#define DEFINE_KERNEL_LAUNCHER(T)                                  \
+  template <>                                                      \
+  void IndexSelect<T, CUDAContext>(                                \
+      const int outer_dim,                                         \
+      const int inner_dim,                                         \
+      const int axis_dim,                                          \
+      const int select_dim,                                        \
+      const int64_t* indices,                                      \
+      const T* x,                                                  \
+      T* y,                                                        \
+      CUDAContext* ctx) {                                          \
+    const int nthreads = outer_dim * select_dim * inner_dim;       \
+    _IndexSelect<<<                                                \
+        CUDA_BLOCKS(nthreads),                                     \
+        CUDA_THREADS,                                              \
+        0,                                                         \
+        ctx->cuda_stream()>>>(                                     \
+        nthreads, inner_dim, axis_dim, select_dim, indices, x, y); \
   }
 
-#define DEFINE_GRAD_KERNEL_LAUNCHER(T)                                \
-  template <>                                                         \
-  void IndexSelectGrad<T, CUDAContext>(                               \
-      const int outer_dim,                                            \
-      const int inner_dim,                                            \
-      const int axis_dim,                                             \
-      const int num_indices,                                          \
-      const int64_t* indices,                                         \
-      const T* dy,                                                    \
-      T* dx,                                                          \
-      CUDAContext* ctx) {                                             \
-    const int nthreads = outer_dim * inner_dim;                       \
-    _IndexSelectGrad<<<                                               \
-        CUDA_BLOCKS(nthreads),                                        \
-        CUDA_THREADS,                                                 \
-        0,                                                            \
-        ctx->cuda_stream()>>>(                                        \
-        nthreads, inner_dim, axis_dim, num_indices, indices, dy, dx); \
+#define DEFINE_GRAD_KERNEL_LAUNCHER(T)                               \
+  template <>                                                        \
+  void IndexSelectGrad<T, CUDAContext>(                              \
+      const int outer_dim,                                           \
+      const int inner_dim,                                           \
+      const int axis_dim,                                            \
+      const int select_dim,                                          \
+      const int64_t* indices,                                        \
+      const T* dy,                                                   \
+      T* dx,                                                         \
+      CUDAContext* ctx) {                                            \
+    const int nthreads = outer_dim * inner_dim;                      \
+    _IndexSelectGrad<<<                                              \
+        CUDA_BLOCKS(nthreads),                                       \
+        CUDA_THREADS,                                                \
+        0,                                                           \
+        ctx->cuda_stream()>>>(                                       \
+        nthreads, inner_dim, axis_dim, select_dim, indices, dy, dx); \
   }
 
 DEFINE_KERNEL_LAUNCHER(bool);

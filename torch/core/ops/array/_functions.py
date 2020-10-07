@@ -428,6 +428,26 @@ class Slice(function.Function):
         )
 
 
+class Sort(function.Function):
+    def __init__(self, key, dev, **kwargs):
+        super(Sort, self).__init__(key, dev, **kwargs)
+        self.axis = kwargs.get('axis', -1)
+        self.descending = kwargs.get('descending', False)
+
+    def attributes(self):
+        return {
+            'op_type': 'Sort',
+            'arguments': {
+                'axis': self.axis,
+                'descending': self.descending,
+            }
+        }
+
+    def forward(self, input, outputs=(None, None)):
+        outputs = [self.alloc(outputs[0]), self.alloc(outputs[1])]
+        return self.dispatch([input], outputs, no_grad=True)
+
+
 class Split(function.Function):
     def __init__(self, key, dev, **kwargs):
         super(Split, self).__init__(key, dev, **kwargs)
@@ -546,7 +566,7 @@ class TopK(function.Function):
     def __init__(self, key, dev, **kwargs):
         super(TopK, self).__init__(key, dev, **kwargs)
         self.k = kwargs.get('k', 1)
-        self.axis = kwargs.get('axis', None)
+        self.axis = kwargs.get('axis', -1)
         self.largest = kwargs.get('largest', True)
         self.sorted = kwargs.get('sorted', True)
 
