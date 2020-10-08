@@ -44,6 +44,7 @@ void SyncBatchNormOp<Context>::TrainingImpl() {
       ctx());
 
   // Compute D(X) = E(X^2) - E(X)^2
+  ctx()->FinishDeviceComputation();
   if (enable_nccl_) {
 #ifdef USE_NCCL
     auto nccl_comm_ = this->nccl_comm();
@@ -138,6 +139,7 @@ void SyncBatchNormGradientOp<Context>::TrainingImpl() {
       N_, C_, S_, data_format(), x, mu, rsig, gamma, dy, dgamma, dbeta, ctx());
 
   // Gradient w.r.t. gamma and beta of global batch
+  ctx()->FinishDeviceComputation();
   if (enable_nccl_) {
 #ifdef USE_NCCL
     auto nccl_comm_ = this->nccl_comm();

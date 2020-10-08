@@ -709,7 +709,7 @@ class TestArrayOps(OpTestCase):
                     self.assertEqual(x.shape, (4,))
 
     @unittest.skipIf(not TEST_CUDA, 'CUDA unavailable')
-    def test_range_cuda(self):
+    def test_permutation_cuda(self):
         with dragon.device('cuda'):
             self.test_permutation()
 
