@@ -325,6 +325,18 @@ void IndexSelectGrad(
     T* dx,
     Context* ctx);
 
+/* array.linspace */
+
+template <typename T, class Context>
+void LinSpace(
+    const int rows,
+    const int cols,
+    const int axis,
+    const double* start,
+    const double* end,
+    T* y,
+    Context* ctx);
+
 /* array.masked_select */
 
 template <typename IndexType, typename ValueType, class Context>
@@ -420,8 +432,8 @@ void Permutation(const int count, T* y, uint32_t* r, Context* ctx);
 template <typename T, class Context>
 void Range(
     const int count,
-    const float start,
-    const float delta,
+    const double start,
+    const double delta,
     T* y,
     Context* ctx);
 

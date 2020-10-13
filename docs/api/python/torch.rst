@@ -45,6 +45,9 @@ vm.torch
   `argmin(...) <torch/argmin.html>`_
   : Return the index of minimum elements along the given dimension.
 
+  `argsort(...) <torch/argsort.html>`_
+  : Return the index of sorted elements along the given dimension.
+
   `axpby(...) <torch/axpby.html>`_
   : Compute the element-wise addition from input to output.
 
@@ -123,6 +126,9 @@ vm.torch
 
   `le(...) <torch/le.html>`_
   : Compute the element-wise less-equal comparison.
+
+  `linspace(...) <torch/linspace.html>`_
+  : Generate evenly spaced values within intervals along the given axis.
 
   `log(...) <torch/log.html>`_
   : Compute the natural logarithm of input.
@@ -241,6 +247,9 @@ vm.torch
   `topk(...) <torch/topk.html>`_
   : Return the top-K largest or smallest elements along the given dimension.
 
+  `transpose(...) <torch/transpose.html>`_
+  : Return a new tensor with two dimensions swapped.
+
   `unique(...) <torch/unique.html>`_
   : Return the unique elements of input.
 
@@ -266,6 +275,7 @@ vm.torch
   torch/arange
   torch/argmax
   torch/argmin
+  torch/argsort
   torch/axpby
   torch/bitwise_not
   torch/bitwise_xor
@@ -295,6 +305,7 @@ vm.torch
   torch/isinf
   torch/isnan
   torch/le
+  torch/linspace
   torch/log
   torch/logsumexp
   torch/lt
@@ -336,6 +347,7 @@ vm.torch
   torch/sum
   torch/tensor
   torch/topk
+  torch/transpose
   torch/unique
   torch/unsqueeze
   torch/where

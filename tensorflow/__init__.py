@@ -100,6 +100,7 @@ from dragon.vm.tensorflow.core.ops.math_ops import divide
 from dragon.vm.tensorflow.core.ops.math_ops import equal
 from dragon.vm.tensorflow.core.ops.math_ops import exp
 from dragon.vm.tensorflow.core.ops.math_ops import less
+from dragon.vm.tensorflow.core.ops.math_ops import linspace
 from dragon.vm.tensorflow.core.ops.math_ops import matmul
 from dragon.vm.tensorflow.core.ops.math_ops import multiply
 from dragon.vm.tensorflow.core.ops.math_ops import pow

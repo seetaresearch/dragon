@@ -48,6 +48,7 @@ from dragon.vm.torch.core.cpp import from_numpy
 from dragon.vm.torch.core.ops import tensorbind as _
 from dragon.vm.torch.core.ops.array.functional import argmax
 from dragon.vm.torch.core.ops.array.functional import argmin
+from dragon.vm.torch.core.ops.array.functional import argsort
 from dragon.vm.torch.core.ops.array.functional import assign
 from dragon.vm.torch.core.ops.array.functional import cat
 from dragon.vm.torch.core.ops.array.functional import channel_affine
@@ -75,11 +76,13 @@ from dragon.vm.torch.core.ops.array.functional import squeeze
 from dragon.vm.torch.core.ops.array.functional import stack
 from dragon.vm.torch.core.ops.array.functional import sum
 from dragon.vm.torch.core.ops.array.functional import topk
+from dragon.vm.torch.core.ops.array.functional import transpose
 from dragon.vm.torch.core.ops.array.functional import unique
 from dragon.vm.torch.core.ops.array.functional import unsqueeze
 from dragon.vm.torch.core.ops.array.functional import where
 from dragon.vm.torch.core.ops.init.functional import arange
 from dragon.vm.torch.core.ops.init.functional import eye
+from dragon.vm.torch.core.ops.init.functional import linspace
 from dragon.vm.torch.core.ops.init.functional import ones
 from dragon.vm.torch.core.ops.init.functional import ones_like
 from dragon.vm.torch.core.ops.init.functional import rand

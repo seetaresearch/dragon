@@ -397,6 +397,13 @@ class TestTensorOps(OpTestCase):
                 self.assertEqual(x.permute(), np.transpose(data))
             else:
                 self.assertEqual(x.permute(*perm), np.transpose(data, perm))
+        entries = [(0, 1), (0, 2), (1, 2)]
+        for dim0, dim1 in entries:
+            data = arange((2, 3, 4))
+            x = new_tensor(data)
+            perm = list(range(len(data.shape)))
+            perm[dim0], perm[dim1] = perm[dim1], perm[dim0]
+            self.assertEqual(x.transpose(dim0, dim1), np.transpose(data, perm))
 
     def test_pow(self):
         for a_shape, b_shape in self.binary_test_shapes:
@@ -492,11 +499,16 @@ class TestTensorOps(OpTestCase):
         for axis, descending in entries:
             data = uniform((5, 10))
             x = new_tensor(data)
-            y = x.sort(axis, descending)[1]
+            val, idx1 = x.sort(axis, descending)
+            idx2 = x.argsort(axis, descending)
             axis = axis if axis is not None else -1
-            result = np.argsort(-data if descending else data, axis=axis)
-            result = np.take(result, np.arange(data.shape[axis]), axis=axis)
-            self.assertEqual(y, result)
+            result_val = np.sort(-data if descending else data, axis=axis)
+            result_val = -result_val if descending else result_val
+            result_idx = np.argsort(-data if descending else data, axis=axis)
+            result_idx = np.take(result_idx, np.arange(data.shape[axis]), axis=axis)
+            self.assertEqual(val, result_val)
+            self.assertEqual(idx1, result_idx)
+            self.assertEqual(idx2, result_idx)
 
     def test_sqrt(self):
         data = np.array([4., 9., 16], 'float32')
@@ -598,6 +610,30 @@ class TestTensorOps(OpTestCase):
 
 class TestTorchOps(OpTestCase):
     """Test the builtin torch ops."""
+
+    def test_arange(self):
+        entries = [([5], {'dtype': 'int64'}),
+                   ([0, 5], {'dtype': 'int64'}),
+                   ([0, 5, 2], {'dtype': 'int64'}),
+                   ([0., 1., 0.2], {'dtype': 'float32'})]
+        for (args, kwargs) in entries:
+            data = np.arange(*args, **kwargs)
+            x = torch.arange(*args, **kwargs)
+            self.assertEqual(x, data)
+
+    def test_linspace(self):
+        entries = [([[0., 5.], [10., 40.], 5], {'dim': 0, 'dtype': 'float32'}),
+                   ([[0., 5.], [10., 40.], 5], {'dim': 1, 'dtype': 'float32'}),
+                   ([[0., 5.], [10., 40.], 5], {'dim': -1, 'dtype': 'float32'}),
+                   ([[0.], [10.], 5], {'dim': 0, 'dtype': 'float32'}),
+                   ([[0.], [10.], 5], {'dim': -1, 'dtype': 'float32'}),
+                   ([0., 10., 5], {'dim': 0, 'dtype': 'float32'}),
+                   ([0., 10., 5], {'dim': 0, 'dtype': 'int64'})]
+        for (args, kwargs) in entries:
+            x = torch.linspace(*args, **kwargs)
+            kwargs['axis'] = kwargs.pop('dim')
+            data = np.linspace(*args, **kwargs)
+            self.assertEqual(x, data)
 
     def test_ones_like(self):
         data = np.ones((2, 3), dtype='float32')

@@ -74,6 +74,54 @@ class Fill(_Initializer):
         }
 
 
+class LinSpace(function.Function):
+    def __init__(self, key, dev, **kwargs):
+        super(LinSpace, self).__init__(key, dev, **kwargs)
+        self.ndim = kwargs.get('ndim', 0)
+        self.num_intervals = kwargs.get('num_intervals', 1)
+        self.dtype = kwargs.get('dtype', 'int64')
+        self.axis = kwargs.get('axis', 0)
+
+    def attributes(self):
+        return {
+            'op_type': 'LinSpace',
+            'arguments': {
+                'axis': self.axis,
+                'dtype': self.dtype,
+                'dims_descs': [
+                    '${{HANDLE}}/dims[{}]'.format(n)
+                    for n in range(self.ndim)],
+                'start_descs': [
+                    '${{HANDLE}}/start[{}]'
+                    .format(n) for n in range(self.num_intervals)],
+                'stop_descs': [
+                    '${{HANDLE}}/stop[{}]'
+                    .format(n) for n in range(self.num_intervals)],
+            }
+        }
+
+    def feed(self, ws, handle, shape, starts, stops):
+        for i, dim in enumerate(shape):
+            self.feed_arg(
+                ws, '{}/dims[{}]'.format(handle, i),
+                dim, 'int64')
+        for i in range(len(starts)):
+            self.feed_arg(
+                ws, '{}/start[{}]'.format(handle, i),
+                starts[i], 'float64')
+            self.feed_arg(
+                ws, '{}/stop[{}]'.format(handle, i),
+                stops[i], 'float64')
+
+    def forward(self, shape, starts, stops, out=None):
+        return self.dispatch(
+            [], [self.alloc(out)],
+            callback=lambda ws, handle:
+                self.feed(ws, handle, shape, starts, stops),
+            no_grad=True,
+        )
+
+
 class Permutation(function.Function):
     def __init__(self, key, dev, **kwargs):
         super(Permutation, self).__init__(key, dev, **kwargs)
@@ -161,7 +209,7 @@ class Range(function.Function):
         for i in range(len(slice_args)):
             self.feed_arg(
                 ws, '{}/slice[{}]'.format(handle, i),
-                slice_args[i], 'float32')
+                slice_args[i], 'float64')
 
     def forward(self, slice_args, out=None):
         return self.dispatch(

@@ -92,6 +92,43 @@ def argmin(input, dim=None, keepdim=False, out=None):
     return _arg_reduce(input, 'ArgMin', dim, keepdim, out)
 
 
+def argsort(input, dim=-1, descending=False):
+    """Return the index of sorted elements along the given dimension.
+
+    By default, the last dimension is chosen:
+
+    ```python
+    x = torch.tensor([[1, 2, 3], [3, 2, 1]])
+    index1 = torch.argsort(x)
+    index2 = torch.argsort(x, dim=1)  # Equivalent
+    ```
+
+    Sort in the descending order if ``descending`` is ``True``:
+
+    ```python
+    x = torch.tensor([1, 2, 3])
+    index1 = torch.argsort(-x)
+    index2 = torch.argsort(x, descending=True)  # Equivalent
+    ```
+
+    Parameters
+    ----------
+    input : dragon.vm.torch.Tensor
+        The input tensor.
+    dim : int, optional, default=-1
+         The dimension to sort elements.
+    descending : bool, optional, default=False
+        Sort in the descending order or not.
+
+    Returns
+    -------
+    dragon.vm.torch.Tensor
+        The output tensor.
+
+    """
+    return sort(input, dim, descending)[1]
+
+
 def assign(out, starts, sizes, input):
     if not isinstance(input, Tensor):
         input = utils.scalar_to_tensor(
@@ -1052,6 +1089,31 @@ def topk(input, k, dim=-1, largest=True, sorted=True, out=None):
             largest=largest,
             sorted=sorted,
         ).apply(input, out if out else (None, None))
+
+
+def transpose(input, dim0, dim1):
+    """Return a new tensor with two dimensions swapped.
+
+    Parameters
+    ----------
+    input : dragon.vm.torch.Tensor
+        The input tensor.
+    dim0 : int
+        The first dimension to be transposed.
+    dim1 : int
+        The second dimension to be transposed.
+
+    Returns
+    -------
+    dragon.vm.torch.Tensor
+        The output tensor.
+
+    """
+    dims = list(range(input.ndimension()))
+    dims[dim0], dims[dim1] = dims[dim1], dims[dim0]
+    return _functions.Transpose \
+        .instantiate(input.device, ndim=len(dims)) \
+        .apply(input, dims)
 
 
 def unique(input, return_inverse=False, return_counts=False, **kwargs):

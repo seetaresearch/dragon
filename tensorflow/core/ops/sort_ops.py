@@ -50,7 +50,7 @@ def argsort(values, axis=-1, direction='ASCENDING', name=None):
     Returns
     -------
     dragon.Tensor
-        The index tensor.
+        The output tensor.
 
     """
     if direction not in ('ASCENDING', 'DESCENDING'):
@@ -97,7 +97,7 @@ def sort(values, axis=-1, direction='ASCENDING', name=None):
     Returns
     -------
     dragon.Tensor
-        The value tensor.
+        The output tensor.
 
     """
     if direction not in ('ASCENDING', 'DESCENDING'):

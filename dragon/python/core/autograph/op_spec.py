@@ -491,6 +491,14 @@ def is_spec(args, inputs, outputs):
     return outputs
 
 
+@register('LinSpace')
+def linspace_spec(args, inputs, outputs):
+    _ = locals()
+    outputs[0].dtype = args['dtype']
+    outputs[0].shape = args['dims']
+    return outputs
+
+
 @register('MaskedSelect')
 def masked_select_spec(args, inputs, outputs):
     _ = locals()

@@ -61,10 +61,9 @@ void ChannelAffineGradientOp<Context>::DoRunWithType() {
   CANONICALIZE_AXES_WITH_TENSOR(X);
 
   // Reduce parameters for weight and bias
-  vec32_t dims = {
-      (int)X.count(0, axis),
-      (int)X.count(axis, axis + num_axes),
-      (int)X.count(axis + num_axes)};
+  vec32_t dims = {(int)X.count(0, axis),
+                  (int)X.count(axis, axis + num_axes),
+                  (int)X.count(axis + num_axes)};
   vec32_t axes = {0, 2};
 
   // dW = dY * X

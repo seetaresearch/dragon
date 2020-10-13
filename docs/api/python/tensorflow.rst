@@ -60,6 +60,9 @@ vm.tensorflow
   `identity(...) <tensorflow/identity.html>`_
   : Return a new tensor copying the content of input.
 
+  `linspace(...) <tensorflow/linspace.html>`_
+  : Generate evenly spaced values within intervals along the given axis.
+
   `name_scope(...) <tensorflow/name_scope.html>`_
   : Context-manager to nest the name as prefix for operations.
 
@@ -131,6 +134,7 @@ vm.tensorflow
   tensorflow/gather
   tensorflow/gradients
   tensorflow/identity
+  tensorflow/linspace
   tensorflow/name_scope
   tensorflow/ones
   tensorflow/ones_like

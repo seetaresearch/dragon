@@ -9,7 +9,7 @@ template <typename T>
 void RangeOp<Context>::DoRunWithType() {
   // Determine the slice arguments
   int num_args;
-  float start = 0.f, limit, delta;
+  double start = 0., limit, delta;
   slice(0, &num_args);
   if (num_args == 2) {
     limit = slice(0), delta = slice(1);

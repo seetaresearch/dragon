@@ -309,6 +309,27 @@ class Tensor(object):
 
         """
 
+    def argsort(self, dim=-1, descending=False):
+        """Return the index of sorted elements.
+
+        Parameters
+        ----------
+        dim : int, optional, default=-1
+            The dimension to sort elements.
+        descending : bool, optional, default=False
+            Sort in the descending order or not.
+
+        Returns
+        -------
+        dragon.vm.torch.Tensor
+            The output tensor.
+
+        See Also
+        --------
+        `torch.argsort(...)`_
+
+        """
+
     def backward(self, gradient=None, retain_graph=False):
         """Compute the derivatives of this tensor w.r.t. graph leaves.
 
@@ -1892,6 +1913,27 @@ class Tensor(object):
         See Also
         --------
         `torch.topk(...)`_
+
+        """
+
+    def transpose(self, dim0, dim1):
+        """Return a new tensor with two dimensions swapped.
+
+        Parameters
+        ----------
+        dim0 : int
+            The first dimension to be transposed.
+        dim1 : int
+            The second dimension to be transposed.
+
+        Returns
+        -------
+        dragon.vm.torch.Tensor
+            The output tensor.
+
+        See Also
+        --------
+        `torch.transpose(...)`_
 
         """
 

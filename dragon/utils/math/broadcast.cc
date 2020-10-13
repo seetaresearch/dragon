@@ -11,7 +11,7 @@ namespace math {
 namespace {
 
 #define DECLARE_ROWWISE_COLWISE_BINARY_FUNC(name, TOut)                 \
-  template <typename T, bool BroadcastA>                                \
+  template <typename T, bool BroadcastA>                              \
   void _Rowwise##name(                                                  \
       const int rows, const int cols, const T* a, const T* b, TOut* y); \
   template <typename T, bool BroadcastA>                                \

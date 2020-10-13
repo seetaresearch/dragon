@@ -262,7 +262,7 @@ class CppExtension(object):
         libraries = kwargs.get('libraries', [])
         libraries.extend(COMMON_LINK_LIBRARIES + ['dragon'])
         kwargs['libraries'] = libraries
-        define_macros = kwargs.get('define_marcos', [])
+        define_macros = kwargs.get('define_macros', [])
         define_macros.append(('DRAGON_API=' + DLLIMPORT_STR, None))
         kwargs['define_macros'] = define_macros
         kwargs['language'] = 'c++'
@@ -282,7 +282,7 @@ class CUDAExtension(object):
         libraries = kwargs.get('libraries', [])
         libraries.extend(COMMON_LINK_LIBRARIES + ['cudart', 'dragon'])
         kwargs['libraries'] = libraries
-        define_macros = kwargs.get('define_marcos', [])
+        define_macros = kwargs.get('define_macros', [])
         define_macros.append(('USE_CUDA', None))
         define_macros.append(('DRAGON_API=' + DLLIMPORT_STR, None))
         kwargs['define_macros'] = define_macros

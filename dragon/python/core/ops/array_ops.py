@@ -118,6 +118,54 @@ def argmin(inputs, axis=None, keep_dims=False, **kwargs):
 
 
 @OpSchema.num_inputs(1)
+def argsort(inputs, axis=-1, descending=False, **kwargs):
+    """Return the index of sorted elements along the given axis.
+
+    By default, the last axis is chosen:
+
+    ```python
+    x = dragon.constant([[1, 2, 3], [3, 2, 1]])
+    index1 = dragon.argsort(x)
+    index2 = dragon.argsort(x, axis=1)  # Equivalent
+    ```
+
+    Sort in the inverse order if ``descending`` is **True**:
+
+    ```python
+    x = dragon.constant([1, 2, 3])
+    index1 = dragon.argsort(-x)
+    index2 = dragon.argsort(x, descending=True)  # Equivalent
+    ```
+
+    Parameters
+    ----------
+    inputs : dragon.Tensor
+        The input tensor.
+    axis : int, optional, default=-1
+        The axis to sort elements.
+    descending : bool, optional, default=False
+        Sort in the descending order or not.
+
+    Returns
+    -------
+    dragon.Tensor
+        The output tensor.
+
+    """
+    args = parse_args(locals())
+    op_lib = array_ops_lib.Sort
+    if context.executing_eagerly():
+        return op_lib \
+            .instantiate(
+                axis=axis,
+                descending=descending,
+            ).apply([inputs])[1]
+    else:
+        args['num_outputs'] = 2
+        return op_lib.blend(**args)[1]
+
+
+@OpSchema.num_inputs(1)
 @ArgHelper.repeated_desc(name='shape', name_v2='dims')
 def broadcast_to(inputs, shape, **kwargs):
     """Broadcast input according to a given shape.
@@ -594,6 +642,65 @@ def index_select(inputs, index, axis=0, **kwargs):
         args['inputs'], args['index'] = \
             [args['inputs'], index], None
         args['axis'], args['num_axes'] = axes[0], len(axes)
+        return op_lib.blend(**args)
+
+
+def linspace(start, stop, num, dtype='int64', axis=0, **kwargs):
+    r"""Generate evenly spaced values within intervals along the given axis.
+
+    Interval :math:`[\text{start}, \text{stop})` is determined for ``num`` values:
+
+    ```python
+    x = dragon.linspace(2, 4, num=3)  # [2, 3, 4]
+    ```
+
+    More than one intervals are accepted to generate N-d coordinates:
+
+    ```python
+    x = dragon.linspace([1, 2], [3, 4], num=3, axis=0)  # [[1, 2], [2, 3], [3, 4]]
+    y = dragon.linspace([1, 2], [3, 4], num=3, axis=1)  # [[1, 2, 3], [2, 3, 4]]
+    ```
+
+    Parameters
+    ----------
+    start : Union[number, Sequence[number]]
+        The start(s) of interval.
+    stop: Union[number, Sequence[number]]
+        The stop(s) of interval.
+    num : int
+        The number of values to generate.
+    dtype : str, optional, default='int64'
+        The optional data type.
+    axis : int, optional, default=0
+        The axis to generate values.
+
+    Returns
+    -------
+    dragon.Tensor
+        The output tensor.
+
+    """
+    args = parse_args(locals())
+    args['dtype'] = args['dtype'].lower()
+    args['start'] = nest.flatten(start)
+    args['stop'] = nest.flatten(stop)
+    args.pop('num')
+    args['dims'] = []
+    if len(args['start']) > 1 or args['start'] == start:
+        args['dims'] = [len(args['start'])]
+    axis = axis if axis >= 0 else axis + len(args['dims']) + 1
+    args['dims'].insert(axis, num)
+    op_lib = array_ops_lib.LinSpace
+    trainable = args.pop('trainable') if 'trainable' in args else False
+    if context.executing_eagerly():
+        return op_lib \
+            .instantiate(
+                ndim=len(args['dims']),
+                num_intervals=len(args['start']),
+                dtype=dtype,
+                axis=axis,
+            ).apply(args['dims'], args['start'], args['stop'], trainable=trainable)
+    else:
         return op_lib.blend(**args)
 
 
@@ -1303,7 +1410,7 @@ def sort(inputs, axis=-1, descending=False, **kwargs):
 
     Returns
     -------
-    Sequence[dragon.vm.torch.Tensor]
+    Sequence[dragon.Tensor]
         The value and index tensor.
 
     """

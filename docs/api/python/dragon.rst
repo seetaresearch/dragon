@@ -21,6 +21,9 @@ dragon
   Functions
   ---------
 
+  `argsort(...) <dragon/argsort.html>`_
+  : Return the index of sorted elements along the given axis.
+
   `assign(...) <dragon/assign.html>`_
   : Assign the value to input.
 
@@ -89,6 +92,9 @@ dragon
 
   `index_select(...) <dragon/index_select.html>`_
   : Select the elements according to the index along the given axis.
+
+  `linspace(...) <dragon/linspace.html>`_
+  : Generate evenly spaced values within intervals along the given axis.
 
   `load_library(...) <dragon/load_library.html>`_
   : Load a shared library.
@@ -178,6 +184,7 @@ dragon
   dragon/GradientTape
   dragon/Tensor
   dragon/Workspace
+  dragon/argsort
   dragon/assign
   dragon/broadcast_to
   dragon/cast
@@ -201,6 +208,7 @@ dragon
   dragon/gradients
   dragon/graph_mode
   dragon/index_select
+  dragon/linspace
   dragon/load_library
   dragon/masked_assign
   dragon/masked_select

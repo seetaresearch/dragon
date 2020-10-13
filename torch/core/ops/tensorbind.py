@@ -131,6 +131,29 @@ def argmin(self, dim=None, keepdim=False):
     return array_funcs.argmin(self, dim, keepdim)
 
 
+def argsort(self, dim=-1, descending=False):
+    """Return the index of sorted elements.
+
+    Parameters
+    ----------
+    dim : int, optional, default=-1
+        The dimension to sort elements.
+    descending : bool, optional, default=False
+        Sort in the descending order or not.
+
+    Returns
+    -------
+    dragon.vm.torch.Tensor
+        The output tensor.
+
+    See Also
+    --------
+    `torch.argsort(...)`_
+
+    """
+    return array_funcs.argsort(self, dim, descending)
+
+
 def backward(self, gradient=None, retain_graph=False):
     """Compute the derivatives of this tensor w.r.t. graph leaves.
 
@@ -1710,6 +1733,29 @@ def topk(self, k, dim=-1, largest=True, sorted=True):
     return array_funcs.topk(self, k, dim, largest, sorted)
 
 
+def transpose(self, dim0, dim1):
+    """Return a new tensor with two dimensions swapped.
+
+    Parameters
+    ----------
+    dim0 : int
+        The first dimension to be transposed.
+    dim1 : int
+        The second dimension to be transposed.
+
+    Returns
+    -------
+    dragon.vm.torch.Tensor
+        The output tensor.
+
+    See Also
+    --------
+    `torch.transpose(...)`_
+
+    """
+    return array_funcs.transpose(self, dim0, dim1)
+
+
 def _type(self, dtype=None):
     """Return the data type.
 
@@ -1890,6 +1936,7 @@ Tensor.add = add
 Tensor.add_ = add_
 Tensor.argmax = argmax
 Tensor.argmin = argmin
+Tensor.argsort = argsort
 Tensor.backward = backward
 Tensor.bitwise_not = bitwise_not
 Tensor.bitwise_not_ = bitwise_not_
@@ -1971,6 +2018,7 @@ Tensor.sum = sum
 Tensor.sub = sub
 Tensor.sub_ = sub_
 Tensor.topk = topk
+Tensor.transpose = transpose
 Tensor.type = _type
 Tensor.uniform_ = uniform_
 Tensor.unique = unique

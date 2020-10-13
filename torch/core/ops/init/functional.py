@@ -14,6 +14,8 @@ from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
 
+from dragon.core.util import nest
+
 from dragon.vm.torch.core import cpp
 from dragon.vm.torch.core.ops import utils
 from dragon.vm.torch.core.ops.init import _functions
@@ -146,6 +148,75 @@ def fill_like(out, shape_like, value):
     return _functions.Fill \
         .instantiate(out.device, value=float(value), dtype=out.dtype) \
         .apply(out, [], shape_like)
+
+
+def linspace(
+    start,
+    end,
+    steps=100,
+    out=None,
+    dtype='int64',
+    dim=0,
+    device=None,
+    requires_grad=False,
+):
+    r"""Generate evenly spaced values within intervals along the given axis.
+
+    Interval :math:`[\text{start}, \text{end})` is determined for ``steps`` values:
+
+    ```python
+    x = torch.linspace(2, 4, steps=3)  # [2, 3, 4]
+    ```
+
+    More than one intervals are accepted to generate N-d coordinates:
+
+    ```python
+    x = torch.linspace([1, 2], [3, 4], steps=3, dim=0)  # [[1, 2], [2, 3], [3, 4]]
+    y = torch.linspace([1, 2], [3, 4], steps=3, dim=1)  # [[1, 2, 3], [2, 3, 4]]
+    ```
+
+    Parameters
+    ----------
+    start : Union[number, Sequence[number]]
+        The start(s) of interval.
+    end: Union[number, Sequence[number]]
+        The ends(s) of interval.
+    steps : int, optional, default=100
+        The number of values to generate.
+    out : dragon.vm.torch.Tensor, optional
+        The optional output tensor.
+    dtype : str, optional, default='int64'
+        The optional data type.
+    dim : int, optional, default=0
+        The dimension to generate values.
+    device : dragon.vm.torch.device, optional
+        The optional device of returned tensor.
+    requires_grad : bool, optional, default=False
+        **True** to record gradient for returned tensor.
+
+    Returns
+    -------
+    dragon.vm.torch.Tensor
+        The output tensor.
+
+    """
+    starts = nest.flatten(start)
+    ends = nest.flatten(end)
+    sizes = []
+    if len(starts) > 1 or starts == start:
+        sizes = [len(starts)]
+    dim = dim if dim >= 0 else dim + len(sizes) + 1
+    sizes.insert(dim, steps)
+    out = _functions.LinSpace \
+        .instantiate(
+            device if device else cpp.device(),
+            ndim=len(sizes),
+            num_intervals=len(starts),
+            dtype=dtype.lower(),
+            axis=dim,
+        ).apply(sizes, starts, ends, out)
+    out.requires_grad = requires_grad
+    return out
 
 
 def normal_fill(input, mean=0, std=1):

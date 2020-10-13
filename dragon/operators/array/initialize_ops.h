@@ -55,7 +55,7 @@ template <class Context>
 class RangeOp final : public Operator<Context> {
  public:
   RangeOp(const OperatorDef& def, Workspace* ws) : Operator<Context>(def, ws) {
-    INIT_OP_REPEATED_ARG_WITH_DESC(float, slice);
+    INIT_OP_REPEATED_ARG_WITH_DESC(double, slice);
   }
   USE_OPERATOR_FUNCTIONS;
 
@@ -65,7 +65,27 @@ class RangeOp final : public Operator<Context> {
   void DoRunWithType();
 
  protected:
-  DECLARE_OP_REPEATED_ARG_WITH_DESC(float, slice);
+  DECLARE_OP_REPEATED_ARG_WITH_DESC(double, slice);
+};
+
+template <class Context>
+class LinSpaceOp final : public InitializeOp<Context> {
+ public:
+  LinSpaceOp(const OperatorDef& def, Workspace* ws)
+      : InitializeOp<Context>(def, ws) {
+    INIT_OP_REPEATED_ARG_WITH_DESC(double, start);
+    INIT_OP_REPEATED_ARG_WITH_DESC(double, stop);
+  }
+  USE_OPERATOR_FUNCTIONS;
+
+  void RunOnDevice() override;
+
+  template <typename T>
+  void DoRunWithType();
+
+ protected:
+  DECLARE_OP_REPEATED_ARG_WITH_DESC(double, start);
+  DECLARE_OP_REPEATED_ARG_WITH_DESC(double, stop);
 };
 
 template <class Context>
@@ -265,7 +285,9 @@ class GlorotUniformOp final : public InitializeOp<Context> {
 
 DEFINE_OP_SINGLE_ARG_WITH_DESC(int64_t, PermutationOp, limit);
 DEFINE_OP_REPEATED_ARG_WITH_DESC(int64_t, InitializeOp, dims);
-DEFINE_OP_REPEATED_ARG_WITH_DESC(float, RangeOp, slice);
+DEFINE_OP_REPEATED_ARG_WITH_DESC(double, RangeOp, slice);
+DEFINE_OP_REPEATED_ARG_WITH_DESC(double, LinSpaceOp, start);
+DEFINE_OP_REPEATED_ARG_WITH_DESC(double, LinSpaceOp, stop);
 
 } // namespace dragon
 

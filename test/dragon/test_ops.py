@@ -630,6 +630,26 @@ class TestArrayOps(OpTestCase):
         with dragon.device('cuda'):
             self.test_index_select()
 
+    def test_linspace(self):
+        entries = [([[0., 5.], [10., 40.], 5], {'axis': 0, 'dtype': 'float32'}),
+                   ([[0., 5.], [10., 40.], 5], {'axis': 1, 'dtype': 'float32'}),
+                   ([[0., 5.], [10., 40.], 5], {'axis': -1, 'dtype': 'float32'}),
+                   ([[0.], [10.], 5], {'axis': 0, 'dtype': 'float32'}),
+                   ([[0.], [10.], 5], {'axis': -1, 'dtype': 'float32'}),
+                   ([0., 10., 5], {'axis': 0, 'dtype': 'float32'}),
+                   ([0., 10., 5], {'axis': 0, 'dtype': 'int64'})]
+        for execution in ('EAGER_MODE', 'GRAPH_MODE'):
+            with execution_context().mode(execution):
+                for (args, kwargs) in entries:
+                    data = np.linspace(*args, **kwargs)
+                    x = dragon.linspace(*args, **kwargs)
+                    self.assertEqual(x, data)
+
+    @unittest.skipIf(not TEST_CUDA, 'CUDA unavailable')
+    def test_linspace_cuda(self):
+        with dragon.device('cuda'):
+            self.test_linspace()
+
     def test_masked_select(self):
         for execution in ('EAGER_MODE', 'GRAPH_MODE'):
             with execution_context().mode(execution):
@@ -821,11 +841,16 @@ class TestArrayOps(OpTestCase):
                 for axis, descending in entries:
                     data = uniform((5, 10))
                     x = new_tensor(data)
-                    y = dragon.sort(x, axis=axis, descending=descending)
+                    val, idx1 = dragon.sort(x, axis=axis, descending=descending)
+                    idx2 = dragon.argsort(x, axis=axis, descending=descending)
                     axis = axis if axis is not None else -1
-                    result = np.argsort(-data if descending else data, axis=axis)
-                    result = np.take(result, np.arange(data.shape[axis]), axis=axis)
-                    self.assertEqual(y[1], result)
+                    result_val = np.sort(-data if descending else data, axis=axis)
+                    result_val = -result_val if descending else result_val
+                    result_idx = np.argsort(-data if descending else data, axis=axis)
+                    result_idx = np.take(result_idx, np.arange(data.shape[axis]), axis=axis)
+                    self.assertEqual(val, result_val)
+                    self.assertEqual(idx1, result_idx)
+                    self.assertEqual(idx2, result_idx)
 
     @unittest.skipIf(not TEST_CUDA, 'CUDA unavailable')
     def test_sort_cuda(self):

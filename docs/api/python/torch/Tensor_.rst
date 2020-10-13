@@ -61,6 +61,10 @@ argmin
 ######
 .. automethod:: dragon.vm.torch.Tensor.argmin
 
+argsort
+#######
+.. automethod:: dragon.vm.torch.Tensor.argsort
+
 backward
 ########
 .. automethod:: dragon.vm.torch.Tensor.backward
@@ -437,6 +441,10 @@ topk
 ####
 .. automethod:: dragon.vm.torch.Tensor.topk
 
+transpose
+#########
+.. automethod:: dragon.vm.torch.Tensor.transpose
+
 type
 ####
 .. automethod:: dragon.vm.torch.Tensor.type
@@ -481,6 +489,7 @@ zero\_
 .. _torch.add(...): add.html
 .. _torch.argmax(...): argmax.html
 .. _torch.argmin(...): argmin.html
+.. _torch.argsort(...): argsort.html
 .. _torch.bitwise_not(...): bitwise_not.html
 .. _torch.bitwise_xor(...): bitwise_xor.html
 .. _torch.ceil(...): ceil.html
@@ -513,6 +522,7 @@ zero\_
 .. _torch.sub(...): sub.html
 .. _torch.sum(...): sum.html
 .. _torch.topk(...): topk.html
+.. _torch.transpose(...): transpose.html
 .. _torch.unique(...): unique.html
 .. _torch.unsqueeze(...): unsqueeze.html
 .. _torch.where(...): where.html

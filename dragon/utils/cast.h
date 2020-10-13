@@ -107,6 +107,11 @@ inline float to<float, float16>(float16 val) {
   return ret;
 }
 
+template <>
+inline float16 to<float16, double>(double val) {
+  return to<float16>(static_cast<float>(val));
+}
+
 #ifdef USE_CUDA
 
 template <>

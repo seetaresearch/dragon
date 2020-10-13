@@ -39,6 +39,7 @@ dragon.cuda
 .. toctree::
   :hidden:
 
+  cuda/Stream
   cuda/current_device
   cuda/enable_cudnn
   cuda/get_device_capability
@@ -46,7 +47,6 @@ dragon.cuda
   cuda/memory_allocated
   cuda/set_default_device
   cuda/set_device
-  cuda/Stream
   cuda/synchronize
 
 .. raw:: html

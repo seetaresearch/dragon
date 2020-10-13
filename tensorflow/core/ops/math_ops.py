@@ -634,6 +634,47 @@ def less_equal(x, y, name=None):
     return math_ops.less_equal([x, y], name=name)
 
 
+def linspace(start, stop, num, dtype='int64', name=None, axis=0):
+    r"""Generate evenly spaced values within intervals along the given axis.
+
+    Interval :math:`[\text{start}, \text{stop})` is determined for ``num`` values:
+
+    ```python
+    x = tf.linspace(2, 4, num=3)  # [2, 3, 4]
+    ```
+
+    More than one intervals are accepted to generate N-d coordinates:
+
+    ```python
+    x = tf.linspace([1, 2], [3, 4], num=3, axis=0)  # [[1, 2], [2, 3], [3, 4]]
+    y = tf.linspace([1, 2], [3, 4], num=3, axis=1)  # [[1, 2, 3], [2, 3, 4]]
+    ```
+
+    Parameters
+    ----------
+    start : Union[number, Sequence[number]]
+        The start(s) of interval.
+    stop: Union[number, Sequence[number]]
+        The stop(s) of interval.
+    num : int
+        The number of values to generate.
+    dtype : str, optional, default='int64'
+        The optional data type.
+    name : str, optional
+        The operation name.
+    axis : int, optional, default=0
+        The axis to generate values.
+
+    Returns
+    -------
+    dragon.Tensor
+        The output tensor.
+
+    """
+    return array_ops.linspace(
+        start, stop, num, dtype=dtype, name=name, axis=axis)
+
+
 def log(x, name=None):
     r"""Compute the logarithm of input.
 
