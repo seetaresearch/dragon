@@ -20,8 +20,9 @@ __global__ void _SigmoidCrossEntropy(
     if (target[i] < 0) {
       loss[i] = mask[i] = T(0);
     } else {
-      loss[i] = log(T(1) + exp(logit[i] - T(2) * logit[i] * (logit[i] >= 0))) +
-          logit[i] * ((logit[i] >= 0) - target[i]);
+      const T lgt = logit[i];
+      loss[i] = log(T(1) + exp(lgt - T(2) * lgt * T(lgt >= 0))) +
+          lgt * (T(lgt >= 0) - target[i]);
       mask[i] = T(1);
     }
   }

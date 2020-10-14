@@ -116,7 +116,7 @@ __global__ void _GenericReduce(
           cast::to<T>(init),                                                   \
           ctx->cuda_stream());                                                 \
       cub::DeviceReduce::Reduce(                                               \
-          ctx->workspace()->data<CUDAContext>({ws_nbytes})[0],                 \
+          ctx->workspace()->data<CUDAContext>({ws_nbytes}, "data:1")[0],       \
           ws_nbytes,                                                           \
           x,                                                                   \
           y,                                                                   \

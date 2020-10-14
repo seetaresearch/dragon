@@ -87,9 +87,11 @@ class DRAGON_API Workspace {
 
   /*! \brief Return a group of the shared raw data */
   template <class Context>
-  vector<void*> data(const vector<size_t>& segments) {
+  vector<void*> data(
+      const vector<size_t>& segments,
+      const string& name = "data:0") {
     vector<void*> group(segments.size());
-    group[0] = CreateTensor("/share/data")
+    group[0] = CreateTensor("/share/buffer/" + name)
                    ->Reshape({(int64_t)std::accumulate(
                        segments.begin(), segments.end(), size_t(0))})
                    ->template mutable_data<uint8_t, Context>();
@@ -101,13 +103,15 @@ class DRAGON_API Workspace {
 
   /*! \brief Return a group of shared typed data */
   template <typename T, class Context>
-  vector<T*> data(const vector<int64_t>& segments) {
+  vector<T*> data(
+      const vector<int64_t>& segments,
+      const string& name = "data:0") {
     vector<T*> group(segments.size());
     vector<size_t> segments_v2;
     for (const auto size : segments) {
       segments_v2.push_back(size * sizeof(T));
     }
-    auto group_v2 = data<Context>(segments_v2);
+    auto group_v2 = data<Context>(segments_v2, name);
     for (int i = 0; i < segments.size(); ++i) {
       group[i] = (T*)group_v2[i];
     }

@@ -75,7 +75,7 @@ void UpdateOpBase<Context>::RunOnDevice() {
     ApplyUpdate<float>(&dX, X);
   } else if (dX.template IsType<float16>()) {
     auto* X_master = workspace()->CreateTensor(X->name() + "[float32]");
-    auto* dX_copy = ctx()->workspace()->CreateTensor("/share/data");
+    auto* dX_copy = ctx()->workspace()->CreateTensor("/share/buffer/data:0");
     if (X_master->count() != X->count()) {
       math::Cast(
           X->count(),

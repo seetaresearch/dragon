@@ -189,56 +189,56 @@ __global__ void _SelectViaDeviceSort(
                << ") to launch the cuda kernel";                 \
   }
 
-#define DEFINE_KERNEL_LAUNCHER(T1, T2, kLowest, kMax)                 \
-  template <>                                                         \
-  void TopSelect<T1, CUDAContext>(                                    \
-      const int outer_dim,                                            \
-      const int inner_dim,                                            \
-      const int axis_dim,                                             \
-      const int select_dim,                                           \
-      const int largest,                                              \
-      const T1* x,                                                    \
-      T1* value,                                                      \
-      int64_t* index,                                                 \
-      CUDAContext* ctx) {                                             \
-    const int rows = outer_dim * inner_dim;                           \
-    const int cols = axis_dim;                                        \
-    if (rows == 1 || cols > CUDA_THREADS * 8) {                       \
-      const int input_count = outer_dim * inner_dim * axis_dim;       \
-      const int output_count = outer_dim * inner_dim * select_dim;    \
-      auto data = ctx->workspace()->template data<CUDAContext>(       \
-          {input_count * sizeof(T1), input_count * sizeof(int64_t)}); \
-      math::Copy(input_count, x, (T1*)data[0], ctx);                  \
-      _DeviceSort(                                                    \
-          outer_dim,                                                  \
-          inner_dim,                                                  \
-          axis_dim,                                                   \
-          largest,                                                    \
-          (T1*)data[0],                                               \
-          (int64_t*)data[1],                                          \
-          ctx);                                                       \
-      if (rows == 1) {                                                \
-        math::Copy(output_count, (T1*)data[0], value, ctx);           \
-        math::Copy(output_count, (int64_t*)data[1], index, ctx);      \
-      } else {                                                        \
-        _SelectViaDeviceSort<<<                                       \
-            CUDA_BLOCKS(output_count),                                \
-            CUDA_THREADS,                                             \
-            0,                                                        \
-            ctx->cuda_stream()>>>(                                    \
-            output_count,                                             \
-            axis_dim,                                                 \
-            inner_dim,                                                \
-            select_dim,                                               \
-            (T1*)data[0],                                             \
-            (int64_t*)data[1],                                        \
-            value,                                                    \
-            index);                                                   \
-      }                                                               \
-      return;                                                         \
-    }                                                                 \
-    T2 init = largest > 0 ? kLowest : kMax;                           \
-    PLACE_BLOCK_SORT_CASES(T2);                                       \
+#define DEFINE_KERNEL_LAUNCHER(T1, T2, kLowest, kMax)                     \
+  template <>                                                             \
+  void TopSelect<T1, CUDAContext>(                                        \
+      const int outer_dim,                                                \
+      const int inner_dim,                                                \
+      const int axis_dim,                                                 \
+      const int select_dim,                                               \
+      const int largest,                                                  \
+      const T1* x,                                                        \
+      T1* value,                                                          \
+      int64_t* index,                                                     \
+      CUDAContext* ctx) {                                                 \
+    const int rows = outer_dim * inner_dim;                               \
+    const int cols = axis_dim;                                            \
+    if (rows == 1 || cols > CUDA_THREADS * 8) {                           \
+      const int in_count = outer_dim * inner_dim * axis_dim;              \
+      const int out_count = outer_dim * inner_dim * select_dim;           \
+      auto data = ctx->workspace()->template data<CUDAContext>(           \
+          {in_count * sizeof(T1), in_count * sizeof(int64_t)}, "data:1"); \
+      math::Copy(in_count, x, (T1*)data[0], ctx);                         \
+      _DeviceSort(                                                        \
+          outer_dim,                                                      \
+          inner_dim,                                                      \
+          axis_dim,                                                       \
+          largest,                                                        \
+          (T1*)data[0],                                                   \
+          (int64_t*)data[1],                                              \
+          ctx);                                                           \
+      if (rows == 1) {                                                    \
+        math::Copy(out_count, (T1*)data[0], value, ctx);                  \
+        math::Copy(out_count, (int64_t*)data[1], index, ctx);             \
+      } else {                                                            \
+        _SelectViaDeviceSort<<<                                           \
+            CUDA_BLOCKS(out_count),                                       \
+            CUDA_THREADS,                                                 \
+            0,                                                            \
+            ctx->cuda_stream()>>>(                                        \
+            out_count,                                                    \
+            axis_dim,                                                     \
+            inner_dim,                                                    \
+            select_dim,                                                   \
+            (T1*)data[0],                                                 \
+            (int64_t*)data[1],                                            \
+            value,                                                        \
+            index);                                                       \
+      }                                                                   \
+      return;                                                             \
+    }                                                                     \
+    T2 init = largest > 0 ? kLowest : kMax;                               \
+    PLACE_BLOCK_SORT_CASES(T2);                                           \
   }
 
 DEFINE_KERNEL_LAUNCHER(

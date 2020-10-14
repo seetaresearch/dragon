@@ -65,11 +65,11 @@ UniqueName
 
 data
 ####
-.. doxygenfunction:: dragon::Workspace::data(const vector<size_t> &segments)
+.. doxygenfunction:: dragon::Workspace::data(const vector<size_t> &segments, const string &name = "data:0")
 
 data
 ####
-.. doxygenfunction:: dragon::Workspace::data(const vector<int64_t> &segments)
+.. doxygenfunction:: dragon::Workspace::data(const vector<int64_t> &segments, const string &name = "data:0")
 
 graphs
 ######
