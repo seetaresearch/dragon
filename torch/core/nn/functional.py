@@ -18,6 +18,7 @@ from dragon.core.util import nest
 from dragon.vm.torch.core.nn.modules import _functions
 from dragon.vm.torch.core.nn import _reduction
 from dragon.vm.torch.core.nn.modules import utils
+from dragon.vm.torch.core.ops.math import functional as math_funcs
 
 
 def avg_pool2d(
@@ -713,6 +714,59 @@ def interpolate(
             num_sizes=len(size) if size is not None else 0,
             num_scales=len(scale_factor) if scale_factor is not None else 0,
         ).apply(input, size, scale_factor)
+
+
+def kl_div(
+    input,
+    target,
+    size_average=None,
+    reduce=None,
+    reduction='mean',
+    log_target=False,
+):
+    """Compute the Kullback-Leibler divergence.
+
+    Parameters
+    ----------
+    input : dragon.vm.torch.Tensor
+        The input tensor.
+    target : dragon.vm.torch.Tensor
+        The target tensor.
+    size_average : bool, optional
+        Whether to average the loss.
+    reduce : bool, optional
+        Whether to reduce the loss.
+    reduction : {'none', 'batchmean', 'mean', 'sum'}, optional
+        The reduce method.
+    log_target : bool, optional, default=False
+        The flag indicating whether ``target`` is passed in log space.
+
+    Returns
+    -------
+    dragon.vm.torch.Tensor
+        The output tensor.
+
+    See Also
+    --------
+    `torch.nn.KLDivLoss(...)`_
+
+    """
+    if size_average is not None or reduce is not None:
+        reduction = _reduction.legacy_get_string(size_average, reduce)
+    else:
+        reduction = reduction
+    if not log_target:
+        out = target * (math_funcs.log(target) - input)
+    else:
+        out = math_funcs.exp(target) * (target - input)
+    if reduction == 'none':
+        return out
+    elif reduction == 'batchmean':
+        return out.sum() / input.size()[0]
+    elif reduction == 'mean':
+        return out.mean()
+    else:
+        return out.sum()
 
 
 def l1_loss(

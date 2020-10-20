@@ -1,6 +1,6 @@
 #include "dragon/operators/array/concat_op.h"
 #include "dragon/core/workspace.h"
-#include "dragon/utils/op_kernels.h"
+#include "dragon/utils/math_functions.h"
 
 namespace dragon {
 
@@ -26,20 +26,20 @@ void ConcatOp<Context>::DoRunWithType() {
     Y_dims[axis] += Input(i).dim(axis);
   }
 
-  int64_t index = 0;
-  auto* y = Y->Reshape(Y_dims)->template mutable_data<T, Context>();
+  Y->Reshape(Y_dims);
+  int64_t output_offset = 0;
 
-  for (int i = 0; i < InputSize(); i++) {
-    kernel::Concat(
-        X.count(0, axis),
-        X.count(axis + 1),
-        Input(i).dim(axis),
-        Y_dims[axis],
-        index,
-        Input(i).template data<T, Context>(),
-        y,
+  for (int i = 0; i < InputSize(); ++i) {
+    const auto& Xi = Input(i);
+    math::CopyMatrix(
+        Xi.count(0, axis),
+        Xi.count(axis),
+        Xi.count(axis),
+        Y->count(axis),
+        Xi.template data<T, Context>(),
+        Y->template mutable_data<T, Context>() + output_offset,
         ctx());
-    index += Input(i).dim(axis);
+    output_offset += Xi.count(axis);
   }
 }
 
@@ -54,21 +54,21 @@ void ConcatGradientOp<Context>::DoRunWithType() {
   auto& dY = Input(0);
   CANONICALIZE_AXIS_WITH_TENSOR(dY);
 
-  int64_t index = 0;
-  for (int i = 0; i < OutputSize(); i++) {
+  int64_t input_offset = 0;
+
+  for (int i = 0; i < OutputSize(); ++i) {
     auto &X = RESTORE_INPUT_SPEC(i), *dX = Output(i);
     if (dX->has_name()) {
-      kernel::Split(
+      math::CopyMatrix(
           dY.count(0, axis),
-          dY.count(axis + 1),
-          dY.dim(axis),
-          X.dim(axis),
-          index,
-          dY.template data<T, Context>(),
+          X.count(axis),
+          dY.count(axis),
+          X.count(axis),
+          dY.template data<T, Context>() + input_offset,
           dX->ReshapeLike(X)->template mutable_data<T, Context>(),
           ctx());
     }
-    index += X.dim(axis);
+    input_offset += X.count(axis);
   }
 }
 

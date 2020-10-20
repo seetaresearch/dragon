@@ -1,7 +1,6 @@
 #include "dragon/operators/array/split_op.h"
 #include "dragon/core/workspace.h"
 #include "dragon/utils/math_functions.h"
-#include "dragon/utils/op_kernels.h"
 
 namespace dragon {
 
@@ -34,27 +33,27 @@ void SplitOp<Context>::DoRunWithType() {
   // Store for the gradient calculation
   STORE_INPUT_SPEC(0);
 
-  int64_t index = 0, next_index;
   vec64_t Y_dims(X.dims());
+  int64_t input_offset = 0, total_size = 0;
+
   for (int i = 0; i < num_splits; ++i) {
-    next_index = index + size_splits[i];
-    CHECK(size_splits[i] > 0 && next_index <= X.dim(axis))
+    total_size += size_splits[i];
+    CHECK(size_splits[i] > 0 && total_size <= X.dim(axis))
         << "\nIllegal size of splits: " << Tensor::DimString(size_splits)
         << " for dimension: " << X.dim(axis);
     auto* Y = Output(i);
     if (Y->has_name()) {
       Y_dims[axis] = size_splits[i];
-      kernel::Split(
+      math::CopyMatrix(
           X.count(0, axis),
-          X.count(axis + 1),
-          X.dim(axis),
-          size_splits[i],
-          index,
-          X.template data<T, Context>(),
+          size_splits[i] * X.count(axis + 1),
+          X.count(axis),
+          size_splits[i] * X.count(axis + 1),
+          X.template data<T, Context>() + input_offset,
           Y->Reshape(Y_dims)->template mutable_data<T, Context>(),
           ctx());
     }
-    index = next_index;
+    input_offset += size_splits[i] * X.count(axis + 1);
   }
 }
 
@@ -67,7 +66,6 @@ template <class Context>
 template <typename T>
 void SplitGradientOp<Context>::DoRunWithType() {
   auto* dX = Output(0);
-
   int num_splits = InputSize();
   CANONICALIZE_AXIS_WITH_TENSOR((*dX));
   DETERMINE_RUNTIME_ARGS((*dX));
@@ -84,21 +82,21 @@ void SplitGradientOp<Context>::DoRunWithType() {
     }
   }
 
-  int64_t index = 0;
+  int64_t output_offset = 0;
+
   for (int i = 0; i < num_splits; i++) {
     auto& dY = Input(i);
     if (dY.has_name()) {
-      kernel::Concat(
-          dX->count(0, axis),
-          dX->count(axis + 1),
-          size_splits[i],
-          dX->dim(axis),
-          index,
+      math::CopyMatrix(
+          dY.count(0, axis),
+          dY.count(axis),
+          dY.count(axis),
+          dX->count(axis),
           dY.template data<T, Context>(),
-          dX->template mutable_data<T, Context>(),
+          dX->template mutable_data<T, Context>() + output_offset,
           ctx());
     }
-    index += size_splits[i];
+    output_offset += size_splits[i] * dX->count(axis + 1);
   }
 }
 

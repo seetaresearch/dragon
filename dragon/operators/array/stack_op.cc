@@ -1,6 +1,6 @@
 #include "dragon/operators/array/stack_op.h"
 #include "dragon/core/workspace.h"
-#include "dragon/utils/op_kernels.h"
+#include "dragon/utils/math_functions.h"
 
 namespace dragon {
 
@@ -26,18 +26,20 @@ void StackOp<Context>::DoRunWithType() {
     STORE_INPUT_SPEC(i);
   }
 
-  auto* y = Y->Reshape(Y_dims)->template mutable_data<T, Context>();
+  Y->Reshape(Y_dims);
+  int64_t output_offset = 0;
 
   for (int i = 0; i < num_stacks; i++) {
-    kernel::Concat(
-        X.count(0, axis),
-        X.count(axis),
-        1,
-        num_stacks,
-        i,
-        Input(i).template data<T, Context>(),
-        y,
+    const auto& Xi = Input(i);
+    math::CopyMatrix(
+        Xi.count(0, axis),
+        Xi.count(axis),
+        Xi.count(axis),
+        Y->count(axis),
+        Xi.template data<T, Context>(),
+        Y->template mutable_data<T, Context>() + output_offset,
         ctx());
+    output_offset += Xi.count(axis);
   }
 }
 
@@ -52,20 +54,21 @@ void StackGradientOp<Context>::DoRunWithType() {
   auto &X_ref = RESTORE_INPUT_SPEC(0), &dY = Input(0);
   CANONICALIZE_AXIS_WITH_TENSOR_AND_OFFSET(X_ref, 1)
 
-  int num_stacks = OutputSize();
-  for (int i = 0; i < num_stacks; ++i) {
+  int64_t input_offset = 0;
+
+  for (int i = 0; i < OutputSize(); ++i) {
     auto &X = RESTORE_INPUT_SPEC(i), *dX = Output(i);
     if (dX->has_name()) {
-      kernel::Split(
-          X.count(0, axis),
+      math::CopyMatrix(
+          dY.count(0, axis),
           X.count(axis),
-          num_stacks,
-          1,
-          i,
-          dY.template data<T, Context>(),
+          dY.count(axis),
+          X.count(axis),
+          dY.template data<T, Context>() + input_offset,
           dX->ReshapeLike(X)->template mutable_data<T, Context>(),
           ctx());
     }
+    input_offset += X.count(axis);
   }
 }
 

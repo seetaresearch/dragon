@@ -48,6 +48,7 @@ from dragon.vm.torch.core.nn.modules.linear import Linear
 from dragon.vm.torch.core.nn.modules.loss import CTCLoss
 from dragon.vm.torch.core.nn.modules.loss import BCEWithLogitsLoss
 from dragon.vm.torch.core.nn.modules.loss import CrossEntropyLoss
+from dragon.vm.torch.core.nn.modules.loss import KLDivLoss
 from dragon.vm.torch.core.nn.modules.loss import L1Loss
 from dragon.vm.torch.core.nn.modules.loss import MSELoss
 from dragon.vm.torch.core.nn.modules.loss import NLLLoss

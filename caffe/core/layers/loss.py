@@ -44,8 +44,8 @@ class EuclideanLoss(Layer):
     def __init__(self, layer_param):
         super(EuclideanLoss, self).__init__(layer_param)
         param = layer_param.loss_param
-        norm_dict = {0: 'mean', 1: 'mean', 2: 'batch_size', 3: 'sum'}
-        reduction = 'batch_size'
+        norm_dict = {0: 'mean', 1: 'mean', 2: 'batch_mean', 3: 'sum'}
+        reduction = 'batch_mean'
         if param.HasField('normalize'):
             if param.normalize:
                 reduction = 'mean'
@@ -81,11 +81,11 @@ class SigmoidCrossEntropyLoss(Layer):
     def __init__(self, layer_param):
         super(SigmoidCrossEntropyLoss, self).__init__(layer_param)
         param = layer_param.loss_param
-        norm_dict = {0: 'mean', 1: 'valid', 2: 'batch_size', 3: 'sum'}
+        norm_dict = {0: 'mean', 1: 'valid', 2: 'batch_mean', 3: 'sum'}
         reduction = 'valid'
         if param.HasField('normalize'):
             if not param.normalize:
-                reduction = 'batch_size'
+                reduction = 'batch_mean'
         else:
             reduction = norm_dict[param.normalization]
         self.arguments = {'reduction': reduction}
@@ -123,8 +123,8 @@ class SmoothL1Loss(Layer):
         super(SmoothL1Loss, self).__init__(layer_param)
         param = layer_param.loss_param
         smooth_l1_param = layer_param.smooth_l1_loss_param
-        norm_dict = {0: 'mean', 1: 'mean', 2: 'batch_size', 3: 'sum'}
-        reduction = 'batch_size'
+        norm_dict = {0: 'mean', 1: 'mean', 2: 'batch_mean', 3: 'sum'}
+        reduction = 'batch_mean'
         if param.HasField('normalize'):
             if param.normalize:
                 reduction = 'mean'
@@ -174,11 +174,11 @@ class SoftmaxWithLoss(Layer):
         super(SoftmaxWithLoss, self).__init__(layer_param)
         param = layer_param.loss_param
         softmax_param = layer_param.softmax_param
-        norm_dict = {0: 'mean', 1: 'valid', 2: 'batch_size', 3: 'sum'}
+        norm_dict = {0: 'mean', 1: 'valid', 2: 'batch_mean', 3: 'sum'}
         reduction = 'valid'
         if param.HasField('normalize'):
             if not param.normalize:
-                reduction = 'batch_size'
+                reduction = 'batch_mean'
         else:
             reduction = norm_dict[param.normalization]
         self.arguments = {

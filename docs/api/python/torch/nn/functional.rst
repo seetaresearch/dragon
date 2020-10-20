@@ -53,6 +53,9 @@ vm.torch.nn.functional
   : Apply the group normalization to input.
   `[Wu & He, 2018] <https://arxiv.org/abs/1803.08494>`_.
 
+  `kl_div(...) <functional/kl_div.html>`_
+  : Compute the Kullback-Leibler divergence.
+
   `l1_loss(...) <functional/l1_loss.html>`_
   : Compute the element-wise absolute value difference.
 
@@ -142,6 +145,7 @@ vm.torch.nn.functional
   functional/dropout
   functional/elu
   functional/group_norm
+  functional/kl_div
   functional/l1_loss
   functional/leaky_relu
   functional/linear

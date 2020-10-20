@@ -27,6 +27,7 @@ from dragon.vm.torch.core.nn.functional import drop_path
 from dragon.vm.torch.core.nn.functional import dropout
 from dragon.vm.torch.core.nn.functional import elu
 from dragon.vm.torch.core.nn.functional import group_norm
+from dragon.vm.torch.core.nn.functional import kl_div
 from dragon.vm.torch.core.nn.functional import l1_loss
 from dragon.vm.torch.core.nn.functional import leaky_relu
 from dragon.vm.torch.core.nn.functional import linear

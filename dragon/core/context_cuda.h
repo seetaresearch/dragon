@@ -148,13 +148,13 @@ class CUDAObjects {
   Map<string, ncclComm_t> nccl_comms_[CUDA_MAX_DEVICES];
 #endif
 
-  /*! \brief The flag that alllows cuDNN or not */
+  /*! \brief The flag that allows cuDNN or not */
   bool cudnn_enabled_ = true;
 
   /*! \brief The flag that allows cuDNN benchmark or not */
   bool cudnn_benchmark_ = false;
 
-  /*! \brief The flag thats allow cuDNN TF32 math type or not */
+  /*! \brief The flag that allows cuDNN TF32 math type or not */
   bool cudnn_allow_tf32_ = false;
 
  private:

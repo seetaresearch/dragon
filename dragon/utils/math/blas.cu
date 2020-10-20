@@ -231,22 +231,54 @@ DEFINE_COPY_FUNC(int64_t);
 DEFINE_COPY_FUNC(float16);
 #undef DEFINE_COPY_FUNC
 
-#define DEFINE_COPY_FUNC(T, cublas_func)                      \
-  template <>                                                 \
-  DRAGON_API void Copy<T, CUDAContext>(                       \
-      const int n,                                            \
-      const int incx,                                         \
-      const int incy,                                         \
-      const T* x,                                             \
-      T* y,                                                   \
-      CUDAContext* ctx) {                                     \
-    if (x != y && n > 0) {                                    \
-      cublas_func(ctx->cublas_handle(), n, x, incx, y, incy); \
-    }                                                         \
+#define DEFINE_COPY_FUNC(T, cublas_func)                                    \
+  template <>                                                               \
+  DRAGON_API void Copy<T, CUDAContext>(                                     \
+      const int n,                                                          \
+      const int incx,                                                       \
+      const int incy,                                                       \
+      const T* x,                                                           \
+      T* y,                                                                 \
+      CUDAContext* ctx) {                                                   \
+    if (x != y && n > 0) {                                                  \
+      CUBLAS_CHECK(cublas_func(ctx->cublas_handle(), n, x, incx, y, incy)); \
+    }                                                                       \
   }
 
 DEFINE_COPY_FUNC(float, cublasScopy);
 DEFINE_COPY_FUNC(double, cublasDcopy);
+#undef DEFINE_COPY_FUNC
+
+#define DEFINE_COPY_FUNC(T)                   \
+  template <>                                 \
+  DRAGON_API void CopyMatrix<T, CUDAContext>( \
+      const int m,                            \
+      const int n,                            \
+      const int ldx,                          \
+      const int ldy,                          \
+      const T* x,                             \
+      T* y,                                   \
+      CUDAContext* ctx) {                     \
+    if (m <= 0 || n <= 0) return;             \
+    CUDA_CHECK(cudaMemcpy2DAsync(             \
+        y,                                    \
+        sizeof(T) * ldy,                      \
+        x,                                    \
+        sizeof(T) * ldx,                      \
+        sizeof(T) * n,                        \
+        m,                                    \
+        cudaMemcpyDeviceToDevice,             \
+        ctx->cuda_stream()));                 \
+  }
+
+DEFINE_COPY_FUNC(bool);
+DEFINE_COPY_FUNC(int8_t);
+DEFINE_COPY_FUNC(uint8_t);
+DEFINE_COPY_FUNC(int);
+DEFINE_COPY_FUNC(int64_t);
+DEFINE_COPY_FUNC(float16);
+DEFINE_COPY_FUNC(float);
+DEFINE_COPY_FUNC(double);
 #undef DEFINE_COPY_FUNC
 
 #define DEFINE_AXPY_FUNC(T)                                                 \
@@ -398,7 +430,7 @@ DEFINE_DOT_FUNC(double, cublasDdot);
       const int n, const T* x, T* y, CUDAContext* ctx) {                       \
     CUBLAS_CHECK(cublasSetPointerMode(                                         \
         ctx->cublas_handle(), CUBLAS_POINTER_MODE_DEVICE));                    \
-    cublas_func(ctx->cublas_handle(), n, x, 1, y);                             \
+    CUBLAS_CHECK(cublas_func(ctx->cublas_handle(), n, x, 1, y));               \
   }                                                                            \
   template <>                                                                  \
   DRAGON_API T ASum<T, CUDAContext>(                                           \
@@ -406,7 +438,7 @@ DEFINE_DOT_FUNC(double, cublasDdot);
     T ret;                                                                     \
     CUBLAS_CHECK(                                                              \
         cublasSetPointerMode(ctx->cublas_handle(), CUBLAS_POINTER_MODE_HOST)); \
-    cublas_func(ctx->cublas_handle(), n, x, 1, &ret);                          \
+    CUBLAS_CHECK(cublas_func(ctx->cublas_handle(), n, x, 1, &ret));            \
     return ret;                                                                \
   }
 

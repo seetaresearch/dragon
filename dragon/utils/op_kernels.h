@@ -270,19 +270,6 @@ void ChannelShuffle(
     T* y,
     Context* ctx);
 
-/* array.concat */
-
-template <typename T, class Context>
-void Concat(
-    const int outer_dim,
-    const int inner_dim,
-    const int x_axis_dim,
-    const int y_cat_dim,
-    const int index,
-    const T* x,
-    T* y,
-    Context* ctx);
-
 /* array.cumsum */
 
 template <typename T, class Context>
@@ -492,19 +479,6 @@ void SliceGrad(
     const int64_t* starts,
     const T* dy,
     T* dx,
-    Context* ctx);
-
-/* array.split */
-
-template <typename T, class Context>
-void Split(
-    const int outer_dim,
-    const int inner_dim,
-    const int x_axis_dim,
-    const int y_axis_dim,
-    const int index,
-    const T* x,
-    T* y,
     Context* ctx);
 
 /* array.tile */

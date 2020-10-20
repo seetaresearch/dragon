@@ -38,7 +38,7 @@ void SigmoidCrossEntropyOp<Context>::DoRunWithType() {
     int64_t normalizer = 1;
     if (reduction_ == "VALID") {
       normalizer = -1; // Select from mask
-    } else if (reduction_ == "BATCH_SIZE") {
+    } else if (reduction_ == "BATCH_MEAN") {
       normalizer = X.dim(0);
     } else if (reduction_ == "MEAN") {
       normalizer = X.count();
@@ -83,7 +83,7 @@ void SigmoidCrossEntropyGradientOp<Context>::DoRunWithType() {
     int64_t normalizer = 1;
     if (reduction_ == "VALID") {
       normalizer = -1; // Select from mask
-    } else if (reduction_ == "BATCH_SIZE") {
+    } else if (reduction_ == "BATCH_MEAN") {
       normalizer = dX->dim(0);
     } else if (reduction_ == "MEAN") {
       normalizer = dX->count();

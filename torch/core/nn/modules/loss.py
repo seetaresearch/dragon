@@ -256,6 +256,58 @@ class CrossEntropyLoss(_WeightedLoss):
         )
 
 
+class KLDivLoss(_Loss):
+    """Compute the Kullback-Leibler divergence.
+
+    Examples:
+
+    ```python
+    m = torch.nn.KLDivLoss()
+    eps = 1e-12  # Epsilon to avoid log(0)
+    # Compute KL(P || Q)
+    q = torch.tensor([0.0, 0.1, 0.2, 0.3, 1.0])
+    p = torch.tensor([0.0, 0.3, 0.2, 0.1, 0.9])
+    loss = m(torch.log(torch.clamp(q, eps)), torch.clamp(p, eps))
+    ```
+
+    See Also
+    --------
+    `torch.nn.functional.kl_div(...)`_
+
+    """
+
+    def __init__(
+        self,
+        size_average=None,
+        reduce=None,
+        reduction='mean',
+        log_target=False,
+    ):
+        """Create a ``KDivLoss`` module.
+
+        Parameters
+        ----------
+        size_average : bool, optional
+            **True** to set the ``reduction`` to *'mean'*.
+        reduce : bool, optional
+            **True** to set the ``reduction`` to *'sum'* or *'mean'*.
+        reduction : {'none', 'batchmean', 'mean', 'sum'}, optional
+            The reduce method.
+        log_target : bool, optional, default=False
+            The flag indicating whether ``target`` is passed in log space.
+
+        """
+        super(KDivLoss, self).__init__(size_average, reduce, reduction)
+        self.log_target = log_target
+
+    def forward(self, input, target):
+        return F.kl_div(
+            input, target,
+            reduction=self.reduction,
+            log_target=self.log_target,
+        )
+
+
 class L1Loss(_Loss):
     r"""Compute the element-wise absolute value difference.
 

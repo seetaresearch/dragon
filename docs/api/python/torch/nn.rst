@@ -84,6 +84,9 @@ vm.torch.nn
   : Apply the gumbel softmax with a temperature.
   `[Jang et.al, 2016] <https://arxiv.org/abs/1611.01144>`_.
 
+  `class KLDivLoss <nn/KLDivLoss.html>`_
+  : Compute the Kullback-Leibler divergence.
+
   `class L1Loss <nn/L1Loss.html>`_
   : Compute the element-wise absolute value difference.
 
@@ -219,6 +222,7 @@ vm.torch.nn
   nn/GroupNorm
   nn/GRU
   nn/GumbelSoftmax
+  nn/KLDivLoss
   nn/L1Loss
   nn/LeakyReLU
   nn/Linear

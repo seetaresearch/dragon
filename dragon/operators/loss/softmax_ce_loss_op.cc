@@ -49,7 +49,7 @@ void SoftmaxCrossEntropyOp<Context>::DoRunWithType() {
         ctx());
   } else {
     int64_t normalizer = 1;
-    if (reduction_ == "BATCH_SIZE") {
+    if (reduction_ == "BATCH_MEAN") {
       normalizer = X.dim(0);
     } else if (reduction_ == "MEAN") {
       normalizer = num_preds;
@@ -93,7 +93,7 @@ void SoftmaxCrossEntropyGradientOp<Context>::DoRunWithType() {
         outer_dim, dX->dim(axis), inner_dim, dy, dx, ctx());
   } else {
     int64_t normalizer = 1;
-    if (reduction_ == "BATCH_SIZE") {
+    if (reduction_ == "BATCH_MEAN") {
       normalizer = dX->dim(0);
     } else if (reduction_ == "MEAN") {
       normalizer = num_preds;

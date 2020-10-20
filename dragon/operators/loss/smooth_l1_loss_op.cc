@@ -45,7 +45,7 @@ void SmoothL1LossOp<Context>::DoRunWithType() {
         ctx());
   } else {
     int64_t normalizer = 1;
-    if (reduction_ == "BATCH_SIZE") {
+    if (reduction_ == "BATCH_MEAN") {
       normalizer *= X.dim(0);
     } else if (reduction_ == "MEAN") {
       normalizer *= X.count();
@@ -94,7 +94,7 @@ void SmoothL1LossGradientOp<Context>::DoRunWithType() {
     math::Mul(dX->count(), dy, dx, dx, ctx());
   } else {
     int64_t normalizer = 1;
-    if (reduction_ == "BATCH_SIZE") {
+    if (reduction_ == "BATCH_MEAN") {
       normalizer *= dX->dim(0);
     } else if (reduction_ == "MEAN") {
       normalizer *= dX->count();
