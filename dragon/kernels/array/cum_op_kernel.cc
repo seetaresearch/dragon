@@ -10,8 +10,8 @@ namespace {
 template <typename T>
 void _CumSum(
     const int outer_dim,
-    const int axis_dim,
     const int inner_dim,
+    const int axis_dim,
     const bool exclusive,
     const T* x,
     T* y,
@@ -33,8 +33,8 @@ void _CumSum(
 template <>
 void _CumSum<float16>(
     const int outer_dim,
-    const int axis_dim,
     const int inner_dim,
+    const int axis_dim,
     const bool exclusive,
     const float16* x,
     float16* y,
@@ -45,8 +45,8 @@ void _CumSum<float16>(
 template <typename T>
 void _CumSumReverse(
     const int outer_dim,
-    const int axis_dim,
     const int inner_dim,
+    const int axis_dim,
     const bool exclusive,
     const T* x,
     T* y,
@@ -72,8 +72,8 @@ void _CumSumReverse(
 template <>
 void _CumSumReverse<float16>(
     const int outer_dim,
-    const int axis_dim,
     const int inner_dim,
+    const int axis_dim,
     const bool exclusive,
     const float16* x,
     float16* y,
@@ -89,17 +89,17 @@ void _CumSumReverse<float16>(
   template <>                                                               \
   void CumSum<T, CPUContext>(                                               \
       const int outer_dim,                                                  \
-      const int axis_dim,                                                   \
       const int inner_dim,                                                  \
+      const int axis_dim,                                                   \
       const bool exclusive,                                                 \
       const bool reverse,                                                   \
       const T* x,                                                           \
       T* y,                                                                 \
       CPUContext* ctx) {                                                    \
     if (reverse) {                                                          \
-      _CumSumReverse(outer_dim, axis_dim, inner_dim, exclusive, x, y, ctx); \
+      _CumSumReverse(outer_dim, inner_dim, axis_dim, exclusive, x, y, ctx); \
     } else {                                                                \
-      _CumSum(outer_dim, axis_dim, inner_dim, exclusive, x, y, ctx);        \
+      _CumSum(outer_dim, inner_dim, axis_dim, exclusive, x, y, ctx);        \
     }                                                                       \
   }
 
@@ -110,7 +110,6 @@ DEFINE_KERNEL_LAUNCHER(int64_t);
 DEFINE_KERNEL_LAUNCHER(float16);
 DEFINE_KERNEL_LAUNCHER(float);
 DEFINE_KERNEL_LAUNCHER(double);
-
 #undef DEFINE_KERNEL_LAUNCHER
 
 } // namespace kernel

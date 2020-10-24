@@ -188,6 +188,49 @@ class TestActivationOps(OpTestCase):
         with dragon.device('cuda'), self.cudnn_ws.as_default():
             self.test_elu()
 
+    def test_hardsigmoid(self):
+        alpha, beta = 0.2, 0.5
+        for execution in ('EAGER_MODE', 'GRAPH_MODE'):
+            with execution_context().mode(execution):
+                data = np.array([-3.0, -2.0, -1.0, 0.0, 1.0, 2.0, 3.0], 'float32')
+                x = new_tensor(data)
+                with dragon.GradientTape() as tape:
+                    tape.watch(x)
+                    y = dragon.nn.hardsigmoid(x, alpha=alpha, beta=beta)
+                dx = tape.gradient(y, [x], output_gradients=[x])[0]
+                result = np.clip(alpha * data + beta, 0, 1)
+                self.assertEqual([y, dx],
+                                 [result, (result > 0) * (result < 1) * data * alpha])
+
+    @unittest.skipIf(not TEST_CUDA, 'CUDA unavailable')
+    def test_hardsigmoid_cuda(self):
+        with dragon.device('cuda'):
+            self.test_hardsigmoid()
+
+    def test_hardswish(self):
+        alpha, beta = 0.2, 0.5
+        bound = beta / alpha
+        alpha2x = alpha * 2.
+        for execution in ('EAGER_MODE', 'GRAPH_MODE'):
+            with execution_context().mode(execution):
+                data = np.array([-3.0, -2.0, -1.0, 0.0, 1.0, 2.0, 3.0], 'float32')
+                x = new_tensor(data)
+                with dragon.GradientTape() as tape:
+                    tape.watch(x)
+                    y = dragon.nn.hardswish(x, alpha=alpha, beta=beta)
+                dx = tape.gradient(y, [x], output_gradients=[x])[0]
+                result = data * np.clip(alpha * data + beta, 0, 1)
+                result2 = data.copy()
+                inds = np.where(data < bound)[0]
+                result2[inds] = data[inds] * (data[inds] * alpha2x + beta)
+                result2[np.where(data < -bound)[0]] = 0
+                self.assertEqual([y, dx], [result, result2])
+
+    @unittest.skipIf(not TEST_CUDA, 'CUDA unavailable')
+    def test_hardswish_cuda(self):
+        with dragon.device('cuda'):
+            self.test_hardswish()
+
     def test_leaky_relu(self):
         alpha = 0.2
         for execution in ('EAGER_MODE', 'GRAPH_MODE'):
@@ -369,6 +412,24 @@ class TestActivationOps(OpTestCase):
         dragon.cuda.enable_cudnn(True)
         with dragon.device('cuda'), self.cudnn_ws.as_default():
             self.test_softmax()
+
+    def test_swish(self):
+        for execution in ('EAGER_MODE', 'GRAPH_MODE'):
+            with execution_context().mode(execution):
+                data = np.array([-3.0, -2.0, -1.0, 0.0, 1.0, 2.0, 3.0], 'float32')
+                x = new_tensor(data)
+                with dragon.GradientTape() as tape:
+                    tape.watch(x)
+                    y = dragon.nn.swish(x)
+                dx = tape.gradient(y, [x], output_gradients=[x])[0]
+                result = data * (1. / (1. + np.exp(-data)))
+                result2 = data * (result + (1. / (1. + np.exp(-data))) * (1. - result))
+                self.assertEqual([y, dx], [result, result2])
+
+    @unittest.skipIf(not TEST_CUDA, 'CUDA unavailable')
+    def test_swish_cuda(self):
+        with dragon.device('cuda'):
+            self.test_swish()
 
     def test_tanh(self):
         for execution in ('EAGER_MODE', 'GRAPH_MODE'):

@@ -124,6 +124,87 @@ class GumbelSoftmax(Module):
         return F.softmax(scores, self.dim, self.inplace)
 
 
+class Hardsigmoid(Module):
+    r"""Apply the hard sigmoid function.
+
+    The **HardSigmoid** function is defined as:
+
+    .. math::
+        \text{Hardsigmoid}(x) = \begin{cases}
+            0 & \text{if~} x \le -3, \\
+            1 & \text{if~} x \ge +3, \\
+            x / 6 + 1 / 2 & \text{otherwise}
+        \end{cases}
+
+    Examples:
+
+    ```python
+    m = torch.nn.Hardsigmoid()
+    x = torch.randn(2, 3)
+    y = m(x)
+    ```
+
+    See Also
+    --------
+    `torch.nn.functional.hardsigmoid(...)`_
+
+    """
+
+    def __init__(self, inplace=False):
+        """Create a ``Hardsigmoid`` module.
+
+        Parameters
+        ----------
+        inplace : bool, optional, default=False
+            Whether to do the operation in-place.
+
+        """
+        super(Hardsigmoid, self).__init__()
+        self.inplace = inplace
+
+    def extra_repr(self):
+        inplace_str = 'inplace' if self.inplace else ''
+        return inplace_str
+
+    def forward(self, input):
+        return F.hardsigmoid(input, self.inplace)
+
+
+class Hardswish(Module):
+    r"""Apply the hard swish function.
+    `[Howard et.al, 2019] <https://arxiv.org/abs/1905.02244>`_.
+
+    The **HardSwish** function is defined as:
+
+    .. math::
+        \text{Hardsigmoid}(x) = \begin{cases}
+            0 & \text{if~} x \le -3, \\
+            x & \text{if~} x \ge +3, \\
+            x \cdot (x + 3) /6 & \text{otherwise}
+        \end{cases}
+
+    Examples:
+
+    ```python
+    m = torch.nn.Hardswish()
+    x = torch.randn(2, 3)
+    y = m(x)
+    ```
+
+    See Also
+    --------
+    `torch.nn.functional.hardswish(...)`_
+
+    """
+
+    def __init__(self):
+        """Create a ``Hardswish`` module."""
+        super(Hardswish, self).__init__()
+
+    def forward(self, input):
+        return F.hardswish(input)
+
+
 class LeakyReLU(Module):
     r"""Apply the leaky rectified linear unit.
 
@@ -492,6 +573,36 @@ class Softmax(Module):
 
     def forward(self, input):
         return F.softmax(input, self.dim, self.inplace)
+
+
+class Swish(Module):
+    r"""Apply the swish function.
+    `[Ramachandran et.al, 2017] <https://arxiv.org/abs/1710.05941>`_.
+
+    The **Swish** function is defined as:
+
+    .. math:: \text{Swish}(x) = x \cdot \frac{1}{1 + \exp(-x)}
+
+    Examples:
+
+    ```python
+    m = torch.nn.Swish()
+    x = torch.randn(2, 3)
+    y = m(x)
+    ```
+
+    See Also
+    --------
+    `torch.nn.functional.swish(...)`_
+
+    """
+
+    def __init__(self):
+        """Create a ``Swish`` module."""
+        super(Swish, self).__init__()
+
+    def forward(self, input):
+        return F.swish(input)
 
 
 class Tanh(Module):

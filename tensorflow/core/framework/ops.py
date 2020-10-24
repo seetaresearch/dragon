@@ -78,7 +78,7 @@ def name_scope(name):
 
 
 def device(device_name):
-    """Context-manager to nest the the device spec.
+    """Context-manager to nest the device spec.
 
     Examples:
 

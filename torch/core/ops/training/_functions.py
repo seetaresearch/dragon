@@ -18,6 +18,8 @@ from dragon.vm.torch.core.autograd import function
 
 
 class ParamUpdate(function.Function):
+    """ParamUpdate function."""
+
     def __init__(self, key, dev, **kwargs):
         super(ParamUpdate, self).__init__(key, dev, **kwargs)
         self.op_type = kwargs.get('op_type', '')
@@ -41,6 +43,8 @@ class ParamUpdate(function.Function):
 
 
 class GradAccumulate(function.Function):
+    """GradAccumulate function."""
+
     def __init__(self, key, dev, **kwargs):
         super(GradAccumulate, self).__init__(key, dev, **kwargs)
         self.momentum = kwargs.get('momentum', 1)
@@ -48,7 +52,10 @@ class GradAccumulate(function.Function):
     def attributes(self):
         return {
             'op_type': 'Axpby',
-            'arguments': {'alpha': 1., 'beta': float(self.momentum)},
+            'arguments': {
+                'alpha': 1.0,
+                'beta': float(self.momentum),
+            },
         }
 
     def forward(self, grad):

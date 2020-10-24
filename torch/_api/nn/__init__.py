@@ -21,6 +21,8 @@ from dragon.vm.torch._api.nn import init
 # Classes
 from dragon.vm.torch.core.nn.modules.activation import ELU
 from dragon.vm.torch.core.nn.modules.activation import GumbelSoftmax
+from dragon.vm.torch.core.nn.modules.activation import Hardsigmoid
+from dragon.vm.torch.core.nn.modules.activation import Hardswish
 from dragon.vm.torch.core.nn.modules.activation import LeakyReLU
 from dragon.vm.torch.core.nn.modules.activation import LogSoftmax
 from dragon.vm.torch.core.nn.modules.activation import PReLU
@@ -29,6 +31,7 @@ from dragon.vm.torch.core.nn.modules.activation import ReLU6
 from dragon.vm.torch.core.nn.modules.activation import SELU
 from dragon.vm.torch.core.nn.modules.activation import Sigmoid
 from dragon.vm.torch.core.nn.modules.activation import Softmax
+from dragon.vm.torch.core.nn.modules.activation import Swish
 from dragon.vm.torch.core.nn.modules.activation import Tanh
 from dragon.vm.torch.core.nn.modules.batchnorm import BatchNorm1d
 from dragon.vm.torch.core.nn.modules.batchnorm import BatchNorm2d

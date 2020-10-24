@@ -63,6 +63,13 @@ dragon.nn
   : Apply the group normalization.
   `[Wu & He, 2018] <https://arxiv.org/abs/1803.08494>`_.
 
+  `hardsigmoid(...) <nn/hardsigmoid.html>`_
+  : Apply the hard sigmoid function.
+
+  `hardswish(...) <nn/hardswish.html>`_
+  : Apply the hard swish function.
+  `[Howard et.al, 2019] <https://arxiv.org/abs/1905.02244>`_.
+
   `instance_norm(...) <nn/instance_norm.html>`_
   : Apply the instance normalization.
   `[Ulyanov et.al, 2016] <https://arxiv.org/abs/1607.08022>`_
@@ -79,7 +86,7 @@ dragon.nn
   `[Krizhevsky et.al, 2012] <http://www.cs.toronto.edu/~hinton/absps/imagenet.pdf>`_.
 
   `log_softmax(...) <nn/log_softmax.html>`_
-  : Apply the composite of logarithm and softmax.
+  : Compute the composite of logarithm and softmax.
 
   `prelu(...) <nn/prelu.html>`_
   : Apply the parametric rectified linear unit.
@@ -101,10 +108,14 @@ dragon.nn
   `[Klambauer et.al, 2017] <https://arxiv.org/abs/1706.02515>`_.
 
   `softmax(...) <nn/softmax.html>`_
-  : Apply the softmax function.
+  : Compute the softmax result.
 
   `space_to_depth(...) <nn/space_to_depth.html>`_
   : Rearrange blocks of spatial data into depth.
+
+  `swish(...) <nn/swish.html>`_
+  : Apply the swish function.
+  `[Ramachandran et.al, 2017] <https://arxiv.org/abs/1710.05941>`_.
    
   `sync_batch_norm(...) <nn/sync_batch_norm.html>`_
   : Apply the batch normalization with synced statistics.
@@ -128,6 +139,8 @@ dragon.nn
   nn/elu
   nn/fully_connected
   nn/group_norm
+  nn/hardsigmoid
+  nn/hardswish
   nn/instance_norm
   nn/layer_norm
   nn/leaky_relu
@@ -140,6 +153,7 @@ dragon.nn
   nn/selu
   nn/softmax
   nn/space_to_depth
+  nn/swish
   nn/sync_batch_norm
 
 .. raw:: html

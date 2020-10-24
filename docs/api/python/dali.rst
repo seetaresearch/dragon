@@ -16,7 +16,7 @@ vm.dali
   #########
 
   `device(...) <dali/device.html>`_
-  : Context-manager to nest the the device spec.
+  : Context-manager to nest the device spec.
 
   `get_device_type(...) <dali/get_device_type.html>`_
   : Return the current nesting device type.

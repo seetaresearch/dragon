@@ -18,6 +18,8 @@ from dragon.core.framework.ops import Operator
 
 
 class LSTMCell(Operator):
+    """LSTMCell operator."""
+
     def __init__(self, key, dev, **kwargs):
         super(LSTMCell, self).__init__(key, dev, **kwargs)
 
@@ -30,6 +32,8 @@ class LSTMCell(Operator):
 
 
 class Recurrent(Operator):
+    """Recurrent operator."""
+
     def __init__(self, key, dev, **kwargs):
         super(Recurrent, self).__init__(key, dev, **kwargs)
         self.mode = kwargs.get('mode', 'rnn_tanh')
@@ -58,6 +62,8 @@ class Recurrent(Operator):
 
 
 class RNNParamSet(Operator):
+    """RNNParamSet operator."""
+
     def __init__(self, key, dev, **kwargs):
         super(RNNParamSet, self).__init__(key, dev, **kwargs)
         self.param_type = kwargs.get('param_type', 'matrix')

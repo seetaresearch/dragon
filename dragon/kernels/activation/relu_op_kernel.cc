@@ -10,9 +10,9 @@ namespace {
 
 template <typename T>
 void _Relu(const int count, const T alpha, const T* x, T* y) {
+  ConstEigenVectorArrayMap<T> X(x, count);
   EigenVectorArrayMap<T>(y, count) =
-      ConstEigenVectorArrayMap<T>(x, count).unaryExpr(
-          [&](T a) { return a > T(0) ? a : alpha * a; });
+      X.cwiseMax(T(0)) + X.cwiseMin(T(0)) * alpha;
 }
 
 template <>

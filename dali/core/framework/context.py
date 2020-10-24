@@ -18,7 +18,7 @@ from dragon.core.util import tls
 
 
 def device(device_type, device_index=0):
-    """Context-manager to nest the the device spec.
+    """Context-manager to nest the device spec.
 
     Examples:
 

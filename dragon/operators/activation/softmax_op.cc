@@ -12,8 +12,8 @@ void SoftmaxOp<Context>::DoRunWithType() {
   CANONICALIZE_AXIS_WITH_TENSOR(X);
   kernel::Softmax(
       X.count(0, axis),
-      X.dim(axis),
       X.count(axis + 1),
+      X.dim(axis),
       X.template data<T, Context>(),
       Y->ReshapeLike(X)->template mutable_data<T, Context>(),
       ctx());
@@ -31,8 +31,8 @@ void SoftmaxGradientOp<Context>::DoRunWithType() {
   CANONICALIZE_AXIS_WITH_TENSOR(Y);
   kernel::SoftmaxGrad(
       Y.count(0, axis),
-      Y.dim(axis),
       Y.count(axis + 1),
+      Y.dim(axis),
       dY.template data<T, Context>(),
       Y.template data<T, Context>(),
       dX->ReshapeLike(Y)->template mutable_data<T, Context>(),

@@ -26,8 +26,8 @@ void SigmoidFocalLossOp<Context>::DoRunWithType() {
 
   kernel::SigmoidFocalLoss(
       outer_dim,
-      X.dim(axis),
       inner_dim,
+      X.dim(axis),
       pos_alpha_,
       neg_alpha_,
       gamma_,
@@ -107,8 +107,8 @@ void SigmoidFocalLossGradientOp<Context>::DoRunWithType() {
 
   kernel::SigmoidFocalLossGrad(
       outer_dim,
-      dX->dim(axis),
       inner_dim,
+      dX->dim(axis),
       pos_alpha_,
       neg_alpha_,
       gamma_,

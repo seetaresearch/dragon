@@ -719,6 +719,50 @@ def floor_(self):
     return math_funcs.floor(self, self)
 
 
+def new_full(
+    self,
+    size,
+    fill_value,
+    dtype=None,
+    device=None,
+    requires_grad=False,
+):
+    """Return a tensor filled with a scalar.
+
+    Refer this tensor if ``dtype`` and ``device`` not provided.
+
+    Parameters
+    ----------
+    size : Sequence[int]
+        The size of output tensor.
+    fill_value : number
+        The scalar to fill.
+    dtype : str, optional
+        The optional data type.
+    device : dragon.vm.torch.device, optional
+        The optional device of returned tensor.
+    requires_grad : bool, optional, default=False
+        **True** to record gradient for returned tensor.
+
+    Returns
+    -------
+    dragon.vm.torch.Tensor
+        The output tensor.
+
+    See Also
+    --------
+    `torch.full(...)`_
+
+    """
+    return init_funcs.full(
+        size,
+        fill_value,
+        dtype=self.dtype if dtype is None else dtype,
+        device=self.device if device is None else device,
+        requires_grad=requires_grad,
+    )
+
+
 def ge(self, other):
     r"""Compute the element-wise greater-equal comparison.
 
@@ -1206,6 +1250,24 @@ def neg(self):
 
     """
     return math_funcs.neg(self)
+
+
+def neg_(self):
+    r"""Compute the element-wise negative.
+
+    .. math:: \text{self} = -\text{self}
+
+    Returns
+    -------
+    dragon.vm.torch.Tensor
+        The self.
+
+    See Also
+    --------
+    `torch.neg(...)`_
+
+    """
+    return math_funcs.neg(self, self)
 
 
 def nonzero(self):
@@ -1993,6 +2055,8 @@ Tensor.multinomial = multinomial
 Tensor.narrow = narrow
 Tensor.ne = ne
 Tensor.neg = neg
+Tensor.neg_ = neg_
+Tensor.new_full = new_full
 Tensor.nonzero = nonzero
 Tensor.normal_ = normal_
 Tensor.permute = permute

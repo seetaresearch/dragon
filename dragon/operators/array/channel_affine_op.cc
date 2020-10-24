@@ -39,8 +39,8 @@ void ChannelAffineOp<Context>::DoRunWithType() {
 
   kernel::ChannelAffine(
       X.count(0, axis),
-      X.count(axis, axis + num_axes),
       X.count(axis + num_axes),
+      X.count(axis, axis + num_axes),
       X.template data<T, Context>(),
       W.template data<T, Context>(),
       InputSize() <= 2 ? nullptr : Input(2).template data<T, Context>(),
@@ -121,8 +121,8 @@ void ChannelAffineGradientOp<Context>::DoRunWithType() {
     Output(0)->ReshapeLike(Input(-1));
     kernel::ChannelAffine(
         X.count(0, axis),
-        X.count(axis, axis + num_axes),
         X.count(axis + num_axes),
+        X.count(axis, axis + num_axes),
         dY.template data<T, Context>(),
         W.template data<T, Context>(),
         (const T*)nullptr,

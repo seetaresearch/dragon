@@ -22,8 +22,8 @@ void _BiasAdd(
 template <typename T>
 void _BiasAdd(
     const int outer_dim,
-    const int axis_dim,
     const int inner_dim,
+    const int axis_dim,
     const T* x,
     const T* b,
     T* y) {
@@ -44,8 +44,8 @@ void _BiasAdd(
 template <>
 void BiasAdd<float16, CPUContext>(
     const int outer_dim,
-    const int axis_dim,
     const int inner_dim,
+    const int axis_dim,
     const float16* x,
     const float16* b,
     float16* y,
@@ -57,8 +57,8 @@ void BiasAdd<float16, CPUContext>(
   template <>                                            \
   void BiasAdd<T, CPUContext>(                           \
       const int outer_dim,                               \
-      const int axis_dim,                                \
       const int inner_dim,                               \
+      const int axis_dim,                                \
       const T* x,                                        \
       const T* b,                                        \
       T* y,                                              \
@@ -66,7 +66,7 @@ void BiasAdd<float16, CPUContext>(
     if (inner_dim == 1) {                                \
       _BiasAdd(outer_dim, axis_dim, x, b, y);            \
     } else {                                             \
-      _BiasAdd(outer_dim, axis_dim, inner_dim, x, b, y); \
+      _BiasAdd(outer_dim, inner_dim, axis_dim, x, b, y); \
     }                                                    \
   }
 

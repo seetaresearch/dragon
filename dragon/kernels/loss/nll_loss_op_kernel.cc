@@ -10,10 +10,10 @@ namespace {
 template <typename LogitType, typename TargetType>
 void _NLLLoss(
     const int outer_dim,
-    const int axis_dim,
     const int inner_dim,
+    const int axis_dim,
     const int ignore_index,
-    const LogitType* log_prob,
+    const LogitType* logit,
     const TargetType* target,
     LogitType* loss,
     LogitType* mask) {
@@ -26,7 +26,7 @@ void _NLLLoss(
       loss[i] = mask[i] = LogitType(0);
     } else {
       k = (idx[0] * axis_dim + label) * inner_dim + idx[1];
-      loss[i] = -log_prob[k], mask[i] = LogitType(1);
+      loss[i] = -logit[k], mask[i] = LogitType(1);
     }
     utils::math::IncreaseIndexInDims(2, dims.data(), idx.data());
   }
@@ -35,12 +35,12 @@ void _NLLLoss(
 template <typename LogitType, typename TargetType>
 void _NLLLossGrad(
     const int outer_dim,
-    const int axis_dim,
     const int inner_dim,
+    const int axis_dim,
     const int ignore_index,
-    const LogitType* log_prob,
+    const LogitType* logit,
     const TargetType* target,
-    LogitType* dx,
+    LogitType* dlogit,
     LogitType* mask) {
   std::array<int, 2> idx = {0, 0};
   std::array<int, 2> dims = {outer_dim, inner_dim};
@@ -51,7 +51,7 @@ void _NLLLossGrad(
       mask[i] = LogitType(0);
     } else {
       k = (idx[0] * axis_dim + label) * inner_dim + idx[1];
-      dx[k] = LogitType(-1), mask[i] = LogitType(1);
+      dlogit[k] = LogitType(-1), mask[i] = LogitType(1);
     }
     utils::math::IncreaseIndexInDims(2, dims.data(), idx.data());
   }
@@ -65,20 +65,20 @@ void _NLLLossGrad(
   template <>                                               \
   void name<LogitType, TargetType, CPUContext>(             \
       const int outer_dim,                                  \
-      const int axis_dim,                                   \
       const int inner_dim,                                  \
+      const int axis_dim,                                   \
       const int ignore_index,                               \
-      const LogitType* log_prob,                            \
+      const LogitType* logit,                               \
       const TargetType* target,                             \
       LogitType* loss,                                      \
       LogitType* mask,                                      \
       CPUContext* ctx) {                                    \
     _##name(                                                \
         outer_dim,                                          \
-        axis_dim,                                           \
         inner_dim,                                          \
+        axis_dim,                                           \
         ignore_index,                                       \
-        log_prob,                                           \
+        logit,                                              \
         target,                                             \
         loss,                                               \
         mask);                                              \

@@ -21,11 +21,11 @@ from dragon.vm.torch.core import cpp
 from dragon.vm.torch.core.tensor import Tensor
 
 
-def new_leaf(sizes, kwargs):
+def new_leaf(size, kwargs):
     """Return a leaf tensor from optional kwargs."""
     device = kwargs.get('device', cpp.device())
     return Tensor(
-        *sizes,
+        *size,
         dtype=kwargs.get('dtype', 'float32'),
         device=cpp.device() if device is None else device,
         requires_grad=kwargs.get('requires_grad', False)

@@ -18,6 +18,8 @@ from dragon.vm.torch.core.autograd import function
 
 
 class Collective(function.Function):
+    """Collective function."""
+
     def __init__(self, key, dev, **kwargs):
         super(Collective, self).__init__(key, dev, **kwargs)
         self.root = kwargs.get('root', 0)

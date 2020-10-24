@@ -13,6 +13,7 @@ from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
 
+from dragon.core.ops import activation_ops as _activation_ops
 from dragon.core.util import six
 from dragon.vm.tensorflow.core.keras.utils import generic_utils
 from dragon.vm.tensorflow.core.ops import math_ops
@@ -81,6 +82,34 @@ def exponential(x):
 
     """
     return math_ops.exp(x)
+
+
+def hard_sigmoid(x, **kwargs):
+    r"""Apply the hard sigmoid function to input.
+
+    The **HardSigmoid** function is defined as:
+
+    .. math:: \text{HardSigmoid}(x) = \max(0, \min(1, 0.2 * x + 0.5))
+
+    Examples:
+
+    ```python
+    x = tf.constant([-2.5, -1.0, 0.0, 1.0, 2.5])
+    print(tf.keras.activations.hard_sigmoid(x, inplace=False))
+    ```
+
+    Parameters
+    ----------
+    x : dragon.Tensor
+        The input tensor.
+
+    Returns
+    -------
+    dragon.Tensor
+        The output tensor.
+
+    """
+    return _activation_ops.hardsigmoid(x, **kwargs)
 
 
 def linear(x):
@@ -238,6 +267,35 @@ def softmax(x, axis=-1, **kwargs):
 
     """
     return nn.softmax(x, axis=axis, **kwargs)
+
+
+def swish(x):
+    r"""Apply the swish function.
+    `[Ramachandran et.al, 2017] <https://arxiv.org/abs/1710.05941>`_.
+
+    The **Swish** function is defined as:
+
+    .. math:: \text{Swish}(x) = x \cdot \frac{1}{1 + \exp(-x)}
+
+    Examples:
+
+    ```python
+    x = tf.constant([-2.5, -1.0, 0.0, 1.0, 2.5])
+    print(tf.keras.activations.swish(x))
+    ```
+
+    Parameters
+    ----------
+    x : dragon.Tensor
+        The input tensor.
+
+    Returns
+    -------
+    dragon.Tensor
+        The output tensor.
+
+    """
+    return nn.swish(x)
 
 
 def tanh(x, **kwargs):

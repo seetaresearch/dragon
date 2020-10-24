@@ -18,6 +18,8 @@ from dragon.core.framework.ops import Operator
 
 
 class ParamUpdate(Operator):
+    """ParamUpdate operator."""
+
     def __init__(self, key, dev, **kwargs):
         super(ParamUpdate, self).__init__(key, dev, **kwargs)
         self.op_type = kwargs.get('op_type', '')

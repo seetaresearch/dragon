@@ -185,8 +185,8 @@ __global__ void _SoftmaxGrad<half>(
 template <>
 void Softmax<float16, CUDAContext>(
     const int outer_dim,
-    const int axis_dim,
     const int inner_dim,
+    const int axis_dim,
     const float16* x,
     float16* y,
     CUDAContext* ctx) {
@@ -203,8 +203,8 @@ void Softmax<float16, CUDAContext>(
 template <>
 void SoftmaxGrad<float16, CUDAContext>(
     const int outer_dim,
-    const int axis_dim,
     const int inner_dim,
+    const int axis_dim,
     const float16* dy,
     const float16* y,
     float16* dx,
@@ -223,8 +223,8 @@ void SoftmaxGrad<float16, CUDAContext>(
   template <>                                                                \
   void Softmax<T, CUDAContext>(                                              \
       const int outer_dim,                                                   \
-      const int axis_dim,                                                    \
       const int inner_dim,                                                   \
+      const int axis_dim,                                                    \
       const T* x,                                                            \
       T* y,                                                                  \
       CUDAContext* ctx) {                                                    \
@@ -237,8 +237,8 @@ void SoftmaxGrad<float16, CUDAContext>(
   template <>                                                    \
   void SoftmaxGrad<T, CUDAContext>(                              \
       const int outer_dim,                                       \
-      const int axis_dim,                                        \
       const int inner_dim,                                       \
+      const int axis_dim,                                        \
       const T* dy,                                               \
       const T* y,                                                \
       T* dx,                                                     \

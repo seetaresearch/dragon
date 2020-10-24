@@ -10,8 +10,8 @@ namespace {
 template <typename LogitType, typename TargetType>
 void _SigmoidFocalLoss(
     const int outer_dim,
-    const int axis_dim,
     const int inner_dim,
+    const int axis_dim,
     const LogitType pos_alpha,
     const LogitType neg_alpha,
     const LogitType gamma,
@@ -55,8 +55,8 @@ void _SigmoidFocalLoss(
 template <typename LogitType, typename TargetType>
 void _SigmoidFocalLossGrad(
     const int outer_dim,
-    const int axis_dim,
     const int inner_dim,
+    const int axis_dim,
     const LogitType pos_alpha,
     const LogitType neg_alpha,
     const LogitType gamma,
@@ -108,8 +108,8 @@ void _SigmoidFocalLossGrad(
   template <>                                               \
   void name<LogitType, TargetType, CPUContext>(             \
       const int outer_dim,                                  \
-      const int axis_dim,                                   \
       const int inner_dim,                                  \
+      const int axis_dim,                                   \
       const float pos_alpha,                                \
       const float neg_alpha,                                \
       const float gamma,                                    \
@@ -121,8 +121,8 @@ void _SigmoidFocalLossGrad(
       CPUContext* ctx) {                                    \
     _##name(                                                \
         outer_dim,                                          \
-        axis_dim,                                           \
         inner_dim,                                          \
+        axis_dim,                                           \
         (LogitType)pos_alpha,                               \
         (LogitType)neg_alpha,                               \
         (LogitType)gamma,                                   \

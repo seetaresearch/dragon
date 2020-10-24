@@ -223,6 +223,96 @@ def elu(inputs, alpha=1., **kwargs):
 
 
 @OpSchema.num_inputs(1)
+def hardsigmoid(inputs, alpha=0.2, beta=0.5, **kwargs):
+    r"""Apply the hard sigmoid function.
+
+    The **HardSigmoid** function is defined as:
+
+    .. math:: \text{HardSigmoid}(x) = \max(0, \min(1, \alpha * x + \beta))
+
+    Examples:
+
+    ```python
+    x = dragon.constant([-2.5, -1.0, 0.0, 1.0, 2.5])
+    print(dragon.nn.hardsigmoid(x, inplace=False))
+    ```
+
+    Parameters
+    ----------
+    inputs : dragon.Tensor
+        The input tensor.
+    alpha : float, optional, default=0.2
+        The value to :math:`\alpha`.
+    beta : float, optional, default=0.5
+        The value to :math:`\beta`.
+
+    Returns
+    -------
+    dragon.Tensor
+        The output tensor.
+
+    """
+    args = parse_args(locals())
+    args['alpha'] = float(alpha)
+    args['beta'] = float(beta)
+    inplace = args.pop('inplace') if 'inplace' in args else False
+    op_lib = activation_ops_lib.HardSigmoid
+    if context.executing_eagerly():
+        return op_lib \
+            .instantiate(
+                alpha=args['alpha'],
+                beta=args['beta'],
+            ).apply([inputs], inplace=inplace)
+    else:
+        return op_lib.blend(**args)
+
+
+@OpSchema.num_inputs(1)
+def hardswish(inputs, alpha=0.2, beta=0.5, **kwargs):
+    r"""Apply the hard swish function.
+    `[Howard et.al, 2019] <https://arxiv.org/abs/1905.02244>`_.
+
+    The **HardSwish** function is defined as:
+
+    .. math:: \text{HardSwish}(x) = x \cdot \max(0, \min(1, \alpha * x + \beta))
+
+    Examples:
+
+    ```python
+    x = dragon.constant([-2.5, -1.0, 0.0, 1.0, 2.5])
+    print(dragon.nn.hardswish(x))
+    ```
+
+    Parameters
+    ----------
+    inputs : dragon.Tensor
+        The input tensor.
+    alpha : float, optional, default=0.2
+        The value to :math:`\alpha`.
+    beta : float, optional, default=0.5
+        The value to :math:`\beta`.
+
+    Returns
+    -------
+    dragon.Tensor
+        The output tensor.
+
+    """
+    args = parse_args(locals())
+    args['alpha'] = float(alpha)
+    args['beta'] = float(beta)
+    op_lib = activation_ops_lib.HardSwish
+    if context.executing_eagerly():
+        return op_lib \
+            .instantiate(
+                alpha=args['alpha'],
+                beta=args['beta'],
+            ).apply([inputs])
+    else:
+        return op_lib.blend(**args)
+
+
+@OpSchema.num_inputs(1)
 def leaky_relu(inputs, alpha=0.2, **kwargs):
     r"""Apply the leaky rectified linear unit.
 
@@ -269,7 +359,7 @@ def leaky_relu(inputs, alpha=0.2, **kwargs):
 
 @OpSchema.num_inputs(1)
 def log_softmax(inputs, axis=-1, **kwargs):
-    r"""Apply the composite of logarithm and softmax.
+    r"""Compute the composite of logarithm and softmax.
 
     The **LogSoftmax** function is defined as:
 
@@ -492,7 +582,7 @@ def selu(inputs, alpha=1.67326, gamma=1.0507, **kwargs):
 
 @OpSchema.num_inputs(1)
 def sigmoid(inputs, **kwargs):
-    r"""Apply the sigmoid function.
+    r"""Compute the sigmoid result of input.
 
     The **Sigmoid** function is defined as:
 
@@ -529,7 +619,7 @@ def sigmoid(inputs, **kwargs):
 
 @OpSchema.num_inputs(1)
 def softmax(inputs, axis=-1, **kwargs):
-    r"""Apply the softmax function.
+    r"""Compute the softmax result.
 
     The **Softmax** function is defined as:
 
@@ -602,3 +692,40 @@ def tanh(inputs, **kwargs):
             .apply([inputs], inplace=inplace)
     else:
         return op_lib.blend('Tanh', **args)
+
+
+@OpSchema.num_inputs(1)
+def swish(inputs, **kwargs):
+    r"""Apply the swish function.
+    `[Ramachandran et.al, 2017] <https://arxiv.org/abs/1710.05941>`_.
+
+    The **Swish** function is defined as:
+
+    .. math:: \text{Swish}(x) = x \cdot \frac{1}{1 + \exp(-x)}
+
+    Examples:
+
+    ```python
+    x = dragon.constant([-2.5, -1.0, 0.0, 1.0, 2.5])
+    print(dragon.nn.swish(x))
+    ```
+
+    Parameters
+    ----------
+    inputs : dragon.Tensor
+        The input tensor.
+
+    Returns
+    -------
+    dragon.Tensor
+        The output tensor.
+
+    """
+    args = parse_args(locals())
+    op_lib = activation_ops_lib.Activation
+    if context.executing_eagerly():
+        return op_lib \
+            .instantiate(op_type='Swish') \
+            .apply([inputs])
+    else:
+        return op_lib.blend('Swish', **args)

@@ -86,6 +86,10 @@ vm.tensorflow.nn
   `sparse_softmax_cross_entropy_with_logits(...) <nn/sparse_softmax_cross_entropy_with_logits.html>`_
   : Compute the softmax cross entropy with sparse labels.
 
+  `swish(...) <nn/swish.html>`_
+  : Apply the swish function.
+  `[Ramachandran et.al, 2017] <https://arxiv.org/abs/1710.05941>`_.
+
 .. toctree::
   :hidden:
 
@@ -113,6 +117,7 @@ vm.tensorflow.nn
   nn/softmax_cross_entropy_with_logits
   nn/space_to_depth
   nn/sparse_softmax_cross_entropy_with_logits
+  nn/swish
 
 .. raw:: html
 

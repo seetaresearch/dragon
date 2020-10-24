@@ -59,8 +59,8 @@ void FullyConnectedOp<Context>::DoRunWithType() {
     TENSOR_FILL(Input(2), vec64_t({N}));
     kernel::BiasAdd(
         M,
-        N,
         1,
+        N,
         Y->template data<T, Context>(),
         Input(2).template data<T, Context>(),
         Y->template mutable_data<T, Context>(),

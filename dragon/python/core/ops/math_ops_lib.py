@@ -18,6 +18,8 @@ from dragon.core.framework.ops import Operator
 
 
 class Axpby(Operator):
+    """Axpby operator."""
+
     def __init__(self, key, dev, **kwargs):
         super(Axpby, self).__init__(key, dev, **kwargs)
         self.alpha = kwargs.get('alpha', 1.)
@@ -40,6 +42,8 @@ class Axpby(Operator):
 
 
 class BinaryOp(Operator):
+    """Binary operator."""
+
     def __init__(self, key, dev, **kwargs):
         super(BinaryOp, self).__init__(key, dev, **kwargs)
         self.op_type = kwargs.get('op_type', '')
@@ -52,6 +56,8 @@ class BinaryOp(Operator):
 
 
 class Clip(Operator):
+    """Clip operator."""
+
     def __init__(self, key, dev, **kwargs):
         super(Clip, self).__init__(key, dev, **kwargs)
         self.low = kwargs.get('low', None)
@@ -75,6 +81,8 @@ class Clip(Operator):
 
 
 class FullyConnected(Operator):
+    """FullyConnected operator."""
+
     def __init__(self, key, dev, **kwargs):
         super(FullyConnected, self).__init__(key, dev, **kwargs)
         self.axis = kwargs.get('axis', 1)
@@ -94,6 +102,8 @@ class FullyConnected(Operator):
 
 
 class MatMul(Operator):
+    """MatMul operator."""
+
     def __init__(self, key, dev, **kwargs):
         super(MatMul, self).__init__(key, dev, **kwargs)
         self.transpose_a = kwargs.get('transpose_a', False)
@@ -113,6 +123,8 @@ class MatMul(Operator):
 
 
 class UnaryOp(Operator):
+    """Unary operator."""
+
     def __init__(self, key, dev, **kwargs):
         super(UnaryOp, self).__init__(key, dev, **kwargs)
         self.op_type = kwargs.get('op_type', '')

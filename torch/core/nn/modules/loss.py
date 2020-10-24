@@ -297,7 +297,7 @@ class KLDivLoss(_Loss):
             The flag indicating whether ``target`` is passed in log space.
 
         """
-        super(KDivLoss, self).__init__(size_average, reduce, reduction)
+        super(KLDivLoss, self).__init__(size_average, reduce, reduction)
         self.log_target = log_target
 
     def forward(self, input, target):

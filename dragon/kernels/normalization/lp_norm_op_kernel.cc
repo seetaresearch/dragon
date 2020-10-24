@@ -10,8 +10,8 @@ namespace {
 template <typename T>
 void _L1Normalize(
     const int outer_dim,
-    const int reduce_dim,
     const int inner_dim,
+    const int reduce_dim,
     const T scale,
     const T eps,
     const T* x,
@@ -32,8 +32,8 @@ void _L1Normalize(
 template <typename T>
 void _L2Normalize(
     const int outer_dim,
-    const int reduce_dim,
     const int inner_dim,
+    const int reduce_dim,
     const T scale,
     const T eps,
     const T* x,
@@ -54,8 +54,8 @@ void _L2Normalize(
 template <typename T>
 void _L1NormalizeGrad(
     const int outer_dim,
-    const int reduce_dim,
     const int inner_dim,
+    const int reduce_dim,
     const T scale,
     const T eps,
     const T* dy,
@@ -81,8 +81,8 @@ void _L1NormalizeGrad(
 template <typename T>
 void _L2NormalizeGrad(
     const int outer_dim,
-    const int reduce_dim,
     const int inner_dim,
+    const int reduce_dim,
     const T scale,
     const T eps,
     const T* dy,
@@ -112,8 +112,8 @@ void _L2NormalizeGrad(
 template <>
 void L1Normalize<float16, CPUContext>(
     const int outer_dim,
-    const int reduce_dim,
     const int inner_dim,
+    const int reduce_dim,
     const float scale,
     const float eps,
     const float16* x,
@@ -125,8 +125,8 @@ void L1Normalize<float16, CPUContext>(
 template <>
 void L2Normalize<float16, CPUContext>(
     const int outer_dim,
-    const int reduce_dim,
     const int inner_dim,
+    const int reduce_dim,
     const float scale,
     const float eps,
     const float16* x,
@@ -138,8 +138,8 @@ void L2Normalize<float16, CPUContext>(
 template <>
 void L1NormalizeGrad<float16, CPUContext>(
     const int outer_dim,
-    const int reduce_dim,
     const int inner_dim,
+    const int reduce_dim,
     const float scale,
     const float eps,
     const float16* dy,
@@ -152,8 +152,8 @@ void L1NormalizeGrad<float16, CPUContext>(
 template <>
 void L2NormalizeGrad<float16, CPUContext>(
     const int outer_dim,
-    const int reduce_dim,
     const int inner_dim,
+    const int reduce_dim,
     const float scale,
     const float eps,
     const float16* dy,
@@ -167,14 +167,14 @@ void L2NormalizeGrad<float16, CPUContext>(
   template <>                                                          \
   void name<T, CPUContext>(                                            \
       const int outer_dim,                                             \
-      const int reduce_dim,                                            \
       const int inner_dim,                                             \
+      const int reduce_dim,                                            \
       const float scale,                                               \
       const float eps,                                                 \
       const T* x,                                                      \
       T* y,                                                            \
       CPUContext* ctx) {                                               \
-    _##name(outer_dim, reduce_dim, inner_dim, (T)scale, (T)eps, x, y); \
+    _##name(outer_dim, inner_dim, reduce_dim, (T)scale, (T)eps, x, y); \
   }
 
 DEFINE_KERNEL_LAUNCHER(L1Normalize, float);
@@ -187,15 +187,15 @@ DEFINE_KERNEL_LAUNCHER(L2Normalize, double);
   template <>                                                               \
   void name<T, CPUContext>(                                                 \
       const int outer_dim,                                                  \
-      const int reduce_dim,                                                 \
       const int inner_dim,                                                  \
+      const int reduce_dim,                                                 \
       const float scale,                                                    \
       const float eps,                                                      \
       const T* dy,                                                          \
       const T* x,                                                           \
       T* dx,                                                                \
       CPUContext* ctx) {                                                    \
-    _##name(outer_dim, reduce_dim, inner_dim, (T)scale, (T)eps, dy, x, dx); \
+    _##name(outer_dim, inner_dim, reduce_dim, (T)scale, (T)eps, dy, x, dx); \
   }
 
 DEFINE_GRAD_KERNEL_LAUNCHER(L1NormalizeGrad, float);

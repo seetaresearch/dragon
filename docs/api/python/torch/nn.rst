@@ -84,6 +84,13 @@ vm.torch.nn
   : Apply the gumbel softmax with a temperature.
   `[Jang et.al, 2016] <https://arxiv.org/abs/1611.01144>`_.
 
+  `class Hardsigmoid <nn/Hardsigmoid.html>`_
+  : Apply the hard sigmoid function.
+
+  `class Hardswish <nn/Hardswish.html>`_
+  : Apply the hard swish function.
+  `[Howard et.al, 2019] <https://arxiv.org/abs/1905.02244>`_.
+
   `class KLDivLoss <nn/KLDivLoss.html>`_
   : Compute the Kullback-Leibler divergence.
 
@@ -178,6 +185,10 @@ vm.torch.nn
   `class Softmax <nn/Softmax.html>`_
   : Apply the softmax function.
 
+  `class Swish <nn/Swish.html>`_
+  : Apply the swish function.
+  `[Ramachandran et.al, 2017] <https://arxiv.org/abs/1710.05941>`_.
+
   `class Tanh <nn/Tanh.html>`_
   : Apply the tanh function.
 
@@ -222,6 +233,8 @@ vm.torch.nn
   nn/GroupNorm
   nn/GRU
   nn/GumbelSoftmax
+  nn/Hardsigmoid
+  nn/Hardswish
   nn/KLDivLoss
   nn/L1Loss
   nn/LeakyReLU
@@ -250,6 +263,7 @@ vm.torch.nn
   nn/SigmoidFocalLoss
   nn/SmoothL1Loss
   nn/Softmax
+  nn/Swish
   nn/Tanh
   nn/SyncBatchNorm
   nn/Upsample

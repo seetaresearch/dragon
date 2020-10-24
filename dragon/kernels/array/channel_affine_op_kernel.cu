@@ -12,8 +12,8 @@ namespace {
 template <typename T>
 __global__ void _ChannelAffine(
     const int nthreads,
-    const int axis_dim,
     const int inner_dim,
+    const int axis_dim,
     const T* x,
     const T* w,
     T* y) {
@@ -29,8 +29,8 @@ __global__ void _ChannelAffine(
 template <>
 __global__ void _ChannelAffine<half>(
     const int nthreads,
-    const int axis_dim,
     const int inner_dim,
+    const int axis_dim,
     const half* x,
     const half* w,
     half* y) {
@@ -51,8 +51,8 @@ __global__ void _ChannelAffine<half>(
 template <typename T>
 __global__ void _ChannelAffine(
     const int nthreads,
-    const int axis_dim,
     const int inner_dim,
+    const int axis_dim,
     const T* x,
     const T* w,
     const T* b,
@@ -70,8 +70,8 @@ __global__ void _ChannelAffine(
 template <>
 __global__ void _ChannelAffine<half>(
     const int nthreads,
-    const int axis_dim,
     const int inner_dim,
+    const int axis_dim,
     const half* x,
     const half* w,
     const half* b,
@@ -95,8 +95,8 @@ __global__ void _ChannelAffine<half>(
 template <>
 __global__ void _ChannelAffine<float>(
     const int nthreads,
-    const int axis_dim,
     const int inner_dim,
+    const int axis_dim,
     const float* x,
     const float* w,
     const float* b,
@@ -114,8 +114,8 @@ __global__ void _ChannelAffine<float>(
 template <>
 __global__ void _ChannelAffine<double>(
     const int nthreads,
-    const int axis_dim,
     const int inner_dim,
+    const int axis_dim,
     const double* x,
     const double* w,
     const double* b,
@@ -137,14 +137,14 @@ __global__ void _ChannelAffine<double>(
 template <>
 void ChannelAffine<float16, CUDAContext>(
     const int outer_dim,
-    const int axis_dim,
     const int inner_dim,
+    const int axis_dim,
     const float16* x,
     const float16* w,
     const float16* b,
     float16* y,
     CUDAContext* ctx) {
-  const int nthreads = outer_dim * axis_dim * inner_dim;
+  const auto nthreads = outer_dim * axis_dim * inner_dim;
   if (b != nullptr) {
     _ChannelAffine<<<
         CUDA_BLOCKS(nthreads),
@@ -152,8 +152,8 @@ void ChannelAffine<float16, CUDAContext>(
         0,
         ctx->cuda_stream()>>>(
         nthreads,
-        axis_dim,
         inner_dim,
+        axis_dim,
         reinterpret_cast<const half*>(x),
         reinterpret_cast<const half*>(w),
         reinterpret_cast<const half*>(b),
@@ -165,8 +165,8 @@ void ChannelAffine<float16, CUDAContext>(
         0,
         ctx->cuda_stream()>>>(
         nthreads,
-        axis_dim,
         inner_dim,
+        axis_dim,
         reinterpret_cast<const half*>(x),
         reinterpret_cast<const half*>(w),
         reinterpret_cast<half*>(y));
@@ -177,26 +177,26 @@ void ChannelAffine<float16, CUDAContext>(
   template <>                                                               \
   void ChannelAffine<T, CUDAContext>(                                       \
       const int outer_dim,                                                  \
-      const int axis_dim,                                                   \
       const int inner_dim,                                                  \
+      const int axis_dim,                                                   \
       const T* x,                                                           \
       const T* w,                                                           \
       const T* b,                                                           \
       T* y,                                                                 \
       CUDAContext* ctx) {                                                   \
-    const int nthreads = outer_dim * axis_dim * inner_dim;                  \
+    const auto nthreads = outer_dim * axis_dim * inner_dim;                 \
     if (b != nullptr) {                                                     \
       _ChannelAffine<<<                                                     \
           CUDA_BLOCKS(nthreads),                                            \
           CUDA_THREADS,                                                     \
           0,                                                                \
-          ctx->cuda_stream()>>>(nthreads, axis_dim, inner_dim, x, w, b, y); \
+          ctx->cuda_stream()>>>(nthreads, inner_dim, axis_dim, x, w, b, y); \
     } else {                                                                \
       _ChannelAffine<<<                                                     \
           CUDA_BLOCKS(nthreads),                                            \
           CUDA_THREADS,                                                     \
           0,                                                                \
-          ctx->cuda_stream()>>>(nthreads, axis_dim, inner_dim, x, w, y);    \
+          ctx->cuda_stream()>>>(nthreads, inner_dim, axis_dim, x, w, y);    \
     }                                                                       \
   }
 
@@ -206,6 +206,7 @@ DEFINE_KERNEL_LAUNCHER(int);
 DEFINE_KERNEL_LAUNCHER(int64_t);
 DEFINE_KERNEL_LAUNCHER(float);
 DEFINE_KERNEL_LAUNCHER(double);
+
 #undef DEFINE_KERNEL_LAUNCHER
 
 } // namespace kernel

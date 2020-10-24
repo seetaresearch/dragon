@@ -109,6 +109,12 @@ vm.torch
   `from_numpy(...) <torch/from_numpy.html>`_
   : Create a tensor from the given numpy array.
 
+  `full(...) <torch/full.html>`_
+  : Return a tensor filled with a scalar.
+
+  `full_like(...) <torch/full_like.html>`_
+  : Return a tensor filled with a scalar with size as input.
+
   `ge(...) <torch/ge.html>`_
   : Compute the element-wise greater-equal comparison.
 
@@ -171,6 +177,9 @@ vm.torch
 
   `ne(...) <torch/ne.html>`_
   : Compute the element-wise not-equal comparison.
+
+  `neg(...) <torch/neg.html>`_
+  : Compute the element-wise negative.
 
   `nonzero(...) <torch/nonzero.html>`_
   : Return the index of non-zero elements.
@@ -299,6 +308,8 @@ vm.torch
   torch/flatten
   torch/floor
   torch/from_numpy
+  torch/full
+  torch/full_like
   torch/ge
   torch/gt
   torch/index_select
@@ -320,6 +331,7 @@ vm.torch
   torch/multinomial
   torch/narrow
   torch/ne
+  torch/neg
   torch/no_grad
   torch/nonzero
   torch/ones

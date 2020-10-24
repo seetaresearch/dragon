@@ -24,8 +24,8 @@ void SoftmaxCrossEntropyOp<Context>::DoRunWithType() {
 
   kernel::Softmax(
       outer_dim,
-      X.dim(axis),
       inner_dim,
+      X.dim(axis),
       X.template data<T, Context>(),
       prob,
       ctx());
@@ -90,7 +90,7 @@ void SoftmaxCrossEntropyGradientOp<Context>::DoRunWithType() {
 
   if (reduction_ == "NONE") {
     kernel::BroadcastLossGrad(
-        outer_dim, dX->dim(axis), inner_dim, dy, dx, ctx());
+        outer_dim, inner_dim, dX->dim(axis), dy, dx, ctx());
   } else {
     int64_t normalizer = 1;
     if (reduction_ == "BATCH_MEAN") {

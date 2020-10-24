@@ -10,8 +10,8 @@ namespace {
 template <typename T>
 void _Softmax(
     const int outer_dim,
-    const int axis_dim,
     const int inner_dim,
+    const int axis_dim,
     const T* x,
     T* y) {
   int row_offset, col_offset, yi;
@@ -45,8 +45,8 @@ void _Softmax(
 template <>
 void _Softmax<float16>(
     const int outer_dim,
-    const int axis_dim,
     const int inner_dim,
+    const int axis_dim,
     const float16* x,
     float16* y) {
   CPU_FP16_NOT_SUPPORTED;
@@ -55,8 +55,8 @@ void _Softmax<float16>(
 template <typename T>
 void _SoftmaxGrad(
     const int outer_dim,
-    const int axis_dim,
     const int inner_dim,
+    const int axis_dim,
     const T* dy,
     const T* y,
     T* dx) {
@@ -82,8 +82,8 @@ void _SoftmaxGrad(
 template <>
 void _SoftmaxGrad<float16>(
     const int outer_dim,
-    const int axis_dim,
     const int inner_dim,
+    const int axis_dim,
     const float16* dy,
     const float16* y,
     float16* dx) {
@@ -98,25 +98,25 @@ void _SoftmaxGrad<float16>(
   template <>                                       \
   void Softmax<T, CPUContext>(                      \
       const int outer_dim,                          \
-      const int axis_dim,                           \
       const int inner_dim,                          \
+      const int axis_dim,                           \
       const T* x,                                   \
       T* y,                                         \
       CPUContext* ctx) {                            \
-    _Softmax(outer_dim, axis_dim, inner_dim, x, y); \
+    _Softmax(outer_dim, inner_dim, axis_dim, x, y); \
   }
 
 #define DEFINE_GRAD_KERNEL_LAUNCHER(T)                       \
   template <>                                                \
   void SoftmaxGrad<T, CPUContext>(                           \
       const int outer_dim,                                   \
-      const int axis_dim,                                    \
       const int inner_dim,                                   \
+      const int axis_dim,                                    \
       const T* dy,                                           \
       const T* y,                                            \
       T* dx,                                                 \
       CPUContext* ctx) {                                     \
-    _SoftmaxGrad(outer_dim, axis_dim, inner_dim, dy, y, dx); \
+    _SoftmaxGrad(outer_dim, inner_dim, axis_dim, dy, y, dx); \
   }
 
 DEFINE_KERNEL_LAUNCHER(float16);

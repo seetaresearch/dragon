@@ -18,6 +18,8 @@ from dragon.core.framework.ops import Operator
 
 
 class Metric(Operator):
+    """Metric operator."""
+
     def __init__(self, key, dev, **kwargs):
         super(Metric, self).__init__(key, dev, **kwargs)
         self.reduction = kwargs.get('reduction', 'MEAN')
@@ -27,6 +29,8 @@ class Metric(Operator):
 
 
 class Accuracy(Metric):
+    """Accuracy operator."""
+
     def __init__(self, key, dev, **kwargs):
         super(Accuracy, self).__init__(key, dev, **kwargs)
         self.axis = kwargs.get('axis', 1)

@@ -19,6 +19,8 @@ from dragon.core.framework.ops import Operator
 
 
 class ArgReduce(Operator):
+    """ArgReduce operator."""
+
     def __init__(self, key, dev, **kwargs):
         super(ArgReduce, self).__init__(key, dev, **kwargs)
         self.op_type = kwargs.get('op_type', 'ArgMax')
@@ -39,6 +41,8 @@ class ArgReduce(Operator):
 
 
 class Cast(Operator):
+    """Cast operator."""
+
     def __init__(self, key, dev, **kwargs):
         super(Cast, self).__init__(key, dev, **kwargs)
         self.dtype = kwargs.get('dtype', 'float32')
@@ -58,6 +62,8 @@ class Cast(Operator):
 
 
 class ChannelAffine(Operator):
+    """ChannelAffine operator."""
+
     def __init__(self, key, dev, **kwargs):
         super(ChannelAffine, self).__init__(key, dev, **kwargs)
         self.axis = kwargs.get('axis', 1)
@@ -78,6 +84,8 @@ class ChannelAffine(Operator):
 
 
 class ChannelNormalize(Operator):
+    """ChannelNormalize operator."""
+
     def __init__(self, key, dev, **kwargs):
         super(ChannelNormalize, self).__init__(key, dev, **kwargs)
         self.axis = kwargs.get('axis', -1)
@@ -115,6 +123,8 @@ class ChannelNormalize(Operator):
 
 
 class ChannelShuffle(Operator):
+    """ChannelShuffle operator."""
+
     def __init__(self, key, dev, **kwargs):
         super(ChannelShuffle, self).__init__(key, dev, **kwargs)
         self.axis = kwargs.get('axis', 0)
@@ -134,6 +144,8 @@ class ChannelShuffle(Operator):
 
 
 class Concat(Operator):
+    """Concat operator."""
+
     def __init__(self, key, dev, **kwargs):
         super(Concat, self).__init__(key, dev, **kwargs)
         self.axis = kwargs.get('axis', 0)
@@ -149,6 +161,8 @@ class Concat(Operator):
 
 
 class Cumulative(Operator):
+    """Cumulative operator."""
+
     def __init__(self, key, dev, **kwargs):
         super(Cumulative, self).__init__(key, dev, **kwargs)
         self.axis = kwargs.get('axis', 0)
@@ -171,6 +185,8 @@ class Cumulative(Operator):
 
 
 class Expand(Operator):
+    """Expand operator."""
+
     def __init__(self, key, dev, **kwargs):
         super(Expand, self).__init__(key, dev, **kwargs)
         self.ndim = kwargs.get('ndim', 0)
@@ -200,6 +216,8 @@ class Expand(Operator):
 
 
 class ExpandDims(Operator):
+    """ExpandDims operator."""
+
     def __init__(self, key, dev, **kwargs):
         super(ExpandDims, self).__init__(key, dev, **kwargs)
         self.axes = kwargs.get('axes', [0])
@@ -218,6 +236,8 @@ class ExpandDims(Operator):
 
 
 class Flatten(Operator):
+    """Flatten operator."""
+
     def __init__(self, key, dev, **kwargs):
         super(Flatten, self).__init__(key, dev, **kwargs)
         self.axis = kwargs.get('axis', 0)
@@ -240,6 +260,8 @@ class Flatten(Operator):
 
 
 class IndexSelect(Operator):
+    """IndexSelect operator."""
+
     def __init__(self, key, dev, **kwargs):
         super(IndexSelect, self).__init__(key, dev, **kwargs)
         self.axis = kwargs.get('axis', 0)
@@ -259,6 +281,8 @@ class IndexSelect(Operator):
 
 
 class LinSpace(Operator):
+    """LinSpace operator."""
+
     def __init__(self, key, dev, **kwargs):
         super(LinSpace, self).__init__(key, dev, **kwargs)
         self.ndim = kwargs.get('ndim', 0)
@@ -309,6 +333,8 @@ class LinSpace(Operator):
 
 
 class MaskedSelect(Operator):
+    """MaskedSelect operator."""
+
     def __init__(self, key, dev, **kwargs):
         super(MaskedSelect, self).__init__(key, dev, **kwargs)
 
@@ -320,6 +346,8 @@ class MaskedSelect(Operator):
 
 
 class Moments(Operator):
+    """Moments operator."""
+
     def __init__(self, key, dev, **kwargs):
         super(Moments, self).__init__(key, dev, **kwargs)
         self.axes = kwargs.get('axes', None)
@@ -339,6 +367,8 @@ class Moments(Operator):
 
 
 class Multinomial(Operator):
+    """Multinomial operator."""
+
     def __init__(self, key, dev, **kwargs):
         super(Multinomial, self).__init__(key, dev, **kwargs)
         self.epsilon = kwargs.get('epsilon', 0.)
@@ -360,6 +390,8 @@ class Multinomial(Operator):
 
 
 class NonZero(Operator):
+    """NonZero operator."""
+
     def __init__(self, key, dev, **kwargs):
         super(NonZero, self).__init__(key, dev, **kwargs)
 
@@ -371,6 +403,8 @@ class NonZero(Operator):
 
 
 class OneHot(Operator):
+    """OneHot operator."""
+
     def __init__(self, key, dev, **kwargs):
         super(OneHot, self).__init__(key, dev, **kwargs)
         self.depth = kwargs.get('depth', 1)
@@ -392,6 +426,8 @@ class OneHot(Operator):
 
 
 class Pad(Operator):
+    """Pad operator."""
+
     def __init__(self, key, dev, **kwargs):
         super(Pad, self).__init__(key, dev, **kwargs)
         self.ndim = kwargs.get('ndim', 0)
@@ -425,6 +461,8 @@ class Pad(Operator):
 
 
 class Permutation(Operator):
+    """Permutation operator."""
+
     def __init__(self, key, dev, **kwargs):
         super(Permutation, self).__init__(key, dev, **kwargs)
         self.dtype = kwargs.get('dtype', 'int64')
@@ -453,6 +491,8 @@ class Permutation(Operator):
 
 
 class Range(Operator):
+    """Range operator."""
+
     def __init__(self, key, dev, **kwargs):
         super(Range, self).__init__(key, dev, **kwargs)
         self.num_args = kwargs.get('num_args', 3)
@@ -487,6 +527,8 @@ class Range(Operator):
 
 
 class Reduce(Operator):
+    """Reduce operator."""
+
     def __init__(self, key, dev, **kwargs):
         super(Reduce, self).__init__(key, dev, **kwargs)
         self.axes = kwargs.get('axes', None)
@@ -507,6 +549,8 @@ class Reduce(Operator):
 
 
 class Repeat(Operator):
+    """Repeat operator."""
+
     def __init__(self, key, dev, **kwargs):
         super(Repeat, self).__init__(key, dev, **kwargs)
         self.axis = kwargs.get('axis', 2147483647)
@@ -526,6 +570,8 @@ class Repeat(Operator):
 
 
 class Reshape(Operator):
+    """Reshape operator."""
+
     def __init__(self, key, dev, **kwargs):
         super(Reshape, self).__init__(key, dev, **kwargs)
         self.ndim = kwargs.get('ndim', 0)
@@ -555,6 +601,8 @@ class Reshape(Operator):
 
 
 class Slice(Operator):
+    """Slice operator."""
+
     def __init__(self, key, dev, **kwargs):
         super(Slice, self).__init__(key, dev, **kwargs)
         self.ndim = kwargs.get('ndim', 0)
@@ -590,6 +638,8 @@ class Slice(Operator):
 
 
 class Shape(Operator):
+    """Shape operator."""
+
     def __init__(self, key, dev, **kwargs):
         super(Shape, self).__init__(key, dev, **kwargs)
         self._device = device_spec.DeviceSpec()
@@ -602,6 +652,8 @@ class Shape(Operator):
 
 
 class Sort(Operator):
+    """Sort operator."""
+
     def __init__(self, key, dev, **kwargs):
         super(Sort, self).__init__(key, dev, **kwargs)
         self.axis = kwargs.get('axis', -1)
@@ -621,6 +673,8 @@ class Sort(Operator):
 
 
 class Split(Operator):
+    """Split operator."""
+
     def __init__(self, key, dev, **kwargs):
         super(Split, self).__init__(key, dev, **kwargs)
         self.axis = kwargs.get('axis', 0)
@@ -643,6 +697,8 @@ class Split(Operator):
 
 
 class Squeeze(Operator):
+    """Squeeze operator."""
+
     def __init__(self, key, dev, **kwargs):
         super(Squeeze, self).__init__(key, dev, **kwargs)
         self.axes = kwargs.get('axes', None)
@@ -674,6 +730,8 @@ class Stack(Operator):
 
 
 class Tile(Operator):
+    """Tile operator."""
+
     def __init__(self, key, dev, **kwargs):
         super(Tile, self).__init__(key, dev, **kwargs)
         self.ndim = kwargs.get('ndim', 0)
@@ -703,6 +761,8 @@ class Tile(Operator):
 
 
 class Transpose(Operator):
+    """Transpose operator."""
+
     def __init__(self, key, dev, **kwargs):
         super(Transpose, self).__init__(key, dev, **kwargs)
         self.ndim = kwargs.get('ndim', 0)
@@ -732,6 +792,8 @@ class Transpose(Operator):
 
 
 class TopK(Operator):
+    """TopK operator."""
+
     def __init__(self, key, dev, **kwargs):
         super(TopK, self).__init__(key, dev, **kwargs)
         self.k = kwargs.get('k', 1)
@@ -755,6 +817,8 @@ class TopK(Operator):
 
 
 class Unique(Operator):
+    """Unique operator."""
+
     def __init__(self, key, dev, **kwargs):
         super(Unique, self).__init__(key, dev, **kwargs)
         self.return_inverse = kwargs.get('return_inverse', False)
@@ -776,6 +840,8 @@ class Unique(Operator):
 
 
 class Where(Operator):
+    """Where operator."""
+
     def __init__(self, key, dev, **kwargs):
         super(Where, self).__init__(key, dev, **kwargs)
 

@@ -28,8 +28,8 @@ void LpNormalizeOp<Context>::DoRunWithType() {
   if (p_ == 1) {
     kernel::L1Normalize(
         X.count(0, axis),
-        reduce_dim,
         X.count(axis + num_axes),
+        reduce_dim,
         reduction_ == "MEAN" ? 1.f / (float)reduce_dim : 1.f,
         epsilon_,
         X.template data<T, Context>(),
@@ -38,8 +38,8 @@ void LpNormalizeOp<Context>::DoRunWithType() {
   } else if (p_ == 2) {
     kernel::L2Normalize(
         X.count(0, axis),
-        reduce_dim,
         X.count(axis + num_axes),
+        reduce_dim,
         reduction_ == "MEAN" ? 1.f / (float)reduce_dim : 1.f,
         epsilon_,
         X.template data<T, Context>(),
@@ -65,8 +65,8 @@ void LpNormalizeGradientOp<Context>::DoRunWithType() {
   if (p_ == 1) {
     kernel::L1NormalizeGrad(
         X.count(0, axis),
-        reduce_dim,
         X.count(axis + num_axes),
+        reduce_dim,
         reduction_ == "MEAN" ? 1.f / (float)reduce_dim : 1.f,
         epsilon_,
         dY.template data<T, Context>(),
@@ -76,8 +76,8 @@ void LpNormalizeGradientOp<Context>::DoRunWithType() {
   } else if (p_ == 2) {
     kernel::L2NormalizeGrad(
         X.count(0, axis),
-        reduce_dim,
         X.count(axis + num_axes),
+        reduce_dim,
         reduction_ == "MEAN" ? 1.f / (float)reduce_dim : 1.f,
         epsilon_,
         dY.template data<T, Context>(),

@@ -146,12 +146,12 @@ void ReduceLossGrad<float16, CUDAContext>(
 template <>
 void BroadcastLossGrad<float16, CUDAContext>(
     const int outer_dim,
-    const int axis_dim,
     const int inner_dim,
+    const int axis_dim,
     const float16* dy,
     float16* dx,
     CUDAContext* ctx) {
-  auto nthreads = outer_dim * axis_dim * inner_dim;
+  const auto nthreads = outer_dim * axis_dim * inner_dim;
   _BroadcastLossGrad<<<
       CUDA_BLOCKS(nthreads),
       CUDA_THREADS,
@@ -214,12 +214,12 @@ void BroadcastLossGrad<float16, CUDAContext>(
   template <>                                                  \
   void BroadcastLossGrad<T, CUDAContext>(                      \
       const int outer_dim,                                     \
-      const int axis_dim,                                      \
       const int inner_dim,                                     \
+      const int axis_dim,                                      \
       const T* dy,                                             \
       T* dx,                                                   \
       CUDAContext* ctx) {                                      \
-    auto nthreads = outer_dim * axis_dim * inner_dim;          \
+    const auto nthreads = outer_dim * axis_dim * inner_dim;    \
     _BroadcastLossGrad<<<                                      \
         CUDA_BLOCKS(nthreads),                                 \
         CUDA_THREADS,                                          \

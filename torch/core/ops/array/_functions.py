@@ -18,6 +18,8 @@ from dragon.vm.torch.core.autograd import function
 
 
 class ArgReduce(function.Function):
+    """ArgReduce function."""
+
     def __init__(self, key, dev, **kwargs):
         super(ArgReduce, self).__init__(key, dev, **kwargs)
         self.op_type = kwargs.get('op_type', 'ArgMax')
@@ -38,6 +40,8 @@ class ArgReduce(function.Function):
 
 
 class Assign(function.Function):
+    """Assign function."""
+
     def __init__(self, key, dev, **kwargs):
         super(Assign, self).__init__(key, dev, **kwargs)
         self.ndim = kwargs.get('ndim', 0)
@@ -76,6 +80,8 @@ class Assign(function.Function):
 
 
 class Cast(function.Function):
+    """Cast function."""
+
     def __init__(self, key, dev, **kwargs):
         super(Cast, self).__init__(key, dev, **kwargs)
         self.dtype = kwargs.get('dtype', 'float32')
@@ -95,6 +101,8 @@ class Cast(function.Function):
 
 
 class ChannelAffine(function.Function):
+    """ChannelAffine function."""
+
     def __init__(self, key, dev, **kwargs):
         super(ChannelAffine, self).__init__(key, dev, **kwargs)
         self.axis = kwargs.get('axis', 1)
@@ -115,6 +123,8 @@ class ChannelAffine(function.Function):
 
 
 class ChannelNormalize(function.Function):
+    """ChannelNormalize function."""
+
     def __init__(self, key, dev, **kwargs):
         super(ChannelNormalize, self).__init__(key, dev, **kwargs)
         self.axis = kwargs.get('axis', -1)
@@ -152,6 +162,8 @@ class ChannelNormalize(function.Function):
 
 
 class ChannelShuffle(function.Function):
+    """ChannelShuffle function."""
+
     def __init__(self, key, dev, **kwargs):
         super(ChannelShuffle, self).__init__(key, dev, **kwargs)
         self.axis = kwargs.get('axis', 0)
@@ -171,6 +183,8 @@ class ChannelShuffle(function.Function):
 
 
 class Concat(function.Function):
+    """Concat function."""
+
     def __init__(self, key, dev, **kwargs):
         super(Concat, self).__init__(key, dev, **kwargs)
         self.axis = kwargs.get('axis', 0)
@@ -186,6 +200,8 @@ class Concat(function.Function):
 
 
 class Cumulative(function.Function):
+    """Cumulative function."""
+
     def __init__(self, key, dev, **kwargs):
         super(Cumulative, self).__init__(key, dev, **kwargs)
         self.axis = kwargs.get('axis', 0)
@@ -208,6 +224,8 @@ class Cumulative(function.Function):
 
 
 class Expand(function.Function):
+    """Expand function."""
+
     def __init__(self, key, dev, **kwargs):
         super(Expand, self).__init__(key, dev, **kwargs)
         self.ndim = kwargs.get('ndim', 0)
@@ -237,6 +255,8 @@ class Expand(function.Function):
 
 
 class Flatten(function.Function):
+    """Flatten function."""
+
     def __init__(self, key, dev, **kwargs):
         super(Flatten, self).__init__(key, dev, **kwargs)
         self.axis = kwargs.get('axis', 0)
@@ -256,6 +276,8 @@ class Flatten(function.Function):
 
 
 class IndexSelect(function.Function):
+    """IndexSelect function."""
+
     def __init__(self, key, dev, **kwargs):
         super(IndexSelect, self).__init__(key, dev, **kwargs)
         self.axis = kwargs.get('axis', 0)
@@ -275,6 +297,8 @@ class IndexSelect(function.Function):
 
 
 class MaskedAssign(function.Function):
+    """MaskedAssign function."""
+
     def __init__(self, key, dev, **kwargs):
         super(MaskedAssign, self).__init__(key, dev, **kwargs)
 
@@ -286,6 +310,8 @@ class MaskedAssign(function.Function):
 
 
 class MaskedSelect(function.Function):
+    """MaskedSelect function."""
+
     def __init__(self, key, dev, **kwargs):
         super(MaskedSelect, self).__init__(key, dev, **kwargs)
 
@@ -297,6 +323,8 @@ class MaskedSelect(function.Function):
 
 
 class Multinomial(function.Function):
+    """Multinomial function."""
+
     def __init__(self, key, dev, **kwargs):
         super(Multinomial, self).__init__(key, dev, **kwargs)
         self.epsilon = kwargs.get('epsilon', 0.)
@@ -317,6 +345,8 @@ class Multinomial(function.Function):
 
 
 class NonZero(function.Function):
+    """NonZero function."""
+
     def __init__(self, key, dev, **kwargs):
         super(NonZero, self).__init__(key, dev, **kwargs)
 
@@ -328,6 +358,8 @@ class NonZero(function.Function):
 
 
 class OneHot(function.Function):
+    """OneHot function."""
+
     def __init__(self, key, dev, **kwargs):
         super(OneHot, self).__init__(key, dev, **kwargs)
         self.depth = kwargs.get('depth', 1)
@@ -345,6 +377,8 @@ class OneHot(function.Function):
 
 
 class Reduce(function.Function):
+    """Reduce function."""
+
     def __init__(self, key, dev, **kwargs):
         super(Reduce, self).__init__(key, dev, **kwargs)
         self.axes = kwargs.get('axes', None)
@@ -365,6 +399,8 @@ class Reduce(function.Function):
 
 
 class Reshape(function.Function):
+    """Reshape function."""
+
     def __init__(self, key, dev, **kwargs):
         super(Reshape, self).__init__(key, dev, **kwargs)
         self.ndim = kwargs.get('ndim', 0)
@@ -394,6 +430,8 @@ class Reshape(function.Function):
 
 
 class Slice(function.Function):
+    """Slice function."""
+
     def __init__(self, key, dev, **kwargs):
         super(Slice, self).__init__(key, dev, **kwargs)
         self.ndim = kwargs.get('ndim', 0)
@@ -429,6 +467,8 @@ class Slice(function.Function):
 
 
 class Sort(function.Function):
+    """Sort function."""
+
     def __init__(self, key, dev, **kwargs):
         super(Sort, self).__init__(key, dev, **kwargs)
         self.axis = kwargs.get('axis', -1)
@@ -449,6 +489,8 @@ class Sort(function.Function):
 
 
 class Split(function.Function):
+    """Split function."""
+
     def __init__(self, key, dev, **kwargs):
         super(Split, self).__init__(key, dev, **kwargs)
         self.axis = kwargs.get('axis', 0)
@@ -469,6 +511,8 @@ class Split(function.Function):
 
 
 class Stack(function.Function):
+    """Stack function."""
+
     def __init__(self, key, dev, **kwargs):
         super(Stack, self).__init__(key, dev, **kwargs)
         self.axis = kwargs.get('axis', 0)
@@ -486,6 +530,8 @@ class Stack(function.Function):
 
 
 class Squeeze(function.Function):
+    """Squeeze function."""
+
     def __init__(self, key, dev, **kwargs):
         super(Squeeze, self).__init__(key, dev, **kwargs)
         self.axes = kwargs.get('axes', None)
@@ -503,6 +549,8 @@ class Squeeze(function.Function):
 
 
 class Tile(function.Function):
+    """Tile function."""
+
     def __init__(self, key, dev, **kwargs):
         super(Tile, self).__init__(key, dev, **kwargs)
         self.ndim = kwargs.get('ndim', 0)
@@ -534,6 +582,8 @@ class Tile(function.Function):
 
 
 class Transpose(function.Function):
+    """Transpose function."""
+
     def __init__(self, key, dev, **kwargs):
         super(Transpose, self).__init__(key, dev, **kwargs)
         self.ndim = kwargs.get('ndim', 0)
@@ -563,6 +613,8 @@ class Transpose(function.Function):
 
 
 class TopK(function.Function):
+    """TopK function."""
+
     def __init__(self, key, dev, **kwargs):
         super(TopK, self).__init__(key, dev, **kwargs)
         self.k = kwargs.get('k', 1)
@@ -587,6 +639,8 @@ class TopK(function.Function):
 
 
 class Unique(function.Function):
+    """Unique function."""
+
     def __init__(self, key, dev, **kwargs):
         super(Unique, self).__init__(key, dev, **kwargs)
         self.return_inverse = kwargs.get('return_inverse', False)
@@ -608,6 +662,8 @@ class Unique(function.Function):
 
 
 class UnSqueeze(function.Function):
+    """UnSqueeze function."""
+
     def __init__(self, key, dev, **kwargs):
         super(UnSqueeze, self).__init__(key, dev, **kwargs)
         self.axes = kwargs.get('axes', None)
@@ -625,6 +681,8 @@ class UnSqueeze(function.Function):
 
 
 class Where(function.Function):
+    """Where function."""
+
     def __init__(self, key, dev, **kwargs):
         super(Where, self).__init__(key, dev, **kwargs)
 

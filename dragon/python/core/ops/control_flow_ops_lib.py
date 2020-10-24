@@ -18,6 +18,8 @@ from dragon.core.framework.ops import Operator
 
 
 class Assign(Operator):
+    """Assign operator."""
+
     def __init__(self, key, dev, **kwargs):
         super(Assign, self).__init__(key, dev, **kwargs)
         self.ndim = kwargs.get('ndim', 0)
@@ -54,6 +56,8 @@ class Assign(Operator):
 
 
 class Copy(Operator):
+    """Copy operator."""
+
     def __init__(self, key, dev, **kwargs):
         super(Copy, self).__init__(key, dev, **kwargs)
 
@@ -66,6 +70,8 @@ class Copy(Operator):
 
 
 class MaskedAssign(Operator):
+    """MaskedAssign operator."""
+
     def __init__(self, key, dev, **kwargs):
         super(MaskedAssign, self).__init__(key, dev, **kwargs)
 

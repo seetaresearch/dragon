@@ -18,6 +18,8 @@ from dragon.core.framework.ops import Operator
 
 
 class Collective(Operator):
+    """Collective operator."""
+
     def __init__(self, key, dev, **kwargs):
         super(Collective, self).__init__(key, dev, **kwargs)
         self.root = kwargs.get('root', 0)

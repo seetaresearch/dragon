@@ -89,13 +89,11 @@ class BatchNorm1d(_BatchNorm):
 
     The normalization is defined as:
 
-    .. math::
-        y = \frac{x - \mathrm{E}[x]}{\sqrt{\mathrm{Var}[x] + \epsilon}} * \gamma + \beta
+    .. math:: y = \frac{x - \mathrm{E}[x]}{\sqrt{\mathrm{Var}[x] + \epsilon}} * \gamma + \beta
 
     The running average of statistics are calculated as:
 
-    .. math::
-        x_{\text{running}} = (1 - \text{momentum}) * x_{\text{running}} + \text{momentum} * x_{\text{stat}}
+    .. math:: x_{\text{running}} = (1 - \text{momentum}) * x_{\text{running}} + \text{momentum} * x_{\text{stat}}
 
     See Also
     --------
@@ -140,13 +138,11 @@ class BatchNorm2d(_BatchNorm):
 
     The normalization is defined as:
 
-    .. math::
-        y = \frac{x - \mathrm{E}[x]}{\sqrt{\mathrm{Var}[x] + \epsilon}} * \gamma + \beta
+    .. math:: y = \frac{x - \mathrm{E}[x]}{\sqrt{\mathrm{Var}[x] + \epsilon}} * \gamma + \beta
 
     The running average of statistics are calculated as:
 
-    .. math::
-        x_{\text{running}} = (1 - \text{momentum}) * x_{\text{running}} + \text{momentum} * x_{\text{stat}}
+    .. math:: x_{\text{running}} = (1 - \text{momentum}) * x_{\text{running}} + \text{momentum} * x_{\text{stat}}
 
     See Also
     --------
@@ -191,13 +187,11 @@ class BatchNorm3d(_BatchNorm):
 
     The normalization is defined as:
 
-    .. math::
-        y = \frac{x - \mathrm{E}[x]}{\sqrt{\mathrm{Var}[x] + \epsilon}} * \gamma + \beta
+    .. math:: y = \frac{x - \mathrm{E}[x]}{\sqrt{\mathrm{Var}[x] + \epsilon}} * \gamma + \beta
 
     The running average of statistics are calculated as:
 
-    .. math::
-        x_{\text{running}} = (1 - \text{momentum}) * x_{\text{running}} + \text{momentum} * x_{\text{stat}}
+    .. math:: x_{\text{running}} = (1 - \text{momentum}) * x_{\text{running}} + \text{momentum} * x_{\text{stat}}
 
     See Also
     --------
@@ -242,13 +236,11 @@ class SyncBatchNorm(_BatchNorm):
 
     The normalization is defined as:
 
-    .. math::
-        y = \frac{x - \mathrm{E}[x]}{\sqrt{\mathrm{Var}[x] + \epsilon}} * \gamma + \beta
+    .. math:: y = \frac{x - \mathrm{E}[x]}{\sqrt{\mathrm{Var}[x] + \epsilon}} * \gamma + \beta
 
     The running average of statistics are calculated as:
 
-    .. math::
-        x_{\text{running}} = (1 - \text{momentum}) * x_{\text{running}} + \text{momentum} * x_{\text{stat}}
+    .. math:: x_{\text{running}} = (1 - \text{momentum}) * x_{\text{running}} + \text{momentum} * x_{\text{stat}}
 
     Additionally, specify ``process_group`` to perform synchronization.
 

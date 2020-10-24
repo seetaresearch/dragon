@@ -314,8 +314,32 @@ ndimension
 .. automethod:: dragon.vm.torch.Tensor.ndimension
 
 ne
-###
+##
 .. automethod:: dragon.vm.torch.Tensor.ne
+
+neg
+###
+.. automethod:: dragon.vm.torch.Tensor.neg
+
+neg\_
+#####
+.. automethod:: dragon.vm.torch.Tensor.neg_
+
+new_ones
+########
+.. automethod:: dragon.vm.torch.Tensor.new_ones
+
+new_empty
+#########
+.. automethod:: dragon.vm.torch.Tensor.new_empty
+
+new_full
+########
+.. automethod:: dragon.vm.torch.Tensor.new_full
+
+new_zeros
+#########
+.. automethod:: dragon.vm.torch.Tensor.new_zeros
 
 nonzero
 #######
@@ -497,10 +521,12 @@ zero\_
 .. _torch.cos(...): cos.html
 .. _torch.cumsum(...): cumsum.html
 .. _torch.div(...): div.html
+.. _torch.empty(...): empty.html
 .. _torch.eq(...): eq.html
 .. _torch.exp(...): exp.html
 .. _torch.flatten(...): flatten.html
 .. _torch.floor(...): floor.html
+.. _torch.full(...): full.html
 .. _torch.ge(...): ge.html
 .. _torch.gt(...): gt.html
 .. _torch.le(...): le.html
@@ -509,6 +535,7 @@ zero\_
 .. _torch.ne(...): ne.html
 .. _torch.neg(...): neg.html
 .. _torch.nonzero(...): nonzero.html
+.. _torch.ones(...): ones.html
 .. _torch.pow(...): pow.html
 .. _torch.reciprocal(...): reciprocal.html
 .. _torch.reshape(...): reshape.html
@@ -526,6 +553,7 @@ zero\_
 .. _torch.unique(...): unique.html
 .. _torch.unsqueeze(...): unsqueeze.html
 .. _torch.where(...): where.html
+.. _torch.zeros(...): zeros.html
 
 .. raw:: html
 

@@ -19,6 +19,7 @@ from dragon.core.framework import config
 from dragon.core.framework import context
 from dragon.core.framework import proto_util
 from dragon.core.framework import workspace
+from dragon.core.util import nest
 from dragon.core.util import six
 from dragon.core.util import string
 from dragon.vm.torch.core import cpp
@@ -1349,6 +1350,177 @@ class Tensor(object):
 
         """
 
+    def neg_(self):
+        r"""Compute the element-wise negative.
+
+        .. math:: \text{self} = -\text{self}
+
+        Returns
+        -------
+        dragon.vm.torch.Tensor
+            The self.
+
+        See Also
+        --------
+        `torch.neg(...)`_
+
+        """
+
+    def new_empty(
+        self,
+        *size,
+        dtype=None,
+        device=None,
+        requires_grad=False,
+    ):
+        """Return a tensor filled with uninitialized data.
+
+        Refer this tensor if ``dtype`` and ``device`` not provided.
+
+        Parameters
+        ----------
+        size : int...
+            The size of output tensor.
+        dtype : str, optional
+            The optional data type.
+        device : dragon.vm.torch.device, optional
+            The optional device of returned tensor.
+        requires_grad : bool, optional, default=False
+            **True** to record gradient for returned tensor.
+
+        Returns
+        -------
+        dragon.vm.torch.Tensor
+            The output tensor.
+
+        See Also
+        --------
+        `torch.empty(...)`_
+
+        """
+        return empty(
+            *nest.flatten(size),
+            dtype=self.dtype if dtype is None else dtype,
+            device=self.device if device is None else device,
+            requires_grad=requires_grad,
+        )
+
+    def new_full(
+        self,
+        size,
+        fill_value,
+        dtype=None,
+        device=None,
+        requires_grad=False,
+    ):
+        """Return a tensor filled with a scalar.
+
+        Refer this tensor if ``dtype`` and ``device`` not provided.
+
+        Parameters
+        ----------
+        size : Sequence[int]
+            The size of output tensor.
+        fill_value : number
+            The scalar to fill.
+        dtype : str, optional
+            The optional data type.
+        device : dragon.vm.torch.device, optional
+            The optional device of returned tensor.
+        requires_grad : bool, optional, default=False
+            **True** to record gradient for returned tensor.
+
+        Returns
+        -------
+        dragon.vm.torch.Tensor
+            The output tensor.
+
+        See Also
+        --------
+        `torch.full(...)`_
+
+        """
+
+    def new_ones(
+        self,
+        *size,
+        dtype=None,
+        device=None,
+        requires_grad=False,
+    ):
+        """Return a tensor filled with with ones.
+
+        Refer this tensor if ``dtype`` and ``device`` not provided.
+
+        Parameters
+        ----------
+        size : int...
+            The size of output tensor.
+        dtype : str, optional
+            The optional data type.
+        device : dragon.vm.torch.device, optional
+            The optional device of returned tensor.
+        requires_grad : bool, optional, default=False
+            **True** to record gradient for returned tensor.
+
+        Returns
+        -------
+        dragon.vm.torch.Tensor
+            The output tensor.
+
+        See Also
+        --------
+        `torch.ones(...)`_
+
+        """
+        return self.new_full(
+            nest.flatten(size),
+            fill_value=1,
+            dtype=dtype,
+            device=device,
+            requires_grad=requires_grad,
+        )
+
+    def new_zeros(
+        self,
+        *size,
+        dtype=None,
+        device=None,
+        requires_grad=False,
+    ):
+        """Return a tensor filled with with zeros.
+
+        Refer this tensor if ``dtype`` and ``device`` not provided.
+
+        Parameters
+        ----------
+        size : int...
+            The size of output tensor.
+        dtype : str, optional
+            The optional data type.
+        device : dragon.vm.torch.device, optional
+            The optional device of returned tensor.
+        requires_grad : bool, optional, default=False
+            **True** to record gradient for returned tensor.
+
+        Returns
+        -------
+        dragon.vm.torch.Tensor
+            The output tensor.
+
+        See Also
+        --------
+        `torch.zeros(...)`_
+
+        """
+        return self.new_full(
+            nest.flatten(size),
+            fill_value=0,
+            dtype=dtype,
+            device=device,
+            requires_grad=requires_grad,
+        )
+
     def nonzero(self):
         r"""Return the index of non-zero elements.
 
@@ -2530,12 +2702,12 @@ class LongTensor(object):
         return Tensor(*args, **kwargs)
 
 
-def empty(*sizes, dtype=None, device=None, requires_grad=False):
+def empty(*size, dtype=None, device=None, requires_grad=False):
     """Return a tensor filled with uninitialized data.
 
     Parameters
     ----------
-    sizes : int...
+    size : int...
         The sizes of output tensor.
     dtype : str, optional
         The optional data type.
@@ -2551,7 +2723,7 @@ def empty(*sizes, dtype=None, device=None, requires_grad=False):
 
     """
     return Tensor(
-        *sizes,
+        *size,
         dtype=dtype if dtype else 'float32',
         device=cpp.device() if device is None else device,
         requires_grad=requires_grad,

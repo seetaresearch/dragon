@@ -14,8 +14,8 @@ namespace {
 template <typename T>
 __global__ void _L1Normalize(
     const int nblocks,
-    const int reduce_dim,
     const int inner_dim,
+    const int reduce_dim,
     const T scale,
     const T eps,
     const T* x,
@@ -42,8 +42,8 @@ __global__ void _L1Normalize(
 
 __global__ void _L1Normalize(
     const int nblocks,
-    const int reduce_dim,
     const int inner_dim,
+    const int reduce_dim,
     const float scale,
     const float eps,
     const half* x,
@@ -71,8 +71,8 @@ __global__ void _L1Normalize(
 template <typename T>
 __global__ void _L2Normalize(
     const int nblocks,
-    const int reduce_dim,
     const int inner_dim,
+    const int reduce_dim,
     const T scale,
     const T eps,
     const T* x,
@@ -99,8 +99,8 @@ __global__ void _L2Normalize(
 
 __global__ void _L2Normalize(
     const int nblocks,
-    const int reduce_dim,
     const int inner_dim,
+    const int reduce_dim,
     const float scale,
     const float eps,
     const half* x,
@@ -128,8 +128,8 @@ __global__ void _L2Normalize(
 template <typename T>
 __global__ void _L1NormalizeGrad(
     const int nblocks,
-    const int reduce_dim,
     const int inner_dim,
+    const int reduce_dim,
     const T scale,
     const T eps,
     const T* dy,
@@ -162,8 +162,8 @@ __global__ void _L1NormalizeGrad(
 
 __global__ void _L1NormalizeGrad(
     const int nblocks,
-    const int reduce_dim,
     const int inner_dim,
+    const int reduce_dim,
     const float scale,
     const float eps,
     const half* dy,
@@ -199,8 +199,8 @@ __global__ void _L1NormalizeGrad(
 template <typename T>
 __global__ void _L2NormalizeGrad(
     const int nblocks,
-    const int reduce_dim,
     const int inner_dim,
+    const int reduce_dim,
     const T scale,
     const T eps,
     const T* dy,
@@ -233,8 +233,8 @@ __global__ void _L2NormalizeGrad(
 
 __global__ void _L2NormalizeGrad(
     const int nblocks,
-    const int reduce_dim,
     const int inner_dim,
+    const int reduce_dim,
     const float scale,
     const float eps,
     const half* dy,
@@ -275,8 +275,8 @@ __global__ void _L2NormalizeGrad(
   template <>                                                                  \
   void name<T, CUDAContext>(                                                   \
       const int outer_dim,                                                     \
-      const int reduce_dim,                                                    \
       const int inner_dim,                                                     \
+      const int reduce_dim,                                                    \
       const float scale,                                                       \
       const float eps,                                                         \
       const float16* x,                                                        \
@@ -285,8 +285,8 @@ __global__ void _L2NormalizeGrad(
     const auto nblocks = outer_dim * inner_dim;                                \
     _##name<<<CUDA_2D_BLOCKS(nblocks), CUDA_THREADS, 0, ctx->cuda_stream()>>>( \
         nblocks,                                                               \
-        reduce_dim,                                                            \
         inner_dim,                                                             \
+        reduce_dim,                                                            \
         scale,                                                                 \
         eps,                                                                   \
         reinterpret_cast<const half*>(x),                                      \
@@ -301,8 +301,8 @@ DEFINE_KERNEL_LAUNCHER(L2Normalize, float16);
   template <>                                                                  \
   void name<T, CUDAContext>(                                                   \
       const int outer_dim,                                                     \
-      const int reduce_dim,                                                    \
       const int inner_dim,                                                     \
+      const int reduce_dim,                                                    \
       const float scale,                                                       \
       const float eps,                                                         \
       const T* x,                                                              \
@@ -310,7 +310,7 @@ DEFINE_KERNEL_LAUNCHER(L2Normalize, float16);
       CUDAContext* ctx) {                                                      \
     const auto nblocks = outer_dim * inner_dim;                                \
     _##name<<<CUDA_2D_BLOCKS(nblocks), CUDA_THREADS, 0, ctx->cuda_stream()>>>( \
-        nblocks, reduce_dim, inner_dim, (T)scale, (T)eps, x, y);               \
+        nblocks, inner_dim, reduce_dim, (T)scale, (T)eps, x, y);               \
   }
 
 DEFINE_KERNEL_LAUNCHER(L1Normalize, float);
@@ -323,8 +323,8 @@ DEFINE_KERNEL_LAUNCHER(L2Normalize, double);
   template <>                                                                  \
   void name<T, CUDAContext>(                                                   \
       const int outer_dim,                                                     \
-      const int reduce_dim,                                                    \
       const int inner_dim,                                                     \
+      const int reduce_dim,                                                    \
       const float scale,                                                       \
       const float eps,                                                         \
       const float16* dy,                                                       \
@@ -334,8 +334,8 @@ DEFINE_KERNEL_LAUNCHER(L2Normalize, double);
     const auto nblocks = outer_dim * inner_dim;                                \
     _##name<<<CUDA_2D_BLOCKS(nblocks), CUDA_THREADS, 0, ctx->cuda_stream()>>>( \
         nblocks,                                                               \
-        reduce_dim,                                                            \
         inner_dim,                                                             \
+        reduce_dim,                                                            \
         scale,                                                                 \
         eps,                                                                   \
         reinterpret_cast<const half*>(dy),                                     \
@@ -351,8 +351,8 @@ DEFINE_GRAD_KERNEL_LAUNCHER(L2NormalizeGrad, float16);
   template <>                                                                  \
   void name<T, CUDAContext>(                                                   \
       const int outer_dim,                                                     \
-      const int reduce_dim,                                                    \
       const int inner_dim,                                                     \
+      const int reduce_dim,                                                    \
       const float scale,                                                       \
       const float eps,                                                         \
       const T* dy,                                                             \
@@ -361,7 +361,7 @@ DEFINE_GRAD_KERNEL_LAUNCHER(L2NormalizeGrad, float16);
       CUDAContext* ctx) {                                                      \
     const auto nblocks = outer_dim * inner_dim;                                \
     _##name<<<CUDA_2D_BLOCKS(nblocks), CUDA_THREADS, 0, ctx->cuda_stream()>>>( \
-        nblocks, reduce_dim, inner_dim, (T)scale, (T)eps, dy, x, dx);          \
+        nblocks, inner_dim, reduce_dim, (T)scale, (T)eps, dy, x, dx);          \
   }
 
 DEFINE_GRAD_KERNEL_LAUNCHER(L1NormalizeGrad, float);

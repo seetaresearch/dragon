@@ -18,6 +18,8 @@ from dragon.vm.torch.core.autograd import function
 
 
 class _Initializer(function.Function):
+    """Base initializer function."""
+
     def __init__(self, key, dev, **kwargs):
         super(_Initializer, self).__init__(key, dev, **kwargs)
         self.ndim = kwargs.get('ndim', 0)
@@ -39,6 +41,8 @@ class _Initializer(function.Function):
 
 
 class Eye(_Initializer):
+    """Eye function."""
+
     def __init__(self, key, dev, **kwargs):
         super(Eye, self).__init__(key, dev, **kwargs)
         self.k = kwargs.get('k', 0)
@@ -57,6 +61,8 @@ class Eye(_Initializer):
 
 
 class Fill(_Initializer):
+    """Fill function."""
+
     def __init__(self, key, dev, **kwargs):
         super(Fill, self).__init__(key, dev, **kwargs)
         self.value = kwargs.get('value', 0.)
@@ -75,6 +81,8 @@ class Fill(_Initializer):
 
 
 class LinSpace(function.Function):
+    """LinSpace function."""
+
     def __init__(self, key, dev, **kwargs):
         super(LinSpace, self).__init__(key, dev, **kwargs)
         self.ndim = kwargs.get('ndim', 0)
@@ -123,6 +131,8 @@ class LinSpace(function.Function):
 
 
 class Permutation(function.Function):
+    """Permutation function."""
+
     def __init__(self, key, dev, **kwargs):
         super(Permutation, self).__init__(key, dev, **kwargs)
         self.dtype = kwargs.get('dtype', 'int64')
@@ -149,6 +159,8 @@ class Permutation(function.Function):
 
 
 class RandomNormal(_Initializer):
+    """RandomNormal function."""
+
     def __init__(self, key, dev, **kwargs):
         super(RandomNormal, self).__init__(key, dev, **kwargs)
         self.mean = kwargs.get('mean', 0.)
@@ -169,6 +181,8 @@ class RandomNormal(_Initializer):
 
 
 class RandomUniform(_Initializer):
+    """RandomUniform function."""
+
     def __init__(self, key, dev, **kwargs):
         super(RandomUniform, self).__init__(key, dev, **kwargs)
         self.low = kwargs.get('low', 0.)
@@ -189,6 +203,8 @@ class RandomUniform(_Initializer):
 
 
 class Range(function.Function):
+    """Range function."""
+
     def __init__(self, key, dev, **kwargs):
         super(Range, self).__init__(key, dev, **kwargs)
         self.num_args = kwargs.get('num_args', 3)

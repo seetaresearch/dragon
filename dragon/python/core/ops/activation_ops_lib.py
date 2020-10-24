@@ -18,6 +18,8 @@ from dragon.core.framework.ops import Operator
 
 
 class Activation(Operator):
+    """Base activation operator."""
+
     def __init__(self, key, dev, **kwargs):
         super(Activation, self).__init__(key, dev, **kwargs)
         self.op_type = kwargs.get('op_type', '')
@@ -31,6 +33,8 @@ class Activation(Operator):
 
 
 class Dropout(Activation):
+    """Dropout operator."""
+
     def __init__(self, key, dev, **kwargs):
         super(Dropout, self).__init__(key, dev, **kwargs)
         self.prob = kwargs.get('prob', 0.5)
@@ -47,6 +51,8 @@ class Dropout(Activation):
 
 
 class DropBlock2d(Activation):
+    """DropBlock2d operator."""
+
     def __init__(self, key, dev, **kwargs):
         super(DropBlock2d, self).__init__(key, dev, **kwargs)
         self.block_size = kwargs.get('block_size', 7)
@@ -69,6 +75,8 @@ class DropBlock2d(Activation):
 
 
 class DropPath(Activation):
+    """DropPath operator."""
+
     def __init__(self, key, dev, **kwargs):
         super(DropPath, self).__init__(key, dev, **kwargs)
         self.prob = kwargs.get('prob', 0.2)
@@ -85,6 +93,8 @@ class DropPath(Activation):
 
 
 class Elu(Activation):
+    """Elu operator."""
+
     def __init__(self, key, dev, **kwargs):
         super(Elu, self).__init__(key, dev, **kwargs)
         self.alpha = kwargs.get('alpha', 1.)
@@ -96,7 +106,45 @@ class Elu(Activation):
         }
 
 
+class HardSigmoid(Activation):
+    """HardSigmoid operator."""
+
+    def __init__(self, key, dev, **kwargs):
+        super(HardSigmoid, self).__init__(key, dev, **kwargs)
+        self.alpha = kwargs.get('alpha', 0.2)
+        self.beta = kwargs.get('beta', 0.5)
+
+    def attributes(self):
+        return {
+            'op_type': 'HardSigmoid',
+            'arguments': {
+                'alpha': float(self.alpha),
+                'beta': float(self.beta),
+            },
+        }
+
+
+class HardSwish(Activation):
+    """HardSwish operator."""
+
+    def __init__(self, key, dev, **kwargs):
+        super(HardSwish, self).__init__(key, dev, **kwargs)
+        self.alpha = kwargs.get('alpha', 0.2)
+        self.beta = kwargs.get('beta', 0.5)
+
+    def attributes(self):
+        return {
+            'op_type': 'HardSwish',
+            'arguments': {
+                'alpha': float(self.alpha),
+                'beta': float(self.beta),
+            },
+        }
+
+
 class PRelu(Operator):
+    """PRelu operator."""
+
     def __init__(self, key, dev, **kwargs):
         super(PRelu, self).__init__(key, dev, **kwargs)
         self.data_format = kwargs.get('data_format', 'NCHW')
@@ -112,6 +160,8 @@ class PRelu(Operator):
 
 
 class Relu(Activation):
+    """Relu operator."""
+
     def __init__(self, key, dev, **kwargs):
         super(Relu, self).__init__(key, dev, **kwargs)
         self.alpha = kwargs.get('alpha', 0.)
@@ -124,6 +174,8 @@ class Relu(Activation):
 
 
 class Relu6(Activation):
+    """Relu6 operator."""
+
     def __init__(self, key, dev, **kwargs):
         super(Relu6, self).__init__(key, dev, **kwargs)
 
@@ -135,6 +187,8 @@ class Relu6(Activation):
 
 
 class Selu(Activation):
+    """Selu operator."""
+
     def __init__(self, key, dev, **kwargs):
         super(Selu, self).__init__(key, dev, **kwargs)
         self.alpha = kwargs.get('alpha', 1.67326)
@@ -151,6 +205,8 @@ class Selu(Activation):
 
 
 class Softmax(Activation):
+    """Softmax operator."""
+
     def __init__(self, key, dev, **kwargs):
         super(Softmax, self).__init__(key, dev, **kwargs)
         self.axis = kwargs.get('axis', 1)

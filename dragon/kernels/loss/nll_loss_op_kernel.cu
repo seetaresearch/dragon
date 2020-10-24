@@ -12,10 +12,10 @@ namespace {
 template <typename LogitType, typename TargetType>
 __global__ void _NLLLoss(
     const int nthreads,
-    const int axis_dim,
     const int inner_dim,
+    const int axis_dim,
     const int ignore_index,
-    const LogitType* log_prob,
+    const LogitType* logit,
     const TargetType* target,
     LogitType* loss,
     LogitType* mask) {
@@ -26,7 +26,7 @@ __global__ void _NLLLoss(
     if (label == ignore_index) {
       loss[yi] = mask[yi] = LogitType(0);
     } else {
-      loss[yi] = -log_prob[(i * axis_dim + label) * inner_dim + j];
+      loss[yi] = -logit[(i * axis_dim + label) * inner_dim + j];
       mask[yi] = LogitType(1);
     }
   }
@@ -35,12 +35,12 @@ __global__ void _NLLLoss(
 template <typename LogitType, typename TargetType>
 __global__ void _NLLLossGrad(
     const int nthreads,
-    const int axis_dim,
     const int inner_dim,
+    const int axis_dim,
     const int ignore_index,
-    const LogitType* log_prob,
+    const LogitType* logit,
     const TargetType* target,
-    LogitType* dx,
+    LogitType* dlogit,
     LogitType* mask) {
   CUDA_1D_KERNEL_LOOP(yi, nthreads) {
     const int i = yi / inner_dim;
@@ -49,7 +49,7 @@ __global__ void _NLLLossGrad(
     if (label == ignore_index) {
       mask[yi] = LogitType(0);
     } else {
-      dx[(i * axis_dim + label) * inner_dim + j] = LogitType(-1);
+      dlogit[(i * axis_dim + label) * inner_dim + j] = LogitType(-1);
       mask[yi] = LogitType(1);
     }
   }
@@ -63,21 +63,21 @@ __global__ void _NLLLossGrad(
   template <>                                                                \
   void name<LogitType, TargetType, CUDAContext>(                             \
       const int outer_dim,                                                   \
-      const int axis_dim,                                                    \
       const int inner_dim,                                                   \
+      const int axis_dim,                                                    \
       const int ignore_index,                                                \
-      const LogitType* log_prob,                                             \
+      const LogitType* logit,                                                \
       const TargetType* target,                                              \
       LogitType* loss,                                                       \
       LogitType* mask,                                                       \
       CUDAContext* ctx) {                                                    \
-    auto nthreads = outer_dim * inner_dim;                                   \
+    const auto nthreads = outer_dim * inner_dim;                             \
     _##name<<<CUDA_BLOCKS(nthreads), CUDA_THREADS, 0, ctx->cuda_stream()>>>( \
         nthreads,                                                            \
-        axis_dim,                                                            \
         inner_dim,                                                           \
+        axis_dim,                                                            \
         ignore_index,                                                        \
-        log_prob,                                                            \
+        logit,                                                               \
         target,                                                              \
         loss,                                                                \
         mask);                                                               \

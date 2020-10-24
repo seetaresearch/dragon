@@ -19,6 +19,8 @@ from dragon.vm.torch.core.autograd import function
 
 
 class _Activation(function.Function):
+    """Base activation function class."""
+
     def __init__(self, key, dev, **kwargs):
         super(_Activation, self).__init__(key, dev, **kwargs)
         self.op_type = kwargs.get('op_type', '')
@@ -32,6 +34,8 @@ class _Activation(function.Function):
 
 
 class _ConvNd(function.Function):
+    """Base convolution function class."""
+
     def __init__(self, key, dev, **kwargs):
         super(_ConvNd, self).__init__(key, dev, **kwargs)
         self.num_output = kwargs.get('out_channels', 1)
@@ -62,6 +66,8 @@ class _ConvNd(function.Function):
 
 
 class _Loss(function.Function):
+    """Base loss function class."""
+
     def __init__(self, key, dev, **kwargs):
         super(_Loss, self).__init__(key, dev, **kwargs)
         self.reduction = kwargs.get('reduction', 'mean').upper()
@@ -71,6 +77,8 @@ class _Loss(function.Function):
 
 
 class _PoolNd(function.Function):
+    """Base pooling function class."""
+
     def __init__(self, key, dev, **kwargs):
         super(_PoolNd, self).__init__(key, dev, **kwargs)
         self.kernel_shape = kwargs.get('kernel_shape', 1)
@@ -99,6 +107,8 @@ class _PoolNd(function.Function):
 
 
 class BatchNorm(function.Function):
+    """BatchNorm function."""
+
     def __init__(self, key, dev, **kwargs):
         super(BatchNorm, self).__init__(key, dev, **kwargs)
         self.momentum = kwargs.get('momentum', 0.1)
@@ -122,16 +132,22 @@ class BatchNorm(function.Function):
 
 
 class Conv2d(_ConvNd):
+    """Conv2d function."""
+
     def __init__(self, key, dev, **kwargs):
         super(Conv2d, self).__init__(key, dev, **kwargs)
 
 
 class ConvTranspose2d(_ConvNd):
+    """ConvTranspose2d function."""
+
     def __init__(self, key, dev, **kwargs):
         super(ConvTranspose2d, self).__init__(key, dev, **kwargs)
 
 
 class CTCLoss(_Loss):
+    """CTCLoss function."""
+
     def __init__(self, key, dev, **kwargs):
         super(CTCLoss, self).__init__(key, dev, **kwargs)
         self.padding_mask = kwargs.get('padding_mask', -1)
@@ -147,11 +163,15 @@ class CTCLoss(_Loss):
 
 
 class DepthwiseConv2d(_ConvNd):
+    """DepthwiseConv2d function."""
+
     def __init__(self, key, dev, **kwargs):
         super(DepthwiseConv2d, self).__init__(key, dev, **kwargs)
 
 
 class DropBlock2d(_Activation):
+    """DropBlock2d function."""
+
     def __init__(self, key, dev, **kwargs):
         super(DropBlock2d, self).__init__(key, dev, **kwargs)
         self.block_size = kwargs.get('block_size', 7)
@@ -173,6 +193,8 @@ class DropBlock2d(_Activation):
 
 
 class Dropout(_Activation):
+    """Dropout function."""
+
     def __init__(self, key, dev, **kwargs):
         super(Dropout, self).__init__(key, dev, **kwargs)
         self.p = kwargs.get('p', 0.5)
@@ -182,6 +204,8 @@ class Dropout(_Activation):
 
 
 class DropPath(_Activation):
+    """DropPath function."""
+
     def __init__(self, key, dev, **kwargs):
         super(DropPath, self).__init__(key, dev, **kwargs)
         self.p = kwargs.get('p', 0.2)
@@ -198,6 +222,8 @@ class DropPath(_Activation):
 
 
 class Elu(_Activation):
+    """ELU function."""
+
     def __init__(self, key, dev, **kwargs):
         super(Elu, self).__init__(key, dev, **kwargs)
         self.alpha = kwargs.get('alpha', 1.)
@@ -211,7 +237,99 @@ class Elu(_Activation):
         }
 
 
+class GroupNorm(function.Function):
+    """GroupNorm function."""
+
+    def __init__(self, key, dev, **kwargs):
+        super(GroupNorm, self).__init__(key, dev, **kwargs)
+        self.group = kwargs.get('group', 32)
+        self.epsilon = kwargs.get('epsilon', 1e-5)
+
+    def attributes(self):
+        return {
+            'op_type': 'GroupNorm',
+            'arguments': {
+                'axis': 1,
+                'group': self.group,
+                'epsilon': self.epsilon,
+            }
+        }
+
+    def forward(self, input, weight, bias):
+        return self.dispatch([input, weight, bias], [self.alloc()])
+
+
+class HardSigmoid(_Activation):
+    """HardSigmoid function."""
+
+    def __init__(self, key, dev, **kwargs):
+        super(HardSigmoid, self).__init__(key, dev, **kwargs)
+        self.alpha = kwargs.get('alpha', 0.2)
+        self.beta = kwargs.get('beta', 0.5)
+
+    def attributes(self):
+        return {
+            'op_type': 'HardSigmoid',
+            'arguments': {
+                'alpha': float(self.alpha),
+                'beta': float(self.beta),
+            },
+        }
+
+
+class HardSwish(_Activation):
+    """HardSwish function."""
+
+    def __init__(self, key, dev, **kwargs):
+        super(HardSwish, self).__init__(key, dev, **kwargs)
+        self.alpha = kwargs.get('alpha', 0.2)
+        self.beta = kwargs.get('beta', 0.5)
+
+    def attributes(self):
+        return {
+            'op_type': 'HardSwish',
+            'arguments': {
+                'alpha': float(self.alpha),
+                'beta': float(self.beta),
+            },
+        }
+
+
+class L1Loss(_Loss):
+    """L1Loss function."""
+
+    def __init__(self, key, dev, **kwargs):
+        super(L1Loss, self).__init__(key, dev, **kwargs)
+
+    def attributes(self):
+        return {
+            'op_type': 'L1Loss',
+            'arguments': {
+                'scale': 1.,
+                'reduction': self.reduction,
+            }
+        }
+
+
+class L2Loss(_Loss):
+    """L2Loss function."""
+
+    def __init__(self, key, dev, **kwargs):
+        super(L2Loss, self).__init__(key, dev, **kwargs)
+
+    def attributes(self):
+        return {
+            'op_type': 'L2Loss',
+            'arguments': {
+                'scale': 2.,
+                'reduction': self.reduction,
+            }
+        }
+
+
 class Linear(function.Function):
+    """Linear function."""
+
     def __init__(self, key, dev, **kwargs):
         super(Linear, self).__init__(key, dev, **kwargs)
 
@@ -231,6 +349,8 @@ class Linear(function.Function):
 
 
 class LocalResponseNorm(function.Function):
+    """LocalResponseNorm function."""
+
     def __init__(self, key, dev, **kwargs):
         super(LocalResponseNorm, self).__init__(key, dev, **kwargs)
         self.size = kwargs.get('size', 5)
@@ -254,55 +374,9 @@ class LocalResponseNorm(function.Function):
         return self.dispatch([input], [self.alloc()])
 
 
-class GroupNorm(function.Function):
-    def __init__(self, key, dev, **kwargs):
-        super(GroupNorm, self).__init__(key, dev, **kwargs)
-        self.group = kwargs.get('group', 32)
-        self.epsilon = kwargs.get('epsilon', 1e-5)
-
-    def attributes(self):
-        return {
-            'op_type': 'GroupNorm',
-            'arguments': {
-                'axis': 1,
-                'group': self.group,
-                'epsilon': self.epsilon,
-            }
-        }
-
-    def forward(self, input, weight, bias):
-        return self.dispatch([input, weight, bias], [self.alloc()])
-
-
-class L1Loss(_Loss):
-    def __init__(self, key, dev, **kwargs):
-        super(L1Loss, self).__init__(key, dev, **kwargs)
-
-    def attributes(self):
-        return {
-            'op_type': 'L1Loss',
-            'arguments': {
-                'scale': 1.,
-                'reduction': self.reduction,
-            }
-        }
-
-
-class L2Loss(_Loss):
-    def __init__(self, key, dev, **kwargs):
-        super(L2Loss, self).__init__(key, dev, **kwargs)
-
-    def attributes(self):
-        return {
-            'op_type': 'L2Loss',
-            'arguments': {
-                'scale': 2.,
-                'reduction': self.reduction,
-            }
-        }
-
-
 class LpNormalize(function.Function):
+    """LpNormalize function."""
+
     def __init__(self, key, dev, **kwargs):
         super(LpNormalize, self).__init__(key, dev, **kwargs)
         self.p = kwargs.get('p', 2)
@@ -326,6 +400,8 @@ class LpNormalize(function.Function):
 
 
 class LSTMCell(function.Function):
+    """LSTMCell function."""
+
     def __init__(self, key, dev, **kwargs):
         super(LSTMCell, self).__init__(key, dev, **kwargs)
 
@@ -338,6 +414,8 @@ class LSTMCell(function.Function):
 
 
 class NLLLoss(_Loss):
+    """NLLLoss function."""
+
     def __init__(self, key, dev, **kwargs):
         super(NLLLoss, self).__init__(key, dev, **kwargs)
         self.ignore_index = kwargs.get('ignore_index', None)
@@ -354,6 +432,8 @@ class NLLLoss(_Loss):
 
 
 class Pad(function.Function):
+    """Pad function."""
+
     def __init__(self, key, dev, **kwargs):
         super(Pad, self).__init__(key, dev, **kwargs)
         self.ndim = kwargs.get('ndim', 0)
@@ -390,11 +470,15 @@ class Pad(function.Function):
 
 
 class Pool2d(_PoolNd):
+    """Pool2d function."""
+
     def __init__(self, key, dev, **kwargs):
         super(Pool2d, self).__init__(key, dev, **kwargs)
 
 
 class PRelu(function.Function):
+    """PRelu function."""
+
     def __init__(self, key, dev, **kwargs):
         super(PRelu, self).__init__(key, dev, **kwargs)
 
@@ -411,6 +495,8 @@ class PRelu(function.Function):
 
 
 class Recurrent(function.Function):
+    """Recurrent function."""
+
     def __init__(self, key, dev, **kwargs):
         super(Recurrent, self).__init__(key, dev, **kwargs)
         self.mode = kwargs.get('mode', 'rnn_tanh')
@@ -447,6 +533,8 @@ class Recurrent(function.Function):
 
 
 class Relu(_Activation):
+    """Relu function."""
+
     def __init__(self, key, dev, **kwargs):
         super(Relu, self).__init__(key, dev, **kwargs)
         self.alpha = kwargs.get('alpha', 0.)
@@ -461,6 +549,8 @@ class Relu(_Activation):
 
 
 class Relu6(_Activation):
+    """Relu6 function."""
+
     def __init__(self, key, dev, **kwargs):
         super(Relu6, self).__init__(key, dev, **kwargs)
 
@@ -474,6 +564,8 @@ class Relu6(_Activation):
 
 
 class Resize(function.Function):
+    """Resize function."""
+
     def __init__(self, key, dev, **kwargs):
         super(Resize, self).__init__(key, dev, **kwargs)
         self.num_sizes = kwargs.get('num_sizes', 0)
@@ -518,6 +610,8 @@ class Resize(function.Function):
 
 
 class RNNParamSet(function.Function):
+    """RNNParamSet function."""
+
     def __init__(self, key, dev, **kwargs):
         super(RNNParamSet, self).__init__(key, dev, **kwargs)
         self.param_type = kwargs.get('param_type', 'matrix')
@@ -549,6 +643,8 @@ class RNNParamSet(function.Function):
 
 
 class SigmoidCrossEntropy(_Loss):
+    """SigmoidCrossEntropy function."""
+
     def __init__(self, key, dev, **kwargs):
         super(SigmoidCrossEntropy, self).__init__(key, dev, **kwargs)
 
@@ -562,6 +658,8 @@ class SigmoidCrossEntropy(_Loss):
 
 
 class SigmoidFocalLoss(_Loss):
+    """SigmoidFocalLoss function."""
+
     def __init__(self, key, dev, **kwargs):
         super(SigmoidFocalLoss, self).__init__(key, dev, **kwargs)
         self.alpha = kwargs.get('alpha', 0.25)
@@ -582,6 +680,8 @@ class SigmoidFocalLoss(_Loss):
 
 
 class SmoothL1Loss(_Loss):
+    """SmoothL1Loss function."""
+
     def __init__(self, key, dev, **kwargs):
         super(SmoothL1Loss, self).__init__(key, dev, **kwargs)
         self.beta = kwargs.get('beta', 1.)
@@ -597,6 +697,8 @@ class SmoothL1Loss(_Loss):
 
 
 class Softmax(_Activation):
+    """Softmax function."""
+
     def __init__(self, key, dev, **kwargs):
         super(Softmax, self).__init__(key, dev, **kwargs)
         self.axis = kwargs.get('axis', 1)
@@ -611,6 +713,8 @@ class Softmax(_Activation):
 
 
 class SparseSoftmaxCrossEntropy(_Loss):
+    """SparseSoftmaxCrossEntropy function."""
+
     def __init__(self, key, dev, **kwargs):
         super(SparseSoftmaxCrossEntropy, self).__init__(key, dev, **kwargs)
         self.ignore_index = kwargs.get('ignore_index', None)
@@ -627,6 +731,8 @@ class SparseSoftmaxCrossEntropy(_Loss):
 
 
 class SyncBatchNorm(BatchNorm):
+    """SyncBatchNorm function."""
+
     def __init__(self, key, dev, **kwargs):
         super(SyncBatchNorm, self).__init__(key, dev, **kwargs)
         self.process_group = kwargs.get('process_group', None)

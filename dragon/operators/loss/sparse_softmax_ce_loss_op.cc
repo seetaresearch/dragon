@@ -29,16 +29,16 @@ void SparseSoftmaxCrossEntropyOp<Context>::DoRunWithType() {
 
   kernel::Softmax(
       outer_dim,
-      X.dim(axis),
       inner_dim,
+      X.dim(axis),
       X.template data<LogitType, Context>(),
       prob,
       ctx());
 
   kernel::SparseSoftmaxCrossEntropy(
       outer_dim,
-      X.dim(axis),
       inner_dim,
+      X.dim(axis),
       ignore_index_,
       prob,
       Input(1).template data<TargetType, Context>(),
@@ -120,8 +120,8 @@ void SparseSoftmaxCrossEntropyGradientOp<Context>::DoRunWithType() {
 
   kernel::SparseSoftmaxCrossEntropyGrad(
       outer_dim,
-      dX->dim(axis),
       inner_dim,
+      dX->dim(axis),
       ignore_index_,
       prob,
       Input(1).template data<TargetType, Context>(),
@@ -131,7 +131,7 @@ void SparseSoftmaxCrossEntropyGradientOp<Context>::DoRunWithType() {
 
   if (reduction_ == "NONE") {
     kernel::BroadcastLossGrad(
-        outer_dim, dX->dim(axis), inner_dim, dy, dx, ctx());
+        outer_dim, inner_dim, dX->dim(axis), dy, dx, ctx());
   } else {
     int64_t normalizer = 1;
     if (reduction_ == "VALID") {

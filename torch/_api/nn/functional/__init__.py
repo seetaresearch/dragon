@@ -27,6 +27,8 @@ from dragon.vm.torch.core.nn.functional import drop_path
 from dragon.vm.torch.core.nn.functional import dropout
 from dragon.vm.torch.core.nn.functional import elu
 from dragon.vm.torch.core.nn.functional import group_norm
+from dragon.vm.torch.core.nn.functional import hardsigmoid
+from dragon.vm.torch.core.nn.functional import hardswish
 from dragon.vm.torch.core.nn.functional import kl_div
 from dragon.vm.torch.core.nn.functional import l1_loss
 from dragon.vm.torch.core.nn.functional import leaky_relu
@@ -47,6 +49,7 @@ from dragon.vm.torch.core.nn.functional import sigmoid
 from dragon.vm.torch.core.nn.functional import sigmoid_focal_loss
 from dragon.vm.torch.core.nn.functional import smooth_l1_loss
 from dragon.vm.torch.core.nn.functional import softmax
+from dragon.vm.torch.core.nn.functional import swish
 from dragon.vm.torch.core.nn.functional import sync_batch_norm
 from dragon.vm.torch.core.nn.functional import tanh
 from dragon.vm.torch.core.nn.functional import upsample

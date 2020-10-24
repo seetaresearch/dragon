@@ -25,9 +25,12 @@ template <>
 __global__ void
 _Elu<half>(const int nthreads, const float alpha, const half* x, half* y) {
   CUDA_1D_KERNEL_LOOP(i, nthreads) {
-#if __CUDA_ARCH__ >= 530
+#if __CUDA_ARCH__ >= 350
     const float val = __half2float(__ldg(x + i));
     y[i] = val > 0.f ? __ldg(x + i) : __float2half(alpha * (exp(val) - 1.f));
+#else
+    const float val = __half2float(x[i]);
+    y[i] = val > 0.f ? x[i] : __float2half(alpha * (exp(val) - 1.f));
 #endif
   }
 }
@@ -36,12 +39,10 @@ template <>
 __global__ void
 _Elu<half2>(const int nthreads, const float alpha, const half2* x, half2* y) {
   CUDA_1D_KERNEL_LOOP(i, nthreads) {
-#if __CUDA_ARCH__ >= 530
     const float2 val = __half22float2(x[i]);
     y[i] = __floats2half2_rn(
         val.x > 0.f ? val.x : alpha * (exp(val.x) - 1.f),
         val.y > 0.f ? val.y : alpha * (exp(val.y) - 1.f));
-#endif
   }
 }
 
@@ -69,10 +70,9 @@ __global__ void _EluGrad<half>(
     const half* y,
     half* dx) {
   CUDA_1D_KERNEL_LOOP(i, nthreads) {
-#if __CUDA_ARCH__ >= 530
     const float val = __half2float(y[i]);
-    dx[i] = __hmul(dy[i], __float2half(val > 0.f ? 1.f : (alpha + val)));
-#endif
+    dx[i] =
+        __float2half(__half2float(dy[i]) * (val > 0.f ? 1.f : (alpha + val)));
   }
 } // EluGrad
 
@@ -84,14 +84,11 @@ __global__ void _EluGrad<half2>(
     const half2* y,
     half2* dx) {
   CUDA_1D_KERNEL_LOOP(i, nthreads) {
-#if __CUDA_ARCH__ >= 530
     const float2 val = __half22float2(y[i]);
-    dx[i] = __hmul2(
-        dy[i],
-        __floats2half2_rn(
-            val.x > 0.f ? 1.f : (alpha + val.x),
-            val.y > 0.f ? 1.f : (alpha + val.y)));
-#endif
+    const float2 grad = __half22float2(dy[i]);
+    dx[i] = __floats2half2_rn(
+        grad.x * (val.x > 0.f ? 1.f : (alpha + val.x)),
+        grad.y * (val.y > 0.f ? 1.f : (alpha + val.y)));
   }
 } // EluGrad
 

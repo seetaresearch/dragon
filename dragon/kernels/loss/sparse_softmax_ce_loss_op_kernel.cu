@@ -12,8 +12,8 @@ namespace {
 template <typename LogitType, typename TargetType>
 __global__ void _SparseSoftmaxCrossEntropy(
     const int nthreads,
-    const int axis_dim,
     const int inner_dim,
+    const int axis_dim,
     const int ignore_index,
     const LogitType* prob,
     const TargetType* target,
@@ -36,8 +36,8 @@ __global__ void _SparseSoftmaxCrossEntropy(
 template <typename LogitType, typename TargetType>
 __global__ void _SparseSoftmaxCrossEntropyGrad(
     const int nthreads,
-    const int axis_dim,
     const int inner_dim,
+    const int axis_dim,
     const int ignore_index,
     const LogitType* prob,
     const TargetType* target,
@@ -69,19 +69,19 @@ __global__ void _SparseSoftmaxCrossEntropyGrad(
   template <>                                                                \
   void name<LogitType, TargetType, CUDAContext>(                             \
       const int outer_dim,                                                   \
-      const int axis_dim,                                                    \
       const int inner_dim,                                                   \
+      const int axis_dim,                                                    \
       const int ignore_index,                                                \
       const LogitType* prob,                                                 \
       const TargetType* target,                                              \
       LogitType* loss,                                                       \
       LogitType* mask,                                                       \
       CUDAContext* ctx) {                                                    \
-    const int nthreads = outer_dim * inner_dim;                              \
+    const auto nthreads = outer_dim * inner_dim;                             \
     _##name<<<CUDA_BLOCKS(nthreads), CUDA_THREADS, 0, ctx->cuda_stream()>>>( \
         nthreads,                                                            \
-        axis_dim,                                                            \
         inner_dim,                                                           \
+        axis_dim,                                                            \
         ignore_index,                                                        \
         prob,                                                                \
         target,                                                              \

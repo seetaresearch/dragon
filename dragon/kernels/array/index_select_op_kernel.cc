@@ -13,16 +13,16 @@ void _IndexSelect(
     const int inner_dim,
     const int axis_dim,
     const int select_dim,
-    const int64_t* indices,
+    const int64_t* index,
     const T* x,
     T* y,
     CPUContext* ctx) {
-  int index;
+  int pos;
   for (int i = 0; i < outer_dim; ++i) {
     for (int j = 0; j < select_dim; ++j) {
-      index = indices[j];
-      index = index >= 0 ? index : index + axis_dim;
-      const T* offset_x = x + (i * axis_dim + index) * inner_dim;
+      pos = index[j];
+      pos = pos >= 0 ? pos : pos + axis_dim;
+      const T* offset_x = x + (i * axis_dim + pos) * inner_dim;
       math::Copy(inner_dim, offset_x, y, ctx);
       y += inner_dim;
     }
@@ -35,16 +35,16 @@ void _IndexSelectGrad(
     const int inner_dim,
     const int axis_dim,
     const int select_dim,
-    const int64_t* indices,
+    const int64_t* index,
     const T* dy,
     T* dx,
     CPUContext* ctx) {
-  int index;
+  int pos;
   for (int i = 0; i < outer_dim; ++i) {
     for (int j = 0; j < select_dim; ++j) {
-      index = indices[j];
-      index = index >= 0 ? index : index + axis_dim;
-      T* offset_dx = dx + (i * axis_dim + index) * inner_dim;
+      pos = index[j];
+      pos = pos >= 0 ? pos : pos + axis_dim;
+      T* offset_dx = dx + (i * axis_dim + pos) * inner_dim;
       math::Add(inner_dim, dy, offset_dx, offset_dx, ctx);
       dy += inner_dim;
     }
@@ -55,18 +55,18 @@ void _IndexSelectGrad(
 
 /* ------------------- Launcher Separator ------------------- */
 
-#define DEFINE_KERNEL_LAUNCHER(name, T)                                      \
-  template <>                                                                \
-  void name<T, CPUContext>(                                                  \
-      const int outer_dim,                                                   \
-      const int inner_dim,                                                   \
-      const int axis_dim,                                                    \
-      const int select_dim,                                                  \
-      const int64_t* indices,                                                \
-      const T* x,                                                            \
-      T* y,                                                                  \
-      CPUContext* ctx) {                                                     \
-    _##name(outer_dim, inner_dim, axis_dim, select_dim, indices, x, y, ctx); \
+#define DEFINE_KERNEL_LAUNCHER(name, T)                                    \
+  template <>                                                              \
+  void name<T, CPUContext>(                                                \
+      const int outer_dim,                                                 \
+      const int inner_dim,                                                 \
+      const int axis_dim,                                                  \
+      const int select_dim,                                                \
+      const int64_t* index,                                                \
+      const T* x,                                                          \
+      T* y,                                                                \
+      CPUContext* ctx) {                                                   \
+    _##name(outer_dim, inner_dim, axis_dim, select_dim, index, x, y, ctx); \
   }
 
 DEFINE_KERNEL_LAUNCHER(IndexSelect, bool);

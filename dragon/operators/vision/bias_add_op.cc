@@ -23,8 +23,8 @@ void BiasAddOp<Context>::DoRunWithType() {
   TENSOR_FILL(B, vec64_t({C}));
   kernel::BiasAdd(
       N,
-      C,
       S,
+      C,
       X.template data<T, Context>(),
       B.template data<T, Context>(),
       Y->ReshapeLike(X)->template mutable_data<T, Context>(),

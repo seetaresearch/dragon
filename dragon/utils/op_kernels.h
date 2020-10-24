@@ -84,6 +84,47 @@ void EluGrad(
     T* dx,
     Context* ctx);
 
+/* activation.hardsigmoid */
+
+template <typename T, class Context>
+void HardSigmoid(
+    const int count,
+    const float alpha,
+    const float beta,
+    const T* x,
+    T* y,
+    Context* ctx);
+
+template <typename T, class Context>
+void HardSigmoidGrad(
+    const int count,
+    const float alpha,
+    const T* dy,
+    const T* y,
+    T* dx,
+    Context* ctx);
+
+/* activation.hardswish */
+
+template <typename T, class Context>
+void HardSwish(
+    const int count,
+    const float alpha,
+    const float beta,
+    const T* x,
+    T* y,
+    Context* ctx);
+
+template <typename T, class Context>
+void HardSwishGrad(
+    const int count,
+    const float alpha,
+    const float beta,
+    const T* dy,
+    const T* x,
+    T* dx,
+    Context* ctx);
+
 /* activation.prelu */
 
 template <typename T, class Context>
@@ -185,8 +226,8 @@ void SigmoidGrad(const int count, const T* dy, const T* y, T* dx, Context* ctx);
 template <typename T, class Context>
 void Softmax(
     const int outer_dim,
-    const int axis_dim,
     const int inner_dim,
+    const int axis_dim,
     const T* x,
     T* y,
     Context* ctx);
@@ -194,9 +235,23 @@ void Softmax(
 template <typename T, class Context>
 void SoftmaxGrad(
     const int outer_dim,
-    const int axis_dim,
     const int inner_dim,
+    const int axis_dim,
     const T* dy,
+    const T* y,
+    T* dx,
+    Context* ctx);
+
+/* activation.hardswish */
+
+template <typename T, class Context>
+void Swish(const int count, const T* x, T* y, Context* ctx);
+
+template <typename T, class Context>
+void SwishGrad(
+    const int count,
+    const T* dy,
+    const T* x,
     const T* y,
     T* dx,
     Context* ctx);
@@ -236,8 +291,8 @@ void ArgMin(
 template <typename T, class Context>
 void ChannelAffine(
     const int outer_dim,
-    const int axis_dim,
     const int inner_dim,
+    const int axis_dim,
     const T* x,
     const T* w,
     const T* b,
@@ -275,8 +330,8 @@ void ChannelShuffle(
 template <typename T, class Context>
 void CumSum(
     const int outer_dim,
-    const int axis_dim,
     const int inner_dim,
+    const int axis_dim,
     const bool exclusive,
     const bool reverse,
     const T* x,
@@ -296,7 +351,7 @@ void IndexSelect(
     const int inner_dim,
     const int axis_dim,
     const int select_dim,
-    const int64_t* indices,
+    const int64_t* index,
     const T* x,
     T* y,
     Context* ctx);
@@ -529,7 +584,7 @@ void TopSelect(
     const int outer_dim,
     const int inner_dim,
     const int axis_dim,
-    const int topk,
+    const int select_dim,
     const int largest,
     const T* x,
     T* value,
@@ -585,8 +640,8 @@ void ReduceLossGrad(
 template <typename T, class Context>
 void BroadcastLossGrad(
     const int outer_dim,
-    const int axis_dim,
     const int inner_dim,
+    const int axis_dim,
     const T* dy,
     T* dx,
     Context* ctx);
@@ -596,10 +651,10 @@ void BroadcastLossGrad(
 template <typename LogitType, typename TargetType, class Context>
 void NLLLoss(
     const int outer_dim,
-    const int axis_dim,
     const int inner_dim,
+    const int axis_dim,
     const int ignore_index,
-    const LogitType* log_prob,
+    const LogitType* logit,
     const TargetType* target,
     LogitType* loss,
     LogitType* mask,
@@ -608,12 +663,12 @@ void NLLLoss(
 template <typename LogitType, typename TargetType, class Context>
 void NLLLossGrad(
     const int outer_dim,
-    const int axis_dim,
     const int inner_dim,
+    const int axis_dim,
     const int ignore_index,
-    const LogitType* log_prob,
+    const LogitType* logit,
     const TargetType* target,
-    LogitType* dx,
+    LogitType* dlogit,
     LogitType* mask,
     Context* ctx);
 
@@ -642,12 +697,12 @@ void SigmoidCrossEntropyGrad(
 template <typename LogitType, typename TargetType, class Context>
 void SigmoidFocalLoss(
     const int outer_dim,
-    const int axis_dim,
     const int inner_dim,
+    const int axis_dim,
     const float pos_alpha,
     const float neg_alpha,
     const float gamma,
-    const int neg_id,
+    const int negative_index,
     const LogitType* logit,
     const TargetType* target,
     LogitType* loss,
@@ -657,8 +712,8 @@ void SigmoidFocalLoss(
 template <typename LogitType, typename TargetType, class Context>
 void SigmoidFocalLossGrad(
     const int outer_dim,
-    const int axis_dim,
     const int inner_dim,
+    const int axis_dim,
     const float pos_alpha,
     const float neg_alpha,
     const float gamma,
@@ -693,8 +748,8 @@ template <typename T, class Context>
 void SoftmaxCrossEntropy(
     const int count,
     const T* prob,
-    const T* targets,
-    T* losses,
+    const T* target,
+    T* loss,
     Context* ctx);
 
 /* loss.sparse_softmax_cross_entropy */
@@ -702,8 +757,8 @@ void SoftmaxCrossEntropy(
 template <typename LogitType, typename TargetType, class Context>
 void SparseSoftmaxCrossEntropy(
     const int outer_dim,
-    const int axis_dim,
     const int inner_dim,
+    const int axis_dim,
     const int ignore_index,
     const LogitType* prob,
     const TargetType* target,
@@ -714,8 +769,8 @@ void SparseSoftmaxCrossEntropy(
 template <typename LogitType, typename TargetType, class Context>
 void SparseSoftmaxCrossEntropyGrad(
     const int outer_dim,
-    const int axis_dim,
     const int inner_dim,
+    const int axis_dim,
     const int ignore_index,
     const LogitType* prob,
     const TargetType* target,
@@ -907,8 +962,8 @@ void GroupNormBackward(
 template <typename T, class Context>
 void L1Normalize(
     const int outer_dim,
-    const int reduce_dim,
     const int inner_dim,
+    const int reduce_dim,
     const float scale,
     const float eps,
     const T* x,
@@ -918,8 +973,8 @@ void L1Normalize(
 template <typename T, class Context>
 void L1NormalizeGrad(
     const int outer_dim,
-    const int reduce_dim,
     const int inner_dim,
+    const int reduce_dim,
     const float scale,
     const float eps,
     const T* dy,
@@ -930,8 +985,8 @@ void L1NormalizeGrad(
 template <typename T, class Context>
 void L2Normalize(
     const int outer_dim,
-    const int reduce_dim,
     const int inner_dim,
+    const int reduce_dim,
     const float scale,
     const float eps,
     const T* x,
@@ -941,8 +996,8 @@ void L2Normalize(
 template <typename T, class Context>
 void L2NormalizeGrad(
     const int outer_dim,
-    const int reduce_dim,
     const int inner_dim,
+    const int reduce_dim,
     const float scale,
     const float eps,
     const T* dy,
@@ -1030,8 +1085,8 @@ void SGDUpdate(
 template <typename T, class Context>
 void BiasAdd(
     const int outer_dim,
-    const int axis_dim,
     const int inner_dim,
+    const int axis_dim,
     const T* x,
     const T* b,
     T* y,

@@ -98,8 +98,8 @@ __global__ void _CumSumReverse<half>(
 template <>
 void CumSum<float16, CUDAContext>(
     const int outer_dim,
-    const int axis_dim,
     const int inner_dim,
+    const int axis_dim,
     const bool exclusive,
     const bool reverse,
     const float16* x,
@@ -129,8 +129,8 @@ void CumSum<float16, CUDAContext>(
   template <>                                                              \
   void CumSum<T, CUDAContext>(                                             \
       const int outer_dim,                                                 \
-      const int axis_dim,                                                  \
       const int inner_dim,                                                 \
+      const int axis_dim,                                                  \
       const bool exclusive,                                                \
       const bool reverse,                                                  \
       const T* x,                                                          \
@@ -155,7 +155,6 @@ DEFINE_KERNEL_LAUNCHER(int);
 DEFINE_KERNEL_LAUNCHER(int64_t);
 DEFINE_KERNEL_LAUNCHER(float);
 DEFINE_KERNEL_LAUNCHER(double);
-
 #undef DEFINE_KERNEL_LAUNCHER
 
 } // namespace kernel

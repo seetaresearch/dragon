@@ -10,8 +10,8 @@ namespace {
 template <typename LogitType, typename TargetType>
 void _SparseSoftmaxCrossEntropy(
     const int outer_dim,
-    const int axis_dim,
     const int inner_dim,
+    const int axis_dim,
     const int ignore_index,
     const LogitType* prob,
     const TargetType* target,
@@ -36,8 +36,8 @@ void _SparseSoftmaxCrossEntropy(
 template <typename LogitType, typename TargetType>
 void _SparseSoftmaxCrossEntropyGrad(
     const int outer_dim,
-    const int axis_dim,
     const int inner_dim,
+    const int axis_dim,
     const int ignore_index,
     const LogitType* prob,
     const TargetType* target,
@@ -72,8 +72,8 @@ void _SparseSoftmaxCrossEntropyGrad(
   template <>                                               \
   void name<LogitType, TargetType, CPUContext>(             \
       const int outer_dim,                                  \
-      const int axis_dim,                                   \
       const int inner_dim,                                  \
+      const int axis_dim,                                   \
       const int ignore_index,                               \
       const LogitType* prob,                                \
       const TargetType* target,                             \
@@ -82,8 +82,8 @@ void _SparseSoftmaxCrossEntropyGrad(
       CPUContext* ctx) {                                    \
     _##name(                                                \
         outer_dim,                                          \
-        axis_dim,                                           \
         inner_dim,                                          \
+        axis_dim,                                           \
         ignore_index,                                       \
         prob,                                               \
         target,                                             \

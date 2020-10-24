@@ -354,6 +354,24 @@ class TestModules(OpTestCase):
         m.reset_parameters()
         _ = repr(m)
 
+    def test_hardsigmoid(self):
+        alpha, beta = 1.0 / 6.0, 0.5
+        data = np.array([--3., -2., -1., 0., 1., 2., 3], 'float32')
+        x = new_tensor(data)
+        m = torch.nn.Hardsigmoid(inplace=True)
+        y, _ = m(x), repr(m)
+        result = np.clip(alpha * data + beta, 0, 1)
+        self.assertEqual(y, result)
+
+    def test_hardswish(self):
+        alpha, beta = 1.0 / 6.0, 0.5
+        data = np.array([-3., -2., -1., 0., 1., 2., 3], 'float32')
+        x = new_tensor(data)
+        m = torch.nn.Hardswish()
+        y, _ = m(x), repr(m)
+        result = data * np.clip(alpha * data + beta, 0, 1)
+        self.assertEqual(y, result)
+
     def test_leaky_relu(self):
         alpha = 0.2
         data = np.array([-1., 0., 1.], 'float32')
@@ -552,6 +570,14 @@ class TestModules(OpTestCase):
         m = torch.nn.Softmax(dim=1, inplace=True)
         y, _ = m(x), repr(m)
         self.assertEqual(y, data)
+
+    def test_swish(self):
+        data = np.array([-3., -2., -1., 0., 1., 2., 3], 'float32')
+        x = new_tensor(data)
+        m = torch.nn.Swish()
+        y, _ = m(x), repr(m)
+        result = data * (1. / (1. + np.exp(-data)))
+        self.assertEqual(y, result)
 
     def test_tanh(self):
         data = np.array([0.2, 0.4, 0.6, 0.8, 1.], 'float32')

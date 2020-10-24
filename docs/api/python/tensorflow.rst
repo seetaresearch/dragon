@@ -37,7 +37,7 @@ vm.tensorflow
   : Return a tensor initialized from the value.
 
   `device(...) <tensorflow/device.html>`_
-  : Context-manager to nest the the device spec.
+  : Context-manager to nest the device spec.
 
   `expand_dims(...) <tensorflow/expand_dims.html>`_
   : Expand the dimensions of input with size 1.

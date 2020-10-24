@@ -18,6 +18,8 @@ from dragon.vm.torch.core.autograd import function
 
 
 class Axpby(function.Function):
+    """Axpby function."""
+
     def __init__(self, key, dev, **kwargs):
         super(Axpby, self).__init__(key, dev, **kwargs)
         self.alpha = kwargs.get('alpha', 1.)
@@ -37,6 +39,8 @@ class Axpby(function.Function):
 
 
 class BinaryFunc(function.Function):
+    """Binary function."""
+
     def __init__(self, key, dev, **kwargs):
         super(BinaryFunc, self).__init__(key, dev, **kwargs)
         self.op_type = kwargs.get('op_type', '')
@@ -49,6 +53,8 @@ class BinaryFunc(function.Function):
 
 
 class Clip(function.Function):
+    """Clip function."""
+
     def __init__(self, key, dev, **kwargs):
         super(Clip, self).__init__(key, dev, **kwargs)
         self.min = kwargs.get('min', None)
@@ -72,6 +78,8 @@ class Clip(function.Function):
 
 
 class UnaryFunc(function.Function):
+    """Unary function."""
+
     def __init__(self, key, dev, **kwargs):
         super(UnaryFunc, self).__init__(key, dev, **kwargs)
         self.op_type = kwargs.get('op_type', '')
@@ -84,6 +92,8 @@ class UnaryFunc(function.Function):
 
 
 class MatMul(function.Function):
+    """MatMul function."""
+
     def __init__(self, key, dev, **kwargs):
         super(MatMul, self).__init__(key, dev, **kwargs)
         self.transpose_a = kwargs.get('transpose_a', False)

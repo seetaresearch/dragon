@@ -12,8 +12,8 @@ void CumSumOp<Context>::DoRunWithType() {
 
   kernel::CumSum(
       X.count(0, axis),
-      X.dim(axis),
       X.count(axis + 1),
+      X.dim(axis),
       exclusive_,
       reverse_,
       X.template data<T, Context>(),
@@ -34,8 +34,8 @@ void CumSumGradientOp<Context>::DoRunWithType() {
 
   kernel::CumSum(
       dY.count(0, axis),
-      dY.dim(axis),
       dY.count(axis + 1),
+      dY.dim(axis),
       exclusive_,
       !reverse_,
       dY.template data<T, Context>(),

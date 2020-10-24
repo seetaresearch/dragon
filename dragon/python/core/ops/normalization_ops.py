@@ -36,19 +36,11 @@ def batch_norm(
 
     The normalization is defined as:
 
-    .. math::
-        y = \frac{x - \mathrm{E}[x]}{\sqrt{\mathrm{Var}[x] + \epsilon}} * \gamma + \beta
+    .. math:: y = \frac{x - \mathrm{E}[x]}{\sqrt{\mathrm{Var}[x] + \epsilon}} * \gamma + \beta
 
     The running average of statistics are calculated as:
 
-    .. math::
-        x_{\text{running}} = \text{momentum} * x_{\text{running}} + (1 - \text{momentum}) * x_{\text{stat}}
-
-    Note that the number of inputs should be **5**, i.e.,
-    this operators is implemented into the fused version.
-
-    However, you can still fix the ``gamma`` and ``beta``,
-    by disabling the their gradients directly.
+    .. math:: x_{\text{running}} = \text{momentum} * x_{\text{running}} + (1 - \text{momentum}) * x_{\text{stat}}
 
     Parameters
     ----------
@@ -91,17 +83,10 @@ def group_norm(inputs, axis=-1, group=32, epsilon=1e-5, **kwargs):
 
     The normalization is defined as:
 
-    .. math::
-        y = \frac{x - \mathrm{E}[x]}{\sqrt{\mathrm{Var}[x] + \epsilon}} * \gamma + \beta
+    .. math:: y = \frac{x - \mathrm{E}[x]}{\sqrt{\mathrm{Var}[x] + \epsilon}} * \gamma + \beta
 
-    It turns out to be **InstanceNorm**, if ``group`` is  **0**,
+    Note that it turns out to be **InstanceNorm**, if ``group`` is  **0**,
     or **LayerNorm**, if ``group`` is **1**.
-
-    Note that the number of inputs should be **3**, i.e.,
-    this operators is implemented into the fused version.
-
-    However, you can still fix the ``gamma`` and ``beta``,
-    by disabling the their gradients directly.
 
     Parameters
     ----------
@@ -141,14 +126,7 @@ def instance_norm(inputs, axis=-1, epsilon=1e-5, **kwargs):
 
     The normalization is defined as:
 
-    .. math::
-        \text{out} = \frac{x - \mathrm{E}[x]}{\sqrt{\mathrm{Var}[x] + \epsilon}} * \gamma + \beta
-
-    Note that the number of inputs should be **3**, i.e.,
-    this operators is implemented into the fused version.
-
-    However, you can still fix the **gamma** and **beta**,
-    by disabling the their gradients directly.
+    .. math:: \text{out} = \frac{x - \mathrm{E}[x]}{\sqrt{\mathrm{Var}[x] + \epsilon}} * \gamma + \beta
 
     Parameters
     ----------
@@ -166,6 +144,33 @@ def instance_norm(inputs, axis=-1, epsilon=1e-5, **kwargs):
 
     """
     return group_norm(inputs, axis=axis, group=0, epsilon=epsilon, **kwargs)
+
+
+@OpSchema.num_inputs(3)
+def layer_norm(inputs, axis=-1, epsilon=1e-5, **kwargs):
+    r"""Apply the layer normalization.
+    `[Ba et.al, 2016] <https://arxiv.org/abs/1607.06450>`_
+
+    The normalization is defined as:
+
+    .. math:: \text{out} = \frac{x - \mathrm{E}[x]}{\sqrt{\mathrm{Var}[x] + \epsilon}} * \gamma + \beta
+
+    Parameters
+    ----------
+    inputs : Sequence[dragon.Tensor]
+        The tensor ``x``, ``gamma`` and ``beta``.
+    axis : int, optional, default=-1
+        The channel axis.
+    epsilon : float, optional, default=1e-5
+        The value to :math:`\epsilon`.
+
+    Returns
+    -------
+    dragon.Tensor
+        The output tensor.
+
+    """
+    return group_norm(inputs, axis=axis, group=1, epsilon=epsilon, **kwargs)
 
 
 @OpSchema.num_inputs(1)
@@ -238,40 +243,6 @@ def lp_normalize(inputs, axis=None, p=2, epsilon=1e-12, reduction='sum', **kwarg
         return op_lib.blend(**args)
 
 
-@OpSchema.num_inputs(3)
-def layer_norm(inputs, axis=-1, epsilon=1e-5, **kwargs):
-    r"""Apply the layer normalization.
-    `[Ba et.al, 2016] <https://arxiv.org/abs/1607.06450>`_
-
-    The normalization is defined as:
-
-    .. math::
-        \text{out} = \frac{x - \mathrm{E}[x]}{\sqrt{\mathrm{Var}[x] + \epsilon}} * \gamma + \beta
-
-    Note that the number of inputs should be *3*, i.e.,
-    this operators is implemented into the fused version.
-
-    However, you can still fix the *gamma* and *beta*,
-    by disabling the their gradients directly.
-
-    Parameters
-    ----------
-    inputs : Sequence[dragon.Tensor]
-        The tensor ``x``, ``gamma`` and ``beta``.
-    axis : int, optional, default=-1
-        The channel axis.
-    epsilon : float, optional, default=1e-5
-        The value to :math:`\epsilon`.
-
-    Returns
-    -------
-    dragon.Tensor
-        The output tensor.
-
-    """
-    return group_norm(inputs, axis=axis, group=1, epsilon=epsilon, **kwargs)
-
-
 @OpSchema.num_inputs(1)
 def local_response_norm(
     inputs,
@@ -289,8 +260,8 @@ def local_response_norm(
 
     .. math::
         out_{i} = x_{i}\left(k + \frac{\alpha}{n}
-            \sum_{j=\max(0, i-n/2)}^{\min(N-1,i+n/2)}x_{j}^2
-        \right)^{-\beta}
+                       \sum_{j=\max(0, i-n/2)}^{\min(N-1,i+n/2)}x_{j}^2
+                       \right)^{-\beta}
 
     Parameters
     ----------
@@ -347,19 +318,11 @@ def sync_batch_norm(
 
     The normalization is defined as:
 
-    .. math::
-        \text{out} = \frac{x - \mathrm{E}[x]}{\sqrt{\mathrm{Var}[x] + \epsilon}} * \gamma + \beta
+    .. math:: \text{out} = \frac{x - \mathrm{E}[x]}{\sqrt{\mathrm{Var}[x] + \epsilon}} * \gamma + \beta
 
     The running average of statistics are calculated as:
 
-    .. math::
-        x_{\text{running}} = \text{momentum} * x_{\text{running}} + (1 - \text{momentum}) * x_{\text{stat}}
-
-    Note that the number of inputs should be **5**, i.e.,
-    this operators is implemented into the fused version.
-
-    However, you can still fix the ``gamma`` and ``beta``,
-    by disabling the their gradients directly.
+    .. math:: x_{\text{running}} = \text{momentum} * x_{\text{running}} + (1 - \text{momentum}) * x_{\text{stat}}
 
     Parameters
     ----------

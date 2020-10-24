@@ -16,6 +16,9 @@ activations
   `get(...) <activations/get.html>`_
   : Return the activation callable by identifier.
 
+  `hard_sigmoid(...) <activations/hard_sigmoid.html>`_
+  : Apply the hard sigmoid function to input.
+
   `linear(...) <activations/linear.html>`_
   : Apply the linear activation to input.
 
@@ -33,6 +36,10 @@ activations
   `softmax(...) <activations/softmax.html>`_
   : Apply the softmax function to input.
 
+  `swish(...) <activations/swish.html>`_
+  : Apply the swish function to input.
+  `[Ramachandran et.al, 2017] <https://arxiv.org/abs/1710.05941>`_.
+
   `tanh(...) <activations/tanh.html>`_
   : Apply the tanh function to input.
 
@@ -42,11 +49,13 @@ activations
   activations/elu
   activations/exponential
   activations/get
+  activations/hard_sigmoid
   activations/linear
   activations/relu
   activations/selu
   activations/sigmoid
   activations/softmax
+  activations/swish
   activations/tanh
 
 .. raw:: html

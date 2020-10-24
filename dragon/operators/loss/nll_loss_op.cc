@@ -27,8 +27,8 @@ void NLLLossOp<Context>::DoRunWithType() {
 
   kernel::NLLLoss(
       outer_dim,
-      X.dim(axis),
       inner_dim,
+      X.dim(axis),
       ignore_index_,
       X.template data<LogitType, Context>(),
       Input(1).template data<TargetType, Context>(),
@@ -109,8 +109,8 @@ void NLLLossGradientOp<Context>::DoRunWithType() {
 
   kernel::NLLLossGrad(
       outer_dim,
-      dX->dim(axis),
       inner_dim,
+      dX->dim(axis),
       ignore_index_,
       X.template data<LogitType, Context>(),
       Input(1).template data<TargetType, Context>(),
@@ -120,7 +120,7 @@ void NLLLossGradientOp<Context>::DoRunWithType() {
 
   if (reduction_ == "NONE") {
     kernel::BroadcastLossGrad(
-        outer_dim, dX->dim(axis), inner_dim, dy, dx, ctx());
+        outer_dim, inner_dim, dX->dim(axis), dy, dx, ctx());
   } else {
     int64_t normalizer = 1;
     if (reduction_ == "VALID") {

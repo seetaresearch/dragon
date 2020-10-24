@@ -55,7 +55,7 @@ dragon
   : Create a callable graph from the specified outputs.
 
   `device(...) <dragon/device.html>`_
-  : Context-manager to nest the the device spec.
+  : Context-manager to nest the device spec.
 
   `eager_mode(...) <dragon/eager_mode.html>`_
   : Context-manager set the eager execution mode.

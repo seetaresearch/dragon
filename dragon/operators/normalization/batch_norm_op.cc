@@ -56,9 +56,9 @@ void BatchNormOp<Context>::TrainingImpl() {
 
   // Compute affine transformation
   if (data_format() == "NCHW") {
-    kernel::ChannelAffine(N_, C_, S_, x, scale, bias, y, ctx());
+    kernel::ChannelAffine(N_, S_, C_, x, scale, bias, y, ctx());
   } else if (data_format() == "NHWC") {
-    kernel::ChannelAffine(N_ * S_, C_, 1, x, scale, bias, y, ctx());
+    kernel::ChannelAffine(N_ * S_, 1, C_, x, scale, bias, y, ctx());
   }
 }
 
@@ -91,9 +91,9 @@ void BatchNormOp<Context>::InferenceImpl() {
 
   // Compute affine transformation
   if (data_format() == "NCHW") {
-    kernel::ChannelAffine(N_, C_, S_, x, scale, bias, y, ctx());
+    kernel::ChannelAffine(N_, S_, C_, x, scale, bias, y, ctx());
   } else if (data_format() == "NHWC") {
-    kernel::ChannelAffine(N_ * S_, C_, 1, x, scale, bias, y, ctx());
+    kernel::ChannelAffine(N_ * S_, 1, C_, x, scale, bias, y, ctx());
   }
 }
 

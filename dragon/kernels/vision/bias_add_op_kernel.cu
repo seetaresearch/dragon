@@ -38,8 +38,8 @@ __global__ void _BiasAdd<half>(
 template <typename T>
 __global__ void _BiasAdd(
     const int nthreads,
-    const int axis_dim,
     const int inner_dim,
+    const int axis_dim,
     const T* x,
     const T* b,
     T* y) {
@@ -55,8 +55,8 @@ __global__ void _BiasAdd(
 template <>
 __global__ void _BiasAdd<half>(
     const int nthreads,
-    const int axis_dim,
     const int inner_dim,
+    const int axis_dim,
     const half* x,
     const half* b,
     half* y) {
@@ -74,13 +74,13 @@ __global__ void _BiasAdd<half>(
 template <>
 void BiasAdd<float16, CUDAContext>(
     const int outer_dim,
-    const int axis_dim,
     const int inner_dim,
+    const int axis_dim,
     const float16* x,
     const float16* b,
     float16* y,
     CUDAContext* ctx) {
-  const int nthreads = outer_dim * axis_dim * inner_dim;
+  const auto nthreads = outer_dim * axis_dim * inner_dim;
   if (inner_dim == 1) {
     _BiasAdd<<<CUDA_BLOCKS(nthreads), CUDA_THREADS, 0, ctx->cuda_stream()>>>(
         nthreads,
@@ -91,8 +91,8 @@ void BiasAdd<float16, CUDAContext>(
   } else {
     _BiasAdd<<<CUDA_BLOCKS(nthreads), CUDA_THREADS, 0, ctx->cuda_stream()>>>(
         nthreads,
-        axis_dim,
         inner_dim,
+        axis_dim,
         reinterpret_cast<const half*>(x),
         reinterpret_cast<const half*>(b),
         reinterpret_cast<half*>(y));
@@ -103,13 +103,13 @@ void BiasAdd<float16, CUDAContext>(
   template <>                                                            \
   void BiasAdd<T, CUDAContext>(                                          \
       const int outer_dim,                                               \
-      const int axis_dim,                                                \
       const int inner_dim,                                               \
+      const int axis_dim,                                                \
       const T* x,                                                        \
       const T* b,                                                        \
       T* y,                                                              \
       CUDAContext* ctx) {                                                \
-    const int nthreads = outer_dim * axis_dim * inner_dim;               \
+    const auto nthreads = outer_dim * axis_dim * inner_dim;              \
     if (inner_dim == 1) {                                                \
       _BiasAdd<<<                                                        \
           CUDA_BLOCKS(nthreads),                                         \
@@ -121,7 +121,7 @@ void BiasAdd<float16, CUDAContext>(
           CUDA_BLOCKS(nthreads),                                         \
           CUDA_THREADS,                                                  \
           0,                                                             \
-          ctx->cuda_stream()>>>(nthreads, axis_dim, inner_dim, x, b, y); \
+          ctx->cuda_stream()>>>(nthreads, inner_dim, axis_dim, x, b, y); \
     }                                                                    \
   }
 

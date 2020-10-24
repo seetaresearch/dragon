@@ -118,10 +118,10 @@ template <typename T>
 void ConvOpBase<Context>::Pb(const T* bias, T* y) {
   if (data_format() == "NCHW") {
     kernel::BiasAdd(
-        Input(0).dim(0), out_channels_, out_dim_, y, bias, y, ctx());
+        Input(0).dim(0), out_dim_, out_channels_, y, bias, y, ctx());
   } else if (data_format() == "NHWC") {
     kernel::BiasAdd(
-        Input(0).dim(0) * out_dim_, out_channels_, 1, y, bias, y, ctx());
+        Input(0).dim(0) * out_dim_, 1, out_channels_, y, bias, y, ctx());
   }
 }
 

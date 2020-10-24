@@ -10,8 +10,8 @@ namespace {
 template <typename T>
 void _BroadcastLossGrad(
     const int outer_dim,
-    const int axis_dim,
     const int inner_dim,
+    const int axis_dim,
     const T* dy,
     T* dx) {
   std::array<int, 3> dims = {outer_dim, axis_dim, inner_dim};
@@ -52,8 +52,8 @@ void ReduceLossGrad<float16, CPUContext>(
 template <>
 void BroadcastLossGrad<float16, CPUContext>(
     const int outer_dim,
-    const int axis_dim,
     const int inner_dim,
+    const int axis_dim,
     const float16* dy,
     float16* dx,
     CPUContext* ctx) {
@@ -98,12 +98,12 @@ void BroadcastLossGrad<float16, CPUContext>(
   template <>                                                            \
   void BroadcastLossGrad<T, CPUContext>(                                 \
       const int outer_dim,                                               \
-      const int axis_dim,                                                \
       const int inner_dim,                                               \
+      const int axis_dim,                                                \
       const T* dy,                                                       \
       T* dx,                                                             \
       CPUContext* ctx) {                                                 \
-    _BroadcastLossGrad(outer_dim, axis_dim, inner_dim, dy, dx);          \
+    _BroadcastLossGrad(outer_dim, inner_dim, axis_dim, dy, dx);          \
   }
 
 DEFINE_KERNEL_LAUNCHER(float);

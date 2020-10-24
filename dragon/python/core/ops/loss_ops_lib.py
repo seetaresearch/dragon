@@ -17,9 +17,11 @@ from __future__ import print_function
 from dragon.core.framework.ops import Operator
 
 
-class _Loss(Operator):
+class Loss(Operator):
+    """Loss operator."""
+
     def __init__(self, key, dev, **kwargs):
-        super(_Loss, self).__init__(key, dev, **kwargs)
+        super(Loss, self).__init__(key, dev, **kwargs)
         self.reduction = kwargs.get('reduction', 'MEAN')
 
     def attributes(self):
@@ -34,17 +36,23 @@ class _Loss(Operator):
         return self.dispatch(inputs, [self.alloc()])
 
 
-class L1Loss(_Loss):
+class L1Loss(Loss):
+    """L1Loss operator."""
+
     def __init__(self, key, dev, **kwargs):
         super(L1Loss, self).__init__(key, dev, **kwargs)
 
 
-class L2Loss(_Loss):
+class L2Loss(Loss):
+    """L2Loss operator."""
+
     def __init__(self, key, dev, **kwargs):
         super(L2Loss, self).__init__(key, dev, **kwargs)
 
 
-class NLLLoss(_Loss):
+class NLLLoss(Loss):
+    """NLLLoss operator."""
+
     def __init__(self, key, dev, **kwargs):
         super(NLLLoss, self).__init__(key, dev, **kwargs)
         self.axis = kwargs.get('axis', -1)
@@ -61,12 +69,16 @@ class NLLLoss(_Loss):
         }
 
 
-class SigmoidCrossEntropy(_Loss):
+class SigmoidCrossEntropy(Loss):
+    """SigmoidCrossEntropy operator."""
+
     def __init__(self, key, dev, **kwargs):
         super(SigmoidCrossEntropy, self).__init__(key, dev, **kwargs)
 
 
-class SmoothL1Loss(_Loss):
+class SmoothL1Loss(Loss):
+    """SmoothL1Loss operator."""
+
     def __init__(self, key, dev, **kwargs):
         super(SmoothL1Loss, self).__init__(key, dev, **kwargs)
         self.beta = kwargs.get('beta', 1.)
@@ -81,7 +93,9 @@ class SmoothL1Loss(_Loss):
         }
 
 
-class SoftmaxCrossEntropy(_Loss):
+class SoftmaxCrossEntropy(Loss):
+    """SoftmaxCrossEntropy operator."""
+
     def __init__(self, key, dev, **kwargs):
         super(SoftmaxCrossEntropy, self).__init__(key, dev, **kwargs)
         self.axis = kwargs.get('axis', -1)
@@ -96,7 +110,9 @@ class SoftmaxCrossEntropy(_Loss):
         }
 
 
-class SparseSoftmaxCrossEntropy(_Loss):
+class SparseSoftmaxCrossEntropy(Loss):
+    """SparseSoftmaxCrossEntropy operator."""
+
     def __init__(self, key, dev, **kwargs):
         super(SparseSoftmaxCrossEntropy, self).__init__(key, dev, **kwargs)
         self.axis = kwargs.get('axis', -1)
@@ -113,7 +129,9 @@ class SparseSoftmaxCrossEntropy(_Loss):
         }
 
 
-class SigmoidFocalLoss(_Loss):
+class SigmoidFocalLoss(Loss):
+    """SigmoidFocalLoss operator."""
+
     def __init__(self, key, dev, **kwargs):
         super(SigmoidFocalLoss, self).__init__(key, dev, **kwargs)
         self.axis = kwargs.get('axis', -1)

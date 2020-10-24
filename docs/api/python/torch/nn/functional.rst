@@ -53,6 +53,13 @@ vm.torch.nn.functional
   : Apply the group normalization to input.
   `[Wu & He, 2018] <https://arxiv.org/abs/1803.08494>`_.
 
+  `hardsigmoid(...) <functional/hardsigmoid.html>`_
+  : Apply the hard sigmoid function to input.
+
+  `hardswish(...) <functional/hardswish.html>`_
+  : Apply the hard swish function to input.
+  `[Howard et.al, 2019] <https://arxiv.org/abs/1905.02244>`_.
+
   `kl_div(...) <functional/kl_div.html>`_
   : Compute the Kullback-Leibler divergence.
 
@@ -113,6 +120,10 @@ vm.torch.nn.functional
   `softmax(...) <functional/softmax.html>`_
   : Apply the softmax function to input.
 
+  `swish(...) <functional/swish.html>`_
+  : Apply the swish function to input.
+  `[Ramachandran et.al, 2017] <https://arxiv.org/abs/1710.05941>`_.
+
   `sync_batch_norm(...) <functional/sync_batch_norm.html>`_
   : Apply the sync batch normalization to input.
   `[Ioffe & Szegedy, 2015] <https://arxiv.org/abs/1502.03167>`_.
@@ -145,6 +156,8 @@ vm.torch.nn.functional
   functional/dropout
   functional/elu
   functional/group_norm
+  functional/hardsigmoid
+  functional/hardswish
   functional/kl_div
   functional/l1_loss
   functional/leaky_relu
@@ -165,6 +178,7 @@ vm.torch.nn.functional
   functional/sigmoid_focal_loss
   functional/smooth_l1_loss
   functional/softmax
+  functional/swish
   functional/sync_batch_norm
   functional/tanh
   functional/upsample

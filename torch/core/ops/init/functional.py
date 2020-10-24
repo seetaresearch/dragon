@@ -135,6 +135,7 @@ def eye(
 
 
 def fill(out, shape, value):
+    """Fill a tensor with a scalar."""
     return _functions.Fill  \
         .instantiate(
             out.device,
@@ -144,10 +145,93 @@ def fill(out, shape, value):
         ).apply(out, shape)
 
 
-def fill_like(out, shape_like, value):
+def fill_like(out, other, value):
+    """Fill a tensor with a scalar as the other."""
     return _functions.Fill \
         .instantiate(out.device, value=float(value), dtype=out.dtype) \
-        .apply(out, [], shape_like)
+        .apply(out, [], other)
+
+
+def full(
+    size,
+    fill_value,
+    out=None,
+    dtype='int64',
+    device=None,
+    requires_grad=False,
+):
+    """Return a tensor filled with a scalar.
+
+    Examples:
+
+    ```python
+    print(torch.full((1, 2), 1))  # [[1, 1]]
+    ```
+
+    Parameters
+    ----------
+    size : Sequence[int]
+        The output shape.
+    fill_value : number
+        The scalar to fill.
+    out : dragon.vm.torch.Tensor, optional
+        The optional output tensor.
+    dtype : str, optional, default='int64'
+        The optional data type.
+    device : dragon.vm.torch.device, optional
+        The optional device of returned tensor.
+    requires_grad : bool, optional, default=False
+        **True** to record gradient for returned tensor.
+
+    Returns
+    -------
+    dragon.vm.torch.Tensor
+        The output tensor.
+
+    """
+    out = out if out else utils.new_leaf(size, locals())
+    return fill(out, size, fill_value)
+
+
+def full_like(
+    input,
+    fill_value,
+    out=None,
+    dtype='int64',
+    device=None,
+    requires_grad=False,
+):
+    """Return a tensor filled with a scalar with size as input.
+
+    Examples:
+
+    ```python
+    print(torch.full_like(torch.zeros(1, 2), 1))  # [[1, 1]]
+    ```
+
+    Parameters
+    ----------
+    input : dragon.vm.torch.Tensor
+        The tensor for indicating shape.
+    fill_value : number
+        The scalar to fill.
+    out : dragon.vm.torch.Tensor, optional
+        The optional output tensor.
+    dtype : str, optional, default='int64'
+        The optional data type.
+    device : dragon.vm.torch.device, optional
+        The optional device of returned tensor.
+    requires_grad : bool, optional, default=False
+        **True** to record gradient for returned tensor.
+
+    Returns
+    -------
+    dragon.vm.torch.Tensor
+        The output tensor.
+
+    """
+    out = utils.new_leaf(input.shape, locals())
+    return fill_like(out, input, fill_value)
 
 
 def linspace(

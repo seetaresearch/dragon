@@ -12,8 +12,8 @@ namespace {
 template <typename LogitType, typename TargetType>
 __global__ void _SigmoidFocalLoss(
     const int nthreads,
-    const int axis_dim,
     const int inner_dim,
+    const int axis_dim,
     const LogitType pos_alpha,
     const LogitType neg_alpha,
     const LogitType gamma,
@@ -53,8 +53,8 @@ __global__ void _SigmoidFocalLoss(
 template <typename LogitType, typename TargetType>
 __global__ void _SigmoidFocalLossGrad(
     const int nthreads,
-    const int axis_dim,
     const int inner_dim,
+    const int axis_dim,
     const LogitType pos_alpha,
     const LogitType neg_alpha,
     const LogitType gamma,
@@ -102,8 +102,8 @@ __global__ void _SigmoidFocalLossGrad(
   template <>                                                                \
   void name<LogitType, TargetType, CUDAContext>(                             \
       const int outer_dim,                                                   \
-      const int axis_dim,                                                    \
       const int inner_dim,                                                   \
+      const int axis_dim,                                                    \
       const float pos_alpha,                                                 \
       const float neg_alpha,                                                 \
       const float gamma,                                                     \
@@ -113,11 +113,11 @@ __global__ void _SigmoidFocalLossGrad(
       LogitType* loss,                                                       \
       LogitType* mask,                                                       \
       CUDAContext* ctx) {                                                    \
-    const int nthreads = outer_dim * axis_dim * inner_dim;                   \
+    const auto nthreads = outer_dim * axis_dim * inner_dim;                  \
     _##name<<<CUDA_BLOCKS(nthreads), CUDA_THREADS, 0, ctx->cuda_stream()>>>( \
         nthreads,                                                            \
-        axis_dim,                                                            \
         inner_dim,                                                           \
+        axis_dim,                                                            \
         (LogitType)pos_alpha,                                                \
         (LogitType)neg_alpha,                                                \
         (LogitType)gamma,                                                    \

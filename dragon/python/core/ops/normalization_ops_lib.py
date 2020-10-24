@@ -18,6 +18,8 @@ from dragon.core.framework.ops import Operator
 
 
 class BatchNorm(Operator):
+    """BatchNorm operator."""
+
     def __init__(self, key, dev, **kwargs):
         super(BatchNorm, self).__init__(key, dev, **kwargs)
         self.axis = kwargs.get('axis', -1)
@@ -43,6 +45,8 @@ class BatchNorm(Operator):
 
 
 class GroupNorm(Operator):
+    """GroupNorm operator."""
+
     def __init__(self, key, dev, **kwargs):
         super(GroupNorm, self).__init__(key, dev, **kwargs)
         self.axis = kwargs.get('axis', -1)
@@ -64,6 +68,8 @@ class GroupNorm(Operator):
 
 
 class LpNormalize(Operator):
+    """LpNormalize operator."""
+
     def __init__(self, key, dev, **kwargs):
         super(LpNormalize, self).__init__(key, dev, **kwargs)
         self.p = kwargs.get('p', 2)
@@ -89,6 +95,8 @@ class LpNormalize(Operator):
 
 
 class LocalResponseNorm(Operator):
+    """LocalResponseNorm operator."""
+
     def __init__(self, key, dev, **kwargs):
         super(LocalResponseNorm, self).__init__(key, dev, **kwargs)
         self.size = kwargs.get('size', 5)
@@ -114,6 +122,8 @@ class LocalResponseNorm(Operator):
 
 
 class SyncBatchNorm(BatchNorm):
+    """SyncBatchNorm operator."""
+
     def __init__(self, key, dev, **kwargs):
         super(SyncBatchNorm, self).__init__(key, dev, **kwargs)
         self.process_group = kwargs.get('process_group', None)

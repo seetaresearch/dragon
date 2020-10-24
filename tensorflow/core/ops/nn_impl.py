@@ -14,6 +14,7 @@ from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
 
+from dragon.core.ops import activation_ops
 from dragon.core.ops import array_ops
 from dragon.core.ops import normalization_ops
 
@@ -182,3 +183,32 @@ def moments(x, axes=None, keepdims=False, name=None):
 
     """
     return array_ops.moments(x, axis=axes, keep_dims=keepdims, name=name)
+
+
+def swish(features):
+    r"""Apply the swish function.
+    `[Ramachandran et.al, 2017] <https://arxiv.org/abs/1710.05941>`_.
+
+    The **Swish** function is defined as:
+
+    .. math:: \text{Swish}(x) = x \cdot \frac{1}{1 + \exp(-x)}
+
+    Examples:
+
+    ```python
+    x = tf.constant([-2.5, -1.0, 0.0, 1.0, 2.5])
+    print(tf.nn.swish(x))
+    ```
+
+    Parameters
+    ----------
+    features : dragon.Tensor
+        The input tensor.
+
+    Returns
+    -------
+    dragon.Tensor
+        The output tensor.
+
+    """
+    return activation_ops.swish(features)

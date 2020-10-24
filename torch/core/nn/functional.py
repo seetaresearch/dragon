@@ -85,13 +85,11 @@ def batch_norm(
 
     The normalization is defined as:
 
-    .. math::
-        y = \frac{x - \mathrm{E}[x]}{\sqrt{\mathrm{Var}[x] + \epsilon}} * \gamma + \beta
+    .. math:: y = \frac{x - \mathrm{E}[x]}{\sqrt{\mathrm{Var}[x] + \epsilon}} * \gamma + \beta
 
     The moving average of stats are calculated as:
 
-    .. math::
-        x_{moving} \leftarrow (1 - momentum) * x_{moving} + momentum * x_{stat}
+    .. math:: x_{moving} \leftarrow (1 - momentum) * x_{moving} + momentum * x_{stat}
 
     Parameters
     ----------
@@ -617,8 +615,7 @@ def group_norm(input, weight, bias, groups=32, eps=1e-5):
 
     The normalization is defined as:
 
-    .. math::
-        y = \frac{x - \mathrm{E}[x]}{\sqrt{\mathrm{Var}[x] + \epsilon}} * \gamma + \beta
+    .. math:: y = \frac{x - \mathrm{E}[x]}{\sqrt{\mathrm{Var}[x] + \epsilon}} * \gamma + \beta
 
     Parameters
     ----------
@@ -646,6 +643,73 @@ def group_norm(input, weight, bias, groups=32, eps=1e-5):
     return _functions.GroupNorm \
         .instantiate(input.device, group=groups, epsilon=eps) \
         .apply(input, weight, bias)
+
+
+def hardsigmoid(input, inplace=False):
+    r"""Apply the hard sigmoid function to input.
+
+    The **HardSigmoid** function is defined as:
+
+    .. math::
+        \text{Hardsigmoid}(x) = \begin{cases}
+            0 & \text{if~} x \le -3, \\
+            1 & \text{if~} x \ge +3, \\
+            x / 6 + 1 / 2 & \text{otherwise}
+        \end{cases}
+
+    See Also
+    --------
+    `torch.nn.Hardsigmoid(...)`_
+
+    Parameters
+    ----------
+    input : dragon.vm.torch.Tensor
+        The input tensor.
+    inplace : bool, optional, default=False
+        Whether to do the operation in-place.
+
+    Returns
+    -------
+    dragon.vm.torch.Tensor
+        The output tensor.
+
+    """
+    return _functions.HardSigmoid \
+        .instantiate(input.device, alpha=1. / 6., beta=0.5) \
+        .apply(input, inplace=inplace)
+
+
+def hardswish(input):
+    r"""Apply the hard swish function to input.
+    `[Howard et.al, 2019] <https://arxiv.org/abs/1905.02244>`_.
+
+    The **HardSwish** function is defined as:
+
+    .. math::
+        \text{Hardsigmoid}(x) = \begin{cases}
+            0 & \text{if~} x \le -3, \\
+            x & \text{if~} x \ge +3, \\
+            x \cdot (x + 3) /6 & \text{otherwise}
+        \end{cases}
+
+    See Also
+    --------
+    `torch.nn.Hardswish(...)`_
+
+    Parameters
+    ----------
+    input : dragon.vm.torch.Tensor
+        The input tensor.
+
+    Returns
+    -------
+    dragon.vm.torch.Tensor
+        The output tensor.
+
+    """
+    return _functions.HardSwish \
+        .instantiate(input.device, alpha=1. / 6., beta=0.5) \
+        .apply(input)
 
 
 def interpolate(
@@ -1516,6 +1580,32 @@ def softmax(input, dim, inplace=False):
         .apply(input, inplace=inplace)
 
 
+def swish(input):
+    r"""Apply the swish function to input.
+    `[Ramachandran et.al, 2017] <https://arxiv.org/abs/1710.05941>`_.
+
+    The **Swish** function is defined as:
+
+    .. math:: \text{Swish}(x) = x \cdot \frac{1}{1 + \exp(-x)}
+
+    Parameters
+    ----------
+    input : dragon.vm.torch.Tensor
+        The input tensor.
+
+    Returns
+    -------
+    dragon.vm.torch.Tensor
+        The output tensor.
+
+    See Also
+    --------
+    `torch.nn.Swish(...)`_
+
+    """
+    return _activation(input, False, 'Swish')
+
+
 def sync_batch_norm(
     input,
     running_mean,
@@ -1532,8 +1622,7 @@ def sync_batch_norm(
 
     The normalization is defined as:
 
-    .. math::
-        y = \frac{x - \mathrm{E}[x]}{\sqrt{\mathrm{Var}[x] + \epsilon}} * \gamma + \beta
+    .. math:: y = \frac{x - \mathrm{E}[x]}{\sqrt{\mathrm{Var}[x] + \epsilon}} * \gamma + \beta
 
     The moving average of stats are calculated as:
 

@@ -18,6 +18,8 @@ from dragon.core.framework.ops import Operator
 
 
 class Initializer(Operator):
+    """Initializer operator."""
+
     def __init__(self, key, dev, **kwargs):
         super(Initializer, self).__init__(key, dev, **kwargs)
         self.ndim = kwargs.get('ndim', 0)
@@ -43,6 +45,8 @@ class Initializer(Operator):
 
 
 class Eye(Initializer):
+    """Eye operator."""
+
     def __init__(self, key, dev, **kwargs):
         super(Eye, self).__init__(key, dev, **kwargs)
         self.k = kwargs.get('k', 0)
@@ -79,6 +83,8 @@ class Fill(Initializer):
 
 
 class GlorotNormal(Initializer):
+    """GlorotNormal operator."""
+
     def __init__(self, key, dev, **kwargs):
         super(GlorotNormal, self).__init__(key, dev, **kwargs)
         self.scale = kwargs.get('scale', 2.)
@@ -99,6 +105,8 @@ class GlorotNormal(Initializer):
 
 
 class GlorotUniform(Initializer):
+    """GlorotUniform operator."""
+
     def __init__(self, key, dev, **kwargs):
         super(GlorotUniform, self).__init__(key, dev, **kwargs)
         self.scale = kwargs.get('scale', 3.)
@@ -119,6 +127,8 @@ class GlorotUniform(Initializer):
 
 
 class RandomNormal(Initializer):
+    """RandomNormal operator."""
+
     def __init__(self, key, dev, **kwargs):
         super(RandomNormal, self).__init__(key, dev, **kwargs)
         self.mean = kwargs.get('mean', 0.)
@@ -139,6 +149,8 @@ class RandomNormal(Initializer):
 
 
 class RandomUniform(Initializer):
+    """RandomUniform operator."""
+
     def __init__(self, key, dev, **kwargs):
         super(RandomUniform, self).__init__(key, dev, **kwargs)
         self.low = kwargs.get('low', 0.)
@@ -159,6 +171,8 @@ class RandomUniform(Initializer):
 
 
 class TruncatedNormal(Initializer):
+    """TruncatedNormal operator."""
+
     def __init__(self, key, dev, **kwargs):
         super(TruncatedNormal, self).__init__(key, dev, **kwargs)
         self.mean = kwargs.get('mean', 0.)

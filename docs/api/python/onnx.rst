@@ -63,7 +63,7 @@ Name                     Supported Reference
 `GlobalLpPool`_
 `GlobalMaxPool`_         |v|       :func:`dragon.nn.pool2d`
 `Greater`_               |v|       :func:`dragon.math.greater`
-`HardSigmoid`_
+`HardSigmoid`_           |v|       :func:`dragon.nn.hardsigmoid`
 `Hardmax`_
 `Identity`_
 `If`_

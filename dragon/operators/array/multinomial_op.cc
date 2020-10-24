@@ -26,7 +26,7 @@ void MultinomialOp<Context>::DoRunWithType() {
     CPUContext cpu_ctx;
     auto* prob = Buffer("prob")->template mutable_data<T, CPUContext>();
     kernel::Softmax(
-        X.count(0, axis), X.dim(axis), X.count(axis + 1), x, prob, &cpu_ctx);
+        X.count(0, axis), X.count(axis + 1), X.dim(axis), x, prob, &cpu_ctx);
     x = prob;
   }
 

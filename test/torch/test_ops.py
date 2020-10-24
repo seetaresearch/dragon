@@ -210,6 +210,16 @@ class TestTensorOps(OpTestCase):
             data.fill(value)
             self.assertEqual(x, data)
 
+    def test_full(self):
+        entries = [((2, 3), 1), ((2, 3), 1.)]
+        for shape, value in entries:
+            data = np.zeros(shape)
+            x = torch.full((1,), 0).new_full(shape, value)
+            data.fill(value)
+            self.assertEqual(x, data)
+            self.assertEqual(torch.empty(1).new_ones(shape), np.ones(shape))
+            self.assertEqual(torch.empty(1).new_zeros(shape), np.zeros(shape))
+
     def test_flatten(self):
         data = arange((1, 2, 3))
         x = new_tensor(data)
@@ -377,6 +387,8 @@ class TestTensorOps(OpTestCase):
         data = np.array([-1., 0., 1.], 'float32')
         x = new_tensor(data)
         self.assertEqual(-x, -data)
+        x.neg_()
+        self.assertEqual(x, -data)
 
     def test_non_zero(self):
         data = arange((2, 3))

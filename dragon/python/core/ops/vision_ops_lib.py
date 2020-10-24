@@ -17,9 +17,11 @@ from __future__ import print_function
 from dragon.core.framework.ops import Operator
 
 
-class _ConvNd(Operator):
+class ConvNd(Operator):
+    """ConvNd operator."""
+
     def __init__(self, key, dev, **kwargs):
-        super(_ConvNd, self).__init__(key, dev, **kwargs)
+        super(ConvNd, self).__init__(key, dev, **kwargs)
         self.num_output = kwargs.get('dim_out', 1)
         self.kernel_shape = kwargs.get('kernel_shape', 1)
         self.strides = kwargs.get('strides', 1)
@@ -46,9 +48,11 @@ class _ConvNd(Operator):
         return self.dispatch(inputs, [self.alloc()])
 
 
-class _PoolNd(Operator):
+class PoolNd(Operator):
+    """PoolNd operator."""
+
     def __init__(self, key, dev, **kwargs):
-        super(_PoolNd, self).__init__(key, dev, **kwargs)
+        super(PoolNd, self).__init__(key, dev, **kwargs)
         self.kernel_shape = kwargs.get('kernel_shape', 1)
         self.strides = kwargs.get('strides', 1)
         self.pads = kwargs.get('pads', 0)
@@ -78,6 +82,8 @@ class _PoolNd(Operator):
 
 
 class BiasAdd(Operator):
+    """BiasAdd operator."""
+
     def __init__(self, key, dev, **kwargs):
         super(BiasAdd, self).__init__(key, dev, **kwargs)
         self.data_format = kwargs.get('data_format', 'NCHW')
@@ -93,12 +99,16 @@ class BiasAdd(Operator):
         return self.dispatch(inputs, outputs)
 
 
-class Conv2d(_ConvNd):
+class Conv2d(ConvNd):
+    """Conv2d operator."""
+
     def __init__(self, key, dev, **kwargs):
         super(Conv2d, self).__init__(key, dev, **kwargs)
 
 
-class ConvTranspose2d(_ConvNd):
+class ConvTranspose2d(ConvNd):
+    """ConvTranspose2d operator."""
+
     def __init__(self, key, dev, **kwargs):
         super(ConvTranspose2d, self).__init__(key, dev, **kwargs)
         self.output_padding = kwargs.get('output_padding', None)
@@ -121,6 +131,8 @@ class ConvTranspose2d(_ConvNd):
 
 
 class DepthToSpace(Operator):
+    """DepthToSpace operator."""
+
     def __init__(self, key, dev, **kwargs):
         super(DepthToSpace, self).__init__(key, dev, **kwargs)
         self.block_size = kwargs.get('block_size', '2')
@@ -139,17 +151,23 @@ class DepthToSpace(Operator):
         return self.dispatch(inputs, [self.alloc()])
 
 
-class DepthwiseConv2d(_ConvNd):
+class DepthwiseConv2d(ConvNd):
+    """DepthwiseConv2d operator."""
+
     def __init__(self, key, dev, **kwargs):
         super(DepthwiseConv2d, self).__init__(key, dev, **kwargs)
 
 
-class Pool2d(_PoolNd):
+class Pool2d(PoolNd):
+    """Pool2d operator."""
+
     def __init__(self, key, dev, **kwargs):
         super(Pool2d, self).__init__(key, dev, **kwargs)
 
 
 class Resize(Operator):
+    """Resize operator."""
+
     def __init__(self, key, dev, **kwargs):
         super(Resize, self).__init__(key, dev, **kwargs)
         self.num_sizes = kwargs.get('num_sizes', 0)
@@ -193,6 +211,8 @@ class Resize(Operator):
 
 
 class RoiAlign(Operator):
+    """RoiAlign operator."""
+
     def __init__(self, key, dev, **kwargs):
         super(RoiAlign, self).__init__(key, dev, **kwargs)
         self.pooled_h = kwargs.get('pooled_h', 0)
@@ -216,6 +236,8 @@ class RoiAlign(Operator):
 
 
 class RoiPool(Operator):
+    """RoiPool operator."""
+
     def __init__(self, key, dev, **kwargs):
         super(RoiPool, self).__init__(key, dev, **kwargs)
         self.pooled_h = kwargs.get('pooled_h', 7)
@@ -237,6 +259,8 @@ class RoiPool(Operator):
 
 
 class SpaceToDepth(Operator):
+    """SpaceToDepth operator."""
+
     def __init__(self, key, dev, **kwargs):
         super(SpaceToDepth, self).__init__(key, dev, **kwargs)
         self.block_size = kwargs.get('block_size', '2')

@@ -82,6 +82,8 @@ from dragon.vm.torch.core.ops.array.functional import unsqueeze
 from dragon.vm.torch.core.ops.array.functional import where
 from dragon.vm.torch.core.ops.init.functional import arange
 from dragon.vm.torch.core.ops.init.functional import eye
+from dragon.vm.torch.core.ops.init.functional import full
+from dragon.vm.torch.core.ops.init.functional import full_like
 from dragon.vm.torch.core.ops.init.functional import linspace
 from dragon.vm.torch.core.ops.init.functional import ones
 from dragon.vm.torch.core.ops.init.functional import ones_like

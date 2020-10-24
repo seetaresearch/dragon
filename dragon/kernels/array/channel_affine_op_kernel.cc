@@ -31,8 +31,8 @@ void _ChannelAffine(
 template <typename T>
 void _ChannelAffine(
     const int outer_dim,
-    const int axis_dim,
     const int inner_dim,
+    const int axis_dim,
     const T* x,
     const T* w,
     const T* b,
@@ -59,8 +59,8 @@ void _ChannelAffine(
 template <>
 void ChannelAffine<float16, CPUContext>(
     const int outer_dim,
-    const int axis_dim,
     const int inner_dim,
+    const int axis_dim,
     const float16* x,
     const float16* w,
     const float16* b,
@@ -73,8 +73,8 @@ void ChannelAffine<float16, CPUContext>(
   template <>                                                     \
   void ChannelAffine<T, CPUContext>(                              \
       const int outer_dim,                                        \
-      const int axis_dim,                                         \
       const int inner_dim,                                        \
+      const int axis_dim,                                         \
       const T* x,                                                 \
       const T* w,                                                 \
       const T* b,                                                 \
@@ -83,7 +83,7 @@ void ChannelAffine<float16, CPUContext>(
     if (inner_dim == 1) {                                         \
       _ChannelAffine(outer_dim, axis_dim, x, w, b, y);            \
     } else {                                                      \
-      _ChannelAffine(outer_dim, axis_dim, inner_dim, x, w, b, y); \
+      _ChannelAffine(outer_dim, inner_dim, axis_dim, x, w, b, y); \
     }                                                             \
   }
 
@@ -93,6 +93,7 @@ DEFINE_KERNEL_LAUNCHER(int);
 DEFINE_KERNEL_LAUNCHER(int64_t);
 DEFINE_KERNEL_LAUNCHER(float);
 DEFINE_KERNEL_LAUNCHER(double);
+
 #undef DEFINE_KERNEL_LAUNCHER
 
 } // namespace kernel

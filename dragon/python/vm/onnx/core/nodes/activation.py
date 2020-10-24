@@ -30,6 +30,20 @@ def dropout_exporter(op_def, shape_dict, ws):
     return node, const_tensors
 
 
+@exporter.register('HardSigmoid')
+def hardsigmoid_exporter(op_def, shape_dict, ws):
+    node, const_tensors = exporter.translate(**locals())
+    alpha, beta = 0.2, 0.5
+    for arg in op_def.arg:
+        if arg.name == 'alpha':
+            alpha = arg.f
+        elif arg.name == 'beta':
+            beta = arg.f
+    helper.add_attribute(node, 'alpha', alpha)
+    helper.add_attribute(node, 'beta', beta)
+    return node, const_tensors
+
+
 @exporter.register('PRelu')
 def prelu_exporter(op_def, shape_dict, ws):
     node, const_tensors = exporter.translate(**locals())

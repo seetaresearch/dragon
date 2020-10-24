@@ -41,5 +41,6 @@ from dragon.vm.tensorflow.core.ops.nn import sigmoid_cross_entropy_with_logits
 from dragon.vm.tensorflow.core.ops.nn import softmax
 from dragon.vm.tensorflow.core.ops.nn import softmax_cross_entropy_with_logits
 from dragon.vm.tensorflow.core.ops.nn import sparse_softmax_cross_entropy_with_logits
+from dragon.vm.tensorflow.core.ops.nn import swish
 
 __all__ = [_s for _s in dir() if not _s.startswith('_')]
