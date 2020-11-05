@@ -65,13 +65,32 @@ class Linear(Module):
         self.reset_parameters()
 
     def extra_repr(self):
+        """
+        Return a string representation of this feature.
+
+        Args:
+            self: (todo): write your description
+        """
         return ('in_features={}, out_features={}, bias={}'
                 .format(self.in_features, self.out_features, self.bias is not None))
 
     def forward(self, input):
+        """
+        R forward computation.
+
+        Args:
+            self: (todo): write your description
+            input: (todo): write your description
+        """
         return F.linear(input, self.weight, self.bias)
 
     def reset_parameters(self):
+        """
+        Reset the parameters.
+
+        Args:
+            self: (todo): write your description
+        """
         stddev = 1. / math.sqrt(self.weight.size(1))
         self.weight.data.uniform_(-stddev, stddev)
         if self.bias is not None:

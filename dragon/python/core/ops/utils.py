@@ -26,7 +26,23 @@ class OpSchema(object):
 
     @classmethod
     def num_inputs(cls, min_num, max_num=None):
+        """
+        Decorator to add num_inputs ( min_num.
+
+        Args:
+            cls: (todo): write your description
+            min_num: (int): write your description
+            max_num: (int): write your description
+        """
         def verify(inputs, min_num, max_num):
+            """
+            Verify that the inputs.
+
+            Args:
+                inputs: (array): write your description
+                min_num: (int): write your description
+                max_num: (int): write your description
+            """
             if min_num == max_num and min_num == 0:
                 return
             inputs = nest.flatten(inputs)
@@ -38,7 +54,18 @@ class OpSchema(object):
                 )
 
         def decorated(inner_function):
+            """
+            Decorator to add a function to the wrapped function.
+
+            Args:
+                inner_function: (todo): write your description
+            """
             def wrapper(*args, **kwargs):
+                """
+                Decorator to callable.
+
+                Args:
+                """
                 if len(args) == 0:
                     raise ValueError('Excepted the first argument as <inputs>.')
                 inputs = args[0]
@@ -53,9 +80,34 @@ class ArgHelper(object):
 
     @classmethod
     def desc(cls, name, as_target=True):
+        """
+        Decorator for a function.
+
+        Args:
+            cls: (todo): write your description
+            name: (str): write your description
+            as_target: (todo): write your description
+        """
         def decorated(inner_function):
+            """
+            Decorator for decorators.
+
+            Args:
+                inner_function: (todo): write your description
+            """
             def wrapper(*args, **kwargs):
+                """
+                Decorator for the given arguments.
+
+                Args:
+                """
                 def generator(arguments):
+                    """
+                    Generate a generator for the given arguments.
+
+                    Args:
+                        arguments: (todo): write your description
+                    """
                     arg = arguments.get(name, None)
                     if arg is None:
                         return arguments
@@ -77,9 +129,36 @@ class ArgHelper(object):
 
     @classmethod
     def repeated_desc(cls, name, name_v2=None, dtype='int64', as_target=True):
+        """
+        Decorator for the decorated function.
+
+        Args:
+            cls: (callable): write your description
+            name: (str): write your description
+            name_v2: (str): write your description
+            dtype: (todo): write your description
+            as_target: (todo): write your description
+        """
         def decorated(inner_function):
+            """
+            Decorator to decorator.
+
+            Args:
+                inner_function: (todo): write your description
+            """
             def wrapper(*args, **kwargs):
+                """
+                Create a function for tensor.
+
+                Args:
+                """
                 def generator(arguments):
+                    """
+                    Generate a generator for a generator.
+
+                    Args:
+                        arguments: (todo): write your description
+                    """
                     arg = arguments.get(name, None)
                     if arg is None:
                         return arguments

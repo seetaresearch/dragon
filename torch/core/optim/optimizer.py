@@ -278,6 +278,12 @@ class Optimizer(object):
         return None
 
     def __repr__(self):
+        """
+        Return a human - readable representation of this parameter.
+
+        Args:
+            self: (todo): write your description
+        """
         format_string = self.__class__.__name__ + ' ('
         for i, group in enumerate(self.param_groups):
             format_string += '\n'

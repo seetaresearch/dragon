@@ -64,10 +64,23 @@ class ELU(Module):
         self.inplace = inplace
 
     def extra_repr(self):
+        """
+        Return a representation.
+
+        Args:
+            self: (todo): write your description
+        """
         inplace_str = ', inplace' if self.inplace else ''
         return 'alpha={}{}'.format(self.alpha, inplace_str)
 
     def forward(self, input):
+        """
+        R forward computation.
+
+        Args:
+            self: (todo): write your description
+            input: (todo): write your description
+        """
         return F.elu(input, self.alpha, self.inplace)
 
 
@@ -114,6 +127,14 @@ class GumbelSoftmax(Module):
             raise ValueError('Excepted a valid dim, got None.')
 
     def forward(self, logits=None, probs=None):
+        """
+        Forward computation.
+
+        Args:
+            self: (todo): write your description
+            logits: (todo): write your description
+            probs: (todo): write your description
+        """
         if probs is not None:
             input = probs.log()
         else:
@@ -163,10 +184,23 @@ class Hardsigmoid(Module):
         self.inplace = inplace
 
     def extra_repr(self):
+        """
+        Return a string representation of this object.
+
+        Args:
+            self: (todo): write your description
+        """
         inplace_str = 'inplace' if self.inplace else ''
         return inplace_str
 
     def forward(self, input):
+        """
+        Forward computation.
+
+        Args:
+            self: (todo): write your description
+            input: (todo): write your description
+        """
         return F.hardsigmoid(input, self.inplace)
 
 
@@ -202,6 +236,13 @@ class Hardswish(Module):
         super(Hardswish, self).__init__()
 
     def forward(self, input):
+        """
+        Forward computation.
+
+        Args:
+            self: (todo): write your description
+            input: (todo): write your description
+        """
         return F.hardswish(input)
 
 
@@ -247,10 +288,23 @@ class LeakyReLU(Module):
         self.inplace = inplace
 
     def extra_repr(self):
+        """
+        Return a human - readable string representation.
+
+        Args:
+            self: (todo): write your description
+        """
         inplace_str = ', inplace' if self.inplace else ''
         return 'negative_slope={}{}'.format(self.negative_slope, inplace_str)
 
     def forward(self, input):
+        """
+        Forward computation.
+
+        Args:
+            self: (todo): write your description
+            input: (todo): write your description
+        """
         return F.leaky_relu(input, self.negative_slope, self.inplace)
 
 
@@ -288,9 +342,22 @@ class LogSoftmax(Module):
         self.dim = dim
 
     def extra_repr(self):
+        """
+        Return a human - readable representation.
+
+        Args:
+            self: (todo): write your description
+        """
         return 'dim={dim}'.format(dim=self.dim)
 
     def forward(self, input):
+        """
+        Forward computation.
+
+        Args:
+            self: (todo): write your description
+            input: (todo): write your description
+        """
         return F.log_softmax(input, self.dim)
 
 
@@ -343,9 +410,22 @@ class PReLU(Module):
         self.weight = Parameter(Tensor(num_parameters).fill_(init))
 
     def extra_repr(self):
+        """
+        Return a human - readable representation of this parameter.
+
+        Args:
+            self: (todo): write your description
+        """
         return 'num_parameters={}'.format(self.num_parameters)
 
     def forward(self, input):
+        """
+        Returns the forward computation.
+
+        Args:
+            self: (todo): write your description
+            input: (todo): write your description
+        """
         return F.prelu(input, self.weight)
 
 
@@ -389,10 +469,23 @@ class ReLU(Module):
         self.inplace = inplace
 
     def extra_repr(self):
+        """
+        Return a string representation of this object.
+
+        Args:
+            self: (todo): write your description
+        """
         inplace_str = 'inplace' if self.inplace else ''
         return inplace_str
 
     def forward(self, input):
+        """
+        Forward computation.
+
+        Args:
+            self: (todo): write your description
+            input: (todo): write your description
+        """
         return F.relu(input, inplace=self.inplace)
 
 
@@ -436,10 +529,23 @@ class ReLU6(Module):
         self.inplace = inplace
 
     def extra_repr(self):
+        """
+        Return a string representation of this object.
+
+        Args:
+            self: (todo): write your description
+        """
         inplace_str = 'inplace' if self.inplace else ''
         return inplace_str
 
     def forward(self, input):
+        """
+        Forward computation.
+
+        Args:
+            self: (todo): write your description
+            input: (todo): write your description
+        """
         return F.relu6(input, inplace=self.inplace)
 
 
@@ -483,10 +589,23 @@ class SELU(Module):
         self.inplace = inplace
 
     def extra_repr(self):
+        """
+        Return a string representation of this object.
+
+        Args:
+            self: (todo): write your description
+        """
         inplace_str = 'inplace' if self.inplace else ''
         return inplace_str
 
     def forward(self, input):
+        """
+        Forward computation.
+
+        Args:
+            self: (todo): write your description
+            input: (todo): write your description
+        """
         return F.selu(input, self.inplace)
 
 
@@ -524,10 +643,23 @@ class Sigmoid(Module):
         self.inplace = inplace
 
     def extra_repr(self):
+        """
+        Return a string representation of this object.
+
+        Args:
+            self: (todo): write your description
+        """
         inplace_str = 'inplace' if self.inplace else ''
         return inplace_str
 
     def forward(self, input):
+        """
+        Forward computation.
+
+        Args:
+            self: (todo): write your description
+            input: (todo): write your description
+        """
         return F.sigmoid(input, self.inplace)
 
 
@@ -568,10 +700,23 @@ class Softmax(Module):
         self.inplace = inplace
 
     def extra_repr(self):
+        """
+        Return a representation of this parameter.
+
+        Args:
+            self: (todo): write your description
+        """
         inplace_str = ', inplace' if self.inplace else ''
         return 'dim={}{}'.format(self.dim, inplace_str)
 
     def forward(self, input):
+        """
+        R forward computation.
+
+        Args:
+            self: (todo): write your description
+            input: (todo): write your description
+        """
         return F.softmax(input, self.dim, self.inplace)
 
 
@@ -602,6 +747,13 @@ class Swish(Module):
         super(Swish, self).__init__()
 
     def forward(self, input):
+        """
+        Forward forward computation of the model.
+
+        Args:
+            self: (todo): write your description
+            input: (todo): write your description
+        """
         return F.swish(input)
 
 
@@ -639,8 +791,21 @@ class Tanh(Module):
         self.inplace = inplace
 
     def extra_repr(self):
+        """
+        Return a string representation of this object.
+
+        Args:
+            self: (todo): write your description
+        """
         inplace_str = 'inplace' if self.inplace else ''
         return inplace_str
 
     def forward(self, input):
+        """
+        R forward computation.
+
+        Args:
+            self: (todo): write your description
+            input: (todo): write your description
+        """
         return F.tanh(input, inplace=self.inplace)

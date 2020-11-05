@@ -18,6 +18,12 @@ from dragon.core.ops import array_ops
 
 
 def get_act_str(fn):
+    """
+    Get the string representation of a function.
+
+    Args:
+        fn: (str): write your description
+    """
     return fn.__name__ if fn is not None else 'No Activation'
 
 

@@ -33,6 +33,15 @@ class _InputLayer(layer.Layer):
     """
 
     def __init__(self, shape, dtype='float32', name=None):
+        """
+        Initialize the graph.
+
+        Args:
+            self: (todo): write your description
+            shape: (int): write your description
+            dtype: (todo): write your description
+            name: (str): write your description
+        """
         super(_InputLayer, self).__init__(name)
         self.shape, self.dtype = shape, dtype
         shape_without_none = [_ if _ is not None else 1 for _ in shape]
@@ -40,6 +49,12 @@ class _InputLayer(layer.Layer):
         self._add_node([], outputs)
 
     def __repr__(self):
+        """
+        Get a repr representation of this object.
+
+        Args:
+            self: (todo): write your description
+        """
         s = 'Input(shape=%s' % str(self.shape)
         if self.name is not None:
             s += (', name=\'%s\'' % self.name)
@@ -47,9 +62,23 @@ class _InputLayer(layer.Layer):
         return s
 
     def __call__(self, inputs, *args, **kwargs):
+        """
+        Call the method.
+
+        Args:
+            self: (todo): write your description
+            inputs: (dict): write your description
+        """
         return super(_InputLayer, self).__call__(inputs)
 
     def forward(self, inputs):
+        """
+        Parse the given inputs.
+
+        Args:
+            self: (todo): write your description
+            inputs: (todo): write your description
+        """
         return inputs
 
 

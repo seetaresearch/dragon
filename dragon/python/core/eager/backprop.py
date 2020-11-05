@@ -31,6 +31,13 @@ from dragon.core.util import tls
 
 class Tape(object):
     def __init__(self, parent):
+        """
+        Initialize the graph
+
+        Args:
+            self: (todo): write your description
+            parent: (todo): write your description
+        """
         self._defs = []
         self._parent = parent
         self._watched = set()
@@ -203,12 +210,24 @@ class GradientTape(object):
             self._tape.watch(t)
 
     def _pop_tape(self):
+        """
+        Pop the next recording from the recording.
+
+        Args:
+            self: (todo): write your description
+        """
         if not self._recording:
             raise ValueError('Tape is not recording.')
         pop_tape()
         self._recording = False
 
     def _push_tape(self):
+        """
+        Push a new recording to the stream.
+
+        Args:
+            self: (todo): write your description
+        """
         if self._recording:
             raise ValueError('Tape is already recording.')
         if self._tape is None:

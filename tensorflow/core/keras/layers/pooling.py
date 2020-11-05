@@ -39,6 +39,18 @@ class Pooling2D(Layer):
         name=None,
         **kwargs
     ):
+        """
+        Initialize the pool.
+
+        Args:
+            self: (todo): write your description
+            pool_function: (todo): write your description
+            pool_size: (int): write your description
+            strides: (int): write your description
+            padding: (str): write your description
+            data_format: (str): write your description
+            name: (str): write your description
+        """
         super(Pooling2D, self).__init__(name=name, **kwargs)
         if strides is None:
             strides = pool_size
@@ -50,6 +62,13 @@ class Pooling2D(Layer):
         self.input_spec = InputSpec(ndim=4)
 
     def call(self, inputs):
+        """
+        Constructs a batch of inputs.
+
+        Args:
+            self: (todo): write your description
+            inputs: (dict): write your description
+        """
         if self.data_format == 'channels_last':
             pool_shape = (1,) + self.pool_size + (1,)
             strides = (1,) + self.strides + (1,)
@@ -70,12 +89,27 @@ class GlobalPooling2D(Layer):
     """The generic 2d global pooling layer."""
 
     def __init__(self, pool_function, data_format=None, **kwargs):
+        """
+        Initialize the network.
+
+        Args:
+            self: (todo): write your description
+            pool_function: (todo): write your description
+            data_format: (str): write your description
+        """
         super(GlobalPooling2D, self).__init__(**kwargs)
         self.pool_function = pool_function
         self.data_format = conv_utils.normalize_data_format(data_format)
         self.input_spec = InputSpec(ndim=4)
 
     def call(self, inputs):
+        """
+        Constructs the network.
+
+        Args:
+            self: (todo): write your description
+            inputs: (dict): write your description
+        """
         outputs = self.pool_function(
             inputs,
             kernel_shape=1,

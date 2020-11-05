@@ -28,24 +28,67 @@ class TestJit(unittest.TestCase):
         torch.Tensor(1, dtype=torch.int64),
     ])
     def func1(self, a, b, **kwargs):
+        """
+        Return the two arguments of two arguments.
+
+        Args:
+            self: (todo): write your description
+            a: (int): write your description
+            b: (int): write your description
+        """
         _ = kwargs
         return a + b
 
     def test_trace(self):
+        """
+        Perform a function.
+
+        Args:
+            self: (todo): write your description
+        """
         @torch.jit.trace(example_inputs=[None, None])
         def func2(a, b):
+            """
+            Returns a and b
+
+            Args:
+                a: (int): write your description
+                b: (int): write your description
+            """
             return a + b
 
         @torch.jit.trace
         def func3(a, b):
+            """
+            Func3 version of b of b.
+
+            Args:
+                a: (int): write your description
+                b: (int): write your description
+            """
             return a + b
 
         @torch.jit.trace(example_inputs=[None])
         def func4(a, b):
+            """
+            Returns a b.
+
+            Args:
+                a: (int): write your description
+                b: (int): write your description
+            """
             return a + b
 
         class TestModule(torch.nn.Module):
             def forward(self, a, b):
+                """
+                Forward a b.
+
+                Args:
+                    self: (todo): write your description
+                    a: (todo): write your description
+                    b: (todo): write your description
+                """
                 return a + b
 
         func5 = torch.jit.trace(lambda a, b: a + b)

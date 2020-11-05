@@ -26,17 +26,45 @@ class RemovableHandle(object):
     next_id = 0
 
     def __init__(self, hooks_dict):
+        """
+        Initialize the hook.
+
+        Args:
+            self: (todo): write your description
+            hooks_dict: (dict): write your description
+        """
         self.hooks_dict_ref = weakref.ref(hooks_dict)
         self.id = RemovableHandle.next_id
         RemovableHandle.next_id += 1
 
     def remove(self):
+        """
+        Remove the hooks from the hook.
+
+        Args:
+            self: (todo): write your description
+        """
         hooks_dict = self.hooks_dict_ref()
         if hooks_dict is not None and self.id in hooks_dict:
             del hooks_dict[self.id]
 
     def __enter__(self):
+        """
+        Decor function.
+
+        Args:
+            self: (todo): write your description
+        """
         return self
 
     def __exit__(self, type, value, tb):
+        """
+        Removes the exit value.
+
+        Args:
+            self: (todo): write your description
+            type: (todo): write your description
+            value: (todo): write your description
+            tb: (todo): write your description
+        """
         self.remove()

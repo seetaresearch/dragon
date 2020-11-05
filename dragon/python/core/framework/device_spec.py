@@ -42,10 +42,29 @@ class DeviceSpec(object):
         return self._proto
 
     def __eq__(self, other):
+        """
+        Determine if two index objects are equal.
+
+        Args:
+            self: (todo): write your description
+            other: (todo): write your description
+        """
         return self.type == other.type and self.index == other.index
 
     def __str__(self):
+        """
+        Return the string representation of this index.
+
+        Args:
+            self: (todo): write your description
+        """
         return '{}:{}'.format(self.type, self.index)
 
     def __repr__(self):
+        """
+        Return a human - readable for a repr.
+
+        Args:
+            self: (todo): write your description
+        """
         return 'device(type={}, index={})'.format(self.type, self.index)

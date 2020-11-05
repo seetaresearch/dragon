@@ -46,11 +46,24 @@ class Size(tuple):
         return math_util.prod(self)
 
     def __getitem__(self, item):
+        """
+        Returns the size.
+
+        Args:
+            self: (todo): write your description
+            item: (str): write your description
+        """
         if not isinstance(item, (slice, tuple)):
             return super(Size, self).__getitem__(item)
         return Size(super(Size, self).__getitem__(item))
 
     def __repr__(self):
+        """
+        Return a repr representation of - repr representation of this object.
+
+        Args:
+            self: (todo): write your description
+        """
         return 'torch.Size([{}])'.format(', '.join([str(s) for s in self]))
 
 
@@ -87,12 +100,31 @@ class device(object):
         return self._proto
 
     def __eq__(self, other):
+        """
+        Determine if two index objects are equal.
+
+        Args:
+            self: (todo): write your description
+            other: (todo): write your description
+        """
         return self.type == other.type and self.index == other.index
 
     def __str__(self):
+        """
+        Return the string representation of this index.
+
+        Args:
+            self: (todo): write your description
+        """
         return '{}:{}'.format(self.type, self.index)
 
     def __repr__(self):
+        """
+        Return a human - readable for a repr.
+
+        Args:
+            self: (todo): write your description
+        """
         return "device(type='{}', index={})".format(self.type, self.index)
 
 

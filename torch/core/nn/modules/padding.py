@@ -25,13 +25,33 @@ class _ConstantPadNd(Module):
     """The base class of constant pad."""
 
     def __init__(self, value):
+        """
+        Initialize the value.
+
+        Args:
+            self: (todo): write your description
+            value: (todo): write your description
+        """
         super(_ConstantPadNd, self).__init__()
         self.value = value
 
     def extra_repr(self):
+        """
+        Return a human - readable string.
+
+        Args:
+            self: (todo): write your description
+        """
         return 'padding={}, value={}'.format(self.padding, self.value)
 
     def forward(self, input):
+        """
+        Parameters ---------- input : int
+
+        Args:
+            self: (todo): write your description
+            input: (todo): write your description
+        """
         return F.pad(input, self.padding, 'constant', self.value)
 
 
@@ -39,9 +59,22 @@ class _ReflectionPadNd(Module):
     """The base class of reflection pad."""
 
     def extra_repr(self):
+        """
+        Return a human - readable representation of this object.
+
+        Args:
+            self: (todo): write your description
+        """
         return 'padding={}'.format(self.padding)
 
     def forward(self, input):
+        """
+        Parameters ---------- input : the given input.
+
+        Args:
+            self: (todo): write your description
+            input: (todo): write your description
+        """
         return F.pad(input, self.padding, 'reflect')
 
 
@@ -49,9 +82,22 @@ class _ReplicationPadNd(Module):
     """The base class of replication pad."""
 
     def extra_repr(self):
+        """
+        Return a human - readable representation of this object.
+
+        Args:
+            self: (todo): write your description
+        """
         return 'padding{}'.format(self.padding)
 
     def forward(self, input):
+        """
+        Parameters ---------- input : the given input.
+
+        Args:
+            self: (todo): write your description
+            input: (todo): write your description
+        """
         return F.pad(input, self.padding, 'replicate')
 
 

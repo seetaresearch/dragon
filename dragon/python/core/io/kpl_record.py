@@ -43,6 +43,13 @@ class KPLRecordProtocol(object):
     """Create a protocol for KPLRecord."""
 
     def __new__(cls, descriptor):
+        """
+        Return a new : class : canonicalized descriptor.
+
+        Args:
+            cls: (todo): write your description
+            descriptor: (str): write your description
+        """
         return cls.canonicalize(descriptor)
 
     @classmethod

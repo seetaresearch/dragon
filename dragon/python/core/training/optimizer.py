@@ -137,6 +137,13 @@ class Optimizer(object):
             ).apply(grad, param)
 
     def __getattr__(self, item):
+        """
+        Return the attribute of an item.
+
+        Args:
+            self: (todo): write your description
+            item: (str): write your description
+        """
         defaults = self.__dict__.get('_defaults')
         if item in defaults:
             return workspace.get_workspace().fetch_tensor(
@@ -144,6 +151,14 @@ class Optimizer(object):
         return self.__dict__[item]
 
     def __setattr__(self, key, value):
+        """
+        Set a key on the value.
+
+        Args:
+            self: (todo): write your description
+            key: (str): write your description
+            value: (todo): write your description
+        """
         defaults = self.__dict__.get('_defaults')
         if defaults is not None and key in defaults:
             workspace.get_workspace().feed_tensor(

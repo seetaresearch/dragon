@@ -28,6 +28,12 @@ class TestDevice(unittest.TestCase):
     """Test the size class."""
 
     def test_properties(self):
+        """
+        Assign the properties of the device.
+
+        Args:
+            self: (todo): write your description
+        """
         self.assertEqual(str(torch.device()), "cpu:0")
         self.assertEqual(repr(torch.device()), "device(type='cpu', index=0)")
 
@@ -36,6 +42,12 @@ class TestTensor(unittest.TestCase):
     """Test the tensor class."""
 
     def test_properties(self):
+        """
+        Test the properties of the properties.
+
+        Args:
+            self: (todo): write your description
+        """
         a = torch.tensor([0.]).cpu()
         b = torch.Tensor([0., 1.], dtype=torch.float64).zero_()
         a.requires_grad = True
@@ -76,6 +88,12 @@ class TestTensor(unittest.TestCase):
             pass
 
     def test_dlpack_converter(self):
+        """
+        Test if the tensor is a numpy array.
+
+        Args:
+            self: (todo): write your description
+        """
         data = np.array([0., 1., 2.], 'float32')
         x = torch.tensor(data)
         x_to_dlpack = torch.utils.dlpack.to_dlpack(x)
@@ -85,6 +103,12 @@ class TestTensor(unittest.TestCase):
         self.assertLessEqual(np.abs(x_from_dlpack.numpy() - data).max(), 1e-5)
 
     def test_internal_converter(self):
+        """
+        Test if the first tensor.
+
+        Args:
+            self: (todo): write your description
+        """
         data = np.array([0., 1., 2.], 'float32')
         x = torch.tensor(data)
         y = x.to(torch.int32)
@@ -104,6 +128,12 @@ class TestTensor(unittest.TestCase):
             pass
 
     def test_numpy_converter(self):
+        """
+        Test if the numpy array is a 2d.
+
+        Args:
+            self: (todo): write your description
+        """
         data = np.array([0., 1., 2.], 'float32')
         x = torch.from_numpy(data)
         self.assertEqual(x.shape, data.shape)
@@ -119,6 +149,12 @@ class TestSize(unittest.TestCase):
     """Test the size class."""
 
     def test_properties(self):
+        """
+        Assigns properties
+
+        Args:
+            self: (todo): write your description
+        """
         self.assertEqual(torch.Size().numel(), 1)
         self.assertEqual(torch.Size((2, 3)).numel(), 6)
         self.assertEqual(repr(torch.Size()), 'torch.Size([])')
@@ -128,6 +164,12 @@ class TestSerialization(unittest.TestCase):
     """Test the serialization utility."""
 
     def test_save_and_load(self):
+        """
+        Initialize the state object to disk.
+
+        Args:
+            self: (todo): write your description
+        """
         state_dict = collections.OrderedDict([
             ('a', torch.Tensor(2, 3)),
             ('b', 1),

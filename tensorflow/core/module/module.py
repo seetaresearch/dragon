@@ -42,6 +42,13 @@ class Module(object):
     _MODULE_IGNORED_PROPERTIES = frozenset(())
 
     def __init__(self, name=None):
+        """
+        Initialize the scope.
+
+        Args:
+            self: (todo): write your description
+            name: (str): write your description
+        """
         self._name = name
         self._scope_name = None
 
@@ -146,6 +153,14 @@ class Module(object):
         )
 
     def _init_set_name(self, name=None, zero_based=True):
+        """
+        Sets the name.
+
+        Args:
+            self: (todo): write your description
+            name: (str): write your description
+            zero_based: (bool): write your description
+        """
         if name is None:
             self._name = workspace.get_workspace().unique_name(
                 name=camel_to_snake(self.__class__.__name__),
@@ -227,14 +242,32 @@ def valid_identifier(name):
 
 
 def _is_module(obj):
+    """
+    Returns true if the given is a module.
+
+    Args:
+        obj: (todo): write your description
+    """
     return isinstance(obj, Module)
 
 
 def _is_variable(obj):
+    """
+    Returns true if obj is a variable variable.
+
+    Args:
+        obj: (todo): write your description
+    """
     return isinstance(obj, variables.VariableMetaclass)
 
 
 def _is_trainable_variable(obj):
+    """
+    Returns true if the variable is a variable variable.
+
+    Args:
+        obj: (todo): write your description
+    """
     return _is_variable(obj) and getattr(obj, "trainable", False)
 
 

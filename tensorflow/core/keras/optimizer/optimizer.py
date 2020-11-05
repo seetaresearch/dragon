@@ -79,6 +79,13 @@ class Optimizer(optimizer_v1.Optimizer):
 
     @iterations.setter
     def iterations(self, variable):
+        """
+        Iterate over all variables.
+
+        Args:
+            self: (todo): write your description
+            variable: (todo): write your description
+        """
         self._iterations = variable
 
     def apply_gradients(self, grads_and_vars):
@@ -123,6 +130,12 @@ class Optimizer(optimizer_v1.Optimizer):
         return self
 
     def _create_hypers(self):
+        """
+        Create all accuracy for all hypergraph.
+
+        Args:
+            self: (todo): write your description
+        """
         if self._hypers_created:
             return
         current_ws = workspace.get_workspace()
@@ -151,6 +164,16 @@ class Optimizer(optimizer_v1.Optimizer):
         initializer='zeros',
         trainable=None,
     ):
+        """
+        Create a weight function.
+
+        Args:
+            name: (str): write your description
+            shape: (list): write your description
+            dtype: (str): write your description
+            initializer: (todo): write your description
+            trainable: (str): write your description
+        """
         if isinstance(initializer, six.string_types) or callable(initializer):
             initializer = initializers.get(initializer)
 
@@ -199,6 +222,13 @@ class Optimizer(optimizer_v1.Optimizer):
             self._alias[name] = '/share/hyper/%s/%s' % (self._op_handle, alias)
 
     def __getattr__(self, item):
+        """
+        Returns the value of an attribute.
+
+        Args:
+            self: (todo): write your description
+            item: (str): write your description
+        """
         if item == 'lr':
             item = 'learning_rate'
         hyper = self.__dict__.get('_hyper')
@@ -207,6 +237,14 @@ class Optimizer(optimizer_v1.Optimizer):
         return self.__dict__[item]
 
     def __setattr__(self, key, value):
+        """
+        Sets a hyperparameter attribute.
+
+        Args:
+            self: (todo): write your description
+            key: (str): write your description
+            value: (todo): write your description
+        """
         if key == 'lr':
             key = 'learning_rate'
         hyper = self.__dict__.get('_hyper')

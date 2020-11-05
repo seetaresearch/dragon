@@ -24,6 +24,12 @@ class TestOptimizer(unittest.TestCase):
     """Test the optimizer class."""
 
     def test_optimizer(self):
+        """
+        Test the optimizer.
+
+        Args:
+            self: (todo): write your description
+        """
         buffer = torch.ones(1)
         weight = torch.ones(1, requires_grad=True)
         try:
@@ -54,6 +60,12 @@ class TestOptimizer(unittest.TestCase):
         _ = repr(optimizer)
 
     def test_adam(self):
+        """
+        Perform the test algorithm.
+
+        Args:
+            self: (todo): write your description
+        """
         weight = torch.ones(1, requires_grad=True)
         entries = [(-0.1, (0., 0.), 1e-8, False),
                    (0.1, (0., 0.), -1e-8, False),
@@ -68,6 +80,12 @@ class TestOptimizer(unittest.TestCase):
                 pass
 
     def test_rmsprop(self):
+        """
+        Calculate rms rms. rms
+
+        Args:
+            self: (todo): write your description
+        """
         weight = torch.ones(1, requires_grad=True)
         entries = [(-0.1, (0., 0.), 1e-8, False),
                    (0.1, (0., 0.), -1e-8, False),
@@ -84,6 +102,12 @@ class TestOptimizer(unittest.TestCase):
                 pass
 
     def test_sgd(self):
+        """
+        Calculate the covariance.
+
+        Args:
+            self: (todo): write your description
+        """
         weight = torch.ones(1, requires_grad=True)
         entries = [(-0.1, 0., False), (0.1, -0.1, False), (0.1, 0., True)]
         for lr, momentum, nesterov in entries:
@@ -93,6 +117,12 @@ class TestOptimizer(unittest.TestCase):
                 pass
 
     def test_step(self):
+        """
+        Perform one step.
+
+        Args:
+            self: (todo): write your description
+        """
         weight1 = torch.ones(1, requires_grad=True)
         weight2 = torch.ones(1, requires_grad=True)
         optimizer = torch.optim.SGD([weight1, weight2], 0.1)

@@ -193,6 +193,12 @@ class Shell(object):
         return onnx_util.import_to_function(model_path, explicit_inputs)
 
     def __enter__(self):
+        """
+        Return a workspace.
+
+        Args:
+            self: (todo): write your description
+        """
         self._workspace = workspace.Workspace()
         self._workspace.merge_from(workspace.get_workspace())
         if context.executing_eagerly():
@@ -201,5 +207,14 @@ class Shell(object):
         return self
 
     def __exit__(self, typ, value, traceback):
+        """
+        Triggers the given exception.
+
+        Args:
+            self: (todo): write your description
+            typ: (todo): write your description
+            value: (todo): write your description
+            traceback: (todo): write your description
+        """
         if self._tape._recording:
             self._tape._pop_tape()

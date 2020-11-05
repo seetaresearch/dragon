@@ -1827,6 +1827,14 @@ def upsample_nearest(input, size=None, scale_factor=None):
 
 
 def _activation(input, inplace=False, _op_type=''):
+    """
+    Perform activation of activation activation.
+
+    Args:
+        input: (array): write your description
+        inplace: (bool): write your description
+        _op_type: (str): write your description
+    """
     return _functions._Activation \
         .instantiate(input.device, op_type=_op_type) \
         .apply(input, inplace=inplace)
@@ -1843,6 +1851,24 @@ def _conv(
     _nd_util=utils._pair,
     _conv_fn=_functions.Conv2d,
 ):
+    """
+    Conv2d convolutional layer.
+
+    Args:
+        input: (array): write your description
+        weight: (str): write your description
+        bias: (array): write your description
+        stride: (int): write your description
+        padding: (str): write your description
+        dilation: (str): write your description
+        groups: (array): write your description
+        _nd_util: (array): write your description
+        utils: (todo): write your description
+        _pair: (str): write your description
+        _conv_fn: (todo): write your description
+        _functions: (todo): write your description
+        Conv2d: (array): write your description
+    """
     weight_shape = list(weight.shape)
     kernel_shape = weight_shape[2:]
     return _conv_fn.instantiate(
@@ -1871,6 +1897,25 @@ def _conv_transpose(
     _nd_util=utils._pair,
     _conv_fn=_functions.ConvTranspose2d,
 ):
+    """
+    Transpose a convolution layer.
+
+    Args:
+        input: (todo): write your description
+        weight: (str): write your description
+        bias: (todo): write your description
+        stride: (int): write your description
+        padding: (str): write your description
+        output_padding: (int): write your description
+        groups: (todo): write your description
+        dilation: (str): write your description
+        _nd_util: (todo): write your description
+        utils: (todo): write your description
+        _pair: (str): write your description
+        _conv_fn: (todo): write your description
+        _functions: (todo): write your description
+        ConvTranspose2d: (todo): write your description
+    """
     weight_shape = list(weight.shape)
     kernel_shape = weight_shape[2:]
     return _conv_fn.instantiate(
@@ -1899,6 +1944,24 @@ def _pool(
     _nd_util=utils._pair,
     _pool_fn=_functions.Pool2d,
 ):
+    """
+    Pool pooling pooling layer.
+
+    Args:
+        input: (array): write your description
+        kernel_size: (int): write your description
+        stride: (int): write your description
+        padding: (int): write your description
+        ceil_mode: (str): write your description
+        global_pooling: (todo): write your description
+        _pool_mode: (todo): write your description
+        _nd_util: (todo): write your description
+        utils: (todo): write your description
+        _pair: (str): write your description
+        _pool_fn: (todo): write your description
+        _functions: (todo): write your description
+        Pool2d: (todo): write your description
+    """
     return _pool_fn.instantiate(
         input.device,
         kernel_shape=_nd_util(kernel_size),

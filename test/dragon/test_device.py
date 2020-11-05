@@ -26,15 +26,33 @@ class TestCUDA(unittest.TestCase):
     """Test the cuda utilities."""
 
     def test_stream(self):
+        """
+        Test for the stream.
+
+        Args:
+            self: (todo): write your description
+        """
         stream = dragon.cuda.Stream(device_index=0)
         self.assertGreater(stream.ptr, 0 if TEST_CUDA else -1)
         stream.synchronize()
         dragon.cuda.synchronize()
 
     def test_cudnn(self):
+        """
+        Enable test test test test.
+
+        Args:
+            self: (todo): write your description
+        """
         dragon.cuda.enable_cudnn()
 
     def test_device(self):
+        """
+        Assign the device.
+
+        Args:
+            self: (todo): write your description
+        """
         major, minor = dragon.cuda.get_device_capability(0)
         self.assertGreaterEqual(major, 1 if TEST_CUDA else 0)
         self.assertGreaterEqual(minor, 0)

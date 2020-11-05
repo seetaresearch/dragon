@@ -29,6 +29,12 @@ from dragon.vm.torch.core.nn.modules.module import Module
 
 class Container(Module):
     def __init__(self, **kwargs):
+        """
+        Initialize a module.
+
+        Args:
+            self: (todo): write your description
+        """
         super(Container, self).__init__()
         warnings.warn("nn.Container is deprecated. All of it's functionality "
                       "is now implemented in nn.Module. Subclass that instead.")
@@ -40,6 +46,12 @@ class Sequential(Module):
     """The sequential container."""
 
     def __init__(self, *args):
+        """
+        Initialize the module.
+
+        Args:
+            self: (todo): write your description
+        """
         super(Sequential, self).__init__()
         if len(args) == 1 and isinstance(args[0], collections.OrderedDict):
             for key, module in args[0].items():
@@ -49,6 +61,13 @@ class Sequential(Module):
                 self.add_module(str(i), module)
 
     def forward(self, input):
+        """
+        Run the module.
+
+        Args:
+            self: (todo): write your description
+            input: (todo): write your description
+        """
         for module in self._modules.values():
             input = module(input)
         return input
@@ -63,6 +82,13 @@ class Sequential(Module):
         return next(itertools.islice(iterator, i, None))
 
     def __delitem__(self, item):
+        """
+        Removes items from the index.
+
+        Args:
+            self: (todo): write your description
+            item: (todo): write your description
+        """
         if isinstance(item, slice):
             keys = [key for key in list(self._modules.keys())[item]]
             for key in keys:
@@ -72,6 +98,13 @@ class Sequential(Module):
             del self._modules[key]
 
     def __getitem__(self, item):
+        """
+        Return an item as a dict.
+
+        Args:
+            self: (todo): write your description
+            item: (str): write your description
+        """
         if isinstance(item, slice):
             return Sequential(collections.OrderedDict(
                 list(self._modules.items())[item]))
@@ -79,24 +112,59 @@ class Sequential(Module):
             return self._get_item_by_index(self._modules.values(), item)
 
     def __len__(self):
+        """
+        Returns the number of bytes in the modules.
+
+        Args:
+            self: (todo): write your description
+        """
         return len(self._modules)
 
     def __setitem__(self, key, value):
+        """
+        Sets the value for the given key.
+
+        Args:
+            self: (todo): write your description
+            key: (str): write your description
+            value: (str): write your description
+        """
         key = self._get_item_by_index(self._modules.keys(), key)
         return setattr(self, key, value)
 
 
 class ModuleList(Module):
     def __init__(self, modules=None):
+        """
+        Initialize modules.
+
+        Args:
+            self: (todo): write your description
+            modules: (str): write your description
+        """
         super(ModuleList, self).__init__()
         if modules is not None:
             self.__iadd__(modules)
 
     def append(self, module):
+        """
+        Append a module to the module.
+
+        Args:
+            self: (todo): write your description
+            module: (todo): write your description
+        """
         self.add_module(str(len(self)), module)
         return self
 
     def extend(self, modules):
+        """
+        Extend the specified list of modules.
+
+        Args:
+            self: (todo): write your description
+            modules: (list): write your description
+        """
         if not isinstance(modules, six.collections_abc.Iterable):
             raise TypeError("ModuleList.extend should be called with an "
                             "Sequence, but got " + type(modules).__name__)
@@ -115,24 +183,65 @@ class ModuleList(Module):
         return str(i)
 
     def __getitem__(self, item):
+        """
+        Return the item from the list.
+
+        Args:
+            self: (todo): write your description
+            item: (str): write your description
+        """
         if isinstance(item, slice):
             return ModuleList(list(self._modules.values())[item])
         else:
             return self._modules[self._get_abs_string_index(item)]
 
     def __iadd__(self, modules):
+        """
+        Return a list of modules.
+
+        Args:
+            self: (todo): write your description
+            modules: (list): write your description
+        """
         return self.extend(modules)
 
     def __iter__(self):
+        """
+        Iterate over all the modules.
+
+        Args:
+            self: (todo): write your description
+        """
         return iter(self._modules.values())
 
     def __len__(self):
+        """
+        Returns the number of bytes in the modules.
+
+        Args:
+            self: (todo): write your description
+        """
         return len(self._modules)
 
     def __setitem__(self, key, value):
+        """
+        Sets an item at key.
+
+        Args:
+            self: (todo): write your description
+            key: (str): write your description
+            value: (str): write your description
+        """
         return setattr(self, self._get_abs_string_index(key), value)
 
     def __delitem__(self, item):
+        """
+        Remove items from the index.
+
+        Args:
+            self: (todo): write your description
+            item: (todo): write your description
+        """
         if isinstance(item, slice):
             keys = [key for key in list(self._modules.keys())[item]]
             for key in keys:

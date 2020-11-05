@@ -30,6 +30,14 @@ class FunctionGuard(object):
     """Map the python function to workspace-local executables."""
 
     def __init__(self, python_function, input_signature=None):
+        """
+        Initialize a function.
+
+        Args:
+            self: (todo): write your description
+            python_function: (todo): write your description
+            input_signature: (str): write your description
+        """
         self._python_function = python_function
         self._function_spec = def_function.FunctionSpec \
             .from_function_and_signature(python_function, input_signature)
@@ -187,6 +195,12 @@ def trace(func=None, example_inputs=None):
 
     """
     def decorated(inner_function):
+        """
+        Decorator that the function.
+
+        Args:
+            inner_function: (todo): write your description
+        """
         if example_inputs is not None:
             input_signatures = []
             for inp in nest.flatten(example_inputs):

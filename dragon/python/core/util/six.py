@@ -49,9 +49,21 @@ else:
 
 if PY3:
     def get_unbound_function(unbound):
+        """
+        Get unbound unbound function.
+
+        Args:
+            unbound: (str): write your description
+        """
         return unbound
 else:
     def get_unbound_function(unbound):
+        """
+        Returns the unbound unbound function.
+
+        Args:
+            unbound: (str): write your description
+        """
         return unbound.im_func
 
 
@@ -64,9 +76,24 @@ def _import_module(name):
 class _LazyDescr(object):
 
     def __init__(self, name):
+        """
+        Sets the name.
+
+        Args:
+            self: (todo): write your description
+            name: (str): write your description
+        """
         self.name = name
 
     def __get__(self, obj, tp):
+        """
+        Get the value of the given object.
+
+        Args:
+            self: (todo): write your description
+            obj: (todo): write your description
+            tp: (int): write your description
+        """
         result = self._resolve()
         setattr(obj, self.name, result)  # Invokes __set__.
         try:
@@ -80,6 +107,15 @@ class _LazyDescr(object):
 
 class MovedModule(_LazyDescr):
     def __init__(self, name, old, new=None):
+        """
+        Initialize a new module.
+
+        Args:
+            self: (todo): write your description
+            name: (str): write your description
+            old: (list): write your description
+            new: (list): write your description
+        """
         super(MovedModule, self).__init__(name)
         if PY3:
             if new is None:
@@ -89,9 +125,22 @@ class MovedModule(_LazyDescr):
             self.mod = old
 
     def _resolve(self):
+        """
+        Resolve the module.
+
+        Args:
+            self: (todo): write your description
+        """
         return _import_module(self.mod)
 
     def __getattr__(self, attr):
+        """
+        Get the value of the given attribute.
+
+        Args:
+            self: (todo): write your description
+            attr: (str): write your description
+        """
         _module = self._resolve()
         value = getattr(_module, attr)
         setattr(self, attr, value)
@@ -100,10 +149,23 @@ class MovedModule(_LazyDescr):
 
 class _LazyModule(types.ModuleType):
     def __init__(self, name):
+        """
+        Initialize a class.
+
+        Args:
+            self: (todo): write your description
+            name: (str): write your description
+        """
         super(_LazyModule, self).__init__(name)
         self.__doc__ = self.__class__.__doc__
 
     def __dir__(self):
+        """
+        Returns a list of all the attributes of the given object.
+
+        Args:
+            self: (todo): write your description
+        """
         attrs = ["__doc__", "__name__"]
         attrs += [attr.name for attr in self._moved_attributes]
         return attrs
@@ -124,28 +186,72 @@ class _SixMetaPathImporter(object):
     """
 
     def __init__(self, six_module_name):
+        """
+        Initialize the module.
+
+        Args:
+            self: (todo): write your description
+            six_module_name: (str): write your description
+        """
         self.name = six_module_name
         self.known_modules = {}
 
     def _add_module(self, mod, *fullnames):
+        """
+        Add a module to the list.
+
+        Args:
+            self: (todo): write your description
+            mod: (todo): write your description
+            fullnames: (str): write your description
+        """
         for fullname in fullnames:
             self.known_modules[self.name + "." + fullname] = mod
 
     def _get_module(self, fullname):
+        """
+        Returns the module object by fullname.
+
+        Args:
+            self: (todo): write your description
+            fullname: (str): write your description
+        """
         return self.known_modules[self.name + "." + fullname]
 
     def find_module(self, fullname, path=None):
+        """
+        Find a module by fullname.
+
+        Args:
+            self: (todo): write your description
+            fullname: (str): write your description
+            path: (list): write your description
+        """
         if fullname in self.known_modules:
             return self
         return None
 
     def __get_module(self, fullname):
+        """
+        Returns the module by full name.
+
+        Args:
+            self: (todo): write your description
+            fullname: (str): write your description
+        """
         try:
             return self.known_modules[fullname]
         except KeyError:
             raise ImportError("This loader does not know module " + fullname)
 
     def load_module(self, fullname):
+        """
+        Load a module.
+
+        Args:
+            self: (todo): write your description
+            fullname: (str): write your description
+        """
         try:
             # in case of a reload
             return sys.modules[fullname]

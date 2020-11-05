@@ -61,6 +61,14 @@ class DataReader(multiprocessing.Process):
         """Record the boundary of current part."""
 
         def __init__(self, start, end):
+            """
+            Initialize start and end times.
+
+            Args:
+                self: (todo): write your description
+                start: (int): write your description
+                end: (int): write your description
+            """
             self.start, self.end = start, end
 
     def __init__(self, **kwargs):

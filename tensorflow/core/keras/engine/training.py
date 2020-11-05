@@ -24,4 +24,10 @@ class Model(network.Network):
     """Compose a group of layers with training and inference features."""
 
     def __init__(self, *args, **kwargs):
+        """
+        Initialize the model.
+
+        Args:
+            self: (todo): write your description
+        """
         super(Model, self).__init__(*args, **kwargs)

@@ -33,6 +33,13 @@ class OpCollector(object):
     """A FIFO free list to manage the resource handle of operators."""
 
     def __init__(self, parent):
+        """
+        Initialize the parent.
+
+        Args:
+            self: (todo): write your description
+            parent: (todo): write your description
+        """
         self._parent = parent
         self._type2keys = collections.defaultdict(collections.deque)
 
@@ -58,6 +65,13 @@ class TensorCollector(object):
     """A FIFO free list to manage the reused tensors."""
 
     def __init__(self, parent):
+        """
+        Initialize this scope.
+
+        Args:
+            self: (todo): write your description
+            parent: (todo): write your description
+        """
         self._parent = parent
         self._scope2keys = collections.defaultdict(collections.deque)
 
@@ -84,6 +98,13 @@ class Workspace(backend.Workspace):
 
     class Collectors(object):
         def __init__(self, workspace):
+            """
+            Initialize tensorboard.
+
+            Args:
+                self: (todo): write your description
+                workspace: (todo): write your description
+            """
             self.OP = OpCollector(workspace)
             self.TENSOR = TensorCollector(workspace)
 
@@ -472,6 +493,12 @@ class _DefaultWorkspaceStack(tls.Stack):
     """A thread-local stack for default workspaces."""
 
     def __init__(self):
+        """
+        Initialize the global workspace.
+
+        Args:
+            self: (todo): write your description
+        """
         super(_DefaultWorkspaceStack, self).__init__()
         self._global_default_workspace = None
 
@@ -483,11 +510,23 @@ class _DefaultWorkspaceStack(tls.Stack):
         return ret
 
     def _get_default(self):
+        """
+        Returns global global global workspace.
+
+        Args:
+            self: (todo): write your description
+        """
         if self._global_default_workspace is None:
             self._global_default_workspace = Workspace()
         return self._global_default_workspace
 
     def reset(self):
+        """
+        Reset the global state.
+
+        Args:
+            self: (todo): write your description
+        """
         super(_DefaultWorkspaceStack, self).reset()
         if self._global_default_workspace is not None:
             self._global_default_workspace.clear()
@@ -495,6 +534,13 @@ class _DefaultWorkspaceStack(tls.Stack):
 
     @contextlib.contextmanager
     def get_controller(self, default):
+        """
+        Return a controller controller.
+
+        Args:
+            self: (todo): write your description
+            default: (todo): write your description
+        """
         with super(_DefaultWorkspaceStack, self) \
                 .get_controller(default) as g:
             yield g

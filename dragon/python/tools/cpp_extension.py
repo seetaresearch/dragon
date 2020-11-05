@@ -101,10 +101,22 @@ class BuildExtension(_build_ext):
     boolean_options.extend(['no-python-abi-suffix'])
 
     def __init__(self, *args, **kwargs):
+        """
+        Initialize the extension. kwargs.
+
+        Args:
+            self: (todo): write your description
+        """
         super(BuildExtension, self).__init__(*args, **kwargs)
         self.no_python_abi_suffix = 1
 
     def build_extensions(self):
+        """
+        Build the list of the compiler extensions.
+
+        Args:
+            self: (todo): write your description
+        """
         try:
             self.compiler.compiler_so.remove("-Wstrict-prototypes")
         except (AttributeError, ValueError):
@@ -161,6 +173,19 @@ class BuildExtension(_build_ext):
             extra_postargs=None,
             depends=None,
         ):
+            """
+            Compile sources.
+
+            Args:
+                sources: (list): write your description
+                output_dir: (str): write your description
+                macros: (str): write your description
+                include_dirs: (str): write your description
+                debug: (bool): write your description
+                extra_preargs: (str): write your description
+                extra_postargs: (str): write your description
+                depends: (str): write your description
+            """
             compile_info = \
                 self.compiler._setup_compile(
                     output_dir,
@@ -176,6 +201,12 @@ class BuildExtension(_build_ext):
             extra_postargs = None
 
             def spawn(cmd):
+                """
+                Spawn a list of command.
+
+                Args:
+                    cmd: (str): write your description
+                """
                 # Using regex to match src, obj and include files.
                 src_regex = _re.compile('/T(p|c)(.*)')
                 src_list = [
@@ -238,6 +269,13 @@ class BuildExtension(_build_ext):
         self.compiler.object_filenames = original_object_filenames
 
     def get_ext_filename(self, ext_name):
+        """
+        Return the filename of the extension.
+
+        Args:
+            self: (str): write your description
+            ext_name: (str): write your description
+        """
         ext_filename = super(BuildExtension, self).get_ext_filename(ext_name)
         if self.no_python_abi_suffix > 0 and _sys.version_info >= (3, 0):
             ext_filename_parts = ext_filename.split('.')
@@ -246,6 +284,13 @@ class BuildExtension(_build_ext):
         return ext_filename
 
     def get_export_symbols(self, ext):
+        """
+        Get the list of a list of the given extension.
+
+        Args:
+            self: (todo): write your description
+            ext: (str): write your description
+        """
         return ext.export_symbols
 
 
@@ -253,6 +298,14 @@ class CppExtension(object):
     """Extension module for generic c++ sources."""
 
     def __new__(cls, name, sources, *args, **kwargs):
+        """
+        Creates a new library.
+
+        Args:
+            cls: (todo): write your description
+            name: (str): write your description
+            sources: (list): write your description
+        """
         include_dirs = kwargs.get('include_dirs', [])
         include_dirs += include_paths()
         kwargs['include_dirs'] = include_dirs
@@ -273,6 +326,14 @@ class CUDAExtension(object):
     """Extension module for generic cuda/c++ sources."""
 
     def __new__(cls, name, sources, *args, **kwargs):
+        """
+        Creates a sources object.
+
+        Args:
+            cls: (todo): write your description
+            name: (str): write your description
+            sources: (list): write your description
+        """
         include_dirs = kwargs.get('include_dirs', [])
         include_dirs += include_paths(cuda=True)
         kwargs['include_dirs'] = include_dirs

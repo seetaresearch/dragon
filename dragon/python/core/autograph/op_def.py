@@ -26,6 +26,12 @@ class OpInfo(object):
     """A class to store the op states."""
 
     def __init__(self):
+        """
+        Initialize the object.
+
+        Args:
+            self: (todo): write your description
+        """
         self._defs = dict()
         self._targets = set()
 
@@ -38,6 +44,13 @@ class OpInfo(object):
         self._targets.add(target)
 
     def merge_from(self, other):
+        """
+        Merge two set objects.
+
+        Args:
+            self: (todo): write your description
+            other: (todo): write your description
+        """
         if hasattr(other, '_op') and other._op is not None:
             self._defs = {**self._defs, **other._op._defs}
             self._targets = self._targets.union(other._op._targets)

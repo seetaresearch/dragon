@@ -21,11 +21,25 @@ class Axpby(Operator):
     """Axpby operator."""
 
     def __init__(self, key, dev, **kwargs):
+        """
+        Initialize the device.
+
+        Args:
+            self: (todo): write your description
+            key: (str): write your description
+            dev: (todo): write your description
+        """
         super(Axpby, self).__init__(key, dev, **kwargs)
         self.alpha = kwargs.get('alpha', 1.)
         self.beta = kwargs.get('beta', 1.)
 
     def attributes(self):
+        """
+        A dictionary of attributes.
+
+        Args:
+            self: (todo): write your description
+        """
         return {
             'op_type': 'Axpby',
             'arguments': {
@@ -35,6 +49,14 @@ class Axpby(Operator):
         }
 
     def forward(self, inputs, outputs=None):
+        """
+        R forward computation.
+
+        Args:
+            self: (todo): write your description
+            inputs: (todo): write your description
+            outputs: (todo): write your description
+        """
         if outputs is None:
             outputs = [None] * len(inputs)
         outputs = [self.alloc(out) for out in outputs]
@@ -45,13 +67,35 @@ class BinaryOp(Operator):
     """Binary operator."""
 
     def __init__(self, key, dev, **kwargs):
+        """
+        Wrapper around the device.
+
+        Args:
+            self: (todo): write your description
+            key: (str): write your description
+            dev: (todo): write your description
+        """
         super(BinaryOp, self).__init__(key, dev, **kwargs)
         self.op_type = kwargs.get('op_type', '')
 
     def attributes(self):
+        """
+        The attributes of the attributes.
+
+        Args:
+            self: (todo): write your description
+        """
         return {'op_type': self.op_type, 'arguments': {}}
 
     def forward(self, inputs, outputs=(None,)):
+        """
+        R callable.
+
+        Args:
+            self: (todo): write your description
+            inputs: (todo): write your description
+            outputs: (todo): write your description
+        """
         return self.dispatch(inputs, [self.alloc(outputs[0])])
 
 
@@ -59,6 +103,14 @@ class Clip(Operator):
     """Clip operator."""
 
     def __init__(self, key, dev, **kwargs):
+        """
+        Initialize a low - level device.
+
+        Args:
+            self: (todo): write your description
+            key: (str): write your description
+            dev: (todo): write your description
+        """
         super(Clip, self).__init__(key, dev, **kwargs)
         self.low = kwargs.get('low', None)
         self.high = kwargs.get('high', None)
@@ -68,6 +120,12 @@ class Clip(Operator):
             self.high = float(self.high)
 
     def attributes(self):
+        """
+        Returns the attributes dictionary of attributes
+
+        Args:
+            self: (todo): write your description
+        """
         return {
             'op_type': 'Clip',
             'arguments': {
@@ -77,6 +135,13 @@ class Clip(Operator):
         }
 
     def forward(self, inputs):
+        """
+        Parse the model.
+
+        Args:
+            self: (todo): write your description
+            inputs: (todo): write your description
+        """
         return self.dispatch(inputs, [self.alloc()])
 
 
@@ -84,11 +149,25 @@ class FullyConnected(Operator):
     """FullyConnected operator."""
 
     def __init__(self, key, dev, **kwargs):
+        """
+        Initialize the device.
+
+        Args:
+            self: (todo): write your description
+            key: (str): write your description
+            dev: (todo): write your description
+        """
         super(FullyConnected, self).__init__(key, dev, **kwargs)
         self.axis = kwargs.get('axis', 1)
         self.transpose_w = kwargs.get('transpose_w', True)
 
     def attributes(self):
+        """
+        A dict of the axis attributes.
+
+        Args:
+            self: (todo): write your description
+        """
         return {
             'op_type': 'FullyConnected',
             'arguments': {
@@ -98,6 +177,13 @@ class FullyConnected(Operator):
         }
 
     def forward(self, inputs):
+        """
+        Parse the model.
+
+        Args:
+            self: (todo): write your description
+            inputs: (todo): write your description
+        """
         return self.dispatch(inputs, [self.alloc()])
 
 
@@ -105,11 +191,25 @@ class MatMul(Operator):
     """MatMul operator."""
 
     def __init__(self, key, dev, **kwargs):
+        """
+        Initialize the underlying device.
+
+        Args:
+            self: (todo): write your description
+            key: (str): write your description
+            dev: (todo): write your description
+        """
         super(MatMul, self).__init__(key, dev, **kwargs)
         self.transpose_a = kwargs.get('transpose_a', False)
         self.transpose_b = kwargs.get('transpose_b', False)
 
     def attributes(self):
+        """
+        A copy of all attributes.
+
+        Args:
+            self: (todo): write your description
+        """
         return {
             'op_type': 'MatMul',
             'arguments': {
@@ -119,6 +219,13 @@ class MatMul(Operator):
         }
 
     def forward(self, inputs):
+        """
+        Parse the model.
+
+        Args:
+            self: (todo): write your description
+            inputs: (todo): write your description
+        """
         return self.dispatch(inputs, [self.alloc()])
 
 
@@ -126,11 +233,32 @@ class UnaryOp(Operator):
     """Unary operator."""
 
     def __init__(self, key, dev, **kwargs):
+        """
+        Wrapper around the device.
+
+        Args:
+            self: (todo): write your description
+            key: (str): write your description
+            dev: (todo): write your description
+        """
         super(UnaryOp, self).__init__(key, dev, **kwargs)
         self.op_type = kwargs.get('op_type', '')
 
     def attributes(self):
+        """
+        The attributes of the attributes.
+
+        Args:
+            self: (todo): write your description
+        """
         return {'op_type': self.op_type, 'arguments': {}}
 
     def forward(self, inputs):
+        """
+        Parse the model.
+
+        Args:
+            self: (todo): write your description
+            inputs: (todo): write your description
+        """
         return self.dispatch(inputs, [self.alloc()])

@@ -27,6 +27,12 @@ class Network(base_layer.Layer):
     """Compose a group of layers."""
 
     def __init__(self, *args, **kwargs):
+        """
+        Initialize network.
+
+        Args:
+            self: (todo): write your description
+        """
         super(Network, self).__init__(**kwargs)
         self._thread_local = threading.local()
         self._is_compiled = False
@@ -45,6 +51,14 @@ class Network(base_layer.Layer):
             self._init_subclassed_network(**kwargs)
 
     def _init_graph_network(self, inputs, outputs, **kwargs):
+        """
+        Initialize a network.
+
+        Args:
+            self: (todo): write your description
+            inputs: (todo): write your description
+            outputs: (todo): write your description
+        """
         self._is_graph_network = True
         if isinstance(inputs, list) and len(nest.flatten(inputs)) == 1:
             inputs = inputs[0]
@@ -57,5 +71,11 @@ class Network(base_layer.Layer):
         self.built = True
 
     def _init_subclassed_network(self, **kwargs):
+        """
+        Initialize the network.
+
+        Args:
+            self: (todo): write your description
+        """
         self._is_graph_network = False
         self.built = False

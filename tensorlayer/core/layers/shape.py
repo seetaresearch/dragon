@@ -43,12 +43,25 @@ class Flatten(layer.Layer):
         super(Flatten, self).__init__(name)
 
     def __repr__(self):
+        """
+        Return a repr representation of this object.
+
+        Args:
+            self: (todo): write your description
+        """
         s = '{classname}('
         s += 'name=\'{name}\''
         s += ')'
         return s.format(classname=self.__class__.__name__, **self.__dict__)
 
     def forward(self, inputs, **kwargs):
+        """
+        Forward computation.
+
+        Args:
+            self: (todo): write your description
+            inputs: (todo): write your description
+        """
         return utils.flatten_reshape(inputs, name=self.name)
 
 
@@ -79,6 +92,12 @@ class Reshape(layer.Layer):
         self.shape = shape
 
     def __repr__(self):
+        """
+        Return a repr representation of this object.
+
+        Args:
+            self: (todo): write your description
+        """
         s = '{classname}('
         s += 'shape={shape},'
         s += 'name=\'{name}\''
@@ -86,6 +105,13 @@ class Reshape(layer.Layer):
         return s.format(classname=self.__class__.__name__, **self.__dict__)
 
     def forward(self, inputs, **kwargs):
+        """
+        Forward computation.
+
+        Args:
+            self: (todo): write your description
+            inputs: (todo): write your description
+        """
         return array_ops.reshape(inputs, shape=self.shape)
 
 
@@ -121,6 +147,12 @@ class Transpose(layer.Layer):
         self.perm = perm
 
     def __repr__(self):
+        """
+        Return a repr representation of this object.
+
+        Args:
+            self: (todo): write your description
+        """
         s = '{classname}('
         s += 'perm={perm},'
         s += 'name=\'{name}\''
@@ -128,4 +160,11 @@ class Transpose(layer.Layer):
         return s.format(classname=self.__class__.__name__, **self.__dict__)
 
     def forward(self, inputs, **kwargs):
+        """
+        R forward computation.
+
+        Args:
+            self: (todo): write your description
+            inputs: (todo): write your description
+        """
         return array_ops.transpose(inputs, perm=self.perm)

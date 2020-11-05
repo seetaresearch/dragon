@@ -19,6 +19,14 @@ from dragon.vm.onnx.core import helper
 
 @exporter.register('Dropout')
 def dropout_exporter(op_def, shape_dict, ws):
+    """
+    Return an exporter from ) dropout operations.
+
+    Args:
+        op_def: (todo): write your description
+        shape_dict: (dict): write your description
+        ws: (todo): write your description
+    """
     node, const_tensors = exporter.translate(**locals())
     drop_ratio = 0.5  # The prob to set zeros randomly.
     for arg in op_def.arg:
@@ -32,6 +40,14 @@ def dropout_exporter(op_def, shape_dict, ws):
 
 @exporter.register('HardSigmoid')
 def hardsigmoid_exporter(op_def, shape_dict, ws):
+    """
+    Hardsigmoid for hards.
+
+    Args:
+        op_def: (todo): write your description
+        shape_dict: (dict): write your description
+        ws: (todo): write your description
+    """
     node, const_tensors = exporter.translate(**locals())
     alpha, beta = 0.2, 0.5
     for arg in op_def.arg:
@@ -46,6 +62,14 @@ def hardsigmoid_exporter(op_def, shape_dict, ws):
 
 @exporter.register('PRelu')
 def prelu_exporter(op_def, shape_dict, ws):
+    """
+    Build a tensor.
+
+    Args:
+        op_def: (todo): write your description
+        shape_dict: (dict): write your description
+        ws: (todo): write your description
+    """
     node, const_tensors = exporter.translate(**locals())
     const_tensors = [helper.from_tensor(op_def.input[1], ws)]
     return node, const_tensors
@@ -53,6 +77,14 @@ def prelu_exporter(op_def, shape_dict, ws):
 
 @exporter.register('Relu')
 def relu_exporter(op_def, shape_dict, ws):
+    """
+    Return an op_def.
+
+    Args:
+        op_def: (todo): write your description
+        shape_dict: (dict): write your description
+        ws: (todo): write your description
+    """
     node, const_tensors = exporter.translate(**locals())
     for arg in op_def.arg:
         if arg.name == 'alpha':
@@ -64,6 +96,14 @@ def relu_exporter(op_def, shape_dict, ws):
 
 @exporter.register('Selu')
 def selu_exporter(op_def, shape_dict, ws):
+    """
+    Return an exporter operator.
+
+    Args:
+        op_def: (todo): write your description
+        shape_dict: (dict): write your description
+        ws: (todo): write your description
+    """
     node, const_tensors = exporter.translate(**locals())
     alpha, gamma = 1.67326, 1.0507
     for arg in op_def.arg:
@@ -78,6 +118,14 @@ def selu_exporter(op_def, shape_dict, ws):
 
 @exporter.register('Softmax')
 def softmax_exporter(op_def, shape_dict, ws):
+    """
+    Translate softmax.
+
+    Args:
+        op_def: (todo): write your description
+        shape_dict: (dict): write your description
+        ws: (todo): write your description
+    """
     node, const_tensors = exporter.translate(**locals())
     ndim = len(shape_dict[op_def.input[0]])
     for arg in op_def.arg:

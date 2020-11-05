@@ -23,24 +23,63 @@ class GradientInfo(object):
     """A class to store the known gradient relations."""
 
     def __init__(self, y, grad_y=None):
+        """
+        Initialize the gradient.
+
+        Args:
+            self: (todo): write your description
+            y: (int): write your description
+            grad_y: (todo): write your description
+        """
         self._y, self._grad_y, self._xs = y, grad_y, []
 
     @property
     def grad_y(self):
+        """
+        Gradient of the gradient
+
+        Args:
+            self: (todo): write your description
+        """
         return self._grad_y
 
     @property
     def xs(self):
+        """
+        Return the xarray of - element
+
+        Args:
+            self: (todo): write your description
+        """
         return self._xs
 
     @property
     def y(self):
+        """
+        Y - axis.
+
+        Args:
+            self: (todo): write your description
+        """
         return self._y
 
     def add_x(self, x):
+        """
+        Add x to the x.
+
+        Args:
+            self: (todo): write your description
+            x: (str): write your description
+        """
         self._xs.append(x)
 
     def required(self):
+        """
+        Returns true if all of the number of the number of the data.
+
+        Args:
+            self: (todo): write your description
+        """
         return len(self._xs) > 0
 
 

@@ -23,7 +23,19 @@ from dragon.core.util import six
 
 
 def _ntuple(n):
+    """
+    Convert a tuple to a tuple.
+
+    Args:
+        n: (todo): write your description
+    """
     def parse(x):
+        """
+        Convert a tuple to a tuple.
+
+        Args:
+            x: (str): write your description
+        """
         if isinstance(x, six.collections_abc.Sequence):
             return x
         return tuple(itertools.repeat(x, n))

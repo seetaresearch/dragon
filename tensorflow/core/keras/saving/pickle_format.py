@@ -27,6 +27,14 @@ PICKLE_DEFAULT_PROTOCOL = 2
 
 
 def load_weights_from_pickle(f, layer, verbose=False):
+    """
+    Loads a pickle from pickle file.
+
+    Args:
+        f: (str): write your description
+        layer: (todo): write your description
+        verbose: (bool): write your description
+    """
     ws = workspace.get_workspace()
     weight_dict = six.moves.pickle.load(f)
     for weight in layer.weights:
@@ -59,6 +67,13 @@ def load_weights_from_pickle(f, layer, verbose=False):
 
 
 def save_weights_to_pickle(f, layer):
+    """
+    Save pickle to pickle file.
+
+    Args:
+        f: (todo): write your description
+        layer: (todo): write your description
+    """
     ws = workspace.get_workspace()
     weight_dict = collections.OrderedDict()
     for weight in layer.weights:

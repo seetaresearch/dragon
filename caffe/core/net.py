@@ -30,6 +30,13 @@ from dragon.vm.caffe.core.proto import caffe_pb2
 
 class Blob(object):
     def __init__(self, tuple):
+        """
+        Initialize the learning.
+
+        Args:
+            self: (todo): write your description
+            tuple: (todo): write your description
+        """
         self.data, self.diff = tuple[0], tuple[1]
         self.lr_multiplier = self.decay_multiplier = 1.
 

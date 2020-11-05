@@ -26,6 +26,14 @@ from dragon.vm.onnx.core import helper
 
 @exporter.register(['ArgMax', 'ArgMin'])
 def arg_reduce_exporter(op_def, shape_dict, ws):
+    """
+    Given an op_exporter
+
+    Args:
+        op_def: (todo): write your description
+        shape_dict: (dict): write your description
+        ws: (todo): write your description
+    """
     node, const_tensors = exporter.translate(**locals())
     # ONNX requires indices only, remove the values.
     indices = node.output[0]
@@ -41,6 +49,14 @@ def arg_reduce_exporter(op_def, shape_dict, ws):
 
 @exporter.register('Cast')
 def cast_exporter(op_def, shape_dict, ws):
+    """
+    Cast a tensor to a tensor.
+
+    Args:
+        op_def: (todo): write your description
+        shape_dict: (dict): write your description
+        ws: (todo): write your description
+    """
     node, const_tensors = exporter.translate(**locals())
     node.op_type = 'Cast'
     if len(node.input) == 0:
@@ -53,6 +69,14 @@ def cast_exporter(op_def, shape_dict, ws):
 
 @exporter.register('ChannelAffine')
 def channel_affine_exporter(op_def, shape_dict, ws):
+    """
+    Return an affine affine channel.
+
+    Args:
+        op_def: (todo): write your description
+        shape_dict: (dict): write your description
+        ws: (todo): write your description
+    """
     node, const_tensors = exporter.translate(**locals())
     node.op_type = 'ATen'  # Currently not supported in ai.onnx
     helper.add_attribute(node, 'op_type', 'ChannelAffine')
@@ -68,6 +92,14 @@ def channel_affine_exporter(op_def, shape_dict, ws):
 
 @exporter.register('ChannelNormalize')
 def channel_normalize_exporter(op_def, shape_dict, ws):
+    """
+    Normalize an exporter.
+
+    Args:
+        op_def: (todo): write your description
+        shape_dict: (dict): write your description
+        ws: (todo): write your description
+    """
     node, const_tensors = exporter.translate(**locals())
     node.op_type = 'ATen'  # Currently not supported in ai.onnx
     helper.add_attribute(node, 'op_type', 'ChannelNormalize')
@@ -94,6 +126,14 @@ def channel_normalize_exporter(op_def, shape_dict, ws):
 
 @exporter.register('Concat')
 def concat_exporter(op_def, shape_dict, ws):
+    """
+    Concatenate a concatenate node.
+
+    Args:
+        op_def: (todo): write your description
+        shape_dict: (dict): write your description
+        ws: (todo): write your description
+    """
     node, const_tensors = exporter.translate(**locals())
     for arg in op_def.arg:
         if arg.name == 'axis':
@@ -103,6 +143,14 @@ def concat_exporter(op_def, shape_dict, ws):
 
 @exporter.register('CumSum')
 def cumulative_exporter(op_def, shape_dict, ws):
+    """
+    Compute the exporter for each axis.
+
+    Args:
+        op_def: (todo): write your description
+        shape_dict: (dict): write your description
+        ws: (todo): write your description
+    """
     node, const_tensors = exporter.translate(**locals())
     axis = 0
     for arg in op_def.arg:
@@ -122,6 +170,14 @@ def cumulative_exporter(op_def, shape_dict, ws):
 
 @exporter.register('Expand')
 def expand_exporter(op_def, shape_dict, ws):
+    """
+    Expand an exporter operator.
+
+    Args:
+        op_def: (todo): write your description
+        shape_dict: (dict): write your description
+        ws: (todo): write your description
+    """
     node, const_tensors = exporter.translate(**locals())
     shape = list(shape_dict[op_def.output[0]])
     shape = helper.from_array(
@@ -134,6 +190,14 @@ def expand_exporter(op_def, shape_dict, ws):
 
 @exporter.register('ExpandDims')
 def expand_dims_exporter(op_def, shape_dict, ws):
+    """
+    Expand an exporter operator and a 2dims.
+
+    Args:
+        op_def: (todo): write your description
+        shape_dict: (dict): write your description
+        ws: (todo): write your description
+    """
     node, const_tensors = exporter.translate(**locals())
     node.op_type = 'Unsqueeze'
     axes = None
@@ -147,6 +211,14 @@ def expand_dims_exporter(op_def, shape_dict, ws):
 
 @exporter.register('Eye')
 def eye_exporter(op_def, shape_dict, ws):
+    """
+    Applies a tensor.
+
+    Args:
+        op_def: (todo): write your description
+        shape_dict: (dict): write your description
+        ws: (todo): write your description
+    """
     node, const_tensors = exporter.translate(**locals())
     if len(op_def.input) > 0:
         node.op_type += 'Like'
@@ -163,6 +235,14 @@ def eye_exporter(op_def, shape_dict, ws):
 
 @exporter.register('Flatten')
 def flatten_exporter(op_def, shape_dict, ws):
+    """
+    Flatten an exporter node.
+
+    Args:
+        op_def: (todo): write your description
+        shape_dict: (dict): write your description
+        ws: (todo): write your description
+    """
     node, const_tensors = exporter.translate(**locals())
     for arg in op_def.arg:
         if arg.name == 'axis':
@@ -179,6 +259,14 @@ def flatten_exporter(op_def, shape_dict, ws):
 
 @exporter.register('IndexSelect')
 def index_select_exporter(op_def, shape_dict, ws):
+    """
+    Given an index of the index of the node.
+
+    Args:
+        op_def: (todo): write your description
+        shape_dict: (dict): write your description
+        ws: (todo): write your description
+    """
     node, const_tensors = exporter.translate(**locals())
     node.op_type = 'Gather'
     for arg in op_def.arg:
@@ -192,6 +280,14 @@ def index_select_exporter(op_def, shape_dict, ws):
 
 @exporter.register('Multinomial')
 def multinomial_exporter(op_def, shape_dict, ws):
+    """
+    Multinomial representation of a tensor.
+
+    Args:
+        op_def: (todo): write your description
+        shape_dict: (dict): write your description
+        ws: (todo): write your description
+    """
     node, const_tensors = exporter.translate(**locals())
     helper.add_attribute(node, 'dtype', helper.tensor_type('int64'))
     for arg in op_def.arg:
@@ -202,6 +298,14 @@ def multinomial_exporter(op_def, shape_dict, ws):
 
 @exporter.register('OneHot')
 def one_hot_exporter(op_def, shape_dict, ws):
+    """
+    Given a one - hot hot hot - hot.
+
+    Args:
+        op_def: (todo): write your description
+        shape_dict: (dict): write your description
+        ws: (todo): write your description
+    """
     node, const_tensors = exporter.translate(**locals())
     helper.add_attribute(node, 'axis', -1)
     depth, on_value, off_value = 1, 1, 0
@@ -227,6 +331,14 @@ def one_hot_exporter(op_def, shape_dict, ws):
 
 
 def pad_exporter(op_def, shape_dict, ws):
+    """
+    Pad an op_defuments.
+
+    Args:
+        op_def: (todo): write your description
+        shape_dict: (dict): write your description
+        ws: (todo): write your description
+    """
     node, const_tensors = exporter.translate(**locals())
     pads, value = [], 0
     for arg in op_def.arg:
@@ -245,6 +357,14 @@ def pad_exporter(op_def, shape_dict, ws):
 
 @exporter.register('Pad-1')
 def pad_exporter_v1(op_def, shape_dict, ws):
+    """
+    Pad an pad operation to a set of pad operation.
+
+    Args:
+        op_def: (todo): write your description
+        shape_dict: (dict): write your description
+        ws: (todo): write your description
+    """
     node, pads, value = pad_exporter(**locals())
     helper.add_attribute(node, 'paddings', pads)
     helper.add_attribute(node, 'value', value)
@@ -253,6 +373,14 @@ def pad_exporter_v1(op_def, shape_dict, ws):
 
 @exporter.register('Pad-2')
 def pad_exporter_v2(op_def, shape_dict, ws):
+    """
+    Pad an ospfads.
+
+    Args:
+        op_def: (todo): write your description
+        shape_dict: (dict): write your description
+        ws: (todo): write your description
+    """
     node, pads, value = pad_exporter(**locals())
     helper.add_attribute(node, 'pads', pads)
     helper.add_attribute(node, 'value', value)
@@ -261,6 +389,14 @@ def pad_exporter_v2(op_def, shape_dict, ws):
 
 @exporter.register('Pad-11')
 def pad_exporter_v11(op_def, shape_dict, ws):
+    """
+    Pad a pad operator to a pad the pad operation.
+
+    Args:
+        op_def: (todo): write your description
+        shape_dict: (dict): write your description
+        ws: (todo): write your description
+    """
     node, pads, value = pad_exporter(**locals())
     pads = helper.from_array(
         numpy.array(pads, 'int64'),
@@ -276,6 +412,14 @@ def pad_exporter_v11(op_def, shape_dict, ws):
 
 @exporter.register('RandomNormal')
 def random_normal_exporter(op_def, shape_dict, ws):
+    """
+    Generate a normalization of the normal distribution.
+
+    Args:
+        op_def: (todo): write your description
+        shape_dict: (dict): write your description
+        ws: (todo): write your description
+    """
     node, const_tensors = exporter.translate(**locals())
     if len(op_def.input) > 0:
         node.op_type += 'Like'
@@ -294,6 +438,14 @@ def random_normal_exporter(op_def, shape_dict, ws):
 
 @exporter.register('RandomUniform')
 def random_uniform_exporter(op_def, shape_dict, ws):
+    """
+    Return a random element from a random operators.
+
+    Args:
+        op_def: (todo): write your description
+        shape_dict: (dict): write your description
+        ws: (todo): write your description
+    """
     node, const_tensors = exporter.translate(**locals())
     if len(op_def.input) > 0:
         node.op_type += 'Like'
@@ -312,6 +464,14 @@ def random_uniform_exporter(op_def, shape_dict, ws):
 
 @exporter.register(['ReduceMax', 'ReduceMean', 'ReduceMin', 'ReduceSum'])
 def reduce_exporter(op_def, shape_dict, ws):
+    """
+    Reduce an op_defors.
+
+    Args:
+        op_def: (todo): write your description
+        shape_dict: (dict): write your description
+        ws: (todo): write your description
+    """
     node, const_tensors = exporter.translate(**locals())
     axes = list(range(len(shape_dict[op_def.input[0]])))
     for arg in op_def.arg:
@@ -325,6 +485,14 @@ def reduce_exporter(op_def, shape_dict, ws):
 
 @exporter.register('Reshape')
 def reshape_exporter(op_def, shape_dict, ws):
+    """
+    Reshape op.
+
+    Args:
+        op_def: (todo): write your description
+        shape_dict: (dict): write your description
+        ws: (todo): write your description
+    """
     node, const_tensors = exporter.translate(**locals())
     shape = dims = list(shape_dict[op_def.output[0]])
     for arg in op_def.arg:
@@ -345,6 +513,14 @@ def reshape_exporter(op_def, shape_dict, ws):
 
 
 def slice_exporter(op_def, shape_dict, ws):
+    """
+    Fetch a slice of a slice.
+
+    Args:
+        op_def: (todo): write your description
+        shape_dict: (dict): write your description
+        ws: (todo): write your description
+    """
     node, const_tensors = exporter.translate(**locals())
     in_shape = shape_dict[op_def.input[0]]
     starts, sizes, ends = [], [], []
@@ -373,6 +549,14 @@ def slice_exporter(op_def, shape_dict, ws):
 
 @exporter.register('Slice-1')
 def slice_exporter_v1(op_def, shape_dict, ws):
+    """
+    Slice a slice of a slice.
+
+    Args:
+        op_def: (todo): write your description
+        shape_dict: (dict): write your description
+        ws: (todo): write your description
+    """
     node, starts, ends = slice_exporter(**locals())
     helper.add_attribute(node, 'axes', numpy.arange(len(starts)))
     helper.add_attribute(node, 'ends', ends)
@@ -382,6 +566,14 @@ def slice_exporter_v1(op_def, shape_dict, ws):
 
 @exporter.register('Slice-10')
 def slice_exporter_v10(op_def, shape_dict, ws):
+    """
+    Slice a slice of a slice.
+
+    Args:
+        op_def: (todo): write your description
+        shape_dict: (dict): write your description
+        ws: (todo): write your description
+    """
     node, starts, ends = slice_exporter(**locals())
     axes = helper.from_array(
         numpy.arange(len(starts), dtype='int64'),
@@ -401,6 +593,14 @@ def slice_exporter_v10(op_def, shape_dict, ws):
 
 @exporter.register('Split')
 def split_exporter(op_def, shape_dict, ws):
+    """
+    Split the exporter for exporter.
+
+    Args:
+        op_def: (todo): write your description
+        shape_dict: (dict): write your description
+        ws: (todo): write your description
+    """
     node, const_tensors = exporter.translate(**locals())
     axis = 0
     for arg in op_def.arg:
@@ -413,6 +613,14 @@ def split_exporter(op_def, shape_dict, ws):
 
 @exporter.register('Squeeze')
 def squeeze_exporter(op_def, shape_dict, ws):
+    """
+    Squeeze an op_def node.
+
+    Args:
+        op_def: (todo): write your description
+        shape_dict: (dict): write your description
+        ws: (todo): write your description
+    """
     node, const_tensors = exporter.translate(**locals())
     axes = None
     for arg in op_def.arg:
@@ -425,6 +633,14 @@ def squeeze_exporter(op_def, shape_dict, ws):
 
 @exporter.register('Tile')
 def tile_exporter(op_def, shape_dict, ws):
+    """
+    Return an exporter of the exporter.
+
+    Args:
+        op_def: (todo): write your description
+        shape_dict: (dict): write your description
+        ws: (todo): write your description
+    """
     node, const_tensors = exporter.translate(**locals())
     repeats = []
     for arg in op_def.arg:
@@ -444,6 +660,14 @@ def tile_exporter(op_def, shape_dict, ws):
 
 @exporter.register('Transpose')
 def transpose_exporter(op_def, shape_dict, ws):
+    """
+    Transpose a exporter operation into an exporter node.
+
+    Args:
+        op_def: (todo): write your description
+        shape_dict: (dict): write your description
+        ws: (todo): write your description
+    """
     node, const_tensors = exporter.translate(**locals())
     for arg in op_def.arg:
         if arg.name == 'perm':
@@ -459,6 +683,14 @@ def transpose_exporter(op_def, shape_dict, ws):
 
 
 def top_k_exporter(op_def, shape_dict, ws):
+    """
+    Top - level of the top k for exporter.
+
+    Args:
+        op_def: (todo): write your description
+        shape_dict: (dict): write your description
+        ws: (todo): write your description
+    """
     node, const_tensors = exporter.translate(**locals())
     k, axis, largest, sorted = 1, -1, True, True
     for arg in op_def.arg:
@@ -475,6 +707,14 @@ def top_k_exporter(op_def, shape_dict, ws):
 
 @exporter.register('TopK-1')
 def top_k_exporter_v1(op_def, shape_dict, ws):
+    """
+    Compute the top - level top - level top - level k - k - k - k - k - 1.
+
+    Args:
+        op_def: (todo): write your description
+        shape_dict: (dict): write your description
+        ws: (todo): write your description
+    """
     node, (k, axis, largest, sorted) = top_k_exporter(op_def, shape_dict, ws)
     if largest == 0:
         raise ValueError('TopK-1 does not support smallest mode.')
@@ -485,6 +725,14 @@ def top_k_exporter_v1(op_def, shape_dict, ws):
 
 @exporter.register('TopK-10')
 def top_k_exporter_v10(op_def, shape_dict, ws):
+    """
+    Compute the top - level of the top - level.
+
+    Args:
+        op_def: (todo): write your description
+        shape_dict: (dict): write your description
+        ws: (todo): write your description
+    """
     node, (k, axis, largest, sorted) = top_k_exporter(op_def, shape_dict, ws)
     if largest == 0:
         raise ValueError('TopK-10 does not support smallest mode.')
@@ -499,6 +747,14 @@ def top_k_exporter_v10(op_def, shape_dict, ws):
 
 @exporter.register('TopK-11')
 def top_k_exporter_v11(op_def, shape_dict, ws):
+    """
+    Return the top - level top - level top - level dimension.
+
+    Args:
+        op_def: (todo): write your description
+        shape_dict: (dict): write your description
+        ws: (todo): write your description
+    """
     node, (k, axis, largest, sorted) = top_k_exporter(op_def, shape_dict, ws)
     helper.add_attribute(node, 'axis', axis)
     helper.add_attribute(node, 'largest', largest)
@@ -513,6 +769,14 @@ def top_k_exporter_v11(op_def, shape_dict, ws):
 
 @exporter.register('Unique')
 def unique_exporter(op_def, shape_dict, ws):
+    """
+    Given an op_tensors.
+
+    Args:
+        op_def: (todo): write your description
+        shape_dict: (dict): write your description
+        ws: (array): write your description
+    """
     node, const_tensors = exporter.translate(**locals())
     helper.add_attribute(node, 'sorted', 1)
     return_inverse = return_counts = 0

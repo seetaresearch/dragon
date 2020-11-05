@@ -18,5 +18,13 @@ class Variable(object):
     """The variable class."""
 
     def __new__(cls, tensor, requires_grad=False):
+        """
+        Create a tensorgrad.
+
+        Args:
+            cls: (todo): write your description
+            tensor: (todo): write your description
+            requires_grad: (bool): write your description
+        """
         tensor.requires_grad = requires_grad
         return tensor

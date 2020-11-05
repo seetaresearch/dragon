@@ -107,6 +107,13 @@ class Function(object):
     """The class to compile graph into a callback function."""
 
     def __init__(self, name=None):
+        """
+        Initialize the graph.
+
+        Args:
+            self: (todo): write your description
+            name: (str): write your description
+        """
         self.callback = None
         self.graph_def = dragon_pb2.GraphDef()
         self.graph_def.name = name if name else 'Graph'
@@ -114,6 +121,16 @@ class Function(object):
         self.inputs, self.outputs = None, None
 
     def create(self, inputs=None, outputs=None, givens=None, optimizer=None):
+        """
+        Creates a new graph.
+
+        Args:
+            self: (int): write your description
+            inputs: (int): write your description
+            outputs: (str): write your description
+            givens: (dict): write your description
+            optimizer: (todo): write your description
+        """
         self.inputs = inputs = [] if inputs is None else nest.flatten(inputs)
         self.outputs = outputs = [] if outputs is None else nest.flatten(outputs)
 

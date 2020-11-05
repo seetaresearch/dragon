@@ -194,10 +194,31 @@ class Layer(module.Module):
         return outputs
 
     def __delitem__(self, key):
+        """
+        Remove an item from the cache.
+
+        Args:
+            self: (todo): write your description
+            key: (str): write your description
+        """
         raise TypeError('The Layer API does not allow to use the method: `__delitem__`')
 
     def __repr__(self):
+        """
+        Return a repr representation of a repr__.
+
+        Args:
+            self: (todo): write your description
+        """
         return 'Layer'
 
     def __setitem__(self, key, item):
+        """
+        Sets the value to the given key.
+
+        Args:
+            self: (todo): write your description
+            key: (str): write your description
+            item: (todo): write your description
+        """
         raise TypeError('The Layer API does not allow to use the method: `__setitem__`')

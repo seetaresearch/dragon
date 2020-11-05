@@ -130,6 +130,15 @@ def avg_pool2d(
 
 
 def bias_add(value, bias, data_format='NHWC', name=None):
+    """
+    Add a bias to a bias.
+
+    Args:
+        value: (str): write your description
+        bias: (todo): write your description
+        data_format: (str): write your description
+        name: (str): write your description
+    """
     return vision_ops.bias_add(
         [value, bias],
         data_format=data_format,
@@ -453,6 +462,13 @@ def elu(features, alpha=1., name=None, **kwargs):
 
 
 def l2_loss(t, name=None):
+    """
+    R l2 loss.
+
+    Args:
+        t: (todo): write your description
+        name: (str): write your description
+    """
     return loss_ops.l2_loss(t, normalization='NONE', name=name)
 
 
@@ -768,6 +784,14 @@ def selu(features, name=None, **kwargs):
 
 
 def sigmoid_cross_entropy_with_logits(logits, targets, name=None):
+    """
+    Compute cross entropy of entropy.
+
+    Args:
+        logits: (todo): write your description
+        targets: (list): write your description
+        name: (str): write your description
+    """
     return loss_ops.sigmoid_cross_entropy(
         [logits, targets],
         normalization='UNIT',
@@ -906,6 +930,16 @@ def _normalize_spatial_args(
     num_spatial_dims,
     start_axis,
 ):
+    """
+    Normalize arguments.
+
+    Args:
+        name: (str): write your description
+        values: (str): write your description
+        num_total_dims: (int): write your description
+        num_spatial_dims: (int): write your description
+        start_axis: (todo): write your description
+    """
     if name in ('ksize', 'strides', 'dilations'):
         if values is None:
             return [1] * num_total_dims

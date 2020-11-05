@@ -33,6 +33,17 @@ class _BatchNorm(Module):
         affine=True,
         track_running_stats=True,
     ):
+        """
+        Initialize the device.
+
+        Args:
+            self: (todo): write your description
+            num_features: (int): write your description
+            eps: (float): write your description
+            momentum: (array): write your description
+            affine: (array): write your description
+            track_running_stats: (todo): write your description
+        """
         super(_BatchNorm, self).__init__()
         self.num_features = num_features
         self.eps = eps
@@ -51,16 +62,34 @@ class _BatchNorm(Module):
         self.reset_parameters()
 
     def reset_parameters(self):
+        """
+        Reset hyperparameter parameters.
+
+        Args:
+            self: (todo): write your description
+        """
         if self.affine:
             self.weight.data.one_()
             self.bias.data.zero_()
 
     def reset_running_stats(self):
+        """
+        Reset the statistics statistics.
+
+        Args:
+            self: (todo): write your description
+        """
         if self.track_running_stats:
             self.running_mean.zero_()
             self.running_var.fill_(1)
 
     def extra_repr(self):
+        """
+        Return a human - readable representation.
+
+        Args:
+            self: (todo): write your description
+        """
         return '{num_features}, ' \
                'eps={eps}, ' \
                'momentum={momentum}, ' \
@@ -69,6 +98,13 @@ class _BatchNorm(Module):
                .format(**self.__dict__)
 
     def forward(self, input):
+        """
+        Forward computation.
+
+        Args:
+            self: (todo): write your description
+            input: (todo): write your description
+        """
         return F.batch_norm(
             input, *self.inputs,
             training=self.training,
@@ -77,6 +113,13 @@ class _BatchNorm(Module):
         )
 
     def _apply(self, fn):
+        """
+        Apply fn to fn.
+
+        Args:
+            self: (todo): write your description
+            fn: (array): write your description
+        """
         lambda_source = inspect.getsource(fn)
         if 'half_()' in lambda_source:
             return self  # Float32 parameters are required.
@@ -288,6 +331,13 @@ class SyncBatchNorm(_BatchNorm):
         self.process_group = process_group
 
     def forward(self, input):
+        """
+        Forward computation.
+
+        Args:
+            self: (todo): write your description
+            input: (todo): write your description
+        """
         if self.training:
             return F.sync_batch_norm(
                 input, *self.inputs,
