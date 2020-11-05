@@ -257,6 +257,12 @@ class Module(object):
 
     @staticmethod
     def _filter_empty_containers(containers):
+        """
+        Filter out : class.
+
+        Args:
+            containers: (todo): write your description
+        """
         existing = set()
         to_visit = containers[::-1]
         filtered = []
@@ -272,6 +278,13 @@ class Module(object):
         return filtered
 
     def _gather_children_attribute(self, attribute):
+        """
+        Return a list of children of an attribute.
+
+        Args:
+            self: (todo): write your description
+            attribute: (str): write your description
+        """
         assert attribute in {
             'all_weights',
             'trainable_weights',
@@ -300,6 +313,14 @@ class Module(object):
             return self.forward(*args, **kwargs)
 
     def __setattr__(self, name, value):
+        """
+        Set an attribute of the value.
+
+        Args:
+            self: (todo): write your description
+            name: (str): write your description
+            value: (todo): write your description
+        """
         if isinstance(value, Module):
             self._modules.append(value)
             if value._name is None:

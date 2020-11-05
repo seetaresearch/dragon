@@ -93,6 +93,12 @@ class Affine(Module):
             self.bias = None
 
     def extra_repr(self):
+        """
+        Return a string representation of - style.
+
+        Args:
+            self: (todo): write your description
+        """
         s = '{num_features}, ' \
             'inplace={inplace}'.format(**self.__dict__)
         if self.bias is None:
@@ -100,4 +106,11 @@ class Affine(Module):
         return s
 
     def forward(self, input):
+        """
+        Forward computation
+
+        Args:
+            self: (todo): write your description
+            input: (todo): write your description
+        """
         return F.affine(input, self.weight, self.bias)

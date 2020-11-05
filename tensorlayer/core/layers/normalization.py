@@ -103,6 +103,12 @@ class BatchNorm(layer.Layer):
             raise ValueError("decay should be between 0 to 1")
 
     def __repr__(self):
+        """
+        Return a repr representation of this field.
+
+        Args:
+            self: (todo): write your description
+        """
         s = '{classname}(' \
             'num_features={num_features}, ' \
             'decay={decay}, ' \
@@ -114,6 +120,13 @@ class BatchNorm(layer.Layer):
         return s.format(classname=self.__class__.__name__, **self.__dict__)
 
     def build(self, input_shape):
+        """
+        Connects the graph.
+
+        Args:
+            self: (todo): write your description
+            input_shape: (list): write your description
+        """
         if input_shape is None:
             num_features = self.num_features
         else:
@@ -149,6 +162,13 @@ class BatchNorm(layer.Layer):
         self._built = True
 
     def forward(self, inputs, **kwargs):
+        """
+        Perform forward
+
+        Args:
+            self: (todo): write your description
+            inputs: (todo): write your description
+        """
         outputs = normalization_ops.batch_norm(
             [inputs,
              self.gamma,

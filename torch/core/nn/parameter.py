@@ -57,4 +57,10 @@ class Parameter(Tensor):
         self._wrapped_tensor = tensor
 
     def __repr__(self):
+        """
+        Return a repr representation of this parameter.
+
+        Args:
+            self: (todo): write your description
+        """
         return 'Parameter containing:\n' + super(Parameter, self).__repr__()

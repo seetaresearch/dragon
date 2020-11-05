@@ -95,6 +95,12 @@ class AffineChannel(Module):
             self.bias = None
 
     def extra_repr(self):
+        """
+        Return a string representation of - style.
+
+        Args:
+            self: (todo): write your description
+        """
         s = '{num_features}, ' \
             'inplace={inplace}'.format(**self.__dict__)
         if self.bias is None:
@@ -102,6 +108,13 @@ class AffineChannel(Module):
         return s
 
     def forward(self, input):
+        """
+        R forward computation.
+
+        Args:
+            self: (todo): write your description
+            input: (todo): write your description
+        """
         return array_funcs.channel_affine(
             input,
             self.weight,
@@ -170,11 +183,23 @@ class GroupNorm(Module):
         self.reset_parameters()
 
     def reset_parameters(self):
+        """
+        Reset hyperparameter parameters.
+
+        Args:
+            self: (todo): write your description
+        """
         if self.affine:
             self.weight.data.one_()
             self.bias.data.zero_()
 
     def extra_repr(self):
+        """
+        Return a human - readable bytestring.
+
+        Args:
+            self: (todo): write your description
+        """
         return '{num_groups},' \
                '{num_channels}, ' \
                'eps={eps}, ' \
@@ -182,6 +207,13 @@ class GroupNorm(Module):
                .format(**self.__dict__)
 
     def forward(self, input):
+        """
+        R forward computation.
+
+        Args:
+            self: (todo): write your description
+            input: (todo): write your description
+        """
         return F.group_norm(
             input, *self.inputs,
             groups=self.num_groups,
@@ -189,6 +221,13 @@ class GroupNorm(Module):
         )
 
     def _apply(self, fn):
+        """
+        Apply fn to fn.
+
+        Args:
+            self: (todo): write your description
+            fn: (array): write your description
+        """
         lambda_source = inspect.getsource(fn)
         if 'half_()' in lambda_source:
             return self  # Float32 parameters are required.
@@ -242,7 +281,20 @@ class LocalResponseNorm(Module):
         self.k = k
 
     def extra_repr(self):
+        """
+        Return a human - readable representation of this object.
+
+        Args:
+            self: (todo): write your description
+        """
         return '{size}, alpha={alpha}, beta={beta}, k={k}'.format(**self.__dict__)
 
     def forward(self, input):
+        """
+        Compute forward algorithm.
+
+        Args:
+            self: (todo): write your description
+            input: (todo): write your description
+        """
         return F.local_response_norm(input, self.size, self.alpha, self.beta, self.k)

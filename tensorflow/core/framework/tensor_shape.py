@@ -83,15 +83,34 @@ class TensorShape(tuple):
         return list(self)
 
     def __repr__(self):
+        """
+        Return a human - readable representation.
+
+        Args:
+            self: (todo): write your description
+        """
         return "TensorShape({})".format(list(self))
 
     def __str__(self):
+        """
+        The string representation of the dimensions
+
+        Args:
+            self: (todo): write your description
+        """
         if self.ndims == 1:
             return "(%s,)" % self.dims[0]
         else:
             return "(%s)" % ", ".join(str(d) for d in self.dims)
 
     def __getitem__(self, key):
+        """
+        Get a slice for the given key.
+
+        Args:
+            self: (todo): write your description
+            key: (str): write your description
+        """
         if isinstance(key, slice):
             return TensorShape(self.dims[key])
         else:

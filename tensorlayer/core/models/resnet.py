@@ -31,6 +31,16 @@ class Bottleneck(tl.models.Model):
     expansion = 4
 
     def __init__(self, dim_in, dim_out, stride=1, downsample=None):
+        """
+        Initialize the network.
+
+        Args:
+            self: (todo): write your description
+            dim_in: (int): write your description
+            dim_out: (int): write your description
+            stride: (int): write your description
+            downsample: (todo): write your description
+        """
         super(Bottleneck, self).__init__()
         self.conv1 = tl.layers.Conv2d(
             in_channels=dim_in,
@@ -58,6 +68,13 @@ class Bottleneck(tl.models.Model):
         self.relu = tl.layers.Relu(inplace=True)
 
     def forward(self, x):
+        """
+        Perform forward computation.
+
+        Args:
+            self: (todo): write your description
+            x: (todo): write your description
+        """
         residual = x
 
         out = self.conv1(x)
@@ -81,6 +98,15 @@ class Bottleneck(tl.models.Model):
 
 class ResNet(tl.models.Model):
     def __init__(self, block, layers, num_classes=1000):
+        """
+        Initialize layers.
+
+        Args:
+            self: (todo): write your description
+            block: (todo): write your description
+            layers: (list): write your description
+            num_classes: (int): write your description
+        """
         super(ResNet, self).__init__()
         self.inplanes = 64
         self.conv1 = tl.layers.Conv2d(
@@ -105,6 +131,13 @@ class ResNet(tl.models.Model):
         )
 
     def forward(self, x):
+        """
+        Forward computation.
+
+        Args:
+            self: (todo): write your description
+            x: (todo): write your description
+        """
         x = self.conv1(x)
         x = self.bn1(x)
         x = self.relu(x)
@@ -122,6 +155,16 @@ class ResNet(tl.models.Model):
         return x
 
     def _make_layer(self, block, planes, blocks, stride=1):
+        """
+        Make a layer.
+
+        Args:
+            self: (todo): write your description
+            block: (todo): write your description
+            planes: (todo): write your description
+            blocks: (todo): write your description
+            stride: (int): write your description
+        """
         downsample = None
         if stride != 1 or self.inplanes != planes * block.expansion:
             downsample = tl.layers.LayerList([

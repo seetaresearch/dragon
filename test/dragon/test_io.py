@@ -28,6 +28,12 @@ class TestKPLRecord(unittest.TestCase):
     """Test the kpl record components."""
 
     def test_writer_and_reader(self):
+        """
+        Serialize the writer and write it to disk.
+
+        Args:
+            self: (todo): write your description
+        """
         path = '/tmp/test_dragon_io_kpl_record'
         protocol = {'a': ['float64'], 'b': ['int64'], 'c': ['bytes']}
         example = {'a': [1., 2., 3.], 'b': [4, 5, 6], 'c': [b'7', b'8', b'9']}
@@ -60,6 +66,12 @@ class TestTFRecord(unittest.TestCase):
     """Test the tf record components."""
 
     def test_example(self):
+        """
+        Reads an example.
+
+        Args:
+            self: (todo): write your description
+        """
         example = dragon.io.TFRecordExample()
         example.add_floats('a', [1., 2., 3.])
         example.add_ints('b', [4, 5, 6])
@@ -75,6 +87,12 @@ class TestTFRecord(unittest.TestCase):
         self.assertEqual(proto1, serialization.deserialize_proto(s, proto2))
 
     def test_writer(self):
+        """
+        Writes a single writer exists.
+
+        Args:
+            self: (todo): write your description
+        """
         path = '/tmp/test_dragon_io_tf_record'
         try:
             if os.path.exists(path):

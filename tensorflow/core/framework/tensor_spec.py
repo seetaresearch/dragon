@@ -91,9 +91,21 @@ class TensorSpec(object):
 
         """
         def dtype_is_compatible_with(spec_or_tensor):
+            """
+            Return true if spec_or_tensor is a tensor_tensor.
+
+            Args:
+                spec_or_tensor: (todo): write your description
+            """
             return self.dtype == spec_or_tensor.dtype
 
         def shape_is_compatible_with(spec_or_tensor):
+            """
+            Returns true if spec_or_tensor is compatible with shape.
+
+            Args:
+                spec_or_tensor: (todo): write your description
+            """
             shape = spec_or_tensor.shape
             if self._shape is not None and shape is not None:
                 if len(self.shape) != len(shape):

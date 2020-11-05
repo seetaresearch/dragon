@@ -16,6 +16,13 @@ from __future__ import print_function
 
 
 def path_to(href, index=False):
+    """
+    Convert href to href.
+
+    Args:
+        href: (str): write your description
+        index: (int): write your description
+    """
     if index:
         if len(href) == 0:
             return 'index.html'

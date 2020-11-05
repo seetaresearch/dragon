@@ -30,6 +30,14 @@ class Operator(object):
     """The operator wrapper."""
 
     def __init__(self, cache_key, device, **kwargs):
+        """
+        Initialize the device.
+
+        Args:
+            self: (todo): write your description
+            cache_key: (str): write your description
+            device: (todo): write your description
+        """
         self._def = None
         self._cache_key = cache_key
         self._device = device

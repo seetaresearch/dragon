@@ -40,6 +40,11 @@ SOURCES = [t[1] for t in TESTS_AND_SOURCES]
 
 
 def parse_args():
+    """
+    Parse command line arguments.
+
+    Args:
+    """
     parser = argparse.ArgumentParser(
         description='run the unittests',
         epilog='where TESTS is any of: {}'.format(', '.join(TESTS)))

@@ -166,7 +166,18 @@ class DataIterator(object):
 
         # Register cleanup callbacks.
         def cleanup():
+            """
+            Terminate the processers.
+
+            Args:
+            """
             def terminate(processes):
+                """
+                Terminate all processes.
+
+                Args:
+                    processes: (int): write your description
+                """
                 for p in processes:
                     p.terminate()
                     p.join()

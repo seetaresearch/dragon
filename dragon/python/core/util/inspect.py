@@ -40,6 +40,12 @@ else:
 
 
 def _convert_maybe_argspec_to_fullargspec(argspec):
+    """
+    Convert an argspecspecspec.
+
+    Args:
+        argspec: (tuple): write your description
+    """
     if isinstance(argspec, FullArgSpec):
         return argspec
     return FullArgSpec(

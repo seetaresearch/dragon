@@ -40,6 +40,20 @@ class RNNBase(Module):
         dropout=0,
         bidirectional=False,
     ):
+        """
+        Initialize the module.
+
+        Args:
+            self: (todo): write your description
+            mode: (todo): write your description
+            input_size: (int): write your description
+            hidden_size: (int): write your description
+            num_layers: (int): write your description
+            bias: (float): write your description
+            batch_first: (str): write your description
+            dropout: (str): write your description
+            bidirectional: (str): write your description
+        """
         super(RNNBase, self).__init__()
         self.mode = mode
         self.num_gates = {'lstm': 4, 'gru': 3}.get(self.mode, 1)
@@ -107,6 +121,12 @@ class RNNBase(Module):
         self._set_parameter(li, pi, type, init_fn(param_shape))
 
     def extra_repr(self):
+        """
+        Return a human - readable representation.
+
+        Args:
+            self: (todo): write your description
+        """
         s = '{input_size}, {hidden_size}'
         if self.num_layers != 1:
             s += ', num_layers={num_layers}'
@@ -121,6 +141,14 @@ class RNNBase(Module):
         return s.format(**self.__dict__)
 
     def forward(self, input, hx=None):
+        """
+        Perform computation.
+
+        Args:
+            self: (todo): write your description
+            input: (todo): write your description
+            hx: (todo): write your description
+        """
         return nn_funcs.Recurrent \
             .instantiate(
                 self.weights.device,
@@ -363,6 +391,16 @@ class GRU(RNNBase):
 
 class RNNCellBase(Module):
     def __init__(self, input_size, hidden_size, bias, num_chunks):
+        """
+        Initialize the module.
+
+        Args:
+            self: (todo): write your description
+            input_size: (int): write your description
+            hidden_size: (int): write your description
+            bias: (float): write your description
+            num_chunks: (int): write your description
+        """
         super(RNNCellBase, self).__init__()
         self.input_size = input_size
         self.hidden_size = hidden_size
@@ -378,6 +416,12 @@ class RNNCellBase(Module):
         self.reset_parameters()
 
     def extra_repr(self):
+        """
+        Return a string representation of this object.
+
+        Args:
+            self: (todo): write your description
+        """
         s = '{input_size}, {hidden_size}'
         if 'bias' in self.__dict__ and self.bias is not True:
             s += ', bias={bias}'
@@ -386,6 +430,12 @@ class RNNCellBase(Module):
         return s.format(**self.__dict__)
 
     def reset_parameters(self):
+        """
+        Reset the model parameters.
+
+        Args:
+            self: (todo): write your description
+        """
         stdv = 1.0 / math.sqrt(self.hidden_size)
         for weight in self.parameters():
             weight.data.uniform_(-stdv, stdv)
@@ -422,6 +472,14 @@ class LSTMCell(RNNCellBase):
             input_size, hidden_size, bias, num_chunks=4)
 
     def forward(self, input, hx=None):
+        """
+        Forward computation.
+
+        Args:
+            self: (todo): write your description
+            input: (todo): write your description
+            hx: (todo): write your description
+        """
         if hx is None:
             zeros = init_funcs.zeros(
                 input.size(0),

@@ -531,6 +531,12 @@ class Tensor(types.TensorMetaclass):
         """
 
     def __hash__(self):
+        """
+        Returns the unique identifier.
+
+        Args:
+            self: (todo): write your description
+        """
         return id(self)
 
     def __int__(self):
@@ -635,6 +641,12 @@ class Tensor(types.TensorMetaclass):
         """
 
     def __repr__(self):
+        """
+        Return a fully qualified name.
+
+        Args:
+            self: (todo): write your description
+        """
         shape_str = ('(' + ', '.join(
             ['?' if str(dim) == 'None' else str(dim)
                 for dim in self.shape]) +
@@ -746,6 +758,15 @@ class TensorRef(object):
     """Create a reference not involved with name scope."""
 
     def __new__(cls, name, shape=None, dtype=None):
+        """
+        Creates a tensor.
+
+        Args:
+            cls: (todo): write your description
+            name: (str): write your description
+            shape: (int): write your description
+            dtype: (todo): write your description
+        """
         tensor_ref = Tensor(shape=shape, dtype=dtype, name='')
         tensor_ref._name = name
         return tensor_ref

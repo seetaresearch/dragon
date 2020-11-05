@@ -51,6 +51,13 @@ class Convolution(Layer):
     """
 
     def __init__(self, layer_param):
+        """
+        Initialize kernel layers.
+
+        Args:
+            self: (todo): write your description
+            layer_param: (todo): write your description
+        """
         super(Convolution, self).__init__(layer_param)
         param = layer_param.convolution_param
         self.arguments = {
@@ -77,6 +84,13 @@ class Convolution(Layer):
             self.add_blob(filler=self.get_filler(param, 'bias_filler'))
 
     def __call__(self, bottom):
+        """
+        Call this module.
+
+        Args:
+            self: (todo): write your description
+            bottom: (todo): write your description
+        """
         inputs = [bottom] + [blob['data'] for blob in self._blobs]
         return vision_ops.conv2d(inputs, **self.arguments)
 
@@ -113,9 +127,23 @@ class Deconvolution(Convolution):
     """
 
     def __init__(self, layer_param):
+        """
+        Initialize layer_parameters.
+
+        Args:
+            self: (todo): write your description
+            layer_param: (todo): write your description
+        """
         super(Deconvolution, self).__init__(layer_param)
 
     def __call__(self, bottom):
+        """
+        Call this module. kw2d function.
+
+        Args:
+            self: (todo): write your description
+            bottom: (todo): write your description
+        """
         inputs = [bottom] + [blob['data'] for blob in self._blobs]
         return vision_ops.conv2d_transpose(inputs, **self.arguments)
 
@@ -143,6 +171,13 @@ class LRN(Layer):
     """
 
     def __init__(self, layer_param):
+        """
+        Initialize layer_parameters.
+
+        Args:
+            self: (todo): write your description
+            layer_param: (todo): write your description
+        """
         super(LRN, self).__init__(layer_param)
         param = layer_param.lrn_param
         if param.norm_region > 0:
@@ -156,6 +191,13 @@ class LRN(Layer):
         }
 
     def __call__(self, bottom):
+        """
+        Call the response with the response.
+
+        Args:
+            self: (todo): write your description
+            bottom: (todo): write your description
+        """
         return normalization_ops.local_response_norm(bottom, **self.arguments)
 
 
@@ -180,6 +222,13 @@ class Pooling(Layer):
     """
 
     def __init__(self, layer_param):
+        """
+        Initialize layer_parameters.
+
+        Args:
+            self: (todo): write your description
+            layer_param: (todo): write your description
+        """
         super(Pooling, self).__init__(layer_param)
         param = layer_param.pooling_param
         self.arguments = {
@@ -202,6 +251,13 @@ class Pooling(Layer):
             self.arguments['strides'] = [param.stride_h, param.stride_w]
 
     def __call__(self, bottom):
+        """
+        Returns a callable object for the arguments.
+
+        Args:
+            self: (todo): write your description
+            bottom: (todo): write your description
+        """
         return vision_ops.pool2d(bottom, **self.arguments)
 
 
@@ -227,6 +283,13 @@ class ROIAlign(Layer):
     """
 
     def __init__(self, layer_param):
+        """
+        Initialize the layer parameters.
+
+        Args:
+            self: (todo): write your description
+            layer_param: (todo): write your description
+        """
         super(ROIAlign, self).__init__(layer_param)
         param = layer_param.roi_pooling_param
         self.arguments = {
@@ -236,6 +299,13 @@ class ROIAlign(Layer):
         }
 
     def __call__(self, bottom):
+        """
+        Returns the align_ops.
+
+        Args:
+            self: (todo): write your description
+            bottom: (todo): write your description
+        """
         return vision_ops.roi_align(bottom, **self.arguments)
 
 
@@ -261,6 +331,13 @@ class ROIPooling(Layer):
     """
 
     def __init__(self, layer_param):
+        """
+        Initialize the layer parameters.
+
+        Args:
+            self: (todo): write your description
+            layer_param: (todo): write your description
+        """
         super(ROIPooling, self).__init__(layer_param)
         param = layer_param.roi_pooling_param
         self.arguments = {
@@ -270,4 +347,11 @@ class ROIPooling(Layer):
         }
 
     def __call__(self, bottom):
+        """
+        Parameters ---------- arguments.
+
+        Args:
+            self: (todo): write your description
+            bottom: (todo): write your description
+        """
         return vision_ops.roi_pool(bottom, **self.arguments)

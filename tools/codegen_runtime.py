@@ -25,6 +25,13 @@ class FileWriter(object):
     """Context-Manager to read and write content."""
 
     def __init__(self, f=None):
+        """
+        Initialize the file
+
+        Args:
+            self: (todo): write your description
+            f: (int): write your description
+        """
         self.f, self.content = f, None
 
     def __enter__(self):
@@ -40,6 +47,14 @@ class FileWriter(object):
         self.content = None
 
     def apply_regex(self, files, transforms):
+        """
+        Apply regular expression.
+
+        Args:
+            self: (todo): write your description
+            files: (list): write your description
+            transforms: (todo): write your description
+        """
         for self.f in files:
             with self:
                 for t in transforms:
@@ -58,6 +73,13 @@ def copy_dir(src, dest, enforce=True):
 
 
 def glob_recurse(root_dir, *extensions):
+    """
+    Walk through all files recursively.
+
+    Args:
+        root_dir: (str): write your description
+        extensions: (str): write your description
+    """
     results = []
     for prefix, _, files in os.walk(root_dir):
         for file in files:

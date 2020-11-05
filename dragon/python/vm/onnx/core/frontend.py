@@ -57,6 +57,21 @@ class DragonFrontend(object):
         ws=None,
         verbose=True,
     ):
+        """
+        Convert a graphdef graph to graph.
+
+        Args:
+            cls: (todo): write your description
+            graph_def: (todo): write your description
+            input_names: (str): write your description
+            output_names: (str): write your description
+            input_shapes: (dict): write your description
+            constants: (dict): write your description
+            value_info: (todo): write your description
+            opset_version: (str): write your description
+            ws: (todo): write your description
+            verbose: (bool): write your description
+        """
         input_names = [] if input_names is None else input_names
         output_names = [] if output_names is None else output_names
         constants = {} if constants is None else constants
@@ -200,6 +215,22 @@ class DragonFrontend(object):
         verbose=True,
         enable_onnx_checker=True,
     ):
+        """
+        Create a graphdef graphdef graph to onnx graph.
+
+        Args:
+            cls: (todo): write your description
+            graph_def: (todo): write your description
+            input_names: (str): write your description
+            output_names: (str): write your description
+            input_shapes: (list): write your description
+            constants: (todo): write your description
+            value_info: (todo): write your description
+            opset_version: (str): write your description
+            workspace: (todo): write your description
+            verbose: (bool): write your description
+            enable_onnx_checker: (bool): write your description
+        """
         opset_id = onnx.OperatorSetIdProto()
         opset_id.domain = ''  # ONNX default domain
         opset_id.version = cls._check_opset_version(opset_version)
@@ -224,6 +255,13 @@ class DragonFrontend(object):
 
     @classmethod
     def _check_opset_version(cls, opset_version):
+        """
+        Checks if the opset version is set_version.
+
+        Args:
+            cls: (todo): write your description
+            opset_version: (str): write your description
+        """
         if opset_version is None:
             opset_version = list(cls.OPSET_VERSIONS.keys())[-1]
         else:

@@ -26,6 +26,15 @@ class _Loss(Module):
         reduce=None,
         reduction='mean',
     ):
+        """
+        Initialize the graph.
+
+        Args:
+            self: (todo): write your description
+            size_average: (int): write your description
+            reduce: (str): write your description
+            reduction: (todo): write your description
+        """
         super(_Loss, self).__init__()
         if size_average is not None or reduce is not None:
             self.reduction = _reduction.legacy_get_string(size_average, reduce)
@@ -41,6 +50,16 @@ class _WeightedLoss(_Loss):
         reduce=None,
         reduction='mean',
     ):
+        """
+        Initialize the graph.
+
+        Args:
+            self: (todo): write your description
+            weight: (int): write your description
+            size_average: (int): write your description
+            reduce: (str): write your description
+            reduction: (todo): write your description
+        """
         super(_WeightedLoss, self).__init__(size_average, reduce, reduction)
         self.register_buffer('weight', weight)
 
@@ -86,6 +105,14 @@ class CTCLoss(_Loss):
         self.padding_mask = padding_mask
 
     def forward(self, input, target):
+        """
+        Forward computation.
+
+        Args:
+            self: (todo): write your description
+            input: (todo): write your description
+            target: (todo): write your description
+        """
         return F.ctc_loss(
             input, target,
             padding_mask=self.padding_mask,
@@ -143,6 +170,14 @@ class NLLLoss(_WeightedLoss):
         self.ignore_index = ignore_index
 
     def forward(self, input, target):
+        """
+        Parameters ---------- forward computation.
+
+        Args:
+            self: (todo): write your description
+            input: (todo): write your description
+            target: (todo): write your description
+        """
         return F.nll_loss(
             input, target,
             reduction=self.reduction,
@@ -192,6 +227,14 @@ class BCEWithLogitsLoss(_WeightedLoss):
             weight, size_average, reduce, reduction)
 
     def forward(self, input, target):
+        """
+        Calculate forward computation.
+
+        Args:
+            self: (todo): write your description
+            input: (todo): write your description
+            target: (todo): write your description
+        """
         return F.binary_cross_entropy_with_logits(
             input, target,
             reduction=self.reduction,
@@ -249,6 +292,14 @@ class CrossEntropyLoss(_WeightedLoss):
         self.ignore_index = ignore_index
 
     def forward(self, input, target):
+        """
+        R forward computation.
+
+        Args:
+            self: (todo): write your description
+            input: (todo): write your description
+            target: (todo): write your description
+        """
         return F.cross_entropy(
             input, target,
             reduction=self.reduction,
@@ -301,6 +352,14 @@ class KLDivLoss(_Loss):
         self.log_target = log_target
 
     def forward(self, input, target):
+        """
+        Calculate the model
+
+        Args:
+            self: (todo): write your description
+            input: (todo): write your description
+            target: (todo): write your description
+        """
         return F.kl_div(
             input, target,
             reduction=self.reduction,
@@ -344,6 +403,14 @@ class L1Loss(_Loss):
         super(L1Loss, self).__init__(size_average, reduce, reduction)
 
     def forward(self, input, target):
+        """
+        Forward computation.
+
+        Args:
+            self: (todo): write your description
+            input: (todo): write your description
+            target: (todo): write your description
+        """
         return F.l1_loss(input, target, reduction=self.reduction)
 
 
@@ -383,6 +450,14 @@ class MSELoss(_Loss):
         super(MSELoss, self).__init__(size_average, reduce, reduction)
 
     def forward(self, input, target):
+        """
+        Forward computation.
+
+        Args:
+            self: (todo): write your description
+            input: (todo): write your description
+            target: (todo): write your description
+        """
         return F.mse_loss(input, target, reduction=self.reduction)
 
 
@@ -437,6 +512,14 @@ class SmoothL1Loss(_Loss):
         self.beta = beta
 
     def forward(self, input, target):
+        """
+        Forward computation.
+
+        Args:
+            self: (todo): write your description
+            input: (todo): write your description
+            target: (todo): write your description
+        """
         return F.smooth_l1_loss(
             input, target,
             beta=self.beta,
@@ -503,6 +586,14 @@ class SigmoidFocalLoss(_WeightedLoss):
         self.negative_index = negative_index
 
     def forward(self, input, target):
+        """
+        Forward computation.
+
+        Args:
+            self: (todo): write your description
+            input: (todo): write your description
+            target: (todo): write your description
+        """
         return F.sigmoid_focal_loss(
             input, target,
             alpha=self.alpha,

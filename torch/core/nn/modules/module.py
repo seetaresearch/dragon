@@ -47,6 +47,13 @@ class Module(object):
         self.training = True
 
     def __getattr__(self, item):
+        """
+        Returns the attribute of an item.
+
+        Args:
+            self: (todo): write your description
+            item: (str): write your description
+        """
         if '_parameters' in self.__dict__:
             _parameters = self.__dict__['_parameters']
             if item in _parameters:
@@ -262,6 +269,13 @@ class Module(object):
         error_msgs = []
 
         def load(module, prefix=''):
+            """
+            Loads the modules in - memory.
+
+            Args:
+                module: (todo): write your description
+                prefix: (str): write your description
+            """
             module._load_from_state_dict(
                 state_dict, prefix, True,
                 missing_keys, unexpected_keys, error_msgs)
@@ -550,6 +564,13 @@ class Module(object):
                 grad.zero_()
 
     def _apply(self, fn):
+        """
+        Apply the given function to the given function.
+
+        Args:
+            self: (todo): write your description
+            fn: (array): write your description
+        """
         for module in self.children():
             module._apply(fn)
         for param in self._parameters.values():

@@ -26,11 +26,27 @@ class _DataPlugin(object):
     """Embedded plugin for **Data** layer."""
 
     def setup(self, inputs, outputs):
+        """
+        Initialize the outputs.
+
+        Args:
+            self: (todo): write your description
+            inputs: (list): write your description
+            outputs: (list): write your description
+        """
         kwargs = eval(self.kwargs_str)
         self.iterator = vision.DataIterator(
             dataset=KPLRecordDataset, **kwargs)
 
     def forward(self, inputs, outputs):
+        """
+        Parameters ---------- inputs : list of inputs ).
+
+        Args:
+            self: (todo): write your description
+            inputs: (todo): write your description
+            outputs: (todo): write your description
+        """
         blobs = self.iterator.next()
         current_ws = workspace.get_workspace()
         for i, blob in enumerate(blobs):
@@ -89,6 +105,13 @@ class Data(Layer):
     """
 
     def __init__(self, layer_param):
+        """
+        Initialize layer_paramtransform
+
+        Args:
+            self: (todo): write your description
+            layer_param: (todo): write your description
+        """
         super(Data, self).__init__(layer_param)
         data_param = layer_param.data_param
         image_data_param = layer_param.image_data_param
@@ -111,6 +134,13 @@ class Data(Layer):
         }
 
     def __call__(self, bottom):
+        """
+        Call the plugin.
+
+        Args:
+            self: (todo): write your description
+            bottom: (todo): write your description
+        """
         args = {
             'module_name': __name__,
             'class_name': '_DataPlugin',

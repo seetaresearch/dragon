@@ -36,6 +36,13 @@ class OpTestCase(unittest.TestCase):
     precision = 1e-5
 
     def __init__(self, method_name='runTest'):
+        """
+        Initialize the method.
+
+        Args:
+            self: (todo): write your description
+            method_name: (str): write your description
+        """
         super(OpTestCase, self).__init__(method_name)
 
     def assertEqual(
@@ -45,6 +52,16 @@ class OpTestCase(unittest.TestCase):
         msg=None,
         prec=None,
     ):
+        """
+        Asserts that first numpy array.
+
+        Args:
+            self: (todo): write your description
+            first: (todo): write your description
+            second: (todo): write your description
+            msg: (str): write your description
+            prec: (todo): write your description
+        """
         if prec is None:
             prec = self.precision
         inputs = nest.flatten(first)
@@ -83,11 +100,23 @@ class TestTensorOps(OpTestCase):
     binary_test_shapes = [((2,), (2,)), ((2, 3), (3,)), ((2, 3), (2, 1))]
 
     def test_abs(self):
+        """
+        Absolute test isochrone.
+
+        Args:
+            self: (todo): write your description
+        """
         data = np.array([-1., 0., 1.], 'float32')
         x = new_tensor(data)
         self.assertEqual(x.abs(), np.abs(data))
 
     def test_add(self):
+        """
+        B_shape to the binary.
+
+        Args:
+            self: (todo): write your description
+        """
         for a_shape, b_shape in self.binary_test_shapes:
             data1, data2 = arange(a_shape), arange(b_shape, 1)
             a, b = new_tensor(data1, False), new_tensor(data2, False)
@@ -96,6 +125,12 @@ class TestTensorOps(OpTestCase):
             self.assertEqual(a, data1 + data2)
 
     def test_argmax(self):
+        """
+        Returns the maximum of the maximum dimension.
+
+        Args:
+            self: (todo): write your description
+        """
         entries = [(0, True), (0, False), (1, True), (1, False)]
         for axis, keep_dims in entries:
             data = arange((2, 3))
@@ -106,6 +141,12 @@ class TestTensorOps(OpTestCase):
             self.assertEqual(x.argmax(axis, keep_dims), result)
 
     def test_argmin(self):
+        """
+        Compute the minimum of the tensor.
+
+        Args:
+            self: (todo): write your description
+        """
         entries = [(0, True), (0, False), (1, True), (1, False)]
         for axis, keep_dims in entries:
             data = arange((2, 3))
@@ -116,6 +157,12 @@ class TestTensorOps(OpTestCase):
             self.assertEqual(x.argmin(axis, keep_dims), result)
 
     def test_bitwise_not(self):
+        """
+        Test for bitwise bitwise bitwise bitwise bits.
+
+        Args:
+            self: (todo): write your description
+        """
         for shape in self.unary_test_shapes:
             data = np.random.binomial(1, 0.5, shape).astype('bool')
             x = new_tensor(data)
@@ -124,6 +171,12 @@ class TestTensorOps(OpTestCase):
             self.assertEqual(x, np.invert(data))
 
     def test_bitwise_xor(self):
+        """
+        Test bitwise xor for xor for xor.
+
+        Args:
+            self: (todo): write your description
+        """
         for a_shape, b_shape in self.binary_test_shapes:
             data1 = np.random.binomial(1, 0.5, a_shape).astype('bool')
             data2 = np.random.binomial(1, 0.5, b_shape).astype('bool')
@@ -133,6 +186,12 @@ class TestTensorOps(OpTestCase):
             self.assertEqual(a, np.bitwise_xor(data1, data2))
 
     def test_ceil(self):
+        """
+        Test if the tensor is a 2d array.
+
+        Args:
+            self: (todo): write your description
+        """
         data = np.array([1.4, 1.7, 2.0])
         x = new_tensor(data)
         self.assertEqual(x.ceil(), np.ceil(data))
@@ -140,12 +199,24 @@ class TestTensorOps(OpTestCase):
         self.assertEqual(x, np.ceil(data))
 
     def test_chunk(self):
+        """
+        Test for a chunk of a chunk.
+
+        Args:
+            self: (todo): write your description
+        """
         data = arange((2, 3))
         x = new_tensor(data)
         y = x.chunk(2, 1)
         self.assertEqual(y, [np.split(data, (2,), axis=1)])
 
     def test_clamp(self):
+        """
+        Test if the test with the test.
+
+        Args:
+            self: (todo): write your description
+        """
         entries = [(None, None), (2, None), (None, 4), (2, 4)]
         for low, high in entries:
             data = arange((6,))
@@ -156,21 +227,45 @@ class TestTensorOps(OpTestCase):
             self.assertEqual(x, result)
 
     def test_copy(self):
+        """
+        Returns a copy of the two tensor
+
+        Args:
+            self: (todo): write your description
+        """
         data1, data2 = arange((2,)), arange((2, 3))
         a, b = new_tensor(data1, False), new_tensor(data2, False)
         self.assertEqual(a.copy_(b), data2)
 
     def test_cos(self):
+        """
+        Test the cosine is the cosine is the cosines.
+
+        Args:
+            self: (todo): write your description
+        """
         data = np.array([0., math.pi * 0.5, math.pi], 'float32')
         x = new_tensor(data)
         self.assertEqual(x.cos(), np.cos(data))
 
     def test_cum_sum(self):
+        """
+        Compute the sum of the sum.
+
+        Args:
+            self: (todo): write your description
+        """
         data = arange((6,), 1)
         x = new_tensor(data)
         self.assertEqual(x.cumsum(0), np.cumsum(data, 0))
 
     def test_div(self):
+        """
+        Divide two tensor.
+
+        Args:
+            self: (todo): write your description
+        """
         for a_shape, b_shape in self.binary_test_shapes:
             data1, data2 = arange(a_shape), arange(b_shape, 1)
             a, b = new_tensor(data1, False), new_tensor(data2, False)
@@ -179,6 +274,12 @@ class TestTensorOps(OpTestCase):
             self.assertEqual(a, data1 / data2)
 
     def test_equal(self):
+        """
+        Test if all the coefficients.
+
+        Args:
+            self: (todo): write your description
+        """
         for a_shape, b_shape in self.binary_test_shapes:
             data1 = uniform(a_shape)
             data2 = dropout(data1, drop_ratio=0.5)
@@ -186,11 +287,23 @@ class TestTensorOps(OpTestCase):
             self.assertEqual(a.eq(b), np.equal(data1, data2))
 
     def test_exp(self):
+        """
+        Return the exp ( exp ( exp ) of ) exp ( exp ( exp ).
+
+        Args:
+            self: (todo): write your description
+        """
         data = np.array([0., 1., 2.], 'float32')
         x = new_tensor(data)
         self.assertEqual(x.exp(), np.exp(data))
 
     def test_expand(self):
+        """
+        Test if the data is a 2d array.
+
+        Args:
+            self: (todo): write your description
+        """
         entries = [(2, 2, 3, 1),
                    (1, 2, 3, 2),
                    (2, 2, 3, 2),
@@ -202,6 +315,12 @@ class TestTensorOps(OpTestCase):
             self.assertEqual(x.expand_as(x.expand(shape)), np.broadcast_to(data, shape))
 
     def test_fill(self):
+        """
+        Fill the array isochrone.
+
+        Args:
+            self: (todo): write your description
+        """
         entries = [((2, 3), 1), ((2, 3), 1.)]
         for shape, value in entries:
             data = np.zeros(shape)
@@ -211,6 +330,12 @@ class TestTensorOps(OpTestCase):
             self.assertEqual(x, data)
 
     def test_full(self):
+        """
+        Test if all samples.
+
+        Args:
+            self: (todo): write your description
+        """
         entries = [((2, 3), 1), ((2, 3), 1.)]
         for shape, value in entries:
             data = np.zeros(shape)
@@ -221,6 +346,12 @@ class TestTensorOps(OpTestCase):
             self.assertEqual(torch.empty(1).new_zeros(shape), np.zeros(shape))
 
     def test_flatten(self):
+        """
+        Flatten a tensor.
+
+        Args:
+            self: (todo): write your description
+        """
         data = arange((1, 2, 3))
         x = new_tensor(data)
         self.assertEqual(x.flatten(), data.flatten())
@@ -228,6 +359,12 @@ class TestTensorOps(OpTestCase):
         self.assertEqual(x, data.reshape((2, 3)))
 
     def test_floor(self):
+        """
+        Perform a tensor.
+
+        Args:
+            self: (todo): write your description
+        """
         data = np.array([0.9, 1.4, 1.9])
         x = new_tensor(data)
         self.assertEqual(x.floor(), np.floor(data))
@@ -235,6 +372,12 @@ class TestTensorOps(OpTestCase):
         self.assertEqual(x, np.floor(data))
 
     def test_getitem(self):
+        """
+        Perform an item test on the data.
+
+        Args:
+            self: (todo): write your description
+        """
         data1, data2 = arange((2, 3)), arange((2,), dtype='int64')
         x, index = new_tensor(data1), new_tensor(data2)
         self.assertEqual(x[x > 2], data1[data1 > 2])
@@ -262,18 +405,36 @@ class TestTensorOps(OpTestCase):
                 pass
 
     def test_greater(self):
+        """
+        Test if the given tensor.
+
+        Args:
+            self: (todo): write your description
+        """
         for a_shape, b_shape in self.binary_test_shapes:
             data1, data2 = uniform(a_shape), uniform(b_shape)
             a, b = new_tensor(data1, False), new_tensor(data2, False)
             self.assertEqual(a > b, np.greater(data1, data2))
 
     def test_greater_equal(self):
+        """
+        Test if two arrays are equal.
+
+        Args:
+            self: (todo): write your description
+        """
         for a_shape, b_shape in self.binary_test_shapes:
             data1, data2 = uniform(a_shape), uniform(b_shape)
             a, b = new_tensor(data1, False), new_tensor(data2, False)
             self.assertEqual(a >= b, np.greater_equal(data1, data2))
 
     def test_index_select(self):
+        """
+        Select the indexing of the index.
+
+        Args:
+            self: (todo): write your description
+        """
         entries = [1, (1, 2)]
         for axis in entries:
             data = arange((1, 2, 3, 4))
@@ -296,28 +457,58 @@ class TestTensorOps(OpTestCase):
                 y, np.take(data.reshape(flatten_shape), index, axis=axes[0]))
 
     def test_less(self):
+        """
+        Test if the shape of the tensor.
+
+        Args:
+            self: (todo): write your description
+        """
         for a_shape, b_shape in self.binary_test_shapes:
             data1, data2 = uniform(a_shape), uniform(b_shape)
             a, b = new_tensor(data1, False), new_tensor(data2, False)
             self.assertEqual(a < b, np.less(data1, data2))
 
     def test_less_equal(self):
+        """
+        Test if two arrays of the coefficients.
+
+        Args:
+            self: (todo): write your description
+        """
         for a_shape, b_shape in self.binary_test_shapes:
             data1, data2 = uniform(a_shape), uniform(b_shape)
             a, b = new_tensor(data1, False), new_tensor(data2, False)
             self.assertEqual(a <= b, np.less_equal(data1, data2))
 
     def test_log(self):
+        """
+        Compute the test.
+
+        Args:
+            self: (todo): write your description
+        """
         data = np.array([1., 2., 3.], 'float32')
         x = new_tensor(data)
         self.assertEqual(x.log(), np.log(data))
 
     def test_log_sum_exp(self):
+        """
+        Test the log of the log of - sum.
+
+        Args:
+            self: (todo): write your description
+        """
         data = np.array([1., 2., 3.], 'float32')
         x = new_tensor(data)
         self.assertEqual(x.logsumexp(0), np.log(np.sum(np.exp(data))))
 
     def test_masked_fill(self):
+        """
+        Test if the mask is masked.
+
+        Args:
+            self: (todo): write your description
+        """
         data = arange((2, 3))
         x = new_tensor(data)
         x.masked_fill_(x > 2, 0)
@@ -325,6 +516,12 @@ class TestTensorOps(OpTestCase):
         self.assertEqual(x, data)
 
     def test_max(self):
+        """
+        Return maximum of the maximum values.
+
+        Args:
+            self: (todo): write your description
+        """
         entries = [(0, True), (0, False),
                    (1, True), (1, False),
                    ((0, 1), True), ((0, 1), False)]
@@ -336,6 +533,12 @@ class TestTensorOps(OpTestCase):
             self.assertEqual(y, result)
 
     def test_mean(self):
+        """
+        Computes the mean of the data.
+
+        Args:
+            self: (todo): write your description
+        """
         entries = [(0, True), (0, False),
                    (1, True), (1, False),
                    ((0, 1), True), ((0, 1), False)]
@@ -347,6 +550,12 @@ class TestTensorOps(OpTestCase):
             self.assertEqual(y, result)
 
     def test_min(self):
+        """
+        Compute the minimum of the maximum.
+
+        Args:
+            self: (todo): write your description
+        """
         entries = [(0, True), (0, False),
                    (1, True), (1, False),
                    ((0, 1), True), ((0, 1), False)]
@@ -358,6 +567,12 @@ class TestTensorOps(OpTestCase):
             self.assertEqual(y, result)
 
     def test_mul(self):
+        """
+        Test if the coefficients of - 1d.
+
+        Args:
+            self: (todo): write your description
+        """
         for a_shape, b_shape in self.binary_test_shapes:
             data1, data2 = arange(a_shape), arange(b_shape, 1)
             a, b = new_tensor(data1, False), new_tensor(data2, False)
@@ -366,17 +581,35 @@ class TestTensorOps(OpTestCase):
             self.assertEqual(a, data1 * data2)
 
     def test_multinomial(self):
+        """
+        Test for multinomial.
+
+        Args:
+            self: (todo): write your description
+        """
         data = np.array([[0.1, 0.2, 0.3, 0.4], [0.4, 0.3, 0.2, 0.1]])
         x = new_tensor(data)
         y = x.multinomial(2)
         self.assertEqual(y.shape, (2, 2))
 
     def test_narrow(self):
+        """
+        Test if the first narrow.
+
+        Args:
+            self: (todo): write your description
+        """
         data = arange((2, 3))
         x = new_tensor(data)
         self.assertEqual(x.narrow(0, 1, 1), data[1:2, :])
 
     def test_not_equal(self):
+        """
+        Test if the equality of the coefficients.
+
+        Args:
+            self: (todo): write your description
+        """
         for a_shape, b_shape in self.binary_test_shapes:
             data1 = uniform(a_shape)
             data2 = dropout(data1, drop_ratio=0.5)
@@ -384,6 +617,12 @@ class TestTensorOps(OpTestCase):
             self.assertEqual(a.ne(b), np.not_equal(data1, data2))
 
     def test_neg(self):
+        """
+        Compute the state of the gaussian.
+
+        Args:
+            self: (todo): write your description
+        """
         data = np.array([-1., 0., 1.], 'float32')
         x = new_tensor(data)
         self.assertEqual(-x, -data)
@@ -391,16 +630,34 @@ class TestTensorOps(OpTestCase):
         self.assertEqual(x, -data)
 
     def test_non_zero(self):
+        """
+        Test if the tensor is zero.
+
+        Args:
+            self: (todo): write your description
+        """
         data = arange((2, 3))
         x = new_tensor(data)
         self.assertEqual((x > 2).nonzero(), np.stack(np.nonzero(data > 2), axis=1))
 
     def test_normal(self):
+        """
+        Test the normalized normalised test.
+
+        Args:
+            self: (todo): write your description
+        """
         data = arange((2, 3))
         x = new_tensor(data)
         x.normal_()
 
     def test_permute(self):
+        """
+        Test if all permutations of the permutation.
+
+        Args:
+            self: (todo): write your description
+        """
         entries = [(0, 2, 1), None]
         for perm in entries:
             data = arange((2, 3, 4))
@@ -418,12 +675,24 @@ class TestTensorOps(OpTestCase):
             self.assertEqual(x.transpose(dim0, dim1), np.transpose(data, perm))
 
     def test_pow(self):
+        """
+        Test if the input tensor.
+
+        Args:
+            self: (todo): write your description
+        """
         for a_shape, b_shape in self.binary_test_shapes:
             data1, data2 = arange(a_shape, 1), arange(b_shape)
             a, b = new_tensor(data1, False), new_tensor(data2, False)
             self.assertEqual(a.pow(b), np.power(data1, data2))
 
     def test_reciprocal(self):
+        """
+        Reciprocal.
+
+        Args:
+            self: (todo): write your description
+        """
         data = np.array([1., 2., 3.], 'float32')
         x = new_tensor(data)
         self.assertEqual(x.reciprocal(), np.reciprocal(data))
@@ -431,6 +700,12 @@ class TestTensorOps(OpTestCase):
         self.assertEqual(x, np.reciprocal(data))
 
     def test_repeat(self):
+        """
+        Test for a 2d tensor.
+
+        Args:
+            self: (todo): write your description
+        """
         entries = [(2,), (1, 1), (1, 2), (2, 1), (2, 2)]
         for repeats in entries:
             data = arange((2, 2))
@@ -440,6 +715,12 @@ class TestTensorOps(OpTestCase):
             self.assertEqual(y, np.tile(data, repeats))
 
     def test_reshape(self):
+        """
+        Reshape the data to the specified shape.
+
+        Args:
+            self: (todo): write your description
+        """
         entries = [(0, 0), (0, -1)]
         for shape in entries:
             data = arange((2, 3))
@@ -454,6 +735,12 @@ class TestTensorOps(OpTestCase):
             self.assertEqual(x.view_as(x), data)
 
     def test_round(self):
+        """
+        Round to round to round to a round.
+
+        Args:
+            self: (todo): write your description
+        """
         data = np.array([0.9, 1.4, 1.9], 'float32')
         x = new_tensor(data)
         self.assertEqual(x.round(), np.round(data))
@@ -461,6 +748,12 @@ class TestTensorOps(OpTestCase):
         self.assertEqual(x, np.round(data))
 
     def test_rsqrt(self):
+        """
+        Compute the eigenvalue
+
+        Args:
+            self: (todo): write your description
+        """
         data = np.array([4., 9., 16], 'float32')
         x = new_tensor(data)
         result = 1. / np.sqrt(data)
@@ -469,6 +762,12 @@ class TestTensorOps(OpTestCase):
         self.assertEqual(x, result)
 
     def test_setitem(self):
+        """
+        Perform the test set of data.
+
+        Args:
+            self: (todo): write your description
+        """
         data = arange((2, 3))
         x = new_tensor(data)
         x[x > 2] = 0
@@ -491,6 +790,12 @@ class TestTensorOps(OpTestCase):
                 pass
 
     def test_sign(self):
+        """
+        Test the signal.
+
+        Args:
+            self: (todo): write your description
+        """
         data = np.array([-1., 0., 1.], 'float32')
         x = new_tensor(data)
         self.assertEqual(x.sign(), np.sign(data))
@@ -498,11 +803,23 @@ class TestTensorOps(OpTestCase):
         self.assertEqual(x, np.sign(data))
 
     def test_sin(self):
+        """
+        Test the angle of the tensor
+
+        Args:
+            self: (todo): write your description
+        """
         data = np.array([0., math.pi * 0.5, math.pi], 'float32')
         x = new_tensor(data)
         self.assertEqual(x.sin(), np.sin(data))
 
     def test_sort(self):
+        """
+        Sorts the results.
+
+        Args:
+            self: (todo): write your description
+        """
         entries = [(None, True),
                    (0, True),
                    (-1, True),
@@ -523,6 +840,12 @@ class TestTensorOps(OpTestCase):
             self.assertEqual(idx2, result_idx)
 
     def test_sqrt(self):
+        """
+        Compute the eigenvalue.
+
+        Args:
+            self: (todo): write your description
+        """
         data = np.array([4., 9., 16], 'float32')
         x = new_tensor(data)
         self.assertEqual(x.sqrt(), np.sqrt(data))
@@ -530,6 +853,12 @@ class TestTensorOps(OpTestCase):
         self.assertEqual(x, np.sqrt(data))
 
     def test_squeeze(self):
+        """
+        Squeeze the tensor.
+
+        Args:
+            self: (todo): write your description
+        """
         entries = [((2, 1, 3), 1), ((1, 2, 1, 3), (0, 2)), ((3, 1, 2, 1), (1,))]
         for shape, axis in entries:
             data = arange(shape)
@@ -539,6 +868,12 @@ class TestTensorOps(OpTestCase):
             self.assertEqual(x, np.squeeze(data, axis))
 
     def test_sub(self):
+        """
+        Test if the given shape of - polynomial.
+
+        Args:
+            self: (todo): write your description
+        """
         for a_shape, b_shape in self.binary_test_shapes:
             data1, data2 = arange(a_shape), arange(b_shape, 1)
             a, b = new_tensor(data1, False), new_tensor(data2, False)
@@ -547,6 +882,12 @@ class TestTensorOps(OpTestCase):
             self.assertEqual(a, data1 - data2)
 
     def test_topk(self):
+        """
+        Compute the topk coefficients.
+
+        Args:
+            self: (todo): write your description
+        """
         entries = [(2, None, True),
                    (2, 0, True),
                    (2, -1, True),
@@ -562,6 +903,12 @@ class TestTensorOps(OpTestCase):
             self.assertEqual(y, result)
 
     def test_type(self):
+        """
+        Test if the data to a tensor.
+
+        Args:
+            self: (todo): write your description
+        """
         entries = [('bool', 'bool'),
                    ('byte', 'uint8'),
                    ('char', 'int8'),
@@ -580,11 +927,23 @@ class TestTensorOps(OpTestCase):
             self.assertEqual(y.type(), dtype)
 
     def test_uniform(self):
+        """
+        Test whether the image.
+
+        Args:
+            self: (todo): write your description
+        """
         data = arange((2, 3))
         x = new_tensor(data)
         x.uniform_()
 
     def test_unique(self):
+        """
+        Return the sum of each sample.
+
+        Args:
+            self: (todo): write your description
+        """
         data = np.array([1, 1, 3, 5, 5, 7, 9])
         entries = [(False, False),
                    (True, False),
@@ -602,6 +961,12 @@ class TestTensorOps(OpTestCase):
             self.assertEqual(y, result)
 
     def test_unsqueeze(self):
+        """
+        Test if a 2d tensor.
+
+        Args:
+            self: (todo): write your description
+        """
         entries = [1, -1]
         for axis in entries:
             data = arange((2, 3, 4))
@@ -611,6 +976,12 @@ class TestTensorOps(OpTestCase):
             self.assertEqual(x, np.expand_dims(data, axis=axis))
 
     def test_where(self):
+        """
+        Test if all entries in a 2d tensor.
+
+        Args:
+            self: (todo): write your description
+        """
         entries = [((6,), (6,))]
         for a_shape, b_shape in entries:
             data1, data2 = arange(a_shape), arange(b_shape, 1)
@@ -624,6 +995,12 @@ class TestTorchOps(OpTestCase):
     """Test the builtin torch ops."""
 
     def test_arange(self):
+        """
+        Generate arange arange
+
+        Args:
+            self: (todo): write your description
+        """
         entries = [([5], {'dtype': 'int64'}),
                    ([0, 5], {'dtype': 'int64'}),
                    ([0, 5, 2], {'dtype': 'int64'}),
@@ -634,6 +1011,12 @@ class TestTorchOps(OpTestCase):
             self.assertEqual(x, data)
 
     def test_linspace(self):
+        """
+        Test if a test test for the test.
+
+        Args:
+            self: (todo): write your description
+        """
         entries = [([[0., 5.], [10., 40.], 5], {'dim': 0, 'dtype': 'float32'}),
                    ([[0., 5.], [10., 40.], 5], {'dim': 1, 'dtype': 'float32'}),
                    ([[0., 5.], [10., 40.], 5], {'dim': -1, 'dtype': 'float32'}),
@@ -648,20 +1031,50 @@ class TestTorchOps(OpTestCase):
             self.assertEqual(x, data)
 
     def test_ones_like(self):
+        """
+        Test if all tensor is a tensor.
+
+        Args:
+            self: (todo): write your description
+        """
         data = np.ones((2, 3), dtype='float32')
         x = new_tensor(data)
         self.assertEqual(torch.ones_like(x), data)
 
     def test_rand(self):
+        """
+        Assigns the samples to a random samples.
+
+        Args:
+            self: (todo): write your description
+        """
         self.assertEqual(torch.rand(2, 3).shape, (2, 3))
 
     def test_randn(self):
+        """
+        Reshqualors todon.
+
+        Args:
+            self: (todo): write your description
+        """
         self.assertEqual(torch.randn(2, 3).shape, (2, 3))
 
     def test_randperm(self):
+        """
+        Generate the random samples.
+
+        Args:
+            self: (todo): write your description
+        """
         self.assertEqual(torch.randperm(4).shape, (4,))
 
     def test_zeros_like(self):
+        """
+        Reshape the tensor is zero.
+
+        Args:
+            self: (todo): write your description
+        """
         data = np.zeros((2, 3), dtype='float32')
         x = new_tensor(data)
         self.assertEqual(torch.zeros_like(x), data)

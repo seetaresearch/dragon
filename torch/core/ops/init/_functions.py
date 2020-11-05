@@ -21,17 +21,43 @@ class _Initializer(function.Function):
     """Base initializer function."""
 
     def __init__(self, key, dev, **kwargs):
+        """
+        Initialize the device.
+
+        Args:
+            self: (todo): write your description
+            key: (str): write your description
+            dev: (todo): write your description
+        """
         super(_Initializer, self).__init__(key, dev, **kwargs)
         self.ndim = kwargs.get('ndim', 0)
         self.dtype = kwargs.get('dtype', 'float32')
 
     def feed(self, ws, handle, shape):
+        """
+        Feed the shape of the given shape.
+
+        Args:
+            self: (todo): write your description
+            ws: (todo): write your description
+            handle: (todo): write your description
+            shape: (int): write your description
+        """
         for i in range(self.ndim):
             self.feed_arg(
                 ws, '{}/dims[{}]'.format(handle, i),
                 shape[i], 'int64')
 
     def forward(self, out, shape, shape_like=None):
+        """
+        Implementation of the layer.
+
+        Args:
+            self: (todo): write your description
+            out: (array): write your description
+            shape: (int): write your description
+            shape_like: (todo): write your description
+        """
         return self.dispatch(
             [] if shape_like is None else [shape_like], [out],
             callback=lambda ws, handle:
@@ -44,10 +70,24 @@ class Eye(_Initializer):
     """Eye function."""
 
     def __init__(self, key, dev, **kwargs):
+        """
+        Initialize the device.
+
+        Args:
+            self: (todo): write your description
+            key: (str): write your description
+            dev: (todo): write your description
+        """
         super(Eye, self).__init__(key, dev, **kwargs)
         self.k = kwargs.get('k', 0)
 
     def attributes(self):
+        """
+        : return : class : dict
+
+        Args:
+            self: (todo): write your description
+        """
         return {
             'op_type': 'Eye',
             'arguments': {
@@ -64,10 +104,24 @@ class Fill(_Initializer):
     """Fill function."""
 
     def __init__(self, key, dev, **kwargs):
+        """
+        Initialize device.
+
+        Args:
+            self: (todo): write your description
+            key: (str): write your description
+            dev: (todo): write your description
+        """
         super(Fill, self).__init__(key, dev, **kwargs)
         self.value = kwargs.get('value', 0.)
 
     def attributes(self):
+        """
+        A dictionary of attributes
+
+        Args:
+            self: (todo): write your description
+        """
         return {
             'op_type': 'Fill',
             'arguments': {
@@ -84,6 +138,14 @@ class LinSpace(function.Function):
     """LinSpace function."""
 
     def __init__(self, key, dev, **kwargs):
+        """
+        Initialize the device.
+
+        Args:
+            self: (todo): write your description
+            key: (str): write your description
+            dev: (todo): write your description
+        """
         super(LinSpace, self).__init__(key, dev, **kwargs)
         self.ndim = kwargs.get('ndim', 0)
         self.num_intervals = kwargs.get('num_intervals', 1)
@@ -91,6 +153,12 @@ class LinSpace(function.Function):
         self.axis = kwargs.get('axis', 0)
 
     def attributes(self):
+        """
+        A dictionary of attributes
+
+        Args:
+            self: (todo): write your description
+        """
         return {
             'op_type': 'LinSpace',
             'arguments': {
@@ -109,6 +177,17 @@ class LinSpace(function.Function):
         }
 
     def feed(self, ws, handle, shape, starts, stops):
+        """
+        Feed a subset of the given shape.
+
+        Args:
+            self: (todo): write your description
+            ws: (todo): write your description
+            handle: (todo): write your description
+            shape: (int): write your description
+            starts: (todo): write your description
+            stops: (todo): write your description
+        """
         for i, dim in enumerate(shape):
             self.feed_arg(
                 ws, '{}/dims[{}]'.format(handle, i),
@@ -122,6 +201,16 @@ class LinSpace(function.Function):
                 stops[i], 'float64')
 
     def forward(self, shape, starts, stops, out=None):
+        """
+        Evaluates the given shape.
+
+        Args:
+            self: (todo): write your description
+            shape: (int): write your description
+            starts: (todo): write your description
+            stops: (todo): write your description
+            out: (array): write your description
+        """
         return self.dispatch(
             [], [self.alloc(out)],
             callback=lambda ws, handle:
@@ -134,10 +223,24 @@ class Permutation(function.Function):
     """Permutation function."""
 
     def __init__(self, key, dev, **kwargs):
+        """
+        Initialize the device.
+
+        Args:
+            self: (todo): write your description
+            key: (str): write your description
+            dev: (todo): write your description
+        """
         super(Permutation, self).__init__(key, dev, **kwargs)
         self.dtype = kwargs.get('dtype', 'int64')
 
     def attributes(self):
+        """
+        A dict of attributes.
+
+        Args:
+            self: (todo): write your description
+        """
         return {
             'op_type': 'Permutation',
             'arguments': {
@@ -147,9 +250,26 @@ class Permutation(function.Function):
         }
 
     def feed(self, ws, handle, limit):
+        """
+        Handle a message.
+
+        Args:
+            self: (todo): write your description
+            ws: (todo): write your description
+            handle: (todo): write your description
+            limit: (int): write your description
+        """
         self.feed_arg(ws, '{}/limit'.format(handle), limit, 'int64')
 
     def forward(self, limit, out=None):
+        """
+        Runs the queue.
+
+        Args:
+            self: (todo): write your description
+            limit: (todo): write your description
+            out: (array): write your description
+        """
         return self.dispatch(
             [], [self.alloc(out)],
             callback=lambda ws, handle:
@@ -162,11 +282,25 @@ class RandomNormal(_Initializer):
     """RandomNormal function."""
 
     def __init__(self, key, dev, **kwargs):
+        """
+        Initialize the device.
+
+        Args:
+            self: (todo): write your description
+            key: (str): write your description
+            dev: (todo): write your description
+        """
         super(RandomNormal, self).__init__(key, dev, **kwargs)
         self.mean = kwargs.get('mean', 0.)
         self.std = kwargs.get('std', 1.)
 
     def attributes(self):
+        """
+        Returns a dictionary of the attributes.
+
+        Args:
+            self: (todo): write your description
+        """
         return {
             'op_type': 'RandomNormal',
             'arguments': {
@@ -184,11 +318,25 @@ class RandomUniform(_Initializer):
     """RandomUniform function."""
 
     def __init__(self, key, dev, **kwargs):
+        """
+        Initialize the device.
+
+        Args:
+            self: (todo): write your description
+            key: (str): write your description
+            dev: (todo): write your description
+        """
         super(RandomUniform, self).__init__(key, dev, **kwargs)
         self.low = kwargs.get('low', 0.)
         self.high = kwargs.get('high', 1.)
 
     def attributes(self):
+        """
+        Return a dictionary of attributes
+
+        Args:
+            self: (todo): write your description
+        """
         return {
             'op_type': 'RandomUniform',
             'arguments': {
@@ -206,11 +354,25 @@ class Range(function.Function):
     """Range function."""
 
     def __init__(self, key, dev, **kwargs):
+        """
+        Initialize the device.
+
+        Args:
+            self: (todo): write your description
+            key: (str): write your description
+            dev: (todo): write your description
+        """
         super(Range, self).__init__(key, dev, **kwargs)
         self.num_args = kwargs.get('num_args', 3)
         self.dtype = kwargs.get('dtype', 'int64')
 
     def attributes(self):
+        """
+        Return a dictionary of attributes
+
+        Args:
+            self: (todo): write your description
+        """
         return {
             'op_type': 'Range',
             'arguments': {
@@ -222,12 +384,29 @@ class Range(function.Function):
         }
 
     def feed(self, ws, handle, slice_args):
+        """
+        Feed a slice.
+
+        Args:
+            self: (todo): write your description
+            ws: (todo): write your description
+            handle: (todo): write your description
+            slice_args: (dict): write your description
+        """
         for i in range(len(slice_args)):
             self.feed_arg(
                 ws, '{}/slice[{}]'.format(handle, i),
                 slice_args[i], 'float64')
 
     def forward(self, slice_args, out=None):
+        """
+        Evaluate the layer.
+
+        Args:
+            self: (todo): write your description
+            slice_args: (todo): write your description
+            out: (array): write your description
+        """
         return self.dispatch(
             [], [self.alloc(out)],
             callback=lambda ws, handle:

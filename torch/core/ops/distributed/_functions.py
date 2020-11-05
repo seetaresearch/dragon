@@ -21,6 +21,14 @@ class Collective(function.Function):
     """Collective function."""
 
     def __init__(self, key, dev, **kwargs):
+        """
+        Initialize the device.
+
+        Args:
+            self: (todo): write your description
+            key: (str): write your description
+            dev: (todo): write your description
+        """
         super(Collective, self).__init__(key, dev, **kwargs)
         self.root = kwargs.get('root', 0)
         self.operation = kwargs.get('operation', 'MEAN')
@@ -28,6 +36,12 @@ class Collective(function.Function):
         self.group = kwargs.get('group', None)
 
     def attributes(self):
+        """
+        A dictionary of attributes.
+
+        Args:
+            self: (todo): write your description
+        """
         arguments = self.group.arguments
         arguments['root'] = self.root
         arguments['operation'] = self.operation
@@ -35,4 +49,11 @@ class Collective(function.Function):
         return {'op_type': 'Collective', 'arguments': arguments}
 
     def forward(self, grads):
+        """
+        Perform the forward gradients.
+
+        Args:
+            self: (todo): write your description
+            grads: (todo): write your description
+        """
         return self.dispatch(grads, grads, no_grad=True)

@@ -67,6 +67,13 @@ def flatten(input):
 
     """
     def append_items(iterable, output_list):
+        """
+        Append items to the list.
+
+        Args:
+            iterable: (todo): write your description
+            output_list: (list): write your description
+        """
         for item in iterable:
             if is_sequence(item):
                 append_items(item, output_list)

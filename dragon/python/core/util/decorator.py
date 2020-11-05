@@ -18,10 +18,24 @@ from __future__ import print_function
 class _Decorator(object):
     """The metaclass of decorator objects."""
     def __init__(self, target):
+        """
+        Initialize the target.
+
+        Args:
+            self: (todo): write your description
+            target: (todo): write your description
+        """
         self._decorated_target = target
 
 
 def make_decorator(target, decorator_func):
+    """
+    Make a decorator for a function.
+
+    Args:
+        target: (todo): write your description
+        decorator_func: (todo): write your description
+    """
     decorator = _Decorator(target)
     setattr(decorator_func, '_dragon_decorator', decorator)
     if hasattr(target, '__name__'):

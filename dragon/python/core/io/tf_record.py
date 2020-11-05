@@ -107,6 +107,12 @@ class TFRecordExample(object):
         """
 
         def mask_crc32(value):
+            """
+            Calculate a 32 - bit 32 - bit integer.
+
+            Args:
+                value: (array): write your description
+            """
             crc = zlib.crc32(bytes(value))
             crc = crc & 0xffffffff if crc < 0 else crc
             crc = numpy.array(crc, 'uint32')
@@ -233,6 +239,12 @@ class TFRecordWriter(object):
             self._writing = False
 
     def _maybe_new_shard(self):
+        """
+        Create shard shard shard file.
+
+        Args:
+            self: (todo): write your description
+        """
         if self._examples >= self._max_examples or \
                 self._data_writer is None:
             self._examples = 0

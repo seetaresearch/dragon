@@ -94,6 +94,13 @@ class BatchNormalization(Layer):
         self.moving_variance = None
 
     def build(self, input_shape):
+        """
+        Connects the module into the graph.
+
+        Args:
+            self: (todo): write your description
+            input_shape: (list): write your description
+        """
         input_shape = tensor_shape.TensorShape(input_shape)
         if not input_shape.ndims:
             raise ValueError('Input has undefined rank: ' + input_shape)
@@ -138,6 +145,13 @@ class BatchNormalization(Layer):
         self.built = True
 
     def call(self, inputs):
+        """
+        Perform the model.
+
+        Args:
+            self: (todo): write your description
+            inputs: (dict): write your description
+        """
         return nn.batch_normalization(
             inputs,
             self.moving_mean,
@@ -152,6 +166,12 @@ class BatchNormalization(Layer):
 
     @property
     def _param_dtype(self):
+        """
+        The dtype of the dtypes.
+
+        Args:
+            self: (todo): write your description
+        """
         if self.dtype == dtypes.float16 or \
                 self.dtype == dtypes.bfloat16:
             return dtypes.float32

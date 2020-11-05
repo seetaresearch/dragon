@@ -73,6 +73,12 @@ class Dense(layer.Layer):
             self._built = True
 
     def __repr__(self):
+        """
+        Return a human - readable representation.
+
+        Args:
+            self: (todo): write your description
+        """
         actstr = self.act.__name__ if self.act is not None else 'No Activation'
         s = ('{classname}(n_units={n_units}, ' + actstr)
         if self.in_channels is not None:
@@ -83,6 +89,13 @@ class Dense(layer.Layer):
         return s.format(classname=self.__class__.__name__, **self.__dict__)
 
     def build(self, inputs_shape):
+        """
+        Connects the module into the graph.
+
+        Args:
+            self: (todo): write your description
+            inputs_shape: (todo): write your description
+        """
         if self.in_channels is None and len(inputs_shape) != 2:
             raise AssertionError('The input dimension must be rank 2.'
                                  'Please reshape or flatten it.')
@@ -105,6 +118,13 @@ class Dense(layer.Layer):
             )
 
     def forward(self, inputs):
+        """
+        Forward computation.
+
+        Args:
+            self: (todo): write your description
+            inputs: (todo): write your description
+        """
         outputs = math_ops.fully_connected(
             [inputs, self.W] + ([self.b] if self.b_init else []), axis=1)
         if self.act:

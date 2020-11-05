@@ -82,10 +82,23 @@ class DropBlock2d(Module):
         self.slot = DropBlock2d._DEFAULT_UNIQUE_SLOT_ID
 
     def extra_repr(self):
+        """
+        Return a repr representation of this parameter.
+
+        Args:
+            self: (todo): write your description
+        """
         inplace_str = ', inplace' if self.inplace else ''
         return 'block_size={}, kp={}{}'.format(self.block_size, self.kp, inplace_str)
 
     def forward(self, input):
+        """
+        Compute forward computation.
+
+        Args:
+            self: (todo): write your description
+            input: (todo): write your description
+        """
         return F.drop_block2d(
             input,
             kp=self.kp,
@@ -141,10 +154,23 @@ class Dropout(Module):
         self.inplace = inplace
 
     def extra_repr(self):
+        """
+        Return a string representation of this field.
+
+        Args:
+            self: (todo): write your description
+        """
         inplace_str = ', inplace' if self.inplace else ''
         return 'p={}{}'.format(self.p, inplace_str)
 
     def forward(self, input):
+        """
+        Forward computation.
+
+        Args:
+            self: (todo): write your description
+            input: (todo): write your description
+        """
         return F.dropout(input, self.p, self.training, self.inplace)
 
 
@@ -194,10 +220,23 @@ class DropPath(Module):
         self.slot = DropPath._DEFAULT_UNIQUE_SLOT_ID
 
     def extra_repr(self):
+        """
+        Return a string representation of this field.
+
+        Args:
+            self: (todo): write your description
+        """
         inplace_str = ', inplace' if self.inplace else ''
         return 'p={}{}'.format(self.p, inplace_str)
 
     def forward(self, input):
+        """
+        Forward computation.
+
+        Args:
+            self: (todo): write your description
+            input: (todo): write your description
+        """
         return F.drop_path(
             input,
             p=self.p,

@@ -27,6 +27,17 @@ class _PoolNd(Module):
         ceil_mode=False,
         global_pooling=False,
     ):
+        """
+        Initialize the kernel.
+
+        Args:
+            self: (todo): write your description
+            kernel_size: (int): write your description
+            stride: (int): write your description
+            padding: (str): write your description
+            ceil_mode: (str): write your description
+            global_pooling: (todo): write your description
+        """
         super(_PoolNd, self).__init__()
         self.kernel_size = kernel_size
         self.stride = stride
@@ -35,6 +46,12 @@ class _PoolNd(Module):
         self.global_pooling = global_pooling
 
     def extra_repr(self):
+        """
+        Return a human - readable representation.
+
+        Args:
+            self: (todo): write your description
+        """
         return 'kernel_size={kernel_size}, ' \
                'stride={stride}, ' \
                'padding={padding}, ' \
@@ -99,6 +116,13 @@ class AvgPool2d(_PoolNd):
         )
 
     def forward(self, input):
+        """
+        Forward computation.
+
+        Args:
+            self: (todo): write your description
+            input: (todo): write your description
+        """
         return F.avg_pool2d(
             input=input,
             kernel_size=self.kernel_size,
@@ -165,6 +189,13 @@ class MaxPool2d(_PoolNd):
         )
 
     def forward(self, input):
+        """
+        Forward forward computation.
+
+        Args:
+            self: (todo): write your description
+            input: (todo): write your description
+        """
         return F.max_pool2d(
             input=input,
             kernel_size=self.kernel_size,

@@ -29,6 +29,12 @@ class TestGradientTape(unittest.TestCase):
     """Test the gradient tape."""
 
     def test_pop_push(self):
+        """
+        Pops a push of the stack.
+
+        Args:
+            self: (todo): write your description
+        """
         with dragon.GradientTape() as tape:
             tape.reset()
             try:
@@ -64,6 +70,12 @@ class TestTensor(unittest.TestCase):
     """Test the tensor class."""
 
     def test_properties(self):
+        """
+        Create a new properties of a b.
+
+        Args:
+            self: (todo): write your description
+        """
         a, b = dragon.Tensor(), dragon.EagerTensor(0)
         self.assertEqual(dragon.Tensor().ndim, 0)
         self.assertEqual(dragon.Tensor(shape=(2,)).ndim, 1)
@@ -114,6 +126,12 @@ class TestTensor(unittest.TestCase):
         self.assertEqual(b.requires_grad, True)
 
     def test_dlpack_converter(self):
+        """
+        Test if the tensor is a numpy.
+
+        Args:
+            self: (todo): write your description
+        """
         data = np.array([0., 1., 2.], 'float32')
         with dragon.device('cpu'), dragon.eager_scope():
             x = dragon.EagerTensor(data, copy=True)
@@ -125,6 +143,12 @@ class TestTensor(unittest.TestCase):
 
     @unittest.skipIf(not TEST_CUDA, 'CUDA unavailable')
     def test_dlpack_converter_cuda(self):
+        """
+        Test for a tensor. dtypes
+
+        Args:
+            self: (todo): write your description
+        """
         data = np.array([0., 1., 2.], 'float32')
         with dragon.device('cuda', 0), execution_context().mode('EAGER_MODE'):
             x = dragon.EagerTensor(data, copy=True) + 0
@@ -141,6 +165,12 @@ class TestWorkspace(unittest.TestCase):
     """Test the workspace class."""
 
     def test_clear(self):
+        """
+        Clears all data.
+
+        Args:
+            self: (todo): write your description
+        """
         w = dragon.Workspace()
         with w.as_default():
             x = dragon.EagerTensor(1)
@@ -149,6 +179,12 @@ class TestWorkspace(unittest.TestCase):
         self.assertEqual(x.size, 0)
 
     def test_feed_tensor(self):
+        """
+        Test if tensor is a tensor.
+
+        Args:
+            self: (todo): write your description
+        """
         w = dragon.Workspace()
         with w.as_default():
             v1, v2 = dragon.EagerTensor(1), np.array(2)
@@ -159,6 +195,12 @@ class TestWorkspace(unittest.TestCase):
             self.assertEqual(int(x), 2)
 
     def test_merge_form(self):
+        """
+        Merge two test form.
+
+        Args:
+            self: (todo): write your description
+        """
         w1, w2 = dragon.Workspace(), dragon.Workspace()
         with w1.as_default():
             x = dragon.Tensor(name='test_merge_from/x').set_value(0)
@@ -167,6 +209,12 @@ class TestWorkspace(unittest.TestCase):
             self.assertEqual(int(x), 0)
 
     def test_register_alias(self):
+        """
+        Register a new alias to see if the sensor.
+
+        Args:
+            self: (todo): write your description
+        """
         w = dragon.Workspace()
         with w.as_default():
             x = dragon.EagerTensor(1)
@@ -174,6 +222,12 @@ class TestWorkspace(unittest.TestCase):
             self.assertEqual(int(w.fetch_tensor('test_register_alias/y')), 1)
 
     def test_reset_tensor(self):
+        """
+        Reset the state of a tensor.
+
+        Args:
+            self: (todo): write your description
+        """
         w = dragon.Workspace()
         with w.as_default():
             x = dragon.EagerTensor(1)
@@ -182,6 +236,12 @@ class TestWorkspace(unittest.TestCase):
             self.assertEqual(x.size, 0)
 
     def test_reset_workspace(self):
+        """
+        Reset the workspace.
+
+        Args:
+            self: (todo): write your description
+        """
         w = dragon.Workspace()
         with w.as_default():
             try:
@@ -191,6 +251,12 @@ class TestWorkspace(unittest.TestCase):
         dragon.reset_workspace()
 
     def test_memory_allocated(self):
+        """
+        Test if all memory in memory isocated.
+
+        Args:
+            self: (todo): write your description
+        """
         w = dragon.Workspace()
         with w.as_default():
             _ = w.memory_allocated()

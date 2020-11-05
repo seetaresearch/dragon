@@ -52,6 +52,14 @@ class Tape(object):
     UID_GENERATOR = _new_incrementer()
 
     def __init__(self, retain_graph=False, retain_op_handles=False):
+        """
+        Initialize the graph.
+
+        Args:
+            self: (todo): write your description
+            retain_graph: (todo): write your description
+            retain_op_handles: (todo): write your description
+        """
         self._defs = []
         self._operations = dict()
         self._sources = set()

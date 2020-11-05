@@ -63,6 +63,12 @@ class MaxPool2d(layer.Layer):
         self.padding = padding
 
     def __repr__(self):
+        """
+        Return a human - readable representation.
+
+        Args:
+            self: (todo): write your description
+        """
         s = '{classname}(' \
             'filter_size={filter_size}, ' \
             'strides={strides}, ' \
@@ -73,6 +79,13 @@ class MaxPool2d(layer.Layer):
         return s.format(classname=self.__class__.__name__, **self.__dict__)
 
     def forward(self, inputs, **kwargs):
+        """
+        R forward computation.
+
+        Args:
+            self: (todo): write your description
+            inputs: (todo): write your description
+        """
         data_format = conv_utils.convert_data_format(self.data_format)
         padding, pads = conv_utils.normalize_2d_args('padding', self.padding)
 
@@ -121,6 +134,17 @@ class MeanPool2d(layer.Layer):
         data_format='channels_first',
         name=None,
     ):
+        """
+        Initialize the filter.
+
+        Args:
+            self: (todo): write your description
+            filter_size: (int): write your description
+            strides: (int): write your description
+            padding: (str): write your description
+            data_format: (str): write your description
+            name: (str): write your description
+        """
         super(MeanPool2d, self).__init__(name)
         strides = filter_size if strides is None else strides
         self.filter_size = conv_utils.normalize_2d_args('ksize', filter_size)
@@ -129,6 +153,12 @@ class MeanPool2d(layer.Layer):
         self.padding = padding
 
     def __repr__(self):
+        """
+        Return a human - readable representation.
+
+        Args:
+            self: (todo): write your description
+        """
         s = '{classname}(' \
             'filter_size={filter_size}, ' \
             'strides={strides}, ' \
@@ -139,6 +169,13 @@ class MeanPool2d(layer.Layer):
         return s.format(classname=self.__class__.__name__, **self.__dict__)
 
     def forward(self, inputs, **kwargs):
+        """
+        R forward computation.
+
+        Args:
+            self: (todo): write your description
+            inputs: (todo): write your description
+        """
         data_format = conv_utils.convert_data_format(self.data_format)
         padding, pads = conv_utils.normalize_2d_args('padding', self.padding)
 
@@ -181,6 +218,12 @@ class GlobalMaxPool2d(layer.Layer):
         self.data_format = conv_utils.normalize_data_format(data_format)
 
     def __repr__(self):
+        """
+        Return a repr representation of this object.
+
+        Args:
+            self: (todo): write your description
+        """
         s = '{classname}('
         if self.name is not None:
             s += 'name=\'{name}\''
@@ -188,6 +231,13 @@ class GlobalMaxPool2d(layer.Layer):
         return s.format(classname=self.__class__.__name__, **self.__dict__)
 
     def forward(self, inputs, **kwargs):
+        """
+        R forward forward computation.
+
+        Args:
+            self: (todo): write your description
+            inputs: (todo): write your description
+        """
         return vision_ops.pool2d(
             inputs,
             kernel_shape=1,
@@ -219,10 +269,24 @@ class GlobalMeanPool2d(layer.Layer):
     """
 
     def __init__(self, data_format='channels_first', name=None):
+        """
+        Initialize data.
+
+        Args:
+            self: (todo): write your description
+            data_format: (str): write your description
+            name: (str): write your description
+        """
         super(GlobalMeanPool2d, self).__init__(name)
         self.data_format = conv_utils.normalize_data_format(data_format)
 
     def __repr__(self):
+        """
+        Return a repr representation of this object.
+
+        Args:
+            self: (todo): write your description
+        """
         s = '{classname}('
         if self.name is not None:
             s += 'name=\'{name}\''
@@ -230,6 +294,13 @@ class GlobalMeanPool2d(layer.Layer):
         return s.format(classname=self.__class__.__name__, **self.__dict__)
 
     def forward(self, inputs, **kwargs):
+        """
+        R forward forward computation.
+
+        Args:
+            self: (todo): write your description
+            inputs: (todo): write your description
+        """
         return vision_ops.pool2d(
             inputs,
             kernel_shape=1,

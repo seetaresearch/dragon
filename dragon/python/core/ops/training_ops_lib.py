@@ -21,6 +21,14 @@ class ParamUpdate(Operator):
     """ParamUpdate operator."""
 
     def __init__(self, key, dev, **kwargs):
+        """
+        Initialize a device.
+
+        Args:
+            self: (todo): write your description
+            key: (str): write your description
+            dev: (todo): write your description
+        """
         super(ParamUpdate, self).__init__(key, dev, **kwargs)
         self.op_type = kwargs.get('op_type', '')
         self.op_handle = kwargs.get('op_handle', '')
@@ -28,6 +36,12 @@ class ParamUpdate(Operator):
         self.decay_mult = kwargs.get('decay_mult', 1)
 
     def attributes(self):
+        """
+        Returns the attributes of the attributes
+
+        Args:
+            self: (todo): write your description
+        """
         return {
             'name': self.op_handle,
             'op_type': self.op_type,
@@ -38,4 +52,12 @@ class ParamUpdate(Operator):
         }
 
     def forward(self, grad, param):
+        """
+        Parameters ---------- gradients.
+
+        Args:
+            self: (todo): write your description
+            grad: (todo): write your description
+            param: (todo): write your description
+        """
         return self.dispatch([grad], [param], no_grad=True)

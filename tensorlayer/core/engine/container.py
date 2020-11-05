@@ -112,6 +112,12 @@ class LayerList(module.Module):
         return len(self._layers)
 
     def __repr__(self):
+        """
+        Return a repr representation of - repr string.
+
+        Args:
+            self: (todo): write your description
+        """
         tmp_str = 'LayerList' + '(\n'
         for idx, layer in enumerate(self._layers):
             mod_str = layer.__repr__()

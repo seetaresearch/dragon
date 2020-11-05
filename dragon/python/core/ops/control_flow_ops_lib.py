@@ -21,10 +21,24 @@ class Assign(Operator):
     """Assign operator."""
 
     def __init__(self, key, dev, **kwargs):
+        """
+        Initialize the device.
+
+        Args:
+            self: (todo): write your description
+            key: (str): write your description
+            dev: (todo): write your description
+        """
         super(Assign, self).__init__(key, dev, **kwargs)
         self.ndim = kwargs.get('ndim', 0)
 
     def attributes(self):
+        """
+        A dictionary of attributes
+
+        Args:
+            self: (todo): write your description
+        """
         return {
             'op_type': 'Assign',
             'arguments': {
@@ -38,6 +52,16 @@ class Assign(Operator):
         }
 
     def feed(self, ws, handle, starts, sizes):
+        """
+        Add the arguments.
+
+        Args:
+            self: (todo): write your description
+            ws: (todo): write your description
+            handle: (todo): write your description
+            starts: (todo): write your description
+            sizes: (int): write your description
+        """
         for i in range(self.ndim):
             self.feed_arg(
                 ws, '{}/starts[{}]'.format(handle, i),
@@ -47,6 +71,15 @@ class Assign(Operator):
                 sizes[i], 'int64')
 
     def forward(self, inputs, starts, sizes):
+        """
+        Parameters ---------- inputs : list of outputs )
+
+        Args:
+            self: (todo): write your description
+            inputs: (todo): write your description
+            starts: (todo): write your description
+            sizes: (int): write your description
+        """
         return self.dispatch(
             [inputs[1]], [inputs[0]],
             callback=lambda ws, handle:
@@ -59,12 +92,34 @@ class Copy(Operator):
     """Copy operator."""
 
     def __init__(self, key, dev, **kwargs):
+        """
+        Initialize the device.
+
+        Args:
+            self: (todo): write your description
+            key: (str): write your description
+            dev: (todo): write your description
+        """
         super(Copy, self).__init__(key, dev, **kwargs)
 
     def attributes(self):
+        """
+        A dict of attributes.
+
+        Args:
+            self: (todo): write your description
+        """
         return {'op_type': 'Copy', 'arguments': {}}
 
     def forward(self, inputs, outputs):
+        """
+        Parameters ---------- inputs : list of outputs
+
+        Args:
+            self: (todo): write your description
+            inputs: (todo): write your description
+            outputs: (todo): write your description
+        """
         outputs = outputs if outputs else [self.alloc()]
         return self.dispatch(inputs, outputs, no_grad=True)
 
@@ -73,10 +128,31 @@ class MaskedAssign(Operator):
     """MaskedAssign operator."""
 
     def __init__(self, key, dev, **kwargs):
+        """
+        Initialize the device.
+
+        Args:
+            self: (todo): write your description
+            key: (str): write your description
+            dev: (todo): write your description
+        """
         super(MaskedAssign, self).__init__(key, dev, **kwargs)
 
     def attributes(self):
+        """
+        A dict of attributes.
+
+        Args:
+            self: (todo): write your description
+        """
         return {'op_type': 'MaskedAssign', 'arguments': {}}
 
     def forward(self, inputs):
+        """
+        R forward forward computation.
+
+        Args:
+            self: (todo): write your description
+            inputs: (todo): write your description
+        """
         return self.dispatch(inputs[1:], [inputs[0]], no_grad=True)

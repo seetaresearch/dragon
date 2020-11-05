@@ -40,14 +40,34 @@ class MethodTarget(object):
     """Class to wrap the target into a instance method."""
 
     def __init__(self, target, original_function):
+        """
+        Initialize this function.
+
+        Args:
+            self: (todo): write your description
+            target: (todo): write your description
+            original_function: (todo): write your description
+        """
         self.weakrefself_target__ = target
         self.weakrefself_func__ = weakref.ref(original_function)
 
     @property
     def target(self):
+        """
+        Return the target.
+
+        Args:
+            self: (todo): write your description
+        """
         return self.weakrefself_target__()
 
     def call(self, args, kwargs):
+        """
+        Call a callable function.
+
+        Args:
+            self: (todo): write your description
+        """
         wrapped_fn = self.weakrefself_func__()
         if inspect.ismethod(wrapped_fn):
             wrapped_fn = six.get_unbound_function(wrapped_fn)
@@ -68,6 +88,11 @@ def class_method_to_instance_method(original_function, instance):
     weak_bound_method_wrapper = None
 
     def bound_method_wrapper(*args, **kwargs):
+        """
+        Decorator for bound bound methods.
+
+        Args:
+        """
         strong_bound_method_wrapper = weak_bound_method_wrapper()
         wrapped_fn = strong_bound_method_wrapper.__wrapped__
         if wrapped_fn is strong_bound_method_wrapper.__original_wrapped__:
@@ -95,6 +120,15 @@ class FunctionSpec(object):
         is_method,
         input_signature,
     ):
+        """
+        Initialize the input method.
+
+        Args:
+            self: (todo): write your description
+            fullargspec: (todo): write your description
+            is_method: (str): write your description
+            input_signature: (str): write your description
+        """
         self._fullargspec = fullargspec
         self._is_method = is_method
         self._input_signature = input_signature
@@ -128,6 +162,12 @@ class FunctionSpec(object):
         return FunctionSpec(fullargspec, is_method, input_signature)
 
     def canonicalize_inputs(self, *args, **kwargs):
+        """
+        Return a list of inputs of the inputs.
+
+        Args:
+            self: (todo): write your description
+        """
         # Check the match between arguments and signatures.
         if self._input_signature is not None:
             # In this case, extra kwargs are forbidden.
@@ -167,6 +207,14 @@ class FunctionGuard(object):
     """Map the python function to workspace-local executables."""
 
     def __init__(self, python_function, input_signature=None):
+        """
+        Initialize the function.
+
+        Args:
+            self: (todo): write your description
+            python_function: (todo): write your description
+            input_signature: (str): write your description
+        """
         self._executables = dict()
         self._inputs = collections.defaultdict(list)
         self._python_function = python_function
@@ -338,6 +386,12 @@ def function(func=None, input_signature=None):
 
     """
     def decorated(inner_function):
+        """
+        Decorator to register a decorator.
+
+        Args:
+            inner_function: (todo): write your description
+        """
         return decorator.make_decorator(
             inner_function,
             FunctionGuard(

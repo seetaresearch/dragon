@@ -27,13 +27,33 @@ class _Merge(Layer):
     """The base layer for elementwise merge functions."""
 
     def __init__(self, **kwargs):
+        """
+        Initialize the object.
+
+        Args:
+            self: (todo): write your description
+        """
         super(_Merge, self).__init__(**kwargs)
         self._reshape_required = False
 
     def _merge_function(self, inputs):
+        """
+        Merge the inputs.
+
+        Args:
+            self: (todo): write your description
+            inputs: (array): write your description
+        """
         raise NotImplementedError
 
     def build(self, input_shape):
+        """
+        Connects the module into the graph.
+
+        Args:
+            self: (todo): write your description
+            input_shape: (list): write your description
+        """
         if not nest.is_sequence(input_shape):
             raise ValueError('Excepted a sequence of inputs for merge layer.')
         if len(input_shape) < 2:
@@ -41,6 +61,13 @@ class _Merge(Layer):
                              'Got ' + str(len(input_shape)) + ' inputs.')
 
     def call(self, inputs):
+        """
+        Call the sequence.
+
+        Args:
+            self: (todo): write your description
+            inputs: (dict): write your description
+        """
         if not nest.is_sequence(inputs):
             raise ValueError('Excepted a sequence of inputs for merge layer.')
         return self._merge_function(inputs)
@@ -63,6 +90,13 @@ class Add(_Merge):
         super(Add, self).__init__(**kwargs)
 
     def _merge_function(self, inputs):
+        """
+        Merge a list of a list of - inputs.
+
+        Args:
+            self: (todo): write your description
+            inputs: (array): write your description
+        """
         output = inputs[0]
         for i in range(1, len(inputs)):
             if output.id == inputs[i].id:
@@ -97,6 +131,13 @@ class Concatenate(_Merge):
         self.axis = axis
 
     def _merge_function(self, inputs):
+        """
+        Merge inputs together inputs.
+
+        Args:
+            self: (todo): write your description
+            inputs: (array): write your description
+        """
         return array_ops.concat(inputs, self.axis)
 
 
@@ -117,6 +158,13 @@ class Maximum(_Merge):
         super(Maximum, self).__init__(**kwargs)
 
     def _merge_function(self, inputs):
+        """
+        Merge the function.
+
+        Args:
+            self: (todo): write your description
+            inputs: (array): write your description
+        """
         output = inputs[0]
         for i in range(1, len(inputs)):
             output = math_ops.maximum([output, inputs[i]])
@@ -140,6 +188,13 @@ class Minimum(_Merge):
         super(Minimum, self).__init__(**kwargs)
 
     def _merge_function(self, inputs):
+        """
+        Merge a list of inputs.
+
+        Args:
+            self: (todo): write your description
+            inputs: (array): write your description
+        """
         output = inputs[0]
         for i in range(1, len(inputs)):
             output = math_ops.minimum([output, inputs[i]])
@@ -163,6 +218,13 @@ class Multiply(_Merge):
         super(Multiply, self).__init__(**kwargs)
 
     def _merge_function(self, inputs):
+        """
+        Merge the inputs of a list.
+
+        Args:
+            self: (todo): write your description
+            inputs: (array): write your description
+        """
         output = inputs[0]
         for i in range(1, len(inputs)):
             output = math_ops.mul([output, inputs[i]])
@@ -186,11 +248,25 @@ class Subtract(_Merge):
         super(Subtract, self).__init__(**kwargs)
 
     def build(self, input_shape):
+        """
+        Connects the module into the graph.
+
+        Args:
+            self: (todo): write your description
+            input_shape: (list): write your description
+        """
         super(Subtract, self).build(input_shape)
         if len(input_shape) != 2:
             raise ValueError('Exactly 2 inputs could subtract.')
 
     def _merge_function(self, inputs):
+        """
+        Merge input function.
+
+        Args:
+            self: (todo): write your description
+            inputs: (array): write your description
+        """
         if len(inputs) != 2:
             raise ValueError('Exactly 2 inputs could subtract.')
         return inputs[0] - inputs[1]

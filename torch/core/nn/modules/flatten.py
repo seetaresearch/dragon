@@ -51,8 +51,21 @@ class Flatten(Module):
         self.end_dim = end_dim
 
     def extra_repr(self):
+        """
+        Return a representation of this dimension.
+
+        Args:
+            self: (todo): write your description
+        """
         return 'start_dim={}, end_dim={}' \
                .format(self.start_dim, self.end_dim)
 
     def forward(self, input):
+        """
+        Forward computation.
+
+        Args:
+            self: (todo): write your description
+            input: (todo): write your description
+        """
         return input.flatten(self.start_dim, self.end_dim)

@@ -31,6 +31,13 @@ class Backend(object):
     NCCL = 'NCCL'
 
     def __new__(cls, name):
+        """
+        Creates a new nccl instance.
+
+        Args:
+            cls: (todo): write your description
+            name: (str): write your description
+        """
         if not isinstance(name, six.string_types):
             raise ValueError('Backend name must be a string, but got: {}'.format(name))
         value = getattr(Backend, name.upper(), Backend.UNDEFINED)
@@ -50,6 +57,16 @@ class ProcessGroup(object):
     """A group that stores a set of ranks."""
 
     def __init__(self, ranks, comm, handle, backend):
+        """
+        Initialize the commands.
+
+        Args:
+            self: (todo): write your description
+            ranks: (int): write your description
+            comm: (todo): write your description
+            handle: (todo): write your description
+            backend: (todo): write your description
+        """
         self._handle = handle
         self._ranks, self._comm = ranks, comm
         if backend is None:
@@ -130,6 +147,12 @@ class ProcessGroup(object):
         return _GLOBAL_PROCESS_GROUP_STACK.get_controller(self)
 
     def __repr__(self):
+        """
+        Return a human - readable representation of this object.
+
+        Args:
+            self: (todo): write your description
+        """
         return '{}:{}'.format(self._backend, self._handle)
 
 
@@ -281,6 +304,12 @@ class _MPIContext(object):
     """Context to finalize mpi under destruction."""
 
     def __init__(self):
+        """
+        Registers the extension.
+
+        Args:
+            self: (todo): write your description
+        """
         # Register a callback to finalize MPI
         # on program exit.
         atexit.register(lambda: _b.mpiFinalize())

@@ -181,6 +181,13 @@ class ONNXBackendRep(BackendRep):
                 self._builder_config.add_optimization_profile(profile)
 
     def _serialize_deserialize(self, cuda_engine):
+        """
+        Serialize the engine. engine.
+
+        Args:
+            self: (todo): write your description
+            cuda_engine: (todo): write your description
+        """
         runtime = trt.Runtime(TRT_LOGGER)
         serialized_engine = cuda_engine.serialize()
         del self._parser
@@ -188,6 +195,13 @@ class ONNXBackendRep(BackendRep):
         return cuda_engine
 
     def _set_device(self, device):
+        """
+        Sets the device.
+
+        Args:
+            self: (todo): write your description
+            device: (todo): write your description
+        """
         self.device = device
         assert(device.type == DeviceType.CUDA)
         cuda.set_device(device.device_id)

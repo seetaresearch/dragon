@@ -37,6 +37,22 @@ class _ConvNd(Module):
         groups,
         bias,
     ):
+        """
+        Initialize the network.
+
+        Args:
+            self: (todo): write your description
+            in_channels: (int): write your description
+            out_channels: (int): write your description
+            kernel_size: (int): write your description
+            stride: (int): write your description
+            padding: (str): write your description
+            dilation: (todo): write your description
+            transposed: (bool): write your description
+            output_padding: (str): write your description
+            groups: (list): write your description
+            bias: (float): write your description
+        """
         super(_ConvNd, self).__init__()
         if in_channels % groups != 0:
             raise ValueError('in_channels must be divisible by groups')
@@ -64,6 +80,12 @@ class _ConvNd(Module):
         self.reset_parameters()
 
     def reset_parameters(self):
+        """
+        Reset the kernel parameters.
+
+        Args:
+            self: (todo): write your description
+        """
         n = self.in_channels
         for k in self.kernel_size:
             n *= k
@@ -73,6 +95,12 @@ class _ConvNd(Module):
             self.bias.data.uniform_(-stdv, stdv)
 
     def extra_repr(self):
+        """
+        Return a string representation of - repr.
+
+        Args:
+            self: (todo): write your description
+        """
         s = ('{in_channels}, '
              '{out_channels}, '
              'kernel_size={kernel_size}, '
@@ -154,6 +182,13 @@ class Conv2d(_ConvNd):
         )
 
     def forward(self, input):
+        """
+        R forward computation.
+
+        Args:
+            self: (todo): write your description
+            input: (todo): write your description
+        """
         return F.conv2d(
             input=input,
             weight=self.weight,
@@ -232,6 +267,13 @@ class ConvTranspose2d(_ConvNd):
         )
 
     def forward(self, input):
+        """
+        Forward computation.
+
+        Args:
+            self: (todo): write your description
+            input: (todo): write your description
+        """
         return F.conv_transpose2d(
             input=input,
             weight=self.weight,
@@ -303,6 +345,13 @@ class DepthwiseConv2d(Conv2d):
         )
 
     def forward(self, input):
+        """
+        Forward computation.
+
+        Args:
+            self: (todo): write your description
+            input: (todo): write your description
+        """
         return F.depthwise_conv2d(
             input=input,
             weight=self.weight,

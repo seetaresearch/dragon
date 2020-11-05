@@ -425,6 +425,12 @@ class Engine(object):
         return results
 
     def __del__(self):
+        """
+        Removes the engine.
+
+        Args:
+            self: (todo): write your description
+        """
         if self._cuda_engine is not None:
             del self._cuda_engine
 

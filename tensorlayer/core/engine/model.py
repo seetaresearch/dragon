@@ -83,6 +83,12 @@ class Model(module.Module):
             return self.forward(inputs, **kwargs)
 
     def __repr__(self):
+        """
+        Return a repr representation of the repr of this object.
+
+        Args:
+            self: (todo): write your description
+        """
         tmpstr = self.name + '(\n'
         for idx, layer in enumerate(self.all_layers):
             modstr = layer.__repr__()

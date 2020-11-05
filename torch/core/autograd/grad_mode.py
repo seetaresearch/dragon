@@ -40,9 +40,21 @@ class enable_grad(object):
         self.prev = is_grad_enabled()
 
     def __enter__(self):
+        """
+        Disables the gradients.
+
+        Args:
+            self: (todo): write your description
+        """
         _set_grad_enabled(True)
 
     def __exit__(self, *args):
+        """
+        Exit the command to exit.
+
+        Args:
+            self: (todo): write your description
+        """
         _set_grad_enabled(self.prev)
         return False
 
@@ -78,9 +90,21 @@ class no_grad(object):
         self.prev = is_grad_enabled()
 
     def __enter__(self):
+        """
+        Enter the gradients.
+
+        Args:
+            self: (todo): write your description
+        """
         _set_grad_enabled(False)
 
     def __exit__(self, *args):
+        """
+        Exit the command to exit.
+
+        Args:
+            self: (todo): write your description
+        """
         _set_grad_enabled(self.prev)
         return False
 
@@ -112,9 +136,21 @@ class set_grad_enabled(object):
         _set_grad_enabled(mode)
 
     def __enter__(self):
+        """
+        Enter the callable
+
+        Args:
+            self: (todo): write your description
+        """
         pass
 
     def __exit__(self, *args):
+        """
+        Exit the command to exit.
+
+        Args:
+            self: (todo): write your description
+        """
         _set_grad_enabled(self.prev)
         return False
 

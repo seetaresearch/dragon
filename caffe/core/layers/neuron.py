@@ -43,6 +43,13 @@ class Dropout(Layer):
     """
 
     def __init__(self, layer_param):
+        """
+        Initialize layer_paramio.
+
+        Args:
+            self: (todo): write your description
+            layer_param: (todo): write your description
+        """
         super(Dropout, self).__init__(layer_param)
         param = layer_param.dropout_param
         if not param.scale_train:
@@ -50,6 +57,13 @@ class Dropout(Layer):
         self.arguments = {'prob': param.dropout_ratio}
 
     def __call__(self, bottom):
+        """
+        Returns the activation function.
+
+        Args:
+            self: (todo): write your description
+            bottom: (todo): write your description
+        """
         return activation_ops.dropout(bottom, **self.arguments)
 
 
@@ -82,10 +96,24 @@ class ELU(Layer):
     """
 
     def __init__(self, layer_param):
+        """
+        Initialize layer_parameters.
+
+        Args:
+            self: (todo): write your description
+            layer_param: (todo): write your description
+        """
         super(ELU, self).__init__(layer_param)
         self.arguments = {'alpha': float(layer_param.elu_param.alpha)}
 
     def __call__(self, bottom):
+        """
+        Call the given cell.
+
+        Args:
+            self: (todo): write your description
+            bottom: (todo): write your description
+        """
         return activation_ops.elu(bottom, **self.arguments)
 
 
@@ -112,6 +140,13 @@ class Power(Layer):
     """
 
     def __init__(self, layer_param):
+        """
+        Initialize the layer.
+
+        Args:
+            self: (todo): write your description
+            layer_param: (todo): write your description
+        """
         super(Power, self).__init__(layer_param)
         param = layer_param.power_param
         self.scale = param.scale
@@ -119,6 +154,13 @@ class Power(Layer):
         self.power = param.power
 
     def __call__(self, bottom):
+        """
+        Return the output of this color.
+
+        Args:
+            self: (todo): write your description
+            bottom: (todo): write your description
+        """
         if self.scale != 1:
             bottom = bottom * self.scale
         if self.shift != 0:
@@ -161,6 +203,13 @@ class PReLU(Layer):
     """
 
     def __init__(self, layer_param):
+        """
+        Initialize layer
+
+        Args:
+            self: (todo): write your description
+            layer_param: (todo): write your description
+        """
         super(PReLU, self).__init__(layer_param)
         param = layer_param.prelu_param
         self.arguments = {
@@ -170,6 +219,13 @@ class PReLU(Layer):
         self.add_blob(filler=self.get_filler(param, 'filler'), value=0.25)
 
     def __call__(self, bottom):
+        """
+        Call the model.
+
+        Args:
+            self: (todo): write your description
+            bottom: (todo): write your description
+        """
         inputs = [bottom] + [blob['data'] for blob in self._blobs]
         return activation_ops.prelu(inputs, **self.arguments)
 
@@ -203,12 +259,26 @@ class ReLU(Layer):
     """
 
     def __init__(self, layer_param):
+        """
+        Initialize layer_slope.
+
+        Args:
+            self: (todo): write your description
+            layer_param: (todo): write your description
+        """
         super(ReLU, self).__init__(layer_param)
         param = layer_param.relu_param
         if param.HasField('negative_slope'):
             self.arguments = {'alpha': param.negative_slope}
 
     def __call__(self, bottom):
+        """
+        Call a new layer with the given layer.
+
+        Args:
+            self: (todo): write your description
+            bottom: (todo): write your description
+        """
         return activation_ops.relu(bottom, **self.arguments)
 
 
@@ -232,9 +302,23 @@ class Sigmoid(Layer):
     """
 
     def __init__(self, layer_param):
+        """
+        Initialize layer_parameters.
+
+        Args:
+            self: (todo): write your description
+            layer_param: (todo): write your description
+        """
         super(Sigmoid, self).__init__(layer_param)
 
     def __call__(self, bottom):
+        """
+        Call the activation function.
+
+        Args:
+            self: (todo): write your description
+            bottom: (todo): write your description
+        """
         return activation_ops.sigmoid(bottom, **self.arguments)
 
 
@@ -258,7 +342,21 @@ class TanH(Layer):
     """
 
     def __init__(self, layer_param):
+        """
+        Initialize layer_parameters.
+
+        Args:
+            self: (todo): write your description
+            layer_param: (todo): write your description
+        """
         super(TanH, self).__init__(layer_param)
 
     def __call__(self, bottom):
+        """
+        Returns the activation function.
+
+        Args:
+            self: (todo): write your description
+            bottom: (todo): write your description
+        """
         return activation_ops.tanh(bottom, **self.arguments)

@@ -20,6 +20,13 @@ from sphinx_seeta_theme import setup as setup_v1
 
 
 def path_to(href, index=False):
+    """
+    Convert href to href.
+
+    Args:
+        href: (str): write your description
+        index: (int): write your description
+    """
     if index:
         if len(href) == 0:
             return 'index.html'

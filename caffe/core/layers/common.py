@@ -48,6 +48,13 @@ class Accuracy(Layer):
     """
 
     def __init__(self, layer_param):
+        """
+        Initialize layer_parameters.
+
+        Args:
+            self: (todo): write your description
+            layer_param: (todo): write your description
+        """
         super(Accuracy, self).__init__(layer_param)
         param = layer_param.accuracy_param
         self.arguments = {
@@ -58,6 +65,13 @@ class Accuracy(Layer):
         }
 
     def __call__(self, bottom):
+        """
+        Returns the metric for the given metric.
+
+        Args:
+            self: (todo): write your description
+            bottom: (todo): write your description
+        """
         return metric_ops.accuracy(bottom, **self.arguments)
 
 
@@ -80,6 +94,13 @@ class ArgMax(Layer):
     """
 
     def __init__(self, layer_param):
+        """
+        Initialize layer_parameters.
+
+        Args:
+            self: (todo): write your description
+            layer_param: (todo): write your description
+        """
         super(ArgMax, self).__init__(layer_param)
         param = layer_param.argmax_param
         if param.top_k != 1:
@@ -87,6 +108,13 @@ class ArgMax(Layer):
         self.arguments = {'axis': param.axis, 'keep_dims': True}
 
     def __call__(self, bottom):
+        """
+        Returns the argmax of the array.
+
+        Args:
+            self: (todo): write your description
+            bottom: (todo): write your description
+        """
         return array_ops.argmax(bottom, **self.arguments)
 
 
@@ -112,6 +140,13 @@ class BatchNorm(Layer):
     """
 
     def __init__(self, layer_param):
+        """
+        Initialize the network.
+
+        Args:
+            self: (todo): write your description
+            layer_param: (todo): write your description
+        """
         super(BatchNorm, self).__init__(layer_param)
         param = layer_param.batch_norm_param
         self.arguments = {
@@ -131,12 +166,26 @@ class BatchNorm(Layer):
         del self._blobs[3:]  # Avoid to save the fixed blobs
 
     def fuse_with_scale_layer(self, scale_layer):
+        """
+        Fuse scale_layer to scale_layer.
+
+        Args:
+            self: (todo): write your description
+            scale_layer: (todo): write your description
+        """
         self._weight = scale_layer._blobs[0]['data']
         if len(scale_layer._blobs) == 2:
             self._bias = scale_layer._blobs[1]['data']
         scale_layer.__call__ = lambda *args, **kwargs: None
 
     def from_proto(self, proto):
+        """
+        Fetches the next tensor.
+
+        Args:
+            self: (todo): write your description
+            proto: (todo): write your description
+        """
         super(BatchNorm, self).from_proto(proto)
         current_ws = workspace.get_workspace()
         running_num = float(current_ws.fetch_tensor(self._blobs[2]['data']))
@@ -148,6 +197,13 @@ class BatchNorm(Layer):
             current_ws.feed_tensor(self._blobs[2]['data'], [1], dtype='float32')
 
     def __call__(self, bottom):
+        """
+        Returns the model. _call.
+
+        Args:
+            self: (todo): write your description
+            bottom: (todo): write your description
+        """
         inputs = [bottom, self._weight, self._bias] + \
                  [blob['data'] for blob in self._blobs[:2]]
         return normalization_ops.batch_norm(inputs, **self.arguments)
@@ -173,10 +229,24 @@ class Concat(Layer):
     """
 
     def __init__(self, layer_param):
+        """
+        Initialize layer_parameters.
+
+        Args:
+            self: (todo): write your description
+            layer_param: (todo): write your description
+        """
         super(Concat, self).__init__(layer_param)
         self.arguments = {'axis': layer_param.concat_param.axis}
 
     def __call__(self, bottom):
+        """
+        Concat. numpy. numpy. arrayops.
+
+        Args:
+            self: (todo): write your description
+            bottom: (todo): write your description
+        """
         return array_ops.concat(bottom, **self.arguments)
 
 
@@ -202,6 +272,13 @@ class Crop(Layer):
     """
 
     def __init__(self, layer_param):
+        """
+        Initialize layer_paramoffs.
+
+        Args:
+            self: (todo): write your description
+            layer_param: (todo): write your description
+        """
         super(Crop, self).__init__(layer_param)
         param = layer_param.crop_param
         offsets = [e for e in param.offset]
@@ -209,6 +286,13 @@ class Crop(Layer):
         self.arguments = {'starts': [[0] * param.axis] + offsets}
 
     def __call__(self, bottom):
+        """
+        Return the slice of the given axis.
+
+        Args:
+            self: (todo): write your description
+            bottom: (todo): write your description
+        """
         if not isinstance(bottom, (tuple, list)) or len(bottom) != 2:
             raise ValueError('Excepted two bottom blobs.')
         sizes = array_ops.concat([
@@ -240,6 +324,13 @@ class Eltwise(Layer):
     """
 
     def __init__(self, layer_param):
+        """
+        Initialize layer_parameters.
+
+        Args:
+            self: (todo): write your description
+            layer_param: (todo): write your description
+        """
         super(Eltwise, self).__init__(layer_param)
         param = layer_param.eltwise_param
         self.eltwise_op = {
@@ -250,6 +341,13 @@ class Eltwise(Layer):
         self.factors = [element for element in param.coeff]
 
     def __call__(self, bottom):
+        """
+        Return a factor of the factor.
+
+        Args:
+            self: (todo): write your description
+            bottom: (todo): write your description
+        """
         for i in range(len(bottom)):
             if i < len(self.factors) and self.factors[i] != 1:
                 bottom[i] *= self.factors[i]
@@ -279,6 +377,13 @@ class Flatten(Layer):
     """
 
     def __init__(self, layer_param):
+        """
+        Initialize layer_paramaxis.
+
+        Args:
+            self: (todo): write your description
+            layer_param: (todo): write your description
+        """
         super(Flatten, self).__init__(layer_param)
         param = layer_param.flatten_param
         axis, end_axis = param.axis, param.end_axis
@@ -286,6 +391,13 @@ class Flatten(Layer):
         self.arguments = {'axis': axis, 'num_axes': num_axes}
 
     def __call__(self, bottom):
+        """
+        Call the array of - arrays.
+
+        Args:
+            self: (todo): write your description
+            bottom: (todo): write your description
+        """
         return array_ops.flatten(bottom, **self.arguments)
 
 
@@ -309,6 +421,13 @@ class InnerProduct(Layer):
     """
 
     def __init__(self, layer_param):
+        """
+        Initialize the layers.
+
+        Args:
+            self: (todo): write your description
+            layer_param: (todo): write your description
+        """
         super(InnerProduct, self).__init__(layer_param)
         param = layer_param.inner_product_param
         self.arguments = {
@@ -321,6 +440,13 @@ class InnerProduct(Layer):
             self.add_blob(filler=self.get_filler(param, 'bias_filler'))
 
     def __call__(self, bottom):
+        """
+        Call the module.
+
+        Args:
+            self: (todo): write your description
+            bottom: (todo): write your description
+        """
         inputs = [bottom] + [blob['data'] for blob in self._blobs]
         return math_ops.fully_connected(inputs, **self.arguments)
 
@@ -345,6 +471,13 @@ class Input(Layer):
     """
 
     def __init__(self, layer_param):
+        """
+        Initialize layer inputs.
+
+        Args:
+            self: (todo): write your description
+            layer_param: (todo): write your description
+        """
         super(Input, self).__init__(layer_param)
         param = layer_param.input_param
         self.blob_shapes = []
@@ -355,6 +488,13 @@ class Input(Layer):
                 self.blob_shapes.append(None)
 
     def __call__(self, bottom):
+        """
+        Implements object for the given route.
+
+        Args:
+            self: (todo): write your description
+            bottom: (todo): write your description
+        """
         name_scope = context.get_name_scope()
         current_ws = workspace.get_workspace()
         return [TensorRef(
@@ -393,6 +533,13 @@ class Normalize(Layer):
     """
 
     def __init__(self, layer_param):
+        """
+        Initialize layer_parameters.
+
+        Args:
+            self: (todo): write your description
+            layer_param: (todo): write your description
+        """
         super(Normalize, self).__init__(layer_param)
         param = layer_param.normalize_param
         self.l2norm_arguments = {
@@ -407,6 +554,13 @@ class Normalize(Layer):
         self.add_blob(filler=self.get_filler(param, 'scale_filler'), value=1)
 
     def __call__(self, bottom):
+        """
+        Implement self ( l2 ) algorithm.
+
+        Args:
+            self: (todo): write your description
+            bottom: (todo): write your description
+        """
         norm_out = [normalization_ops.lp_normalize(bottom, **self.l2norm_arguments)]
         norm_out += [blob['data'] for blob in self._blobs]
         return math_ops.affine(norm_out, **self.affine_arguments)
@@ -434,11 +588,25 @@ class Permute(Layer):
     """
 
     def __init__(self, layer_param):
+        """
+        Initialize layer_parameters.
+
+        Args:
+            self: (todo): write your description
+            layer_param: (todo): write your description
+        """
         super(Permute, self).__init__(layer_param)
         param = layer_param.permute_param
         self.arguments = {'perm': [e for e in param.order]}
 
     def __call__(self, bottom):
+        """
+        Compute the array.
+
+        Args:
+            self: (todo): write your description
+            bottom: (todo): write your description
+        """
         return array_ops.transpose(bottom, **self.arguments)
 
 
@@ -465,6 +633,13 @@ class Python(Layer):
     """
 
     def __init__(self, layer_param):
+        """
+        Initialize the layer
+
+        Args:
+            self: (todo): write your description
+            layer_param: (todo): write your description
+        """
         super(Python, self).__init__(layer_param)
         param = layer_param.python_param
         self.arguments = {
@@ -475,6 +650,13 @@ class Python(Layer):
         }
 
     def __call__(self, bottom):
+        """
+        Returns the arguments for the given plugin.
+
+        Args:
+            self: (todo): write your description
+            bottom: (todo): write your description
+        """
         return framework_ops.python_plugin(bottom, **self.arguments)
 
 
@@ -498,6 +680,13 @@ class Reduction(Layer):
     """
 
     def __init__(self, layer_param):
+        """
+        Initialize layer_parameters.
+
+        Args:
+            self: (todo): write your description
+            layer_param: (todo): write your description
+        """
         super(Reduction, self).__init__(layer_param)
         param = layer_param.reduction_param
         if param.axis < 0:
@@ -508,6 +697,13 @@ class Reduction(Layer):
         self.reduction = {1: array_ops.sum, 4: array_ops.mean}[param.operation]
 
     def __call__(self, bottom):
+        """
+        Return the top - left and bottom parameters.
+
+        Args:
+            self: (todo): write your description
+            bottom: (todo): write your description
+        """
         top = self.reduction(bottom, **self.arguments)
         if self.scale != 1:
             top *= self.scale
@@ -537,11 +733,25 @@ class Reshape(Layer):
     """
 
     def __init__(self, layer_param):
+        """
+        Initialize layer_parameters.
+
+        Args:
+            self: (todo): write your description
+            layer_param: (todo): write your description
+        """
         super(Reshape, self).__init__(layer_param)
         param = layer_param.reshape_param
         self.arguments = {'shape': [e for e in param.shape.dim]}
 
     def __call__(self, bottom):
+        """
+        Return the array of the arguments.
+
+        Args:
+            self: (todo): write your description
+            bottom: (todo): write your description
+        """
         return array_ops.reshape(bottom, **self.arguments)
 
 
@@ -574,6 +784,13 @@ class Scale(Layer):
     """
 
     def __init__(self, layer_param):
+        """
+        Initialize layer_parameters.
+
+        Args:
+            self: (todo): write your description
+            layer_param: (todo): write your description
+        """
         super(Scale, self).__init__(layer_param)
         param = layer_param.scale_param
         self.arguments = {'axis': param.axis, 'num_axes': param.num_axes}
@@ -582,6 +799,13 @@ class Scale(Layer):
             self.add_blob(filler=self.get_filler(param, 'bias_filler'))
 
     def __call__(self, bottom):
+        """
+        Returns the module.
+
+        Args:
+            self: (todo): write your description
+            bottom: (todo): write your description
+        """
         inputs = [bottom] + [blob['data'] for blob in self._blobs]
         return math_ops.affine(inputs, **self.arguments)
 
@@ -609,6 +833,13 @@ class Slice(Layer):
     """
 
     def __init__(self, layer_param):
+        """
+        Initialize layer_paramuments.
+
+        Args:
+            self: (todo): write your description
+            layer_param: (todo): write your description
+        """
         super(Slice, self).__init__(layer_param)
         param = layer_param.slice_param
         self.arguments = {
@@ -618,6 +849,13 @@ class Slice(Layer):
         }
 
     def __call__(self, bottom):
+        """
+        Return a callable for a callable.
+
+        Args:
+            self: (todo): write your description
+            bottom: (todo): write your description
+        """
         return array_ops.split(bottom, **self.arguments)
 
 
@@ -644,10 +882,24 @@ class Softmax(Layer):
     """
 
     def __init__(self, layer_param):
+        """
+        Initialize layer_paramuments.
+
+        Args:
+            self: (todo): write your description
+            layer_param: (todo): write your description
+        """
         super(Softmax, self).__init__(layer_param)
         self.arguments = {'axis': layer_param.softmax_param.axis}
 
     def __call__(self, bottom):
+        """
+        Call the l { layer with the given arguments.
+
+        Args:
+            self: (todo): write your description
+            bottom: (todo): write your description
+        """
         return activation_ops.softmax(bottom, **self.arguments)
 
 
@@ -667,9 +919,23 @@ class StopGradient(Layer):
     """
 
     def __init__(self, layer_param):
+        """
+        Initialize layer_parameters.
+
+        Args:
+            self: (todo): write your description
+            layer_param: (todo): write your description
+        """
         super(StopGradient, self).__init__(layer_param)
 
     def __call__(self, bottom):
+        """
+        Call this cell.
+
+        Args:
+            self: (todo): write your description
+            bottom: (todo): write your description
+        """
         return framework_ops.stop_gradient(bottom, **self.arguments)
 
 
@@ -693,6 +959,13 @@ class Tile(Layer):
     """
 
     def __init__(self, layer_param):
+        """
+        Initialize the layer layer_parameters.
+
+        Args:
+            self: (todo): write your description
+            layer_param: (todo): write your description
+        """
         super(Tile, self).__init__(layer_param)
         param = layer_param.tile_param
         repeats = [1] * (param.axis + 1)
@@ -700,4 +973,11 @@ class Tile(Layer):
         self.arguments = {'repeats': repeats}
 
     def __call__(self, bottom):
+        """
+        Return a new tiles : class : class : array.
+
+        Args:
+            self: (todo): write your description
+            bottom: (todo): write your description
+        """
         return array_ops.tile(bottom, **self.arguments)
