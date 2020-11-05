@@ -38,10 +38,23 @@ class Concat(layer.Layer):
         self.concat_dim = concat_dim
 
     def __repr__(self):
+        """
+        Return a repr representation of this object.
+
+        Args:
+            self: (todo): write your description
+        """
         s = '{classname}(concat_dim={concat_dim})'
         return s.format(classname=self.__class__.__name__, **self.__dict__)
 
     def forward(self, inputs, **kwargs):
+        """
+        Parameters ---------- inputs : np.
+
+        Args:
+            self: (todo): write your description
+            inputs: (todo): write your description
+        """
         return array_ops.concat(
             inputs,
             axis=self.concat_dim,
@@ -81,6 +94,12 @@ class Elementwise(layer.Layer):
         }[operation.lower()]
 
     def __repr__(self):
+        """
+        Return a human - readable representation of this object.
+
+        Args:
+            self: (todo): write your description
+        """
         s = '{classname}(combine_fn={combine_fn}, '
         s += utils.get_act_str(self.act)
         if self.name is not None:
@@ -89,6 +108,13 @@ class Elementwise(layer.Layer):
         return s.format(classname=self.__class__.__name__, **self.__dict__)
 
     def forward(self, inputs, **kwargs):
+        """
+        Forward function inputs.
+
+        Args:
+            self: (todo): write your description
+            inputs: (todo): write your description
+        """
         outputs = inputs[0]
         for input in inputs[1:]:
             outputs = self.combine_fn([outputs, input])

@@ -26,6 +26,13 @@ register = _GLOBAL_REGISTERED_SPECS.register
 
 @register('Accuracy')
 def accuracy_spec(args, inputs, outputs):
+    """
+    Accuracy spec.
+
+    Args:
+        inputs: (array): write your description
+        outputs: (todo): write your description
+    """
     _ = locals()
     outputs[0].dtype, outputs[0].shape = 'float32', []
     return outputs
@@ -33,6 +40,13 @@ def accuracy_spec(args, inputs, outputs):
 
 @register(['ArgMax', 'ArgMin'])
 def arg_reduce_spec(args, inputs, outputs):
+    """
+    Arguments : args ( s ) along the given axis.
+
+    Args:
+        inputs: (array): write your description
+        outputs: (array): write your description
+    """
     outputs[0].dtype = 'int64'
     axis = args['axis']
     if args['keep_dims']:
@@ -61,11 +75,25 @@ def arg_reduce_spec(args, inputs, outputs):
 
 @register(['Assign', 'MaskedAssign'])
 def assign_spec(args, inputs, outputs):
+    """
+    Assign a spec to the given spec.
+
+    Args:
+        inputs: (array): write your description
+        outputs: (todo): write your description
+    """
     _ = locals()
     return outputs
 
 
 def binary_shape_spec(inputs, outputs):
+    """
+    : param inputs : list.
+
+    Args:
+        inputs: (array): write your description
+        outputs: (todo): write your description
+    """
     if inputs[0].shape is None or inputs[1].shape is None:
         return outputs
     a_shape, b_shape = inputs[0].shape, inputs[1].shape
@@ -103,6 +131,13 @@ def binary_shape_spec(inputs, outputs):
     'Where',
 ])
 def binary_math_spec(args, inputs, outputs):
+    """
+    : parameter_math_spec.
+
+    Args:
+        inputs: (array): write your description
+        outputs: (todo): write your description
+    """
     _ = locals()
     outputs = binary_shape_spec(inputs, outputs)
     outputs[0].dtype = inputs[0].dtype
@@ -120,6 +155,13 @@ def binary_math_spec(args, inputs, outputs):
     'NotEqual',
 ])
 def binary_compare_spec(args, inputs, outputs):
+    """
+    Compares the binary spec and compare
+
+    Args:
+        inputs: (todo): write your description
+        outputs: (todo): write your description
+    """
     _ = locals()
     outputs = binary_shape_spec(inputs, outputs)
     outputs[0].dtype = 'bool'
@@ -128,6 +170,13 @@ def binary_compare_spec(args, inputs, outputs):
 
 @register('Cast')
 def cast_spec(args, inputs, outputs):
+    """
+    Cast inputs to inputs.
+
+    Args:
+        inputs: (array): write your description
+        outputs: (todo): write your description
+    """
     outputs[0].dtype = args['dtype']
     try:
         outputs[0].shape = inputs[0].shape[:]
@@ -138,6 +187,13 @@ def cast_spec(args, inputs, outputs):
 
 @register('Concat')
 def concat_spec(args, inputs, outputs):
+    """
+    Concatenate the spec.
+
+    Args:
+        inputs: (array): write your description
+        outputs: (todo): write your description
+    """
     outputs[0].dtype = inputs[0].dtype
     axis = args['axis']
     out_shape = None
@@ -170,6 +226,13 @@ def concat_spec(args, inputs, outputs):
 
 @register(['Conv2d', 'DepthwiseConv2d'])
 def conv_spec(args, inputs, outputs):
+    """
+    Conv_speces spec for a 2d array.
+
+    Args:
+        inputs: (array): write your description
+        outputs: (todo): write your description
+    """
     outputs[0].dtype = inputs[0].dtype
     try:
         out_shape = list(inputs[0].shape[:])
@@ -203,6 +266,13 @@ def conv_spec(args, inputs, outputs):
 
 @register('ConvTranspose2d')
 def conv_transpose_spec(args, inputs, outputs):
+    """
+    Transpose a convolution spec into a convolution spec.
+
+    Args:
+        inputs: (todo): write your description
+        outputs: (todo): write your description
+    """
     outputs[0].dtype = inputs[0].dtype
     try:
         out_shape = list(inputs[0].shape[:])
@@ -241,6 +311,13 @@ def conv_transpose_spec(args, inputs, outputs):
 
 @register('DepthToSpace')
 def depth_to_space_spec(args, inputs, outputs):
+    """
+    Convert a depth - space specification.
+
+    Args:
+        inputs: (array): write your description
+        outputs: (todo): write your description
+    """
     outputs[0].dtype = inputs[0].dtype
     try:
         bs = args['block_size']
@@ -268,6 +345,13 @@ def depth_to_space_spec(args, inputs, outputs):
 
 @register('Dot')
 def dot_spec(args, inputs, outputs):
+    """
+    Compute dot product.
+
+    Args:
+        inputs: (array): write your description
+        outputs: (array): write your description
+    """
     _ = locals()
     outputs[0].dtype = inputs[0].dtype
     try:
@@ -294,6 +378,13 @@ def dot_spec(args, inputs, outputs):
     'SmoothL1Loss',
 ])
 def eltwise_loss_spec(args, inputs, outputs):
+    """
+    Evaluate_loss_loss )
+
+    Args:
+        inputs: (list): write your description
+        outputs: (todo): write your description
+    """
     outputs[0].dtype, outputs[0].shape = 'float32', []
     if args['reduction'].upper() == 'NONE':
         try:
@@ -305,6 +396,13 @@ def eltwise_loss_spec(args, inputs, outputs):
 
 @register('Expand')
 def expand_spec(args, inputs, outputs):
+    """
+    Expand a list of arguments.
+
+    Args:
+        inputs: (array): write your description
+        outputs: (array): write your description
+    """
     outputs[0].dtype = inputs[0].dtype
     shape, out_shape = args['dims'], None
     if shape is None:
@@ -328,6 +426,13 @@ def expand_spec(args, inputs, outputs):
 
 @register('ExpandDims')
 def expand_dims_spec(args, inputs, outputs):
+    """
+    Expand the dimensions of the spec.
+
+    Args:
+        inputs: (array): write your description
+        outputs: (todo): write your description
+    """
     outputs[0].dtype = inputs[0].dtype
     axes = [] if args['axes'] is None else args['axes']
     try:
@@ -364,6 +469,13 @@ def expand_dims_spec(args, inputs, outputs):
     'TruncatedNormal',
 ])
 def fill_spec(args, inputs, outputs):
+    """
+    Fill the spec with arguments.
+
+    Args:
+        inputs: (array): write your description
+        outputs: (todo): write your description
+    """
     _ = locals()
     outputs[0].dtype = args['dtype']
     try:
@@ -378,6 +490,13 @@ def fill_spec(args, inputs, outputs):
 
 @register('Flatten')
 def flatten_spec(args, inputs, outputs):
+    """
+    Flatten a flatten layer.
+
+    Args:
+        inputs: (array): write your description
+        outputs: (todo): write your description
+    """
     outputs[0].dtype = inputs[0].dtype
     keep_axes = args['keep_axes']
     axis, num_axes = args['axis'], args['num_axes']
@@ -415,6 +534,13 @@ def flatten_spec(args, inputs, outputs):
 
 @register('FullyConnected')
 def fully_connected_spec(args, inputs, outputs):
+    """
+    Fullyfully resize_connected spec.
+
+    Args:
+        inputs: (array): write your description
+        outputs: (todo): write your description
+    """
     outputs[0].dtype = inputs[0].dtype
     axis, out_channels = args['axis'], args.get('out_channels', None)
     while axis < 0:
@@ -442,6 +568,13 @@ def fully_connected_spec(args, inputs, outputs):
 
 @register('ChannelNormalize')
 def channel_normalize_spec(args, inputs, outputs):
+    """
+    Normalize a channel spec.
+
+    Args:
+        inputs: (todo): write your description
+        outputs: (todo): write your description
+    """
     outputs[0].dtype = args['dtype']
     perm = args['perm']
     if 'perm_desc' in args or 'perm_descs' in args:
@@ -460,6 +593,13 @@ def channel_normalize_spec(args, inputs, outputs):
 
 @register('IndexSelect')
 def index_select_spec(args, inputs, outputs):
+    """
+    Return the index of an index.
+
+    Args:
+        inputs: (array): write your description
+        outputs: (array): write your description
+    """
     outputs[0].dtype = inputs[0].dtype
     axis = args['axis']
     num_axes = args['num_axes']
@@ -482,6 +622,13 @@ def index_select_spec(args, inputs, outputs):
 
 @register(['IsInf', 'IsNaN'])
 def is_spec(args, inputs, outputs):
+    """
+    Check if arguments have the same shape.
+
+    Args:
+        inputs: (array): write your description
+        outputs: (todo): write your description
+    """
     _ = locals()
     outputs[0].dtype = 'bool'
     try:
@@ -493,6 +640,13 @@ def is_spec(args, inputs, outputs):
 
 @register('LinSpace')
 def linspace_spec(args, inputs, outputs):
+    """
+    Return a spec for the given inputs.
+
+    Args:
+        inputs: (array): write your description
+        outputs: (todo): write your description
+    """
     _ = locals()
     outputs[0].dtype = args['dtype']
     outputs[0].shape = args['dims']
@@ -501,6 +655,13 @@ def linspace_spec(args, inputs, outputs):
 
 @register('MaskedSelect')
 def masked_select_spec(args, inputs, outputs):
+    """
+    Mask the mask.
+
+    Args:
+        inputs: (array): write your description
+        outputs: (todo): write your description
+    """
     _ = locals()
     outputs[0].dtype = inputs[0].dtype
     outputs[0].shape = (None,)
@@ -509,6 +670,13 @@ def masked_select_spec(args, inputs, outputs):
 
 @register('MatMul')
 def matmul_spec(args, inputs, outputs):
+    """
+    Matmul spec.
+
+    Args:
+        inputs: (array): write your description
+        outputs: (todo): write your description
+    """
     outputs[0].dtype = inputs[0].dtype
     ta, tb = args['transA'], args['transB']
     out_shape = None
@@ -525,6 +693,13 @@ def matmul_spec(args, inputs, outputs):
 
 @register('Moments')
 def moments_spec(args, inputs, outputs):
+    """
+    Moments of the outputs.
+
+    Args:
+        inputs: (array): write your description
+        outputs: (todo): write your description
+    """
     outputs[0].dtype = outputs[1].dtype = \
         inputs[0].dtype if inputs[0].dtype == 'float64' else 'float32'
     axes, keep_dims = args['axes'], args['keep_dims']
@@ -547,6 +722,13 @@ def moments_spec(args, inputs, outputs):
 
 @register('Multinomial')
 def multinomial_spec(args, inputs, outputs):
+    """
+    Multinomial spec.
+
+    Args:
+        inputs: (array): write your description
+        outputs: (array): write your description
+    """
     outputs[0].dtype = 'int64'
     try:
         outputs[0].shape = inputs[0].shape[:]
@@ -558,6 +740,13 @@ def multinomial_spec(args, inputs, outputs):
 
 @register('NonZero')
 def non_zero_spec(args, inputs, outputs):
+    """
+    Non - zero zero zero padding.
+
+    Args:
+        inputs: (array): write your description
+        outputs: (todo): write your description
+    """
     _ = locals()
     outputs[0].dtype = 'int64'
     try:
@@ -569,6 +758,13 @@ def non_zero_spec(args, inputs, outputs):
 
 @register('OneHot')
 def one_hot_spec(args, inputs, outputs):
+    """
+    One - hot hot hot_hot.
+
+    Args:
+        inputs: (array): write your description
+        outputs: (todo): write your description
+    """
     outputs[0].dtype = inputs[0].dtype
     try:
         outputs[0].shape = inputs[0].shape[:] + (args['depth'],)
@@ -579,6 +775,13 @@ def one_hot_spec(args, inputs, outputs):
 
 @register('Pad')
 def pad_spec(args, inputs, outputs):
+    """
+    Pad a new spec.
+
+    Args:
+        inputs: (array): write your description
+        outputs: (todo): write your description
+    """
     outputs[0].dtype = inputs[0].dtype
     pads, num_dims = args['pads'], len(args['pads']) // 2
     out_shape = None
@@ -598,6 +801,13 @@ def pad_spec(args, inputs, outputs):
 
 @register('Permutation')
 def permutation_spec(args, inputs, outputs):
+    """
+    Permutation permutation function inputs.
+
+    Args:
+        inputs: (array): write your description
+        outputs: (todo): write your description
+    """
     _ = locals()
     outputs[0].dtype = args['dtype']
     if len(inputs) == 1:
@@ -612,6 +822,13 @@ def permutation_spec(args, inputs, outputs):
 
 @register('Pool2d')
 def pool_spec(args, inputs, outputs):
+    """
+    Pool spec.
+
+    Args:
+        inputs: (array): write your description
+        outputs: (todo): write your description
+    """
     outputs[0].dtype = inputs[0].dtype
     out_shape = None
     try:
@@ -644,12 +861,26 @@ def pool_spec(args, inputs, outputs):
 
 @register(['PythonPlugin', 'PythonPluginInfer'])
 def python_spec(args, inputs, outputs):
+    """
+    Python 2 - tuple.
+
+    Args:
+        inputs: (array): write your description
+        outputs: (todo): write your description
+    """
     _ = locals()
     return outputs
 
 
 @register('Range')
 def range_spec(args, inputs, outputs):
+    """
+    Given a new range.
+
+    Args:
+        inputs: (array): write your description
+        outputs: (str): write your description
+    """
     _ = locals()
     outputs[0].dtype = args['dtype']
     slice_args = args['slice']
@@ -671,6 +902,13 @@ def range_spec(args, inputs, outputs):
     'ReduceSum',
 ])
 def reduce_spec(args, inputs, outputs):
+    """
+    Reduce the function to reduce the given shape.
+
+    Args:
+        inputs: (array): write your description
+        outputs: (array): write your description
+    """
     outputs[0].dtype = inputs[0].dtype
     axes, keep_dims = args['axes'], args['keep_dims']
     if axes is None:
@@ -695,6 +933,13 @@ def reduce_spec(args, inputs, outputs):
 
 @register('Repeat')
 def repeat_spec(args, inputs, outputs):
+    """
+    Repeat a function along the given axis.
+
+    Args:
+        inputs: (array): write your description
+        outputs: (array): write your description
+    """
     outputs[0].dtype = inputs[0].dtype
     axis, repeats = args['axis'], args['repeats']
     if axis is None:
@@ -719,6 +964,13 @@ def repeat_spec(args, inputs, outputs):
 
 @register('Reshape')
 def reshape_spec(args, inputs, outputs):
+    """
+    Reshape spec.
+
+    Args:
+        inputs: (array): write your description
+        outputs: (todo): write your description
+    """
     outputs[0].dtype = inputs[0].dtype
     shape, out_shape = args['dims'], None
     try:
@@ -753,6 +1005,13 @@ def reshape_spec(args, inputs, outputs):
 
 @register('Resize')
 def resize_spec(args, inputs, outputs):
+    """
+    Resize the spec.
+
+    Args:
+        inputs: (array): write your description
+        outputs: (todo): write your description
+    """
     outputs[0].dtype = inputs[0].dtype
     if 'sizes_desc' in args or \
        'sizes_descs' in args or \
@@ -790,6 +1049,13 @@ def resize_spec(args, inputs, outputs):
 
 @register(['RoiPool', 'RoiAlign'])
 def roi_pool_spec(args, inputs, outputs):
+    """
+    Roi pool spec.
+
+    Args:
+        inputs: (array): write your description
+        outputs: (todo): write your description
+    """
     outputs[0].dtype = inputs[0].dtype
     pool_h, pool_w = args['pooled_h'], args['pooled_w']
     out_shape = None
@@ -808,6 +1074,13 @@ def roi_pool_spec(args, inputs, outputs):
 
 @register('Shape')
 def shape_spec(args, inputs, outputs):
+    """
+    Returns the shape spec for a dictionary inputs.
+
+    Args:
+        inputs: (array): write your description
+        outputs: (todo): write your description
+    """
     _ = locals()
     outputs[0].dtype = 'int64'
     try:
@@ -819,6 +1092,13 @@ def shape_spec(args, inputs, outputs):
 
 @register('Slice')
 def slice_spec(args, inputs, outputs):
+    """
+    Return a list of a slice.
+
+    Args:
+        inputs: (array): write your description
+        outputs: (todo): write your description
+    """
     outputs[0].dtype = inputs[0].dtype
     if 'starts_desc' in args or \
        'starts_descs' in args or \
@@ -851,6 +1131,13 @@ def slice_spec(args, inputs, outputs):
     'SparseSoftmaxCrossEntropy',
 ])
 def softmax_loss_spec(args, inputs, outputs):
+    """
+    Compute softmax.
+
+    Args:
+        inputs: (array): write your description
+        outputs: (todo): write your description
+    """
     outputs[0].dtype = 'float32'
     axis, reduction = args['axis'], args['reduction']
     if reduction != 'NONE':
@@ -867,6 +1154,13 @@ def softmax_loss_spec(args, inputs, outputs):
 
 @register('Sort')
 def sort_spec(args, inputs, outputs):
+    """
+    Sort the output spec according to the given arguments.
+
+    Args:
+        inputs: (array): write your description
+        outputs: (str): write your description
+    """
     _ = locals()
     outputs[0].dtype = inputs[0].dtype
     outputs[1].dtype = 'int64'
@@ -881,6 +1175,13 @@ def sort_spec(args, inputs, outputs):
 
 @register('SpaceToDepth')
 def space_to_depth_spec(args, inputs, outputs):
+    """
+    Convert a space : class : numpy array.
+
+    Args:
+        inputs: (array): write your description
+        outputs: (todo): write your description
+    """
     outputs[0].dtype = inputs[0].dtype
     try:
         bs = args['block_size']
@@ -908,6 +1209,13 @@ def space_to_depth_spec(args, inputs, outputs):
 
 @register('Split')
 def split_spec(args, inputs, outputs):
+    """
+    Returns a list of inputs into a new shape.
+
+    Args:
+        inputs: (array): write your description
+        outputs: (todo): write your description
+    """
     num_outputs = len(outputs)
     for i in range(num_outputs):
         outputs[i].dtype = inputs[0].dtype
@@ -953,6 +1261,13 @@ def split_spec(args, inputs, outputs):
 
 @register('Squeeze')
 def squeeze_spec(args, inputs, outputs):
+    """
+    Squeeze a list of inputs.
+
+    Args:
+        inputs: (array): write your description
+        outputs: (todo): write your description
+    """
     outputs[0].dtype = inputs[0].dtype
     axes = [] if args['axes'] is None else args['axes']
     try:
@@ -976,6 +1291,13 @@ def squeeze_spec(args, inputs, outputs):
 
 @register('Stack')
 def stack_spec(args, inputs, outputs):
+    """
+    Helper function inputs of the inputs.
+
+    Args:
+        inputs: (array): write your description
+        outputs: (todo): write your description
+    """
     outputs[0].dtype = inputs[0].dtype
     axis = args['axis']
     out_shape = None
@@ -1007,6 +1329,13 @@ def stack_spec(args, inputs, outputs):
 
 @register('Tile')
 def tile_spec(args, inputs, outputs):
+    """
+    : param args : a dictionary of arguments
+
+    Args:
+        inputs: (array): write your description
+        outputs: (todo): write your description
+    """
     outputs[0].dtype = inputs[0].dtype
     repeats = args['repeats']
     if repeats is not None:
@@ -1026,6 +1355,13 @@ def tile_spec(args, inputs, outputs):
 
 @register('Transpose')
 def transpose_spec(args, inputs, outputs):
+    """
+    Transpose a transpose spec.
+
+    Args:
+        inputs: (todo): write your description
+        outputs: (todo): write your description
+    """
     outputs[0].dtype = inputs[0].dtype
     perm = args['perm']
     if 'perm_desc' in args or 'perm_descs' in args:
@@ -1044,6 +1380,13 @@ def transpose_spec(args, inputs, outputs):
 
 @register('TopK')
 def top_k_spec(args, inputs, outputs):
+    """
+    Top - level of k - kernel.
+
+    Args:
+        inputs: (array): write your description
+        outputs: (todo): write your description
+    """
     outputs[0].dtype = inputs[0].dtype
     outputs[1].dtype = 'int64'
     k, axis = args['k'], args['axis']
@@ -1060,6 +1403,13 @@ def top_k_spec(args, inputs, outputs):
 
 @register('Unchanged')
 def unchanged_spec(args, inputs, outputs):
+    """
+    Unchanged spec.
+
+    Args:
+        inputs: (todo): write your description
+        outputs: (todo): write your description
+    """
     _ = locals()
     outputs[0].dtype = inputs[0].dtype
     try:
@@ -1071,6 +1421,13 @@ def unchanged_spec(args, inputs, outputs):
 
 @register('Unique')
 def unique_spec(args, inputs, outputs):
+    """
+    Given a list of inputs.
+
+    Args:
+        inputs: (array): write your description
+        outputs: (array): write your description
+    """
     return_inverse = args['return_inverse']
     return_counts = args['return_counts']
     outputs[0].dtype = inputs[0].dtype

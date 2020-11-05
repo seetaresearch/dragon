@@ -79,6 +79,14 @@ class Top(object):
     produced by a layer.)"""
 
     def __init__(self, fn, n):
+        """
+        Initialize a function.
+
+        Args:
+            self: (todo): write your description
+            fn: (int): write your description
+            n: (int): write your description
+        """
         self.fn = fn
         self.n = n
 
@@ -88,9 +96,25 @@ class Top(object):
         return to_proto(self)
 
     def _update(self, params):
+        """
+        Updates the parameters.
+
+        Args:
+            self: (todo): write your description
+            params: (list): write your description
+        """
         self.fn._update(params)
 
     def _to_proto(self, layers, names, autonames):
+        """
+        Convert a list of layers to a list of layers.
+
+        Args:
+            self: (todo): write your description
+            layers: (todo): write your description
+            names: (str): write your description
+            autonames: (str): write your description
+        """
         return self.fn._to_proto(layers, names, autonames)
 
 
@@ -99,6 +123,15 @@ class Function(object):
     are Tops from other layers)."""
 
     def __init__(self, type_name, inputs, params):
+        """
+        Initialize inputs.
+
+        Args:
+            self: (todo): write your description
+            type_name: (str): write your description
+            inputs: (list): write your description
+            params: (dict): write your description
+        """
         self.type_name = type_name
         self.inputs = inputs
         self.params = params
@@ -112,6 +145,14 @@ class Function(object):
         self.tops = tuple(Top(self, n) for n in range(self.ntop))
 
     def _get_name(self, names, autonames):
+        """
+        Get the name of a type.
+
+        Args:
+            self: (todo): write your description
+            names: (str): write your description
+            autonames: (str): write your description
+        """
         if self not in names and self.ntop > 0:
             names[self] = self._get_top_name(self.tops[0], names, autonames)
         elif self not in names:
@@ -120,15 +161,40 @@ class Function(object):
         return names[self]
 
     def _get_top_name(self, top, names, autonames):
+        """
+        Return the name of the top - type.
+
+        Args:
+            self: (todo): write your description
+            top: (str): write your description
+            names: (str): write your description
+            autonames: (str): write your description
+        """
         if top not in names:
             autonames[top.fn.type_name] += 1
             names[top] = top.fn.type_name + str(autonames[top.fn.type_name])
         return names[top]
 
     def _update(self, params):
+        """
+        Updates the params
+
+        Args:
+            self: (todo): write your description
+            params: (list): write your description
+        """
         self.params.update(params)
 
     def _to_proto(self, layers, names, autonames):
+        """
+        Helper function to protobian.
+
+        Args:
+            self: (todo): write your description
+            layers: (todo): write your description
+            names: (str): write your description
+            autonames: (str): write your description
+        """
         if self in layers:
             return
         bottom_names = []
@@ -167,35 +233,104 @@ class NetSpec(object):
     names."""
 
     def __init__(self):
+        """
+        Initialize this method
+
+        Args:
+            self: (todo): write your description
+        """
         super(NetSpec, self).__setattr__('tops', collections.OrderedDict())
 
     def __setattr__(self, name, value):
+        """
+        Sets the value of an attribute.
+
+        Args:
+            self: (todo): write your description
+            name: (str): write your description
+            value: (todo): write your description
+        """
         self.tops[name] = value
 
     def __getattr__(self, name):
+        """
+        Return the attribute of a given name.
+
+        Args:
+            self: (todo): write your description
+            name: (str): write your description
+        """
         return self.tops[name]
 
     def __setitem__(self, key, value):
+        """
+        Sets the value of a key.
+
+        Args:
+            self: (todo): write your description
+            key: (str): write your description
+            value: (str): write your description
+        """
         self.__setattr__(key, value)
 
     def __getitem__(self, item):
+        """
+        Return the value of an item.
+
+        Args:
+            self: (todo): write your description
+            item: (str): write your description
+        """
         return self.__getattr__(item)
 
     def __delitem__(self, name):
+        """
+        Removes an item from the list.
+
+        Args:
+            self: (todo): write your description
+            name: (str): write your description
+        """
         del self.tops[name]
 
     def keys(self):
+        """
+        Return a copy of the keys.
+
+        Args:
+            self: (todo): write your description
+        """
         keys = [k for k, v in self.tops.items()]
         return keys
 
     def vals(self):
+        """
+        Return a dict of all values in this collection.
+
+        Args:
+            self: (todo): write your description
+        """
         vals = [v for k, v in self.tops.items()]
         return vals
 
     def update(self, name, params):
+        """
+        Update this parameter values.
+
+        Args:
+            self: (todo): write your description
+            name: (str): write your description
+            params: (list): write your description
+        """
         self.tops[name]._update(params)
 
     def to_proto(self):
+        """
+        Convert the network to a protobuf.
+
+        Args:
+            self: (todo): write your description
+        """
         names = {v: k for k, v in self.tops.items()}
         autonames = collections.Counter()
         layers = collections.OrderedDict()
@@ -212,7 +347,19 @@ class Layers(object):
     specifying a 3x3 convolution applied to bottom."""
 
     def __getattr__(self, name):
+        """
+        Get the name of a given layer.
+
+        Args:
+            self: (todo): write your description
+            name: (str): write your description
+        """
         def layer_fn(*args, **kwargs):
+            """
+            Return the layer function.
+
+            Args:
+            """
             fn = Function(name, args, kwargs)
             if fn.ntop == 0:
                 return fn
@@ -229,8 +376,22 @@ class Parameters(object):
     to specify max pooling."""
 
     def __getattr__(self, name):
+        """
+        Gets a single parameter.
+
+        Args:
+            self: (todo): write your description
+            name: (str): write your description
+        """
         class Param:
             def __getattr__(self, param_name):
+                """
+                Returns the value of a protobuf.
+
+                Args:
+                    self: (todo): write your description
+                    param_name: (str): write your description
+                """
                 return getattr(getattr(caffe_pb2, name + 'Parameter'), param_name)
         return Param()
 

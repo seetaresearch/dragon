@@ -19,6 +19,14 @@ from dragon.vm.onnx.core import helper
 
 @exporter.register('BatchNorm')
 def batch_norm_exporter(op_def, shape_dict, ws):
+    """
+    Batch normalization.
+
+    Args:
+        op_def: (todo): write your description
+        shape_dict: (dict): write your description
+        ws: (todo): write your description
+    """
     node, const_tensors = exporter.translate(**locals())
     node.op_type = 'BatchNormalization'
     for arg in op_def.arg:
@@ -33,6 +41,14 @@ def batch_norm_exporter(op_def, shape_dict, ws):
 
 @exporter.register('GroupNorm')
 def group_norm_exporter(op_def, shape_dict, ws):
+    """
+    Compute the norm_exporter operation.
+
+    Args:
+        op_def: (todo): write your description
+        shape_dict: (dict): write your description
+        ws: (todo): write your description
+    """
     node, const_tensors = exporter.translate(**locals())
     node.op_type = 'ATen'  # Currently not supported in ai.onnx
     for arg in op_def.arg:
@@ -52,6 +68,14 @@ def group_norm_exporter(op_def, shape_dict, ws):
 
 @exporter.register('LpNormalize')
 def lp_normalize_exporter(op_def, shape_dict, ws):
+    """
+    Normalize exporter of an exporter.
+
+    Args:
+        op_def: (todo): write your description
+        shape_dict: (dict): write your description
+        ws: (todo): write your description
+    """
     node, const_tensors = exporter.translate(**locals())
     node.op_type = 'LpNormalization'
     for arg in op_def.arg:

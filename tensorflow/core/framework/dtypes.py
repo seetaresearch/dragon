@@ -374,6 +374,13 @@ class DType(str):
             other.as_datatype_enum, other.base_dtype.as_datatype_enum)
 
     def __eq__(self, other):
+        """
+        Return true if other is equal to other.
+
+        Args:
+            self: (todo): write your description
+            other: (todo): write your description
+        """
         if other is None:
             return False
         try:
@@ -383,15 +390,40 @@ class DType(str):
             return False
 
     def __ne__(self, other):
+        """
+        Determine if self and false otherwise.
+
+        Args:
+            self: (todo): write your description
+            other: (todo): write your description
+        """
         return not self.__eq__(other)
 
     def __int__(self):
+        """
+        Returns the int value of the int
+
+        Args:
+            self: (todo): write your description
+        """
         return self._type_enum
 
     def __str__(self):
+        """
+        Return the string representation of this object.
+
+        Args:
+            self: (todo): write your description
+        """
         return self._name
 
     def __hash__(self):
+        """
+        Returns the hash of the field.
+
+        Args:
+            self: (todo): write your description
+        """
         return self._type_enum
 
 

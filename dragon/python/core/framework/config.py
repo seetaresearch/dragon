@@ -21,6 +21,12 @@ class Config(object):
     """Store the common configurations for frontend."""
 
     def __init__(self):
+        """
+        Initialize the graph.
+
+        Args:
+            self: (todo): write your description
+        """
         # The type of device.
         # Enumeration in ('cpu', 'cuda', 'cnml').
         self.device_type = 'cpu'
@@ -73,6 +79,11 @@ _config_lock = threading.Lock()
 
 
 def _create_config():
+    """
+    Create a global configuration.
+
+    Args:
+    """
     global _config
     with _config_lock:
         if _config is None:

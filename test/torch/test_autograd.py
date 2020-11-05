@@ -24,6 +24,12 @@ class TestGradMode(unittest.TestCase):
     """Test the grad mode."""
 
     def test_set_grad_enabled(self):
+        """
+        Set the gradient of the gradient.
+
+        Args:
+            self: (todo): write your description
+        """
         a = torch.tensor(1., requires_grad=True)
         b = torch.tensor(1., requires_grad=False)
         with torch.no_grad():
@@ -44,6 +50,12 @@ class TestBackProp(unittest.TestCase):
     """Test the back-propagation."""
 
     def test_backward(self):
+        """
+        Test for backward backward backward.
+
+        Args:
+            self: (todo): write your description
+        """
         x = torch.tensor(1., dtype=torch.float32, requires_grad=True)
         y = x + 1
         entries = [([y], []),

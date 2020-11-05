@@ -38,6 +38,13 @@ class OpTestCase(unittest.TestCase):
     precision = 1e-5
 
     def __init__(self, method_name='runTest'):
+        """
+        Initialize the method.
+
+        Args:
+            self: (todo): write your description
+            method_name: (str): write your description
+        """
         super(OpTestCase, self).__init__(method_name)
 
     def assertEqual(
@@ -47,6 +54,16 @@ class OpTestCase(unittest.TestCase):
         msg=None,
         prec=None,
     ):
+        """
+        Asserts that first numpy array.
+
+        Args:
+            self: (todo): write your description
+            first: (todo): write your description
+            second: (todo): write your description
+            msg: (str): write your description
+            prec: (todo): write your description
+        """
         if prec is None:
             prec = self.precision
         inputs = nest.flatten(first)
@@ -79,6 +96,12 @@ class TestModule(unittest.TestCase):
     """Test the base module class."""
 
     def test_properties(self):
+        """
+        Test the test properties.
+
+        Args:
+            self: (todo): write your description
+        """
         m = torch.nn.Module()
         m.add_module('sub1', torch.nn.Module().cuda().half())
         m.sub2 = torch.nn.Module().double()
@@ -121,6 +144,12 @@ class TestModule(unittest.TestCase):
         _, _ = repr(m), repr(m.weight)
 
     def test_sequential(self):
+        """
+        Test for the sequence of sequences.
+
+        Args:
+            self: (todo): write your description
+        """
         m1 = torch.nn.Sequential(torch.nn.Module())
         m2 = torch.nn.Sequential(collections.OrderedDict([
             ('sub1', torch.nn.Module()),
@@ -134,6 +163,12 @@ class TestModule(unittest.TestCase):
         self.assertEqual(len(m2), 0)
 
     def test_list(self):
+        """
+        List of the tests of the tests.
+
+        Args:
+            self: (todo): write your description
+        """
         m = torch.nn.ModuleList([torch.nn.Module()])
         m.append(torch.nn.Module())
         m.extend([torch.nn.Module()])
@@ -147,6 +182,12 @@ class TestModule(unittest.TestCase):
             pass
 
     def test_forward_hook(self):
+        """
+        Run forward hook.
+
+        Args:
+            self: (todo): write your description
+        """
         m = torch.nn.Module()
         with m.register_forward_hook(lambda m, inputs, outputs: [1, 2, 3]):
             self.assertEqual(m(), [1, 2, 3])
@@ -157,6 +198,12 @@ class TestModules(OpTestCase):
     """Test the nn module class."""
 
     def test_affine_channel(self):
+        """
+        Test for affine affine features.
+
+        Args:
+            self: (todo): write your description
+        """
         data1 = arange((2, 3, 4, 5))
         data2, data3 = arange((1, 3, 1, 1)), arange((1, 3, 1, 1))
         w, b = new_tensor(data2.flatten()), new_tensor(data3.flatten())
@@ -192,6 +239,12 @@ class TestModules(OpTestCase):
             self.assertEqual(y, result)
 
     def test_bce_with_logits_loss(self):
+        """
+        Compute the bce loss.
+
+        Args:
+            self: (todo): write your description
+        """
         for reduction in ('mean', 'sum', 'none'):
             data1 = np.array([[0.2], [0.5], [0.7]], 'float32')
             data2 = -np.log(1. / data1 - 1.)
@@ -205,6 +258,12 @@ class TestModules(OpTestCase):
             self.assertEqual(y, result)
 
     def test_batch_norm(self):
+        """
+        Batch normalization.
+
+        Args:
+            self: (todo): write your description
+        """
         eps = 1e-5
         entries = [((4, 3), (1, 3), 0),
                    ((4, 3), (1, 3), 1),
@@ -243,6 +302,12 @@ class TestModules(OpTestCase):
             self.assertEqual(y, result)
 
     def test_conv2d(self):
+        """
+        Test for 2d convolution.
+
+        Args:
+            self: (todo): write your description
+        """
         entries = [((2, 2, 2, 2), (3, 2, 1, 1), (3,), 1, 1, 0, 1, 1),
                    ((2, 2, 2, 2), (3, 2, 3, 3), (3,), 3, 1, 1, 1, 1)]
         results = [[[[[0.04, 0.05], [0.06, 0.07]], [[0.22, 0.27], [0.32, 0.37]], [[0.4, 0.49], [0.58, 0.67]]],
@@ -260,6 +325,12 @@ class TestModules(OpTestCase):
             self.assertEqual(y, np.array(result))
 
     def test_conv2d_transpose(self):
+        """
+        Test for 2d convolution.
+
+        Args:
+            self: (todo): write your description
+        """
         entries = [((2, 2, 2, 2), (2, 3, 1, 1), (3,), 1, 1, 0, 1, 1),
                    ((2, 2, 2, 2), (2, 3, 3, 3), (3,), 3, 1, 1, 1, 1)]
         results = [[[[[0.12, 0.15], [0.18, 0.21]], [[0.26, 0.31], [0.36, 0.41]], [[0.4, 0.47], [0.54, 0.61]]],
@@ -281,6 +352,12 @@ class TestModules(OpTestCase):
             self.assertEqual(y, np.array(result))
 
     def test_cross_entropy_loss(self):
+        """
+        Compute the cross entropy of the cross entropy.
+
+        Args:
+            self: (todo): write your description
+        """
         for reduction in ('mean', 'sum', 'none'):
             data1 = np.log(np.array(
                 [[0.2, 0.3, 0.5], [0.1, 0.7, 0.2]], 'float32'))
@@ -292,6 +369,12 @@ class TestModules(OpTestCase):
             self.assertEqual(y, result)
 
     def test_dropout(self):
+        """
+        Dropout x is_drop
+
+        Args:
+            self: (todo): write your description
+        """
         prob = 0.
         data = uniform((2, 3))
         x = new_tensor(data)
@@ -300,6 +383,12 @@ class TestModules(OpTestCase):
         self.assertEqual(y, data)
 
     def test_drop_block2d(self):
+        """
+        Drop - copy of x.
+
+        Args:
+            self: (todo): write your description
+        """
         keep_prob = 1.
         data = uniform((2, 3, 4, 4))
         x = new_tensor(data)
@@ -308,6 +397,12 @@ class TestModules(OpTestCase):
         self.assertEqual(y, data)
 
     def test_drop_path(self):
+        """
+        Drop test path
+
+        Args:
+            self: (todo): write your description
+        """
         prob = 0.
         data = uniform((2, 3))
         x = new_tensor(data)
@@ -316,6 +411,12 @@ class TestModules(OpTestCase):
         self.assertEqual(y, data)
 
     def test_elu(self):
+        """
+        Compute the element of - wise test.
+
+        Args:
+            self: (todo): write your description
+        """
         alpha = 1.
         data = np.array([-1., 0., 1.], 'float32')
         x = new_tensor(data)
@@ -325,6 +426,12 @@ class TestModules(OpTestCase):
         self.assertEqual(y, result)
 
     def test_group_norm(self):
+        """
+        Compute the normalization.
+
+        Args:
+            self: (todo): write your description
+        """
         eps = 1e-5
         entries = [((1, 4), (1, 4), 2, (2,)),
                    ((1, 4, 2), (1, 4, 1), 2, (2, 3))]
@@ -349,12 +456,24 @@ class TestModules(OpTestCase):
             self.assertEqual(y, result)
 
     def test_gru_module(self):
+        """
+        Reset the module.
+
+        Args:
+            self: (todo): write your description
+        """
         m = torch.nn.GRU(2, 3)
         m.reset_parameter(initializer='uniform')
         m.reset_parameters()
         _ = repr(m)
 
     def test_hardsigmoid(self):
+        """
+        Test hardsigmigmoid
+
+        Args:
+            self: (todo): write your description
+        """
         alpha, beta = 1.0 / 6.0, 0.5
         data = np.array([--3., -2., -1., 0., 1., 2., 3], 'float32')
         x = new_tensor(data)
@@ -364,6 +483,12 @@ class TestModules(OpTestCase):
         self.assertEqual(y, result)
 
     def test_hardswish(self):
+        """
+        Test the hardswishwish
+
+        Args:
+            self: (todo): write your description
+        """
         alpha, beta = 1.0 / 6.0, 0.5
         data = np.array([-3., -2., -1., 0., 1., 2., 3], 'float32')
         x = new_tensor(data)
@@ -373,6 +498,12 @@ class TestModules(OpTestCase):
         self.assertEqual(y, result)
 
     def test_leaky_relu(self):
+        """
+        Test the leaky test test.
+
+        Args:
+            self: (todo): write your description
+        """
         alpha = 0.2
         data = np.array([-1., 0., 1.], 'float32')
         x = new_tensor(data)
@@ -382,6 +513,12 @@ class TestModules(OpTestCase):
         self.assertEqual(y, result)
 
     def test_linear(self):
+        """
+        Test if the linear regression.
+
+        Args:
+            self: (todo): write your description
+        """
         entries = [((2, 3), (4, 3), (4,), False),
                    ((2, 3), (4, 3), (4,), True)]
         for x_shape, w_shape, b_shape, bias in entries:
@@ -396,12 +533,24 @@ class TestModules(OpTestCase):
             self.assertEqual(y, result)
 
     def test_local_response_norm(self):
+        """
+        Compute local local local local local local response.
+
+        Args:
+            self: (todo): write your description
+        """
         entries = [((2, 3, 2, 2), 5, 0.0001, 0.75, 1.)]
         for x_shape, size, alpha, beta, bias in entries:
             m = torch.nn.LocalResponseNorm(size=size, alpha=alpha, beta=beta, k=bias)
             _ = repr(m)
 
     def test_log_softmax(self):
+        """
+        Computes the softmax.
+
+        Args:
+            self: (todo): write your description
+        """
         data = np.array([[0.2, 0.3, 0.5], [0.1, 0.7, 0.2]], 'float32')
         x = new_tensor(np.log(data))
         m = torch.nn.LogSoftmax(1)
@@ -409,14 +558,32 @@ class TestModules(OpTestCase):
         self.assertEqual(y, np.log(data))
 
     def test_lstm_module(self):
+        """
+        Test if lstm module.
+
+        Args:
+            self: (todo): write your description
+        """
         m = torch.nn.LSTM(2, 3)
         _ = repr(m)
 
     def test_lstm_cell(self):
+        """
+        Test if lstm cell is a lstm cell.
+
+        Args:
+            self: (todo): write your description
+        """
         m = torch.nn.LSTMCell(2, 3)
         _ = repr(m)
 
     def test_l1_loss(self):
+        """
+        Computes the l1 loss.
+
+        Args:
+            self: (todo): write your description
+        """
         for reduction in ('mean', 'sum', 'none'):
             data1 = np.array([-1., 0., 1.], 'float32')
             data2 = np.array([1., 0., -1.], 'float32')
@@ -427,6 +594,12 @@ class TestModules(OpTestCase):
             self.assertEqual(y, result)
 
     def test_mse_loss(self):
+        """
+        Compute the loss.
+
+        Args:
+            self: (todo): write your description
+        """
         for reduction in ('mean', 'sum', 'none'):
             data1 = np.array([-1., 0., 1.], 'float32')
             data2 = np.array([1., 0., -1.], 'float32')
@@ -437,6 +610,12 @@ class TestModules(OpTestCase):
             self.assertEqual(y, result)
 
     def test_nll_loss(self):
+        """
+        Compute the loss of the loss.
+
+        Args:
+            self: (todo): write your description
+        """
         for reduction in ('mean', 'sum', 'none'):
             data1 = np.log(np.array(
                 [[0.2, 0.3, 0.5], [0.1, 0.7, 0.2]], 'float32'))
@@ -448,6 +627,12 @@ class TestModules(OpTestCase):
             self.assertEqual(y, result)
 
     def test_pad(self):
+        """
+        Test if the input tensor is identical.
+
+        Args:
+            self: (todo): write your description
+        """
         for ndim in (1, 2, 3):
             data = np.ones((2, 2, 2, 2), dtype='float32')
             x = new_tensor(data)
@@ -464,6 +649,12 @@ class TestModules(OpTestCase):
                 self.assertEqual(m4(x), np.pad(data, pads, 'constant'))
 
     def test_pool2d(self):
+        """
+        Test pool2d pooling.
+
+        Args:
+            self: (todo): write your description
+        """
         entries = [((2, 2, 2, 2), (2, 2), 2, 1, 'MAX'),
                    ((2, 2, 2, 2), (2, 2), 2, 1, 'AVG')]
         for x_shape, kernel_shape, strides, pads, mode in entries:
@@ -476,6 +667,12 @@ class TestModules(OpTestCase):
             self.assertEqual(y, result)
 
     def test_prelu(self):
+        """
+        Prelu preprocessing.
+
+        Args:
+            self: (todo): write your description
+        """
         entries = [((3,), (1,)),
                    ((3,), (3,)),
                    ((2, 3), (1,)),
@@ -493,6 +690,12 @@ class TestModules(OpTestCase):
             self.assertEqual(y, result)
 
     def test_relu(self):
+        """
+        Test if the projection isochrone.
+
+        Args:
+            self: (todo): write your description
+        """
         data = np.array([-1., 0., 1.], 'float32')
         x = new_tensor(data)
         m = torch.nn.ReLU(inplace=True)
@@ -501,6 +704,12 @@ class TestModules(OpTestCase):
         self.assertEqual(y, result)
 
     def test_relu6(self):
+        """
+        Perform a tensor.
+
+        Args:
+            self: (todo): write your description
+        """
         data = np.array([-1., 0., 1., 6., 7.], 'float32')
         x = new_tensor(data)
         m = torch.nn.ReLU6(inplace=True)
@@ -509,10 +718,22 @@ class TestModules(OpTestCase):
         self.assertEqual(y, result)
 
     def test_rnn_module(self):
+        """
+        Test the rnn module
+
+        Args:
+            self: (todo): write your description
+        """
         m = torch.nn.RNN(3, 2)
         _ = repr(m)
 
     def test_selu(self):
+        """
+        Perform a tensor.
+
+        Args:
+            self: (todo): write your description
+        """
         alpha, gamma = 1.67326, 1.0507
         data = np.array([-1., 0., 1.], 'float32')
         x = new_tensor(data)
@@ -524,6 +745,12 @@ class TestModules(OpTestCase):
         self.assertEqual(y, result)
 
     def test_smooth_l1_loss(self):
+        """
+        Test the l1 loss.
+
+        Args:
+            self: (todo): write your description
+        """
         for reduction in ('mean', 'sum', 'none'):
             for beta in (1.,):
                 data1 = np.array([-1., 0., 1.], 'float32')
@@ -540,6 +767,12 @@ class TestModules(OpTestCase):
                 self.assertEqual(y, result)
 
     def test_sigmoid(self):
+        """
+        Test the sigmoid is a tensor.
+
+        Args:
+            self: (todo): write your description
+        """
         data = np.array([0.2, 0.4, 0.6, 0.8, 1.], 'float32')
         x = new_tensor(data)
         m = torch.nn.Sigmoid(inplace=True)
@@ -548,6 +781,12 @@ class TestModules(OpTestCase):
         self.assertEqual(y, result)
 
     def test_sigmoid_focal_loss(self):
+        """
+        Computes the focaloid
+
+        Args:
+            self: (todo): write your description
+        """
         pos_alpha, neg_alpha, gamma = 0.25, 0.75, 2.0
         for reduction in ('mean', 'sum', 'none'):
             data1 = np.array([[0.2, 0.3], [0.5, 0.1], [0.7, 0.2]], 'float32')
@@ -565,6 +804,12 @@ class TestModules(OpTestCase):
             self.assertEqual(y, result)
 
     def test_softmax(self):
+        """
+        Test the softmax is the softmax.
+
+        Args:
+            self: (todo): write your description
+        """
         data = np.array([[0.2, 0.3, 0.5], [0.1, 0.7, 0.2]], 'float32')
         x = new_tensor(np.log(data))
         m = torch.nn.Softmax(dim=1, inplace=True)
@@ -572,6 +817,12 @@ class TestModules(OpTestCase):
         self.assertEqual(y, data)
 
     def test_swish(self):
+        """
+        Swish test isochrone
+
+        Args:
+            self: (todo): write your description
+        """
         data = np.array([-3., -2., -1., 0., 1., 2., 3], 'float32')
         x = new_tensor(data)
         m = torch.nn.Swish()
@@ -580,6 +831,12 @@ class TestModules(OpTestCase):
         self.assertEqual(y, result)
 
     def test_tanh(self):
+        """
+        Test if the cross - validation
+
+        Args:
+            self: (todo): write your description
+        """
         data = np.array([0.2, 0.4, 0.6, 0.8, 1.], 'float32')
         x = new_tensor(data)
         m = torch.nn.Tanh(inplace=True)
@@ -587,6 +844,12 @@ class TestModules(OpTestCase):
         self.assertEqual(y, np.tanh(data))
 
     def test_upsample(self):
+        """
+        Perform anova of anova isochrone.
+
+        Args:
+            self: (todo): write your description
+        """
         entries = [((2, 2, 1, 1), (2, 2), 'nearest'),
                    ((2, 2, 1, 1), (2, 2), 'bilinear'),
                    ((2, 2, 4, 4), (2, 2), 'nearest'),
@@ -613,10 +876,22 @@ class TestNNInit(OpTestCase):
     """Test the nn.init module."""
 
     def test_constant(self):
+        """
+        Test if the constant.
+
+        Args:
+            self: (todo): write your description
+        """
         x = torch.nn.init.constant_(torch.Tensor(2, dtype=torch.float32), 1)
         self.assertEqual(x, np.ones((2,), dtype='float32'))
 
     def test_dirac(self):
+        """
+        Initialize all tensors in the tensor.
+
+        Args:
+            self: (todo): write your description
+        """
         for ndim in range(2, 6):
             for groups in range(1, 4):
                 try:
@@ -627,6 +902,12 @@ class TestNNInit(OpTestCase):
                     pass
 
     def test_eye(self):
+        """
+        Inverse of the tensor.
+
+        Args:
+            self: (todo): write your description
+        """
         x = torch.nn.init.eye_(torch.Tensor(2, 3, dtype=torch.float32))
         self.assertEqual(x, np.eye(2, 3))
         try:
@@ -635,10 +916,22 @@ class TestNNInit(OpTestCase):
             pass
 
     def test_random(self):
+        """
+        Initialize the random tensor.
+
+        Args:
+            self: (todo): write your description
+        """
         _ = torch.nn.init.normal_(torch.Tensor(2, dtype=torch.float32))
         _ = torch.nn.init.uniform_(torch.Tensor(2, dtype=torch.float32))
 
     def test_variance_scaling(self):
+        """
+        Test for variance of - variance variance.
+
+        Args:
+            self: (todo): write your description
+        """
         a = torch.Tensor(2, dtype=torch.float32)
         b = torch.Tensor(2, 3, dtype=torch.float32)
         c = torch.Tensor(2, 3, 3, dtype=torch.float32)
@@ -666,6 +959,12 @@ class TestReduction(unittest.TestCase):
     """Test the reduction utility."""
 
     def test_legacy_string(self):
+        """
+        Test if the legend.
+
+        Args:
+            self: (todo): write your description
+        """
         entries = [(None, None, 'mean'),
                    (None, False, 'none'),
                    (None, True, 'mean'),

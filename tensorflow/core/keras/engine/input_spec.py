@@ -34,6 +34,18 @@ class InputSpec(object):
         min_ndim=None,
         axes=None,
     ):
+        """
+        Initialize the axes.
+
+        Args:
+            self: (todo): write your description
+            dtype: (todo): write your description
+            shape: (int): write your description
+            ndim: (int): write your description
+            max_ndim: (int): write your description
+            min_ndim: (int): write your description
+            axes: (todo): write your description
+        """
         self.dtype = dtypes.as_dtype(dtype).name if dtype is not None else None
         if shape is not None:
             self.ndim = len(shape)
@@ -58,6 +70,12 @@ class InputSpec(object):
                 )
 
     def __repr__(self):
+        """
+        Return a representation of this parameter.
+
+        Args:
+            self: (todo): write your description
+        """
         spec = [('dtype=' + str(self.dtype)) if self.dtype else '',
                 ('shape=' + str(self.shape)) if self.shape else '',
                 ('ndim=' + str(self.ndim)) if self.ndim else '',

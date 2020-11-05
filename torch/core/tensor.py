@@ -68,6 +68,12 @@ class Tensor(object):
     """
 
     def __init__(self, *args, **kwargs):
+        """
+        Initialize the device.
+
+        Args:
+            self: (todo): write your description
+        """
         self._tape = None
         self._is_leaf = False
         self._gc = kwargs.get('gc', None)
@@ -144,6 +150,12 @@ class Tensor(object):
 
     @property
     def grad_fn(self):
+        """
+        Decorator function that function. n. n.
+
+        Args:
+            self: (todo): write your description
+        """
         return None
 
     @property
@@ -184,6 +196,13 @@ class Tensor(object):
 
     @requires_grad.setter
     def requires_grad(self, value):
+        """
+        Set the gradients. gradients.
+
+        Args:
+            self: (todo): write your description
+            value: (todo): write your description
+        """
         self._requires_grad = value
 
     @property
@@ -2336,6 +2355,12 @@ class Tensor(object):
         return self.add(other)
 
     def __del__(self):
+        """
+        Removes the leaf.
+
+        Args:
+            self: (todo): write your description
+        """
         if self.is_leaf and self._gc:
             # Always reuse the leaf tensors.
             # PyGC will detect them automatically.
@@ -2395,6 +2420,12 @@ class Tensor(object):
         return self.gt(other)
 
     def __hash__(self):
+        """
+        Returns the unique identifier.
+
+        Args:
+            self: (todo): write your description
+        """
         return id(self)
 
     def __iadd__(self, other):
@@ -2547,6 +2578,12 @@ class Tensor(object):
         """
 
     def __repr__(self):
+        """
+        Return a human - readable string representation of this array.
+
+        Args:
+            self: (todo): write your description
+        """
         array = self.numpy()
         if len(array.shape) == 0:
             return str(array)
@@ -2644,6 +2681,12 @@ class BoolTensor(object):
     """The bool tensor."""
 
     def __new__(cls, *args, **kwargs):
+        """
+        Create a tensorfluent.
+
+        Args:
+            cls: (todo): write your description
+        """
         kwargs['dtype'] = 'bool'
         return Tensor(*args, **kwargs)
 
@@ -2652,6 +2695,12 @@ class ByteTensor(object):
     """The uint8 tensor."""
 
     def __new__(cls, *args, **kwargs):
+        """
+        Create a tensorfluent.
+
+        Args:
+            cls: (todo): write your description
+        """
         kwargs['dtype'] = 'uint8'
         return Tensor(*args, **kwargs)
 
@@ -2660,6 +2709,12 @@ class CharTensor(object):
     """The int8 tensor."""
 
     def __new__(cls, *args, **kwargs):
+        """
+        Create a tensorfluent.
+
+        Args:
+            cls: (todo): write your description
+        """
         kwargs['dtype'] = 'int8'
         return Tensor(*args, **kwargs)
 
@@ -2668,6 +2723,12 @@ class DoubleTensor(object):
     """The float64 tensor."""
 
     def __new__(cls, *args, **kwargs):
+        """
+        Create a tensorfluent.
+
+        Args:
+            cls: (todo): write your description
+        """
         kwargs['dtype'] = 'float64'
         return Tensor(*args, **kwargs)
 
@@ -2676,6 +2737,12 @@ class FloatTensor(object):
     """The float32 tensor."""
 
     def __new__(cls, *args, **kwargs):
+        """
+        Create a tensorfluent.
+
+        Args:
+            cls: (todo): write your description
+        """
         kwargs['dtype'] = 'float32'
         return Tensor(*args, **kwargs)
 
@@ -2684,6 +2751,12 @@ class HalfTensor(object):
     """The float16 tensor."""
 
     def __new__(cls, *args, **kwargs):
+        """
+        Create a tensorfluent.
+
+        Args:
+            cls: (todo): write your description
+        """
         kwargs['dtype'] = 'float16'
         return Tensor(*args, **kwargs)
 
@@ -2692,12 +2765,24 @@ class IntTensor(object):
     """The int32 tensor."""
 
     def __new__(cls, *args, **kwargs):
+        """
+        Create a tensorfluent.
+
+        Args:
+            cls: (todo): write your description
+        """
         kwargs['dtype'] = 'int32'
         return Tensor(*args, **kwargs)
 
 
 class LongTensor(object):
     def __new__(cls, *args, **kwargs):
+        """
+        Create a tensorfluent.
+
+        Args:
+            cls: (todo): write your description
+        """
         kwargs['dtype'] = 'int64'
         return Tensor(*args, **kwargs)
 

@@ -21,12 +21,33 @@ class LSTMCell(Operator):
     """LSTMCell operator."""
 
     def __init__(self, key, dev, **kwargs):
+        """
+        Initialize the device.
+
+        Args:
+            self: (todo): write your description
+            key: (str): write your description
+            dev: (todo): write your description
+        """
         super(LSTMCell, self).__init__(key, dev, **kwargs)
 
     def attributes(self):
+        """
+        A dict of attributes.
+
+        Args:
+            self: (todo): write your description
+        """
         return {'op_type': 'LSTMCell', 'arguments': {}}
 
     def forward(self, inputs):
+        """
+        Calculate the forward computation.
+
+        Args:
+            self: (todo): write your description
+            inputs: (todo): write your description
+        """
         outputs = [self.alloc() for _ in range(2)]
         return self.dispatch(inputs, outputs)
 
@@ -35,6 +56,14 @@ class Recurrent(Operator):
     """Recurrent operator."""
 
     def __init__(self, key, dev, **kwargs):
+        """
+        Initialize the device initialization.
+
+        Args:
+            self: (todo): write your description
+            key: (str): write your description
+            dev: (todo): write your description
+        """
         super(Recurrent, self).__init__(key, dev, **kwargs)
         self.mode = kwargs.get('mode', 'rnn_tanh')
         self.num_layers = kwargs.get('num_layers', 1)
@@ -44,6 +73,12 @@ class Recurrent(Operator):
         self.is_training = kwargs.get('is_training', False)
 
     def attributes(self):
+        """
+        Returns a dict of attributes of the attribute
+
+        Args:
+            self: (todo): write your description
+        """
         return {
             'op_type': 'Recurrent',
             'arguments': {
@@ -58,6 +93,13 @@ class Recurrent(Operator):
         }
 
     def forward(self, inputs):
+        """
+        Parse the model.
+
+        Args:
+            self: (todo): write your description
+            inputs: (todo): write your description
+        """
         return self.dispatch(inputs, [self.alloc()])
 
 
@@ -65,6 +107,14 @@ class RNNParamSet(Operator):
     """RNNParamSet operator."""
 
     def __init__(self, key, dev, **kwargs):
+        """
+        Initialize layer.
+
+        Args:
+            self: (todo): write your description
+            key: (str): write your description
+            dev: (todo): write your description
+        """
         super(RNNParamSet, self).__init__(key, dev, **kwargs)
         self.param_type = kwargs.get('param_type', 'matrix')
         self.num_layers = kwargs.get('num_layers', 1)
@@ -76,6 +126,12 @@ class RNNParamSet(Operator):
         self.mode = kwargs.get('mode', 'rnn_tanh')
 
     def attributes(self):
+        """
+        A dict of layers.
+
+        Args:
+            self: (todo): write your description
+        """
         return {
             'op_type': 'RNNParamSet',
             'arguments': {
@@ -91,4 +147,11 @@ class RNNParamSet(Operator):
         }
 
     def forward(self, inputs):
+        """
+        Perform a forward.
+
+        Args:
+            self: (todo): write your description
+            inputs: (todo): write your description
+        """
         return self.dispatch([inputs[1]], [inputs[0]], no_grad=True)

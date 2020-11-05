@@ -21,6 +21,14 @@ class Collective(Operator):
     """Collective operator."""
 
     def __init__(self, key, dev, **kwargs):
+        """
+        Initialize the device.
+
+        Args:
+            self: (todo): write your description
+            key: (str): write your description
+            dev: (todo): write your description
+        """
         super(Collective, self).__init__(key, dev, **kwargs)
         self.root = kwargs.get('root', 0)
         self.operation = kwargs.get('operation', 'MEAN')
@@ -28,6 +36,12 @@ class Collective(Operator):
         self.group = kwargs.get('group', None)
 
     def attributes(self):
+        """
+        A dictionary of attributes.
+
+        Args:
+            self: (todo): write your description
+        """
         arguments = self.group.arguments
         arguments['root'] = self.root
         arguments['operation'] = self.operation
@@ -35,4 +49,11 @@ class Collective(Operator):
         return {'op_type': 'Collective', 'arguments': arguments}
 
     def forward(self, inputs):
+        """
+        Run the model.
+
+        Args:
+            self: (todo): write your description
+            inputs: (todo): write your description
+        """
         return self.dispatch(inputs, inputs, no_grad=True)

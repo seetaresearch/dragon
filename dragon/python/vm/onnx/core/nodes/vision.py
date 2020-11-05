@@ -26,6 +26,14 @@ from dragon.vm.onnx.core import helper
     'DepthwiseConv2d',
 ])
 def convolution(op_def, shape_dict, ws):
+    """
+    Translate a convolution operator.
+
+    Args:
+        op_def: (todo): write your description
+        shape_dict: (dict): write your description
+        ws: (todo): write your description
+    """
     node, const_tensors = exporter.translate(**locals())
     node.op_type = 'ConvTranspose' if 'Transpose' in op_def.type else 'Conv'
     if 'Depthwise' in op_def.type:
@@ -69,6 +77,14 @@ def convolution(op_def, shape_dict, ws):
 
 @exporter.register(['DepthToSpace', 'SpaceToDepth'])
 def depth_space_exporter(op_def, shape_dict, ws):
+    """
+    Return a set of the exporter for the given operation.
+
+    Args:
+        op_def: (todo): write your description
+        shape_dict: (dict): write your description
+        ws: (todo): write your description
+    """
     node, const_tensors = exporter.translate(**locals())
     for arg in op_def.arg:
         _assert_data_format(arg)
@@ -79,6 +95,14 @@ def depth_space_exporter(op_def, shape_dict, ws):
 
 @exporter.register('Pool2d')
 def pool(op_def, shape_dict, ws):
+    """
+    Build a pooling operator.
+
+    Args:
+        op_def: (todo): write your description
+        shape_dict: (dict): write your description
+        ws: (todo): write your description
+    """
     node, const_tensors = exporter.translate(**locals())
     rank = len(shape_dict[op_def.input[0]]) - 2
     global_pooling, node_copy = 0, copy.deepcopy(node)
@@ -119,12 +143,28 @@ def pool(op_def, shape_dict, ws):
 
 @exporter.register('Resize-1')
 def resize_v1(op_def, shape_dict, ws):
+    """
+    Resize v1.
+
+    Args:
+        op_def: (todo): write your description
+        shape_dict: (dict): write your description
+        ws: (todo): write your description
+    """
     _ = locals()
     raise RuntimeError('<Upsample> requires opset version >= 7.')
 
 
 @exporter.register('Resize-7')
 def resize_v7(op_def, shape_dict, ws):
+    """
+    Resize a v7 layer.
+
+    Args:
+        op_def: (array): write your description
+        shape_dict: (dict): write your description
+        ws: (array): write your description
+    """
     node, const_tensors = exporter.translate(**locals())
     node.op_type = 'Upsample'
     input_shape = shape_dict[op_def.input[0]]
@@ -143,6 +183,14 @@ def resize_v7(op_def, shape_dict, ws):
 
 @exporter.register('Resize-9')
 def resize_v9(op_def, shape_dict, ws):
+    """
+    Resize a v9 operation.
+
+    Args:
+        op_def: (array): write your description
+        shape_dict: (dict): write your description
+        ws: (array): write your description
+    """
     node, const_tensors = resize_v10(op_def, shape_dict, ws)
     node.op_type = 'Upsample'
     return node, const_tensors
@@ -150,6 +198,14 @@ def resize_v9(op_def, shape_dict, ws):
 
 @exporter.register('Resize-10')
 def resize_v10(op_def, shape_dict, ws):
+    """
+    Resize a v10.
+
+    Args:
+        op_def: (array): write your description
+        shape_dict: (dict): write your description
+        ws: (array): write your description
+    """
     node, const_tensors = exporter.translate(**locals())
     input_shape = shape_dict[op_def.input[0]]
     output_shape = shape_dict[op_def.output[0]]
@@ -169,6 +225,14 @@ def resize_v10(op_def, shape_dict, ws):
 
 @exporter.register('Resize-11')
 def resize_v11(op_def, shape_dict, ws):
+    """
+    Resize a v11 node.
+
+    Args:
+        op_def: (todo): write your description
+        shape_dict: (dict): write your description
+        ws: (array): write your description
+    """
     node, const_tensors = resize_v10(op_def, shape_dict, ws)
     coord_mode = 'half_pixel'
     for arg in op_def.arg:
@@ -190,6 +254,14 @@ def resize_v11(op_def, shape_dict, ws):
 
 @exporter.register('RoiAlign')
 def roi_align(op_def, shape_dict, ws):
+    """
+    Aligns alignments to alignments.
+
+    Args:
+        op_def: (todo): write your description
+        shape_dict: (dict): write your description
+        ws: (todo): write your description
+    """
     node, const_tensors = exporter.translate(**locals())
     # Make a dummy "batch_indices".
     batch_indices = helper.from_array(
@@ -211,6 +283,14 @@ def roi_align(op_def, shape_dict, ws):
 
 @exporter.register('RoiPool')
 def roi_pool(op_def, shape_dict, ws):
+    """
+    Roi pool.
+
+    Args:
+        op_def: (todo): write your description
+        shape_dict: (dict): write your description
+        ws: (todo): write your description
+    """
     node, const_tensors = exporter.translate(**locals())
     node.op_type = 'MaxRoiPool'
     pooled_shape = [None, None]
@@ -226,12 +306,25 @@ def roi_pool(op_def, shape_dict, ws):
 
 
 def _assert_data_format(arg):
+    """
+    Check if arg is a data format string.
+
+    Args:
+        arg: (todo): write your description
+    """
     if arg.name == 'data_format':
         if arg.s == 'NHWC':
             raise ValueError('ONNX does not support NHWC format.')
 
 
 def _normalize_tuple(value, rank):
+    """
+    Normalize a list.
+
+    Args:
+        value: (todo): write your description
+        rank: (int): write your description
+    """
     if len(value) > rank:
         return [value[i] for i in range(rank)]
     else:
@@ -240,6 +333,13 @@ def _normalize_tuple(value, rank):
 
 
 def _normalize_pads(value, rank):
+    """
+    Normalize a value.
+
+    Args:
+        value: (todo): write your description
+        rank: (int): write your description
+    """
     if len(value) == (rank * 2):
         return value
     return _normalize_tuple(value, rank) * 2

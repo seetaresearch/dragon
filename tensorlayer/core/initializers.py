@@ -68,6 +68,14 @@ class Constant(Initializer):
         self.value = value
 
     def __call__(self, shape, dtype='float32', **kwargs):
+        """
+        Return a new callable with the given shape.
+
+        Args:
+            self: (todo): write your description
+            shape: (tuple): write your description
+            dtype: (todo): write your description
+        """
         return self._getter(
             init_ops.fill,
             value=self.value,
@@ -98,6 +106,14 @@ class GlorotNormal(Initializer):
         self.mode, self.scale = mode, scale
 
     def __call__(self, shape, dtype='float32', **kwargs):
+        """
+        Return the callable array.
+
+        Args:
+            self: (todo): write your description
+            shape: (tuple): write your description
+            dtype: (todo): write your description
+        """
         return self._getter(
             init_ops.glorot_normal,
             mode=self.mode,
@@ -131,6 +147,14 @@ class GlorotUniform(Initializer):
         self.mode, self.scale = mode, scale
 
     def __call__(self, shape, dtype='float32', **kwargs):
+        """
+        Return a copy of self.
+
+        Args:
+            self: (todo): write your description
+            shape: (tuple): write your description
+            dtype: (todo): write your description
+        """
         return self._getter(
             init_ops.glorot_uniform,
             mode=self.mode,
@@ -153,6 +177,14 @@ class Ones(Initializer):
         super(Ones, self).__init__()
 
     def __call__(self, shape, dtype='float32', **kwargs):
+        """
+        Return a new array with the given shape.
+
+        Args:
+            self: (todo): write your description
+            shape: (tuple): write your description
+            dtype: (todo): write your description
+        """
         return self._getter(
             init_ops.fill,
             value=1,
@@ -183,6 +215,14 @@ class RandomNormal(Initializer):
         self.mean, self.stddev = mean, stddev
 
     def __call__(self, shape, dtype='float32', **kwargs):
+        """
+        Return a random actor.
+
+        Args:
+            self: (todo): write your description
+            shape: (tuple): write your description
+            dtype: (todo): write your description
+        """
         return self._getter(
             init_ops.random_normal,
             mean=self.mean,
@@ -214,6 +254,14 @@ class RandomUniform(Initializer):
         self.minval, self.maxval = minval, maxval
 
     def __call__(self, shape, dtype='float32', **kwargs):
+        """
+        Return a random shape.
+
+        Args:
+            self: (todo): write your description
+            shape: (tuple): write your description
+            dtype: (todo): write your description
+        """
         return self._getter(
             init_ops.random_uniform,
             low=self.minval,
@@ -245,6 +293,14 @@ class TruncatedNormal(Initializer):
         self.mean, self.stddev = mean, stddev
 
     def __call__(self, shape, dtype='float32', **kwargs):
+        """
+        Return self ( shape [ dtype ].
+
+        Args:
+            self: (todo): write your description
+            shape: (tuple): write your description
+            dtype: (todo): write your description
+        """
         return self._getter(
             init_ops.truncated_normal,
             mean=self.mean,
@@ -267,6 +323,14 @@ class Zeros(Initializer):
         super(Zeros, self).__init__()
 
     def __call__(self, shape, dtype='float32', **kwargs):
+        """
+        Return a new array with the given shape.
+
+        Args:
+            self: (todo): write your description
+            shape: (tuple): write your description
+            dtype: (todo): write your description
+        """
         return self._getter(
             init_ops.fill,
             value=0,
@@ -277,6 +341,12 @@ class Zeros(Initializer):
 
 
 def get(identifier):
+    """
+    Get a callable object by identifier.
+
+    Args:
+        identifier: (str): write your description
+    """
     if identifier is None:
         return None
     elif callable(identifier):

@@ -22,6 +22,13 @@ class Registry(object):
     """The base registry class."""
 
     def __init__(self, name):
+        """
+        Initialize the registry.
+
+        Args:
+            self: (todo): write your description
+            name: (str): write your description
+        """
         self._name = name
         self._registry = collections.OrderedDict()
 
@@ -45,6 +52,12 @@ class Registry(object):
     def register(self, name, func=None, **kwargs):
         """Register a function by name."""
         def decorated(inner_function):
+            """
+            Decorator to register a function.
+
+            Args:
+                inner_function: (todo): write your description
+            """
             for key in (name if isinstance(
                     name, (tuple, list)) else [name]):
                 self._registry[key] = functools.partial(

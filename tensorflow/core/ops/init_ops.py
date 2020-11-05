@@ -416,6 +416,12 @@ class Zeros(Initializer):
 
 
 def glorot_uniform_initializer(dtype='float32'):
+    """
+    Return a uniform initial variance.
+
+    Args:
+        dtype: (str): write your description
+    """
     return variance_scaling_initializer(
         scale=1.0,
         mode='fan_avg',
@@ -425,6 +431,12 @@ def glorot_uniform_initializer(dtype='float32'):
 
 
 def glorot_normal_initializer(dtype='float32'):
+    """
+    Returns a normalizer for a gaussian distribution.
+
+    Args:
+        dtype: (str): write your description
+    """
     return variance_scaling_initializer(
         scale=1.0,
         mode='fan_avg',

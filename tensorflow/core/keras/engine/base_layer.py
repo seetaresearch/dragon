@@ -370,6 +370,13 @@ class Layer(module.Module):
         return output
 
     def _gather_children_attribute(self, attribute):
+        """
+        Gathers children of an attribute.
+
+        Args:
+            self: (todo): write your description
+            attribute: (str): write your description
+        """
         assert attribute in {
             'weights',
             'trainable_weights',
@@ -388,6 +395,13 @@ class Layer(module.Module):
         return []
 
     def _maybe_build(self, inputs):
+        """
+        Connects the graph to the graph.
+
+        Args:
+            self: (todo): write your description
+            inputs: (todo): write your description
+        """
         if not self.built:
             input_spec.assert_input_compatibility(
                 self.input_spec, inputs, self.name)
@@ -405,6 +419,12 @@ class Layer(module.Module):
             super(Layer, self).__setattr__(name, default_value)
 
     def _name_scope(self):
+        """
+        Returns the scope name.
+
+        Args:
+            self: (todo): write your description
+        """
         return self.name
 
     def __call__(self, inputs, *args, **kwargs):
@@ -415,6 +435,14 @@ class Layer(module.Module):
         return outputs
 
     def __setattr__(self, name, value):
+        """
+        Set weights.
+
+        Args:
+            self: (todo): write your description
+            name: (str): write your description
+            value: (todo): write your description
+        """
         # Add the layer.
         if self.__class__.__name__ != 'Sequential' and \
                 isinstance(value, Layer):

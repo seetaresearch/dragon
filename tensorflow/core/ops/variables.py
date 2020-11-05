@@ -29,6 +29,12 @@ class VariableMetaclass(object):
 
     @property
     def trainable(self):
+        """
+        Returns a list of the current state
+
+        Args:
+            self: (todo): write your description
+        """
         return True
 
 
@@ -73,6 +79,12 @@ class Variable(VariableMetaclass, EagerTensor):
         return self._requires_grad
 
     def __repr__(self):
+        """
+        Return a human - readable representation of this array.
+
+        Args:
+            self: (todo): write your description
+        """
         array = self.numpy()
         content_str, shape = str(array), array.shape
         numpy_str = '{}, dtype={}'.format(content_str, array.dtype)
@@ -87,6 +99,16 @@ class Variable(VariableMetaclass, EagerTensor):
 
 
 def get_default_initializer(name, shape=None, dtype=dtypes.float32):
+    """
+    Return a default initializer.
+
+    Args:
+        name: (str): write your description
+        shape: (int): write your description
+        dtype: (str): write your description
+        dtypes: (str): write your description
+        float32: (todo): write your description
+    """
     # Defaults: float32.
     if dtype is None:
         dtype = dtypes.float32
@@ -117,6 +139,18 @@ def get_variable(
     trainable=True,
     use_resource=True,
 ):
+    """
+    Get a variable.
+
+    Args:
+        name: (str): write your description
+        shape: (str): write your description
+        dtype: (str): write your description
+        initializer: (todo): write your description
+        regularizer: (str): write your description
+        trainable: (str): write your description
+        use_resource: (str): write your description
+    """
     if shape is None:
         raise ValueError('Must specific a shape to create a Variable.')
     if initializer is None:

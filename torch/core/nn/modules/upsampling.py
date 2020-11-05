@@ -66,6 +66,13 @@ class Upsample(Module):
         self.align_corners = align_corners
 
     def forward(self, input):
+        """
+        Forward computation.
+
+        Args:
+            self: (todo): write your description
+            input: (todo): write your description
+        """
         return F.interpolate(
             input,
             size=self.size,
@@ -75,6 +82,12 @@ class Upsample(Module):
         )
 
     def extra_repr(self):
+        """
+        Return a representation of this factor.
+
+        Args:
+            self: (todo): write your description
+        """
         if self.scale_factor is not None:
             info = 'scale_factor=' + str(self.scale_factor)
         else:

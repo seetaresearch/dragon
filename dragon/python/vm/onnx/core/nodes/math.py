@@ -21,6 +21,14 @@ from dragon.vm.onnx.core import helper
 
 @exporter.register('Add')
 def add_exporter(op_def, shape_dict, ws):
+    """
+    Add an exporter operator to the graph.
+
+    Args:
+        op_def: (todo): write your description
+        shape_dict: (dict): write your description
+        ws: (todo): write your description
+    """
     node, const_tensors = exporter.translate(**locals())
     dtype = str(helper.fetch_tensor(op_def.output[0], ws).dtype)
     node.op_type = 'Or' if dtype == 'bool' else 'Add'
@@ -33,6 +41,14 @@ def add_exporter(op_def, shape_dict, ws):
 
 @exporter.register('Div')
 def div_exporter(op_def, shape_dict, ws):
+    """
+    Divide a tensor into a tensor.
+
+    Args:
+        op_def: (todo): write your description
+        shape_dict: (dict): write your description
+        ws: (todo): write your description
+    """
     node, const_tensors = exporter.translate(**locals())
     const_tensors = []  # Global scalars
     for e in op_def.input:
@@ -43,6 +59,14 @@ def div_exporter(op_def, shape_dict, ws):
 
 @exporter.register('Clip')
 def clip_exporter(op_def, shape_dict, ws):
+    """
+    Clip an op_def node.
+
+    Args:
+        op_def: (todo): write your description
+        shape_dict: (dict): write your description
+        ws: (todo): write your description
+    """
     node, const_tensors = exporter.translate(**locals())
     for arg in op_def.arg:
         if arg.name == 'low':
@@ -54,6 +78,14 @@ def clip_exporter(op_def, shape_dict, ws):
 
 @exporter.register('Clip-11')
 def clip_exporter_v11(op_def, shape_dict, ws):
+    """
+    Clip an op_def node to another.
+
+    Args:
+        op_def: (todo): write your description
+        shape_dict: (dict): write your description
+        ws: (todo): write your description
+    """
     node, const_tensors = exporter.translate(**locals())
     min_value, max_value, const_tensors = None, None, []
     dtype = ws.FetchTensor(op_def.output[0]).dtype
@@ -83,6 +115,14 @@ def clip_exporter_v11(op_def, shape_dict, ws):
 
 @exporter.register('FullyConnected-7')
 def fully_connected_exporter_v7(op_def, shape_dict, ws):
+    """
+    This is a 2. 0 - 2.
+
+    Args:
+        op_def: (todo): write your description
+        shape_dict: (dict): write your description
+        ws: (todo): write your description
+    """
     node, const_tensors = exporter.translate(**locals())
     node.op_type = 'Gemm'
     helper.add_attribute(node, 'alpha', 1.)
@@ -97,6 +137,14 @@ def fully_connected_exporter_v7(op_def, shape_dict, ws):
 
 @exporter.register('FullyConnected')
 def fully_connected_exporter(op_def, shape_dict, ws):
+    """
+    Exporter for a node.
+
+    Args:
+        op_def: (todo): write your description
+        shape_dict: (dict): write your description
+        ws: (todo): write your description
+    """
     node, const_tensors = fully_connected_exporter_v7(op_def, shape_dict, ws)
     helper.add_attribute(node, 'broadcast', 1)  # Removed since opset 7
     return node, const_tensors
@@ -104,6 +152,14 @@ def fully_connected_exporter(op_def, shape_dict, ws):
 
 @exporter.register('Invert')
 def invert_exporter(op_def, shape_dict, ws):
+    """
+    Invert an exporter operator into an exporter node.
+
+    Args:
+        op_def: (todo): write your description
+        shape_dict: (dict): write your description
+        ws: (todo): write your description
+    """
     node, const_tensors = exporter.translate(**locals())
     node.op_type = 'Not'
     return node, const_tensors
@@ -111,6 +167,14 @@ def invert_exporter(op_def, shape_dict, ws):
 
 @exporter.register('Matmul')
 def matmul_exporter(op_def, shape_dict, ws):
+    """
+    Return the exporter operator.
+
+    Args:
+        op_def: (todo): write your description
+        shape_dict: (dict): write your description
+        ws: (todo): write your description
+    """
     node, const_tensors = exporter.translate(**locals())
     node.op_type = 'MatMul'
     for arg in op_def.arg:
@@ -125,6 +189,14 @@ def matmul_exporter(op_def, shape_dict, ws):
 
 @exporter.register('Maximum')
 def maximum_exporter(op_def, shape_dict, ws):
+    """
+    Applies the maximum operator to a tensor.
+
+    Args:
+        op_def: (todo): write your description
+        shape_dict: (dict): write your description
+        ws: (todo): write your description
+    """
     node, const_tensors = exporter.translate(**locals())
     node.op_type = 'Max'  # Eltwise, Broadcast
     const_tensors = []  # Global scalars
@@ -136,6 +208,14 @@ def maximum_exporter(op_def, shape_dict, ws):
 
 @exporter.register('Minimum')
 def minimum_exporter(op_def, shape_dict, ws):
+    """
+    Return the minimum of a tensors.
+
+    Args:
+        op_def: (todo): write your description
+        shape_dict: (dict): write your description
+        ws: (todo): write your description
+    """
     node, const_tensors = exporter.translate(**locals())
     node.op_type = 'Min'  # Eltwise, Broadcast
     const_tensors = []  # Global scalars
@@ -147,6 +227,14 @@ def minimum_exporter(op_def, shape_dict, ws):
 
 @exporter.register('Mul')
 def mul_exporter(op_def, shape_dict, ws):
+    """
+    Mulexporter from a dtype.
+
+    Args:
+        op_def: (todo): write your description
+        shape_dict: (dict): write your description
+        ws: (todo): write your description
+    """
     node, const_tensors = exporter.translate(**locals())
     dtype = str(helper.fetch_tensor(op_def.output[0], ws).dtype)
     node.op_type = 'And' if dtype == 'bool' else 'Mul'
@@ -159,6 +247,14 @@ def mul_exporter(op_def, shape_dict, ws):
 
 @exporter.register('Pow')
 def pow_exporter(op_def, shape_dict, ws):
+    """
+    Pow_exporter operator.
+
+    Args:
+        op_def: (todo): write your description
+        shape_dict: (dict): write your description
+        ws: (todo): write your description
+    """
     node, const_tensors = exporter.translate(**locals())
     const_tensors = []  # Global scalars
     for e in op_def.input:
@@ -169,6 +265,14 @@ def pow_exporter(op_def, shape_dict, ws):
 
 @exporter.register('Sub')
 def sub_exporter(op_def, shape_dict, ws):
+    """
+    Sub_exporter ( op_dict.
+
+    Args:
+        op_def: (todo): write your description
+        shape_dict: (dict): write your description
+        ws: (todo): write your description
+    """
     node, const_tensors = exporter.translate(**locals())
     dtype = str(helper.fetch_tensor(op_def.output[0], ws).dtype)
     node.op_type = 'Xor' if dtype == 'bool' else 'Sub'

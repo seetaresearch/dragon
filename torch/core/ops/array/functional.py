@@ -130,6 +130,15 @@ def argsort(input, dim=-1, descending=False):
 
 
 def assign(out, starts, sizes, input):
+    """
+    Assigns tensor to a tensor.
+
+    Args:
+        out: (array): write your description
+        starts: (todo): write your description
+        sizes: (int): write your description
+        input: (array): write your description
+    """
     if not isinstance(input, Tensor):
         input = utils.scalar_to_tensor(
             input,
@@ -827,6 +836,14 @@ def reshape(input, shape, out=None):
 
 
 def slice(input, starts, sizes):
+    """
+    Slice a slice of a slice.
+
+    Args:
+        input: (array): write your description
+        starts: (int): write your description
+        sizes: (int): write your description
+    """
     return _functions.Slice \
         .instantiate(input.device, ndim=len(starts)) \
         .apply(input, starts, sizes)

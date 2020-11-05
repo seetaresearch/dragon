@@ -62,10 +62,23 @@ def leaky_relu(x, alpha=0.2, name="leaky_relu", **kwargs):
 
 
 def relu(x, name='relu', **kwargs):
+    """
+    Create a relu function.
+
+    Args:
+        x: (todo): write your description
+        name: (str): write your description
+    """
     return leaky_relu(x, 0., name, **kwargs)
 
 
 def get(identifier):
+    """
+    Get a callable object by identifier.
+
+    Args:
+        identifier: (str): write your description
+    """
     if identifier is None:
         return None
     elif callable(identifier):

@@ -28,6 +28,12 @@ class _ThreadLocalData(threading.local):
     """Thread local storage for the eager context."""
 
     def __init__(self):
+        """
+        Initialize the graph.
+
+        Args:
+            self: (todo): write your description
+        """
         super(_ThreadLocalData, self).__init__()
         cfg = config.config()
         self.mode = cfg.graph_execution
@@ -38,6 +44,12 @@ class EagerContext(object):
     """Environment in which eager operations execute."""
 
     def __init__(self):
+        """
+        Initialize the thread.
+
+        Args:
+            self: (todo): write your description
+        """
         self._thread_local_data = _ThreadLocalData()
 
     def executing_eagerly(self):
@@ -64,6 +76,11 @@ _context_lock = threading.Lock()
 
 
 def _initialize_context():
+    """
+    Initialize the context.
+
+    Args:
+    """
     global _context
     with _context_lock:
         if _context is None:

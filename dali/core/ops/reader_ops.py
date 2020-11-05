@@ -117,6 +117,11 @@ class KPLRecordReader(object):
             self.features = dict((k, ExternalSource()) for k in features)
 
         def cleanup():
+            """
+            Terminate the context manager.
+
+            Args:
+            """
             self.terminate()
 
         import atexit
@@ -231,6 +236,12 @@ class TFRecordReader(object):
 
     @staticmethod
     def check_files(path):
+        """
+        Check that the data files.
+
+        Args:
+            path: (str): write your description
+        """
         data_files, index_files, features_file = [], [], None
         for file in os.listdir(path):
             if file.endswith('.data'):

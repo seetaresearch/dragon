@@ -46,6 +46,18 @@ class LayerNode(object):
         out_tensors,
         in_tensor_idxes,
     ):
+        """
+        Initialize a tensorboard.
+
+        Args:
+            self: (todo): write your description
+            layer: (todo): write your description
+            node_index: (str): write your description
+            in_nodes: (int): write your description
+            in_tensors: (int): write your description
+            out_tensors: (str): write your description
+            in_tensor_idxes: (str): write your description
+        """
         self.layer = layer
         self.node_index = node_index
         self.in_nodes = in_nodes
@@ -57,6 +69,13 @@ class LayerNode(object):
         self.visited = False
 
     def __call__(self, inputs, **kwargs):
+        """
+        Evaluate the model.
+
+        Args:
+            self: (todo): write your description
+            inputs: (dict): write your description
+        """
         outputs = self.layer.forward(inputs, **kwargs)
         self.in_tensors = nest.flatten(inputs)
         self.out_tensors = nest.flatten(outputs)

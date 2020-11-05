@@ -73,12 +73,32 @@ class LossFunctionWrapper(Loss):
         name=None,
         **kwargs
     ):
+        """
+        Initialize the loss.
+
+        Args:
+            self: (todo): write your description
+            fn: (int): write your description
+            reduction: (todo): write your description
+            losses_utils: (todo): write your description
+            Reduction: (todo): write your description
+            SUM: (todo): write your description
+            name: (str): write your description
+        """
         super(LossFunctionWrapper, self).__init__(
             reduction=reduction, name=name)
         self.fn = fn
         self._fn_kwargs = kwargs
 
     def call(self, y_true, y_pred):
+        """
+        Evaluate function.
+
+        Args:
+            self: (todo): write your description
+            y_true: (array): write your description
+            y_pred: (array): write your description
+        """
         return self.fn(y_true, y_pred, **self._fn_kwargs)
 
 

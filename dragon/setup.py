@@ -26,6 +26,12 @@ try:
 
     class bdist_wheel(_bdist_wheel):
         def finalize_options(self):
+            """
+            Finalizes all the options.
+
+            Args:
+                self: (todo): write your description
+            """
             _bdist_wheel.finalize_options(self)
             self.root_is_pure = False
 except ImportError:
@@ -94,6 +100,12 @@ class install(setuptools.command.install.install):
     """Old-style command to prevent from installing egg."""
 
     def run(self):
+        """
+        Run the command.
+
+        Args:
+            self: (todo): write your description
+        """
         setuptools.command.install.install.run(self)
 
 

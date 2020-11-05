@@ -22,6 +22,13 @@ from dragon.core.util import six
 
 
 def convert_data_format(data_format, ndim):
+    """
+    Convert numpy array format.
+
+    Args:
+        data_format: (str): write your description
+        ndim: (int): write your description
+    """
     if data_format == 'channels_last':
         if ndim == 3:
             return 'NWC'
@@ -52,6 +59,17 @@ def deconv_output_length(
     stride=0,
     dilation=1,
 ):
+    """
+    Deconv_output_length deconv_output
+
+    Args:
+        input_length: (int): write your description
+        filter_size: (int): write your description
+        padding: (str): write your description
+        output_padding: (int): write your description
+        stride: (int): write your description
+        dilation: (str): write your description
+    """
     assert padding in {'same', 'valid', 'full'}
     if input_length is None:
         return None
@@ -75,6 +93,12 @@ def deconv_output_length(
 
 
 def normalize_data_format(value):
+    """
+    Normalize data format.
+
+    Args:
+        value: (str): write your description
+    """
     if value is None:
         value = 'channels_last'
     data_format = value.lower()

@@ -21,6 +21,14 @@ class ParamUpdate(function.Function):
     """ParamUpdate function."""
 
     def __init__(self, key, dev, **kwargs):
+        """
+        Initialize a device.
+
+        Args:
+            self: (todo): write your description
+            key: (str): write your description
+            dev: (todo): write your description
+        """
         super(ParamUpdate, self).__init__(key, dev, **kwargs)
         self.op_type = kwargs.get('op_type', '')
         self.op_handle = kwargs.get('op_handle', '')
@@ -28,6 +36,12 @@ class ParamUpdate(function.Function):
         self.decay_mult = kwargs.get('decay_mult', 1)
 
     def attributes(self):
+        """
+        Returns the attributes of the attributes
+
+        Args:
+            self: (todo): write your description
+        """
         return {
             'name': self.op_handle,
             'op_type': self.op_type,
@@ -38,6 +52,14 @@ class ParamUpdate(function.Function):
         }
 
     def forward(self, param, grad):
+        """
+        Perform a forward forward pass on the device.
+
+        Args:
+            self: (todo): write your description
+            param: (todo): write your description
+            grad: (todo): write your description
+        """
         self._check_device([param, grad])
         return self.dispatch([grad], [param], no_grad=True)
 
@@ -46,10 +68,24 @@ class GradAccumulate(function.Function):
     """GradAccumulate function."""
 
     def __init__(self, key, dev, **kwargs):
+        """
+        Initialize the device.
+
+        Args:
+            self: (todo): write your description
+            key: (str): write your description
+            dev: (todo): write your description
+        """
         super(GradAccumulate, self).__init__(key, dev, **kwargs)
         self.momentum = kwargs.get('momentum', 1)
 
     def attributes(self):
+        """
+        Returns a dictionary of attributes.
+
+        Args:
+            self: (todo): write your description
+        """
         return {
             'op_type': 'Axpby',
             'arguments': {
@@ -59,4 +95,11 @@ class GradAccumulate(function.Function):
         }
 
     def forward(self, grad):
+        """
+        Perform a forward forward.
+
+        Args:
+            self: (todo): write your description
+            grad: (todo): write your description
+        """
         return self.dispatch([grad], [grad.id + '[accum]'], no_grad=True)

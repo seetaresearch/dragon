@@ -35,6 +35,14 @@ except ImportError as e:
 
 @contextlib.contextmanager
 def dlopen_guard(extra_flags=ctypes.RTLD_GLOBAL):
+    """
+    Context manager to open_guardflags ().
+
+    Args:
+        extra_flags: (todo): write your description
+        ctypes: (todo): write your description
+        RTLD_GLOBAL: (todo): write your description
+    """
     old_flags = None
     if _getdlopenflags and _setdlopenflags:
         old_flags = _getdlopenflags()

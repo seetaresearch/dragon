@@ -716,6 +716,14 @@ def squeeze(input, axis=None, name=None):
 
 
 def tile(input, multiples, name=None):
+    """
+    Create a tile from a list of arrays.
+
+    Args:
+        input: (array): write your description
+        multiples: (bool): write your description
+        name: (str): write your description
+    """
     return array_ops.tile(input, repeats=multiples, name=name)
 
 

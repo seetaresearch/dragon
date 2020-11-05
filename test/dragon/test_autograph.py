@@ -25,6 +25,12 @@ class TestConfig(unittest.TestCase):
     """Test the graph config."""
 
     def test_execution(self):
+        """
+        Test for execution of execution execution.
+
+        Args:
+            self: (todo): write your description
+        """
         for mode in ('EAGER_MODE', 'GRAPH_MODE', 'UNKNOWN'):
             try:
                 dragon.autograph.set_execution(mode)
@@ -33,10 +39,22 @@ class TestConfig(unittest.TestCase):
                 pass
 
     def test_optimization(self):
+        """
+        Test if the optimizer has been run.
+
+        Args:
+            self: (todo): write your description
+        """
         dragon.autograph.set_optimization(1)
         self.assertEqual(config.config().graph_optimization, 1)
 
     def test_scheduler(self):
+        """
+        Test the scheduler.
+
+        Args:
+            self: (todo): write your description
+        """
         for scheduler in ('SIMPLE', 'FUSION', 'KNOWN', 'SIMPLE'):
             try:
                 dragon.autograph.set_scheduler(scheduler)
@@ -49,6 +67,12 @@ class TestConfig(unittest.TestCase):
                 pass
 
     def test_verbosity(self):
+        """
+        Set the verbosity.
+
+        Args:
+            self: (todo): write your description
+        """
         dragon.autograph.set_verbosity(1)
         self.assertEqual(config.config().graph_verbosity, 1)
         dragon.autograph.set_verbosity(0)
@@ -63,10 +87,25 @@ class TestFunction(unittest.TestCase):
         dragon.Tensor(dtype='int32'),
     ])
     def func1(self, a, b, c=0, **kwargs):
+        """
+        Returns : a numpy.
+
+        Args:
+            self: (todo): write your description
+            a: (int): write your description
+            b: (int): write your description
+            c: (int): write your description
+        """
         _ = kwargs
         return a + b + c
 
     def test_create_function(self):
+        """
+        Create a test function.
+
+        Args:
+            self: (todo): write your description
+        """
         a = dragon.Tensor(dtype='int32').set_value(1)
         b = dragon.Tensor(dtype='int32').set_value(2)
         y = a + 1
@@ -85,8 +124,21 @@ class TestFunction(unittest.TestCase):
         self.assertEqual(int(f()), 3)
 
     def test_def_function(self):
+        """
+        Define a function.
+
+        Args:
+            self: (todo): write your description
+        """
         @dragon.function(input_signature=[dragon.Tensor()])
         def func2(a, b):
+            """
+            Returns a and b
+
+            Args:
+                a: (int): write your description
+                b: (int): write your description
+            """
             return a + b
         self.assertEqual(self.func1([1, 2], [3, 4]).get_value().tolist(), [4, 6])
         self.assertEqual(self.func1([1, 2], b=[3, 4]).get_value().tolist(), [4, 6])
@@ -104,6 +156,12 @@ class TestFunction(unittest.TestCase):
             pass
 
     def test_update_function(self):
+        """
+        Updates the objective function.
+
+        Args:
+            self: (todo): write your description
+        """
         optimizer = dragon.optimizers.SGD()
         try:
             _ = optimizer.op_type

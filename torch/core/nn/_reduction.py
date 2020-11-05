@@ -22,6 +22,14 @@ from dragon.core.util import logging
 
 
 def legacy_get_string(size_average, reduce, emit_warning=True):
+    """
+    Get string from memory
+
+    Args:
+        size_average: (int): write your description
+        reduce: (str): write your description
+        emit_warning: (todo): write your description
+    """
     warning = "size_average and reduce args will be deprecated," \
               " please use reduction='{}' instead."
     size_average = True if size_average is None else size_average

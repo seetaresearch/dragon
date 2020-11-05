@@ -50,6 +50,27 @@ class Conv(Layer):
         name=None,
         **kwargs,
     ):
+        """
+        Initialize the convolutional layer.
+
+        Args:
+            self: (todo): write your description
+            rank: (int): write your description
+            filters: (list): write your description
+            kernel_size: (int): write your description
+            strides: (int): write your description
+            padding: (str): write your description
+            data_format: (str): write your description
+            dilation_rate: (todo): write your description
+            activation: (str): write your description
+            use_bias: (bool): write your description
+            kernel_initializer: (int): write your description
+            bias_initializer: (int): write your description
+            kernel_regularizer: (dict): write your description
+            bias_regularizer: (dict): write your description
+            trainable: (todo): write your description
+            name: (str): write your description
+        """
         super(Conv, self).__init__(trainable=trainable, name=name, **kwargs)
         self.rank = rank
         self.filters = filters
@@ -70,6 +91,13 @@ class Conv(Layer):
         self.bias = None
 
     def build(self, input_shape):
+        """
+        Connects the graph into the graph.
+
+        Args:
+            self: (todo): write your description
+            input_shape: (list): write your description
+        """
         input_shape = tensor_shape.TensorShape(input_shape)
         channel_axis = self._get_channel_axis()
         if input_shape.dims[channel_axis] is None:
@@ -106,6 +134,13 @@ class Conv(Layer):
         self.built = True
 
     def call(self, inputs):
+        """
+        Call the network.
+
+        Args:
+            self: (todo): write your description
+            inputs: (dict): write your description
+        """
         outputs = self.conv_function(
             input=inputs,
             filters=self.kernel,
@@ -131,6 +166,12 @@ class Conv(Layer):
         return outputs
 
     def _get_channel_axis(self):
+        """
+        Return the axis axis for the given axis.
+
+        Args:
+            self: (todo): write your description
+        """
         return 1 if self.data_format == 'channels_first' else -1
 
 
@@ -274,6 +315,13 @@ class Conv2DTranspose(Conv2D):
                 self.output_padding, self.rank)
 
     def build(self, input_shape):
+        """
+        Connects the graph into the graph.
+
+        Args:
+            self: (todo): write your description
+            input_shape: (list): write your description
+        """
         input_shape = tensor_shape.TensorShape(input_shape)
         channel_axis = self._get_channel_axis()
         if input_shape.dims[channel_axis] is None:
@@ -307,6 +355,13 @@ class Conv2DTranspose(Conv2D):
         self.built = True
 
     def call(self, inputs):
+        """
+        Parameters ---------- inputs.
+
+        Args:
+            self: (todo): write your description
+            inputs: (dict): write your description
+        """
         inputs_shape = array_ops.shape(inputs)
         batch_size = inputs_shape[0]
         if self.data_format == 'channels_first':

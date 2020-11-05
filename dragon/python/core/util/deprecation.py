@@ -27,6 +27,13 @@ _PRINTED_WARNING = {}
 
 
 def _validate_callable(func, decorator_name):
+    """
+    Validate a callable.
+
+    Args:
+        func: (todo): write your description
+        decorator_name: (str): write your description
+    """
     if not hasattr(func, '__call__'):
         raise ValueError(
             '%s is not a function. If this is a property, make sure'
@@ -36,6 +43,13 @@ def _validate_callable(func, decorator_name):
 
 
 def _validate_deprecation_args(date, instructions):
+    """
+    Validate the arguments of the depends.
+
+    Args:
+        date: (todo): write your description
+        instructions: (todo): write your description
+    """
     if date is not None and not re.match(r'20\d\d-[01]\d-[0123]\d', date):
         raise ValueError('Date must be YYYY-MM-DD.')
     if not instructions:
@@ -43,6 +57,12 @@ def _validate_deprecation_args(date, instructions):
 
 
 def _get_qualified_name(function):
+    """
+    Returns the fully qualified name of the given function.
+
+    Args:
+        function: (todo): write your description
+    """
     # Python 3
     if hasattr(function, '__qualname__'):
         return function.__qualname__
@@ -53,12 +73,31 @@ def _get_qualified_name(function):
 
 
 def deprecated(date, instructions, warn_once=True):
+    """
+    This decorator to mark functions as deprecated.
+
+    Args:
+        date: (todo): write your description
+        instructions: (str): write your description
+        warn_once: (bool): write your description
+    """
     _validate_deprecation_args(date, instructions)
 
     def decorated(inner_func):
+        """
+        Decorator to mark a function as a decorator.
+
+        Args:
+            inner_func: (todo): write your description
+        """
         _validate_callable(inner_func, 'deprecated')
 
         def wrapper(*args, **kwargs):
+            """
+            Decorator to turn a function into a function.
+
+            Args:
+            """
             if _PRINT_DEPRECATION_WARNINGS:
                 if inner_func not in _PRINTED_WARNING:
                     if warn_once:
@@ -80,6 +119,11 @@ def deprecated(date, instructions, warn_once=True):
 def not_installed(package=''):
     """Return a dummy function for the package that is not installed."""
     def dummy_fn(*args, **kwargs):
+        """
+        Dummy import function.
+
+        Args:
+        """
         _ = locals()
         raise ImportError('Package <%s> is required but not installed.' % package)
     return dummy_fn
@@ -89,7 +133,21 @@ class NotInstalled(object):
     """Return a dummy object for the package that is not installed."""
 
     def __init__(self, package=''):
+        """
+        Initialize the package.
+
+        Args:
+            self: (todo): write your description
+            package: (str): write your description
+        """
         self._package = package
 
     def __getattr__(self, item):
+        """
+        Get an import from the given item.
+
+        Args:
+            self: (todo): write your description
+            item: (str): write your description
+        """
         raise ImportError('Package <%s> is required but not installed.' % self._package)

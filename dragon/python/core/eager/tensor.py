@@ -92,6 +92,13 @@ class EagerTensor(Tensor):
 
     @dtype.setter
     def dtype(self, value):
+        """
+        Set dtype.
+
+        Args:
+            self: (todo): write your description
+            value: (todo): write your description
+        """
         raise RuntimeError('Call ``astype(...)`` to change the data type.')
 
     @property
@@ -120,6 +127,13 @@ class EagerTensor(Tensor):
 
     @name.setter
     def name(self, value):
+        """
+        The name.
+
+        Args:
+            self: (todo): write your description
+            value: (str): write your description
+        """
         name_scope = context.get_name_scope()
         self._name = name_scope + (value if value else 'Tensor')
 
@@ -137,10 +151,23 @@ class EagerTensor(Tensor):
 
     @property
     def requires_grad(self):
+        """
+        Return self. grad_grad.
+
+        Args:
+            self: (todo): write your description
+        """
         return self._requires_grad
 
     @requires_grad.setter
     def requires_grad(self, value):
+        """
+        Set the gradients. gradients.
+
+        Args:
+            self: (todo): write your description
+            value: (todo): write your description
+        """
         self._requires_grad = value
 
     @property
@@ -157,6 +184,13 @@ class EagerTensor(Tensor):
 
     @shape.setter
     def shape(self, value):
+        """
+        Set new shape.
+
+        Args:
+            self: (todo): write your description
+            value: (todo): write your description
+        """
         raise RuntimeError('Call ``reshape(...)`` to change the dimensions.')
 
     @property
@@ -444,6 +478,12 @@ class EagerTensor(Tensor):
         """
 
     def __del__(self):
+        """
+        Clearsing the node
+
+        Args:
+            self: (todo): write your description
+        """
         if (self._is_leaf or not self._requires_grad) and self._gc:
             # Always reuse the leaf tensors.
             # PyGC will detect them automatically.
@@ -509,6 +549,12 @@ class EagerTensor(Tensor):
         """
 
     def __hash__(self):
+        """
+        Returns the unique identifier.
+
+        Args:
+            self: (todo): write your description
+        """
         return id(self)
 
     def __iadd__(self, other):
@@ -670,6 +716,12 @@ class EagerTensor(Tensor):
         """
 
     def __repr__(self):
+        """
+        Return a human - readable representation.
+
+        Args:
+            self: (todo): write your description
+        """
         array = self.numpy()
         if len(array.shape) == 0:
             return str(array)

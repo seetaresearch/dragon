@@ -28,9 +28,22 @@ class Reduction(object):
 
     @classmethod
     def all(cls):
+        """
+        Returns a list of the class objects.
+
+        Args:
+            cls: (todo): write your description
+        """
         return cls.NONE, cls.SUM, cls.MEAN, cls.VALID
 
     @classmethod
     def validate(cls, key):
+        """
+        Validate the given key.
+
+        Args:
+            cls: (callable): write your description
+            key: (str): write your description
+        """
         if key not in cls.all():
             raise ValueError('Invalid Reduction Key %s.' % key)

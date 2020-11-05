@@ -57,6 +57,13 @@ class ELU(Layer):
         self.inplace = kwargs.get('inplace', False)
 
     def call(self, inputs):
+        """
+        Evaluate the model.
+
+        Args:
+            self: (todo): write your description
+            inputs: (dict): write your description
+        """
         return activations.elu(
             inputs,
             alpha=self.alpha,
@@ -100,6 +107,13 @@ class LeakyReLU(Layer):
         self.inplace = kwargs.get('inplace', False)
 
     def call(self, inputs):
+        """
+        Eval on the ) inputs ) inputs.
+
+        Args:
+            self: (todo): write your description
+            inputs: (dict): write your description
+        """
         return activations.relu(
             inputs,
             alpha=self.alpha,
@@ -146,6 +160,13 @@ class ReLU(Layer):
         self.inplace = kwargs.get('inplace', False)
 
     def call(self, inputs):
+        """
+        Call the model.
+
+        Args:
+            self: (todo): write your description
+            inputs: (dict): write your description
+        """
         return activations.relu(
             inputs,
             alpha=self.negative_slope,
@@ -180,6 +201,13 @@ class SELU(Layer):
         self.inplace = kwargs.get('inplace', False)
 
     def call(self, inputs):
+        """
+        Execute the module inputs.
+
+        Args:
+            self: (todo): write your description
+            inputs: (dict): write your description
+        """
         return activations.selu(inputs, inplace=self.inplace)
 
 
@@ -213,6 +241,13 @@ class Softmax(Layer):
         self.inplace = kwargs.get('inplace', False)
 
     def call(self, inputs):
+        """
+        Evaluate the model.
+
+        Args:
+            self: (todo): write your description
+            inputs: (dict): write your description
+        """
         return activations.softmax(
             inputs,
             axis=self.axis,

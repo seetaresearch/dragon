@@ -22,13 +22,35 @@ class _Activation(function.Function):
     """Base activation function class."""
 
     def __init__(self, key, dev, **kwargs):
+        """
+        Initialize a device.
+
+        Args:
+            self: (todo): write your description
+            key: (str): write your description
+            dev: (todo): write your description
+        """
         super(_Activation, self).__init__(key, dev, **kwargs)
         self.op_type = kwargs.get('op_type', '')
 
     def attributes(self):
+        """
+        The attributes of the attributes.
+
+        Args:
+            self: (todo): write your description
+        """
         return {'op_type': self.op_type, 'arguments': {}}
 
     def forward(self, input, inplace=False):
+        """
+        Forward computation.
+
+        Args:
+            self: (todo): write your description
+            input: (todo): write your description
+            inplace: (bool): write your description
+        """
         out = input if inplace else self.alloc()
         return self.dispatch([input], [out])
 
@@ -37,6 +59,14 @@ class _ConvNd(function.Function):
     """Base convolution function class."""
 
     def __init__(self, key, dev, **kwargs):
+        """
+        Initialize the device.
+
+        Args:
+            self: (todo): write your description
+            key: (str): write your description
+            dev: (todo): write your description
+        """
         super(_ConvNd, self).__init__(key, dev, **kwargs)
         self.num_output = kwargs.get('out_channels', 1)
         self.kernel_shape = kwargs.get('kernel_shape', 1)
@@ -47,6 +77,12 @@ class _ConvNd(function.Function):
         self.output_padding = kwargs.get('output_padding', None)
 
     def attributes(self):
+        """
+        Returns a dictionary of attributes.
+
+        Args:
+            self: (todo): write your description
+        """
         return {
             'op_type': self.__class__.__name__,
             'arguments': {
@@ -61,6 +97,15 @@ class _ConvNd(function.Function):
         }
 
     def forward(self, input, weight, bias=None):
+        """
+        Forward computation.
+
+        Args:
+            self: (todo): write your description
+            input: (todo): write your description
+            weight: (str): write your description
+            bias: (todo): write your description
+        """
         inputs = [input, weight] + ([bias] if bias else [])
         return self.dispatch(inputs, [self.alloc()])
 
@@ -69,10 +114,25 @@ class _Loss(function.Function):
     """Base loss function class."""
 
     def __init__(self, key, dev, **kwargs):
+        """
+        Initialize the device.
+
+        Args:
+            self: (todo): write your description
+            key: (str): write your description
+            dev: (todo): write your description
+        """
         super(_Loss, self).__init__(key, dev, **kwargs)
         self.reduction = kwargs.get('reduction', 'mean').upper()
 
     def forward(self, inputs):
+        """
+        Parse the model.
+
+        Args:
+            self: (todo): write your description
+            inputs: (todo): write your description
+        """
         return self.dispatch(inputs, [self.alloc()])
 
 
@@ -80,6 +140,14 @@ class _PoolNd(function.Function):
     """Base pooling function class."""
 
     def __init__(self, key, dev, **kwargs):
+        """
+        Initialize the device.
+
+        Args:
+            self: (todo): write your description
+            key: (str): write your description
+            dev: (todo): write your description
+        """
         super(_PoolNd, self).__init__(key, dev, **kwargs)
         self.kernel_shape = kwargs.get('kernel_shape', 1)
         self.strides = kwargs.get('strides', 1)
@@ -89,6 +157,12 @@ class _PoolNd(function.Function):
         self.global_pooling = kwargs.get('global_pooling', False)
 
     def attributes(self):
+        """
+        Return a dictionary of attributes.
+
+        Args:
+            self: (todo): write your description
+        """
         return {
             'op_type': self.__class__.__name__,
             'arguments': {
@@ -103,6 +177,13 @@ class _PoolNd(function.Function):
         }
 
     def forward(self, input):
+        """
+        Parse the model.
+
+        Args:
+            self: (todo): write your description
+            input: (todo): write your description
+        """
         return self.dispatch([input], [self.alloc()])
 
 
@@ -110,12 +191,26 @@ class BatchNorm(function.Function):
     """BatchNorm function."""
 
     def __init__(self, key, dev, **kwargs):
+        """
+        Initialize the device.
+
+        Args:
+            self: (todo): write your description
+            key: (str): write your description
+            dev: (todo): write your description
+        """
         super(BatchNorm, self).__init__(key, dev, **kwargs)
         self.momentum = kwargs.get('momentum', 0.1)
         self.epsilon = kwargs.get('epsilon', 1e-5)
         self.training = kwargs.get('training', False)
 
     def attributes(self):
+        """
+        Return a dictionary of the attributes.
+
+        Args:
+            self: (todo): write your description
+        """
         return {
             'op_type': 'BatchNorm',
             'arguments': {
@@ -127,6 +222,17 @@ class BatchNorm(function.Function):
         }
 
     def forward(self, input, running_mean, running_var, weight, bias):
+        """
+        Parameters ---------- inputs : float_mean
+
+        Args:
+            self: (todo): write your description
+            input: (todo): write your description
+            running_mean: (todo): write your description
+            running_var: (todo): write your description
+            weight: (str): write your description
+            bias: (todo): write your description
+        """
         inputs = [input, weight, bias, running_mean, running_var]
         return self.dispatch(inputs, [self.alloc()])
 
@@ -135,6 +241,14 @@ class Conv2d(_ConvNd):
     """Conv2d function."""
 
     def __init__(self, key, dev, **kwargs):
+        """
+        Initialize device.
+
+        Args:
+            self: (todo): write your description
+            key: (str): write your description
+            dev: (todo): write your description
+        """
         super(Conv2d, self).__init__(key, dev, **kwargs)
 
 
@@ -142,6 +256,14 @@ class ConvTranspose2d(_ConvNd):
     """ConvTranspose2d function."""
 
     def __init__(self, key, dev, **kwargs):
+        """
+        Initialize the underlying device.
+
+        Args:
+            self: (todo): write your description
+            key: (str): write your description
+            dev: (todo): write your description
+        """
         super(ConvTranspose2d, self).__init__(key, dev, **kwargs)
 
 
@@ -149,10 +271,24 @@ class CTCLoss(_Loss):
     """CTCLoss function."""
 
     def __init__(self, key, dev, **kwargs):
+        """
+        Initialize the device.
+
+        Args:
+            self: (todo): write your description
+            key: (str): write your description
+            dev: (todo): write your description
+        """
         super(CTCLoss, self).__init__(key, dev, **kwargs)
         self.padding_mask = kwargs.get('padding_mask', -1)
 
     def attributes(self):
+        """
+        A list of the mask.
+
+        Args:
+            self: (todo): write your description
+        """
         return {
             'op_type': 'CTCLoss',
             'arguments': {
@@ -166,6 +302,14 @@ class DepthwiseConv2d(_ConvNd):
     """DepthwiseConv2d function."""
 
     def __init__(self, key, dev, **kwargs):
+        """
+        Initialize the device.
+
+        Args:
+            self: (todo): write your description
+            key: (str): write your description
+            dev: (todo): write your description
+        """
         super(DepthwiseConv2d, self).__init__(key, dev, **kwargs)
 
 
@@ -173,6 +317,14 @@ class DropBlock2d(_Activation):
     """DropBlock2d function."""
 
     def __init__(self, key, dev, **kwargs):
+        """
+        Initialize the device.
+
+        Args:
+            self: (todo): write your description
+            key: (str): write your description
+            dev: (todo): write your description
+        """
         super(DropBlock2d, self).__init__(key, dev, **kwargs)
         self.block_size = kwargs.get('block_size', 7)
         self.keep_prob = kwargs.get('keep_prob', 0.9)
@@ -180,6 +332,12 @@ class DropBlock2d(_Activation):
         self.decrement = kwargs.get('decrement', 0.)
 
     def attributes(self):
+        """
+        A dictionary of attributes.
+
+        Args:
+            self: (todo): write your description
+        """
         return {
             'op_type': 'DropBlock2d',
             'arguments': {
@@ -196,10 +354,24 @@ class Dropout(_Activation):
     """Dropout function."""
 
     def __init__(self, key, dev, **kwargs):
+        """
+        Initialize device.
+
+        Args:
+            self: (todo): write your description
+            key: (str): write your description
+            dev: (todo): write your description
+        """
         super(Dropout, self).__init__(key, dev, **kwargs)
         self.p = kwargs.get('p', 0.5)
 
     def attributes(self):
+        """
+        A dictionary of the attributes.
+
+        Args:
+            self: (todo): write your description
+        """
         return {'op_type': 'Dropout', 'arguments': {'prob': self.p}}
 
 
@@ -207,11 +379,25 @@ class DropPath(_Activation):
     """DropPath function."""
 
     def __init__(self, key, dev, **kwargs):
+        """
+        Initialize device.
+
+        Args:
+            self: (todo): write your description
+            key: (str): write your description
+            dev: (todo): write your description
+        """
         super(DropPath, self).__init__(key, dev, **kwargs)
         self.p = kwargs.get('p', 0.2)
         self.increment = kwargs.get('increment', 0.)
 
     def attributes(self):
+        """
+        A dictionary of the attributes.
+
+        Args:
+            self: (todo): write your description
+        """
         return {
             'op_type': 'DropPath',
             'arguments': {
@@ -225,10 +411,24 @@ class Elu(_Activation):
     """ELU function."""
 
     def __init__(self, key, dev, **kwargs):
+        """
+        Initialize the device.
+
+        Args:
+            self: (todo): write your description
+            key: (str): write your description
+            dev: (todo): write your description
+        """
         super(Elu, self).__init__(key, dev, **kwargs)
         self.alpha = kwargs.get('alpha', 1.)
 
     def attributes(self):
+        """
+        A dict of attributes of attributes.
+
+        Args:
+            self: (todo): write your description
+        """
         return {
             'op_type': 'Elu',
             'arguments': {
@@ -241,11 +441,25 @@ class GroupNorm(function.Function):
     """GroupNorm function."""
 
     def __init__(self, key, dev, **kwargs):
+        """
+        Initialize a device.
+
+        Args:
+            self: (todo): write your description
+            key: (str): write your description
+            dev: (todo): write your description
+        """
         super(GroupNorm, self).__init__(key, dev, **kwargs)
         self.group = kwargs.get('group', 32)
         self.epsilon = kwargs.get('epsilon', 1e-5)
 
     def attributes(self):
+        """
+        A dictionary of attributes for this group.
+
+        Args:
+            self: (todo): write your description
+        """
         return {
             'op_type': 'GroupNorm',
             'arguments': {
@@ -256,6 +470,15 @@ class GroupNorm(function.Function):
         }
 
     def forward(self, input, weight, bias):
+        """
+        Parameters ---------- input : ndarray - > b ).
+
+        Args:
+            self: (todo): write your description
+            input: (todo): write your description
+            weight: (str): write your description
+            bias: (todo): write your description
+        """
         return self.dispatch([input, weight, bias], [self.alloc()])
 
 
@@ -263,11 +486,25 @@ class HardSigmoid(_Activation):
     """HardSigmoid function."""
 
     def __init__(self, key, dev, **kwargs):
+        """
+        Initialize device.
+
+        Args:
+            self: (todo): write your description
+            key: (str): write your description
+            dev: (todo): write your description
+        """
         super(HardSigmoid, self).__init__(key, dev, **kwargs)
         self.alpha = kwargs.get('alpha', 0.2)
         self.beta = kwargs.get('beta', 0.5)
 
     def attributes(self):
+        """
+        A dictionary of attributes.
+
+        Args:
+            self: (todo): write your description
+        """
         return {
             'op_type': 'HardSigmoid',
             'arguments': {
@@ -281,11 +518,25 @@ class HardSwish(_Activation):
     """HardSwish function."""
 
     def __init__(self, key, dev, **kwargs):
+        """
+        Initialize the device.
+
+        Args:
+            self: (todo): write your description
+            key: (str): write your description
+            dev: (todo): write your description
+        """
         super(HardSwish, self).__init__(key, dev, **kwargs)
         self.alpha = kwargs.get('alpha', 0.2)
         self.beta = kwargs.get('beta', 0.5)
 
     def attributes(self):
+        """
+        A dictionary of attributes.
+
+        Args:
+            self: (todo): write your description
+        """
         return {
             'op_type': 'HardSwish',
             'arguments': {
@@ -299,9 +550,23 @@ class L1Loss(_Loss):
     """L1Loss function."""
 
     def __init__(self, key, dev, **kwargs):
+        """
+        Initialize the l1 device.
+
+        Args:
+            self: (todo): write your description
+            key: (str): write your description
+            dev: (todo): write your description
+        """
         super(L1Loss, self).__init__(key, dev, **kwargs)
 
     def attributes(self):
+        """
+        Return a dict of attributes of the object.
+
+        Args:
+            self: (todo): write your description
+        """
         return {
             'op_type': 'L1Loss',
             'arguments': {
@@ -315,9 +580,23 @@ class L2Loss(_Loss):
     """L2Loss function."""
 
     def __init__(self, key, dev, **kwargs):
+        """
+        Initialize the device.
+
+        Args:
+            self: (todo): write your description
+            key: (str): write your description
+            dev: (todo): write your description
+        """
         super(L2Loss, self).__init__(key, dev, **kwargs)
 
     def attributes(self):
+        """
+        A dict of attributes of attributes.
+
+        Args:
+            self: (todo): write your description
+        """
         return {
             'op_type': 'L2Loss',
             'arguments': {
@@ -331,9 +610,23 @@ class Linear(function.Function):
     """Linear function."""
 
     def __init__(self, key, dev, **kwargs):
+        """
+        Initialize a device.
+
+        Args:
+            self: (todo): write your description
+            key: (str): write your description
+            dev: (todo): write your description
+        """
         super(Linear, self).__init__(key, dev, **kwargs)
 
     def attributes(self):
+        """
+        A dict of attributes.
+
+        Args:
+            self: (todo): write your description
+        """
         return {
             'op_type': 'FullyConnected',
             'arguments': {
@@ -343,6 +636,16 @@ class Linear(function.Function):
         }
 
     def forward(self, input, weight, bias=None, out=None):
+        """
+        Parameters ---------- inputs.
+
+        Args:
+            self: (todo): write your description
+            input: (todo): write your description
+            weight: (str): write your description
+            bias: (todo): write your description
+            out: (array): write your description
+        """
         inputs = [input, weight] + ([bias] if bias else [])
         outputs = [out] if out else [self.alloc()]
         return self.dispatch(inputs, outputs)
@@ -352,6 +655,14 @@ class LocalResponseNorm(function.Function):
     """LocalResponseNorm function."""
 
     def __init__(self, key, dev, **kwargs):
+        """
+        Initialize the device.
+
+        Args:
+            self: (todo): write your description
+            key: (str): write your description
+            dev: (todo): write your description
+        """
         super(LocalResponseNorm, self).__init__(key, dev, **kwargs)
         self.size = kwargs.get('size', 5)
         self.alpha = kwargs.get('alpha', 0.0001)
@@ -359,6 +670,12 @@ class LocalResponseNorm(function.Function):
         self.bias = kwargs.get('bias', 1.)
 
     def attributes(self):
+        """
+        Returns a dictionary of attributes.
+
+        Args:
+            self: (todo): write your description
+        """
         return {
             'op_type': 'LRN',
             'arguments': {
@@ -371,6 +688,13 @@ class LocalResponseNorm(function.Function):
         }
 
     def forward(self, input):
+        """
+        Parse the model.
+
+        Args:
+            self: (todo): write your description
+            input: (todo): write your description
+        """
         return self.dispatch([input], [self.alloc()])
 
 
@@ -378,12 +702,26 @@ class LpNormalize(function.Function):
     """LpNormalize function."""
 
     def __init__(self, key, dev, **kwargs):
+        """
+        Initialize the device.
+
+        Args:
+            self: (todo): write your description
+            key: (str): write your description
+            dev: (todo): write your description
+        """
         super(LpNormalize, self).__init__(key, dev, **kwargs)
         self.p = kwargs.get('p', 2)
         self.axis = kwargs.get('axis', 0)
         self.epsilon = kwargs.get('epsilon', 1e-12)
 
     def attributes(self):
+        """
+        A dictionary of attributes for all attributes.
+
+        Args:
+            self: (todo): write your description
+        """
         return {
             'op_type': 'LpNormalize',
             'arguments': {
@@ -396,6 +734,14 @@ class LpNormalize(function.Function):
         }
 
     def forward(self, input, out=None):
+        """
+        Parse the model.
+
+        Args:
+            self: (todo): write your description
+            input: (todo): write your description
+            out: (array): write your description
+        """
         return self.dispatch([input], [self.alloc(out)])
 
 
@@ -403,12 +749,34 @@ class LSTMCell(function.Function):
     """LSTMCell function."""
 
     def __init__(self, key, dev, **kwargs):
+        """
+        Initialize the device.
+
+        Args:
+            self: (todo): write your description
+            key: (str): write your description
+            dev: (todo): write your description
+        """
         super(LSTMCell, self).__init__(key, dev, **kwargs)
 
     def attributes(self):
+        """
+        A dict of attributes.
+
+        Args:
+            self: (todo): write your description
+        """
         return {'op_type': 'LSTMCell', 'arguments': {}}
 
     def forward(self, input, cx):
+        """
+        Run the forward computation.
+
+        Args:
+            self: (todo): write your description
+            input: (todo): write your description
+            cx: (todo): write your description
+        """
         outputs = [self.alloc() for _ in range(2)]
         return self.dispatch([input, cx], outputs)
 
@@ -417,10 +785,24 @@ class NLLLoss(_Loss):
     """NLLLoss function."""
 
     def __init__(self, key, dev, **kwargs):
+        """
+        Initialize the device.
+
+        Args:
+            self: (todo): write your description
+            key: (str): write your description
+            dev: (todo): write your description
+        """
         super(NLLLoss, self).__init__(key, dev, **kwargs)
         self.ignore_index = kwargs.get('ignore_index', None)
 
     def attributes(self):
+        """
+        Returns the attributes of attributes.
+
+        Args:
+            self: (todo): write your description
+        """
         return {
             'op_type': 'NLLLoss',
             'arguments': {
@@ -435,12 +817,26 @@ class Pad(function.Function):
     """Pad function."""
 
     def __init__(self, key, dev, **kwargs):
+        """
+        Initialize device.
+
+        Args:
+            self: (todo): write your description
+            key: (str): write your description
+            dev: (todo): write your description
+        """
         super(Pad, self).__init__(key, dev, **kwargs)
         self.ndim = kwargs.get('ndim', 0)
         self.value = kwargs.get('value', 0.)
         self.mode = kwargs.get('mode', 'CONSTANT')
 
     def attributes(self):
+        """
+        Returns a dictionary of attributes
+
+        Args:
+            self: (todo): write your description
+        """
         return {
             'op_type': 'Pad',
             'arguments': {
@@ -454,6 +850,15 @@ class Pad(function.Function):
         }
 
     def feed(self, ws, handle, pads):
+        """
+        Feed the given packet.
+
+        Args:
+            self: (todo): write your description
+            ws: (todo): write your description
+            handle: (todo): write your description
+            pads: (int): write your description
+        """
         for i, e in enumerate(pads):
             self.feed_arg(
                 ws,
@@ -462,6 +867,14 @@ class Pad(function.Function):
             )
 
     def forward(self, input, pads):
+        """
+        Parse forward step.
+
+        Args:
+            self: (todo): write your description
+            input: (todo): write your description
+            pads: (todo): write your description
+        """
         return self.dispatch(
             [input], [self.alloc()],
             callback=lambda ws, handle:
@@ -473,6 +886,14 @@ class Pool2d(_PoolNd):
     """Pool2d function."""
 
     def __init__(self, key, dev, **kwargs):
+        """
+        Initialize device.
+
+        Args:
+            self: (todo): write your description
+            key: (str): write your description
+            dev: (todo): write your description
+        """
         super(Pool2d, self).__init__(key, dev, **kwargs)
 
 
@@ -480,9 +901,23 @@ class PRelu(function.Function):
     """PRelu function."""
 
     def __init__(self, key, dev, **kwargs):
+        """
+        Initialize a devel device.
+
+        Args:
+            self: (todo): write your description
+            key: (str): write your description
+            dev: (todo): write your description
+        """
         super(PRelu, self).__init__(key, dev, **kwargs)
 
     def attributes(self):
+        """
+        The attributes of attributes.
+
+        Args:
+            self: (todo): write your description
+        """
         return {
             'op_type': 'PRelu',
             'arguments': {
@@ -491,6 +926,14 @@ class PRelu(function.Function):
         }
 
     def forward(self, input, weight):
+        """
+        Parameters ---------- input : ndarray.
+
+        Args:
+            self: (todo): write your description
+            input: (todo): write your description
+            weight: (str): write your description
+        """
         return self.dispatch([input, weight], [self.alloc()])
 
 
@@ -498,6 +941,14 @@ class Recurrent(function.Function):
     """Recurrent function."""
 
     def __init__(self, key, dev, **kwargs):
+        """
+        Initialize the device.
+
+        Args:
+            self: (todo): write your description
+            key: (str): write your description
+            dev: (todo): write your description
+        """
         super(Recurrent, self).__init__(key, dev, **kwargs)
         self.mode = kwargs.get('mode', 'rnn_tanh')
         self.num_layers = kwargs.get('num_layers', 1)
@@ -508,6 +959,12 @@ class Recurrent(function.Function):
         self.num_outputs = 3 if 'lstm' in self.mode else 2
 
     def attributes(self):
+        """
+        Returns a dict of attributes of the attribute
+
+        Args:
+            self: (todo): write your description
+        """
         return {
             'op_type': 'Recurrent',
             'arguments': {
@@ -522,6 +979,15 @@ class Recurrent(function.Function):
         }
 
     def forward(self, input, weights, hx=None):
+        """
+        Forward computation.
+
+        Args:
+            self: (todo): write your description
+            input: (todo): write your description
+            weights: (todo): write your description
+            hx: (todo): write your description
+        """
         inputs = [input, weights]
         if hx is not None:
             inputs += nest.flatten(hx)
@@ -536,10 +1002,24 @@ class Relu(_Activation):
     """Relu function."""
 
     def __init__(self, key, dev, **kwargs):
+        """
+        Initialize device.
+
+        Args:
+            self: (todo): write your description
+            key: (str): write your description
+            dev: (todo): write your description
+        """
         super(Relu, self).__init__(key, dev, **kwargs)
         self.alpha = kwargs.get('alpha', 0.)
 
     def attributes(self):
+        """
+        A dict of attributes of attributes.
+
+        Args:
+            self: (todo): write your description
+        """
         return {
             'op_type': 'Relu',
             'arguments': {
@@ -552,9 +1032,23 @@ class Relu6(_Activation):
     """Relu6 function."""
 
     def __init__(self, key, dev, **kwargs):
+        """
+        Initialize a devu6 device.
+
+        Args:
+            self: (todo): write your description
+            key: (str): write your description
+            dev: (todo): write your description
+        """
         super(Relu6, self).__init__(key, dev, **kwargs)
 
     def attributes(self):
+        """
+        A dictionary of the object attributes.
+
+        Args:
+            self: (todo): write your description
+        """
         return {
             'op_type': 'Relu',
             'arguments': {
@@ -567,6 +1061,14 @@ class Resize(function.Function):
     """Resize function."""
 
     def __init__(self, key, dev, **kwargs):
+        """
+        Initialize mode.
+
+        Args:
+            self: (todo): write your description
+            key: (str): write your description
+            dev: (todo): write your description
+        """
         super(Resize, self).__init__(key, dev, **kwargs)
         self.num_sizes = kwargs.get('num_sizes', 0)
         self.num_scales = kwargs.get('num_scales', 0)
@@ -576,6 +1078,12 @@ class Resize(function.Function):
         self.align_corners = kwargs.get('align_corners', False)
 
     def attributes(self):
+        """
+        Returns a dict of attributes.
+
+        Args:
+            self: (todo): write your description
+        """
         return {
             'op_type': 'Resize',
             'arguments': {
@@ -592,6 +1100,16 @@ class Resize(function.Function):
         }
 
     def feed(self, ws, handle, sizes, scales):
+        """
+        Feed the number of the given handle.
+
+        Args:
+            self: (todo): write your description
+            ws: (todo): write your description
+            handle: (todo): write your description
+            sizes: (int): write your description
+            scales: (float): write your description
+        """
         for i in range(self.num_sizes):
             self.feed_arg(
                 ws, '{}/sizes[{}]'.format(handle, i),
@@ -602,6 +1120,15 @@ class Resize(function.Function):
                 scales[i], 'float32')
 
     def forward(self, input, sizes=None, scales=None):
+        """
+        Parameters ---------- inputs.
+
+        Args:
+            self: (todo): write your description
+            input: (todo): write your description
+            sizes: (int): write your description
+            scales: (todo): write your description
+        """
         return self.dispatch(
             [input], [self.alloc()],
             callback=lambda ws, handle:
@@ -613,6 +1140,14 @@ class RNNParamSet(function.Function):
     """RNNParamSet function."""
 
     def __init__(self, key, dev, **kwargs):
+        """
+        Initialize layer.
+
+        Args:
+            self: (todo): write your description
+            key: (str): write your description
+            dev: (todo): write your description
+        """
         super(RNNParamSet, self).__init__(key, dev, **kwargs)
         self.param_type = kwargs.get('param_type', 'matrix')
         self.num_layers = kwargs.get('num_layers', 1)
@@ -624,6 +1159,12 @@ class RNNParamSet(function.Function):
         self.mode = kwargs.get('mode', 'rnn_tanh')
 
     def attributes(self):
+        """
+        A dict of layers.
+
+        Args:
+            self: (todo): write your description
+        """
         return {
             'op_type': 'RNNParamSet',
             'arguments': {
@@ -639,6 +1180,14 @@ class RNNParamSet(function.Function):
         }
 
     def forward(self, param, weights):
+        """
+        Parameters ---------- param : param param : class : parameter *.
+
+        Args:
+            self: (todo): write your description
+            param: (todo): write your description
+            weights: (todo): write your description
+        """
         return self.dispatch([param], [weights], no_grad=True)
 
 
@@ -646,9 +1195,23 @@ class SigmoidCrossEntropy(_Loss):
     """SigmoidCrossEntropy function."""
 
     def __init__(self, key, dev, **kwargs):
+        """
+        Initialize the devoid device.
+
+        Args:
+            self: (todo): write your description
+            key: (str): write your description
+            dev: (todo): write your description
+        """
         super(SigmoidCrossEntropy, self).__init__(key, dev, **kwargs)
 
     def attributes(self):
+        """
+        Return a dict of attributes.
+
+        Args:
+            self: (todo): write your description
+        """
         return {
             'op_type': 'SigmoidCrossEntropy',
             'arguments': {
@@ -661,12 +1224,26 @@ class SigmoidFocalLoss(_Loss):
     """SigmoidFocalLoss function."""
 
     def __init__(self, key, dev, **kwargs):
+        """
+        Initialize a devoid device.
+
+        Args:
+            self: (todo): write your description
+            key: (str): write your description
+            dev: (todo): write your description
+        """
         super(SigmoidFocalLoss, self).__init__(key, dev, **kwargs)
         self.alpha = kwargs.get('alpha', 0.25)
         self.gamma = kwargs.get('gamma', 2.)
         self.negative_index = kwargs.get('negative_index', None)
 
     def attributes(self):
+        """
+        Return a dictionary of attributes.
+
+        Args:
+            self: (todo): write your description
+        """
         return {
             'op_type': 'SigmoidFocalLoss',
             'arguments': {
@@ -683,10 +1260,24 @@ class SmoothL1Loss(_Loss):
     """SmoothL1Loss function."""
 
     def __init__(self, key, dev, **kwargs):
+        """
+        Initialize the device.
+
+        Args:
+            self: (todo): write your description
+            key: (str): write your description
+            dev: (todo): write your description
+        """
         super(SmoothL1Loss, self).__init__(key, dev, **kwargs)
         self.beta = kwargs.get('beta', 1.)
 
     def attributes(self):
+        """
+        A dictionary of attributes of attributes
+
+        Args:
+            self: (todo): write your description
+        """
         return {
             'op_type': 'SmoothL1Loss',
             'arguments': {
@@ -700,10 +1291,24 @@ class Softmax(_Activation):
     """Softmax function."""
 
     def __init__(self, key, dev, **kwargs):
+        """
+        Initialize the device.
+
+        Args:
+            self: (todo): write your description
+            key: (str): write your description
+            dev: (todo): write your description
+        """
         super(Softmax, self).__init__(key, dev, **kwargs)
         self.axis = kwargs.get('axis', 1)
 
     def attributes(self):
+        """
+        A dictionary of the axis attributes
+
+        Args:
+            self: (todo): write your description
+        """
         return {
             'op_type': 'Softmax',
             'arguments': {
@@ -716,10 +1321,24 @@ class SparseSoftmaxCrossEntropy(_Loss):
     """SparseSoftmaxCrossEntropy function."""
 
     def __init__(self, key, dev, **kwargs):
+        """
+        Initialize the device.
+
+        Args:
+            self: (todo): write your description
+            key: (str): write your description
+            dev: (todo): write your description
+        """
         super(SparseSoftmaxCrossEntropy, self).__init__(key, dev, **kwargs)
         self.ignore_index = kwargs.get('ignore_index', None)
 
     def attributes(self):
+        """
+        Returns the attributes of attributes.
+
+        Args:
+            self: (todo): write your description
+        """
         return {
             'op_type': 'SparseSoftmaxCrossEntropy',
             'arguments': {
@@ -734,10 +1353,24 @@ class SyncBatchNorm(BatchNorm):
     """SyncBatchNorm function."""
 
     def __init__(self, key, dev, **kwargs):
+        """
+        Initialize the device.
+
+        Args:
+            self: (todo): write your description
+            key: (str): write your description
+            dev: (todo): write your description
+        """
         super(SyncBatchNorm, self).__init__(key, dev, **kwargs)
         self.process_group = kwargs.get('process_group', None)
 
     def attributes(self):
+        """
+        A list of - group attributes.
+
+        Args:
+            self: (todo): write your description
+        """
         attrs = BatchNorm.attributes(self)
         attrs['op_type'] = 'SyncBatchNorm'
         attrs['arguments'].update(self.process_group.arguments)

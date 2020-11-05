@@ -25,6 +25,12 @@ class TestBackend(unittest.TestCase):
     """Test the backend components."""
 
     def test_empty_group(self):
+        """
+        Create empty backend of the backends.
+
+        Args:
+            self: (todo): write your description
+        """
         for backend in (None, 'AUTO', 'NCCL', 'MPI', 'UNKNOWN', 0):
             try:
                 group = dragon.distributed.new_group(backend=backend)
@@ -40,6 +46,12 @@ class TestBackend(unittest.TestCase):
 
     @unittest.skipIf(not TEST_MPI, 'MPI unavailable')
     def test_mpi_single_process(self):
+        """
+        Perform a single world process.
+
+        Args:
+            self: (todo): write your description
+        """
         self.assertEqual(dragon.distributed.get_rank(), 0)
         self.assertEqual(dragon.distributed.get_world_size(), 1)
         group = dragon.distributed.new_group(ranks=[0], backend='MPI')

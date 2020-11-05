@@ -79,6 +79,13 @@ class Dense(Layer):
         self.bias = None
 
     def build(self, input_shape):
+        """
+        Connects the graph into the graph.
+
+        Args:
+            self: (todo): write your description
+            input_shape: (list): write your description
+        """
         dtype = dtypes.as_dtype(self.dtype or dtypes.float32)
         if not (dtype.is_floating or dtype.is_complex):
             raise TypeError(
@@ -116,6 +123,13 @@ class Dense(Layer):
         self.built = True
 
     def call(self, inputs):
+        """
+        Call the network.
+
+        Args:
+            self: (todo): write your description
+            inputs: (dict): write your description
+        """
         outputs = math_ops.fully_connected(
             [inputs, self.kernel] + [self.bias]
             if self.use_bias else [],
@@ -158,6 +172,13 @@ class Dropout(Layer):
         self.inplace = kwargs.get('inplace', False)
 
     def call(self, inputs):
+        """
+        Call all activation function.
+
+        Args:
+            self: (todo): write your description
+            inputs: (dict): write your description
+        """
         if self.trainable:
             return activation_ops.dropout(
                 inputs,
@@ -203,6 +224,13 @@ class Flatten(Layer):
         self.input_spec = InputSpec(min_ndim=1)
 
     def call(self, inputs):
+        """
+        Evaluate function.
+
+        Args:
+            self: (todo): write your description
+            inputs: (dict): write your description
+        """
         if self.data_format == 'channels_first':
             perm = [0] + [i for i in range(2, len(inputs.shape))] + [1]
             inputs = array_ops.transpose(inputs, perm=perm)
@@ -243,6 +271,13 @@ class Permute(Layer):
         self.input_spec = InputSpec(ndim=len(self.dims) + 1)
 
     def call(self, inputs):
+        """
+        Returns the shape of the module inputs.
+
+        Args:
+            self: (todo): write your description
+            inputs: (dict): write your description
+        """
         return array_ops.transpose(inputs, perm=[0] + self.dims)
 
 
@@ -282,4 +317,11 @@ class Reshape(Layer):
         self.target_shape = nest.flatten(target_shape)
 
     def call(self, inputs):
+        """
+        Call the shape of the inputs.
+
+        Args:
+            self: (todo): write your description
+            inputs: (dict): write your description
+        """
         return array_ops.reshape(inputs, shape=[0] + self.target_shape)

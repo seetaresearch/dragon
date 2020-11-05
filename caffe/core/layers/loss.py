@@ -42,6 +42,13 @@ class EuclideanLoss(Layer):
     """
 
     def __init__(self, layer_param):
+        """
+        Method to initialize layer_parameters.
+
+        Args:
+            self: (todo): write your description
+            layer_param: (todo): write your description
+        """
         super(EuclideanLoss, self).__init__(layer_param)
         param = layer_param.loss_param
         norm_dict = {0: 'mean', 1: 'mean', 2: 'batch_mean', 3: 'sum'}
@@ -54,6 +61,13 @@ class EuclideanLoss(Layer):
         self.arguments = {'reduction': reduction}
 
     def __call__(self, bottom):
+        """
+        Compute l2 loss.
+
+        Args:
+            self: (todo): write your description
+            bottom: (todo): write your description
+        """
         loss = loss_ops.l2_loss(bottom, **self.arguments)
         loss_weight = 1. if self.loss_weight is None else self.loss_weight
         return loss * (loss_weight * 0.5)
@@ -79,6 +93,13 @@ class SigmoidCrossEntropyLoss(Layer):
     """
 
     def __init__(self, layer_param):
+        """
+        Initialize layer_paramnorm.
+
+        Args:
+            self: (todo): write your description
+            layer_param: (todo): write your description
+        """
         super(SigmoidCrossEntropyLoss, self).__init__(layer_param)
         param = layer_param.loss_param
         norm_dict = {0: 'mean', 1: 'valid', 2: 'batch_mean', 3: 'sum'}
@@ -91,6 +112,13 @@ class SigmoidCrossEntropyLoss(Layer):
         self.arguments = {'reduction': reduction}
 
     def __call__(self, bottom):
+        """
+        Calculate the loss.
+
+        Args:
+            self: (todo): write your description
+            bottom: (todo): write your description
+        """
         loss = loss_ops.sigmoid_cross_entropy(bottom, **self.arguments)
         if self.loss_weight is not None:
             loss *= self.loss_weight
@@ -120,6 +148,13 @@ class SmoothL1Loss(Layer):
     """
 
     def __init__(self, layer_param):
+        """
+        Initialize layer_parameters.
+
+        Args:
+            self: (todo): write your description
+            layer_param: (todo): write your description
+        """
         super(SmoothL1Loss, self).__init__(layer_param)
         param = layer_param.loss_param
         smooth_l1_param = layer_param.smooth_l1_loss_param
@@ -137,6 +172,13 @@ class SmoothL1Loss(Layer):
         }
 
     def __call__(self, bottom):
+        """
+        Call the l1 loss.
+
+        Args:
+            self: (todo): write your description
+            bottom: (todo): write your description
+        """
         loss = loss_ops.smooth_l1_loss(bottom, **self.arguments)
         if self.loss_weight is not None:
             loss *= self.loss_weight
@@ -171,6 +213,13 @@ class SoftmaxWithLoss(Layer):
     """
 
     def __init__(self, layer_param):
+        """
+        Initialize layer_parameters.
+
+        Args:
+            self: (todo): write your description
+            layer_param: (todo): write your description
+        """
         super(SoftmaxWithLoss, self).__init__(layer_param)
         param = layer_param.loss_param
         softmax_param = layer_param.softmax_param
@@ -189,6 +238,13 @@ class SoftmaxWithLoss(Layer):
         }
 
     def __call__(self, bottom):
+        """
+        Calculate loss.
+
+        Args:
+            self: (todo): write your description
+            bottom: (todo): write your description
+        """
         loss = loss_ops.sparse_softmax_cross_entropy(bottom, **self.arguments)
         if self.loss_weight is not None:
             loss *= self.loss_weight

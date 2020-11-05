@@ -92,6 +92,12 @@ class Conv2d(layer.Layer):
             self._built = True
 
     def __repr__(self):
+        """
+        Return a repr representation of this parameter.
+
+        Args:
+            self: (todo): write your description
+        """
         s = ('{classname}('
              'in_channels={in_channels}, '
              'out_channels={n_filter}, '
@@ -109,6 +115,13 @@ class Conv2d(layer.Layer):
         return s.format(classname=self.__class__.__name__, **self.__dict__)
 
     def build(self, inputs_shape):
+        """
+        Connects the module to the graph.
+
+        Args:
+            self: (todo): write your description
+            inputs_shape: (todo): write your description
+        """
         if self.in_channels is None:
             if self.data_format == 'channels_last':
                 self.in_channels = inputs_shape[-1]
@@ -130,6 +143,13 @@ class Conv2d(layer.Layer):
             )
 
     def forward(self, inputs, **kwargs):
+        """
+        Forward computation.
+
+        Args:
+            self: (todo): write your description
+            inputs: (todo): write your description
+        """
         data_format = conv_utils.convert_data_format(self.data_format)
         padding, pads = conv_utils.normalize_2d_args('padding', self.padding)
         outputs = vision_ops.conv2d(

@@ -40,6 +40,19 @@ class RNNModule(object):
         dropout=0,
         name=None,
     ):
+        """
+        Initialize the network.
+
+        Args:
+            self: (todo): write your description
+            mode: (str): write your description
+            input_size: (int): write your description
+            hidden_size: (int): write your description
+            num_layers: (int): write your description
+            bidirectional: (str): write your description
+            dropout: (str): write your description
+            name: (str): write your description
+        """
         self.mode = mode.lower()
         self.num_gates = {'lstm': 4, 'gru': 3}.get(self.mode, 1)
         self.input_size = input_size
@@ -202,6 +215,12 @@ class RNNModule(object):
         return numpy.zeros(shape, dtype=dtype)
 
     def __call__(self, *args, **kwargs):
+        """
+        R call the call ().
+
+        Args:
+            self: (todo): write your description
+        """
         return self.forward(args, **kwargs)
 
 

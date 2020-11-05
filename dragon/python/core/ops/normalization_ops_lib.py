@@ -21,6 +21,14 @@ class BatchNorm(Operator):
     """BatchNorm operator."""
 
     def __init__(self, key, dev, **kwargs):
+        """
+        Initialize batch device.
+
+        Args:
+            self: (todo): write your description
+            key: (str): write your description
+            dev: (todo): write your description
+        """
         super(BatchNorm, self).__init__(key, dev, **kwargs)
         self.axis = kwargs.get('axis', -1)
         self.momentum = kwargs.get('momentum', 0.9)
@@ -30,6 +38,12 @@ class BatchNorm(Operator):
             raise ValueError('Excepted determined stats mode.')
 
     def attributes(self):
+        """
+        A dictionary of attributes.
+
+        Args:
+            self: (todo): write your description
+        """
         return {
             'op_type': 'BatchNorm',
             'arguments': {
@@ -41,6 +55,13 @@ class BatchNorm(Operator):
         }
 
     def forward(self, inputs):
+        """
+        Parse the model.
+
+        Args:
+            self: (todo): write your description
+            inputs: (todo): write your description
+        """
         return self.dispatch(inputs, [self.alloc()])
 
 
@@ -48,12 +69,26 @@ class GroupNorm(Operator):
     """GroupNorm operator."""
 
     def __init__(self, key, dev, **kwargs):
+        """
+        Initialize the device.
+
+        Args:
+            self: (todo): write your description
+            key: (str): write your description
+            dev: (todo): write your description
+        """
         super(GroupNorm, self).__init__(key, dev, **kwargs)
         self.axis = kwargs.get('axis', -1)
         self.group = kwargs.get('group', 32)
         self.epsilon = kwargs.get('epsilon', 1e-5)
 
     def attributes(self):
+        """
+        Return dictionary of the group attributes.
+
+        Args:
+            self: (todo): write your description
+        """
         return {
             'op_type': 'GroupNorm',
             'arguments': {
@@ -64,6 +99,13 @@ class GroupNorm(Operator):
         }
 
     def forward(self, inputs):
+        """
+        Parse the model.
+
+        Args:
+            self: (todo): write your description
+            inputs: (todo): write your description
+        """
         return self.dispatch(inputs, [self.alloc()])
 
 
@@ -71,6 +113,14 @@ class LpNormalize(Operator):
     """LpNormalize operator."""
 
     def __init__(self, key, dev, **kwargs):
+        """
+        Initialize the device.
+
+        Args:
+            self: (todo): write your description
+            key: (str): write your description
+            dev: (todo): write your description
+        """
         super(LpNormalize, self).__init__(key, dev, **kwargs)
         self.p = kwargs.get('p', 2)
         self.axis = kwargs.get('axis', 0)
@@ -79,6 +129,12 @@ class LpNormalize(Operator):
         self.reduction = kwargs.get('reduction', 'SUM')
 
     def attributes(self):
+        """
+        Return the dictionary of attributes.
+
+        Args:
+            self: (todo): write your description
+        """
         return {
             'op_type': 'LpNormalize',
             'arguments': {
@@ -91,6 +147,13 @@ class LpNormalize(Operator):
         }
 
     def forward(self, inputs):
+        """
+        Parse the model.
+
+        Args:
+            self: (todo): write your description
+            inputs: (todo): write your description
+        """
         return self.dispatch(inputs, [self.alloc()])
 
 
@@ -98,6 +161,14 @@ class LocalResponseNorm(Operator):
     """LocalResponseNorm operator."""
 
     def __init__(self, key, dev, **kwargs):
+        """
+        Initialize device.
+
+        Args:
+            self: (todo): write your description
+            key: (str): write your description
+            dev: (todo): write your description
+        """
         super(LocalResponseNorm, self).__init__(key, dev, **kwargs)
         self.size = kwargs.get('size', 5)
         self.alpha = kwargs.get('alpha', 0.0001)
@@ -106,6 +177,12 @@ class LocalResponseNorm(Operator):
         self.data_format = kwargs.get('data_format', 'NCHW')
 
     def attributes(self):
+        """
+        A dictionary of attributes for this object.
+
+        Args:
+            self: (todo): write your description
+        """
         return {
             'op_type': 'LRN',
             'arguments': {
@@ -118,6 +195,13 @@ class LocalResponseNorm(Operator):
         }
 
     def forward(self, inputs):
+        """
+        Parse the model.
+
+        Args:
+            self: (todo): write your description
+            inputs: (todo): write your description
+        """
         return self.dispatch(inputs, [self.alloc()])
 
 
@@ -125,10 +209,24 @@ class SyncBatchNorm(BatchNorm):
     """SyncBatchNorm operator."""
 
     def __init__(self, key, dev, **kwargs):
+        """
+        Initialize the device.
+
+        Args:
+            self: (todo): write your description
+            key: (str): write your description
+            dev: (todo): write your description
+        """
         super(SyncBatchNorm, self).__init__(key, dev, **kwargs)
         self.process_group = kwargs.get('process_group', None)
 
     def attributes(self):
+        """
+        A list of - group attributes.
+
+        Args:
+            self: (todo): write your description
+        """
         attrs = BatchNorm.attributes(self)
         attrs['op_type'] = 'SyncBatchNorm'
         attrs['arguments'].update(self.process_group.arguments)

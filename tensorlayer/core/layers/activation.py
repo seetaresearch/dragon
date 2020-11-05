@@ -55,9 +55,22 @@ class Relu(layer.Layer):
         self.inplace = inplace
 
     def forward(self, inputs):
+        """
+        Evaluates.
+
+        Args:
+            self: (todo): write your description
+            inputs: (todo): write your description
+        """
         return activations.relu(inputs, inplace=self.inplace)
 
     def __repr__(self):
+        """
+        Return a repr representation of this object.
+
+        Args:
+            self: (todo): write your description
+        """
         s = '{classname}('
         s += 'inplace={inplace},'
         s += 'name={name}'

@@ -38,14 +38,31 @@ class TestDeprecation(unittest.TestCase):
         @deprecation.deprecated('2077-01-01', 'Bad deprecated.')
         @property
         def deprecated_property(self):
+            """
+            Returns the deprecated property.
+
+            Args:
+                self: (todo): write your description
+            """
             return None
     except ValueError:
         pass
 
     def test_deprecated(self):
+        """
+        This is deprecated.
+
+        Args:
+            self: (todo): write your description
+        """
         @deprecation.deprecated(
             '2077-01-01', 'This function is deprecated since 2077.')
         def func():
+            """
+            Decor function that will be called function.
+
+            Args:
+            """
             pass
         dragon.logging.set_verbosity('FATAL')
         func()
@@ -53,6 +70,11 @@ class TestDeprecation(unittest.TestCase):
         try:
             @deprecation.deprecated('2077-01', 'Bad deprecated.')
             def func():
+                """
+                Decor function that will be called function.
+
+                Args:
+                """
                 pass
             func()
         except ValueError:
@@ -60,12 +82,23 @@ class TestDeprecation(unittest.TestCase):
         try:
             @deprecation.deprecated('2077-01-01', '')
             def func():
+                """
+                Decor function that will be called function.
+
+                Args:
+                """
                 pass
             func()
         except ValueError:
             pass
 
     def test_not_installed(self):
+        """
+        Check if the list of the installed
+
+        Args:
+            self: (todo): write your description
+        """
         try:
             deprecation.not_installed('!@#$%^&**()')()
         except ImportError:
@@ -81,6 +114,12 @@ class TestLogging(unittest.TestCase):
     """Test the logging utility."""
 
     def test_message(self):
+        """
+        Sets the test message.
+
+        Args:
+            self: (todo): write your description
+        """
         dragon.logging.set_verbosity('FATAL')
         self.assertEqual(dragon.logging.get_verbosity(), logging.FATAL)
         dragon.logging.debug('Test dragon.logging.debug(..)')
@@ -92,6 +131,12 @@ class TestLogging(unittest.TestCase):
         self.assertEqual(dragon.logging.get_verbosity(), logging.INFO)
 
     def test_logging_file(self):
+        """
+        Sets the logging logging file.
+
+        Args:
+            self: (todo): write your description
+        """
         dragon.logging.set_directory(None)
 
 
@@ -99,6 +144,12 @@ class TestNest(unittest.TestCase):
     """Test the nest utility."""
 
     def test_nested(self):
+        """
+        Test if a nested lists of a nested lists.
+
+        Args:
+            self: (todo): write your description
+        """
         self.assertTrue(nest.is_nested(list()))
         self.assertTrue(nest.is_sequence(list()))
         self.assertTrue(nest.is_nested(tuple()))
@@ -107,6 +158,12 @@ class TestNest(unittest.TestCase):
         self.assertFalse(nest.is_sequence(dict()))
 
     def test_flatten(self):
+        """
+        Test for all possible paths in the path.
+
+        Args:
+            self: (todo): write your description
+        """
         self.assertEqual(nest.flatten(1), [1])
         for a, b in zip(nest.flatten_with_paths([2, 4, [31, 32], 1]),
                         [((0,), 2), ((1,), 4), ((2, 0), 31), ((2, 1), 32), ((3,), 1)]):
@@ -120,6 +177,12 @@ class TestRegistry(unittest.TestCase):
     """Test the registry utility."""
 
     def test_register(self):
+        """
+        Registers a register.
+
+        Args:
+            self: (todo): write your description
+        """
         reg = registry.Registry('test_registry')
         reg.register('a+b', lambda a, b: a + b)
         self.assertTrue('a+b' in reg.keys)
@@ -135,6 +198,12 @@ class TestSerialization(unittest.TestCase):
     """Test the serialization utility."""
 
     def test_bytes(self):
+        """
+        Test if the test bytes from the bytes object.
+
+        Args:
+            self: (todo): write your description
+        """
         f = io.BytesIO(b'123')
         serialization.save_bytes(b'456', f)
         f.seek(0)
@@ -156,6 +225,12 @@ class TestSerialization(unittest.TestCase):
             pass
 
     def test_proto(self):
+        """
+        Serialize the given protobuf.
+
+        Args:
+            self: (todo): write your description
+        """
         self.assertEqual(serialization.serialize_proto(None), b'')
         s = serialization.serialize_proto(dragon_pb2.OperatorDef(name='!@#$%^&**()'))
         s = serialization.serialize_proto(s)
@@ -179,7 +254,20 @@ class TestTLS(unittest.TestCase):
     """Test the tls utility."""
 
     def test_constant(self):
+        """
+        Test that a constant.
+
+        Args:
+            self: (todo): write your description
+        """
         def write(i, q):
+            """
+            Writes an 8 - bit value.
+
+            Args:
+                i: (todo): write your description
+                q: (todo): write your description
+            """
             c.value = i
             q.append(c.value)
         c, q = tls.Constant(value=-1), []
@@ -190,6 +278,12 @@ class TestTLS(unittest.TestCase):
         self.assertEqual(c.value, -1)
 
     def test_stack(self):
+        """
+        Test if the stack stack
+
+        Args:
+            self: (todo): write your description
+        """
         s = tls.Stack()
         s.enforce_nesting = True
         self.assertEqual(s.enforce_nesting, True)

@@ -18,12 +18,26 @@ from dragon.vm.torch.core.autograd import function
 
 class RoIPool(function.Function):
     def __init__(self, key, dev, **kwargs):
+        """
+        Initialize kwargs
+
+        Args:
+            self: (todo): write your description
+            key: (str): write your description
+            dev: (todo): write your description
+        """
         super(RoIPool, self).__init__(key, dev, **kwargs)
         self.pool_h = kwargs.get('pooled_h', 7)
         self.pool_w = kwargs.get('pooled_w', 7)
         self.spatial_scale = kwargs.get('spatial_scale', 1.)
 
     def attributes(self):
+        """
+        Returns the pool attributes.
+
+        Args:
+            self: (todo): write your description
+        """
         return {
             'op_type': 'RoiPool',
             'arguments': {
@@ -34,11 +48,27 @@ class RoIPool(function.Function):
         }
 
     def forward(self, input, boxes):
+        """
+        Call this function on the input.
+
+        Args:
+            self: (todo): write your description
+            input: (todo): write your description
+            boxes: (list): write your description
+        """
         return self.dispatch([input, boxes], [self.alloc()])
 
 
 class RoIAlign(function.Function):
     def __init__(self, key, dev, **kwargs):
+        """
+        Initialize the device.
+
+        Args:
+            self: (todo): write your description
+            key: (str): write your description
+            dev: (todo): write your description
+        """
         super(RoIAlign, self).__init__(key, dev, **kwargs)
         self.pooled_h = kwargs.get('pooled_h', 0)
         self.pooled_w = kwargs.get('pooled_w', 0)
@@ -46,6 +76,12 @@ class RoIAlign(function.Function):
         self.sampling_ratio = kwargs.get('sampling_ratio', 2)
 
     def attributes(self):
+        """
+        A dictionary of the attributes for the sampler.
+
+        Args:
+            self: (todo): write your description
+        """
         return {
             'op_type': 'RoiAlign',
             'arguments': {
@@ -57,4 +93,12 @@ class RoIAlign(function.Function):
         }
 
     def forward(self, input, boxes):
+        """
+        Call this function on the input.
+
+        Args:
+            self: (todo): write your description
+            input: (todo): write your description
+            boxes: (list): write your description
+        """
         return self.dispatch([input, boxes], [self.alloc()])

@@ -21,6 +21,12 @@ from dragon.core.util import six
 
 
 def convert_data_format(data_format):
+    """
+    Convert data_data_format.
+
+    Args:
+        data_format: (str): write your description
+    """
     if data_format == 'channels_last':
         return 'NHWC'
     elif data_format == 'channels_first':
@@ -30,6 +36,12 @@ def convert_data_format(data_format):
 
 
 def normalize_data_format(value):
+    """
+    Normalize data format.
+
+    Args:
+        value: (str): write your description
+    """
     if value is None:
         value = 'channels_first'
     data_format = value.lower()
@@ -43,6 +55,14 @@ def normalize_data_format(value):
 
 
 def normalize_spatial_args(name, values, num_spatial_dims):
+    """
+    Normalize arguments.
+
+    Args:
+        name: (str): write your description
+        values: (str): write your description
+        num_spatial_dims: (int): write your description
+    """
     if name in ('ksize', 'strides', 'dilations'):
         if values is None:
             return [1] * num_spatial_dims

@@ -25,6 +25,13 @@ class LayerMetaclass(object):
     """Meta class for layer like objects."""
 
     def __init__(self, name=None):
+        """
+        Initialize the weights.
+
+        Args:
+            self: (todo): write your description
+            name: (str): write your description
+        """
         self._name = name
         self._all_weights = None
         self._trainable_weights = None
@@ -60,10 +67,23 @@ class LayerMetaclass(object):
 
     @property
     def training(self):
+        """
+        Return the training function.
+
+        Args:
+            self: (todo): write your description
+        """
         return self._training
 
     @training.setter
     def training(self, value):
+        """
+        Set the training.
+
+        Args:
+            self: (todo): write your description
+            value: (str): write your description
+        """
         self._training = value
 
     @property
@@ -129,6 +149,12 @@ class Layer(LayerMetaclass):
 
     @staticmethod
     def _compute_shape(tensors):
+        """
+        Compute shape of shape.
+
+        Args:
+            tensors: (todo): write your description
+        """
         if isinstance(tensors, list):
             shape_mem = [t.shape for t in tensors]
         else:
@@ -243,12 +269,33 @@ class Layer(LayerMetaclass):
         return outputs
 
     def __delitem__(self, key):
+        """
+        Remove an item from the cache.
+
+        Args:
+            self: (todo): write your description
+            key: (str): write your description
+        """
         raise TypeError('The Layer API does not allow to use the method: `__delitem__`')
 
     def __repr__(self):
+        """
+        Return a repr representation of a repr__.
+
+        Args:
+            self: (todo): write your description
+        """
         return 'Layer'
 
     def __setitem__(self, key, item):
+        """
+        Sets the value to the given key.
+
+        Args:
+            self: (todo): write your description
+            key: (str): write your description
+            item: (todo): write your description
+        """
         raise TypeError('The Layer API does not allow to use the method: `__setitem__`')
 
 
@@ -370,15 +417,34 @@ class LayerList(Layer):
             layer.training = mode
 
     def __getitem__(self, idx):
+        """
+        Return the item corresponding to the given index.
+
+        Args:
+            self: (todo): write your description
+            idx: (list): write your description
+        """
         if isinstance(idx, slice):
             return LayerList(list(self._all_layers)[idx])
         else:
             return self._all_layers[idx]
 
     def __len__(self):
+        """
+        Returns the length of the layer.
+
+        Args:
+            self: (todo): write your description
+        """
         return len(self._all_layers)
 
     def __repr__(self):
+        """
+        Return a human - readable representation of this object.
+
+        Args:
+            self: (todo): write your description
+        """
         tmp_str = 'LayerList' + '(\n'
         for idx, layer in enumerate(self._all_layers):
             mod_str = layer.__repr__()
