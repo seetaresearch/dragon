@@ -10,11 +10,11 @@ namespace dragon {
 namespace kernel {
 
 #if __CUDA_ARCH__ >= 350
-#define L(x, i) __ldg(x + i)
-#define LF(x, i) __half2float(__ldg(x + i))
+#define LOAD(x, i) __ldg(x + i)
+#define LOADF(x, i) __half2float(__ldg(x + i))
 #else
-#define L(x, i) x[i]
-#define LF(x, i) __half2float(x[i])
+#define LOAD(x, i) x[i]
+#define LOADF(x, i) __half2float(x[i])
 #endif
 
 namespace {
@@ -33,14 +33,14 @@ __global__ void _GroupNormFusedParams(
   const int outer_dim = N * G;
   CUDA_2D_KERNEL_LOOP1(i, outer_dim) {
     const int g = i % G;
-    const T mu_val = L(mu, i);
-    const T rsig_val = L(rsig, i);
+    const T mu_val = LOAD(mu, i);
+    const T rsig_val = LOAD(rsig, i);
     CUDA_2D_KERNEL_LOOP2(j, D) {
       const int wi = i * D + j;
       const int gi = g * D + j;
-      const T w = L(gamma, gi) * rsig_val;
+      const T w = LOAD(gamma, gi) * rsig_val;
       scale[wi] = w;
-      bias[wi] = fma(-w, mu_val, L(beta, gi));
+      bias[wi] = fma(-w, mu_val, LOAD(beta, gi));
     }
   }
 }
@@ -56,11 +56,11 @@ __global__ void _GroupNormForwardNCHW(
     Tx* y) {
   const int outer_dim = N * C;
   CUDA_2D_KERNEL_LOOP1(i, outer_dim) {
-    const Tp w = L(scale, i);
-    const Tp b = L(bias, i);
+    const Tp w = LOAD(scale, i);
+    const Tp b = LOAD(bias, i);
     CUDA_2D_KERNEL_LOOP2(j, S) {
       const int xi = i * S + j;
-      y[xi] = fma(L(x, xi), w, b);
+      y[xi] = fma(LOAD(x, xi), w, b);
     }
   }
 }
@@ -76,11 +76,11 @@ __global__ void _GroupNormForwardNCHW<half, float>(
     half* y) {
   const int outer_dim = N * C;
   CUDA_2D_KERNEL_LOOP1(i, outer_dim) {
-    const float w = L(scale, i);
-    const float b = L(bias, i);
+    const float w = LOAD(scale, i);
+    const float b = LOAD(bias, i);
     CUDA_2D_KERNEL_LOOP2(j, S) {
       const int xi = i * S + j;
-      y[xi] = __float2half(fmaf(LF(x, xi), w, b));
+      y[xi] = __float2half(fmaf(LOADF(x, xi), w, b));
     }
   }
 }
@@ -100,7 +100,7 @@ __global__ void _GroupNormForwardNHWC(
     CUDA_2D_KERNEL_LOOP2(j, C) {
       const int xi = i * C + j;
       const int wi = n * C + j;
-      y[xi] = fma(L(x, xi), L(scale, wi), L(bias, wi));
+      y[xi] = fma(LOAD(x, xi), LOAD(scale, wi), LOAD(bias, wi));
     }
   }
 }
@@ -120,7 +120,7 @@ __global__ void _GroupNormForwardNHWC<half, float>(
     CUDA_2D_KERNEL_LOOP2(j, C) {
       const int xi = i * C + j;
       const int wi = n * C + j;
-      y[xi] = __float2half(fmaf(LF(x, xi), L(scale, wi), L(bias, wi)));
+      y[xi] = __float2half(fmaf(LOADF(x, xi), LOAD(scale, wi), LOAD(bias, wi)));
     }
   }
 }
@@ -149,8 +149,8 @@ __global__ void _GroupNormWGrad(
           ? (n * outer_dim + i) * S + j % S
           : j * outer_dim + i;
       const int mi = n * G + i / D;
-      dg_val += L(dy, xi) * (L(x, xi) - L(mu, mi)) * L(rsig, mi);
-      db_val += L(dy, xi);
+      dg_val += LOAD(dy, xi) * (LOAD(x, xi) - LOAD(mu, mi)) * LOAD(rsig, mi);
+      db_val += LOAD(dy, xi);
     }
     dg_val = BlockReduce<Tp>(dg_storage).Reduce(dg_val, cub::Sum());
     db_val = BlockReduce<Tp>(db_storage).Reduce(db_val, cub::Sum());
@@ -185,8 +185,8 @@ __global__ void _GroupNormWGradHalf(
           ? (n * outer_dim + i) * S + j % S
           : j * outer_dim + i;
       const int mi = n * G + i / D;
-      dg_val += LF(dy, xi) * (LF(x, xi) - L(mu, mi)) * L(rsig, mi);
-      db_val += LF(dy, xi);
+      dg_val += LOADF(dy, xi) * (LOADF(x, xi) - LOAD(mu, mi)) * LOAD(rsig, mi);
+      db_val += LOADF(dy, xi);
     }
     dg_val = BlockReduce<float>(dg_storage).Reduce(dg_val, cub::Sum());
     db_val = BlockReduce<float>(db_storage).Reduce(db_val, cub::Sum());
@@ -219,8 +219,8 @@ __global__ void _GroupNormInternalGrad(
       const int xi = kOrder == StorageOrder::NCHW
           ? i * inner_dim + j
           : (i / G * S + j % S) * G * D + gi;
-      ds_val += L(gamma, gi) * L(dy, xi) * L(x, xi);
-      db_val += L(gamma, gi) * L(dy, xi);
+      ds_val += LOAD(gamma, gi) * LOAD(dy, xi) * LOAD(x, xi);
+      db_val += LOAD(gamma, gi) * LOAD(dy, xi);
     }
     ds_val = BlockReduce<Tp>(ds_storage).Reduce(ds_val, cub::Sum());
     db_val = BlockReduce<Tp>(db_storage).Reduce(db_val, cub::Sum());
@@ -253,8 +253,8 @@ __global__ void _GroupNormInternalGradHalf(
       const int xi = kOrder == StorageOrder::NCHW
           ? i * inner_dim + j
           : (i / G * S + j % S) * G * D + gi;
-      ds_val += L(gamma, gi) * LF(dy, xi) * LF(x, xi);
-      db_val += L(gamma, gi) * LF(dy, xi);
+      ds_val += LOAD(gamma, gi) * LOADF(dy, xi) * LOADF(x, xi);
+      db_val += LOAD(gamma, gi) * LOADF(dy, xi);
     }
     ds_val = BlockReduce<float>(ds_storage).Reduce(ds_val, cub::Sum());
     db_val = BlockReduce<float>(db_storage).Reduce(db_val, cub::Sum());
@@ -285,10 +285,10 @@ __global__ void _GroupNormGrad(
     const int mi = kOrder == StorageOrder::NCHW ? i / (D * S)
                                                 : i / (C * S) * G + (i / D % G);
     const int gi = kOrder == StorageOrder::NCHW ? (i / S) % C : i % C;
-    const Tp u = fma(L(db, mi), L(mu, mi), -L(ds, mi)) * (L(x, i) - L(mu, mi)) *
-        utils::math::Cube(L(rsig, mi));
-    const Tp v = L(db, mi) * L(rsig, mi);
-    dx[i] = L(gamma, gi) * L(dy, i) * L(rsig, mi) + (u - v) * denom;
+    const Tp u = fma(LOAD(db, mi), LOAD(mu, mi), -LOAD(ds, mi)) *
+        (LOAD(x, i) - LOAD(mu, mi)) * utils::math::Cube(LOAD(rsig, mi));
+    const Tp v = LOAD(db, mi) * LOAD(rsig, mi);
+    dx[i] = LOAD(gamma, gi) * LOAD(dy, i) * LOAD(rsig, mi) + (u - v) * denom;
   }
 }
 
@@ -312,13 +312,16 @@ __global__ void _GroupNormGradHalf(
     const int mi = kOrder == StorageOrder::NCHW ? i / (D * S)
                                                 : i / (C * S) * G + (i / D % G);
     const int gi = kOrder == StorageOrder::NCHW ? (i / S) % C : i % C;
-    const float u = fmaf(L(db, mi), L(mu, mi), -L(ds, mi)) *
-        (LF(x, i) - L(mu, mi)) * utils::math::Cube(L(rsig, mi));
-    const float v = L(db, mi) * L(rsig, mi);
-    dx[i] =
-        __float2half(L(gamma, gi) * LF(dy, i) * L(rsig, mi) + (u - v) * denom);
+    const float u = fmaf(LOAD(db, mi), LOAD(mu, mi), -LOAD(ds, mi)) *
+        (LOADF(x, i) - LOAD(mu, mi)) * utils::math::Cube(LOAD(rsig, mi));
+    const float v = LOAD(db, mi) * LOAD(rsig, mi);
+    dx[i] = __float2half(
+        LOAD(gamma, gi) * LOADF(dy, i) * LOAD(rsig, mi) + (u - v) * denom);
   }
 }
+
+#undef LOAD
+#undef LOADF
 
 } // namespace
 
@@ -543,8 +546,6 @@ void GroupNormBackward<float16, float, CUDAContext>(
 DEFINE_KERNEL_LAUNCHER(float, float);
 DEFINE_GRAD_KERNEL_LAUNCHER(float, float);
 
-#undef L
-#undef LF
 #undef DEFINE_KERNEL_LAUNCHER
 #undef DEFINE_GRAD_KERNEL_LAUNCHER
 

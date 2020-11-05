@@ -104,15 +104,17 @@ __global__ void _ResizeNearestGradNCHW<half>(
     const half* dy,
     float* dx) {
   CUDA_1D_KERNEL_LOOP(yi, nthreads) {
-#if __CUDA_ARCH__ >= 530
     const int w = yi % out_w;
     const int h = (yi / out_w) % out_h;
     const int c = (yi / out_w / out_h) % C;
     const int n = yi / out_w / out_h / C;
     const int h_in = min(int(h * scale_h), H - 1);
     const int w_in = min(int(w * scale_w), W - 1);
+#if __CUDA_ARCH__ >= 350
     atomicAdd(
         &dx[((n * C + c) * H + h_in) * W + w_in], __half2float(__ldg(dy + yi)));
+#else
+    atomicAdd(&dx[((n * C + c) * H + h_in) * W + w_in], __half2float(dy[yi]));
 #endif
   }
 }
@@ -157,15 +159,17 @@ __global__ void _ResizeNearestGradNHWC<half>(
     const half* dy,
     float* dx) {
   CUDA_1D_KERNEL_LOOP(yi, nthreads) {
-#if __CUDA_ARCH__ >= 530
     const int c = yi % C;
     const int w = (yi / C) % out_w;
     const int h = (yi / C / out_w) % out_h;
     const int n = yi / C / out_w / out_h;
     const int h_in = min(int(h * scale_h), H - 1);
     const int w_in = min(int(w * scale_w), W - 1);
+#if __CUDA_ARCH__ >= 350
     atomicAdd(
         &dx[((n * H + h_in) * W + w_in) * C + c], __half2float(__ldg(dy + yi)));
+#else
+    atomicAdd(&dx[((n * H + h_in) * W + w_in) * C + c], __half2float(dy[yi]));
 #endif
   }
 }

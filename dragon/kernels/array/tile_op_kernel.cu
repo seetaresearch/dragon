@@ -42,15 +42,12 @@ __global__ void _TileGrad(
     const int i = xi / x_cols;
     const int j = xi % x_cols;
     const T* offset_dy = dy + i * y_cols + j;
-
     T val = (*offset_dy);
     offset_dy += x_cols;
-
     for (int k = 1; k < multiple; ++k) {
       val += (*offset_dy);
       offset_dy += x_cols;
     }
-
     dx[xi] = val;
   }
 }
@@ -64,21 +61,16 @@ __global__ void _TileGrad<half>(
     const half* dy,
     half* dx) {
   CUDA_1D_KERNEL_LOOP(xi, nthreads) {
-#if __CUDA_ARCH__ >= 530
     const int i = xi / x_cols;
     const int j = xi % x_cols;
     const half* offset_dy = dy + i * y_cols + j;
-
-    half val = (*offset_dy);
+    float val = __half2float(*offset_dy);
     offset_dy += x_cols;
-
     for (int k = 1; k < multiple; ++k) {
-      val += __hadd((*offset_dy), val);
+      val += __half2float(*offset_dy);
       offset_dy += x_cols;
     }
-
-    dx[xi] = val;
-#endif
+    dx[xi] = __float2half(val);
   }
 }
 

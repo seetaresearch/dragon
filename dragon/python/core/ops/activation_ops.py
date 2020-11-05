@@ -24,14 +24,14 @@ from dragon.core.ops.utils import parse_args
 
 
 @OpSchema.num_inputs(1)
-@ArgHelper.desc('prob', as_target=False)
-def dropout(inputs, prob=0.5, scale=True, **kwargs):
+@ArgHelper.desc('ratio', as_target=False)
+def dropout(inputs, ratio=0.5, **kwargs):
     r"""Set the elements of the input to zero randomly.
     `[Srivastava et.al, 2014] <http://jmlr.org/papers/v15/srivastava14a.html>`_.
 
     The **Dropout** function is defined as:
 
-    .. math:: \text{Dropout}(x) = x * (r \sim \mathcal{B}(1, 1 - \text{prob}))
+    .. math:: \text{Dropout}(x) = x * (r \sim \mathcal{B}(1, 1 - \text{ratio}))
 
     Examples:
 
@@ -44,10 +44,8 @@ def dropout(inputs, prob=0.5, scale=True, **kwargs):
     ----------
     inputs : dragon.Tensor
         The input tensor.
-    prob : Union[float, dragon.Tensor], optional, default=0.2
-        The dropping probability.
-    scale : bool, optional, default=True
-        Whether to scale the output during training.
+    ratio : Union[float, dragon.Tensor], optional, default=0.5
+        The dropping ratio.
 
     Returns
     -------
@@ -56,56 +54,39 @@ def dropout(inputs, prob=0.5, scale=True, **kwargs):
 
     """
     args = parse_args(locals())
-    args['prob'] = float(prob)
     inplace = args.pop('inplace') if 'inplace' in args else False
     op_lib = activation_ops_lib.Dropout
     if context.executing_eagerly():
         return op_lib \
-            .instantiate(prob=args['prob'], scale=scale) \
-            .apply([inputs], inplace=inplace)
+            .instantiate() \
+            .apply([inputs], ratio, inplace=inplace)
     else:
         return op_lib.blend(**args)
 
 
 @OpSchema.num_inputs(1)
-@ArgHelper.desc('keep_prob', as_target=False)
-def drop_block2d(
-    inputs,
-    block_size=7,
-    keep_prob=0.9,
-    alpha=1.,
-    decrement=0.,
-    data_format='NCHW',
-    **kwargs
-):
+@ArgHelper.desc('ratio', as_target=False)
+def drop_block2d(inputs, ratio=0.1, block_size=7, data_format='NCHW', **kwargs):
     r"""Set the spatial blocks over input to zero randomly.
     `[Ghiasi et.al, 2018] <https://arxiv.org/abs/1810.12890>`_.
 
     The **DropBlock** function is defined as:
 
     .. math::
-        \text{DropBlock}(x_{ijk} =
-            x_{ijk} * (r_{ik} \sim \mathcal{B}(1, \alpha\gamma)) \\ \quad \\
+        \text{DropBlock}(x_{ijk}) =
+            x_{ijk} * (r_{ik} \sim \mathcal{B}(1, 1 - \gamma)) \\ \quad \\
                 \text{where}\quad \gamma =
-                    \frac{\text{keep\_prob}}{\text{block\_size}^{n}}
+                    \frac{\text{ratio}}{\text{block\_size}^{n}}
                     \frac{\text{feat\_size}^{n}}{(\text{feat\_size} - \text{block\_size} + 1)^n}
-
-    Set the ``decrement`` to schedule ``keep_prob`` from **1.0**.
-
-    Set the ``alpha`` to decrease :math:`\gamma` for different stages.
 
     Parameters
     ----------
     inputs : dragon.Tensor
         The input tensor.
+    ratio : Union[float, dragon.Tensor], optional, default=0.1
+        The dropping ratio.
     block_size : int, optional, default=7
-        The size of a spatial block.
-    keep_prob : Union[float, dragon.Tensor], optional, default=0.9
-        The keeping prob.
-    alpha : float, optional, default=1.
-        The value to :math:`\gamma`.
-    decrement : float, optional, default=0.
-        The decrement value to ``keep_prob``.
+        The spatial block size.
     data_format : {'NCHW', 'NHWC'}, optional
         The optional data format.
 
@@ -116,43 +97,34 @@ def drop_block2d(
 
     """
     args = parse_args(locals())
-    args['alpha'] = float(alpha)
-    args['decrement'] = float(decrement)
+    inplace = args.pop('inplace') if 'inplace' in args else False
     op_lib = activation_ops_lib.DropBlock2d
     if context.executing_eagerly():
         return op_lib \
             .instantiate(
                 block_size=block_size,
-                keep_prob=float(args['keep_prob']),
-                alpha=args['alpha'],
-                decrement=args['decrement'],
                 data_format=data_format,
-                slot=args.get('slot', None),
-            ).apply([inputs], args.get('inplace', False))
+            ).apply([inputs], ratio, inplace=inplace)
     else:
         return op_lib.blend(**args)
 
 
 @OpSchema.num_inputs(1)
-@ArgHelper.desc('prob', as_target=False)
-def drop_path(inputs, prob=0.2, increment=0., **kwargs):
+@ArgHelper.desc('ratio', as_target=False)
+def drop_path(inputs, ratio=0.2, **kwargs):
     r"""Set the examples over the input to zero randomly.
     `[Larsson et.al, 2016] <https://arxiv.org/abs/1605.07648>`_.
 
     The **DropPath** function is defined as:
 
-    .. math:: \text{DropPath}(x_{ij}) = x_{ij} * (r_{i} \sim \mathcal{B}(1, 1 - \text{prob}))
-
-    Set the ``increment`` to schedule ``prob`` from **0.0** after each run.
+    .. math:: \text{DropPath}(x_{ij}) = x_{ij} * (r_{i} \sim \mathcal{B}(1, 1 - \text{ratio}))
 
     Parameters
     ----------
     inputs : dragon.Tensor
         The input tensor.
-    prob : Union[float, dragon.Tensor], optional, default=0.2
-        The dropping prob.
-    increment : float, optional, default=0.0
-        The increment ``prob``.
+    ratio : Union[float, dragon.Tensor], optional, default=0.2
+        The dropping ratio.
 
     Returns
     -------
@@ -161,23 +133,18 @@ def drop_path(inputs, prob=0.2, increment=0., **kwargs):
 
     """
     args = parse_args(locals())
-    args['prob'] = float(prob)
-    args['increment'] = float(increment)
     inplace = args.pop('inplace') if 'inplace' in args else False
     op_lib = activation_ops_lib.DropPath
     if context.executing_eagerly():
         return op_lib \
-            .instantiate(
-                prob=args['prob'],
-                increment=args['increment'],
-                slot=args.get('slot', None),
-            ).apply([inputs], inplace=inplace)
+            .instantiate() \
+            .apply([inputs], ratio, inplace=inplace)
     else:
         return op_lib.blend(**args)
 
 
 @OpSchema.num_inputs(1)
-def elu(inputs, alpha=1., **kwargs):
+def elu(inputs, alpha=1.0, **kwargs):
     r"""Apply the exponential linear unit.
     `[Clevert et.al, 2015] <https://arxiv.org/abs/1511.07289>`_.
 
@@ -201,7 +168,7 @@ def elu(inputs, alpha=1., **kwargs):
     ----------
     inputs : dragon.Tensor
         The input tensor.
-    alpha : float, optional, default=1.
+    alpha : float, optional, default=1.0
         The value to :math:`\alpha`.
 
     Returns

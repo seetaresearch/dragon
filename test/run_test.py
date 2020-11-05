@@ -35,6 +35,10 @@ TESTS_AND_SOURCES = [
     ('torch/test_torch', 'dragon.vm.torch.core'),
 ]
 
+DISTRIBUTED_BLOCKLIST = [
+    'dragon/test_distributed',
+]
+
 TESTS = [t[0] for t in TESTS_AND_SOURCES]
 SOURCES = [t[1] for t in TESTS_AND_SOURCES]
 
@@ -66,6 +70,10 @@ def parse_args():
         metavar='TESTS',
         default=[],
         help='select a set of tests to exclude')
+    parser.add_argument(
+        '--ignore-distributed-blocklist',
+        action='store_true',
+        help='always run blocklisted distributed tests')
     return parser.parse_args()
 
 
@@ -95,6 +103,9 @@ def main():
     base_command = get_base_command(args)
     tests, sources = get_selected_tests(args, TESTS, SOURCES)
     for i, test in enumerate(tests):
+        if (test in DISTRIBUTED_BLOCKLIST and
+                not args.ignore_distributed_blocklist):
+            continue
         command = base_command[:]
         if args.coverage:
             if sources[i]:

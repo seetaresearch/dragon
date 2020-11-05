@@ -32,63 +32,57 @@ class Activation(Operator):
         return self.dispatch(inputs, outputs)
 
 
-class Dropout(Activation):
+class Dropout(Operator):
     """Dropout operator."""
 
     def __init__(self, key, dev, **kwargs):
         super(Dropout, self).__init__(key, dev, **kwargs)
-        self.prob = kwargs.get('prob', 0.5)
-        self.scale = kwargs.get('scale', True)
 
     def attributes(self):
         return {
             'op_type': 'Dropout',
-            'arguments': {
-                'prob': self.prob,
-                'scale': self.scale,
-            }
+            'arguments': {'ratio_desc': '${HANDLE}/ratio'},
         }
 
+    def feed(self, ws, handle, ratio):
+        self.feed_arg(ws, '{}/ratio'.format(handle), ratio, 'float32')
 
-class DropBlock2d(Activation):
+    def forward(self, inputs, ratio, inplace=False):
+        outputs = [self.alloc(inputs[0]) if inplace else self.alloc()]
+        return self.dispatch(inputs, outputs,
+                             callback=lambda ws, handle:
+                             self.feed(ws, handle, ratio))
+
+
+class DropBlock2d(Dropout):
     """DropBlock2d operator."""
 
     def __init__(self, key, dev, **kwargs):
         super(DropBlock2d, self).__init__(key, dev, **kwargs)
         self.block_size = kwargs.get('block_size', 7)
-        self.keep_prob = kwargs.get('keep_prob', 0.9)
-        self.alpha = kwargs.get('alpha', 1.)
-        self.decrement = kwargs.get('decrement', 0.)
         self.data_format = kwargs.get('data_format', 'NCHW')
 
     def attributes(self):
         return {
             'op_type': 'DropBlock2d',
             'arguments': {
+                'ratio_desc': '${HANDLE}/ratio',
                 'block_size': self.block_size,
-                'keep_prob': self.keep_prob,
-                'alpha': self.alpha,
-                'decrement': self.decrement,
                 'data_format': self.data_format,
             },
         }
 
 
-class DropPath(Activation):
+class DropPath(Dropout):
     """DropPath operator."""
 
     def __init__(self, key, dev, **kwargs):
         super(DropPath, self).__init__(key, dev, **kwargs)
-        self.prob = kwargs.get('prob', 0.2)
-        self.increment = kwargs.get('increment', 0.)
 
     def attributes(self):
         return {
             'op_type': 'DropPath',
-            'arguments': {
-                'prob': self.prob,
-                'increment': self.increment,
-            }
+            'arguments': {'ratio_desc': '${HANDLE}/ratio'},
         }
 
 

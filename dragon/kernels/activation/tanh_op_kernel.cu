@@ -20,22 +20,15 @@ __global__ void _Tanh(const int nthreads, const T* x, T* y) {
 template <>
 __global__ void _Tanh<half>(const int nthreads, const half* x, half* y) {
   CUDA_1D_KERNEL_LOOP(i, nthreads) {
-#if __CUDA_ARCH__ >= 530
-    const half a = hexp(__ldg(x + i));
-    const half b = hexp(__hneg(__ldg(x + i)));
-    y[i] = __hdiv(__hsub(a, b), __hadd(a, b));
-#endif
+    y[i] = __float2half(tanh(__half2float(x[i])));
   }
 }
 
 template <>
 __global__ void _Tanh<half2>(const int nthreads, const half2* x, half2* y) {
   CUDA_1D_KERNEL_LOOP(i, nthreads) {
-#if __CUDA_ARCH__ >= 530
-    const half2 a = h2exp(__ldg(x + i));
-    const half2 b = h2exp(__hneg2(__ldg(x + i)));
-    y[i] = __h2div(__hsub2(a, b), __hadd2(a, b));
-#endif
+    const float2 val = __half22float2(x[i]);
+    y[i] = __floats2half2_rn(tanh(val.x), tanh(val.y));
   }
 }
 
@@ -49,11 +42,9 @@ __global__ void _TanhGrad(const int nthreads, const T* dy, const T* y, T* dx) {
 template <>
 __global__ void
 _TanhGrad<half>(const int nthreads, const half* dy, const half* y, half* dx) {
-  const half kOne = __float2half(1.f);
   CUDA_1D_KERNEL_LOOP(i, nthreads) {
-#if __CUDA_ARCH__ >= 530
-    dx[i] = __hmul(dy[i], __hsub(kOne, utils::math::Square(y[i])));
-#endif
+    dx[i] = __float2half(
+        __half2float(dy[i]) * (1.f - utils::math::Square(__half2float(y[i]))));
   }
 }
 
@@ -63,11 +54,12 @@ __global__ void _TanhGrad<half2>(
     const half2* dy,
     const half2* y,
     half2* dx) {
-  const half2 kOne = __float2half2_rn(1.f);
   CUDA_1D_KERNEL_LOOP(i, nthreads) {
-#if __CUDA_ARCH__ >= 530
-    dx[i] = __hmul2(dy[i], __hsub2(kOne, utils::math::Square(y[i])));
-#endif
+    const float2 val = __half22float2(y[i]);
+    const float2 grad = __half22float2(dy[i]);
+    dx[i] = __floats2half2_rn(
+        grad.x * (1.f - utils::math::Square(val.x)),
+        grad.y * (1.f - utils::math::Square(val.y)));
   }
 }
 

@@ -20,11 +20,8 @@ __global__ void _CosGrad(const int nthreads, const T* dy, const T* x, T* dx) {
 template <>
 __global__ void
 _CosGrad<half>(const int nthreads, const half* dy, const half* x, half* dx) {
-  const half kFactor = __float2half(-1.f);
   CUDA_1D_KERNEL_LOOP(i, nthreads) {
-#if __CUDA_ARCH__ >= 530
-    dx[i] = __hmul(__hmul(dy[i], kFactor), hsin(x[i]));
-#endif
+    dx[i] = __float2half(-__half2float(dy[i]) * sin(__half2float(x[i])));
   }
 }
 
@@ -34,11 +31,10 @@ __global__ void _CosGrad<half2>(
     const half2* dy,
     const half2* x,
     half2* dx) {
-  const half2 kFactor = __float2half2_rn(-1.f);
   CUDA_1D_KERNEL_LOOP(i, nthreads) {
-#if __CUDA_ARCH__ >= 530
-    dx[i] = __hmul2(__hmul2(dy[i], kFactor), h2sin(x[i]));
-#endif
+    const float2 val = __half22float2(x[i]);
+    const float2 grad = __half22float2(dy[i]);
+    dx[i] = __floats2half2_rn(-grad.x * sin(val.x), -grad.y * sin(val.y));
   }
 }
 
@@ -53,9 +49,7 @@ template <>
 __global__ void
 _SinGrad<half>(const int nthreads, const half* dy, const half* x, half* dx) {
   CUDA_1D_KERNEL_LOOP(i, nthreads) {
-#if __CUDA_ARCH__ >= 530
-    dx[i] = __hmul(dy[i], hcos(x[i]));
-#endif
+    dx[i] = __float2half(__half2float(dy[i]) * cos(__half2float(x[i])));
   }
 }
 
@@ -66,9 +60,9 @@ __global__ void _SinGrad<half2>(
     const half2* x,
     half2* dx) {
   CUDA_1D_KERNEL_LOOP(i, nthreads) {
-#if __CUDA_ARCH__ >= 530
-    dx[i] = __hmul2(dy[i], h2cos(x[i]));
-#endif
+    const float2 val = __half22float2(x[i]);
+    const float2 grad = __half22float2(dy[i]);
+    dx[i] = __floats2half2_rn(grad.x * cos(val.x), grad.y * cos(val.y));
   }
 }
 
@@ -86,11 +80,9 @@ __global__ void _ReciprocalGrad<half>(
     const half* dy,
     const half* y,
     half* dx) {
-  const half c = __float2half(-1.f);
   CUDA_1D_KERNEL_LOOP(i, nthreads) {
-#if __CUDA_ARCH__ >= 530
-    dx[i] = __hmul(__hmul(c, dy[i]), utils::math::Square(y[i]));
-#endif
+    dx[i] = __float2half(
+        -__half2float(dy[i]) * utils::math::Square(__half2float(y[i])));
   }
 }
 
@@ -100,11 +92,11 @@ __global__ void _ReciprocalGrad<half2>(
     const half2* dy,
     const half2* y,
     half2* dx) {
-  const half2 c = __float2half2_rn(-1.f);
   CUDA_1D_KERNEL_LOOP(i, nthreads) {
-#if __CUDA_ARCH__ >= 530
-    dx[i] = __hmul2(__hmul2(c, dy[i]), utils::math::Square(y[i]));
-#endif
+    const float2 val = __half22float2(y[i]);
+    const float2 grad = __half22float2(dy[i]);
+    dx[i] =
+        __floats2half2_rn(-grad.x * (val.x * val.x), -grad.y * (val.y * val.y));
   }
 }
 
@@ -118,11 +110,9 @@ __global__ void _RsqrtGrad(const int nthreads, const T* dy, const T* y, T* dx) {
 template <>
 __global__ void
 _RsqrtGrad<half>(const int nthreads, const half* dy, const half* y, half* dx) {
-  const half c = __float2half(-0.5f);
   CUDA_1D_KERNEL_LOOP(i, nthreads) {
-#if __CUDA_ARCH__ >= 530
-    dx[i] = __hmul(__hmul(c, dy[i]), utils::math::Cube(y[i]));
-#endif
+    dx[i] = __float2half(
+        -0.5f * __half2float(dy[i]) * utils::math::Cube(__half2float(y[i])));
   }
 }
 
@@ -132,11 +122,12 @@ __global__ void _RsqrtGrad<half2>(
     const half2* dy,
     const half2* y,
     half2* dx) {
-  const half2 c = __float2half2_rn(-0.5f);
   CUDA_1D_KERNEL_LOOP(i, nthreads) {
-#if __CUDA_ARCH__ >= 530
-    dx[i] = __hmul2(__hmul2(c, dy[i]), utils::math::Cube(y[i]));
-#endif
+    const float2 val = __half22float2(y[i]);
+    const float2 grad = __half22float2(dy[i]);
+    dx[i] = __floats2half2_rn(
+        -0.5f * grad.x * (val.x * val.x * val.x),
+        -0.5f * grad.y * (val.y * val.y * val.y));
   }
 }
 

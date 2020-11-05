@@ -15,8 +15,8 @@ void DropoutOp<Context>::DoRunWithType() {
     Buffer("mask")->ReshapeLike(X);
     kernel::Dropout(
         X.count(),
-        prob(),
-        1.f / (1.f - prob()),
+        ratio(),
+        1.f / (1.f - ratio()),
         X.template data<T, Context>(),
         Buffer("mask")->template mutable_data<uint8_t, Context>(),
         Y->ReshapeLike(X)->template mutable_data<T, Context>(),
@@ -41,7 +41,7 @@ void DropoutGradientOp<Context>::DoRunWithType() {
   } else if (phase() == "TRAIN") {
     kernel::ApplyMask(
         dY.count(),
-        1.f / (1.f - prob()),
+        1.f / (1.f - ratio()),
         dY.template data<T, Context>(),
         Buffer("mask")->template data<uint8_t, Context>(),
         dX->ReshapeLike(dY)->template mutable_data<T, Context>(),

@@ -58,30 +58,29 @@ __global__ void _RoiPool(
     wend = min(max(wend + roi_start_w, 0), W);
     const bool empty = (hend <= hstart) || (wend <= wstart);
 
+    int max_idx = empty ? -1 : 0;
     const T* offset_x = x + (batch_ind * C + c) * H * W;
-
-    int maxi = empty ? -1 : 0;
     T val = empty ? T(0) : offset_x[0];
 
     for (int h = hstart; h < hend; ++h) {
       for (int w = wstart; w < wend; ++w) {
-        int xi = h * W + w;
+        const int xi = h * W + w;
 #if __CUDA_ARCH__ >= 350
         if (__ldg(offset_x + xi) > val) {
-          maxi = xi;
           val = __ldg(offset_x + xi);
+          max_idx = xi;
         }
 #else
-        if (x[xi] > val) {
-          maxi = xi;
+        if (offset_x[xi] > val) {
           val = offset_x[xi];
+          max_idx = xi;
         }
 #endif
       }
     }
 
     y[yi] = val;
-    mask[yi] = maxi;
+    mask[yi] = max_idx;
   }
 }
 
@@ -98,9 +97,7 @@ __global__ void _RoiPool<half>(
     const float* rois,
     int* mask,
     half* y) {
-  const half kZero = __float2half(0.f);
   CUDA_1D_KERNEL_LOOP(yi, nthreads) {
-#if __CUDA_ARCH__ >= 530
     const int ow = yi % out_w;
     const int oh = (yi / out_w) % out_h;
     const int c = (yi / out_w / out_h) % C;
@@ -136,24 +133,42 @@ __global__ void _RoiPool<half>(
     wend = min(max(wend + roi_start_w, 0), W);
     const bool empty = (hend <= hstart) || (wend <= wstart);
 
+    int max_idx = empty ? -1 : 0;
     const half* offset_x = x + ((batch_ind * C + c) * H * W);
-
-    int maxi = empty ? -1 : 0;
-    half val = empty ? kZero : __ldg(offset_x);
+#if __CUDA_ARCH__ >= 530
+    half val = empty ? __float2half(0.f) : __ldg(offset_x);
+#else
+    float val = empty ? 0.f : __half2float(*offset_x);
+#endif
 
     for (int h = hstart; h < hend; ++h) {
       for (int w = wstart; w < wend; ++w) {
-        int xi = h * W + w;
+        const int xi = h * W + w;
+#if __CUDA_ARCH__ >= 530
         if (__hgt(__ldg(offset_x + xi), val)) {
-          maxi = xi;
           val = __ldg(offset_x + xi);
+          max_idx = xi;
         }
+#elif __CUDA_ARCH__ >= 350
+        if (__half2float(__ldg(offset_x + xi)) > val) {
+          val = __half2float(__ldg(offset_x + xi));
+          max_idx = xi;
+        }
+#else
+        if (__half2float(offset_x[xi]) > val) {
+          val = __half2float(offset_x[xi]);
+          max_idx = xi;
+        }
+#endif
       }
     }
 
+#if __CUDA_ARCH__ >= 530
     y[yi] = val;
-    mask[yi] = maxi;
+#else
+    y[yi] = __float2half(val);
 #endif
+    mask[yi] = max_idx;
   }
 }
 
@@ -205,18 +220,21 @@ __global__ void _RoiPoolGrad<half>(
     const int* mask,
     float* dx) {
   CUDA_1D_KERNEL_LOOP(yi, nthreads) {
-#if __CUDA_ARCH__ >= 530
     const int c = (yi / out_w / out_h) % C;
     const int n = yi / out_w / out_h / C;
-
     const float* roi = rois + n * 5;
+
     const int batch_ind = roi[0];
     if (batch_ind < 0) continue;
 
     float* offset_dx = dx + (batch_ind * C + c) * H * W;
-
+#if __CUDA_ARCH__ >= 350
     if (__ldg(mask + yi) != -1) {
       atomicAdd(offset_dx + __ldg(mask + yi), __half2float(dy[yi]));
+    }
+#else
+    if (mask[yi] != -1) {
+      atomicAdd(offset_dx + mask[yi], __half2float(dy[yi]));
     }
 #endif
   }

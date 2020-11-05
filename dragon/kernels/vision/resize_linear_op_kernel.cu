@@ -10,6 +10,14 @@ namespace kernel {
 
 namespace {
 
+#if __CUDA_ARCH__ >= 350
+#define LOAD(x, i) __ldg(x + i)
+#define LOADF(x, i) __half2float(__ldg(x + i))
+#else
+#define LOAD(x, i) x[i]
+#define LOADF(x, i) __half2float(x[i])
+#endif
+
 template <typename T>
 float ComputeScale(T in_size, T out_size, bool align_corners) {
   if (align_corners) {
@@ -62,17 +70,10 @@ __global__ void _ResizeLinearNCHW(
     const float u = w_in - li;
 
     const int offset = (n * C + c) * H;
-#if __CUDA_ARCH__ >= 350
-    const float tl = __ldg(x + ((offset + ti) * W + li));
-    const float tr = __ldg(x + ((offset + ti) * W + ri));
-    const float bl = __ldg(x + ((offset + bi) * W + li));
-    const float br = __ldg(x + ((offset + bi) * W + ri));
-#else
-    const float tl = x[(offset + ti) * W + li];
-    const float tr = x[(offset + ti) * W + ri];
-    const float bl = x[(offset + bi) * W + li];
-    const float br = x[(offset + bi) * W + ri];
-#endif
+    const float tl = LOAD(x, ((offset + ti) * W + li));
+    const float tr = LOAD(x, ((offset + ti) * W + ri));
+    const float bl = LOAD(x, ((offset + bi) * W + li));
+    const float br = LOAD(x, ((offset + bi) * W + ri));
     const float t = tl + (tr - tl) * u;
     const float b = bl + (br - bl) * u;
     y[yi] = (T)(t + (b - t) * v);
@@ -93,7 +94,6 @@ __global__ void _ResizeLinearNCHW<half>(
     const half* x,
     half* y) {
   CUDA_1D_KERNEL_LOOP(yi, nthreads) {
-#if __CUDA_ARCH__ >= 530
     const int w = yi % out_w;
     const int h = (yi / out_w) % out_h;
     const int c = (yi / out_w / out_h) % C;
@@ -110,15 +110,13 @@ __global__ void _ResizeLinearNCHW<half>(
     const float u = w_in - li;
 
     const int offset = (n * C + c) * H;
-    const float tl = __half2float(__ldg(x + ((offset + ti) * W + li)));
-    const float tr = __half2float(__ldg(x + ((offset + ti) * W + ri)));
-    const float bl = __half2float(__ldg(x + ((offset + bi) * W + li)));
-    const float br = __half2float(__ldg(x + ((offset + bi) * W + ri)));
+    const float tl = LOADF(x, ((offset + ti) * W + li));
+    const float tr = LOADF(x, ((offset + ti) * W + ri));
+    const float bl = LOADF(x, ((offset + bi) * W + li));
+    const float br = LOADF(x, ((offset + bi) * W + ri));
     const float t = tl + (tr - tl) * u;
     const float b = bl + (br - bl) * u;
-
     y[yi] = __float2half(t + (b - t) * v);
-#endif
   }
 }
 
@@ -152,17 +150,10 @@ __global__ void _ResizeLinearNHWC(
     const float u = w_in - li;
 
     const int offset = n * H;
-#if __CUDA_ARCH__ >= 350
-    const float tl = __ldg(x + (((offset + ti) * W + li) * C + c));
-    const float tr = __ldg(x + (((offset + ti) * W + ri) * C + c));
-    const float bl = __ldg(x + (((offset + bi) * W + li) * C + c));
-    const float br = __ldg(x + (((offset + bi) * W + ri) * C + c));
-#else
-    const float tl = x[((offset + ti) * W + li) * C + c];
-    const float tr = x[((offset + ti) * W + ri) * C + c];
-    const float bl = x[((offset + bi) * W + li) * C + c];
-    const float br = x[((offset + bi) * W + ri) * C + c];
-#endif
+    const float tl = LOAD(x, (((offset + ti) * W + li) * C + c));
+    const float tr = LOAD(x, (((offset + ti) * W + ri) * C + c));
+    const float bl = LOAD(x, (((offset + bi) * W + li) * C + c));
+    const float br = LOAD(x, (((offset + bi) * W + ri) * C + c));
     const float t = tl + (tr - tl) * u;
     const float b = bl + (br - bl) * u;
     y[yi] = (T)(t + (b - t) * v);
@@ -183,7 +174,6 @@ __global__ void _ResizeLinearNHWC<half>(
     const half* x,
     half* y) {
   CUDA_1D_KERNEL_LOOP(yi, nthreads) {
-#if __CUDA_ARCH__ >= 530
     const int c = yi % C;
     const int w = (yi / C) % out_w;
     const int h = (yi / C / out_w) % out_h;
@@ -200,19 +190,13 @@ __global__ void _ResizeLinearNHWC<half>(
     const float u = w_in - li;
 
     const int offset = n * H;
-    const float tl =
-        __half2float(__ldg(x + (((offset + ti) * W + li) * C + c)));
-    const float tr =
-        __half2float(__ldg(x + (((offset + ti) * W + ri) * C + c)));
-    const float bl =
-        __half2float(__ldg(x + (((offset + bi) * W + li) * C + c)));
-    const float br =
-        __half2float(__ldg(x + (((offset + bi) * W + ri) * C + c)));
+    const float tl = LOADF(x, (((offset + ti) * W + li) * C + c));
+    const float tr = LOADF(x, (((offset + ti) * W + ri) * C + c));
+    const float bl = LOADF(x, (((offset + bi) * W + li) * C + c));
+    const float br = LOADF(x, (((offset + bi) * W + ri) * C + c));
     const float t = tl + (tr - tl) * u;
     const float b = bl + (br - bl) * u;
-
     y[yi] = __float2half(t + (b - t) * v);
-#endif
   }
 }
 
@@ -245,13 +229,8 @@ __global__ void _ResizeLinearGradNCHW(
     const int ri = (w_in < W - 1) ? ceilf(w_in) : W - 1;
     const float u = w_in - li;
 
-#if __CUDA_ARCH__ >= 350
-    const float dt = (1.f - v) * ((float)__ldg(dy + yi));
-    const float db = v * ((float)__ldg(dy + yi));
-#else
-    const float dt = (1.f - v) * ((float)dy[yi]);
-    const float db = v * ((float)dy[yi]);
-#endif
+    const float dt = (1.f - v) * LOAD(dy, yi);
+    const float db = v * LOAD(dy, yi);
 
     const int offset = (n * C + c) * H;
     atomicAdd(&dx[(offset + ti) * W + li], (1.f - u) * dt);
@@ -275,7 +254,6 @@ __global__ void _ResizeLinearGradNCHW<half>(
     const half* dy,
     float* dx) {
   CUDA_1D_KERNEL_LOOP(yi, nthreads) {
-#if __CUDA_ARCH__ >= 530
     const int w = yi % out_w;
     const int h = (yi / out_w) % out_h;
     const int c = (yi / out_w / out_h) % C;
@@ -291,15 +269,14 @@ __global__ void _ResizeLinearGradNCHW<half>(
     const int ri = (w_in < W - 1) ? ceilf(w_in) : W - 1;
     const float u = w_in - li;
 
-    const float dt = (1.f - v) * __half2float(__ldg(dy + yi));
-    const float db = v * __half2float(__ldg(dy + yi));
+    const float dt = (1.f - v) * LOADF(dy, yi);
+    const float db = v * LOADF(dy, yi);
 
     const int offset = (n * C + c) * H;
     atomicAdd(&dx[(offset + ti) * W + li], (1.f - u) * dt);
     atomicAdd(&dx[(offset + ti) * W + ri], u * dt);
     atomicAdd(&dx[(offset + bi) * W + li], (1.f - u) * db);
     atomicAdd(&dx[(offset + bi) * W + ri], u * db);
-#endif
   }
 }
 
@@ -332,13 +309,8 @@ __global__ void _ResizeLinearGradNHWC(
     const int ri = (w_in < W - 1) ? ceilf(w_in) : W - 1;
     const float u = w_in - li;
 
-#if __CUDA_ARCH__ >= 350
-    const float dt = (1.f - v) * ((float)__ldg(dy + yi));
-    const float db = v * ((float)__ldg(dy + yi));
-#else
-    const float dt = (1.f - v) * ((float)dy[yi]);
-    const float db = v * ((float)dy[yi]);
-#endif
+    const float dt = (1.f - v) * LOAD(dy, yi);
+    const float db = v * LOAD(dy, yi);
 
     const int offset = n * H;
     atomicAdd(&dx[((offset + ti) * W + li) * C + c], (1.f - u) * dt);
@@ -347,6 +319,49 @@ __global__ void _ResizeLinearGradNHWC(
     atomicAdd(&dx[((offset + bi) * W + ri) * C + c], u * db);
   }
 }
+
+template <>
+__global__ void _ResizeLinearGradNHWC<half>(
+    const int nthreads,
+    const int C,
+    const int H,
+    const int W,
+    const int out_h,
+    const int out_w,
+    const float scale_h,
+    const float scale_w,
+    const bool align_corners,
+    const half* dy,
+    float* dx) {
+  CUDA_1D_KERNEL_LOOP(yi, nthreads) {
+    const int c = yi % C;
+    const int w = (yi / C) % out_w;
+    const int h = (yi / C / out_w) % out_h;
+    const int n = yi / C / out_w / out_h;
+
+    const float h_in = TransformCoordinate(h, scale_h, align_corners);
+    const int ti = floorf(h_in);
+    const int bi = (h_in < H - 1) ? ceilf(h_in) : H - 1;
+    const float v = h_in - ti;
+
+    const float w_in = TransformCoordinate(w, scale_w, align_corners);
+    const int li = floorf(w_in);
+    const int ri = (w_in < W - 1) ? ceilf(w_in) : W - 1;
+    const float u = w_in - li;
+
+    const float dt = (1.f - v) * LOADF(dy, yi);
+    const float db = v * LOADF(dy, yi);
+
+    const int offset = n * H;
+    atomicAdd(&dx[((offset + ti) * W + li) * C + c], (1.f - u) * dt);
+    atomicAdd(&dx[((offset + ti) * W + ri) * C + c], u * dt);
+    atomicAdd(&dx[((offset + bi) * W + li) * C + c], (1.f - u) * db);
+    atomicAdd(&dx[((offset + bi) * W + ri) * C + c], u * db);
+  }
+}
+
+#undef LOAD
+#undef LOADF
 
 } // namespace
 

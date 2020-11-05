@@ -1,6 +1,7 @@
 #ifdef USE_CUDA
 
 #include "dragon/core/context_cuda.h"
+#include "dragon/utils/math_functions.h"
 #include "dragon/utils/op_kernels.h"
 
 namespace dragon {
@@ -52,40 +53,8 @@ __global__ void _IndexSelectGrad(
       int pos = index[k];
 #endif
       pos = pos >= 0 ? pos : pos + axis_dim;
-      dx[x_offset + pos * inner_dim] += (*offset_dy);
-      offset_dy += inner_dim;
-    }
-  }
-}
-
-template <>
-__global__ void _IndexSelectGrad<half>(
-    const int nthreads,
-    const int inner_dim,
-    const int axis_dim,
-    const int select_dim,
-    const int64_t* index,
-    const half* dy,
-    half* dx) {
-  CUDA_1D_KERNEL_LOOP(ti, nthreads) {
-    const int i = ti / inner_dim;
-    const int j = ti % inner_dim;
-    const int x_offset = i * axis_dim * inner_dim + j;
-    const half* offset_dy = dy + i * select_dim * inner_dim + j;
-    for (int k = 0; k < select_dim; ++k) {
-#if __CUDA_ARCH__ >= 350
-      int pos = __ldg(index + k);
-#else
-      int pos = index[k];
-#endif
-      pos = pos >= 0 ? pos : pos + axis_dim;
       pos = x_offset + pos * inner_dim;
-#if __CUDA_ARCH__ >= 530
-      dx[pos] = __hadd(dx[pos], *(offset_dy));
-#else
-      dx[pos] =
-          __float2half(__half2float(dx[pos]) + __half2float(*(offset_dy)));
-#endif
+      dx[pos] = math::PlusFunctor<T>()(dx[pos], *(offset_dy));
       offset_dy += inner_dim;
     }
   }
@@ -94,31 +63,6 @@ __global__ void _IndexSelectGrad<half>(
 } // namespace
 
 /* ------------------- Launcher Separator ------------------- */
-
-template <>
-void IndexSelectGrad<float16, CUDAContext>(
-    const int outer_dim,
-    const int inner_dim,
-    const int axis_dim,
-    const int select_dim,
-    const int64_t* index,
-    const float16* dy,
-    float16* dx,
-    CUDAContext* ctx) {
-  const int nthreads = outer_dim * inner_dim;
-  _IndexSelectGrad<<<
-      CUDA_BLOCKS(nthreads),
-      CUDA_THREADS,
-      0,
-      ctx->cuda_stream()>>>(
-      nthreads,
-      inner_dim,
-      axis_dim,
-      select_dim,
-      index,
-      reinterpret_cast<const half*>(dy),
-      reinterpret_cast<half*>(dx));
-} // IndexSelectGrad
 
 #define DEFINE_KERNEL_LAUNCHER(T)                                \
   template <>                                                    \
@@ -169,6 +113,7 @@ DEFINE_KERNEL_LAUNCHER(float16);
 DEFINE_KERNEL_LAUNCHER(float);
 DEFINE_KERNEL_LAUNCHER(double);
 
+DEFINE_GRAD_KERNEL_LAUNCHER(float16);
 DEFINE_GRAD_KERNEL_LAUNCHER(float);
 DEFINE_GRAD_KERNEL_LAUNCHER(double);
 

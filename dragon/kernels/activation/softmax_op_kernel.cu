@@ -71,7 +71,6 @@ __global__ void _Softmax<half>(
     const half lowest,
     const half* x,
     half* y) {
-#if __CUDA_ARCH__ >= 530
   __shared__ float block_val;
   __shared__ typename BlockReduce<float>::TempStorage storage;
   CUDA_2D_KERNEL_LOOP1(i, rows) {
@@ -105,7 +104,6 @@ __global__ void _Softmax<half>(
       y[yi] = __float2half(__half2float(y[yi]) / block_val);
     }
   }
-#endif
 }
 
 template <typename T>
@@ -153,7 +151,6 @@ __global__ void _SoftmaxGrad<half>(
     const half* dy,
     const half* y,
     half* dx) {
-#if __CUDA_ARCH__ >= 530
   __shared__ float block_val;
   __shared__ typename BlockReduce<float>::TempStorage storage;
   CUDA_2D_KERNEL_LOOP1(i, rows) {
@@ -162,7 +159,11 @@ __global__ void _SoftmaxGrad<half>(
     float val = 0.f;
     CUDA_2D_KERNEL_LOOP2(j, cols) {
       const int yi = c + j * inner_dim;
+#if __CUDA_ARCH__ >= 350
       val += __half2float(__ldg(dy + yi)) * __half2float(__ldg(y + yi));
+#else
+      val += __half2float(dy[yi]) * __half2float(y[yi]);
+#endif
     }
     val = BlockReduce<float>(storage).Sum(val);
     if (threadIdx.x == 0) block_val = val;
@@ -170,12 +171,16 @@ __global__ void _SoftmaxGrad<half>(
 
     CUDA_2D_KERNEL_LOOP2(j, cols) {
       const int yi = c + j * inner_dim;
+#if __CUDA_ARCH__ >= 350
       dx[yi] = __float2half(
           (__half2float(__ldg(dy + yi)) - block_val) *
           __half2float(__ldg(y + yi)));
+#else
+      dx[yi] = __float2half(
+          (__half2float(dy[yi]) - block_val) * __half2float(y[yi]));
+#endif
     }
   }
-#endif
 } // SoftmaxGrad
 
 } // namespace

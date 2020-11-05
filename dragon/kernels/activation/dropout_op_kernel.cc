@@ -37,20 +37,20 @@ void _ApplyMask<float16>(
 template <typename T>
 void _Dropout(
     const int count,
-    const T prob,
+    const T ratio,
     const T scale,
     const T* x,
     uint8_t* mask,
     T* y,
     CPUContext* ctx) {
-  math::RandomBernoulli(count, T(1) - prob, mask, ctx);
+  math::RandomBernoulli(count, T(1) - ratio, mask, ctx);
   _ApplyMask(count, scale, x, mask, y);
 }
 
 template <>
 void _Dropout<float16>(
     const int count,
-    const float16 prob,
+    const float16 ratio,
     const float16 scale,
     const float16* x,
     uint8_t* mask,
@@ -63,28 +63,28 @@ void _Dropout<float16>(
 
 /* ------------------- Launcher Separator ------------------- */
 
-#define DEFINE_KERNEL_LAUNCHER(T)                                            \
-  template <>                                                                \
-  void ApplyMask<T, CPUContext>(                                             \
-      const int count,                                                       \
-      const float scale,                                                     \
-      const T* x,                                                            \
-      const uint8_t* mask,                                                   \
-      T* y,                                                                  \
-      CPUContext* ctx) {                                                     \
-    _ApplyMask(count, cast::to<T>(scale), x, mask, y);                       \
-  }                                                                          \
-  template <>                                                                \
-  void Dropout<T, CPUContext>(                                               \
-      const int count,                                                       \
-      const float prob,                                                      \
-      const float scale,                                                     \
-      const T* x,                                                            \
-      uint8_t* mask,                                                         \
-      T* y,                                                                  \
-      uint32_t* r,                                                           \
-      CPUContext* ctx) {                                                     \
-    _Dropout(count, cast::to<T>(prob), cast::to<T>(scale), x, mask, y, ctx); \
+#define DEFINE_KERNEL_LAUNCHER(T)                                             \
+  template <>                                                                 \
+  void ApplyMask<T, CPUContext>(                                              \
+      const int count,                                                        \
+      const float scale,                                                      \
+      const T* x,                                                             \
+      const uint8_t* mask,                                                    \
+      T* y,                                                                   \
+      CPUContext* ctx) {                                                      \
+    _ApplyMask(count, cast::to<T>(scale), x, mask, y);                        \
+  }                                                                           \
+  template <>                                                                 \
+  void Dropout<T, CPUContext>(                                                \
+      const int count,                                                        \
+      const float ratio,                                                      \
+      const float scale,                                                      \
+      const T* x,                                                             \
+      uint8_t* mask,                                                          \
+      T* y,                                                                   \
+      uint32_t* r,                                                            \
+      CPUContext* ctx) {                                                      \
+    _Dropout(count, cast::to<T>(ratio), cast::to<T>(scale), x, mask, y, ctx); \
   }
 
 DEFINE_KERNEL_LAUNCHER(float16);

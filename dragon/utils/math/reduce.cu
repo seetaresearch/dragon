@@ -36,6 +36,28 @@ __global__ void _RowwiseReduce(
   }
 }
 
+template <class Reducer>
+__global__ void _RowwiseReduce(
+    const int rows,
+    const int cols,
+    const Reducer reducer,
+    const float init,
+    const float scale,
+    const half* x,
+    half* y) {
+  __shared__ typename BlockReduce<float>::TempStorage storage;
+  CUDA_2D_KERNEL_LOOP1(i, cols) {
+    float val = init;
+    CUDA_2D_KERNEL_LOOP2(j, rows) {
+      val = reducer(val, __half2float(x[j * cols + i]));
+    }
+    val = BlockReduce<float>(storage).Reduce(val, reducer);
+    if (threadIdx.x == 0) {
+      y[i] = __float2half(val * scale);
+    }
+  }
+}
+
 template <typename T, class Reducer>
 __global__ void _ColwiseReduce(
     const int rows,
@@ -54,6 +76,28 @@ __global__ void _ColwiseReduce(
     val = BlockReduce<T>(storage).Reduce(val, reducer);
     if (threadIdx.x == 0) {
       y[i] = math::MultipliesFunctor<T>()(val, scale);
+    }
+  }
+}
+
+template <class Reducer>
+__global__ void _ColwiseReduce(
+    const int rows,
+    const int cols,
+    const Reducer reducer,
+    const float init,
+    const float scale,
+    const half* x,
+    half* y) {
+  __shared__ typename BlockReduce<float>::TempStorage storage;
+  CUDA_2D_KERNEL_LOOP1(i, rows) {
+    float val = init;
+    CUDA_2D_KERNEL_LOOP2(j, cols) {
+      val = reducer(val, __half2float(x[i * cols + j]));
+    }
+    val = BlockReduce<float>(storage).Sum(val);
+    if (threadIdx.x == 0) {
+      y[i] = __float2half(val * scale);
     }
   }
 }
@@ -89,99 +133,134 @@ __global__ void _GenericReduce(
   }
 }
 
-#define DEFINE_REDUCE_FUNCTION(name)                                           \
-  template <typename T, typename Reducer>                                      \
-  int _Reduce##name(                                                           \
-      const int num_dims,                                                      \
-      const int* dims,                                                         \
-      const int num_axes,                                                      \
-      const int* axes,                                                         \
-      const Reducer reducer,                                                   \
-      const T init,                                                            \
-      const float scale,                                                       \
-      const T* x,                                                              \
-      T* y,                                                                    \
-      CUDAContext* ctx) {                                                      \
-    const int count =                                                          \
-        std::accumulate(dims, dims + num_dims, 1, std::multiplies<int>());     \
-    if (num_dims == num_axes && count > 10000) {                               \
-      size_t ws_nbytes = 0;                                                    \
-      cub::DeviceReduce::Reduce(                                               \
-          nullptr,                                                             \
-          ws_nbytes,                                                           \
-          x,                                                                   \
-          y,                                                                   \
-          count,                                                               \
-          reducer,                                                             \
-          cast::to<T>(init),                                                   \
-          ctx->cuda_stream());                                                 \
-      cub::DeviceReduce::Reduce(                                               \
-          ctx->workspace()->data<CUDAContext>({ws_nbytes}, "data:1")[0],       \
-          ws_nbytes,                                                           \
-          x,                                                                   \
-          y,                                                                   \
-          count,                                                               \
-          reducer,                                                             \
-          cast::to<T>(init),                                                   \
-          ctx->cuda_stream());                                                 \
-      return 0;                                                                \
-    }                                                                          \
-    int rows, cols;                                                            \
-    vec32_t y_dims(dims, dims + num_dims);                                     \
-    for (int i = 0; i < num_axes; ++i)                                         \
-      y_dims[axes[i]] = 1;                                                     \
-    /*! Case #1: Rowwise Reduce */                                             \
-    if (utils::math::IsRowwiseReduce(                                          \
-            num_dims, dims, y_dims.data(), &rows, &cols)) {                    \
-      _RowwiseReduce<<<                                                        \
-          CUDA_2D_BLOCKS(cols),                                                \
-          CUDA_THREADS,                                                        \
-          0,                                                                   \
-          ctx->cuda_stream()>>>(                                               \
-          rows, cols, reducer, init, cast::to<T>(scale), x, y);                \
-      return 1;                                                                \
-    }                                                                          \
-    /*! Case #2: Colwise Reduce */                                             \
-    if (utils::math::IsColwiseReduce(                                          \
-            num_dims, dims, y_dims.data(), &rows, &cols)) {                    \
-      _ColwiseReduce<<<                                                        \
-          CUDA_2D_BLOCKS(rows),                                                \
-          CUDA_THREADS,                                                        \
-          0,                                                                   \
-          ctx->cuda_stream()>>>(                                               \
-          rows, cols, reducer, init, cast::to<T>(scale), x, y);                \
-      return 2;                                                                \
-    }                                                                          \
-    /*! Case #3: Generic Reduce */                                             \
-    CUDA_TENSOR_DIMS_CHECK(num_dims);                                          \
-    SimpleArray<int, CUDA_TENSOR_MAX_DIMS> axesT, stridesT, dimsT;             \
-    utils::math::TransposeAxesForReduce(num_dims, num_axes, axes, axesT.data); \
-    utils::math::ComputeTransposeStrides(                                      \
-        num_dims, dims, axesT.data, stridesT.data);                            \
-    rows = cols = 1;                                                           \
-    const int pivot = num_dims - num_axes;                                     \
-    for (int i = 0; i < pivot; ++i)                                            \
-      rows *= dims[axesT.data[i]];                                             \
-    for (int i = pivot; i < num_dims; ++i)                                     \
-      cols *= dims[axesT.data[i]];                                             \
-    for (int i = 0; i < num_dims; ++i)                                         \
-      dimsT.data[i] = dims[axesT.data[i]];                                     \
-    _GenericReduce<<<                                                          \
-        CUDA_2D_BLOCKS(rows),                                                  \
-        CUDA_THREADS,                                                          \
-        0,                                                                     \
-        ctx->cuda_stream()>>>(                                                 \
-        rows,                                                                  \
-        cols,                                                                  \
-        num_dims,                                                              \
-        dimsT,                                                                 \
-        stridesT,                                                              \
-        reducer,                                                               \
-        init,                                                                  \
-        cast::to<T>(scale),                                                    \
-        x,                                                                     \
-        y);                                                                    \
-    return 3;                                                                  \
+template <class Reducer, int D>
+__global__ void _GenericReduce(
+    const int rows,
+    const int cols,
+    const int num_dims,
+    const SimpleArray<int, D> x_dims,
+    const SimpleArray<int, D> x_strides,
+    const Reducer reducer,
+    const float init,
+    const float scale,
+    const half* x,
+    half* y) {
+  __shared__ typename BlockReduce<float>::TempStorage storage;
+  CUDA_2D_KERNEL_LOOP1(i, rows) {
+    float val = init;
+    CUDA_2D_KERNEL_LOOP2(j, cols) {
+      int xi = 0, c = i * cols + j;
+      for (int d = num_dims - 1; d >= 0; --d) {
+        int r;
+        FIXED_DIVISOR_DIV_MOD(x_dims.data[d], c, &c, &r);
+        xi += r * x_strides.data[d];
+      }
+      val = reducer(val, __half2float(x[xi]));
+    }
+    val = BlockReduce<float>(storage).Reduce(val, reducer);
+    if (threadIdx.x == 0) {
+      y[i] = __float2half(val * scale);
+    }
+  }
+}
+
+#define DEFINE_REDUCE_FUNCTION(name)                                       \
+  template <typename T, typename Reducer>                                  \
+  int _Reduce##name(                                                       \
+      const int num_dims,                                                  \
+      const int* dims,                                                     \
+      const int num_axes,                                                  \
+      const int* axes,                                                     \
+      const Reducer reducer,                                               \
+      const T init,                                                        \
+      const float scale,                                                   \
+      const T* x,                                                          \
+      T* y,                                                                \
+      CUDAContext* ctx) {                                                  \
+    const int count =                                                      \
+        std::accumulate(dims, dims + num_dims, 1, std::multiplies<int>()); \
+    if (num_dims == num_axes && count > 10000) {                           \
+      size_t ws_nbytes = 0;                                                \
+      cub::DeviceReduce::Reduce(                                           \
+          nullptr,                                                         \
+          ws_nbytes,                                                       \
+          x,                                                               \
+          y,                                                               \
+          count,                                                           \
+          reducer,                                                         \
+          cast::to<T>(init),                                               \
+          ctx->cuda_stream());                                             \
+      cub::DeviceReduce::Reduce(                                           \
+          ctx->workspace()->data<CUDAContext>({ws_nbytes}, "data:1")[0],   \
+          ws_nbytes,                                                       \
+          x,                                                               \
+          y,                                                               \
+          count,                                                           \
+          reducer,                                                         \
+          cast::to<T>(init),                                               \
+          ctx->cuda_stream());                                             \
+      return 0;                                                            \
+    }                                                                      \
+    int rows, cols;                                                        \
+    vec32_t out_dims(dims, dims + num_dims);                               \
+    for (int i = 0; i < num_axes; ++i) {                                   \
+      out_dims[axes[i]] = 1;                                               \
+    }                                                                      \
+    if (utils::math::IsRowwiseReduce(                                      \
+            num_dims, dims, out_dims.data(), &rows, &cols)) {              \
+      _RowwiseReduce<<<                                                    \
+          CUDA_2D_BLOCKS(cols),                                            \
+          CUDA_THREADS,                                                    \
+          0,                                                               \
+          ctx->cuda_stream()>>>(                                           \
+          rows, cols, reducer, init, cast::to<T>(scale), x, y);            \
+      return 1;                                                            \
+    }                                                                      \
+    if (utils::math::IsColwiseReduce(                                      \
+            num_dims, dims, out_dims.data(), &rows, &cols)) {              \
+      _ColwiseReduce<<<                                                    \
+          CUDA_2D_BLOCKS(rows),                                            \
+          CUDA_THREADS,                                                    \
+          0,                                                               \
+          ctx->cuda_stream()>>>(                                           \
+          rows, cols, reducer, init, cast::to<T>(scale), x, y);            \
+      return 2;                                                            \
+    }                                                                      \
+    CUDA_TENSOR_DIMS_CHECK(num_dims);                                      \
+    SimpleArray<int, CUDA_TENSOR_MAX_DIMS> transpose_axes;                 \
+    SimpleArray<int, CUDA_TENSOR_MAX_DIMS> transpose_strides;              \
+    SimpleArray<int, CUDA_TENSOR_MAX_DIMS> transpose_dims;                 \
+    utils::math::TransposeAxesForReduce(                                   \
+        num_dims, num_axes, axes, transpose_axes.data);                    \
+    utils::math::ComputeTransposeStrides(                                  \
+        num_dims, dims, transpose_axes.data, transpose_strides.data);      \
+    rows = cols = 1;                                                       \
+    const int pivot = num_dims - num_axes;                                 \
+    for (int i = 0; i < pivot; ++i) {                                      \
+      rows *= dims[transpose_axes.data[i]];                                \
+    }                                                                      \
+    for (int i = pivot; i < num_dims; ++i) {                               \
+      cols *= dims[transpose_axes.data[i]];                                \
+    }                                                                      \
+    for (int i = 0; i < num_dims; ++i) {                                   \
+      transpose_dims.data[i] = dims[transpose_axes.data[i]];               \
+    }                                                                      \
+    _GenericReduce<<<                                                      \
+        CUDA_2D_BLOCKS(rows),                                              \
+        CUDA_THREADS,                                                      \
+        0,                                                                 \
+        ctx->cuda_stream()>>>(                                             \
+        rows,                                                              \
+        cols,                                                              \
+        num_dims,                                                          \
+        transpose_dims,                                                    \
+        transpose_strides,                                                 \
+        reducer,                                                           \
+        init,                                                              \
+        cast::to<T>(scale),                                                \
+        x,                                                                 \
+        y);                                                                \
+    return 3;                                                              \
   }
 
 DEFINE_REDUCE_FUNCTION(Max);
@@ -192,6 +271,91 @@ DEFINE_REDUCE_FUNCTION(Sum);
 } // namespace
 
 /* ------------------- Launcher Separator ------------------- */
+
+// Fallback to use FP32 accumulator instead of FP16.
+// We found that FP16 accumulator drops too many small values in
+// empirical experiments.
+template <>
+void ReduceSum<float16, CUDAContext>(
+    const int num_dims,
+    const int* dims,
+    const int num_axes,
+    const int* axes,
+    const float scale,
+    const float16* x,
+    float16* y,
+    CUDAContext* ctx) {
+  // NB: There is no way to dispatch device reduce
+  //     with FP32 accumulator for FP16 input type.
+  //     Performance may drop in some cases.
+  int rows, cols;
+  vec32_t out_dims(dims, dims + num_dims);
+  for (int i = 0; i < num_axes; ++i) {
+    out_dims[axes[i]] = 1;
+  }
+  if (utils::math::IsRowwiseReduce(
+          num_dims, dims, out_dims.data(), &rows, &cols)) {
+    _RowwiseReduce<<<
+        CUDA_2D_BLOCKS(cols),
+        CUDA_THREADS,
+        0,
+        ctx->cuda_stream()>>>(
+        rows,
+        cols,
+        math::PlusFunctor<float>(),
+        0.f,
+        scale,
+        reinterpret_cast<const half*>(x),
+        reinterpret_cast<half*>(y));
+    return;
+  }
+  if (utils::math::IsColwiseReduce(
+          num_dims, dims, out_dims.data(), &rows, &cols)) {
+    _ColwiseReduce<<<
+        CUDA_2D_BLOCKS(rows),
+        CUDA_THREADS,
+        0,
+        ctx->cuda_stream()>>>(
+        rows,
+        cols,
+        math::PlusFunctor<float>(),
+        0.f,
+        scale,
+        reinterpret_cast<const half*>(x),
+        reinterpret_cast<half*>(y));
+    return;
+  }
+  CUDA_TENSOR_DIMS_CHECK(num_dims);
+  SimpleArray<int, CUDA_TENSOR_MAX_DIMS> transpose_axes;
+  SimpleArray<int, CUDA_TENSOR_MAX_DIMS> transpose_strides;
+  SimpleArray<int, CUDA_TENSOR_MAX_DIMS> transpose_dims;
+  utils::math::TransposeAxesForReduce(
+      num_dims, num_axes, axes, transpose_axes.data);
+  utils::math::ComputeTransposeStrides(
+      num_dims, dims, transpose_axes.data, transpose_strides.data);
+  rows = cols = 1;
+  const int pivot = num_dims - num_axes;
+  for (int i = 0; i < pivot; ++i) {
+    rows *= dims[transpose_axes.data[i]];
+  }
+  for (int i = pivot; i < num_dims; ++i) {
+    cols *= dims[transpose_axes.data[i]];
+  }
+  for (int i = 0; i < num_dims; ++i) {
+    transpose_dims.data[i] = dims[transpose_axes.data[i]];
+  }
+  _GenericReduce<<<CUDA_2D_BLOCKS(rows), CUDA_THREADS, 0, ctx->cuda_stream()>>>(
+      rows,
+      cols,
+      num_dims,
+      transpose_dims,
+      transpose_strides,
+      math::PlusFunctor<float>(),
+      0.f,
+      scale,
+      reinterpret_cast<const half*>(x),
+      reinterpret_cast<half*>(y));
+}
 
 #define DEFINE_KERNEL_LAUNCHER(name, T, Reducer, kInit) \
   template <>                                           \
@@ -294,7 +458,6 @@ DEFINE_KERNEL_LAUNCHER(Sum, int8_t, math::PlusFunctor, int8_t(0));
 DEFINE_KERNEL_LAUNCHER(Sum, uint8_t, math::PlusFunctor, uint8_t(0));
 DEFINE_KERNEL_LAUNCHER(Sum, int, math::PlusFunctor, int(0));
 DEFINE_KERNEL_LAUNCHER(Sum, int64_t, math::PlusFunctor, int64_t(0));
-DEFINE_KERNEL_LAUNCHER(Sum, float16, math::PlusFunctor, cast::to<float16>(0.f));
 DEFINE_KERNEL_LAUNCHER(Sum, float, math::PlusFunctor, 0.f);
 DEFINE_KERNEL_LAUNCHER(Sum, double, math::PlusFunctor, 0.);
 #undef DEFINE_KERNEL_LAUNCHER

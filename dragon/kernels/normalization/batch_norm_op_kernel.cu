@@ -10,9 +10,9 @@ namespace dragon {
 namespace kernel {
 
 #if __CUDA_ARCH__ >= 350
-#define L(x, i) __ldg(x + i)
+#define LOAD(x, i) __ldg(x + i)
 #else
-#define L(x, i) x[i]
+#define LOAD(x, i) x[i]
 #endif
 
 namespace {
@@ -34,8 +34,8 @@ __global__ void _BatchNormExpectation(
     CUDA_2D_KERNEL_LOOP2(j, outer_dim) {
       const int xi = kOrder == StorageOrder::NCHW ? (j / S * C + i) * S + j % S
                                                   : j * C + i;
-      ex_val += L(x, xi);
-      ex2_val += utils::math::Square(L(x, xi));
+      ex_val += LOAD(x, xi);
+      ex2_val += utils::math::Square(LOAD(x, xi));
     }
     ex_val = BlockReduce<Tp>(ex_storage).Reduce(ex_val, cub::Sum());
     ex2_val = BlockReduce<Tp>(ex2_storage).Reduce(ex2_val, cub::Sum());
@@ -66,8 +66,8 @@ __global__ void _BatchNormInternalGrad(
     CUDA_2D_KERNEL_LOOP2(j, outer_dim) {
       const int xi = kOrder == StorageOrder::NCHW ? (j / S * C + i) * S + j % S
                                                   : j * C + i;
-      dg_val += L(dy, xi) * (L(x, xi) - L(mu, i)) * L(rsig, i);
-      db_val += L(dy, xi);
+      dg_val += LOAD(dy, xi) * (LOAD(x, xi) - LOAD(mu, i)) * LOAD(rsig, i);
+      db_val += LOAD(dy, xi);
     }
     dg_val = BlockReduce<Tp>(dg_storage).Reduce(dg_val, cub::Sum());
     db_val = BlockReduce<Tp>(db_storage).Reduce(db_val, cub::Sum());
@@ -95,9 +95,9 @@ __global__ void _BatchNormTrainingGrad(
   const Tp denom = Tp(1) / Tp(N * S);
   CUDA_1D_KERNEL_LOOP(i, nthreads) {
     const int pi = kOrder == StorageOrder::NCHW ? (i / S) % C : i % C;
-    const Tp x_norm = (L(x, i) - L(mu, pi)) * L(rsig, pi);
-    dx[i] = L(gamma, pi) * L(rsig, pi) *
-        (L(dy, i) - fma(x_norm, L(dgamma, pi), L(dbeta, pi)) * denom);
+    const Tp x_norm = (LOAD(x, i) - LOAD(mu, pi)) * LOAD(rsig, pi);
+    dx[i] = LOAD(gamma, pi) * LOAD(rsig, pi) *
+        (LOAD(dy, i) - fma(x_norm, LOAD(dgamma, pi), LOAD(dbeta, pi)) * denom);
   }
 }
 
@@ -120,8 +120,8 @@ __global__ void _BatchNormWGrad(
     CUDA_2D_KERNEL_LOOP2(j, outer_dim) {
       const int xi = kOrder == StorageOrder::NCHW ? (j / S * C + i) * S + j % S
                                                   : j * C + i;
-      dg_val += L(dy, xi) * (L(x, xi) - L(mu, i)) * L(rsig, i);
-      db_val += L(dy, xi);
+      dg_val += LOAD(dy, xi) * (LOAD(x, xi) - LOAD(mu, i)) * LOAD(rsig, i);
+      db_val += LOAD(dy, xi);
     }
     dg_val = BlockReduce<Tp>(dg_storage).Reduce(dg_val, cub::Sum());
     db_val = BlockReduce<Tp>(db_storage).Reduce(db_val, cub::Sum());
@@ -143,9 +143,11 @@ __global__ void _BatchNormInferenceGrad(
     Tx* dx) {
   CUDA_1D_KERNEL_LOOP(i, nthreads) {
     const int pi = kOrder == StorageOrder::NCHW ? (i / S) % C : i % C;
-    dx[i] = L(gamma, pi) * L(dy, i) * L(rsig, pi);
+    dx[i] = LOAD(gamma, pi) * LOAD(dy, i) * LOAD(rsig, pi);
   }
 }
+
+#undef LOAD
 
 } // namespace
 
@@ -294,7 +296,6 @@ __global__ void _BatchNormInferenceGrad(
 
 DEFINE_GRAD_KERNEL_LAUNCHER(float, float);
 
-#undef L
 #undef DEFINE_GRAD_KERNEL_LAUNCHER
 
 } // namespace kernel

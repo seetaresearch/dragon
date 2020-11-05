@@ -47,7 +47,7 @@ class Dropout(Layer):
         param = layer_param.dropout_param
         if not param.scale_train:
             raise ValueError('Unscaled dropout is not supported.')
-        self.arguments = {'prob': param.dropout_ratio}
+        self.arguments = {'ratio': param.dropout_ratio}
 
     def __call__(self, bottom):
         return activation_ops.dropout(bottom, **self.arguments)

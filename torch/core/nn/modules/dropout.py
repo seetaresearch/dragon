@@ -25,10 +25,10 @@ class DropBlock2d(Module):
     The **DropBlock** function is defined as:
 
     .. math::
-        \text{DropBlock}(x_{ijk} =
-            x_{ijk} * (r_{ik} \sim \mathcal{B}(1, \alpha\gamma)) \\ \quad \\
+        \text{DropBlock}(x_{ijk}) =
+            x_{ijk} * (r_{ik} \sim \mathcal{B}(1, 1 - \gamma)) \\ \quad \\
                 \text{where}\quad \gamma =
-                    \frac{\text{keep\_prob}}{\text{block\_size}^{n}}
+                    \frac{p}{\text{block\_size}^{n}}
                     \frac{\text{feat\_size}^{n}}{(\text{feat\_size} - \text{block\_size} + 1)^n}
 
     Examples:
@@ -45,56 +45,35 @@ class DropBlock2d(Module):
 
     """
 
-    # Store the global unique slot index
-    _DEFAULT_UNIQUE_SLOT_ID = 0
-
-    def __init__(
-        self,
-        kp=0.9,
-        block_size=7,
-        alpha=1.,
-        decrement=0.,
-        inplace=False,
-    ):
+    def __init__(self, p=0.1, block_size=7, inplace=False):
         r"""Create a ``DropBlock2d`` module.
 
         Parameters
         ----------
-        kp : float, optional, default=0.9
-            The keeping prob.
+        p : float, optional, default=0.1
+            The dropping ratio.
         block_size : int, optional, default=7
             The size of a spatial block.
-        alpha : float, optional, default=1.
-            The scale factor to :math:`\gamma`.
-        decrement : float, optional, default=0.
-            The decrement value to ``kp``.
         inplace : bool, optional, default=False
             Whether to do the operation in-place.
 
         """
         super(DropBlock2d, self).__init__()
-        self.kp = kp
+        self.p = p
         self.block_size = block_size
-        self.alpha = alpha
-        self.decrement = decrement
         self.inplace = inplace
-        DropBlock2d._DEFAULT_UNIQUE_SLOT_ID += 1
-        self.slot = DropBlock2d._DEFAULT_UNIQUE_SLOT_ID
 
     def extra_repr(self):
         inplace_str = ', inplace' if self.inplace else ''
-        return 'block_size={}, kp={}{}'.format(self.block_size, self.kp, inplace_str)
+        return 'p={}, block_size={}{}' \
+               .format(self.p, self.block_size, inplace_str)
 
     def forward(self, input):
         return F.drop_block2d(
-            input,
-            kp=self.kp,
+            input, self.p,
             block_size=self.block_size,
-            alpha=self.alpha,
-            decrement=self.decrement,
             training=self.training,
             inplace=self.inplace,
-            slot=self.slot,
         )
 
 
@@ -104,7 +83,7 @@ class Dropout(Module):
 
     The **Dropout** function is defined as:
 
-    .. math:: \text{Dropout}(x) = x * (r \sim \mathcal{B}(1, 1 - \text{prob}))
+    .. math:: \text{Dropout}(x) = x * (r \sim \mathcal{B}(1, 1 - p))
 
     Examples:
 
@@ -131,7 +110,7 @@ class Dropout(Module):
         Parameters
         ----------
         p : float, optional, default=0.5
-            The dropping prob.
+            The dropping ratio.
         inplace : bool, optional, default=False
             Whether to do the operation in-place.
 
@@ -154,7 +133,7 @@ class DropPath(Module):
 
     The **DropPath** function is defined as:
 
-    .. math:: \text{DropPath}(x_{ij}) = x_{ij} * (r_{i} \sim \mathcal{B}(1, 1 - \text{prob}))
+    .. math:: \text{DropPath}(x_{ij}) = x_{ij} * (r_{i} \sim \mathcal{B}(1, 1 - p))
 
     Examples:
 
@@ -170,39 +149,24 @@ class DropPath(Module):
 
     """
 
-    # Store the global unique slot index
-    _DEFAULT_UNIQUE_SLOT_ID = 0
-
-    def __init__(self, p=0.2, increment=0., inplace=False):
+    def __init__(self, p=0.2, inplace=False):
         """Create a ``DropPath`` module.
 
         Parameters
         ----------
         p : float, optional, default=0.2
-            The dropping prob.
-        increment : float, optional, default=0.
-            The increment value to ``p``.
+            The dropping ratio.
         inplace : bool, optional, default=False
             Whether to do the operation in-place.
 
         """
         super(DropPath, self).__init__()
         self.p = p
-        self.increment = increment
         self.inplace = inplace
-        DropPath._DEFAULT_UNIQUE_SLOT_ID += 1
-        self.slot = DropPath._DEFAULT_UNIQUE_SLOT_ID
 
     def extra_repr(self):
         inplace_str = ', inplace' if self.inplace else ''
         return 'p={}{}'.format(self.p, inplace_str)
 
     def forward(self, input):
-        return F.drop_path(
-            input,
-            p=self.p,
-            increment=self.increment,
-            training=self.training,
-            inplace=self.inplace,
-            slot=self.slot,
-        )
+        return F.drop_path(input, self.p, self.training, self.inplace)

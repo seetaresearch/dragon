@@ -41,8 +41,9 @@ __global__ void _RepeatGrad(
     const int i = xi / x_inner_dim / axis_dim;
     const T* offset_dy = dy + ((i * axis_dim + j) * y_inner_dim + k);
     T val = T(0);
-    for (int r = 0; r < repeats; ++r)
+    for (int r = 0; r < repeats; ++r) {
       val += offset_dy[r * x_inner_dim];
+    }
     dx[xi] = val;
   }
 }
@@ -57,16 +58,15 @@ __global__ void _RepeatGrad<half>(
     const half* dy,
     half* dx) {
   CUDA_1D_KERNEL_LOOP(xi, nthreads) {
-#if __CUDA_ARCH__ >= 530
     const int k = xi % x_inner_dim;
     const int j = (xi / x_inner_dim) % axis_dim;
     const int i = xi / x_inner_dim / axis_dim;
     const half* offset_dy = dy + ((i * axis_dim + j) * y_inner_dim + k);
     float val = 0.f;
-    for (int r = 0; r < repeats; ++r)
+    for (int r = 0; r < repeats; ++r) {
       val += __half2float(offset_dy[r * x_inner_dim]);
+    }
     dx[xi] = __float2half(val);
-#endif
   }
 }
 

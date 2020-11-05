@@ -33,7 +33,7 @@ void ApplyMask(
 template <typename T, class Context>
 void Dropout(
     const int count,
-    const float prob,
+    const float ratio,
     const float scale,
     const T* x,
     uint8_t* mask,

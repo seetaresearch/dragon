@@ -35,11 +35,9 @@ __global__ void _Selu<half>(
     const half* x,
     half* y) {
   CUDA_1D_KERNEL_LOOP(i, nthreads) {
-#if __CUDA_ARCH__ >= 530
     const float val = __half2float(x[i]);
     y[i] =
         __float2half(val > 0.f ? gamma * val : alphaXgamma * (exp(val) - 1.f));
-#endif
   }
 }
 
@@ -51,12 +49,10 @@ __global__ void _Selu<half2>(
     const half2* x,
     half2* y) {
   CUDA_1D_KERNEL_LOOP(i, nthreads) {
-#if __CUDA_ARCH__ >= 530
     const float2 val = __half22float2(x[i]);
     y[i] = __floats2half2_rn(
         val.x > 0.f ? gamma * val.x : alphaXgamma * (exp(val.x) - 1.f),
         val.y > 0.f ? gamma * val.y : alphaXgamma * (exp(val.y) - 1.f));
-#endif
   }
 }
 
@@ -86,11 +82,9 @@ __global__ void _SeluGrad<half>(
     const half* y,
     half* dx) {
   CUDA_1D_KERNEL_LOOP(i, nthreads) {
-#if __CUDA_ARCH__ >= 530
     const float val = __half2float(y[i]);
-    dx[i] =
-        __hmul(dy[i], __float2half(val > 0.f ? gamma : (alphaXgamma + val)));
-#endif
+    dx[i] = __float2half(
+        __half2float(dy[i]) * (val > 0.f ? gamma : (alphaXgamma + val)));
   }
 } // SeluGrad
 
@@ -103,14 +97,11 @@ __global__ void _SeluGrad<half2>(
     const half2* y,
     half2* dx) {
   CUDA_1D_KERNEL_LOOP(i, nthreads) {
-#if __CUDA_ARCH__ >= 530
     const float2 val = __half22float2(y[i]);
-    dx[i] = __hmul2(
-        dy[i],
-        __floats2half2_rn(
-            val.x > 0.f ? gamma : (alphaXgamma + val.x),
-            val.y > 0.f ? gamma : (alphaXgamma + val.y)));
-#endif
+    const float2 grad = __half22float2(dy[i]);
+    dx[i] = __floats2half2_rn(
+        grad.x * (val.x > 0.f ? gamma : (alphaXgamma + val.x)),
+        grad.y * (val.y > 0.f ? gamma : (alphaXgamma + val.y)));
   }
 } // SeluGrad
 

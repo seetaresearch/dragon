@@ -97,14 +97,14 @@ class TestActivationOps(OpTestCase):
         self.cudnn_ws = dragon.Workspace()
 
     def test_dropout(self):
-        prob = 0.
+        ratio = 0.
         for execution in ('EAGER_MODE', 'GRAPH_MODE'):
             with execution_context().mode(execution):
                 data = uniform((2, 3))
                 x = new_tensor(data)
                 with dragon.GradientTape() as tape:
                     tape.watch(x)
-                    y = dragon.nn.dropout(x, prob=prob)
+                    y = dragon.nn.dropout(x, ratio=ratio)
                 dx = tape.gradient(y, [x], output_gradients=[x])[0]
                 self.assertEqual([y, dx], [data, data])
 
@@ -121,7 +121,7 @@ class TestActivationOps(OpTestCase):
             self.test_dropout()
 
     def test_drop_block2d(self):
-        keep_prob, block_size = 1., 2
+        ratio, block_size = 0., 2
         for execution in ('EAGER_MODE', 'GRAPH_MODE'):
             with execution_context().mode(execution):
                 for data_format in ('NCHW', 'NHWC'):
@@ -132,8 +132,8 @@ class TestActivationOps(OpTestCase):
                         tape.watch(x)
                         y = dragon.nn.drop_block2d(
                             x,
+                            ratio=ratio,
                             block_size=block_size,
-                            keep_prob=keep_prob,
                             data_format=data_format)
                     dx = tape.gradient(y, [x], output_gradients=[x])[0]
                     self.assertEqual([y, dx], [data, data])
@@ -145,14 +145,14 @@ class TestActivationOps(OpTestCase):
             self.test_drop_block2d()
 
     def test_drop_path(self):
-        prob = 0.
+        ratio = 0.
         for execution in ('EAGER_MODE', 'GRAPH_MODE'):
             with execution_context().mode(execution):
                 data = uniform((2, 3))
                 x = new_tensor(data)
                 with dragon.GradientTape() as tape:
                     tape.watch(x)
-                    y = dragon.nn.drop_path(x, prob=prob)
+                    y = dragon.nn.drop_path(x, ratio=ratio)
                 dx = tape.gradient(y, [x], output_gradients=[x])[0]
                 self.assertEqual([y, dx], [data, data])
 

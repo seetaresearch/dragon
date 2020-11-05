@@ -28,7 +28,7 @@ void CuDNNDropoutOp<Context>::DoRunWithType() {
         CUDNN_CHECK(cudnnRestoreDropoutDescriptor(
             dropout_desc_,
             ctx()->cudnn_handle(),
-            this->prob(),
+            this->ratio(),
             X_states->template mutable_data<uint8_t, Context>(),
             states_size,
             rng_seed_));
@@ -37,7 +37,7 @@ void CuDNNDropoutOp<Context>::DoRunWithType() {
         CUDNN_CHECK(cudnnSetDropoutDescriptor(
             dropout_desc_,
             ctx()->cudnn_handle(),
-            this->prob(),
+            this->ratio(),
             X_states->template mutable_data<uint8_t, Context>(),
             states_size,
             rng_seed_));
@@ -86,7 +86,7 @@ void CuDNNDropoutGradientOp<Context>::DoRunWithType() {
         CUDNN_CHECK(cudnnRestoreDropoutDescriptor(
             dropout_desc_,
             ctx()->cudnn_handle(),
-            this->prob(),
+            this->ratio(),
             X_states->template mutable_data<uint8_t, Context>(),
             states_size,
             rng_seed_));

@@ -25,12 +25,19 @@ __global__ void _Clip<half>(
     const half high,
     const half* x,
     half* y) {
-  CUDA_1D_KERNEL_LOOP(i, nthreads) {
 #if __CUDA_ARCH__ >= 530
-    const half val = __hlt(__ldg(x + i), high) ? __ldg(x + i) : high;
-    y[i] = __hgt(val, low) ? val : low;
-#endif
+  CUDA_1D_KERNEL_LOOP(i, nthreads) {
+    y[i] = __hlt(__ldg(x + i), high)
+        ? (__hgt(__ldg(x + i), low) ? __ldg(x + i) : low)
+        : high;
   }
+#else
+  const float kLow = __half2float(low);
+  const float kHigh = __half2float(high);
+  CUDA_1D_KERNEL_LOOP(i, nthreads) {
+    y[i] = __float2half(max(kLow, min(__half2float(x[i]), kHigh)));
+  }
+#endif
 }
 
 template <typename T>
@@ -59,12 +66,28 @@ __global__ void _ClipGrad<half>(
     const half* x,
     half* dx) {
   const half kZero = __float2half(0.f);
-  CUDA_1D_KERNEL_LOOP(i, nthreads) {
 #if __CUDA_ARCH__ >= 530
+  CUDA_1D_KERNEL_LOOP(i, nthreads) {
     dx[i] =
-        __hlt(__ldg(x + i), low) || __hgt(__ldg(x + i), high) ? kZero : dy[i];
-#endif
+        (__hlt(__ldg(x + i), low) || __hgt(__ldg(x + i), high)) ? kZero : dy[i];
   }
+#elif __CUDA_ARCH__ >= 350
+  const float kLow = __half2float(low);
+  const float kHigh = __half2float(high);
+  CUDA_1D_KERNEL_LOOP(i, nthreads) {
+    dx[i] = (__half2float(__ldg(x + i)) < kLow ||
+             __half2float(__ldg(x + i)) > kHigh)
+        ? kZero
+        : dy[i];
+  }
+#else
+  const float kLow = __half2float(low);
+  const float kHigh = __half2float(high);
+  CUDA_1D_KERNEL_LOOP(i, nthreads) {
+    dx[i] = (__half2float(x[i]) < kLow || __half2float(x[i]) > kHigh) ? kZero
+                                                                      : dy[i];
+  }
+#endif
 }
 
 } // namespace

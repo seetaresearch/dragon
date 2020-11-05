@@ -22,10 +22,8 @@ class DropBlock2dOp final : public Operator<Context> {
  public:
   DropBlock2dOp(const OperatorDef& def, Workspace* ws)
       : Operator<Context>(def, ws),
-        block_size_(OP_SINGLE_ARG(int64_t, "block_size", 7)),
-        alpha_(OP_SINGLE_ARG(float, "alpha", 1.f)),
-        decrement_(OP_SINGLE_ARG(float, "decrement", 0.f)) {
-    INIT_OP_SINGLE_ARG_WITH_DESC(float, keep_prob, 0.9f);
+        block_size_(OP_SINGLE_ARG(int64_t, "block_size", 7)) {
+    INIT_OP_SINGLE_ARG_WITH_DESC(float, ratio, 0.1f);
   }
   USE_OPERATOR_FUNCTIONS;
 
@@ -36,8 +34,7 @@ class DropBlock2dOp final : public Operator<Context> {
 
  protected:
   int64_t block_size_;
-  float alpha_, decrement_, prob_ = 1.;
-  DECLARE_OP_SINGLE_ARG_WITH_DESC(float, keep_prob);
+  DECLARE_OP_SINGLE_ARG_WITH_DESC(float, ratio);
 };
 
 template <class Context>
@@ -52,7 +49,7 @@ class DropBlock2dGradientOp final : public Operator<Context> {
   void DoRunWithType();
 };
 
-DEFINE_OP_SINGLE_ARG_WITH_DESC(float, DropBlock2dOp, keep_prob);
+DEFINE_OP_SINGLE_ARG_WITH_DESC(float, DropBlock2dOp, ratio);
 
 } // namespace dragon
 

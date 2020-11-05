@@ -12,27 +12,20 @@ void DropBlock2dOp<Context>::DoRunWithType() {
   if (phase() == "TEST") {
     Y->ReshapeLike(X)->CopyFrom(X, ctx());
   } else if (phase() == "TRAIN") {
-    int64_t feat_h, feat_w, seed_h, seed_w;
+    int64_t feature_h, feature_w, seed_h, seed_w;
     if (data_format() == "NCHW") {
-      feat_h = X.dim(2), feat_w = X.dim(3);
+      feature_h = X.dim(2), feature_w = X.dim(3);
     } else if (data_format() == "NHWC") {
-      feat_h = X.dim(1), feat_w = X.dim(2);
+      feature_h = X.dim(1), feature_w = X.dim(2);
     } else {
       LOG(FATAL) << "Unknown DataFormat: " << data_format();
     }
-    seed_h = feat_h - block_size_ + 1;
-    seed_w = feat_w - block_size_ + 1;
-    CHECK(seed_h > 0 && seed_w > 0) << "\nExcepted block_size <= feat_size.";
-    // Schedule the keep ratio
-    auto kp = keep_prob();
-    if (decrement_ > 0.f && prob_ > kp) {
-      prob_ -= decrement_;
-    } else {
-      prob_ = kp; // Fixed to the limit value
-    }
+    seed_h = feature_h - block_size_ + 1;
+    seed_w = feature_w - block_size_ + 1;
+    CHECK(seed_h > 0 && seed_w > 0) << "\nExcepted block_size <= feature_size.";
     // Compute the drop ratio
-    float gamma = (1.f - prob_) / std::pow(block_size_, 2);
-    gamma *= (alpha_ * (feat_h * feat_w) / (seed_h * seed_w));
+    float gamma = ratio() / std::pow(block_size_, 2);
+    gamma *= (float(feature_h * feature_w) / float(seed_h * seed_w));
     // Prepare buffers
     auto* mask = Buffer("mask")
                      ->ReshapeLike(X)
@@ -50,8 +43,8 @@ void DropBlock2dOp<Context>::DoRunWithType() {
     kernel::DropBlock2d(
         X.dim(0),
         data_format() == "NCHW" ? X.dim(1) : X.dim(-1),
-        feat_h,
-        feat_w,
+        feature_h,
+        feature_w,
         seed_h,
         seed_w,
         block_size_,

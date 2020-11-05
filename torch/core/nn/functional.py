@@ -427,16 +427,16 @@ def dropout(input, p=0.5, training=True, inplace=False):
 
     The **Dropout** function is defined as:
 
-    .. math:: \text{Dropout}(x) = x * \text{Bernoulli}(p=1 - prob)
+    .. math:: \text{Dropout}(x) = x * (r \sim \mathcal{B}(1, 1 - p))
 
     Parameters
     ----------
     input : dragon.vm.torch.Tensor
         The input tensor.
     p : float, optional, default=0.5
-        The dropping prob.
+        The dropping ratio.
     training : bool, optional, default=True
-        The training flag.
+        Apply dropping if **True**.
     inplace : bool, optional, default=False
         Whether to do the operation in-place.
 
@@ -453,50 +453,40 @@ def dropout(input, p=0.5, training=True, inplace=False):
     if not training:
         return input
     return _functions.Dropout \
-        .instantiate(
-            input.device,
-            p=p,
-        ).apply(input, inplace=inplace)
+        .instantiate(input.device) \
+        .apply(input, p, inplace=inplace)
 
 
 def drop_block2d(
     input,
-    kp=0.9,
+    p=0.1,
     block_size=7,
-    alpha=1.,
-    decrement=0.,
     training=True,
     inplace=False,
-    slot=None,
 ):
     r"""Set the spatial blocks over input to zero randomly.
 
     The **DropBlock** function is defined as:
 
     .. math::
-        \text{DropBlock}(x) = x \cdot \text{Bernoulli}(\alpha\cdot\gamma) \\
-        \quad \\ \text{where}\quad \gamma =
-            \frac{keep\_prob}{block\_size^{n}}
-            \frac{feat\_size^{n}}{(feat\_size - block\_size + 1)^n}
+        \text{DropBlock}(x_{ijk}) =
+            x_{ijk} * (r_{ik} \sim \mathcal{B}(1, 1 - \gamma)) \\ \quad \\
+                \text{where}\quad \gamma =
+                    \frac{p}{\text{block\_size}^{n}}
+                    \frac{\text{feat\_size}^{n}}{(\text{feat\_size} - \text{block\_size} + 1)^n}
 
     Parameters
     ----------
     input : dragon.vm.torch.Tensor
         The input tensor.
-    kp : float, optional, default=0.9
-        The keeping prob.
+    p : float, optional, default=0.1
+        The dropping ratio.
     block_size : int, optional, default=7
-        The size of a spatial block.
-    alpha : float, optional, default=1.
-        The scale factor to :math:`\gamma`.
-    decrement : float, optional, default=0.
-        The decrement value to ``kp``.
+        The spatial block size.
     training : bool, optional, default=True
-        The training flag.
+        Apply dropping if **True**.
     inplace : bool, optional, default=False
         Whether to do the operation in-place.
-    slot : int, optional
-        The optional slot index.
 
     Returns
     -------
@@ -513,28 +503,17 @@ def drop_block2d(
     return _functions.DropBlock2d \
         .instantiate(
             input.device,
-            keep_prob=kp,
             block_size=block_size,
-            alpha=alpha,
-            decrement=decrement,
-            slot=slot,
-        ).apply(input, inplace=inplace)
+        ).apply(input, p, inplace=inplace)
 
 
-def drop_path(
-    input,
-    p=0.2,
-    increment=0.,
-    training=True,
-    inplace=False,
-    slot=None,
-):
+def drop_path(input, p=0.2, training=True, inplace=False):
     r"""Set the examples over input to zero randomly.
     `[Larsson et.al, 2016] <https://arxiv.org/abs/1605.07648>`_.
 
     The **DropPath** function is defined as:
 
-    .. math:: \text{DropPath}(x) = x * \text{Bernoulli}(p=1 - prob)
+    .. math:: \text{DropPath}(x_{ij}) = x_{ij} * (r_{i} \sim \mathcal{B}(1, 1 - p))
 
     Parameters
     ----------
@@ -542,14 +521,10 @@ def drop_path(
         The input tensor.
     p : float, optional, default=0.2
         The dropping prob.
-    increment : float, optional, default=0.
-        The increment value to ``p``.
     training : bool, optional, default=True
-        The training flag.
+        Apply dropping if **True**.
     inplace : bool, optional, default=False
         Whether to do the operation in-place.
-    slot : int, optional
-        The optional slot index.
 
     Returns
     -------
@@ -564,12 +539,8 @@ def drop_path(
     if not training:
         return input
     return _functions.DropPath \
-        .instantiate(
-            input.device,
-            p=p,
-            increment=increment,
-            slot=slot,
-        ).apply(input, inplace=inplace)
+        .instantiate(input.device) \
+        .apply(input, p, inplace=inplace)
 
 
 def elu(input, alpha=1., inplace=False):

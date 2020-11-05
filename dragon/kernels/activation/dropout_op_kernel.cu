@@ -23,17 +23,14 @@ __global__ void _ApplyMask(
   }
 }
 
-template <>
-__global__ void _ApplyMask<half>(
+__global__ void _ApplyMask(
     const int nthreads,
-    const half scale,
+    const float scale,
     const half* x,
     const uint8_t* mask,
     half* y) {
   CUDA_1D_KERNEL_LOOP(i, nthreads) {
-#if __CUDA_ARCH__ >= 530
-    y[i] = __hmul(__hmul(x[i], scale), __float2half((float)mask[i]));
-#endif
+    y[i] = __float2half(__half2float(x[i]) * (float)mask[i] * scale);
   }
 }
 
@@ -47,25 +44,21 @@ __global__ void _Dropout(
     uint8_t* mask,
     T* y) {
   CUDA_1D_KERNEL_LOOP(i, nthreads) {
-    y[i] = x[i] * (T)(mask[i] = (r[i] > threshold)) * scale;
+    y[i] = x[i] * T(mask[i] = (r[i] > threshold)) * scale;
   }
 }
 
-template <>
-__global__ void _Dropout<half>(
+__global__ void _Dropout(
     const int nthreads,
     const uint32_t threshold,
-    const half scale,
+    const float scale,
     const half* x,
     const uint32_t* r,
     uint8_t* mask,
     half* y) {
   CUDA_1D_KERNEL_LOOP(i, nthreads) {
-#if __CUDA_ARCH__ >= 530
-    y[i] = __hmul(
-        __hmul(x[i], scale),
-        __float2half((float)(mask[i] = (r[i] > threshold))));
-#endif
+    y[i] = __float2half(
+        __half2float(x[i]) * float(mask[i] = (r[i] > threshold)) * scale);
   }
 }
 
@@ -83,7 +76,7 @@ void ApplyMask<float16, CUDAContext>(
     CUDAContext* ctx) {
   _ApplyMask<<<CUDA_BLOCKS(count), CUDA_THREADS, 0, ctx->cuda_stream()>>>(
       count,
-      cast::to<half>(scale),
+      scale,
       reinterpret_cast<const half*>(x),
       mask,
       reinterpret_cast<half*>(y));
@@ -92,7 +85,7 @@ void ApplyMask<float16, CUDAContext>(
 template <>
 void Dropout<float16, CUDAContext>(
     const int count,
-    const float prob,
+    const float ratio,
     const float scale,
     const float16* x,
     uint8_t* mask,
@@ -102,8 +95,8 @@ void Dropout<float16, CUDAContext>(
   math::Random(count, r, ctx);
   _Dropout<<<CUDA_BLOCKS(count), CUDA_THREADS, 0, ctx->cuda_stream()>>>(
       count,
-      static_cast<uint32_t>(UINT_MAX * prob),
-      cast::to<half>(scale),
+      static_cast<uint32_t>(UINT_MAX * ratio),
+      scale,
       reinterpret_cast<const half*>(x),
       r,
       mask,
@@ -125,7 +118,7 @@ void Dropout<float16, CUDAContext>(
   template <>                                                                \
   void Dropout<T, CUDAContext>(                                              \
       const int count,                                                       \
-      const float prob,                                                      \
+      const float ratio,                                                     \
       const float scale,                                                     \
       const T* x,                                                            \
       uint8_t* mask,                                                         \
@@ -133,7 +126,7 @@ void Dropout<float16, CUDAContext>(
       uint32_t* r,                                                           \
       CUDAContext* ctx) {                                                    \
     math::Random(count, r, ctx);                                             \
-    auto threshold = static_cast<uint32_t>(UINT_MAX * prob);                 \
+    auto threshold = static_cast<uint32_t>(UINT_MAX * ratio);                \
     _Dropout<<<CUDA_BLOCKS(count), CUDA_THREADS, 0, ctx->cuda_stream()>>>(   \
         count, threshold, cast::to<T>(scale), x, r, mask, y);                \
   }

@@ -12,27 +12,19 @@ void DropPathOp<Context>::DoRunWithType() {
   if (phase() == "TEST") {
     Y->ReshapeLike(X)->CopyFrom(X, ctx());
   } else if (phase() == "TRAIN") {
-    // Schedule the drop ratio
-    auto dp = prob();
-    if (inc_ > 0.f && drop_prob_ < dp) {
-      drop_prob_ += inc_;
-    } else {
-      drop_prob_ = dp; // Fixed to the limit value
-    }
     auto* mask = Buffer("mask")
                      ->Reshape({X.dim(0)})
                      ->template mutable_data<float, Context>();
     auto* scale = Buffer("scale")
                       ->Reshape({})
                       ->template mutable_data<float, CPUContext>();
-    scale[0] = 1.f / (1.f - drop_prob_);
     // Generate mask for each example
     math::RandomUniform(X.dim(0), 0.f, 1.f, mask, ctx());
     // Apply mask to the feature
     kernel::DropPath(
         X.dim(0),
         X.stride(0),
-        scale[0],
+        1.f / (1.f - ratio()),
         X.template data<T, Context>(),
         mask,
         Y->ReshapeLike(X)->template mutable_data<T, Context>(),
@@ -57,7 +49,7 @@ void DropPathGradientOp<Context>::DoRunWithType() {
     kernel::DropPath(
         dY.dim(0),
         dY.stride(0),
-        Buffer("scale")->template data<float, CPUContext>()[0],
+        1.f / (1.f - ratio()),
         dY.template data<T, Context>(),
         Buffer("mask")->template data<float, Context>(),
         dX->ReshapeLike(dY)->template mutable_data<T, Context>(),

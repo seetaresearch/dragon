@@ -18,21 +18,17 @@ __global__ void _Sigmoid(const int nthreads, const T* x, T* y) {
 
 template <>
 __global__ void _Sigmoid<half>(const int nthreads, const half* x, half* y) {
-  const half kOne = __float2half(1.f);
   CUDA_1D_KERNEL_LOOP(i, nthreads) {
-#if __CUDA_ARCH__ >= 530
-    y[i] = __hdiv(kOne, __hadd(kOne, hexp(__hneg(x[i]))));
-#endif
+    y[i] = __float2half(1.f / (1.f + exp(-__half2float(x[i]))));
   }
 }
 
 template <>
 __global__ void _Sigmoid<half2>(const int nthreads, const half2* x, half2* y) {
-  const half2 kOne = __float2half2_rn(1.f);
   CUDA_1D_KERNEL_LOOP(i, nthreads) {
-#if __CUDA_ARCH__ >= 530
-    y[i] = __h2div(kOne, __hadd2(kOne, h2exp(__hneg2(x[i]))));
-#endif
+    const float2 val = __half22float2(x[i]);
+    y[i] =
+        __floats2half2_rn(1.f / (1.f + exp(-val.x)), 1.f / (1.f + exp(-val.y)));
   }
 }
 
@@ -54,11 +50,9 @@ __global__ void _SigmoidGrad<half>(
     const half* dy,
     const half* y,
     half* dx) {
-  const half kOne = __float2half(1.f);
   CUDA_1D_KERNEL_LOOP(i, nthreads) {
-#if __CUDA_ARCH__ >= 530
-    dx[i] = __hmul(dy[i], __hmul(__ldg(y + i), __hsub(kOne, __ldg(y + i))));
-#endif
+    const float val = __half2float(y[i]);
+    dx[i] = __float2half(__half2float(dy[i]) * val * (1.f - val));
   }
 } // SigmoidGrad
 
@@ -68,11 +62,11 @@ __global__ void _SigmoidGrad<half2>(
     const half2* dy,
     const half2* y,
     half2* dx) {
-  const half2 kOne = __float2half2_rn(1.f);
   CUDA_1D_KERNEL_LOOP(i, nthreads) {
-#if __CUDA_ARCH__ >= 530
-    dx[i] = __hmul2(dy[i], __hmul2(__ldg(y + i), __hsub2(kOne, __ldg(y + i))));
-#endif
+    const float2 val = __half22float2(y[i]);
+    const float2 grad = __half22float2(dy[i]);
+    dx[i] = __floats2half2_rn(
+        grad.x * val.x * (1.f - val.x), grad.y * val.y * (1.f - val.y));
   }
 } // SigmoidGrad
 

@@ -1,6 +1,7 @@
 #ifdef USE_CUDA
 
 #include "dragon/core/context_cuda.h"
+#include "dragon/utils/math_functions.h"
 #include "dragon/utils/op_kernels.h"
 
 namespace dragon {
@@ -22,7 +23,7 @@ __global__ void _CumSum(
     y[c] = exclusive ? T(0) : x[c];
     for (int j = 1; j < cols; ++j) {
       const int yi = c + inner_dim;
-      y[yi] = y[c] + x[exclusive ? c : yi];
+      y[yi] = math::PlusFunctor<T>()(y[c], x[exclusive ? c : yi]);
       c = yi;
     }
   }
@@ -38,15 +39,13 @@ __global__ void _CumSum<half>(
     half* y) {
   const half kZero = __float2half(0.f);
   CUDA_1D_KERNEL_LOOP(i, rows) {
-#if __CUDA_ARCH__ >= 530
     int c = (i / inner_dim) * cols * inner_dim + (i % inner_dim);
     y[c] = exclusive ? kZero : x[c];
     for (int j = 1; j < cols; ++j) {
       const int yi = c + inner_dim;
-      y[yi] = __hadd(y[c], x[exclusive ? c : yi]);
+      y[yi] = math::PlusFunctor<half>()(y[c], x[exclusive ? c : yi]);
       c = yi;
     }
-#endif
   }
 }
 
@@ -63,7 +62,7 @@ __global__ void _CumSumReverse(
     y[c] = exclusive ? T(0) : x[c];
     for (int j = cols - 2; j >= 0; --j) {
       const int yi = c - inner_dim;
-      y[yi] = y[c] + x[exclusive ? c : yi];
+      y[yi] = math::PlusFunctor<T>()(y[c], x[exclusive ? c : yi]);
       c = yi;
     }
   }
@@ -79,15 +78,13 @@ __global__ void _CumSumReverse<half>(
     half* y) {
   const half kZero = __float2half(0.f);
   CUDA_1D_KERNEL_LOOP(i, rows) {
-#if __CUDA_ARCH__ >= 530
     int c = ((i / inner_dim) * cols + (cols - 1)) * inner_dim + (i % inner_dim);
     y[c] = exclusive ? kZero : x[c];
     for (int j = cols - 2; j >= 0; --j) {
       const int yi = c - inner_dim;
-      y[yi] = __hadd(y[c], x[exclusive ? c : yi]);
+      y[yi] = math::PlusFunctor<half>()(y[c], x[exclusive ? c : yi]);
       c = yi;
     }
-#endif
   }
 }
 

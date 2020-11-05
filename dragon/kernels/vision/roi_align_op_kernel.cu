@@ -9,6 +9,14 @@ namespace kernel {
 
 namespace {
 
+#if __CUDA_ARCH__ >= 350
+#define LOAD(x, i) __ldg(x + i)
+#define LOADF(x, i) __half2float(__ldg(x + i))
+#else
+#define LOAD(x, i) x[i]
+#define LOADF(x, i) __half2float(x[i])
+#endif
+
 template <typename T>
 __device__ float
 _RoiAlignIntp(const int H, const int W, float h, float w, const T* x) {
@@ -34,17 +42,10 @@ _RoiAlignIntp(const int H, const int W, float h, float w, const T* x) {
     w = (float)li;
   }
 
-#if __CUDA_ARCH__ >= 350
-  const float tl = __ldg(x + (ti * W + li));
-  const float tr = __ldg(x + (ti * W + ri));
-  const float bl = __ldg(x + (bi * W + li));
-  const float br = __ldg(x + (bi * W + ri));
-#else
-  const float tl = x[ti * W + li];
-  const float tr = x[ti * W + ri];
-  const float bl = x[bi * W + li];
-  const float br = x[bi * W + ri];
-#endif
+  const float tl = LOAD(x, (ti * W + li));
+  const float tr = LOAD(x, (ti * W + ri));
+  const float bl = LOAD(x, (bi * W + li));
+  const float br = LOAD(x, (bi * W + ri));
 
   const float v = h - ti;
   const float u = w - li;
@@ -79,17 +80,10 @@ _RoiAlignIntp<half>(const int H, const int W, float h, float w, const half* x) {
     w = (float)li;
   }
 
-#if __CUDA_ARCH__ >= 350
-  const float tl = __half2float(__ldg(x + (ti * W + li)));
-  const float tr = __half2float(__ldg(x + (ti * W + ri)));
-  const float bl = __half2float(__ldg(x + (bi * W + li)));
-  const float br = __half2float(__ldg(x + (bi * W + ri)));
-#else
-  const float tl = __half2float(x[ti * W + li]);
-  const float tr = __half2float(x[ti * W + ri]);
-  const float bl = __half2float(x[bi * W + li]);
-  const float br = __half2float(x[bi * W + ri]);
-#endif
+  const float tl = LOADF(x, (ti * W + li));
+  const float tr = LOADF(x, (ti * W + ri));
+  const float bl = LOADF(x, (bi * W + li));
+  const float br = LOADF(x, (bi * W + ri));
 
   const float v = h - ti;
   const float u = w - li;
@@ -388,6 +382,9 @@ __global__ void _RoiAlignGrad<half>(
     } // End j
   }
 }
+
+#undef LOAD
+#undef LOADF
 
 } // namespace
 

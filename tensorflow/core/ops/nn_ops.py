@@ -408,7 +408,7 @@ def dropout(x, rate, name=None, **kwargs):
     x : dragon.Tensor
         The tensor :math:`x`.
     rate : Union[float, dragon.Tensor]
-        The dropping probability.
+        The dropping ratio.
     name : str, optional
         The operation name.
 

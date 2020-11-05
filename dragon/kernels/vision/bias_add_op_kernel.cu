@@ -1,6 +1,7 @@
 #ifdef USE_CUDA
 
 #include "dragon/core/context_cuda.h"
+#include "dragon/utils/math_functions.h"
 #include "dragon/utils/op_kernels.h"
 
 namespace dragon {
@@ -14,23 +15,9 @@ __global__ void
 _BiasAdd(const int nthreads, const int axis_dim, const T* x, const T* b, T* y) {
   CUDA_1D_KERNEL_LOOP(i, nthreads) {
 #if __CUDA_ARCH__ >= 350
-    y[i] = x[i] + __ldg(b + i % axis_dim);
+    y[i] = math::PlusFunctor<T>()(x[i], __ldg(b + i % axis_dim));
 #else
-    y[i] = x[i] + b[i % axis_dim];
-#endif
-  }
-}
-
-template <>
-__global__ void _BiasAdd<half>(
-    const int nthreads,
-    const int axis_dim,
-    const half* x,
-    const half* b,
-    half* y) {
-  CUDA_1D_KERNEL_LOOP(i, nthreads) {
-#if __CUDA_ARCH__ >= 530
-    y[i] = __hadd(x[i], __ldg(b + i % axis_dim));
+    y[i] = math::PlusFunctor<T>()(x[i], b[i % axis_dim]);
 #endif
   }
 }
@@ -45,24 +32,9 @@ __global__ void _BiasAdd(
     T* y) {
   CUDA_1D_KERNEL_LOOP(i, nthreads) {
 #if __CUDA_ARCH__ >= 350
-    y[i] = x[i] + __ldg(b + (i / inner_dim) % axis_dim);
+    y[i] = math::PlusFunctor<T>()(x[i], __ldg(b + (i / inner_dim) % axis_dim));
 #else
-    y[i] = x[i] + b[(i / inner_dim) % axis_dim];
-#endif
-  }
-}
-
-template <>
-__global__ void _BiasAdd<half>(
-    const int nthreads,
-    const int inner_dim,
-    const int axis_dim,
-    const half* x,
-    const half* b,
-    half* y) {
-  CUDA_1D_KERNEL_LOOP(i, nthreads) {
-#if __CUDA_ARCH__ >= 530
-    y[i] = __hadd(x[i], __ldg(b + (i / inner_dim) % axis_dim));
+    y[i] = math::PlusFunctor<T>()(x[i], b[(i / inner_dim) % axis_dim]);
 #endif
   }
 }

@@ -51,7 +51,6 @@ __global__ void _RowwiseMoments<half, float>(
     const half* x,
     float* mean,
     float* var) {
-#if __CUDA_ARCH__ >= 530
   __shared__ typename BlockReduce<float>::TempStorage m_storage;
   __shared__ typename BlockReduce<float>::TempStorage v_storage;
   const float scale = 1.f / (float)rows;
@@ -70,7 +69,6 @@ __global__ void _RowwiseMoments<half, float>(
       var[i] = v_val * scale - mu * mu;
     }
   }
-#endif
 }
 
 template <typename Tx, typename Ty>
@@ -112,7 +110,6 @@ __global__ void _ColwiseMoments<half, float>(
     const half* x,
     float* mean,
     float* var) {
-#if __CUDA_ARCH__ >= 530
   __shared__ typename BlockReduce<float>::TempStorage m_storage;
   __shared__ typename BlockReduce<float>::TempStorage v_storage;
   const float scale = 1.f / (float)cols;
@@ -131,7 +128,6 @@ __global__ void _ColwiseMoments<half, float>(
       var[i] = v_val * scale - mu * mu;
     }
   }
-#endif
 }
 
 template <typename Tx, typename Ty, int D>

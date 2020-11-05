@@ -133,7 +133,7 @@ class Dropout(Layer):
 
     The **Dropout** function is defined as:
 
-    .. math:: \text{Dropout}(x) = x * \text{Bernoulli}(p=1 - prob)
+    .. math:: \text{Dropout}(x) = x * (r \sim \mathcal{B}(1, 1 - \text{rate}))
 
     Examples:
 
@@ -150,7 +150,7 @@ class Dropout(Layer):
         Parameters
         ----------
         rate : Union[float, dragon.Tensor]
-            The dropping probability.
+            The dropping ratio.
 
         """
         super(Dropout, self).__init__(**kwargs)
@@ -161,7 +161,7 @@ class Dropout(Layer):
         if self.trainable:
             return activation_ops.dropout(
                 inputs,
-                prob=self.rate,
+                ratio=self.rate,
                 inplace=self.inplace,
             )
         return inputs
@@ -238,8 +238,7 @@ class Permute(Layer):
         if sorted(dims) != list(range(1, len(dims) + 1)):
             raise ValueError(
                 'Argument <dims> should be consecutive and start from 1.\n'
-                'Got {}'.format(str(dims))
-            )
+                'Got {}'.format(str(dims)))
         self.input_spec = InputSpec(ndim=len(self.dims) + 1)
 
     def call(self, inputs):

@@ -24,11 +24,15 @@ __global__ void _PRelu(const int nthreads, const T* x, const T* w, T* y) {
 template <>
 __global__ void
 _PRelu<half>(const int nthreads, const half* x, const half* w, half* y) {
-  const half kZero = __float2half(0.f);
   CUDA_1D_KERNEL_LOOP(i, nthreads) {
-#if __CUDA_ARCH__ >= 530
-    y[i] = __hgt(__ldg(x + i), kZero) ? __ldg(x + i)
-                                      : __hmul(__ldg(x + i), __ldg(w));
+#if __CUDA_ARCH__ >= 350
+    y[i] = __half2float(__ldg(x + i)) > 0.f
+        ? __ldg(x + i)
+        : __float2half(__half2float(__ldg(x + i)) * __half2float(__ldg(w)));
+#else
+    y[i] = __half2float(x[i]) > 0.f
+        ? x[i]
+        : __float2half(__half2float(x[i]) * __half2float(w[0]));
 #endif
   }
 }
@@ -59,12 +63,17 @@ __global__ void _PReluNCHW<half>(
     const half* x,
     const half* w,
     half* y) {
-  const half kZero = __float2half(0.f);
   CUDA_1D_KERNEL_LOOP(i, nthreads) {
-#if __CUDA_ARCH__ >= 530
-    y[i] = __hgt(__ldg(x + i), kZero)
+#if __CUDA_ARCH__ >= 350
+    y[i] = __half2float(__ldg(x + i)) > 0.f
         ? __ldg(x + i)
-        : __hmul(__ldg(x + i), __ldg(w + ((i / S) % C)));
+        : __float2half(
+              __half2float(__ldg(x + i)) *
+              __half2float(__ldg(w + ((i / S) % C))));
+#else
+    y[i] = __half2float(x[i]) > 0.f
+        ? x[i]
+        : __float2half(__half2float(x[i]) * __half2float(w[(i / S) % C]));
 #endif
   }
 }
@@ -89,12 +98,16 @@ __global__ void _PReluNHWC<half>(
     const half* x,
     const half* w,
     half* y) {
-  const half kZero = __float2half(0.f);
   CUDA_1D_KERNEL_LOOP(i, nthreads) {
-#if __CUDA_ARCH__ >= 530
-    y[i] = __hgt(__ldg(x + i), kZero)
+#if __CUDA_ARCH__ >= 350
+    y[i] = __half2float(__ldg(x + i)) > 0.f
         ? __ldg(x + i)
-        : __hmul(__ldg(x + i), __ldg(w + (i % C)));
+        : __float2half(
+              __half2float(__ldg(x + i)) * __half2float(__ldg(w + (i % C))));
+#else
+    y[i] = __half2float(x[i]) > 0.f
+        ? x[i]
+        : __float2half(__half2float(x[i]) * __half2float(w[i % C]));
 #endif
   }
 }
@@ -118,11 +131,15 @@ __global__ void _PReluGrad<half>(
     const half* x,
     const half* w,
     half* dx) {
-  const half kOne = __float2half(1.f);
-  const half kZero = __float2half(0.f);
   CUDA_1D_KERNEL_LOOP(i, nthreads) {
-#if __CUDA_ARCH__ >= 530
-    dx[i] = __hmul(dy[i], (__hgt(__ldg(x + i), kZero) ? kOne : __ldg(w)));
+#if __CUDA_ARCH__ >= 350
+    dx[i] = __float2half(
+        __half2float(dy[i]) *
+        (__half2float(x[i]) > 0.f ? 1.f : __half2float(__ldg(w))));
+#else
+    dx[i] = __float2half(
+        __half2float(dy[i]) *
+        (__half2float(x[i]) > 0.f ? 1.f : __half2float(w[0])));
 #endif
   }
 }
@@ -154,12 +171,16 @@ __global__ void _PReluGradNCHW<half>(
     const half* x,
     const half* w,
     half* dx) {
-  const half kOne = __float2half(1.f);
-  const half kZero = __float2half(0.f);
   CUDA_1D_KERNEL_LOOP(i, nthreads) {
-#if __CUDA_ARCH__ >= 530
-    dx[i] =
-        dy[i] * (__hgt(__ldg(x + i), kZero) ? kOne : __ldg(w + ((i / S) % C)));
+#if __CUDA_ARCH__ >= 350
+    dx[i] = __float2half(
+        __half2float(dy[i]) *
+        (__half2float(x[i]) > 0.f ? 1.f
+                                  : __half2float(__ldg(w + ((i / S) % C)))));
+#else
+    dx[i] = __float2half(
+        __half2float(dy[i]) *
+        (__half2float(x[i]) > 0.f ? 1.f : __half2float(w[(i / S) % C])));
 #endif
   }
 }
@@ -189,11 +210,15 @@ __global__ void _PReluGradNHWC<half>(
     const half* x,
     const half* w,
     half* dx) {
-  const half kOne = __float2half(1.f);
-  const half kZero = __float2half(0.f);
   CUDA_1D_KERNEL_LOOP(i, nthreads) {
-#if __CUDA_ARCH__ >= 530
-    dx[i] = dy[i] * (__hgt(__ldg(x + i), kZero) ? kOne : __ldg(w + (i % C)));
+#if __CUDA_ARCH__ >= 350
+    dx[i] = __float2half(
+        __half2float(dy[i]) *
+        (__half2float(x[i]) > 0.f ? 1.f : __half2float(__ldg(w + (i % C)))));
+#else
+    dx[i] = __float2half(
+        __half2float(dy[i]) *
+        (__half2float(x[i]) > 0.f ? 1.f : __half2float(w[i % C])));
 #endif
   }
 }
@@ -201,12 +226,14 @@ __global__ void _PReluGradNHWC<half>(
 template <typename T>
 __global__ void _PReluWGrad(const int N, const T* dy, const T* x, T* dw) {
   __shared__ typename BlockReduce<T>::TempStorage storage;
-
   T val = T(0);
   CUDA_2D_KERNEL_LOOP2(i, N) {
+#if __CUDA_ARCH__ >= 350
+    val += __ldg(x + i) < T(0) ? dy[i] * __ldg(x + i) : T(0);
+#else
     val += x[i] < T(0) ? dy[i] * x[i] : T(0);
+#endif
   }
-
   val = BlockReduce<T>(storage).Sum(val);
   if (threadIdx.x == 0) *dw = val;
 }
@@ -214,16 +241,18 @@ __global__ void _PReluWGrad(const int N, const T* dy, const T* x, T* dw) {
 template <>
 __global__ void
 _PReluWGrad<half>(const int N, const half* dy, const half* x, half* dw) {
-  const half kZero = __float2half(0.f);
   __shared__ typename BlockReduce<float>::TempStorage storage;
-
   float val = 0.f;
   CUDA_2D_KERNEL_LOOP2(i, N) {
-#if __CUDA_ARCH__ >= 530
-    val += __hlt(x[i], kZero) ? __half2float(__hmul(dy[i], x[i])) : 0.f;
+#if __CUDA_ARCH__ >= 350
+    val += __half2float(__ldg(x + i)) < 0.f
+        ? __half2float(dy[i]) * __half2float(__ldg(x + i))
+        : 0.f;
+#else
+    val += __half2float(x[i]) < 0.f ? __half2float(dy[i]) * __half2float(x[i])
+                                    : 0.f;
 #endif
   }
-
   val = BlockReduce<float>(storage).Sum(val);
   if (threadIdx.x == 0) *dw = __float2half(val);
 }
@@ -241,7 +270,11 @@ __global__ void _PReluWGradNCHW(
     T val = T(0);
     CUDA_2D_KERNEL_LOOP2(j, NS) {
       const int yi = ((j / S) * C + i) * S + j % S;
+#if __CUDA_ARCH__ >= 350
+      val += __ldg(x + yi) < T(0) ? dy[yi] * __ldg(x + yi) : T(0);
+#else
       val += x[yi] < T(0) ? dy[yi] * x[yi] : T(0);
+#endif
     }
     val = BlockReduce<T>(storage).Sum(val);
     if (threadIdx.x == 0) dw[i] = val;
@@ -256,14 +289,19 @@ __global__ void _PReluWGradNCHW<half>(
     const half* dy,
     const half* x,
     half* dw) {
-  const half kZero = __float2half(0.f);
   __shared__ typename BlockReduce<float>::TempStorage storage;
   CUDA_2D_KERNEL_LOOP1(i, C) {
     float val = 0.f;
     CUDA_2D_KERNEL_LOOP2(j, NS) {
-#if __CUDA_ARCH__ >= 530
       const int yi = ((j / S) * C + i) * S + j % S;
-      val += __hlt(x[yi], kZero) ? __half2float(__hmul(dy[yi], x[yi])) : 0.f;
+#if __CUDA_ARCH__ >= 350
+      val += __half2float(__ldg(x + yi)) < 0.f
+          ? __half2float(dy[yi]) * __half2float(__ldg(x + yi))
+          : 0.f;
+#else
+      val += __half2float(x[yi]) < 0.f
+          ? __half2float(dy[yi]) * __half2float(x[yi])
+          : 0.f;
 #endif
     }
     val = BlockReduce<float>(storage).Sum(val);
@@ -279,7 +317,11 @@ _PReluWGradNHWC(const int NS, const int C, const T* dy, const T* x, T* dw) {
     T val = T(0);
     CUDA_2D_KERNEL_LOOP2(j, NS) {
       const int yi = j * C + i;
+#if __CUDA_ARCH__ >= 350
+      val += __ldg(x + yi) < 0 ? dy[yi] * __ldg(x + yi) : T(0);
+#else
       val += x[yi] < 0 ? dy[yi] * x[yi] : T(0);
+#endif
     }
     val = BlockReduce<T>(storage).Sum(val);
     if (threadIdx.x == 0) dw[i] = val;
@@ -298,9 +340,15 @@ __global__ void _PReluWGradNHWC<half>(
   CUDA_2D_KERNEL_LOOP1(i, C) {
     float val = 0.f;
     CUDA_2D_KERNEL_LOOP2(j, NS) {
-#if __CUDA_ARCH__ >= 530
       const int yi = j * C + i;
-      val += __hlt(x[yi], kZero) ? __half2float(__hmul(dy[yi], x[yi])) : 0.f;
+#if __CUDA_ARCH__ >= 350
+      val += __half2float(__ldg(x + yi)) < 0.f
+          ? __half2float(dy[yi]) * __half2float(__ldg(x + yi))
+          : 0.f;
+#else
+      val += __half2float(x[yi]) < 0.f
+          ? __half2float(dy[yi]) * __half2float(x[yi])
+          : 0.f;
 #endif
     }
     val = BlockReduce<float>(storage).Sum(val);

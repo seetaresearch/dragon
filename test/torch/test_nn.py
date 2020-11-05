@@ -292,26 +292,26 @@ class TestModules(OpTestCase):
             self.assertEqual(y, result)
 
     def test_dropout(self):
-        prob = 0.
+        p = 0.
         data = uniform((2, 3))
         x = new_tensor(data)
-        m = torch.nn.Dropout(p=prob, inplace=True)
+        m = torch.nn.Dropout(p, inplace=True)
         y, _ = m(x), repr(m)
         self.assertEqual(y, data)
 
     def test_drop_block2d(self):
-        keep_prob = 1.
+        p = 0.
         data = uniform((2, 3, 4, 4))
         x = new_tensor(data)
-        m = torch.nn.DropBlock2d(kp=keep_prob, block_size=2, inplace=True)
+        m = torch.nn.DropBlock2d(p, block_size=2, inplace=True)
         y, _ = m(x), repr(m)
         self.assertEqual(y, data)
 
     def test_drop_path(self):
-        prob = 0.
+        p = 0.
         data = uniform((2, 3))
         x = new_tensor(data)
-        m = torch.nn.DropPath(p=prob, inplace=True)
+        m = torch.nn.DropPath(p, inplace=True)
         y, _ = m(x), repr(m)
         self.assertEqual(y, data)
 

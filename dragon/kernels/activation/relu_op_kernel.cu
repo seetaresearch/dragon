@@ -25,9 +25,12 @@ template <>
 __global__ void
 _Relu<half>(const int nthreads, const float alpha, const half* x, half* y) {
   CUDA_1D_KERNEL_LOOP(i, nthreads) {
-#if __CUDA_ARCH__ >= 530
+#if __CUDA_ARCH__ >= 350
     const float val = __half2float(__ldg(x + i));
     y[i] = val > 0.f ? __ldg(x + i) : __float2half(val * alpha);
+#else
+    const float val = __half2float(x[i]);
+    y[i] = val > 0.f ? x[i] : __float2half(val * alpha);
 #endif
   }
 }
@@ -36,12 +39,10 @@ template <>
 __global__ void
 _Relu<half2>(const int nthreads, const float alpha, const half2* x, half2* y) {
   CUDA_1D_KERNEL_LOOP(i, nthreads) {
-#if __CUDA_ARCH__ >= 530
     const float2 val = __half22float2(x[i]);
     y[i] = __floats2half2_rn(
         val.x > 0.f ? val.x : val.x * alpha,
         val.y > 0.f ? val.y : val.y * alpha);
-#endif
   }
 }
 
@@ -63,13 +64,25 @@ template <>
 __global__ void
 _ReluN<half>(const int nthreads, const half max_value, const half* x, half* y) {
   const half kZero = __float2half(0.f);
-  CUDA_1D_KERNEL_LOOP(i, nthreads) {
 #if __CUDA_ARCH__ >= 530
+  CUDA_1D_KERNEL_LOOP(i, nthreads) {
     y[i] = __hgt(__ldg(x + i), kZero)
         ? (__hlt(__ldg(x + i), max_value) ? __ldg(x + i) : max_value)
         : kZero;
-#endif
   }
+#elif __CUDA_ARCH__ >= 350
+  const float kMax = __half2float(max_value);
+  CUDA_1D_KERNEL_LOOP(i, nthreads) {
+    const float val = __half2float(__ldg(x + i));
+    y[i] = val > 0.f ? ((val < kMax) ? __ldg(x + i) : max_value) : kZero;
+  }
+#else
+  const float kMax = __half2float(max_value);
+  CUDA_1D_KERNEL_LOOP(i, nthreads) {
+    const float val = __half2float(x[i]);
+    y[i] = val > 0.f ? ((val < kMax) ? x[i] : max_value) : kZero;
+  }
+#endif
 }
 
 __global__ void _ReluNHalf2(
@@ -91,6 +104,25 @@ __global__ void _ReluNHalf2(
                    ? __high2half(__ldg(x + i))
                    : max_value)
             : kZero);
+#elif __CUDA_ARCH__ >= 350
+    const float kMax = __half2float(max_value);
+    CUDA_1D_KERNEL_LOOP(i, nthreads) {
+      const float2 val = __half22float2(__ldg(x + i));
+      y[i] = __halves2half2(
+          val.x > 0.f ? ((val.x < kMax) ? __low2half(__ldg(x + i)) : max_value)
+                      : kZero,
+          val.y > 0.f ? ((val.y < kMax) ? __high2half(__ldg(x + i)) : max_value)
+                      : kZero);
+    }
+#else
+    const float kMax = __half2float(max_value);
+    CUDA_1D_KERNEL_LOOP(i, nthreads) {
+      const float2 val = __half22float2(x[i]);
+      y[i] = __halves2half2(
+          val.x > 0.f ? ((val.x < kMax) ? __low2half(x[i]) : max_value) : kZero,
+          val.y > 0.f ? ((val.y < kMax) ? __high2half(x[i]) : max_value)
+                      : kZero);
+    }
 #endif
   }
 }
@@ -103,7 +135,7 @@ __global__ void _ReluGrad(
     const T* y,
     T* dx) {
   CUDA_1D_KERNEL_LOOP(i, nthreads) {
-#if __CUDA_ARCH__ >= 530
+#if __CUDA_ARCH__ >= 350
     dx[i] = __ldg(dy + i) * ((__ldg(y + i) > 0) + alpha * (__ldg(y + i) <= 0));
 #else
     dx[i] = dy[i] * ((y[i] > 0) + alpha * (y[i] <= 0));
@@ -118,14 +150,10 @@ __global__ void _ReluGrad<half>(
     const half* dy,
     const half* y,
     half* dx) {
-  const half kZero = __float2half(0.f);
   CUDA_1D_KERNEL_LOOP(i, nthreads) {
-#if __CUDA_ARCH__ >= 530
-    dx[i] = __hmul(
-        dy[i],
-        __float2half(
-            __hgt(__ldg(y + i), kZero) + __hle(__ldg(y + i), kZero) * alpha));
-#endif
+    const float val = __half2float(y[i]);
+    dx[i] = __float2half(
+        __half2float(dy[i]) * ((val > 0.f) + alpha * (val <= 0.f)));
   }
 } // ReluGrad
 
@@ -136,17 +164,12 @@ __global__ void _ReluGrad<half2>(
     const half2* dy,
     const half2* y,
     half2* dx) {
-  const half kZero = __float2half(0.f);
   CUDA_1D_KERNEL_LOOP(i, nthreads) {
-#if __CUDA_ARCH__ >= 530
-    dx[i] = __hmul2(
-        dy[i],
-        __floats2half2_rn(
-            __hgt(__low2half(__ldg(y + i)), kZero) +
-                __hle(__low2half(__ldg(y + i)), kZero) * alpha,
-            __hgt(__high2half(__ldg(y + i)), kZero) +
-                __hle(__high2half(__ldg(y + i)), kZero) * alpha));
-#endif
+    const float2 val = __half22float2(y[i]);
+    const float2 grad = __half22float2(dy[i]);
+    dx[i] = __floats2half2_rn(
+        grad.x * ((val.x > 0.f) + alpha * (val.x <= 0.f)),
+        grad.y * ((val.y > 0.f) + alpha * (val.y <= 0.f)));
   }
 } // ReluGrad
 
@@ -158,7 +181,7 @@ __global__ void _ReluNGrad(
     const T* y,
     T* dx) {
   CUDA_1D_KERNEL_LOOP(i, nthreads) {
-#if __CUDA_ARCH__ >= 530
+#if __CUDA_ARCH__ >= 350
     dx[i] = (__ldg(y + i) > 0 && __ldg(y + i) < max_value) ? dy[i] : T(0);
 #else
     dx[i] = (y[i] > 0 && y[i] < max_value) ? dy[i] : T(0);
@@ -174,14 +197,20 @@ __global__ void _ReluNGrad<half>(
     const half* y,
     half* dx) {
   const half kZero = __float2half(0.f);
-  CUDA_1D_KERNEL_LOOP(i, nthreads) {
 #if __CUDA_ARCH__ >= 530
+  CUDA_1D_KERNEL_LOOP(i, nthreads) {
     dx[i] = (__hgt(__ldg(y + i), kZero) && __hlt(__ldg(y + i), max_value))
         ? dy[i]
         : kZero;
-#endif
   }
-} // ReluNGrad
+#else
+  const float kMax = __half2float(max_value);
+  CUDA_1D_KERNEL_LOOP(i, nthreads) {
+    const float val = __half2float(y[i]);
+    dx[i] = (val > 0.f && val < kMax) ? dy[i] : kZero;
+  }
+#endif
+}
 
 template <>
 __global__ void _ReluNGrad<half2>(
@@ -190,15 +219,33 @@ __global__ void _ReluNGrad<half2>(
     const half2* dy,
     const half2* y,
     half2* dx) {
+#if __CUDA_ARCH__ >= 530
   const half2 kZero = __float2half2_rn(0.f);
   CUDA_1D_KERNEL_LOOP(i, nthreads) {
-#if __CUDA_ARCH__ >= 530
     dx[i] = __hmul2(
         __hmul2(__hgt2(__ldg(y + i), kZero), __hlt2(__ldg(y + i), max_value)),
         dy[i]);
-#endif
   }
-} // ReluNGrad
+#elif __CUDA_ARCH__ >= 350
+  const half kZero = __float2half(0.f);
+  const float kMax = __half2float(__low2half(max_value));
+  CUDA_1D_KERNEL_LOOP(i, nthreads) {
+    const float2 val = __half22float2(y[i]);
+    dx[i] = __halves2half2(
+        (val.x > 0.f && val.x < kMax) ? __low2half(__ldg(dy + i)) : kZero,
+        (val.y > 0.f && val.y < kMax) ? __high2half(__ldg(dy + i)) : kZero);
+  }
+#else
+  const half kZero = __float2half(0.f);
+  const float kMax = __half2float(__low2half(max_value));
+  CUDA_1D_KERNEL_LOOP(i, nthreads) {
+    const float2 val = __half22float2(y[i]);
+    dx[i] = __halves2half2(
+        (val.x > 0.f && val.x < kMax) ? __low2half(dy[i]) : kZero,
+        (val.y > 0.f && val.y < kMax) ? __high2half(dy[i]) : kZero);
+  }
+#endif
+}
 
 } // namespace
 
