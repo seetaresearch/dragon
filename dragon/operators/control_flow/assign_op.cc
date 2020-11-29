@@ -43,11 +43,11 @@ void AssignOp<Context>::DoRunWithType() {
 
   if (X.dims() != X_dims) {
     vec64_t dims1, dims2;
-    if (utils::math::IsBinaryBroadcast(X.dims(), X_dims, dims1)) {
+    if (math::utils::IsBinaryBroadcast(X.dims(), X_dims, dims1)) {
       CHECK(X_dims == dims1)
           << "\nCould not assign with shapes " << X.DimString() << " "
           << Tensor::DimString(X_dims);
-      utils::math::ComputeBinaryBroadcastDims(X.dims(), X_dims, dims1, dims2);
+      math::utils::ComputeBinaryBroadcastDims(X.dims(), X_dims, dims1, dims2);
       if (dims1 != dims2) {
         auto* scratch = ctx()->workspace()->template data<T, Context>(
             {X_broadcast.count()})[0];

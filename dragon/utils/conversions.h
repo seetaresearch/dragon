@@ -10,26 +10,29 @@
  * ------------------------------------------------------------
  */
 
-#ifndef DRAGON_UTILS_CAST_H_
-#define DRAGON_UTILS_CAST_H_
+#ifndef DRAGON_UTILS_CONVERSIONS_H_
+#define DRAGON_UTILS_CONVERSIONS_H_
 
 #include "dragon/core/types.h"
 #include "dragon/utils/device/common_cuda.h"
 
+#if defined(__CUDACC__)
+#define CONVERSIONS_DECL inline __host__ __device__
+#else
+#define CONVERSIONS_DECL inline
+#endif
+
 namespace dragon {
 
-#define HFLT_MAX 65504.F
-#define HFLT_MIN 6.10e-5F
+namespace convert {
 
-namespace cast {
-
-template <typename DType, typename SType>
-DType to(SType val) {
-  return static_cast<DType>(val);
+template <typename DestType, typename SrcType>
+CONVERSIONS_DECL DestType To(SrcType val) {
+  return static_cast<DestType>(val);
 }
 
 template <>
-inline float16 to<float16, float>(float val) {
+inline float16 To<float16, float>(float val) {
   float16 ret;
   unsigned* xp = reinterpret_cast<unsigned int*>(&val);
   unsigned x = *xp;
@@ -78,7 +81,7 @@ inline float16 to<float16, float>(float val) {
 }
 
 template <>
-inline float to<float, float16>(float16 val) {
+inline float To<float, float16>(float16 val) {
   unsigned sign = ((val.x >> 15) & 1);
   unsigned exponent = ((val.x >> 10) & 0x1f);
   unsigned mantissa = ((val.x & 0x3ff) << 13);
@@ -108,41 +111,41 @@ inline float to<float, float16>(float16 val) {
 }
 
 template <>
-inline float16 to<float16, double>(double val) {
-  return to<float16>(static_cast<float>(val));
+inline float16 To<float16, double>(double val) {
+  return To<float16>(static_cast<float>(val));
 }
 
 #ifdef USE_CUDA
 
 template <>
-inline float16 to<float16, half>(half val) {
+CONVERSIONS_DECL float16 To<float16, half>(half val) {
   return float16{__half_raw(val).x};
 }
 
 template <>
-inline half to<half, float>(float val) {
+CONVERSIONS_DECL half To<half, float>(float val) {
   return __float2half(val);
 }
 
 template <>
-inline half to<half, float16>(float16 val) {
+CONVERSIONS_DECL half To<half, float16>(float16 val) {
   return __half_raw{val.x};
 }
 
 template <>
-inline half2 to<half2, float>(float val) {
+CONVERSIONS_DECL half2 To<half2, float>(float val) {
   return __float2half2_rn(val);
 }
 
 template <>
-inline half2 to<half2, float16>(float16 val) {
+CONVERSIONS_DECL half2 To<half2, float16>(float16 val) {
   return half2(__half2_raw{val.x, val.x});
 }
 
 #endif // USE_CUDA
 
-} // namespace cast
+} // namespace convert
 
 } // namespace dragon
 
-#endif // DRAGON_UTILS_CAST_H_
+#endif // DRAGON_UTILS_CONVERSIONS_H_

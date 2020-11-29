@@ -27,7 +27,7 @@ void _ResizeNearestNCHW(
     h_in = std::min(int(idx[2] * scale_h), h_max);
     w_in = std::min(int(idx[3] * scale_w), w_max);
     y[i] = x[(((idx[0] * C) + idx[1]) * H + h_in) * W + w_in];
-    utils::math::IncreaseIndexInDims(4, dims.data(), idx.data());
+    math::utils::IncreaseIndexInDims(4, dims.data(), idx.data());
   }
 }
 
@@ -52,7 +52,7 @@ void _ResizeNearestNHWC(
     w_in = std::min(int(idx[2] * scale_w), w_max);
     memcpy(
         y + i * C, x + (((idx[0] * H) + h_in) * W + w_in) * C, C * sizeof(T));
-    utils::math::IncreaseIndexInDims(3, dims.data(), idx.data());
+    math::utils::IncreaseIndexInDims(3, dims.data(), idx.data());
   }
 }
 
@@ -76,7 +76,7 @@ void _ResizeNearestGradNCHW(
     h_in = std::min(int(idx[2] * scale_h), h_max);
     w_in = std::min(int(idx[3] * scale_w), w_max);
     dx[(((idx[0] * C) + idx[1]) * H + h_in) * W + w_in] += (float)dy[i];
-    utils::math::IncreaseIndexInDims(4, dims.data(), idx.data());
+    math::utils::IncreaseIndexInDims(4, dims.data(), idx.data());
   }
 }
 
@@ -100,7 +100,7 @@ void _ResizeNearestGradNHWC(
     h_in = std::min(int(idx[1] * scale_h), h_max);
     w_in = std::min(int(idx[2] * scale_w), w_max);
     dx[(((idx[0] * H) + h_in) * W + w_in) * C + idx[3]] += (float)dy[i];
-    utils::math::IncreaseIndexInDims(4, dims.data(), idx.data());
+    math::utils::IncreaseIndexInDims(4, dims.data(), idx.data());
   }
 }
 

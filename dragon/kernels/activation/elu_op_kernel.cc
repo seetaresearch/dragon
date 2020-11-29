@@ -1,5 +1,5 @@
-#include "dragon/utils/cast.h"
-#include "dragon/utils/eigen_utils.h"
+#include "dragon/utils/conversions.h"
+#include "dragon/utils/device/common_eigen.h"
 #include "dragon/utils/op_kernels.h"
 
 namespace dragon {
@@ -50,19 +50,19 @@ void _EluGrad<float16>(
   template <>                                                                  \
   void Elu<T, CPUContext>(                                                     \
       const int count, const float alpha, const T* x, T* y, CPUContext* ctx) { \
-    _Elu(count, cast::to<T>(alpha), x, y);                                     \
+    _Elu(count, convert::To<T>(alpha), x, y);                                  \
   }
 
-#define DEFINE_GRAD_KERNEL_LAUNCHER(T)              \
-  template <>                                       \
-  void EluGrad<T, CPUContext>(                      \
-      const int count,                              \
-      const float alpha,                            \
-      const T* dy,                                  \
-      const T* y,                                   \
-      T* dx,                                        \
-      CPUContext* ctx) {                            \
-    _EluGrad(count, cast::to<T>(alpha), dy, y, dx); \
+#define DEFINE_GRAD_KERNEL_LAUNCHER(T)                 \
+  template <>                                          \
+  void EluGrad<T, CPUContext>(                         \
+      const int count,                                 \
+      const float alpha,                               \
+      const T* dy,                                     \
+      const T* y,                                      \
+      T* dx,                                           \
+      CPUContext* ctx) {                               \
+    _EluGrad(count, convert::To<T>(alpha), dy, y, dx); \
   }
 
 DEFINE_KERNEL_LAUNCHER(float16);

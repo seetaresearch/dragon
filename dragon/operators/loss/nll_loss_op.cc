@@ -105,7 +105,7 @@ void NLLLossGradientOp<Context>::DoRunWithType() {
   auto* dx = dX->template mutable_data<LogitType, Context>();
   auto* mask =
       ctx()->workspace()->template data<LogitType, Context>({num_preds + 1})[0];
-  math::Set(dX->count(), cast::to<LogitType>(0.f), dx, ctx());
+  math::Set(dX->count(), convert::To<LogitType>(0.f), dx, ctx());
 
   kernel::NLLLossGrad(
       outer_dim,

@@ -62,7 +62,7 @@ void _ResizeLinearNCHW(
     t = tl + (tr - tl) * u;
     b = bl + (br - bl) * u;
     y[i] = static_cast<T>(t + (b - t) * v);
-    utils::math::IncreaseIndexInDims(4, dims.data(), idx.data());
+    math::utils::IncreaseIndexInDims(4, dims.data(), idx.data());
   }
 }
 
@@ -99,7 +99,7 @@ void _ResizeLinearNHWC(
     t = tl + (tr - tl) * u;
     b = bl + (br - bl) * u;
     y[i] = static_cast<T>(t + (b - t) * v);
-    utils::math::IncreaseIndexInDims(4, dims.data(), idx.data());
+    math::utils::IncreaseIndexInDims(4, dims.data(), idx.data());
   }
 }
 
@@ -135,7 +135,7 @@ void _ResizeLinearGradNCHW(
     dx[(offset + ti) * W + ri] += u * dt; // tr
     dx[(offset + bi) * W + li] += (1.f - u) * db; // bl
     dx[(offset + bi) * W + ri] += u * db; // br
-    utils::math::IncreaseIndexInDims(4, dims.data(), idx.data());
+    math::utils::IncreaseIndexInDims(4, dims.data(), idx.data());
   }
 }
 
@@ -171,7 +171,7 @@ void _ResizeLinearGradNHWC(
     dx[((offset + ti) * W + ri) * C + idx[3]] += u * dt; // tr
     dx[((offset + bi) * W + li) * C + idx[3]] += (1.f - u) * db; // bl
     dx[((offset + bi) * W + ri) * C + idx[3]] += u * db; // br
-    utils::math::IncreaseIndexInDims(4, dims.data(), idx.data());
+    math::utils::IncreaseIndexInDims(4, dims.data(), idx.data());
   }
 }
 

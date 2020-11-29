@@ -28,7 +28,7 @@ void _ChannelNormalize(
       if (d == axis) wi = idx[d];
     }
     y[yi] = ((Ty)x[xi] - (Ty)mean[wi]) / (Ty)std[wi];
-    utils::math::IncreaseIndexInDims(num_dims, y_dims, idx.data());
+    math::utils::IncreaseIndexInDims(num_dims, y_dims, idx.data());
   }
 }
 

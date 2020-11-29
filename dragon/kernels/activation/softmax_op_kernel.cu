@@ -1,7 +1,6 @@
 #ifdef USE_CUDA
 
 #include "dragon/core/context_cuda.h"
-#include "dragon/utils/cast.h"
 #include "dragon/utils/device/common_cub.h"
 #include "dragon/utils/math_functions.h"
 #include "dragon/utils/op_kernels.h"
@@ -200,7 +199,7 @@ void Softmax<float16, CUDAContext>(
       rows,
       cols,
       inner_dim,
-      cast::to<half>(std::numeric_limits<float>::lowest()),
+      convert::To<half>(std::numeric_limits<float>::lowest()),
       reinterpret_cast<const half*>(x),
       reinterpret_cast<half*>(y));
 }

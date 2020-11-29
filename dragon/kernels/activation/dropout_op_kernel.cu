@@ -1,7 +1,6 @@
 #ifdef USE_CUDA
 
 #include "dragon/core/context_cuda.h"
-#include "dragon/utils/cast.h"
 #include "dragon/utils/math_functions.h"
 #include "dragon/utils/op_kernels.h"
 
@@ -113,7 +112,7 @@ void Dropout<float16, CUDAContext>(
       T* y,                                                                  \
       CUDAContext* ctx) {                                                    \
     _ApplyMask<<<CUDA_BLOCKS(count), CUDA_THREADS, 0, ctx->cuda_stream()>>>( \
-        count, cast::to<T>(scale), x, mask, y);                              \
+        count, convert::To<T>(scale), x, mask, y);                           \
   }                                                                          \
   template <>                                                                \
   void Dropout<T, CUDAContext>(                                              \
@@ -128,7 +127,7 @@ void Dropout<float16, CUDAContext>(
     math::Random(count, r, ctx);                                             \
     auto threshold = static_cast<uint32_t>(UINT_MAX * ratio);                \
     _Dropout<<<CUDA_BLOCKS(count), CUDA_THREADS, 0, ctx->cuda_stream()>>>(   \
-        count, threshold, cast::to<T>(scale), x, r, mask, y);                \
+        count, threshold, convert::To<T>(scale), x, r, mask, y);             \
   }
 
 DEFINE_KERNEL_LAUNCHER(float);

@@ -26,7 +26,7 @@ void _CumSum(
     } else {
       y[i] = exclusive ? T(0) : x[i];
     }
-    utils::math::IncreaseIndexInDims(3, dims.data(), idx.data());
+    math::utils::IncreaseIndexInDims(3, dims.data(), idx.data());
   }
 }
 

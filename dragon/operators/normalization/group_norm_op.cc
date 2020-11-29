@@ -31,9 +31,11 @@ void GroupNormOp<Context>::DoRunWithType() {
     kernel::Moments(4, dims.data(), 2, axes.data(), x, mu, rsig, ctx());
   }
 
+  // Inverse stddev from variance
   math::InvStd(N_ * G_, epsilon_, rsig, rsig, ctx());
 
-  kernel::GroupNormForward(
+  // Fuse parameters to compute affine transformation
+  kernel::GroupNorm(
       N_,
       G_,
       D_,
@@ -73,7 +75,8 @@ void GroupNormGradientOp<Context>::DoRunWithType() {
   auto* X_scale = Buffer("X_scale")->Reshape({N_, G_});
   auto* X_bias = Buffer("X_bias")->Reshape({N_, G_});
 
-  kernel::GroupNormBackward(
+  // Gradient w.r.t. gamma, beta and input
+  kernel::GroupNormGrad(
       N_,
       G_,
       D_,
@@ -86,9 +89,9 @@ void GroupNormGradientOp<Context>::DoRunWithType() {
       Input(2).template data<InputType, Context>(), // dy
       X_scale->template mutable_data<ParamType, Context>(),
       X_bias->template mutable_data<ParamType, Context>(),
-      dX->template mutable_data<InputType, Context>(),
       dW->Reshape({C_})->template mutable_data<ParamType, Context>(),
       dB->Reshape({C_})->template mutable_data<ParamType, Context>(),
+      dX->template mutable_data<InputType, Context>(),
       ctx());
 }
 

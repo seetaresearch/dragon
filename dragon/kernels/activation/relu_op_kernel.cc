@@ -1,5 +1,5 @@
-#include "dragon/utils/cast.h"
-#include "dragon/utils/eigen_utils.h"
+#include "dragon/utils/conversions.h"
+#include "dragon/utils/device/common_eigen.h"
 #include "dragon/utils/op_kernels.h"
 
 namespace dragon {
@@ -87,7 +87,7 @@ void _ReluNGrad<float16>(
   template <>                                                                  \
   void Relu<T, CPUContext>(                                                    \
       const int count, const float alpha, const T* x, T* y, CPUContext* ctx) { \
-    _Relu(count, cast::to<T>(alpha), x, y);                                    \
+    _Relu(count, convert::To<T>(alpha), x, y);                                 \
   }                                                                            \
   template <>                                                                  \
   void ReluN<T, CPUContext>(                                                   \
@@ -96,29 +96,29 @@ void _ReluNGrad<float16>(
       const T* x,                                                              \
       T* y,                                                                    \
       CPUContext* ctx) {                                                       \
-    _ReluN(count, cast::to<T>(max_value), x, y);                               \
+    _ReluN(count, convert::To<T>(max_value), x, y);                            \
   }
 
-#define DEFINE_GRAD_KERNEL_LAUNCHER(T)                    \
-  template <>                                             \
-  void ReluGrad<T, CPUContext>(                           \
-      const int count,                                    \
-      const float alpha,                                  \
-      const T* dy,                                        \
-      const T* y,                                         \
-      T* dx,                                              \
-      CPUContext* ctx) {                                  \
-    _ReluGrad(count, cast::to<T>(alpha), dy, y, dx);      \
-  }                                                       \
-  template <>                                             \
-  void ReluNGrad<T, CPUContext>(                          \
-      const int count,                                    \
-      const float max_value,                              \
-      const T* dy,                                        \
-      const T* y,                                         \
-      T* dx,                                              \
-      CPUContext* ctx) {                                  \
-    _ReluNGrad(count, cast::to<T>(max_value), dy, y, dx); \
+#define DEFINE_GRAD_KERNEL_LAUNCHER(T)                       \
+  template <>                                                \
+  void ReluGrad<T, CPUContext>(                              \
+      const int count,                                       \
+      const float alpha,                                     \
+      const T* dy,                                           \
+      const T* y,                                            \
+      T* dx,                                                 \
+      CPUContext* ctx) {                                     \
+    _ReluGrad(count, convert::To<T>(alpha), dy, y, dx);      \
+  }                                                          \
+  template <>                                                \
+  void ReluNGrad<T, CPUContext>(                             \
+      const int count,                                       \
+      const float max_value,                                 \
+      const T* dy,                                           \
+      const T* y,                                            \
+      T* dx,                                                 \
+      CPUContext* ctx) {                                     \
+    _ReluNGrad(count, convert::To<T>(max_value), dy, y, dx); \
   }
 
 DEFINE_KERNEL_LAUNCHER(float16);

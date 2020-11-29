@@ -21,7 +21,7 @@ void AddOp<Context>::DoRunWithType() {
         B.template data<T, Context>(),
         Output(0, {0, 1})->Reshape(Y_dims)->template mutable_data<T, Context>(),
         ctx());
-  } else if (utils::math::IsBinaryBroadcast(A.dims(), B.dims(), Y_dims)) {
+  } else if (math::utils::IsBinaryBroadcast(A.dims(), B.dims(), Y_dims)) {
     auto* Y = Output(0, CheckOutputAliases(A, B, Output(0), Y_dims));
     math::Add(
         A.ndim(),
@@ -51,7 +51,7 @@ void AddGradientOp<Context>::DoRunWithType() {
 
   vec32_t A_broadcast_axes, B_broadcast_axes;
   vec32_t Y_dims(dY.dims().begin(), dY.dims().end());
-  utils::math::ComputeBinaryBroadcastAxes(
+  math::utils::ComputeBinaryBroadcastAxes(
       A.dims(), B.dims(), dY.dims(), A_broadcast_axes, B_broadcast_axes);
 
   if (dA->has_name()) {

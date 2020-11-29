@@ -25,7 +25,7 @@ void _Slice(
       xi += (index[d] + starts[d]) * x_strides[d];
     }
     y[yi] = x[xi];
-    utils::math::IncreaseIndexInDims(num_dims, y_dims, index.data());
+    math::utils::IncreaseIndexInDims(num_dims, y_dims, index.data());
   }
 }
 
@@ -47,7 +47,7 @@ void _SliceGrad(
       xi += (index[d] + starts[d]) * x_strides[d];
     }
     dx[xi] = dy[yi];
-    utils::math::IncreaseIndexInDims(num_dims, y_dims, index.data());
+    math::utils::IncreaseIndexInDims(num_dims, y_dims, index.data());
   }
 }
 

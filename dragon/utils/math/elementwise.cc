@@ -1,5 +1,5 @@
 #include "dragon/utils/math/elementwise.h"
-#include "dragon/utils/eigen_utils.h"
+#include "dragon/utils/device/common_eigen.h"
 #include "dragon/utils/math_functions.h"
 
 namespace dragon {
@@ -254,7 +254,7 @@ DRAGON_API void IsInf<float16, CPUContext>(
     bool* y,
     CPUContext* ctx) {
   for (int i = 0; i < n; ++i) {
-    y[i] = utils::math::IsInf(x[i]);
+    y[i] = math::utils::IsInf(x[i]);
   }
 }
 
@@ -279,7 +279,7 @@ DRAGON_API void IsNaN<float16, CPUContext>(
     bool* y,
     CPUContext* ctx) {
   for (int i = 0; i < n; ++i) {
-    y[i] = utils::math::IsNaN(x[i]);
+    y[i] = math::utils::IsNaN(x[i]);
   }
 }
 
@@ -306,7 +306,7 @@ DRAGON_API void ReplaceNaN<float16, CPUContext>(
     CPUContext* ctx) {
   EigenVectorArrayMap<float16>(y, n) =
       ConstEigenVectorArrayMap<float16>(x, n).unaryExpr(
-          [&](float16 x) { return utils::math::IsNaN(x) ? value : x; });
+          [&](float16 x) { return math::utils::IsNaN(x) ? value : x; });
 }
 
 DEFINE_REPLACE_NAN_FUNC(float);

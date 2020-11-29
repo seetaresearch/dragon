@@ -1,4 +1,4 @@
-#include "dragon/utils/cast.h"
+#include "dragon/utils/conversions.h"
 #include "dragon/utils/math_functions.h"
 #include "dragon/utils/op_kernels.h"
 
@@ -47,7 +47,7 @@ void _AvgPool2dNCHW(
       for (int w = wstart; w < wend; ++w)
         val += offset_x[h * W + w];
     y[i] = val / area;
-    utils::math::IncreaseIndexInDims(4, dims.data(), idx.data());
+    math::utils::IncreaseIndexInDims(4, dims.data(), idx.data());
   }
 }
 
@@ -89,7 +89,7 @@ void _AvgPool2dNHWC(
       for (int w = wstart; w < wend; ++w)
         val += offset_x[(h * W + w) * C];
     y[i] = val / area;
-    utils::math::IncreaseIndexInDims(4, dims.data(), idx.data());
+    math::utils::IncreaseIndexInDims(4, dims.data(), idx.data());
   }
 }
 
@@ -130,7 +130,7 @@ void _AvgPool2dGradNCHW(
     for (int h = hstart; h < hend; ++h)
       for (int w = wstart; w < wend; ++w)
         offset_dx[h * W + w] += dy[i] / area;
-    utils::math::IncreaseIndexInDims(4, dims.data(), idx.data());
+    math::utils::IncreaseIndexInDims(4, dims.data(), idx.data());
   }
 }
 
@@ -170,7 +170,7 @@ void _AvgPool2dGradNHWC(
     for (int h = hstart; h < hend; ++h)
       for (int w = wstart; w < wend; ++w)
         offset_dx[(h * W + w) * C] += dy[i] / area;
-    utils::math::IncreaseIndexInDims(4, dims.data(), idx.data());
+    math::utils::IncreaseIndexInDims(4, dims.data(), idx.data());
   }
 }
 
@@ -253,7 +253,7 @@ void _AvgPool2dGradNHWC(
       const T* dy,                                         \
       T* dx,                                               \
       CPUContext* ctx) {                                   \
-    math::Set(N* C* H* W, cast::to<T>(0.f), dx, ctx);      \
+    math::Set(N* C* H* W, convert::To<T>(0.f), dx, ctx);   \
     if (data_format == "NCHW") {                           \
       _AvgPool2dGradNCHW(                                  \
           N,                                               \

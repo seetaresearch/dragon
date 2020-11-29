@@ -1,5 +1,5 @@
-#include "dragon/utils/cast.h"
-#include "dragon/utils/eigen_utils.h"
+#include "dragon/utils/conversions.h"
+#include "dragon/utils/device/common_eigen.h"
 #include "dragon/utils/op_kernels.h"
 
 namespace dragon {
@@ -57,29 +57,29 @@ void _SeluGrad<float16>(
 
 /* ------------------- Launcher Separator ------------------- */
 
-#define DEFINE_KERNEL_LAUNCHER(T)                               \
-  template <>                                                   \
-  void Selu<T, CPUContext>(                                     \
-      const int count,                                          \
-      const float alpha,                                        \
-      const float gamma,                                        \
-      const T* x,                                               \
-      T* y,                                                     \
-      CPUContext* ctx) {                                        \
-    _Selu(count, cast::to<T>(alpha), cast::to<T>(gamma), x, y); \
+#define DEFINE_KERNEL_LAUNCHER(T)                                     \
+  template <>                                                         \
+  void Selu<T, CPUContext>(                                           \
+      const int count,                                                \
+      const float alpha,                                              \
+      const float gamma,                                              \
+      const T* x,                                                     \
+      T* y,                                                           \
+      CPUContext* ctx) {                                              \
+    _Selu(count, convert::To<T>(alpha), convert::To<T>(gamma), x, y); \
   }
 
-#define DEFINE_GRAD_KERNEL_LAUNCHER(T)                                   \
-  template <>                                                            \
-  void SeluGrad<T, CPUContext>(                                          \
-      const int count,                                                   \
-      const float alpha,                                                 \
-      const float gamma,                                                 \
-      const T* dy,                                                       \
-      const T* y,                                                        \
-      T* dx,                                                             \
-      CPUContext* tx) {                                                  \
-    _SeluGrad(count, cast::to<T>(alpha), cast::to<T>(gamma), dy, y, dx); \
+#define DEFINE_GRAD_KERNEL_LAUNCHER(T)                                         \
+  template <>                                                                  \
+  void SeluGrad<T, CPUContext>(                                                \
+      const int count,                                                         \
+      const float alpha,                                                       \
+      const float gamma,                                                       \
+      const T* dy,                                                             \
+      const T* y,                                                              \
+      T* dx,                                                                   \
+      CPUContext* tx) {                                                        \
+    _SeluGrad(count, convert::To<T>(alpha), convert::To<T>(gamma), dy, y, dx); \
   }
 
 DEFINE_KERNEL_LAUNCHER(float16);

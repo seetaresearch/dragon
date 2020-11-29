@@ -25,7 +25,7 @@ void _Assign(
       yi += (index[d] + starts[d]) * y_strides[d];
     }
     y[yi] = x[i];
-    utils::math::IncreaseIndexInDims(num_dims, x_dims, index.data());
+    math::utils::IncreaseIndexInDims(num_dims, x_dims, index.data());
   }
 }
 

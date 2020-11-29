@@ -172,7 +172,7 @@ __global__ void _BroadcastWhere(
     vec64_t X_dims(x_dims, x_dims + x_ndim);                             \
     vec64_t Y_dims(y_dims, y_dims + y_ndim);                             \
     vec64_t X_broadcast_dims, Y_broadcast_dims;                          \
-    utils::math::ComputeBinaryBroadcastDims(                             \
+    math::utils::ComputeBinaryBroadcastDims(                             \
         X_dims, Y_dims, X_broadcast_dims, Y_broadcast_dims);             \
     if (X_broadcast_dims == Y_broadcast_dims) {                          \
       auto count = std::accumulate(                                      \
@@ -180,7 +180,7 @@ __global__ void _BroadcastWhere(
       Copy(count, x, y, ctx);                                            \
       return;                                                            \
     }                                                                    \
-    if (utils::math::IsRowwiseBroadcast(X_dims, Y_dims, &rows, &cols)) { \
+    if (math::utils::IsRowwiseBroadcast(X_dims, Y_dims, &rows, &cols)) { \
       const auto nthreads = rows * cols;                                 \
       _RowwiseSet<<<                                                     \
           CUDA_BLOCKS(nthreads),                                         \
@@ -193,7 +193,7 @@ __global__ void _BroadcastWhere(
           reinterpret_cast<T2*>(y));                                     \
       return;                                                            \
     }                                                                    \
-    if (utils::math::IsColwiseBroadcast(X_dims, Y_dims, &rows, &cols)) { \
+    if (math::utils::IsColwiseBroadcast(X_dims, Y_dims, &rows, &cols)) { \
       const auto nthreads = rows * cols;                                 \
       _ColwiseSet<<<                                                     \
           CUDA_BLOCKS(nthreads),                                         \
@@ -208,7 +208,7 @@ __global__ void _BroadcastWhere(
     }                                                                    \
     vec64_t X_broadcast_strides, _;                                      \
     CUDA_TENSOR_DIMS_CHECK((int)Y_dims.size());                          \
-    utils::math::ComputeBinaryBroadcastStrides(                          \
+    math::utils::ComputeBinaryBroadcastStrides(                          \
         X_dims, Y_dims, X_broadcast_strides, _, _);                      \
     SimpleArray<int, CUDA_TENSOR_MAX_DIMS> strides, dims;                \
     const auto nthreads = std::accumulate(                               \
@@ -255,7 +255,7 @@ DEFINE_SET_FUNC(double, double);
     vec64_t A_dims(a_dims, a_dims + a_ndim);                                  \
     vec64_t B_dims(b_dims, b_dims + b_ndim);                                  \
     vec64_t A_broadcast_dims, B_broadcast_dims;                               \
-    utils::math::ComputeBinaryBroadcastDims(                                  \
+    math::utils::ComputeBinaryBroadcastDims(                                  \
         A_dims, B_dims, A_broadcast_dims, B_broadcast_dims);                  \
     if (A_broadcast_dims == B_broadcast_dims) {                               \
       auto count = std::accumulate(                                           \
@@ -263,7 +263,7 @@ DEFINE_SET_FUNC(double, double);
       name(count, a, b, y, ctx);                                              \
       return;                                                                 \
     }                                                                         \
-    if (utils::math::IsRowwiseBroadcast(                                      \
+    if (math::utils::IsRowwiseBroadcast(                                      \
             A_dims, B_dims, &rows, &cols, &broadcast_1st)) {                  \
       const auto nthreads = rows * cols;                                      \
       if (broadcast_1st > 0) {                                                \
@@ -277,7 +277,7 @@ DEFINE_SET_FUNC(double, double);
       }                                                                       \
       return;                                                                 \
     }                                                                         \
-    if (utils::math::IsColwiseBroadcast(                                      \
+    if (math::utils::IsColwiseBroadcast(                                      \
             A_dims, B_dims, &rows, &cols, &broadcast_1st)) {                  \
       const auto nthreads = rows * cols;                                      \
       if (broadcast_1st > 0) {                                                \
@@ -292,7 +292,7 @@ DEFINE_SET_FUNC(double, double);
       return;                                                                 \
     }                                                                         \
     vec64_t A_broadcast_strides, B_broadcast_strides, Y_dims;                 \
-    utils::math::ComputeBinaryBroadcastStrides(                               \
+    math::utils::ComputeBinaryBroadcastStrides(                               \
         A_dims, B_dims, A_broadcast_strides, B_broadcast_strides, Y_dims);    \
     CUDA_TENSOR_DIMS_CHECK((int)Y_dims.size());                               \
     SimpleArray<int, CUDA_TENSOR_MAX_DIMS> a_strides, b_strides, y_dims;      \
@@ -434,7 +434,7 @@ DEFINE_BINARY_FUNC(Mul, bool, uint8_t); // And
     vec64_t A_dims(a_dims, a_dims + a_ndim);                                  \
     vec64_t B_dims(b_dims, b_dims + b_ndim);                                  \
     vec64_t A_broadcast_dims, B_broadcast_dims;                               \
-    utils::math::ComputeBinaryBroadcastDims(                                  \
+    math::utils::ComputeBinaryBroadcastDims(                                  \
         A_dims, B_dims, A_broadcast_dims, B_broadcast_dims);                  \
     if (A_broadcast_dims == B_broadcast_dims) {                               \
       auto count = std::accumulate(                                           \
@@ -442,7 +442,7 @@ DEFINE_BINARY_FUNC(Mul, bool, uint8_t); // And
       name(count, a, b, y, ctx);                                              \
       return;                                                                 \
     }                                                                         \
-    if (utils::math::IsRowwiseBroadcast(                                      \
+    if (math::utils::IsRowwiseBroadcast(                                      \
             A_dims, B_dims, &rows, &cols, &broadcast_1st)) {                  \
       auto nthreads = rows * cols;                                            \
       if (broadcast_1st > 0) {                                                \
@@ -466,7 +466,7 @@ DEFINE_BINARY_FUNC(Mul, bool, uint8_t); // And
       }                                                                       \
       return;                                                                 \
     }                                                                         \
-    if (utils::math::IsColwiseBroadcast(                                      \
+    if (math::utils::IsColwiseBroadcast(                                      \
             A_dims, B_dims, &rows, &cols, &broadcast_1st)) {                  \
       auto nthreads = rows * cols;                                            \
       if (broadcast_1st > 0) {                                                \
@@ -491,7 +491,7 @@ DEFINE_BINARY_FUNC(Mul, bool, uint8_t); // And
       return;                                                                 \
     }                                                                         \
     vec64_t A_broadcast_strides, B_broadcast_strides, Y_dims;                 \
-    utils::math::ComputeBinaryBroadcastStrides(                               \
+    math::utils::ComputeBinaryBroadcastStrides(                               \
         A_dims, B_dims, A_broadcast_strides, B_broadcast_strides, Y_dims);    \
     CUDA_TENSOR_DIMS_CHECK((int)Y_dims.size());                               \
     SimpleArray<int, CUDA_TENSOR_MAX_DIMS> a_strides, b_strides, y_dims;      \
@@ -550,13 +550,13 @@ DEFINE_BINARY_FUNC(GreaterEqual, bool, bool, math::GreaterEqualFunctor);
     vec64_t A_broadcast_dims, B_broadcast_dims, C_broadcast_dims;           \
     vec64_t A_broadcast_strides, B_broadcast_strides, C_broadcast_strides;  \
     vec64_t Y_dims, _, __;                                                  \
-    utils::math::ComputeBinaryBroadcastStrides(A_dims, B_dims, _, _, __);   \
-    utils::math::ComputeBinaryBroadcastStrides(C_dims, __, _, _, Y_dims);   \
-    utils::math::ComputeBinaryBroadcastDims(                                \
+    math::utils::ComputeBinaryBroadcastStrides(A_dims, B_dims, _, _, __);   \
+    math::utils::ComputeBinaryBroadcastStrides(C_dims, __, _, _, Y_dims);   \
+    math::utils::ComputeBinaryBroadcastDims(                                \
         A_dims, Y_dims, A_broadcast_dims, _);                               \
-    utils::math::ComputeBinaryBroadcastDims(                                \
+    math::utils::ComputeBinaryBroadcastDims(                                \
         B_dims, Y_dims, B_broadcast_dims, _);                               \
-    utils::math::ComputeBinaryBroadcastDims(                                \
+    math::utils::ComputeBinaryBroadcastDims(                                \
         C_dims, Y_dims, C_broadcast_dims, _);                               \
     if (A_broadcast_dims == B_broadcast_dims &&                             \
         B_broadcast_dims == C_broadcast_dims) {                             \
@@ -566,11 +566,11 @@ DEFINE_BINARY_FUNC(GreaterEqual, bool, bool, math::GreaterEqualFunctor);
       return;                                                               \
     }                                                                       \
     CUDA_TENSOR_DIMS_CHECK((int)Y_dims.size());                             \
-    utils::math::ComputeBinaryBroadcastStrides(                             \
+    math::utils::ComputeBinaryBroadcastStrides(                             \
         A_dims, Y_dims, A_broadcast_strides, _, _);                         \
-    utils::math::ComputeBinaryBroadcastStrides(                             \
+    math::utils::ComputeBinaryBroadcastStrides(                             \
         B_dims, Y_dims, B_broadcast_strides, _, _);                         \
-    utils::math::ComputeBinaryBroadcastStrides(                             \
+    math::utils::ComputeBinaryBroadcastStrides(                             \
         C_dims, Y_dims, C_broadcast_strides, _, _);                         \
     SimpleArray<int, CUDA_TENSOR_MAX_DIMS> a_strides, b_strides, c_strides; \
     SimpleArray<int, CUDA_TENSOR_MAX_DIMS> y_dims;                          \

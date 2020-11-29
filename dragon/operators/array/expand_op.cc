@@ -19,7 +19,7 @@ void ExpandOp<Context>::DoRunWithType() {
   // Store for the gradient calculation
   STORE_INPUT_SPEC(0);
 
-  if (utils::math::IsBinaryBroadcast(X.dims(), X_dims, Y_dims)) {
+  if (math::utils::IsBinaryBroadcast(X.dims(), X_dims, Y_dims)) {
     math::Set(
         X.ndim(),
         X.dims().data(),
@@ -47,7 +47,7 @@ void ExpandGradientOp<Context>::DoRunWithType() {
 
   vec32_t X_broadcast_axes, _;
   vec32_t Y_dims(dY.dims().begin(), dY.dims().end());
-  utils::math::ComputeBinaryBroadcastAxes(
+  math::utils::ComputeBinaryBroadcastAxes(
       dX->dims(), dY.dims(), dY.dims(), X_broadcast_axes, _);
 
   if (X_broadcast_axes.empty()) {

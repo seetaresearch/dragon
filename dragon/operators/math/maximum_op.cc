@@ -13,7 +13,7 @@ void MaximumGradientOp<Context>::DoRunWithType() {
 
   vec32_t A_broadcast_axes, B_broadcast_axes;
   vec32_t Y_dims(dY.dims().begin(), dY.dims().end());
-  utils::math::ComputeBinaryBroadcastAxes(
+  math::utils::ComputeBinaryBroadcastAxes(
       A.dims(), B.dims(), dY.dims(), A_broadcast_axes, B_broadcast_axes);
 
   // Temporal space to store the intermediate gradient

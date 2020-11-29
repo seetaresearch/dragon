@@ -14,7 +14,6 @@
 #define DRAGON_MODULES_PYTHON_OPERATOR_H_
 
 #include "dragon/modules/python/common.h"
-#include "dragon/utils/eigen_utils.h"
 
 namespace dragon {
 

@@ -162,7 +162,7 @@ __global__ void _SelectViaDeviceSort(
 
 /* ------------------- Launcher Separator ------------------- */
 
-#define PLACE_BLOCK_SORT_CASE(T, items_per_thread)                     \
+#define BLOCKSORT_KERNEL(T, items_per_thread)                          \
   _SelectViaBlockSort<T, items_per_thread>                             \
       <<<CUDA_2D_BLOCKS(rows), CUDA_THREADS, 0, ctx->cuda_stream()>>>( \
           rows,                                                        \
@@ -175,15 +175,15 @@ __global__ void _SelectViaDeviceSort(
           reinterpret_cast<T*>(value),                                 \
           index)
 
-#define PLACE_BLOCK_SORT_CASES(T)                                \
+#define DISPATCH_BLOCKSORT_KERNEL(T)                             \
   if (cols <= CUDA_THREADS) {                                    \
-    PLACE_BLOCK_SORT_CASE(T, 1);                                 \
+    BLOCKSORT_KERNEL(T, 1);                                      \
   } else if (cols <= CUDA_THREADS * 2) {                         \
-    PLACE_BLOCK_SORT_CASE(T, 2);                                 \
+    BLOCKSORT_KERNEL(T, 2);                                      \
   } else if (cols <= CUDA_THREADS * 4) {                         \
-    PLACE_BLOCK_SORT_CASE(T, 4);                                 \
+    BLOCKSORT_KERNEL(T, 4);                                      \
   } else if (cols <= CUDA_THREADS * 8) {                         \
-    PLACE_BLOCK_SORT_CASE(T, 8);                                 \
+    BLOCKSORT_KERNEL(T, 8);                                      \
   } else {                                                       \
     LOG(FATAL) << "Too larger dimension (> " << CUDA_THREADS * 8 \
                << ") to launch the cuda kernel";                 \
@@ -238,7 +238,7 @@ __global__ void _SelectViaDeviceSort(
       return;                                                             \
     }                                                                     \
     T2 init = largest > 0 ? kLowest : kMax;                               \
-    PLACE_BLOCK_SORT_CASES(T2);                                           \
+    DISPATCH_BLOCKSORT_KERNEL(T2);                                        \
   }
 
 DEFINE_KERNEL_LAUNCHER(
@@ -277,8 +277,8 @@ DEFINE_KERNEL_LAUNCHER(
     std::numeric_limits<double>::lowest(),
     std::numeric_limits<double>::max());
 
-#undef PLACE_BLOCK_SORT_CASE
-#undef PLACE_BLOCK_SORT_CASES
+#undef BLOCK_SORTKERNEL
+#undef DISPATCH_BLOCKSORT_KERNEL
 #undef DEFINE_KERNEL_LAUNCHER
 
 } // namespace kernel

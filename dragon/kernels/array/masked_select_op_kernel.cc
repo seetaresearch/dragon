@@ -1,6 +1,5 @@
-#include "dragon/utils/cast.h"
+#include "dragon/utils/device/common_openmp.h"
 #include "dragon/utils/math_functions.h"
-#include "dragon/utils/omp_utils.h"
 #include "dragon/utils/op_kernels.h"
 
 namespace dragon {
@@ -52,17 +51,17 @@ void _MaskedSelectGrad(
     _MaskedSelect(num_selected, index, x, y);          \
   }
 
-#define DEFINE_GRAD_KERNEL_LAUNCHER(IndexType, ValueType)  \
-  template <>                                              \
-  void MaskedSelectGrad<IndexType, ValueType, CPUContext>( \
-      const int count,                                     \
-      const int num_selected,                              \
-      const IndexType* index,                              \
-      const ValueType* dy,                                 \
-      ValueType* dx,                                       \
-      CPUContext* ctx) {                                   \
-    math::Set(count, cast::to<ValueType>(0.f), dx, ctx);   \
-    _MaskedSelectGrad(num_selected, index, dy, dx);        \
+#define DEFINE_GRAD_KERNEL_LAUNCHER(IndexType, ValueType)   \
+  template <>                                               \
+  void MaskedSelectGrad<IndexType, ValueType, CPUContext>(  \
+      const int count,                                      \
+      const int num_selected,                               \
+      const IndexType* index,                               \
+      const ValueType* dy,                                  \
+      ValueType* dx,                                        \
+      CPUContext* ctx) {                                    \
+    math::Set(count, convert::To<ValueType>(0.f), dx, ctx); \
+    _MaskedSelectGrad(num_selected, index, dy, dx);         \
   }
 
 DEFINE_KERNEL_LAUNCHER(int, bool);

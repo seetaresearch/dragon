@@ -1,7 +1,7 @@
 #ifdef USE_CUDA
 
 #include "dragon/core/context_cuda.h"
-#include "dragon/utils/cast.h"
+#include "dragon/utils/conversions.h"
 #include "dragon/utils/math_functions.h"
 #include "dragon/utils/op_kernels.h"
 
@@ -61,7 +61,7 @@ __global__ void _MaskedSelectGrad(
       const ValueType* dy,                                  \
       ValueType* dx,                                        \
       CUDAContext* ctx) {                                   \
-    math::Set(count, cast::to<ValueType>(0.f), dx, ctx);    \
+    math::Set(count, convert::To<ValueType>(0.f), dx, ctx); \
     _MaskedSelectGrad<<<                                    \
         CUDA_BLOCKS(num_selected),                          \
         CUDA_THREADS,                                       \

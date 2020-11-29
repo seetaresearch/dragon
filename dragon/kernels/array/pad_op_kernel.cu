@@ -1,7 +1,6 @@
 #ifdef USE_CUDA
 
 #include "dragon/core/context_cuda.h"
-#include "dragon/utils/cast.h"
 #include "dragon/utils/math_functions.h"
 #include "dragon/utils/op_kernels.h"
 
@@ -114,7 +113,7 @@ __global__ void _EdgePad(
         X_strides,                                                             \
         Y_dims,                                                                \
         X_pads,                                                                \
-        cast::to<T>(value),                                                    \
+        convert::To<T>(value),                                                 \
         x,                                                                     \
         y);                                                                    \
   }

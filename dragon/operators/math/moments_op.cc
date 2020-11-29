@@ -40,7 +40,7 @@ void MomentsOp<Context>::DoRunWithType() {
         ctx());
     math::Set(
         1,
-        cast::to<Ty>(0.f),
+        convert::To<Ty>(0.f),
         Y2->Reshape(Y_shape)->template mutable_data<Ty, Context>(),
         ctx());
   } else {

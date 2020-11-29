@@ -366,11 +366,15 @@ void ConvOpBase<Context>::Reshape(bool backward) {
 template class ConvOpBase<CPUContext>;
 INSTANTIATE_API(CPUContext, float);
 INSTANTIATE_API(CPUContext, double);
+template void ConvOpBase<CPUContext>::Pb(const float16*, float16*);
+template void ConvOpBase<CPUContext>::Db(const float16*, float16*);
 
 #ifdef USE_CUDA
 template class ConvOpBase<CUDAContext>;
 INSTANTIATE_API(CUDAContext, float);
 INSTANTIATE_API(CUDAContext, double);
+template void ConvOpBase<CUDAContext>::Pb(const float16*, float16*);
+template void ConvOpBase<CUDAContext>::Db(const float16*, float16*);
 #endif
 
 #undef INSTANTIATE_API

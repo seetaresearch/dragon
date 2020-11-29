@@ -1,7 +1,7 @@
 #include "dragon/utils/math/reduce.h"
-#include "dragon/utils/eigen_utils.h"
+#include "dragon/utils/device/common_eigen.h"
+#include "dragon/utils/device/common_openmp.h"
 #include "dragon/utils/math/utils.h"
-#include "dragon/utils/omp_utils.h"
 
 namespace dragon {
 
@@ -169,22 +169,22 @@ void _GenericReduceSum(
     for (int i = 0; i < num_axes; ++i)                                       \
       y_dims[axes[i]] = 1;                                                   \
     /* Case #1: Rowwise Reduce */                                            \
-    if (utils::math::IsRowwiseReduce(                                        \
+    if (math::utils::IsRowwiseReduce(                                        \
             num_dims, dims, y_dims.data(), &rows, &cols)) {                  \
       _RowwiseReduce##name(rows, cols, scale, x, y);                         \
       return;                                                                \
     }                                                                        \
     /* Case #2: Colwise Reduce */                                            \
-    if (utils::math::IsColwiseReduce(                                        \
+    if (math::utils::IsColwiseReduce(                                        \
             num_dims, dims, y_dims.data(), &rows, &cols)) {                  \
       _ColwiseReduce##name(rows, cols, scale, x, y);                         \
       return;                                                                \
     }                                                                        \
     /* Case #3: Generic Reduce */                                            \
     vec32_t axesT(num_dims), stridesT(num_dims), dimsT(num_dims);            \
-    utils::math::TransposeAxesForReduce(                                     \
+    math::utils::TransposeAxesForReduce(                                     \
         num_dims, num_axes, axes, axesT.data());                             \
-    utils::math::ComputeTransposeStrides(                                    \
+    math::utils::ComputeTransposeStrides(                                    \
         num_dims, dims, axesT.data(), stridesT.data());                      \
     rows = cols = 1;                                                         \
     const int pivot = num_dims - num_axes;                                   \

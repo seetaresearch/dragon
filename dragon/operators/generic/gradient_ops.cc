@@ -13,7 +13,7 @@ void GradientGenerateOp<Context>::DoRunWithType() {
     Y->ReshapeLike(Input(i));
     math::Set(
         Y->count(),
-        cast::to<T>(defaults_[i]),
+        convert::To<T>(defaults_[i]),
         Y->template mutable_data<T, Context>(),
         ctx());
   }

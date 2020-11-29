@@ -87,7 +87,7 @@ void SliceGradientOp<Context>::DoRunWithType() {
 
   // Zero the redundant gradients
   auto* dx = dX->template mutable_data<T, Context>();
-  math::Set(dX->count(), cast::to<T>(0.f), dx, ctx());
+  math::Set(dX->count(), convert::To<T>(0.f), dx, ctx());
 
   // Copy the dY to the right positions
   kernel::SliceGrad(

@@ -133,8 +133,7 @@ def export(
         if output_names is not None:
             raise ValueError(
                 'Excepted the output names from <outputs>.\n'
-                'You should set the <output_names> to None.'
-            )
+                'You should set the <output_names> to None.')
         outputs, output_names = list(outputs.values()), list(outputs.keys())
     else:
         outputs = nest.flatten(outputs)

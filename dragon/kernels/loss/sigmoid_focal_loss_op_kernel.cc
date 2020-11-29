@@ -48,7 +48,7 @@ void _SigmoidFocalLoss(
     loss[i] += -c2 * neg_term * neg_alpha;
     mask[i] = c1;
 
-    utils::math::IncreaseIndexInDims(3, dims.data(), idx.data());
+    math::utils::IncreaseIndexInDims(3, dims.data(), idx.data());
   }
 }
 
@@ -96,7 +96,7 @@ void _SigmoidFocalLossGrad(
     dx[i] += -c2 * neg_term * neg_alpha;
     mask[i] = c1;
 
-    utils::math::IncreaseIndexInDims(3, dims.data(), idx.data());
+    math::utils::IncreaseIndexInDims(3, dims.data(), idx.data());
   }
 }
 

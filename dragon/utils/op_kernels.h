@@ -844,117 +844,117 @@ void SinGrad(const int count, const T* dy, const T* x, T* dx, Context* ctx);
 
 /* normalization.batch_norm */
 
-template <typename Tx, typename Tp, class Context>
+template <typename T, typename AccT, class Context>
+void BatchNorm(
+    const int N,
+    const int C,
+    const int S,
+    const string& data_format,
+    const T* x,
+    const AccT* mu,
+    const AccT* rsig,
+    const AccT* gamma,
+    const AccT* beta,
+    AccT* scale,
+    AccT* bias,
+    T* y,
+    Context* ctx);
+
+template <typename T, typename AccT, class Context>
 void BatchNormExpectation(
     const int N,
     const int C,
     const int S,
-    const Tp denorm,
+    const AccT denorm,
     const string& data_format,
-    const Tx* x,
-    Tp* ex,
-    Tp* ex2,
+    const T* x,
+    AccT* ex,
+    AccT* ex2,
     Context* ctx);
 
-template <typename Tx, typename Tp, class Context>
+template <typename T, typename AccT, class Context>
 void BatchNormInternalGrad(
     const int N,
     const int C,
     const int S,
     const string& data_format,
-    const Tx* x,
-    const Tp* mu,
-    const Tp* rsig,
-    const Tp* gamma,
-    const Tx* dy,
-    Tp* dgamma,
-    Tp* dbeta,
+    const T* x,
+    const AccT* mu,
+    const AccT* rsig,
+    const AccT* gamma,
+    const T* dy,
+    AccT* dgamma,
+    AccT* dbeta,
     Context* ctx);
 
-template <typename Tx, typename Tp, class Context>
+template <typename T, typename AccT, class Context>
 void BatchNormTrainingGrad(
     const int N,
     const int C,
     const int S,
     const string& data_format,
-    const Tx* x,
-    const Tp* mu,
-    const Tp* rsig,
-    const Tp* gamma,
-    const Tp* dgamma,
-    const Tp* dbeta,
-    const Tx* dy,
-    Tx* dx,
+    const T* x,
+    const AccT* mu,
+    const AccT* rsig,
+    const AccT* gamma,
+    const AccT* dgamma,
+    const AccT* dbeta,
+    const T* dy,
+    T* dx,
     Context* ctx);
 
-template <typename Tx, typename Tp, class Context>
-void BatchNormBackwardTraining(
+template <typename T, typename AccT, class Context>
+void BatchNormInferenceGrad(
     const int N,
     const int C,
     const int S,
     const string& data_format,
-    const Tx* x,
-    const Tp* mu,
-    const Tp* rsig,
-    const Tp* gamma,
-    const Tx* dy,
-    Tx* dx,
-    Tp* dgamma,
-    Tp* dbeta,
-    Context* ctx);
-
-template <typename Tx, typename Tp, class Context>
-void BatchNormBackwardInference(
-    const int N,
-    const int C,
-    const int S,
-    const string& data_format,
-    const Tx* x,
-    const Tp* mu,
-    const Tp* rsig,
-    const Tp* gamma,
-    const Tx* dy,
-    Tx* dx,
-    Tp* dgamma,
-    Tp* dbeta,
+    const T* x,
+    const AccT* mu,
+    const AccT* rsig,
+    const AccT* gamma,
+    const T* dy,
+    AccT* dgamma,
+    AccT* dbeta,
+    T* dx,
     Context* ctx);
 
 /* normalization.group_norm */
 
-template <typename Tx, typename Tp, class Context>
-void GroupNormForward(
+template <typename T, typename AccT, class Context>
+void GroupNorm(
     const int N,
     const int G,
     const int D,
     const int S,
     const string& data_format,
-    const Tx* x,
-    const Tp* mu,
-    const Tp* rsig,
-    const Tp* gamma,
-    const Tp* beta,
-    Tp* scale,
-    Tp* bias,
-    Tx* y,
+    const T* x,
+    const AccT* mu,
+    const AccT* rsig,
+    const AccT* gamma,
+    const AccT* beta,
+    AccT* scale,
+    AccT* bias,
+    T* y,
     Context* ctx);
 
-template <typename Tx, typename Tp, class Context>
-void GroupNormBackward(
+template <typename T, typename AccT, class Context>
+void GroupNormGrad(
     const int N,
     const int G,
     const int D,
     const int S,
     const string& data_format,
-    const Tx* x,
-    const Tp* mu,
-    const Tp* rsig,
-    const Tp* gamma,
-    const Tx* dy,
-    Tp* ds,
-    Tp* db,
-    Tx* dx,
-    Tp* dgamma,
-    Tp* dbeta,
+    const T* x,
+    const AccT* mu,
+    const AccT* rsig,
+    const AccT* gamma,
+    const T* dy,
+    AccT* ds,
+    AccT* db,
+    AccT* dgamma,
+    AccT* dbeta,
+    T* dx,
     Context* ctx);
 
 /* normalization.lp_norm */

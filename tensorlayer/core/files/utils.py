@@ -49,8 +49,7 @@ def assign_weights(value_list, module):
     if len(weight_list) != len(value_list):
         raise ValueError(
             'Excepted %d values for weights, got %d.'
-            % (len(weight_list), len(value_list))
-        )
+            % (len(weight_list), len(value_list)))
     for weight, value in zip(weight_list, value_list):
         _set_value(weight, value)
         matched_info.append((weight.name, weight.shape))
@@ -143,8 +142,7 @@ def load_hdf5_to_weights(filepath, module, skip=False):
     except Exception:
         raise NameError(
             "The loaded hdf5 file needs to have 'layer_names' as attributes.\n"
-            "Please check whether this hdf5 file is saved from TL."
-        )
+            "Please check whether this hdf5 file is saved from TL.")
     matched_info = _load_weights_from_hdf5_group(f, module.modules, skip)
     f.close()
     return matched_info

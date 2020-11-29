@@ -19,47 +19,92 @@ void BatchNormOp<Context>::TrainingImpl() {
   auto* X_bias = Buffer("X_bias")->Reshape({C_});
 
   auto* x = Input(0).template data<InputType, Context>();
-  auto* gamma = Input(1).template data<ParamType, Context>();
-  auto* beta = Input(2).template data<ParamType, Context>();
   auto* rm = Input(3).template mutable_data<ParamType, Context>();
   auto* rv = Input(4).template mutable_data<ParamType, Context>();
   auto* mu = X_mu->template mutable_data<ParamType, Context>();
   auto* rsig = X_rsig->template mutable_data<ParamType, Context>();
   auto* scale = X_scale->template mutable_data<ParamType, Context>();
-  auto* bias = X_bias->template mutable_data<ParamType, Context>();
-  auto* y = Output(0)->template mutable_data<InputType, Context>();
 
   // Compute moments
-  if (data_format() == "NCHW") {
-    vec32_t dims = {(int)N_, (int)C_, (int)S_};
-    vec32_t axes = {0, 2};
-    kernel::Moments(3, dims.data(), 2, axes.data(), x, mu, rsig, ctx());
-  } else if (data_format() == "NHWC") {
-    vec32_t dims = {(int)(N_ * S_), (int)C_};
-    vec32_t axes = {0};
-    kernel::Moments(2, dims.data(), 1, axes.data(), x, mu, rsig, ctx());
+  if (sync_stats_ > 0) {
+#ifdef USE_MPI
+    // Compute E(X) and E(X^2)
+    kernel::BatchNormExpectation(
+        N_,
+        C_,
+        S_,
+        ParamType(1) / (N_ * comm_size_ * S_),
+        data_format(),
+        x,
+        mu,
+        rsig,
+        ctx());
+    // Compute D(X) = E(X^2) - E(X)^2
+    ctx()->FinishDeviceComputation();
+    if (enable_nccl_) {
+#ifdef USE_NCCL
+      auto nccl_comm_ = this->nccl_comm();
+      auto nccl_dtype_ = this->template nccl_dtype<ParamType>();
+      NCCL_CHECK(ncclAllReduce(
+          (void*)mu,
+          (void*)mu,
+          C_,
+          nccl_dtype_,
+          ncclSum,
+          nccl_comm_,
+          ((CUDAContext*)ctx())->cuda_stream()));
+      NCCL_CHECK(ncclAllReduce(
+          (void*)rsig,
+          (void*)rsig,
+          C_,
+          nccl_dtype_,
+          ncclSum,
+          nccl_comm_,
+          ((CUDAContext*)ctx())->cuda_stream()));
+#endif // USE_NCCL
+    } else {
+      AllReduce(mu, mu, C_);
+      AllReduce(rsig, rsig, C_);
+    }
+    math::Square(C_, mu, scale, ctx());
+    math::Sub(C_, rsig, scale, rsig, ctx());
+#endif // USE_MPI
+  } else {
+    if (data_format() == "NCHW") {
+      vec32_t dims = {(int)N_, (int)C_, (int)S_};
+      vec32_t axes = {0, 2};
+      kernel::Moments(3, dims.data(), 2, axes.data(), x, mu, rsig, ctx());
+    } else if (data_format() == "NHWC") {
+      vec32_t dims = {(int)(N_ * S_), (int)C_};
+      vec32_t axes = {0};
+      kernel::Moments(2, dims.data(), 1, axes.data(), x, mu, rsig, ctx());
+    }
   }
 
   // Compute running statistics
   if (is_recomputing_ == 0) {
-    // Running(X) = (1 - momentum) * Cur(X) + momentum * Running(X)
     math::Axpby(C_, 1.f - momentum_, mu, momentum_, rm, ctx());
     math::Axpby(C_, 1.f - momentum_, rsig, momentum_, rv, ctx());
   }
 
-  // Fuse parameters along channel axis
-  // [mu, rsig, alpha, beta] => [scale, bias]
+  // Inverse stddev from variance
   math::InvStd(C_, epsilon_, rsig, rsig, ctx());
-  math::Mul(C_, gamma, rsig, scale, ctx());
-  math::Mul(C_, scale, mu, bias, ctx());
-  math::Sub(C_, beta, bias, bias, ctx());
 
-  // Compute affine transformation
-  if (data_format() == "NCHW") {
-    kernel::ChannelAffine(N_, S_, C_, x, scale, bias, y, ctx());
-  } else if (data_format() == "NHWC") {
-    kernel::ChannelAffine(N_ * S_, 1, C_, x, scale, bias, y, ctx());
-  }
+  // Fuse parameters to compute affine transformation
+  kernel::BatchNorm(
+      N_,
+      C_,
+      S_,
+      data_format(),
+      x,
+      mu,
+      rsig,
+      Input(1).template data<ParamType, Context>(), // gamma
+      Input(2).template data<ParamType, Context>(), // beta
+      scale,
+      X_bias->template mutable_data<ParamType, Context>(),
+      Output(0)->template mutable_data<InputType, Context>(),
+      ctx());
 }
 
 template <class Context>
@@ -70,31 +115,30 @@ void BatchNormOp<Context>::InferenceImpl() {
   TENSOR_FILL_WITH_TYPE(Input(3), vec64_t({C_}), ParamType);
   TENSOR_FILL_WITH_TYPE(Input(4), vec64_t({C_}), ParamType);
 
+  auto* X_rsig = Buffer("X_rsig")->Reshape({C_});
   auto* X_scale = Buffer("X_scale")->Reshape({C_});
   auto* X_bias = Buffer("X_bias")->Reshape({C_});
-
-  auto* x = Input(0).template data<InputType, Context>();
-  auto* gamma = Input(1).template data<ParamType, Context>();
-  auto* beta = Input(2).template data<ParamType, Context>();
-  auto* rm = Input(3).template data<ParamType, Context>();
   auto* rv = Input(4).template data<ParamType, Context>();
-  auto* scale = X_scale->template mutable_data<ParamType, Context>();
-  auto* bias = X_bias->template mutable_data<ParamType, Context>();
-  auto* y = Output(0)->template mutable_data<InputType, Context>();
+  auto* rsig = X_rsig->template mutable_data<ParamType, Context>();
 
-  // Fuse parameters along channel axis
-  // [mu, rsig, alpha, beta] => [scale, bias]
-  math::InvStd(C_, epsilon_, rv, bias, ctx());
-  math::Mul(C_, gamma, bias, scale, ctx());
-  math::Mul(C_, scale, rm, bias, ctx());
-  math::Sub(C_, beta, bias, bias, ctx());
+  // Inverse stddev from variance
+  math::InvStd(C_, epsilon_, rv, rsig, ctx());
 
-  // Compute affine transformation
-  if (data_format() == "NCHW") {
-    kernel::ChannelAffine(N_, S_, C_, x, scale, bias, y, ctx());
-  } else if (data_format() == "NHWC") {
-    kernel::ChannelAffine(N_ * S_, 1, C_, x, scale, bias, y, ctx());
-  }
+  // Fuse parameters to compute affine transformation
+  kernel::BatchNorm(
+      N_,
+      C_,
+      S_,
+      data_format(),
+      Input(0).template data<InputType, Context>(),
+      Input(3).template data<ParamType, Context>(),
+      rsig,
+      Input(1).template data<ParamType, Context>(), // gamma
+      Input(2).template data<ParamType, Context>(), // beta
+      X_scale->template mutable_data<ParamType, Context>(),
+      X_bias->template mutable_data<ParamType, Context>(),
+      Output(0)->template mutable_data<InputType, Context>(),
+      ctx());
 }
 
 template <class Context>
@@ -113,9 +157,15 @@ void BatchNormOp<Context>::RunOnDevice() {
     } else {
       InferenceImpl<float, float>();
     }
+  } else if (Input(0).template IsType<float16>()) {
+    if (is_training_) {
+      TrainingImpl<float16, float>();
+    } else {
+      InferenceImpl<float16, float>();
+    }
   } else {
     LOG(FATAL) << MessageForUnsupported(
-        types::to_string(Input(0).meta()), {"float32"});
+        types::to_string(Input(0).meta()), {"float16", "float32"});
   }
 }
 
@@ -124,21 +174,71 @@ template <typename InputType, typename ParamType>
 void BatchNormGradientOp<Context>::TrainingImpl() {
   auto *dX = Output(0), *dW = Output(1), *dB = Output(2);
   auto *X_mu = Buffer("X_mu"), *X_rsig = Buffer("X_rsig");
+  auto *X_scale = Buffer("X_scale"), *X_bias = Buffer("X_bias");
 
-  // Gradient w.r.t. gamma, beta and input
-  kernel::BatchNormBackwardTraining(
+  auto* x = Input(0).template data<InputType, Context>();
+  auto* gamma = Input(1).template data<ParamType, Context>();
+  auto* dy = Input(4).template data<InputType, Context>();
+  auto* mu = X_mu->template data<ParamType, Context>();
+  auto* rsig = X_rsig->template data<ParamType, Context>();
+  auto* scale = X_scale->template mutable_data<ParamType, Context>();
+  auto* bias = X_bias->template mutable_data<ParamType, Context>();
+  auto* dgamma = dW->Reshape({C_})->template mutable_data<ParamType, Context>();
+  auto* dbeta = dB->Reshape({C_})->template mutable_data<ParamType, Context>();
+
+  // Gradient w.r.t. gamma and beta
+  kernel::BatchNormInternalGrad(
+      N_, C_, S_, data_format(), x, mu, rsig, gamma, dy, dgamma, dbeta, ctx());
+
+  if (sync_stats_ > 0) {
+#ifdef USE_MPI
+    ctx()->FinishDeviceComputation();
+    if (enable_nccl_) {
+#ifdef USE_NCCL
+      auto nccl_comm_ = this->nccl_comm();
+      auto nccl_dtype_ = this->template nccl_dtype<ParamType>();
+      NCCL_CHECK(ncclAllReduce(
+          (void*)dgamma,
+          (void*)scale,
+          C_,
+          nccl_dtype_,
+          ncclSum,
+          nccl_comm_,
+          ((CUDAContext*)ctx())->cuda_stream()));
+      NCCL_CHECK(ncclAllReduce(
+          (void*)dbeta,
+          (void*)bias,
+          C_,
+          nccl_dtype_,
+          ncclSum,
+          nccl_comm_,
+          ((CUDAContext*)ctx())->cuda_stream()));
+#endif // USE_NCCL
+    } else {
+      AllReduce(dgamma, scale, C_);
+      AllReduce(dbeta, bias, C_);
+    }
+    math::Scale(C_, ParamType(1) / comm_size_, scale, scale, ctx());
+    math::Scale(C_, ParamType(1) / comm_size_, bias, bias, ctx());
+#endif // USE_MPI
+  } else {
+    scale = dgamma, bias = dbeta;
+  }
+
+  // Gradient w.r.t. input
+  kernel::BatchNormTrainingGrad(
       N_,
       C_,
       S_,
       data_format(),
-      Input(0).template data<InputType, Context>(), // x
-      X_mu->template data<ParamType, Context>(), // mu
-      X_rsig->template data<ParamType, Context>(), // rsig
-      Input(1).template data<ParamType, Context>(), // gamma
-      Input(4).template data<InputType, Context>(), // dy
-      Output(0)->template mutable_data<InputType, Context>(), // dx
-      dW->Reshape({C_})->template mutable_data<ParamType, Context>(), // dgamma
-      dB->Reshape({C_})->template mutable_data<ParamType, Context>(), // dbeta
+      x,
+      mu,
+      rsig,
+      gamma,
+      scale,
+      bias,
+      dy,
+      Output(0)->template mutable_data<InputType, Context>(),
       ctx());
 }
 
@@ -158,11 +258,11 @@ void BatchNormGradientOp<Context>::InferenceImpl() {
     dbeta = dB->Reshape({C_})->template mutable_data<ParamType, Context>();
   }
 
-  // Restore inverse stddev from variance
+  // Inverse stddev from variance
   math::InvStd(C_, epsilon_, rv, rsig, ctx());
 
   // Gradient w.r.t. gamma, beta and input
-  kernel::BatchNormBackwardInference(
+  kernel::BatchNormInferenceGrad(
       N_,
       C_,
       S_,
@@ -172,9 +272,9 @@ void BatchNormGradientOp<Context>::InferenceImpl() {
       rsig,
       Input(1).template data<ParamType, Context>(), // gamma
       Input(4).template data<InputType, Context>(), // dy
-      dX->template mutable_data<InputType, Context>(),
       dgamma,
       dbeta,
+      dX->template mutable_data<InputType, Context>(),
       ctx());
 }
 
@@ -190,9 +290,15 @@ void BatchNormGradientOp<Context>::RunOnDevice() {
     } else {
       InferenceImpl<float, float>();
     }
+  } else if (Input(0).template IsType<float16>()) {
+    if (is_training_ > 0) {
+      TrainingImpl<float16, float>();
+    } else {
+      InferenceImpl<float16, float>();
+    }
   } else {
     LOG(FATAL) << MessageForUnsupported(
-        types::to_string(Input(0).meta()), {"float32"});
+        types::to_string(Input(0).meta()), {"float16", "float32"});
   }
 }
 

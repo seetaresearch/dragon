@@ -14,8 +14,8 @@ void MaskedAssignOp<Context>::DoRunWithType() {
       << "\nExcepted bool or uint8 mask.";
 
   vec64_t X_dims, Y_dims;
-  if (utils::math::IsBinaryBroadcast(X.dims(), X_mask.dims(), X_dims) &&
-      utils::math::IsBinaryBroadcast(X_dims, Y->dims(), Y_dims) &&
+  if (math::utils::IsBinaryBroadcast(X.dims(), X_mask.dims(), X_dims) &&
+      math::utils::IsBinaryBroadcast(X_dims, Y->dims(), Y_dims) &&
       Y_dims == Y->dims()) {
     math::Where(
         X.ndim(),

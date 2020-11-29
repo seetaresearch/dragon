@@ -13,11 +13,9 @@
 #ifndef DRAGON_UTILS_MATH_UTILS_H_
 #define DRAGON_UTILS_MATH_UTILS_H_
 
-#include "dragon/core/context.h"
-#include "dragon/core/context_cuda.h"
-#include "dragon/utils/cast.h"
+#include "dragon/utils/conversions.h"
 
-#ifdef USE_CUDA
+#if defined(__CUDACC__)
 #define MATH_UTILS_DECL inline __host__ __device__
 #else
 #define MATH_UTILS_DECL inline
@@ -32,9 +30,9 @@
 
 namespace dragon {
 
-namespace utils {
-
 namespace math {
+
+namespace utils {
 
 template <
     typename T,
@@ -73,11 +71,11 @@ MATH_UTILS_DECL bool IsNaN(T x) {
 }
 
 inline bool IsInf(float16 x) {
-  return std::abs(cast::to<float>(x)) > HFLT_MAX;
+  return std::abs(convert::To<float>(x)) > HFLT_MAX;
 }
 
 inline bool IsNaN(float16 x) {
-  return IsNaN(cast::to<float>(x));
+  return IsNaN(convert::To<float>(x));
 }
 
 template <typename T>
@@ -249,9 +247,9 @@ inline void IncreaseIndexInDims(const int num_dims, const T* dims, T* index) {
   }
 }
 
-} // namespace math
-
 } // namespace utils
+
+} // namespace math
 
 } // namespace dragon
 

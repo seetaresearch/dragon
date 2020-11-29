@@ -42,7 +42,7 @@ class ConstantFiller final : public Filler<T, Context> {
   void Fill(Tensor* X, Context* ctx) override {
     math::Set(
         X->count(),
-        cast::to<T>(info().value()),
+        convert::To<T>(info().value()),
         X->mutable_data<T, Context>(),
         ctx);
   }

@@ -14,8 +14,8 @@ void WhereOp<Context>::DoRunWithType() {
       << "\nExcepted bool or uint8 condition tensor.";
 
   vec64_t AB_dims, Y_dims;
-  if (utils::math::IsBinaryBroadcast(A.dims(), B.dims(), AB_dims) &&
-      utils::math::IsBinaryBroadcast(AB_dims, C.dims(), Y_dims)) {
+  if (math::utils::IsBinaryBroadcast(A.dims(), B.dims(), AB_dims) &&
+      math::utils::IsBinaryBroadcast(AB_dims, C.dims(), Y_dims)) {
     math::Where(
         A.ndim(),
         A.dims().data(),
@@ -50,7 +50,7 @@ void WhereGradientOp<Context>::DoRunWithType() {
 
   vec32_t A_broadcast_axes, B_broadcast_axes;
   vec32_t Y_dims(dY.dims().begin(), dY.dims().end());
-  utils::math::ComputeBinaryBroadcastAxes(
+  math::utils::ComputeBinaryBroadcastAxes(
       A.dims(), B.dims(), dY.dims(), A_broadcast_axes, B_broadcast_axes);
 
   // Temporal space to store the intermediate gradient and zeros
@@ -68,7 +68,7 @@ void WhereGradientOp<Context>::DoRunWithType() {
   if (scratch_size > 0) {
     scratch = ctx()->workspace()->template data<T, Context>({scratch_size})[0];
     zeros = scratch + (scratch_size - 1);
-    math::Set(1, cast::to<T>(0.f), zeros, ctx());
+    math::Set(1, convert::To<T>(0.f), zeros, ctx());
   }
 
   if (dA->has_name()) {

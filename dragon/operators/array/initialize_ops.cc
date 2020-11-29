@@ -46,7 +46,7 @@ template <class Context>
 template <typename T>
 void FillOp<Context>::DoRunWithType() {
   auto* y = Output(0)->template mutable_data<T, Context>();
-  math::Set(Output(0)->count(), cast::to<T>(value_), y, ctx());
+  math::Set(Output(0)->count(), convert::To<T>(value_), y, ctx());
 }
 
 template <class Context>

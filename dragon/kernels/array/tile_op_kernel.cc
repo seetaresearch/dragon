@@ -25,7 +25,7 @@ void _Tile(
       xi += (index[d] % x_dims[d]) * x_strides[d];
     }
     y[i] = x[xi];
-    utils::math::IncreaseIndexInDims(num_dims, y_dims, index.data());
+    math::utils::IncreaseIndexInDims(num_dims, y_dims, index.data());
   }
 }
 

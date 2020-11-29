@@ -28,7 +28,7 @@ void _NLLLoss(
       k = (idx[0] * axis_dim + label) * inner_dim + idx[1];
       loss[i] = -logit[k], mask[i] = LogitType(1);
     }
-    utils::math::IncreaseIndexInDims(2, dims.data(), idx.data());
+    math::utils::IncreaseIndexInDims(2, dims.data(), idx.data());
   }
 }
 
@@ -53,7 +53,7 @@ void _NLLLossGrad(
       k = (idx[0] * axis_dim + label) * inner_dim + idx[1];
       dlogit[k] = LogitType(-1), mask[i] = LogitType(1);
     }
-    utils::math::IncreaseIndexInDims(2, dims.data(), idx.data());
+    math::utils::IncreaseIndexInDims(2, dims.data(), idx.data());
   }
 }
 

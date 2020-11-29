@@ -75,7 +75,7 @@ void SplitGradientOp<Context>::DoRunWithType() {
     if (!Input(i).has_name()) {
       math::Set(
           dX->count(),
-          cast::to<T>(0.f),
+          convert::To<T>(0.f),
           dX->template mutable_data<T, Context>(),
           ctx());
       break;

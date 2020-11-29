@@ -1,4 +1,3 @@
-#include "dragon/utils/cast.h"
 #include "dragon/utils/math_functions.h"
 #include "dragon/utils/op_kernels.h"
 

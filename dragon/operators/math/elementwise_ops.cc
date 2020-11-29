@@ -93,7 +93,7 @@ DEFINE_INPLACE_UNARY_OP_IMPL(Invert, T);
           B.template data<T, Context>(),                                     \
           Y->Reshape(Y_dims)->template mutable_data<TOut, Context>(),        \
           ctx());                                                            \
-    } else if (utils::math::IsBinaryBroadcast(A.dims(), B.dims(), Y_dims)) { \
+    } else if (math::utils::IsBinaryBroadcast(A.dims(), B.dims(), Y_dims)) { \
       math::name(                                                            \
           A.ndim(),                                                          \
           A.dims().data(),                                                   \

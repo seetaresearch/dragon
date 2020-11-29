@@ -29,7 +29,7 @@ void _SparseSoftmaxCrossEntropy(
       loss[i] = -std::log(std::max(prob[k], LogitType(FLT_MIN)));
       mask[i] = LogitType(1);
     }
-    utils::math::IncreaseIndexInDims(2, dims.data(), idx.data());
+    math::utils::IncreaseIndexInDims(2, dims.data(), idx.data());
   }
 }
 
@@ -60,7 +60,7 @@ void _SparseSoftmaxCrossEntropyGrad(
       dx[k] -= LogitType(1);
       mask[i] = LogitType(1);
     }
-    utils::math::IncreaseIndexInDims(2, dims.data(), idx.data());
+    math::utils::IncreaseIndexInDims(2, dims.data(), idx.data());
   }
 }
 

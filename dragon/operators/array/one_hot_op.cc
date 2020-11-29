@@ -15,7 +15,7 @@ void OneHotOp<Context>::DoRunWithType() {
   // Brush the off-value over all
   math::Set(
       X.count() * depth_,
-      cast::to<T>((float)off_value_),
+      convert::To<T>((float)off_value_),
       Y->Reshape(Y_dims)->template mutable_data<T, Context>(),
       ctx());
 

@@ -1,7 +1,7 @@
 #ifdef USE_CUDA
 
 #include "dragon/core/context_cuda.h"
-#include "dragon/utils/cast.h"
+#include "dragon/utils/conversions.h"
 #include "dragon/utils/math/blas.h"
 
 namespace dragon {
@@ -357,16 +357,16 @@ DRAGON_API void Axpby<float16, CUDAContext>(
   if ((n & 1) == 0) {
     _Axpby<<<CUDA_BLOCKS(n >> 1), CUDA_THREADS, 0, ctx->cuda_stream()>>>(
         n >> 1,
-        cast::to<half2>(alpha),
+        convert::To<half2>(alpha),
         reinterpret_cast<const half2*>(x),
-        cast::to<half2>(beta),
+        convert::To<half2>(beta),
         reinterpret_cast<half2*>(y));
   } else {
     _Axpby<<<CUDA_BLOCKS(n), CUDA_THREADS, 0, ctx->cuda_stream()>>>(
         n,
-        cast::to<half>(alpha),
+        convert::To<half>(alpha),
         reinterpret_cast<const half*>(x),
-        cast::to<half>(beta),
+        convert::To<half>(beta),
         reinterpret_cast<half*>(y));
   }
 }
@@ -531,8 +531,8 @@ DRAGON_API void Gemv<float16, CUDAContext>(
         LDC));
 #endif
   } else if (math_type == "float16") {
-    const half alpha_val = cast::to<half>(alpha);
-    const half beta_val = cast::to<half>(beta);
+    const half alpha_val = convert::To<half>(alpha);
+    const half beta_val = convert::To<half>(beta);
 #if CUDA_VERSION >= 9000
     if (TENSOR_CORE_AVAILABLE()) {
       // GEMV + MATH16 + TENSOR-CORE
@@ -733,8 +733,8 @@ DRAGON_API void Gemm<float16, CUDAContext>(
         N));
 #endif
   } else if (math_type == "float16") {
-    const half alpha_val = cast::to<half>(alpha);
-    const half beta_val = cast::to<half>(beta);
+    const half alpha_val = convert::To<half>(alpha);
+    const half beta_val = convert::To<half>(beta);
 #if CUDA_VERSION >= 9000
     if (TENSOR_CORE_AVAILABLE()) {
       // GEMM + MATH16 + TENSOR-CORE

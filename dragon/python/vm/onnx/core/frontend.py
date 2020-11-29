@@ -163,14 +163,11 @@ class DragonFrontend(object):
                     helper.make_tensor_value_info(
                         name=name,
                         elem_type=value_info[name][0],
-                        shape=value_info[name][1],
-                    )
-                ])
+                        shape=value_info[name][1])])
             except KeyError:
                 raise ValueError(
                     'Info of tensor `{}` is missing, '
-                    'specify it in <value_info>.'.format(name)
-                )
+                    'specify it in <value_info>.'.format(name))
 
         # Add outputs.
         onnx_graph.output.extend(
@@ -238,8 +235,7 @@ class DragonFrontend(object):
             raise RuntimeError(
                 'OpSet {} requires ONNX version >= {}. '
                 '({} currently installed.)'
-                .format(opset_version, onnx_version, onnx.__version__)
-            )
+                .format(opset_version, onnx_version, onnx.__version__))
         return opset_version
 
     @staticmethod

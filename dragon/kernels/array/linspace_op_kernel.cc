@@ -1,4 +1,4 @@
-#include "dragon/utils/cast.h"
+#include "dragon/utils/conversions.h"
 #include "dragon/utils/op_kernels.h"
 
 namespace dragon {
@@ -16,12 +16,12 @@ void _RowwiseLinSpace(
     T* y) {
   for (int i = 0; i < cols; ++i) {
     const auto delta = (stop[i] - start[i]) / double(rows - 1);
-    y[i] = cast::to<T>(start[i]);
+    y[i] = convert::To<T>(start[i]);
     if (rows > 1) {
-      y[i + (rows - 1) * cols] = cast::to<T>(stop[i]);
+      y[i + (rows - 1) * cols] = convert::To<T>(stop[i]);
     }
     for (int j = 1; j < rows - 1; ++j) {
-      y[i + j * cols] = cast::to<T>(start[i] + double(j) * delta);
+      y[i + j * cols] = convert::To<T>(start[i] + double(j) * delta);
     }
   }
 }
@@ -36,12 +36,12 @@ void _ColwiseLinSpace(
   for (int i = 0; i < rows; ++i) {
     const auto delta = (stop[i] - start[i]) / double(cols - 1);
     auto* offset_y = y + i * cols;
-    offset_y[0] = cast::to<T>(start[i]);
+    offset_y[0] = convert::To<T>(start[i]);
     if (cols > 1) {
-      offset_y[cols - 1] = cast::to<T>(stop[i]);
+      offset_y[cols - 1] = convert::To<T>(stop[i]);
     }
     for (int j = 1; j < cols - 1; ++j) {
-      offset_y[j] = cast::to<T>(start[i] + double(j) * delta);
+      offset_y[j] = convert::To<T>(start[i] + double(j) * delta);
     }
   }
 }

@@ -70,7 +70,7 @@ template <typename T>
 __global__ void
 _ReciprocalGrad(const int nthreads, const T* dy, const T* y, T* dx) {
   CUDA_1D_KERNEL_LOOP(i, nthreads) {
-    dx[i] = -dy[i] * utils::math::Square(y[i]);
+    dx[i] = -dy[i] * math::utils::Square(y[i]);
   }
 }
 
@@ -82,7 +82,7 @@ __global__ void _ReciprocalGrad<half>(
     half* dx) {
   CUDA_1D_KERNEL_LOOP(i, nthreads) {
     dx[i] = __float2half(
-        -__half2float(dy[i]) * utils::math::Square(__half2float(y[i])));
+        -__half2float(dy[i]) * math::utils::Square(__half2float(y[i])));
   }
 }
 
@@ -103,7 +103,7 @@ __global__ void _ReciprocalGrad<half2>(
 template <typename T>
 __global__ void _RsqrtGrad(const int nthreads, const T* dy, const T* y, T* dx) {
   CUDA_1D_KERNEL_LOOP(i, nthreads) {
-    dx[i] = T(-0.5) * dy[i] * utils::math::Cube(y[i]);
+    dx[i] = T(-0.5) * dy[i] * math::utils::Cube(y[i]);
   }
 }
 
@@ -112,7 +112,7 @@ __global__ void
 _RsqrtGrad<half>(const int nthreads, const half* dy, const half* y, half* dx) {
   CUDA_1D_KERNEL_LOOP(i, nthreads) {
     dx[i] = __float2half(
-        -0.5f * __half2float(dy[i]) * utils::math::Cube(__half2float(y[i])));
+        -0.5f * __half2float(dy[i]) * math::utils::Cube(__half2float(y[i])));
   }
 }
 

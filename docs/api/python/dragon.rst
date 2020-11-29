@@ -81,6 +81,9 @@ dragon
   `function(...) <dragon/function.html>`_
   : Compile a function and return an executable.
 
+  `get_num_threads(...) <dragon/get_num_threads.html>`_
+  : Return the number of threads for cpu parallelism.
+
   `get_workspace(...) <dragon/get_workspace.html>`_
   : Return the current default workspace.
 
@@ -137,6 +140,9 @@ dragon
 
   `reshape(...) <dragon/reshape.html>`_
   : Change the dimensions of input.
+
+  `set_num_threads(...) <dragon/set_num_threads.html>`_
+  : Set the number of threads for cpu parallelism.
 
   `shape(...) <dragon/shape.html>`_
   : Return the shape of input.
@@ -204,6 +210,7 @@ dragon
   dragon/fill
   dragon/flatten
   dragon/function
+  dragon/get_num_threads
   dragon/get_workspace
   dragon/gradients
   dragon/graph_mode
@@ -223,6 +230,7 @@ dragon
   dragon/repeat
   dragon/reset_workspace
   dragon/reshape
+  dragon/set_num_threads
   dragon/shape
   dragon/slice
   dragon/sort

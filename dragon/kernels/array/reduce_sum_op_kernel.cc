@@ -26,7 +26,7 @@ void _ReduceSumGrad(
       yi += (index[d] % y_dims[d]) * y_strides[d];
     }
     dx[xi] = dy[yi] * scale;
-    utils::math::IncreaseIndexInDims(num_dims, x_dims, index.data());
+    math::utils::IncreaseIndexInDims(num_dims, x_dims, index.data());
   }
 }
 

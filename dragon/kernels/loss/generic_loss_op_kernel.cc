@@ -19,7 +19,7 @@ void _BroadcastLossGrad(
   const int count = outer_dim * axis_dim * inner_dim;
   for (int i = 0; i < count; ++i) {
     dx[i] *= dy[idx[0] * inner_dim + idx[2]];
-    utils::math::IncreaseIndexInDims(3, dims.data(), idx.data());
+    math::utils::IncreaseIndexInDims(3, dims.data(), idx.data());
   }
 }
 
@@ -78,32 +78,32 @@ void BroadcastLossGrad<float16, CPUContext>(
     y[0] = math::Sum(count, 1.f / inv_scale, x, ctx);     \
   }
 
-#define DEFINE_GRAD_KERNEL_LAUNCHER(T)                                   \
-  template <>                                                            \
-  void ReduceLossGrad<T, CPUContext>(                                    \
-      const int count,                                                   \
-      const int num_masks,                                               \
-      const float normalizer,                                            \
-      const T* dy,                                                       \
-      const T* mask,                                                     \
-      T* dx,                                                             \
-      CPUContext* ctx) {                                                 \
-    float inv_scale = std::max(                                          \
-        0.5f,                                                            \
-        num_masks > 0 && normalizer < 0.f                                \
-            ? (float)math::Sum(num_masks, 1.f, mask, ctx)                \
-            : normalizer);                                               \
-    math::Scale(count, cast::to<float>(dy[0]) / inv_scale, dx, dx, ctx); \
-  }                                                                      \
-  template <>                                                            \
-  void BroadcastLossGrad<T, CPUContext>(                                 \
-      const int outer_dim,                                               \
-      const int inner_dim,                                               \
-      const int axis_dim,                                                \
-      const T* dy,                                                       \
-      T* dx,                                                             \
-      CPUContext* ctx) {                                                 \
-    _BroadcastLossGrad(outer_dim, inner_dim, axis_dim, dy, dx);          \
+#define DEFINE_GRAD_KERNEL_LAUNCHER(T)                                      \
+  template <>                                                               \
+  void ReduceLossGrad<T, CPUContext>(                                       \
+      const int count,                                                      \
+      const int num_masks,                                                  \
+      const float normalizer,                                               \
+      const T* dy,                                                          \
+      const T* mask,                                                        \
+      T* dx,                                                                \
+      CPUContext* ctx) {                                                    \
+    float inv_scale = std::max(                                             \
+        0.5f,                                                               \
+        num_masks > 0 && normalizer < 0.f                                   \
+            ? (float)math::Sum(num_masks, 1.f, mask, ctx)                   \
+            : normalizer);                                                  \
+    math::Scale(count, convert::To<float>(dy[0]) / inv_scale, dx, dx, ctx); \
+  }                                                                         \
+  template <>                                                               \
+  void BroadcastLossGrad<T, CPUContext>(                                    \
+      const int outer_dim,                                                  \
+      const int inner_dim,                                                  \
+      const int axis_dim,                                                   \
+      const T* dy,                                                          \
+      T* dx,                                                                \
+      CPUContext* ctx) {                                                    \
+    _BroadcastLossGrad(outer_dim, inner_dim, axis_dim, dy, dx);             \
   }
 
 DEFINE_KERNEL_LAUNCHER(float);

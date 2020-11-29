@@ -1,5 +1,5 @@
-#include "dragon/utils/cast.h"
-#include "dragon/utils/eigen_utils.h"
+#include "dragon/utils/conversions.h"
+#include "dragon/utils/device/common_eigen.h"
 #include "dragon/utils/op_kernels.h"
 
 namespace dragon {
@@ -59,29 +59,30 @@ void _HardSwishGrad<float16>(
 
 } // namespace
 
-#define DEFINE_KERNEL_LAUNCHER(T)                                   \
-  template <>                                                       \
-  void HardSwish<T, CPUContext>(                                    \
-      const int count,                                              \
-      const float alpha,                                            \
-      const float beta,                                             \
-      const T* x,                                                   \
-      T* y,                                                         \
-      CPUContext* ctx) {                                            \
-    _HardSwish(count, cast::to<T>(alpha), cast::to<T>(beta), x, y); \
+#define DEFINE_KERNEL_LAUNCHER(T)                                         \
+  template <>                                                             \
+  void HardSwish<T, CPUContext>(                                          \
+      const int count,                                                    \
+      const float alpha,                                                  \
+      const float beta,                                                   \
+      const T* x,                                                         \
+      T* y,                                                               \
+      CPUContext* ctx) {                                                  \
+    _HardSwish(count, convert::To<T>(alpha), convert::To<T>(beta), x, y); \
   }
 
-#define DEFINE_GRAD_KERNEL_LAUNCHER(T)                                       \
-  template <>                                                                \
-  void HardSwishGrad<T, CPUContext>(                                         \
-      const int count,                                                       \
-      const float alpha,                                                     \
-      const float beta,                                                      \
-      const T* dy,                                                           \
-      const T* x,                                                            \
-      T* dx,                                                                 \
-      CPUContext* ctx) {                                                     \
-    _HardSwishGrad(count, cast::to<T>(alpha), cast::to<T>(beta), dy, x, dx); \
+#define DEFINE_GRAD_KERNEL_LAUNCHER(T)                                  \
+  template <>                                                           \
+  void HardSwishGrad<T, CPUContext>(                                    \
+      const int count,                                                  \
+      const float alpha,                                                \
+      const float beta,                                                 \
+      const T* dy,                                                      \
+      const T* x,                                                       \
+      T* dx,                                                            \
+      CPUContext* ctx) {                                                \
+    _HardSwishGrad(                                                     \
+        count, convert::To<T>(alpha), convert::To<T>(beta), dy, x, dx); \
   }
 
 DEFINE_KERNEL_LAUNCHER(float16);

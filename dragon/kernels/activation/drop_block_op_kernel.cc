@@ -34,7 +34,7 @@ void _DropBlock2dNCHW(
         }
       } // Share the mask between channels
     }
-    utils::math::IncreaseIndexInDims(3, dims.data(), idx.data());
+    math::utils::IncreaseIndexInDims(3, dims.data(), idx.data());
   }
 }
 
@@ -65,7 +65,7 @@ void _DropBlock2dNHWC(
         }
       } // Share the mask between channels
     }
-    utils::math::IncreaseIndexInDims(3, dims.data(), idx.data());
+    math::utils::IncreaseIndexInDims(3, dims.data(), idx.data());
   }
 }
 

@@ -1,7 +1,7 @@
 #ifdef USE_CUDA
 
 #include "dragon/core/context_cuda.h"
-#include "dragon/utils/cast.h"
+#include "dragon/utils/conversions.h"
 #include "dragon/utils/device/common_cub.h"
 #include "dragon/utils/math_functions.h"
 #include "dragon/utils/op_kernels.h"
@@ -28,10 +28,10 @@ __global__ void _RowwiseMoments(
       const int xi = j * cols + i;
 #if __CUDA_ARCH__ >= 350
       m_val += __ldg(x + xi);
-      v_val += utils::math::Square(__ldg(x + xi));
+      v_val += math::utils::Square(__ldg(x + xi));
 #else
       m_val += x[xi];
-      v_val += utils::math::Square(x[xi]);
+      v_val += math::utils::Square(x[xi]);
 #endif
     }
     m_val = BlockReduce<Ty>(m_storage).Sum(m_val);
@@ -59,7 +59,7 @@ __global__ void _RowwiseMoments<half, float>(
     CUDA_2D_KERNEL_LOOP2(j, rows) {
       const int xi = j * cols + i;
       m_val += __half2float(__ldg(x + xi));
-      v_val += utils::math::Square(__half2float(__ldg(x + xi)));
+      v_val += math::utils::Square(__half2float(__ldg(x + xi)));
     }
     m_val = BlockReduce<float>(m_storage).Sum(m_val);
     v_val = BlockReduce<float>(v_storage).Sum(v_val);
@@ -87,10 +87,10 @@ __global__ void _ColwiseMoments(
       const int xi = i * cols + j;
 #if __CUDA_ARCH__ >= 350
       m_val += __ldg(x + xi);
-      v_val += utils::math::Square(__ldg(x + xi));
+      v_val += math::utils::Square(__ldg(x + xi));
 #else
       m_val += x[xi];
-      v_val += utils::math::Square(x[xi]);
+      v_val += math::utils::Square(x[xi]);
 #endif
     }
     m_val = BlockReduce<Ty>(m_storage).Sum(m_val);
@@ -118,7 +118,7 @@ __global__ void _ColwiseMoments<half, float>(
     CUDA_2D_KERNEL_LOOP2(j, cols) {
       const int xi = i * cols + j;
       m_val += __half2float(__ldg(x + xi));
-      v_val += utils::math::Square(__half2float(__ldg(x + xi)));
+      v_val += math::utils::Square(__half2float(__ldg(x + xi)));
     }
     m_val = BlockReduce<float>(m_storage).Sum(m_val);
     v_val = BlockReduce<float>(v_storage).Sum(v_val);
@@ -154,10 +154,10 @@ __global__ void _GenericMoments(
       }
 #if __CUDA_ARCH__ >= 350
       m_val += __ldg(x + xi);
-      v_val += utils::math::Square(__ldg(x + xi));
+      v_val += math::utils::Square(__ldg(x + xi));
 #else
       m_val += x[xi];
-      v_val += utils::math::Square(x[xi]);
+      v_val += math::utils::Square(x[xi]);
 #endif
     }
     m_val = BlockReduce<Ty>(m_storage).Sum(m_val);
@@ -194,10 +194,10 @@ __global__ void _GenericMoments(
       }
 #if __CUDA_ARCH__ >= 350
       m_val += __half2float(__ldg(x + xi));
-      v_val += utils::math::Square(__half2float(__ldg(x + xi)));
+      v_val += math::utils::Square(__half2float(__ldg(x + xi)));
 #else
       m_val += __half2float(x[xi]);
-      v_val += utils::math::Square(__half2float(x[xi]));
+      v_val += math::utils::Square(__half2float(x[xi]));
 #endif
     }
     m_val = BlockReduce<float>(m_storage).Sum(m_val);
@@ -226,7 +226,7 @@ void _Moments(
     y_dims[axes[i]] = 1;
 
   /*! Case #1: Rowwise Reduce */
-  if (utils::math::IsRowwiseReduce(
+  if (math::utils::IsRowwiseReduce(
           num_dims, dims, y_dims.data(), &rows, &cols)) {
     _RowwiseMoments<<<
         CUDA_2D_BLOCKS(cols),
@@ -237,7 +237,7 @@ void _Moments(
   }
 
   /*! Case #2: Colwise Reduce */
-  if (utils::math::IsColwiseReduce(
+  if (math::utils::IsColwiseReduce(
           num_dims, dims, y_dims.data(), &rows, &cols)) {
     _ColwiseMoments<<<
         CUDA_2D_BLOCKS(rows),
@@ -250,8 +250,8 @@ void _Moments(
   /*! Case #3: Generic Reduce */
   CUDA_TENSOR_DIMS_CHECK(num_dims);
   SimpleArray<int, CUDA_TENSOR_MAX_DIMS> axesT, stridesT, dimsT;
-  utils::math::TransposeAxesForReduce(num_dims, num_axes, axes, axesT.data);
-  utils::math::ComputeTransposeStrides(
+  math::utils::TransposeAxesForReduce(num_dims, num_axes, axes, axesT.data);
+  math::utils::ComputeTransposeStrides(
       num_dims, dims, axesT.data, stridesT.data);
 
   rows = cols = 1;

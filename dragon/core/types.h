@@ -19,6 +19,11 @@
 
 #include "dragon/core/typeid.h"
 
+#ifndef HFLT_MAX
+#define HFLT_MAX 65504.F
+#define HFLT_MIN 6.10e-5F
+#endif
+
 namespace dragon {
 
 typedef std::vector<int> vec32_t;

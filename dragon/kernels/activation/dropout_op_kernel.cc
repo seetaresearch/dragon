@@ -1,6 +1,5 @@
-#include "dragon/utils/cast.h"
+#include "dragon/utils/device/common_openmp.h"
 #include "dragon/utils/math_functions.h"
-#include "dragon/utils/omp_utils.h"
 #include "dragon/utils/op_kernels.h"
 
 namespace dragon {
@@ -63,28 +62,29 @@ void _Dropout<float16>(
 
 /* ------------------- Launcher Separator ------------------- */
 
-#define DEFINE_KERNEL_LAUNCHER(T)                                             \
-  template <>                                                                 \
-  void ApplyMask<T, CPUContext>(                                              \
-      const int count,                                                        \
-      const float scale,                                                      \
-      const T* x,                                                             \
-      const uint8_t* mask,                                                    \
-      T* y,                                                                   \
-      CPUContext* ctx) {                                                      \
-    _ApplyMask(count, cast::to<T>(scale), x, mask, y);                        \
-  }                                                                           \
-  template <>                                                                 \
-  void Dropout<T, CPUContext>(                                                \
-      const int count,                                                        \
-      const float ratio,                                                      \
-      const float scale,                                                      \
-      const T* x,                                                             \
-      uint8_t* mask,                                                          \
-      T* y,                                                                   \
-      uint32_t* r,                                                            \
-      CPUContext* ctx) {                                                      \
-    _Dropout(count, cast::to<T>(ratio), cast::to<T>(scale), x, mask, y, ctx); \
+#define DEFINE_KERNEL_LAUNCHER(T)                                              \
+  template <>                                                                  \
+  void ApplyMask<T, CPUContext>(                                               \
+      const int count,                                                         \
+      const float scale,                                                       \
+      const T* x,                                                              \
+      const uint8_t* mask,                                                     \
+      T* y,                                                                    \
+      CPUContext* ctx) {                                                       \
+    _ApplyMask(count, convert::To<T>(scale), x, mask, y);                      \
+  }                                                                            \
+  template <>                                                                  \
+  void Dropout<T, CPUContext>(                                                 \
+      const int count,                                                         \
+      const float ratio,                                                       \
+      const float scale,                                                       \
+      const T* x,                                                              \
+      uint8_t* mask,                                                           \
+      T* y,                                                                    \
+      uint32_t* r,                                                             \
+      CPUContext* ctx) {                                                       \
+    _Dropout(                                                                  \
+        count, convert::To<T>(ratio), convert::To<T>(scale), x, mask, y, ctx); \
   }
 
 DEFINE_KERNEL_LAUNCHER(float16);

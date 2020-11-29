@@ -16,6 +16,8 @@ from __future__ import print_function
 
 import threading
 
+from dragon import backend
+
 
 class Config(object):
     """Store the common configurations for frontend."""
@@ -36,7 +38,7 @@ class Config(object):
         # The graph verbosity level.
         self.graph_verbosity = 0
         # The execution mode for graph.
-        self.graph_execution = 'GRAPH_MODE'
+        self.graph_execution = 'EAGER_MODE'
 
         # The directory to store logging files.
         self.log_dir = None
@@ -54,6 +56,30 @@ def config():
     if _config is None:
         _create_config()
     return _config
+
+
+def get_num_threads():
+    """Return the number of threads for cpu parallelism.
+
+    Returns
+    -------
+    num : int
+        The number of threads to use.
+
+    """
+    return backend.GetNumThreads()
+
+
+def set_num_threads(num):
+    """Set the number of threads for cpu parallelism.
+
+    Parameters
+    ----------
+    num : int
+        The number of threads to use.
+
+    """
+    backend.SetNumThreads(num)
 
 
 def set_random_seed(seed):

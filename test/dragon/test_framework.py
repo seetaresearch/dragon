@@ -25,6 +25,14 @@ from dragon.core.testing.unittest.common_utils import run_tests
 from dragon.core.testing.unittest.common_utils import TEST_CUDA
 
 
+class TestContext(unittest.TestCase):
+    """Test the framework context."""
+
+    def test_properties(self):
+        dragon.random.set_seed(1337)
+        dragon.set_num_threads(dragon.get_num_threads())
+
+
 class TestGradientTape(unittest.TestCase):
     """Test the gradient tape."""
 

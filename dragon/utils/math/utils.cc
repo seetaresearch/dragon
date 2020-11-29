@@ -7,9 +7,9 @@
 
 namespace dragon {
 
-namespace utils {
-
 namespace math {
+
+namespace utils {
 
 bool IsRowwiseBroadcast(
     const vec64_t& A_dims,
@@ -279,8 +279,8 @@ void ComputeTransposeStrides(
   }
 }
 
-} // namespace math
-
 } // namespace utils
+
+} // namespace math
 
 } // namespace dragon

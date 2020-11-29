@@ -35,7 +35,7 @@ __global__ void _Tanh<half2>(const int nthreads, const half2* x, half2* y) {
 template <typename T>
 __global__ void _TanhGrad(const int nthreads, const T* dy, const T* y, T* dx) {
   CUDA_1D_KERNEL_LOOP(i, nthreads) {
-    dx[i] = dy[i] * (T(1) - utils::math::Square(y[i]));
+    dx[i] = dy[i] * (T(1) - math::utils::Square(y[i]));
   }
 }
 
@@ -44,7 +44,7 @@ __global__ void
 _TanhGrad<half>(const int nthreads, const half* dy, const half* y, half* dx) {
   CUDA_1D_KERNEL_LOOP(i, nthreads) {
     dx[i] = __float2half(
-        __half2float(dy[i]) * (1.f - utils::math::Square(__half2float(y[i]))));
+        __half2float(dy[i]) * (1.f - math::utils::Square(__half2float(y[i]))));
   }
 }
 
@@ -58,8 +58,8 @@ __global__ void _TanhGrad<half2>(
     const float2 val = __half22float2(y[i]);
     const float2 grad = __half22float2(dy[i]);
     dx[i] = __floats2half2_rn(
-        grad.x * (1.f - utils::math::Square(val.x)),
-        grad.y * (1.f - utils::math::Square(val.y)));
+        grad.x * (1.f - math::utils::Square(val.x)),
+        grad.y * (1.f - math::utils::Square(val.y)));
   }
 }
 

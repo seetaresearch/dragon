@@ -49,13 +49,11 @@ def load_weights_from_pickle(f, layer, verbose=False):
                 if verbose:
                     logging.info(
                         'Weight({}) loaded, Size: ({})'
-                        .format(name, ', '.join([str(d) for d in value_shape]))
-                    )
+                        .format(name, ', '.join([str(d) for d in value_shape])))
             else:
                 logging.warning(
                     'Weight({}) is not created '
-                    'in current workspace. Skip.'.format(name)
-                )
+                    'in current workspace. Skip.'.format(name))
 
 
 def save_weights_to_pickle(f, layer):

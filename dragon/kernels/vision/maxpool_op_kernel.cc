@@ -1,4 +1,4 @@
-#include "dragon/utils/cast.h"
+#include "dragon/utils/conversions.h"
 #include "dragon/utils/math_functions.h"
 #include "dragon/utils/op_kernels.h"
 
@@ -52,7 +52,7 @@ void _MaxPool2dNCHW(
     }
     y[i] = val;
     mask[i] = mxi;
-    utils::math::IncreaseIndexInDims(4, dims.data(), idx.data());
+    math::utils::IncreaseIndexInDims(4, dims.data(), idx.data());
   }
 }
 
@@ -99,7 +99,7 @@ void _MaxPool2dNHWC(
     }
     y[i] = val;
     mask[i] = mxi;
-    utils::math::IncreaseIndexInDims(4, dims.data(), idx.data());
+    math::utils::IncreaseIndexInDims(4, dims.data(), idx.data());
   }
 }
 
@@ -129,7 +129,7 @@ void _MaxPool2dGradNCHW(
     if (mask[i] != -1) {
       dx[idx[0] * CHW + idx[1] * HW + mask[i]] += dy[i];
     }
-    utils::math::IncreaseIndexInDims(3, dims.data(), idx.data());
+    math::utils::IncreaseIndexInDims(3, dims.data(), idx.data());
   }
 }
 
@@ -158,7 +158,7 @@ void _MaxPool2dGradNHWC(
     if (mask[i] != -1) {
       dx[idx[0] * HWC + mask[i]] += dy[i];
     }
-    utils::math::IncreaseIndexInDims(2, dims.data(), idx.data());
+    math::utils::IncreaseIndexInDims(2, dims.data(), idx.data());
   }
 }
 
@@ -245,7 +245,7 @@ void _MaxPool2dGradNHWC(
       const int* mask,                                     \
       T* dx,                                               \
       CPUContext* ctx) {                                   \
-    math::Set(N* C* H* W, cast::to<T>(0.f), dx, ctx);      \
+    math::Set(N* C* H* W, convert::To<T>(0.f), dx, ctx);   \
     if (data_format == "NCHW") {                           \
       _MaxPool2dGradNCHW(                                  \
           N,                                               \

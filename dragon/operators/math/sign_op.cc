@@ -9,7 +9,7 @@ void SignGradientOp<Context>::DoRunWithType() {
   auto &dY = Input(0), *dX = Output(0);
   math::Set(
       dY.count(),
-      cast::to<T>(0.f),
+      convert::To<T>(0.f),
       dX->ReshapeLike(dY)->template mutable_data<T, Context>(),
       ctx());
 }

@@ -1,5 +1,5 @@
 #include "dragon/utils/math/blas.h"
-#include "dragon/utils/eigen_utils.h"
+#include "dragon/utils/device/common_eigen.h"
 
 namespace dragon {
 

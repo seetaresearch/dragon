@@ -18,7 +18,7 @@
 #include "dragon/core/operator_schema.h"
 #include "dragon/core/registry.h"
 #include "dragon/core/tensor.h"
-#include "dragon/utils/cast.h"
+#include "dragon/utils/conversions.h"
 
 namespace dragon {
 

@@ -10,25 +10,27 @@
  * ------------------------------------------------------------
  */
 
-#ifndef DRAGON_UTILS_OMP_UTILS_H_
-#define DRAGON_UTILS_OMP_UTILS_H_
+#ifndef DRAGON_UTILS_DEVICE_COMMON_OPENMP_H_
+#define DRAGON_UTILS_DEVICE_COMMON_OPENMP_H_
 
 #ifdef USE_OPENMP
 
 #include <omp.h>
 #include <algorithm>
 
+#include "dragon/utils/device/common_eigen.h"
+
 namespace dragon {
 
 #define OMP_MIN_ITERATORS_PER_CORE 200000
 
 inline int OMP_THREADS(const int N) {
-  int threads = std::max(N / OMP_MIN_ITERATORS_PER_CORE, 1);
-  return std::min(threads, omp_get_num_procs());
+  int nthreads = std::max(N / OMP_MIN_ITERATORS_PER_CORE, 1);
+  return std::min(nthreads, Eigen::nbThreads());
 }
 
 } // namespace dragon
 
 #endif // USE_OPENMP
 
-#endif // DRAGON_UTILS_OMP_UTILS_H_
+#endif // DRAGON_UTILS_DEVICE_COMMON_OPENMP_H_

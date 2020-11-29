@@ -1,5 +1,5 @@
-#include "dragon/utils/cast.h"
-#include "dragon/utils/omp_utils.h"
+#include "dragon/utils/conversions.h"
+#include "dragon/utils/device/common_openmp.h"
 #include "dragon/utils/op_kernels.h"
 
 namespace dragon {
@@ -14,7 +14,7 @@ void _Range(const int count, const double start, const double delta, T* y) {
 #pragma omp parallel for num_threads(OMP_THREADS(count))
 #endif
   for (int i = 0; i < count; ++i) {
-    y[i] = cast::to<T>(start + double(i) * delta);
+    y[i] = convert::To<T>(start + double(i) * delta);
   }
 }
 

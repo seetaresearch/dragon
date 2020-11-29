@@ -46,7 +46,7 @@ void DepthwiseConv2dOp<Context>::DoRunWithType() {
 
 template <class Context>
 void DepthwiseConv2dOp<Context>::RunOnDevice() {
-  DispatchHelper<TensorTypes<float>>::Call(this, Input(0));
+  DispatchHelper<TensorTypes<float16, float>>::Call(this, Input(0));
 }
 
 template <class Context>
@@ -111,7 +111,7 @@ void DepthwiseConv2dGradientOp<Context>::DoRunWithType() {
 
 template <class Context>
 void DepthwiseConv2dGradientOp<Context>::RunOnDevice() {
-  DispatchHelper<TensorTypes<float>>::Call(this, Input(0));
+  DispatchHelper<TensorTypes<float16, float>>::Call(this, Input(0));
 }
 
 DEPLOY_CPU_OPERATOR(DepthwiseConv2d);

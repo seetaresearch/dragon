@@ -315,7 +315,7 @@ void CuDNNRecurrentGradientOp<Context>::DoRunWithType() {
   if (Output(1)->has_name()) {
     // CuDNN accumulates the gradient of weights
     // We should reset them before bakcward computing
-    math::Set(Output(1)->count(), cast::to<T>(0.f), yAt(1), ctx());
+    math::Set(Output(1)->count(), convert::To<T>(0.f), yAt(1), ctx());
     CUDNN_CHECK(cudnnRNNBackwardWeights(
         ctx()->cudnn_handle(),
         rnn_desc_,

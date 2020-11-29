@@ -47,6 +47,8 @@ from dragon.core.autograph.function_lib import create_function
 from dragon.core.autograph.grad_impl import gradients
 from dragon.core.eager.context import eager_mode
 from dragon.core.eager.context import graph_mode
+from dragon.core.framework.config import get_num_threads
+from dragon.core.framework.config import set_num_threads
 from dragon.core.framework.context import device
 from dragon.core.framework.context import eager_scope
 from dragon.core.framework.context import name_scope

@@ -10,8 +10,8 @@
  * ------------------------------------------------------------
  */
 
-#ifndef DRAGON_UTILS_EIGEN_UTILS_H_
-#define DRAGON_UTILS_EIGEN_UTILS_H_
+#ifndef DRAGON_UTILS_DEVICE_COMMON_EIGEN_H_
+#define DRAGON_UTILS_DEVICE_COMMON_EIGEN_H_
 
 #include <Eigen/Core>
 
@@ -64,4 +64,4 @@ using ConstEigenArrayMap =
 
 } // namespace dragon
 
-#endif // DRAGON_UTILS_EIGEN_UTILS_H_
+#endif // DRAGON_UTILS_DEVICE_COMMON_EIGEN_H_

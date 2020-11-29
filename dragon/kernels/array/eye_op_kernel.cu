@@ -1,7 +1,6 @@
 #ifdef USE_CUDA
 
 #include "dragon/core/context_cuda.h"
-#include "dragon/utils/cast.h"
 #include "dragon/utils/math_functions.h"
 #include "dragon/utils/op_kernels.h"
 
@@ -37,7 +36,7 @@ void Eye<float16, CUDAContext>(
     const int k,
     float16* y,
     CUDAContext* ctx) {
-  math::Set(n * m, cast::to<float16>(0.f), y, ctx);
+  math::Set(n * m, convert::To<float16>(0.f), y, ctx);
   if (k > 0) {
     if (m - k > 0) {
       _SetEye<<<CUDA_BLOCKS(m - k), CUDA_THREADS, 0, ctx->cuda_stream()>>>(

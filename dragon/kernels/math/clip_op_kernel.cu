@@ -1,7 +1,6 @@
 #ifdef USE_CUDA
 
 #include "dragon/core/context_cuda.h"
-#include "dragon/utils/cast.h"
 #include "dragon/utils/op_kernels.h"
 
 namespace dragon {
@@ -104,8 +103,8 @@ void Clip<float16, CUDAContext>(
     CUDAContext* ctx) {
   _Clip<<<CUDA_BLOCKS(count), CUDA_THREADS, 0, ctx->cuda_stream()>>>(
       count,
-      cast::to<half>(low),
-      cast::to<half>(high),
+      convert::To<half>(low),
+      convert::To<half>(high),
       reinterpret_cast<const half*>(x),
       reinterpret_cast<half*>(y));
 }
@@ -121,8 +120,8 @@ void ClipGrad<float16, CUDAContext>(
     CUDAContext* ctx) {
   _ClipGrad<<<CUDA_BLOCKS(count), CUDA_THREADS, 0, ctx->cuda_stream()>>>(
       count,
-      cast::to<half>(low),
-      cast::to<half>(high),
+      convert::To<half>(low),
+      convert::To<half>(high),
       reinterpret_cast<const half*>(dy),
       reinterpret_cast<const half*>(x),
       reinterpret_cast<half*>(dx));
@@ -138,7 +137,7 @@ void ClipGrad<float16, CUDAContext>(
       T* y,                                                             \
       CUDAContext* ctx) {                                               \
     _Clip<<<CUDA_BLOCKS(count), CUDA_THREADS, 0, ctx->cuda_stream()>>>( \
-        count, cast::to<T>(low), cast::to<T>(high), x, y);              \
+        count, convert::To<T>(low), convert::To<T>(high), x, y);        \
   }
 
 #define DEFINE_GRAD_KERNEL_LAUNCHER(T)                                      \
@@ -152,7 +151,7 @@ void ClipGrad<float16, CUDAContext>(
       T* dx,                                                                \
       CUDAContext* ctx) {                                                   \
     _ClipGrad<<<CUDA_BLOCKS(count), CUDA_THREADS, 0, ctx->cuda_stream()>>>( \
-        count, cast::to<T>(low), cast::to<T>(high), dy, x, dx);             \
+        count, convert::To<T>(low), convert::To<T>(high), dy, x, dx);       \
   }
 
 DEFINE_KERNEL_LAUNCHER(int8_t);

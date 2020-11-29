@@ -1,5 +1,5 @@
 #include "dragon/utils/math/broadcast.h"
-#include "dragon/utils/eigen_utils.h"
+#include "dragon/utils/device/common_eigen.h"
 #include "dragon/utils/math/blas.h"
 #include "dragon/utils/math/elementwise.h"
 #include "dragon/utils/math/utils.h"
@@ -11,7 +11,7 @@ namespace math {
 namespace {
 
 #define DECLARE_ROWWISE_COLWISE_BINARY_FUNC(name, TOut)                 \
-  template <typename T, bool BroadcastA>                              \
+  template <typename T, bool BroadcastA>                                \
   void _Rowwise##name(                                                  \
       const int rows, const int cols, const T* a, const T* b, TOut* y); \
   template <typename T, bool BroadcastA>                                \
@@ -342,7 +342,7 @@ DEFINE_ROWWISE_COLWISE_BIANRY_FUNC(Maximum, double, max);
         bi += idx[d] * b_strides[d];                                  \
       }                                                               \
       y[yi] = a[ai] expr b[bi];                                       \
-      utils::math::IncreaseIndexInDims(num_dims, y_dims, idx.data()); \
+      math::utils::IncreaseIndexInDims(num_dims, y_dims, idx.data()); \
     }                                                                 \
   }
 
@@ -379,7 +379,7 @@ DEFINE_BROADCAST_BINARY_FUNC(GreaterEqual, bool, >=);
         bi += idx[d] * b_strides[d];                                  \
       }                                                               \
       y[yi] = func(a[ai], b[bi]);                                     \
-      utils::math::IncreaseIndexInDims(num_dims, y_dims, idx.data()); \
+      math::utils::IncreaseIndexInDims(num_dims, y_dims, idx.data()); \
     }                                                                 \
   }
 
@@ -406,7 +406,7 @@ DEFINE_BROADCAST_BINARY_FUNC(Maximum, T, std::max);
     vec64_t X_dims(x_dims, x_dims + x_ndim);                                 \
     vec64_t Y_dims(y_dims, y_dims + y_ndim);                                 \
     vec64_t X_broadcast_dims, Y_broadcast_dims;                              \
-    utils::math::ComputeBinaryBroadcastDims(                                 \
+    math::utils::ComputeBinaryBroadcastDims(                                 \
         X_dims, Y_dims, X_broadcast_dims, Y_broadcast_dims);                 \
     if (X_broadcast_dims == Y_broadcast_dims) {                              \
       auto count = std::accumulate(                                          \
@@ -414,18 +414,18 @@ DEFINE_BROADCAST_BINARY_FUNC(Maximum, T, std::max);
       Copy(count, x, y, ctx);                                                \
       return;                                                                \
     }                                                                        \
-    if (utils::math::IsRowwiseBroadcast(X_dims, Y_dims, &rows, &cols)) {     \
+    if (math::utils::IsRowwiseBroadcast(X_dims, Y_dims, &rows, &cols)) {     \
       EigenArrayMap<T>(y, cols, rows).colwise() =                            \
           ConstEigenVectorArrayMap<T>(x, cols);                              \
       return;                                                                \
     }                                                                        \
-    if (utils::math::IsColwiseBroadcast(X_dims, Y_dims, &rows, &cols)) {     \
+    if (math::utils::IsColwiseBroadcast(X_dims, Y_dims, &rows, &cols)) {     \
       EigenArrayMap<T>(y, cols, rows).rowwise() =                            \
           ConstEigenVectorArrayMap<T>(x, rows).transpose();                  \
       return;                                                                \
     }                                                                        \
     vec64_t X_broadcast_strides, _;                                          \
-    utils::math::ComputeBinaryBroadcastStrides(                              \
+    math::utils::ComputeBinaryBroadcastStrides(                              \
         X_dims, Y_dims, X_broadcast_strides, _, _);                          \
     const int num_dims = Y_dims.size();                                      \
     const auto count = std::accumulate(                                      \
@@ -438,7 +438,7 @@ DEFINE_BROADCAST_BINARY_FUNC(Maximum, T, std::max);
         xi += idx[d] * X_broadcast_strides[d];                               \
       }                                                                      \
       y[yi] = x[xi];                                                         \
-      utils::math::IncreaseIndexInDims(num_dims, Y_dims.data(), idx.data()); \
+      math::utils::IncreaseIndexInDims(num_dims, Y_dims.data(), idx.data()); \
     }                                                                        \
   }
 
@@ -467,7 +467,7 @@ DEFINE_SET_FUNC(double);
     vec64_t A_dims(a_dims, a_dims + a_ndim);                               \
     vec64_t B_dims(b_dims, b_dims + b_ndim);                               \
     vec64_t A_broadcast_dims, B_broadcast_dims;                            \
-    utils::math::ComputeBinaryBroadcastDims(                               \
+    math::utils::ComputeBinaryBroadcastDims(                               \
         A_dims, B_dims, A_broadcast_dims, B_broadcast_dims);               \
     if (A_broadcast_dims == B_broadcast_dims) {                            \
       auto count = std::accumulate(                                        \
@@ -475,7 +475,7 @@ DEFINE_SET_FUNC(double);
       name(count, a, b, y, ctx);                                           \
       return;                                                              \
     }                                                                      \
-    if (utils::math::IsRowwiseBroadcast(                                   \
+    if (math::utils::IsRowwiseBroadcast(                                   \
             A_dims, B_dims, &rows, &cols, &broadcast_1st)) {               \
       if (broadcast_1st > 0) {                                             \
         _Rowwise##name<TIn, true>(rows, cols, a, b, y);                    \
@@ -484,7 +484,7 @@ DEFINE_SET_FUNC(double);
       }                                                                    \
       return;                                                              \
     }                                                                      \
-    if (utils::math::IsColwiseBroadcast(                                   \
+    if (math::utils::IsColwiseBroadcast(                                   \
             A_dims, B_dims, &rows, &cols, &broadcast_1st)) {               \
       if (broadcast_1st > 0) {                                             \
         _Colwise##name<TIn, true>(rows, cols, a, b, y);                    \
@@ -494,7 +494,7 @@ DEFINE_SET_FUNC(double);
       return;                                                              \
     }                                                                      \
     vec64_t A_broadcast_strides, B_broadcast_strides, Y_dims;              \
-    utils::math::ComputeBinaryBroadcastStrides(                            \
+    math::utils::ComputeBinaryBroadcastStrides(                            \
         A_dims, B_dims, A_broadcast_strides, B_broadcast_strides, Y_dims); \
     _Broadcast##name(                                                      \
         Y_dims.size(),                                                     \
@@ -658,13 +658,13 @@ DEFINE_BINARY_FUNC(GreaterEqual, bool);
     vec64_t A_broadcast_dims, B_broadcast_dims, C_broadcast_dims;            \
     vec64_t A_broadcast_strides, B_broadcast_strides, C_broadcast_strides;   \
     vec64_t Y_dims, _, __;                                                   \
-    utils::math::ComputeBinaryBroadcastStrides(A_dims, B_dims, _, _, __);    \
-    utils::math::ComputeBinaryBroadcastStrides(C_dims, __, _, _, Y_dims);    \
-    utils::math::ComputeBinaryBroadcastDims(                                 \
+    math::utils::ComputeBinaryBroadcastStrides(A_dims, B_dims, _, _, __);    \
+    math::utils::ComputeBinaryBroadcastStrides(C_dims, __, _, _, Y_dims);    \
+    math::utils::ComputeBinaryBroadcastDims(                                 \
         A_dims, Y_dims, A_broadcast_dims, _);                                \
-    utils::math::ComputeBinaryBroadcastDims(                                 \
+    math::utils::ComputeBinaryBroadcastDims(                                 \
         B_dims, Y_dims, B_broadcast_dims, _);                                \
-    utils::math::ComputeBinaryBroadcastDims(                                 \
+    math::utils::ComputeBinaryBroadcastDims(                                 \
         C_dims, Y_dims, C_broadcast_dims, _);                                \
     if (A_broadcast_dims == B_broadcast_dims &&                              \
         B_broadcast_dims == C_broadcast_dims) {                              \
@@ -673,11 +673,11 @@ DEFINE_BINARY_FUNC(GreaterEqual, bool);
       Where(count, a, b, c, y, ctx);                                         \
       return;                                                                \
     }                                                                        \
-    utils::math::ComputeBinaryBroadcastStrides(                              \
+    math::utils::ComputeBinaryBroadcastStrides(                              \
         A_dims, Y_dims, A_broadcast_strides, _, _);                          \
-    utils::math::ComputeBinaryBroadcastStrides(                              \
+    math::utils::ComputeBinaryBroadcastStrides(                              \
         B_dims, Y_dims, B_broadcast_strides, _, _);                          \
-    utils::math::ComputeBinaryBroadcastStrides(                              \
+    math::utils::ComputeBinaryBroadcastStrides(                              \
         C_dims, Y_dims, C_broadcast_strides, _, _);                          \
     const int num_dims = Y_dims.size();                                      \
     const auto count = std::accumulate(                                      \
@@ -692,7 +692,7 @@ DEFINE_BINARY_FUNC(GreaterEqual, bool);
         ci += idx[d] * C_broadcast_strides[d];                               \
       }                                                                      \
       y[yi] = c[ci] ? a[ai] : b[bi];                                         \
-      utils::math::IncreaseIndexInDims(num_dims, Y_dims.data(), idx.data()); \
+      math::utils::IncreaseIndexInDims(num_dims, Y_dims.data(), idx.data()); \
     }                                                                        \
   }
 

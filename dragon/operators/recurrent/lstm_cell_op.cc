@@ -34,7 +34,7 @@ void LSTMCellGradientOp<Context>::DoRunWithType() {
   auto* dhx = Output(1)->template mutable_data<T, Context>();
 
   if (!Input(-1).has_name()) {
-    math::Set(Input(-1).count(), cast::to<T>(0.f), dc, ctx());
+    math::Set(Input(-1).count(), convert::To<T>(0.f), dc, ctx());
   }
 
   kernel::LSTMCellGrad(

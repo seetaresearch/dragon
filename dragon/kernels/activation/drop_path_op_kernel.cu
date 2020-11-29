@@ -1,7 +1,6 @@
 #ifdef USE_CUDA
 
 #include "dragon/core/context_cuda.h"
-#include "dragon/utils/cast.h"
 #include "dragon/utils/math_functions.h"
 #include "dragon/utils/op_kernels.h"
 
@@ -86,7 +85,7 @@ void DropPath<float16, CUDAContext>(
     const auto nthreads = rows * cols;                                         \
     const auto thresh = 1.f - (1.f / scale);                                   \
     _DropPath<<<CUDA_BLOCKS(nthreads), CUDA_THREADS, 0, ctx->cuda_stream()>>>( \
-        nthreads, cols, thresh, cast::to<T>(scale), x, mask, y);               \
+        nthreads, cols, thresh, convert::To<T>(scale), x, mask, y);            \
   }
 
 DEFINE_KERNEL_LAUNCHER(float);

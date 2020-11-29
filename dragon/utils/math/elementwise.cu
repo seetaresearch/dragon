@@ -1,7 +1,6 @@
 #ifdef USE_CUDA
 
 #include "dragon/core/context_cuda.h"
-#include "dragon/utils/cast.h"
 #include "dragon/utils/math/elementwise.h"
 #include "dragon/utils/math/functional.h"
 #include "dragon/utils/math/utils.h"
@@ -233,7 +232,7 @@ __global__ void _Set(const int n, const T alpha, T* x) {
 template <typename T>
 __global__ void _Sign(const int n, const T* x, T* y) {
   CUDA_1D_KERNEL_LOOP(i, n) {
-    y[i] = utils::math::Sign(x[i]);
+    y[i] = math::utils::Sign(x[i]);
   }
 }
 
@@ -248,7 +247,7 @@ template <>
 __global__ void _Sign<half>(const int n, const half* x, half* y) {
   CUDA_1D_KERNEL_LOOP(i, n) {
     const float val = __half2float(x[i]);
-    y[i] = __float2half(utils::math::Sign(val));
+    y[i] = __float2half(math::utils::Sign(val));
   }
 }
 
@@ -257,14 +256,14 @@ __global__ void _Sign<half2>(const int n, const half2* x, half2* y) {
   CUDA_1D_KERNEL_LOOP(i, n) {
     const float2 val = __half22float2(x[i]);
     y[i] =
-        __floats2half2_rn(utils::math::Sign(val.x), utils::math::Sign(val.y));
+        __floats2half2_rn(math::utils::Sign(val.x), math::utils::Sign(val.y));
   }
 }
 
 template <typename T>
 __global__ void _Square(const int n, const T* x, T* y) {
   CUDA_1D_KERNEL_LOOP(i, n) {
-    y[i] = utils::math::Square(x[i]);
+    y[i] = math::utils::Square(x[i]);
   }
 }
 
@@ -289,28 +288,28 @@ __global__ void _NotZero<half>(const int nthreads, const half* x, bool* y) {
 template <typename T>
 __global__ void _IsInf(const int n, const T* x, bool* y) {
   CUDA_1D_KERNEL_LOOP(i, n) {
-    y[i] = utils::math::IsInf(x[i]);
+    y[i] = math::utils::IsInf(x[i]);
   }
 }
 
 template <>
 __global__ void _IsInf<half>(const int n, const half* x, bool* y) {
   CUDA_1D_KERNEL_LOOP(i, n) {
-    y[i] = utils::math::IsInf(x[i]);
+    y[i] = math::utils::IsInf(x[i]);
   }
 }
 
 template <typename T>
 __global__ void _IsNaN(const int n, const T* x, bool* y) {
   CUDA_1D_KERNEL_LOOP(i, n) {
-    y[i] = utils::math::IsNaN(x[i]);
+    y[i] = math::utils::IsNaN(x[i]);
   }
 }
 
 template <>
 __global__ void _IsNaN<half>(const int n, const half* x, bool* y) {
   CUDA_1D_KERNEL_LOOP(i, n) {
-    y[i] = utils::math::IsNaN(x[i]);
+    y[i] = math::utils::IsNaN(x[i]);
   }
 }
 
@@ -318,9 +317,9 @@ template <typename T>
 __global__ void _ReplaceNaN(const int n, const T value, const T* x, T* y) {
   CUDA_1D_KERNEL_LOOP(i, n) {
 #if __CUDA_ARCH__ >= 350
-    y[i] = utils::math::IsNaN(__ldg(x + i)) ? value : __ldg(x + i);
+    y[i] = math::utils::IsNaN(__ldg(x + i)) ? value : __ldg(x + i);
 #else
-    y[i] = utils::math::IsNaN(x[i]) ? value : x[i];
+    y[i] = math::utils::IsNaN(x[i]) ? value : x[i];
 #endif
   }
 }
@@ -330,9 +329,9 @@ __global__ void
 _ReplaceNaN<half>(const int n, const half value, const half* x, half* y) {
   CUDA_1D_KERNEL_LOOP(i, n) {
 #if __CUDA_ARCH__ >= 350
-    y[i] = utils::math::IsNaN(__ldg(x + i)) ? value : __ldg(x + i);
+    y[i] = math::utils::IsNaN(__ldg(x + i)) ? value : __ldg(x + i);
 #else
-    y[i] = utils::math::IsNaN(x[i]) ? value : x[i];
+    y[i] = math::utils::IsNaN(x[i]) ? value : x[i];
 #endif
   }
 }
@@ -526,7 +525,7 @@ DRAGON_API void Set<float16, CUDAContext>(
   }
   if ((n & 1) == 0) {
     _Set<<<CUDA_BLOCKS(n >> 1), CUDA_THREADS, 0, ctx->cuda_stream()>>>(
-        n >> 1, cast::to<half2>(value), reinterpret_cast<half2*>(y));
+        n >> 1, convert::To<half2>(value), reinterpret_cast<half2*>(y));
   } else {
     _Set<<<CUDA_BLOCKS(n), CUDA_THREADS, 0, ctx->cuda_stream()>>>(n, value, y);
   }
@@ -561,13 +560,13 @@ DRAGON_API void InvStd<float16, CUDAContext>(
   if ((n & 1) == 0) {
     _InvStd<<<CUDA_BLOCKS(n >> 1), CUDA_THREADS, 0, ctx->cuda_stream()>>>(
         n >> 1,
-        cast::to<half2>(eps),
+        convert::To<half2>(eps),
         reinterpret_cast<const half2*>(x),
         reinterpret_cast<half2*>(y));
   } else {
     _InvStd<<<CUDA_BLOCKS(n), CUDA_THREADS, 0, ctx->cuda_stream()>>>(
         n,
-        cast::to<half>(eps),
+        convert::To<half>(eps),
         reinterpret_cast<const half*>(x),
         reinterpret_cast<half*>(y));
   }
@@ -707,7 +706,7 @@ DRAGON_API void ReplaceNaN<float16, CUDAContext>(
     CUDAContext* ctx) {
   _ReplaceNaN<<<CUDA_BLOCKS(n), CUDA_THREADS, 0, ctx->cuda_stream()>>>(
       n,
-      cast::to<half>(value),
+      convert::To<half>(value),
       reinterpret_cast<const half*>(x),
       reinterpret_cast<half*>(y));
 }
@@ -738,14 +737,14 @@ DRAGON_API void Bias<float16, CUDAContext>(
   if ((n & 1) == 0) {
     _Bias<<<CUDA_BLOCKS(n >> 1), CUDA_THREADS, 0, ctx->cuda_stream()>>>(
         n >> 1,
-        cast::to<half2>(beta),
+        convert::To<half2>(beta),
         math::PlusFunctor<half2>(),
         reinterpret_cast<const half2*>(x),
         reinterpret_cast<half2*>(y));
   } else {
     _Bias<<<CUDA_BLOCKS(n), CUDA_THREADS, 0, ctx->cuda_stream()>>>(
         n,
-        cast::to<half>(beta),
+        convert::To<half>(beta),
         math::PlusFunctor<half>(),
         reinterpret_cast<const half*>(x),
         reinterpret_cast<half*>(y));

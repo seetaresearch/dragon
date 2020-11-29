@@ -62,7 +62,7 @@ void IndexSelectGradientOp<Context>::DoRunWithType() {
   // Reset the accumulating gradient
   math::Set(
       dX->count(),
-      cast::to<T>(0.f),
+      convert::To<T>(0.f),
       dX->template mutable_data<T, Context>(),
       ctx());
 

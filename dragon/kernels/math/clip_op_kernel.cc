@@ -1,6 +1,6 @@
-#include "dragon/utils/cast.h"
-#include "dragon/utils/eigen_utils.h"
-#include "dragon/utils/omp_utils.h"
+#include "dragon/utils/conversions.h"
+#include "dragon/utils/device/common_eigen.h"
+#include "dragon/utils/device/common_openmp.h"
 #include "dragon/utils/op_kernels.h"
 
 namespace dragon {
@@ -22,15 +22,15 @@ void _Clip<float16>(
     const float16 high,
     const float16* x,
     float16* y) {
-  auto lowf = cast::to<float>(low);
-  auto highf = cast::to<float>(high);
+  auto lowf = convert::To<float>(low);
+  auto highf = convert::To<float>(high);
 #ifdef USE_OPENMP
 #pragma omp parallel for num_threads(OMP_THREADS(count))
 #endif
   for (int i = 0; i < count; ++i) {
-    auto val = cast::to<float>(x[i]);
+    auto val = convert::To<float>(x[i]);
     val = std::max(lowf, std::min(val, highf));
-    y[i] = cast::to<float16>(val);
+    y[i] = convert::To<float16>(val);
   }
 }
 
@@ -56,14 +56,14 @@ void _ClipGrad<float16>(
     const float16* dy,
     const float16* x,
     float16* dx) {
-  auto lowf = cast::to<float>(low);
-  auto highf = cast::to<float>(high);
-  auto kZero = cast::to<float16>(0.f);
+  auto lowf = convert::To<float>(low);
+  auto highf = convert::To<float>(high);
+  auto kZero = convert::To<float16>(0.f);
 #ifdef USE_OPENMP
 #pragma omp parallel for num_threads(OMP_THREADS(count))
 #endif
   for (int i = 0; i < count; ++i) {
-    auto val = cast::to<float>(x[i]);
+    auto val = convert::To<float>(x[i]);
     dx[i] = (val < lowf || val > highf) ? kZero : dy[i];
   }
 } // ClipGrad
@@ -72,29 +72,29 @@ void _ClipGrad<float16>(
 
 /* ------------------- Launcher Separator ------------------- */
 
-#define DEFINE_KERNEL_LAUNCHER(T)                            \
-  template <>                                                \
-  void Clip<T, CPUContext>(                                  \
-      const int count,                                       \
-      const float low,                                       \
-      const float high,                                      \
-      const T* x,                                            \
-      T* y,                                                  \
-      CPUContext* ctx) {                                     \
-    _Clip(count, cast::to<T>(low), cast::to<T>(high), x, y); \
+#define DEFINE_KERNEL_LAUNCHER(T)                                  \
+  template <>                                                      \
+  void Clip<T, CPUContext>(                                        \
+      const int count,                                             \
+      const float low,                                             \
+      const float high,                                            \
+      const T* x,                                                  \
+      T* y,                                                        \
+      CPUContext* ctx) {                                           \
+    _Clip(count, convert::To<T>(low), convert::To<T>(high), x, y); \
   }
 
-#define DEFINE_GRAD_KERNEL_LAUNCHER(T)                                \
-  template <>                                                         \
-  void ClipGrad<T, CPUContext>(                                       \
-      const int count,                                                \
-      const float low,                                                \
-      const float high,                                               \
-      const T* dy,                                                    \
-      const T* x,                                                     \
-      T* dx,                                                          \
-      CPUContext* ctx) {                                              \
-    _ClipGrad(count, cast::to<T>(low), cast::to<T>(high), dy, x, dx); \
+#define DEFINE_GRAD_KERNEL_LAUNCHER(T)                                      \
+  template <>                                                               \
+  void ClipGrad<T, CPUContext>(                                             \
+      const int count,                                                      \
+      const float low,                                                      \
+      const float high,                                                     \
+      const T* dy,                                                          \
+      const T* x,                                                           \
+      T* dx,                                                                \
+      CPUContext* ctx) {                                                    \
+    _ClipGrad(count, convert::To<T>(low), convert::To<T>(high), dy, x, dx); \
   }
 
 DEFINE_KERNEL_LAUNCHER(int8_t);

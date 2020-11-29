@@ -117,6 +117,39 @@ void _DepthwiseConv2dNHWC(
 
 /* ------------------- Launcher Separator ------------------- */
 
+#define DISPATCH_DATA_KERNEL(name, ...)                  \
+  if (data_format == "NCHW") {                           \
+    name##NCHW(__VA_ARGS__);                             \
+  } else if (data_format == "NHWC") {                    \
+    name##NHWC(__VA_ARGS__);                             \
+  } else {                                               \
+    LOG(FATAL) << "Unknown DataFormat: " << data_format; \
+  }
+
+template <>
+void DepthwiseConv2d<float16, CPUContext>(
+    const int N,
+    const int C,
+    const int H,
+    const int W,
+    const int out_h,
+    const int out_w,
+    const int kernel_h,
+    const int kernel_w,
+    const int stride_h,
+    const int stride_w,
+    const int pad_h,
+    const int pad_w,
+    const int dilation_h,
+    const int dilation_w,
+    const string& data_format,
+    const float16* x,
+    const float16* w,
+    float16* y,
+    CPUContext* ctx) {
+  CPU_FP16_NOT_SUPPORTED;
+}
+
 template <>
 void DepthwiseConv2d<float, CPUContext>(
     const int N,
@@ -138,94 +171,78 @@ void DepthwiseConv2d<float, CPUContext>(
     const float* w,
     float* y,
     CPUContext* ctx) {
-  if (data_format == "NCHW") {
-    _DepthwiseConv2dNCHW(
-        N,
-        C,
-        H,
-        W,
-        out_h,
-        out_w,
-        kernel_h,
-        kernel_w,
-        stride_h,
-        stride_w,
-        pad_h,
-        pad_w,
-        dilation_h,
-        dilation_w,
-        x,
-        w,
-        y);
-  } else {
-    _DepthwiseConv2dNHWC(
-        N,
-        C,
-        H,
-        W,
-        out_h,
-        out_w,
-        kernel_h,
-        kernel_w,
-        stride_h,
-        stride_w,
-        pad_h,
-        pad_w,
-        dilation_h,
-        dilation_w,
-        x,
-        w,
-        y);
-  }
+  DISPATCH_DATA_KERNEL(
+      _DepthwiseConv2d,
+      N,
+      C,
+      H,
+      W,
+      out_h,
+      out_w,
+      kernel_h,
+      kernel_w,
+      stride_h,
+      stride_w,
+      pad_h,
+      pad_w,
+      dilation_h,
+      dilation_w,
+      x,
+      w,
+      y);
 }
 
-template <>
-void DepthwiseConv2dGrad<float, CPUContext>(
-    const int N,
-    const int C,
-    const int H,
-    const int W,
-    const int out_h,
-    const int out_w,
-    const int kernel_h,
-    const int kernel_w,
-    const int stride_h,
-    const int stride_w,
-    const int pad_h,
-    const int pad_w,
-    const int dilation_h,
-    const int dilation_w,
-    const string& data_format,
-    const float* dy,
-    const float* w,
-    float* dx,
-    CPUContext* ctx) {
-  NOT_IMPLEMENTED;
-} // DepthwiseConv2dGrad
+#define DEFINE_GRAD_KERNEL_LAUNCHER(T)      \
+  template <>                               \
+  void DepthwiseConv2dGrad<T, CPUContext>(  \
+      const int N,                          \
+      const int C,                          \
+      const int H,                          \
+      const int W,                          \
+      const int out_h,                      \
+      const int out_w,                      \
+      const int kernel_h,                   \
+      const int kernel_w,                   \
+      const int stride_h,                   \
+      const int stride_w,                   \
+      const int pad_h,                      \
+      const int pad_w,                      \
+      const int dilation_h,                 \
+      const int dilation_w,                 \
+      const string& data_format,            \
+      const T* dy,                          \
+      const T* w,                           \
+      T* dx,                                \
+      CPUContext* ctx) {                    \
+    NOT_IMPLEMENTED;                        \
+  }                                         \
+  template <>                               \
+  void DepthwiseConv2dWGrad<T, CPUContext>( \
+      const int N,                          \
+      const int C,                          \
+      const int H,                          \
+      const int W,                          \
+      const int out_h,                      \
+      const int out_w,                      \
+      const int kernel_h,                   \
+      const int kernel_w,                   \
+      const int stride_h,                   \
+      const int stride_w,                   \
+      const int pad_h,                      \
+      const int pad_w,                      \
+      const int dilation_h,                 \
+      const int dilation_w,                 \
+      const string& data_format,            \
+      const T* dy,                          \
+      const T* x,                           \
+      T* dw,                                \
+      CPUContext* ctx) {                    \
+    NOT_IMPLEMENTED;                        \
+  }
 
-template <>
-void DepthwiseConv2dWGrad<float, CPUContext>(
-    const int N,
-    const int C,
-    const int H,
-    const int W,
-    const int out_h,
-    const int out_w,
-    const int kernel_h,
-    const int kernel_w,
-    const int stride_h,
-    const int stride_w,
-    const int pad_h,
-    const int pad_w,
-    const int dilation_h,
-    const int dilation_w,
-    const string& data_format,
-    const float* dy,
-    const float* x,
-    float* dw,
-    CPUContext* ctx) {
-  NOT_IMPLEMENTED;
-} // DepthwiseConv2dWGrad
+DEFINE_GRAD_KERNEL_LAUNCHER(float16);
+DEFINE_GRAD_KERNEL_LAUNCHER(float);
+#undef DEFINE_GRAD_KERNEL_LAUNCHER
 
 } // namespace kernel
 

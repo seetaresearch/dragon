@@ -1,7 +1,7 @@
 #ifdef USE_CUDA
 
 #include "dragon/core/context_cuda.h"
-#include "dragon/utils/cast.h"
+#include "dragon/utils/conversions.h"
 #include "dragon/utils/op_kernels.h"
 
 namespace dragon {
@@ -287,13 +287,13 @@ void ReluN<float16, CUDAContext>(
         0,
         ctx->cuda_stream()>>>(
         count >> 1,
-        cast::to<half>(max_value),
+        convert::To<half>(max_value),
         reinterpret_cast<const half2*>(x),
         reinterpret_cast<half2*>(y));
   } else {
     _ReluN<<<CUDA_BLOCKS(count), CUDA_THREADS, 0, ctx->cuda_stream()>>>(
         count,
-        cast::to<half>(max_value),
+        convert::To<half>(max_value),
         reinterpret_cast<const half*>(x),
         reinterpret_cast<half*>(y));
   }
@@ -339,14 +339,14 @@ void ReluNGrad<float16, CUDAContext>(
         0,
         ctx->cuda_stream()>>>(
         count >> 1,
-        cast::to<half2>(max_value),
+        convert::To<half2>(max_value),
         reinterpret_cast<const half2*>(dy),
         reinterpret_cast<const half2*>(y),
         reinterpret_cast<half2*>(dx));
   } else {
     _ReluNGrad<<<CUDA_BLOCKS(count), CUDA_THREADS, 0, ctx->cuda_stream()>>>(
         count,
-        cast::to<half>(max_value),
+        convert::To<half>(max_value),
         reinterpret_cast<const half*>(dy),
         reinterpret_cast<const half*>(y),
         reinterpret_cast<half*>(dx));
@@ -362,7 +362,7 @@ void ReluNGrad<float16, CUDAContext>(
       T* y,                                                              \
       CUDAContext* ctx) {                                                \
     _Relu<<<CUDA_BLOCKS(count), CUDA_THREADS, 0, ctx->cuda_stream()>>>(  \
-        count, cast::to<T>(alpha), x, y);                                \
+        count, convert::To<T>(alpha), x, y);                             \
   }                                                                      \
   template <>                                                            \
   void ReluN<T, CUDAContext>(                                            \
@@ -372,7 +372,7 @@ void ReluNGrad<float16, CUDAContext>(
       T* y,                                                              \
       CUDAContext* ctx) {                                                \
     _ReluN<<<CUDA_BLOCKS(count), CUDA_THREADS, 0, ctx->cuda_stream()>>>( \
-        count, cast::to<T>(max_value), x, y);                            \
+        count, convert::To<T>(max_value), x, y);                         \
   }
 
 #define DEFINE_GRAD_KERNEL_LAUNCHER(T)                                       \
@@ -385,7 +385,7 @@ void ReluNGrad<float16, CUDAContext>(
       T* dx,                                                                 \
       CUDAContext* ctx) {                                                    \
     _ReluGrad<<<CUDA_BLOCKS(count), CUDA_THREADS, 0, ctx->cuda_stream()>>>(  \
-        count, cast::to<T>(alpha), dy, y, dx);                               \
+        count, convert::To<T>(alpha), dy, y, dx);                            \
   }                                                                          \
   template <>                                                                \
   void ReluNGrad<T, CUDAContext>(                                            \
@@ -396,7 +396,7 @@ void ReluNGrad<float16, CUDAContext>(
       T* dx,                                                                 \
       CUDAContext* ctx) {                                                    \
     _ReluNGrad<<<CUDA_BLOCKS(count), CUDA_THREADS, 0, ctx->cuda_stream()>>>( \
-        count, cast::to<T>(max_value), dy, y, dx);                           \
+        count, convert::To<T>(max_value), dy, y, dx);                        \
   }
 
 DEFINE_KERNEL_LAUNCHER(float);

@@ -1,5 +1,5 @@
+#include "dragon/utils/device/common_openmp.h"
 #include "dragon/utils/math_functions.h"
-#include "dragon/utils/omp_utils.h"
 #include "dragon/utils/op_kernels.h"
 
 namespace dragon {
@@ -106,14 +106,14 @@ void _Moments(
     y_dims[axes[i]] = 1;
 
   // Case #1: Rowwise Reduce
-  if (utils::math::IsRowwiseReduce(
+  if (math::utils::IsRowwiseReduce(
           num_dims, dims, y_dims.data(), &rows, &cols)) {
     _RowwiseMoments(rows, cols, x, mean, var);
     return;
   }
 
   // Case #2: Colwise Reduce
-  if (utils::math::IsColwiseReduce(
+  if (math::utils::IsColwiseReduce(
           num_dims, dims, y_dims.data(), &rows, &cols)) {
     _ColwiseMoments(rows, cols, x, mean, var);
     return;
@@ -121,8 +121,8 @@ void _Moments(
 
   // Case #3: Generic Reduce
   vec32_t axesT(num_dims), stridesT(num_dims), dimsT(num_dims);
-  utils::math::TransposeAxesForReduce(num_dims, num_axes, axes, axesT.data());
-  utils::math::ComputeTransposeStrides(
+  math::utils::TransposeAxesForReduce(num_dims, num_axes, axes, axesT.data());
+  math::utils::ComputeTransposeStrides(
       num_dims, dims, axesT.data(), stridesT.data());
 
   rows = cols = 1;

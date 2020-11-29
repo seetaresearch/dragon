@@ -1,6 +1,6 @@
-#include "dragon/utils/cast.h"
+#include "dragon/utils/conversions.h"
+#include "dragon/utils/device/common_openmp.h"
 #include "dragon/utils/math/elementwise.h"
-#include "dragon/utils/omp_utils.h"
 
 namespace dragon {
 
@@ -14,7 +14,7 @@ void _Cast(const int n, const Tx* x, Ty* y) {
 #pragma omp parallel for num_threads(OMP_THREADS(n))
 #endif
   for (int i = 0; i < n; ++i) {
-    y[i] = cast::to<Ty>(x[i]);
+    y[i] = convert::To<Ty>(x[i]);
   }
 }
 

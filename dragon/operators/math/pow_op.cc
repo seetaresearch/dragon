@@ -12,7 +12,7 @@ void PowGradientOp<Context>::DoRunWithType() {
 
   vec32_t A_broadcast_axes, B_broadcast_axes;
   vec32_t Y_dims(dY.dims().begin(), dY.dims().end());
-  utils::math::ComputeBinaryBroadcastAxes(
+  math::utils::ComputeBinaryBroadcastAxes(
       A.dims(), B.dims(), dY.dims(), A_broadcast_axes, B_broadcast_axes);
 
   // Temporal space to store the intermediate gradient
@@ -99,7 +99,7 @@ void PowGradientOp<Context>::DoRunWithType() {
           ctx());
       math::ReplaceNaN(
           A.count(),
-          cast::to<T>(0.f),
+          convert::To<T>(0.f),
           dA->template data<T, Context>(),
           dA->template mutable_data<T, Context>(),
           ctx());
@@ -141,7 +141,7 @@ void PowGradientOp<Context>::DoRunWithType() {
           A.template data<T, Context>(),
           scratch,
           ctx());
-      math::ReplaceNaN(Y.count(), cast::to<T>(0.f), scratch, scratch, ctx());
+      math::ReplaceNaN(Y.count(), convert::To<T>(0.f), scratch, scratch, ctx());
       if (B_broadcast_axes.empty()) {
         math::Mul(
             Y.count(), scratch, B.template data<T, Context>(), scratch, ctx());

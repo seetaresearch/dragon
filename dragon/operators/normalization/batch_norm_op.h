@@ -35,7 +35,8 @@ class BatchNormOpBase : public GenericOpBase<Context> {
       : GenericOpBase<Context>(def, ws),
         momentum_(OP_SINGLE_ARG(float, "momentum", 0.9f)),
         epsilon_(OP_SINGLE_ARG(double, "epsilon", 1e-5)),
-        use_stats_(OP_SINGLE_ARG(int64_t, "use_stats", -1)) {}
+        use_stats_(OP_SINGLE_ARG(int64_t, "use_stats", -1)),
+        sync_stats_(OP_SINGLE_ARG(int64_t, "comm", 0) > 0 ? 1 : 0) {}
   USE_OPERATOR_FUNCTIONS;
 
   void DetermineBaseArguments() {
@@ -58,7 +59,8 @@ class BatchNormOpBase : public GenericOpBase<Context> {
  protected:
   float momentum_;
   double epsilon_;
-  int64_t use_stats_, N_, C_, S_;
+  int64_t N_, C_, S_;
+  int64_t use_stats_, sync_stats_;
   int64_t is_training_, is_recomputing_;
 };
 
@@ -69,6 +71,7 @@ class BatchNormOpBase : public GenericOpBase<Context> {
   using BatchNormOpBase<Context>::momentum_;              \
   using BatchNormOpBase<Context>::epsilon_;               \
   using BatchNormOpBase<Context>::use_stats_;             \
+  using BatchNormOpBase<Context>::sync_stats_;            \
   using BatchNormOpBase<Context>::N_;                     \
   using BatchNormOpBase<Context>::C_;                     \
   using BatchNormOpBase<Context>::S_;                     \
@@ -82,6 +85,9 @@ class BatchNormOp : public BatchNormOpBase<Context> {
       : BatchNormOpBase<Context>(def, ws) {}
   USE_OPERATOR_FUNCTIONS;
   USE_BATCHNORM_FUNCTIONS;
+#ifdef USE_MPI
+  USE_COLLECTIVE_FUNCTIONS;
+#endif
 
   void RunOnDevice() override;
 
@@ -99,6 +105,9 @@ class BatchNormGradientOp : public BatchNormOpBase<Context> {
       : BatchNormOpBase<Context>(def, ws) {}
   USE_OPERATOR_FUNCTIONS;
   USE_BATCHNORM_FUNCTIONS;
+#ifdef USE_MPI
+  USE_COLLECTIVE_FUNCTIONS;
+#endif
 
   void RunOnDevice() override;
 
@@ -108,40 +117,6 @@ class BatchNormGradientOp : public BatchNormOpBase<Context> {
   template <typename InputType, typename ParamType>
   void InferenceImpl();
 };
-
-#ifdef USE_MPI
-
-template <class Context>
-class SyncBatchNormOp : public BatchNormOp<Context> {
- public:
-  SyncBatchNormOp(const OperatorDef& def, Workspace* ws)
-      : BatchNormOp<Context>(def, ws) {}
-  USE_OPERATOR_FUNCTIONS;
-  USE_BATCHNORM_FUNCTIONS;
-  USE_COLLECTIVE_FUNCTIONS;
-
-  void RunOnDevice() override;
-
-  template <typename InputType, typename ParamType>
-  void TrainingImpl();
-};
-
-template <class Context>
-class SyncBatchNormGradientOp : public BatchNormGradientOp<Context> {
- public:
-  SyncBatchNormGradientOp(const OperatorDef& def, Workspace* ws)
-      : BatchNormGradientOp<Context>(def, ws) {}
-  USE_OPERATOR_FUNCTIONS;
-  USE_BATCHNORM_FUNCTIONS;
-  USE_COLLECTIVE_FUNCTIONS;
-
-  void RunOnDevice() override;
-
-  template <typename InputType, typename ParamType>
-  void TrainingImpl();
-};
-
-#endif // USE_MPI
 
 #ifdef USE_CUDNN
 

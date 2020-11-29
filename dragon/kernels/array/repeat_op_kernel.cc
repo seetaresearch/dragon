@@ -1,5 +1,5 @@
+#include "dragon/utils/device/common_openmp.h"
 #include "dragon/utils/math_functions.h"
-#include "dragon/utils/omp_utils.h"
 #include "dragon/utils/op_kernels.h"
 
 namespace dragon {

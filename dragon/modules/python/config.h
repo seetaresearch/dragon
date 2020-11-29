@@ -14,6 +14,7 @@
 #define DRAGON_MODULES_PYTHON_CONFIG_H_
 
 #include "dragon/modules/python/common.h"
+#include "dragon/utils/device/common_eigen.h"
 
 namespace dragon {
 
@@ -22,9 +23,16 @@ namespace python {
 namespace config {
 
 void RegisterModule(py::module& m) {
+  /*! \brief Set the logging severity */
   m.def("SetLoggingLevel", [](const string& severity) {
     SetLogDestination(severity);
   });
+
+  /*! \brief Set the number of threads for cpu parallelism */
+  m.def("SetNumThreads", [](int num) { Eigen::setNbThreads(num); });
+
+  /*! \brief Return the number of threads for cpu parallelism */
+  m.def("GetNumThreads", []() { return Eigen::nbThreads(); });
 }
 
 } // namespace config
