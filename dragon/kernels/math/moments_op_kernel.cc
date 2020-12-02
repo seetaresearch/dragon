@@ -155,7 +155,7 @@ void Moments<float16, float, CPUContext>(
   CPU_FP16_NOT_SUPPORTED;
 }
 
-#define DEFINE_MOMENTS_KERNEL_LAUNCHER(Tx, Ty)                   \
+#define DEFINE_KERNEL_LAUNCHER(Tx, Ty)                           \
   template <>                                                    \
   void Moments<Tx, Ty, CPUContext>(                              \
       const int num_dims,                                        \
@@ -169,14 +169,13 @@ void Moments<float16, float, CPUContext>(
     _Moments(num_dims, dims, num_axes, axes, x, mean, var, ctx); \
   }
 
-DEFINE_MOMENTS_KERNEL_LAUNCHER(int8_t, float);
-DEFINE_MOMENTS_KERNEL_LAUNCHER(uint8_t, float);
-DEFINE_MOMENTS_KERNEL_LAUNCHER(int, float);
-DEFINE_MOMENTS_KERNEL_LAUNCHER(int64_t, float);
-DEFINE_MOMENTS_KERNEL_LAUNCHER(float, float);
-DEFINE_MOMENTS_KERNEL_LAUNCHER(double, double);
-
-#undef DEFINE_MOMENTS_KERNEL_LAUNCHER
+DEFINE_KERNEL_LAUNCHER(int8_t, float);
+DEFINE_KERNEL_LAUNCHER(uint8_t, float);
+DEFINE_KERNEL_LAUNCHER(int, float);
+DEFINE_KERNEL_LAUNCHER(int64_t, float);
+DEFINE_KERNEL_LAUNCHER(float, float);
+DEFINE_KERNEL_LAUNCHER(double, double);
+#undef DEFINE__KERNEL_LAUNCHER
 
 } // namespace kernel
 

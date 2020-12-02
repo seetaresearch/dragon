@@ -53,6 +53,7 @@ class OpDef(object):
         outputs=None,
         num_outputs=1,
         extra_inputs=None,
+        extra_outputs=None,
         name=None,
         **kwargs
     ):
@@ -64,6 +65,7 @@ class OpDef(object):
         for input in inputs:
             op_info.merge_from(input)
 
+        # Collect defs from extra inputs.
         if extra_inputs is not None:
             extra_inputs = nest.flatten(extra_inputs)
             for input in extra_inputs:

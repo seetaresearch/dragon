@@ -104,11 +104,10 @@ def copy(self):
 
     See Also
     --------
-    `dragon.copy(...)`_
+    `dragon.identity(...)`_
 
     """
-    return control_flow_ops_lib.Copy \
-        .instantiate().apply([self], None)
+    return array_ops_lib.Identity.instantiate().apply([self])
 
 
 def div(self, other):
@@ -194,7 +193,7 @@ def getitem(self, item):
             if axis is not None:
                 return _index_select(self, item[axis], axis)
         starts, sizes = _process_index(item)
-        return _section_select(self, starts, sizes)
+        return _sliced_select(self, starts, sizes)
 
 
 def glorot_normal(self, mode='fan_in', scale=2.0):
@@ -599,7 +598,7 @@ def setitem(self, key, value):
         _masked_assign(self, value, key)
     else:
         starts, sizes = _process_index(key)
-        _section_assign(self, value, starts, sizes)
+        _sliced_assign(self, value, starts, sizes)
 
 
 def sub(self, other):
@@ -705,7 +704,7 @@ def _masked_assign(ref, value, mask):
     """Assign value according to the mask."""
     value = ops.scalar_to_tensor(value, ref.dtype)
     return control_flow_ops_lib.MaskedAssign \
-        .instantiate().apply([ref, value, mask])
+        .instantiate().apply([ref, value, mask], inplace=True)
 
 
 def _masked_select(x, mask):
@@ -747,16 +746,16 @@ def _process_index(item):
     return starts, sizes
 
 
-def _section_assign(ref, value, starts, sizes):
-    """Apply the section-assign operation."""
+def _sliced_assign(ref, value, starts, sizes):
+    """Assign value according to the slices."""
     value = ops.scalar_to_tensor(value, ref.dtype)
     return control_flow_ops_lib.Assign \
         .instantiate(ndim=len(starts) if starts is not None else 0) \
-        .apply([ref, value], starts, sizes)
+        .apply([ref, value], starts, sizes, inplace=True)
 
 
-def _section_select(x, starts, sizes):
-    """Apply the section-select operation."""
+def _sliced_select(x, starts, sizes):
+    """Select elements according to the slices."""
     return array_ops_lib.Slice \
         .instantiate(ndim=len(starts)).apply([x], starts, sizes)
 

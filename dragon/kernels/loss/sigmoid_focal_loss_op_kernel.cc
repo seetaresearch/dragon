@@ -137,12 +137,10 @@ DEFINE_KERNEL_LAUNCHER(SigmoidFocalLoss, float, float);
 DEFINE_KERNEL_LAUNCHER(SigmoidFocalLoss, float, int64_t);
 DEFINE_KERNEL_LAUNCHER(SigmoidFocalLoss, double, double);
 DEFINE_KERNEL_LAUNCHER(SigmoidFocalLoss, double, int64_t);
-
 DEFINE_KERNEL_LAUNCHER(SigmoidFocalLossGrad, float, float);
 DEFINE_KERNEL_LAUNCHER(SigmoidFocalLossGrad, float, int64_t);
 DEFINE_KERNEL_LAUNCHER(SigmoidFocalLossGrad, double, double);
 DEFINE_KERNEL_LAUNCHER(SigmoidFocalLossGrad, double, int64_t);
-
 #undef DEFINE_KERNEL_LAUNCHER
 
 } // namespace kernel

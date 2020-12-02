@@ -12,9 +12,9 @@ namespace kernel {
 namespace {
 
 #if __CUDA_ARCH__ >= 350
-#define LOAD(x, i) __ldg(x + i)
+#define LDG(x, i) __ldg(x + i)
 #else
-#define LOAD(x, i) x[i]
+#define LDG(x, i) x[i]
 #endif
 
 template <typename T, typename AccT, int KKH, int KKW>
@@ -60,7 +60,7 @@ __global__ void _DepthwiseConv2dNCHW(
         iw = iw_start + kw * dilation_w;
         if (ih >= 0 && ih < H && iw >= 0 && iw < W) {
           xi = x_start + ih * W + iw;
-          sum_val += convert::To<AccT>(Multiplies(LOAD(x, xi), LOAD(w, wi)));
+          sum_val += convert::To<AccT>(Multiplies(LDG(x, xi), LDG(w, wi)));
         }
         ++wi;
       } // End kw
@@ -112,7 +112,7 @@ __global__ void _DepthwiseConv2dNHWC(
         iw = iw_start + kw * dilation_w;
         if (ih >= 0 && ih < H && iw >= 0 && iw < W) {
           xi = ((x_start + ih) * W + iw) * C + c;
-          sum_val += convert::To<AccT>(Multiplies(LOAD(x, xi), LOAD(w, wi)));
+          sum_val += convert::To<AccT>(Multiplies(LDG(x, xi), LDG(w, wi)));
         }
         ++wi;
       } // End kw
@@ -164,7 +164,7 @@ __global__ void _DepthwiseConv2dGradNCHW(
           ow = ow / stride_w;
           if (oh >= 0 && oh < out_h && ow >= 0 && ow < out_w) {
             yi = y_start + oh * out_w + ow;
-            sum_val += convert::To<AccT>(Multiplies(LOAD(dy, yi), LOAD(w, wi)));
+            sum_val += convert::To<AccT>(Multiplies(LDG(dy, yi), LDG(w, wi)));
           }
         }
         ++wi;
@@ -217,7 +217,7 @@ __global__ void _DepthwiseConv2dGradNHWC(
           ow = ow / stride_w;
           if (oh >= 0 && oh < out_h && ow >= 0 && ow < out_w) {
             yi = ((y_start + oh) * out_w + ow) * C + c;
-            sum_val += convert::To<AccT>(Multiplies(LOAD(dy, yi), LOAD(w, wi)));
+            sum_val += convert::To<AccT>(Multiplies(LDG(dy, yi), LDG(w, wi)));
           }
         }
         ++wi;
@@ -267,7 +267,7 @@ __global__ void _DepthwiseConv2dWGradNCHW(
       if (ih >= 0 && iw >= 0 && ih < H && iw < W) {
         xi = ((i * C + c) * H + ih) * W + iw;
         yi = (i * C + c) * out_h * out_w + j;
-        sum_val += convert::To<AccT>(Multiplies(LOAD(dy, yi), LOAD(x, xi)));
+        sum_val += convert::To<AccT>(Multiplies(LDG(dy, yi), LDG(x, xi)));
       }
     }
   }
@@ -320,7 +320,7 @@ __global__ void _DepthwiseConv2dWGradNHWC(
       if (ih >= 0 && iw >= 0 && ih < H && iw < W) {
         xi = ((i * H + ih) * W + iw) * C + c;
         yi = (i * ohw + j) * C + c;
-        sum_val += convert::To<AccT>(Multiplies(LOAD(dy, yi), LOAD(x, xi)));
+        sum_val += convert::To<AccT>(Multiplies(LDG(dy, yi), LDG(x, xi)));
       }
     }
   }
@@ -333,7 +333,7 @@ __global__ void _DepthwiseConv2dWGradNHWC(
   }
 }
 
-#undef LOAD
+#undef LDG
 
 } // namespace
 
@@ -528,10 +528,8 @@ __global__ void _DepthwiseConv2dWGradNHWC(
 
 DEFINE_KERNEL_LAUNCHER(float16, half, float);
 DEFINE_KERNEL_LAUNCHER(float, float, float);
-
 DEFINE_GRAD_KERNEL_LAUNCHER(float16, half, float);
 DEFINE_GRAD_KERNEL_LAUNCHER(float, float, float);
-
 #undef DISPATCH_DATA_KERNEL
 #undef DISPATCH_WEIGHT_KERNEL
 #undef DEFINE_KERNEL_LAUNCHER

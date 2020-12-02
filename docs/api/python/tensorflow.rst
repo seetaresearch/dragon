@@ -58,7 +58,7 @@ vm.tensorflow
   : Compute the symbolic derivatives of ``ys`` w.r.t. ``xs`` .
 
   `identity(...) <tensorflow/identity.html>`_
-  : Return a new tensor copying the content of input.
+  : Return a tensor copied from the input.
 
   `linspace(...) <tensorflow/linspace.html>`_
   : Generate evenly spaced values within intervals along the given axis.

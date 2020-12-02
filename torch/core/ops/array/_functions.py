@@ -71,7 +71,7 @@ class Assign(function.Function):
     def forward(self, out, starts, sizes, input):
         self._check_device([input, out])
         return self.dispatch(
-            [input], [out],
+            [out, input], [self.alloc(out)],
             callback=lambda ws, handle:
                 self.feed(ws, handle, starts, sizes),
             no_grad=True,
@@ -306,7 +306,7 @@ class MaskedAssign(function.Function):
         return {'op_type': 'MaskedAssign', 'arguments': {}}
 
     def forward(self, out, mask, input):
-        return self.dispatch([input, mask], [self.alloc(out)])
+        return self.dispatch([out, input, mask], [self.alloc(out)])
 
 
 class MaskedSelect(function.Function):

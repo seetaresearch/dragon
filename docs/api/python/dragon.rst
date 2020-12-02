@@ -48,9 +48,6 @@ dragon
   `constant(...) <dragon/constant.html>`_
   : Return a tensor initialized from the value.
 
-  `copy(...) <dragon/copy.html>`_
-  : Copy the input.
-
   `create_function(...) <dragon/create_function.html>`_
   : Create a callable graph from the specified outputs.
 
@@ -92,6 +89,9 @@ dragon
 
   `graph_mode(...) <dragon/graph_mode.html>`_
   : Context-manager set the graph execution mode.
+
+  `identity(...) <dragon/identity.html>`_
+  : Return a tensor copied from the input.
 
   `index_select(...) <dragon/index_select.html>`_
   : Select the elements according to the index along the given axis.
@@ -199,7 +199,6 @@ dragon
   dragon/channel_shuffle
   dragon/concat
   dragon/constant
-  dragon/copy
   dragon/create_function
   dragon/device
   dragon/eager_mode
@@ -214,6 +213,7 @@ dragon
   dragon/get_workspace
   dragon/gradients
   dragon/graph_mode
+  dragon/identity
   dragon/index_select
   dragon/linspace
   dragon/load_library

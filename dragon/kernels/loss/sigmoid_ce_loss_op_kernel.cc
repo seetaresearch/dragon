@@ -68,10 +68,8 @@ void _SigmoidCrossEntropyGrad(
 
 DEFINE_KERNEL_LAUNCHER(SigmoidCrossEntropy, float);
 DEFINE_KERNEL_LAUNCHER(SigmoidCrossEntropy, double);
-
 DEFINE_KERNEL_LAUNCHER(SigmoidCrossEntropyGrad, float);
 DEFINE_KERNEL_LAUNCHER(SigmoidCrossEntropyGrad, double);
-
 #undef DEFINE_KERNEL_LAUNCHER
 
 } // namespace kernel

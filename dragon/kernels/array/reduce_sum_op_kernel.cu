@@ -128,7 +128,6 @@ void ReduceSumGrad<float16, CUDAContext>(
 
 DEFINE_GRAD_KERNEL_LAUNCHER(float);
 DEFINE_GRAD_KERNEL_LAUNCHER(double);
-
 #undef DEFINE_GRAD_KERNEL_LAUNCHER
 
 } // namespace kernel

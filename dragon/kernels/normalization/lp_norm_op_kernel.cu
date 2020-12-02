@@ -170,14 +170,6 @@ __global__ void _L2NormalizeGrad(
             reinterpret_cast<ScalarT*>(y));                                 \
   }
 
-DEFINE_KERNEL_LAUNCHER(L1Normalize, float16, half, float);
-DEFINE_KERNEL_LAUNCHER(L1Normalize, float, float, float);
-DEFINE_KERNEL_LAUNCHER(L1Normalize, double, double, double);
-DEFINE_KERNEL_LAUNCHER(L2Normalize, float16, half, float);
-DEFINE_KERNEL_LAUNCHER(L2Normalize, float, float, float);
-DEFINE_KERNEL_LAUNCHER(L2Normalize, double, double, double);
-#undef DEFINE_KERNEL_LAUNCHER
-
 #define DEFINE_GRAD_KERNEL_LAUNCHER(name, T, ScalarT, AccT)                 \
   template <>                                                               \
   void name<T, CUDAContext>(                                                \
@@ -203,12 +195,19 @@ DEFINE_KERNEL_LAUNCHER(L2Normalize, double, double, double);
             reinterpret_cast<ScalarT*>(dx));                                \
   }
 
+DEFINE_KERNEL_LAUNCHER(L1Normalize, float16, half, float);
+DEFINE_KERNEL_LAUNCHER(L1Normalize, float, float, float);
+DEFINE_KERNEL_LAUNCHER(L1Normalize, double, double, double);
+DEFINE_KERNEL_LAUNCHER(L2Normalize, float16, half, float);
+DEFINE_KERNEL_LAUNCHER(L2Normalize, float, float, float);
+DEFINE_KERNEL_LAUNCHER(L2Normalize, double, double, double);
 DEFINE_GRAD_KERNEL_LAUNCHER(L1NormalizeGrad, float16, half, float);
 DEFINE_GRAD_KERNEL_LAUNCHER(L1NormalizeGrad, float, float, float);
 DEFINE_GRAD_KERNEL_LAUNCHER(L1NormalizeGrad, double, double, double);
 DEFINE_GRAD_KERNEL_LAUNCHER(L2NormalizeGrad, float16, half, float);
 DEFINE_GRAD_KERNEL_LAUNCHER(L2NormalizeGrad, float, float, float);
 DEFINE_GRAD_KERNEL_LAUNCHER(L2NormalizeGrad, double, double, double);
+#undef DEFINE_KERNEL_LAUNCHER
 #undef DEFINE_GRAD_KERNEL_LAUNCHER
 
 } // namespace kernel

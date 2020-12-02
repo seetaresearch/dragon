@@ -88,12 +88,10 @@ DEFINE_KERNEL_LAUNCHER(NLLLoss, float, float);
 DEFINE_KERNEL_LAUNCHER(NLLLoss, float, int64_t);
 DEFINE_KERNEL_LAUNCHER(NLLLoss, double, double);
 DEFINE_KERNEL_LAUNCHER(NLLLoss, double, int64_t);
-
 DEFINE_KERNEL_LAUNCHER(NLLLossGrad, float, float);
 DEFINE_KERNEL_LAUNCHER(NLLLossGrad, float, int64_t);
 DEFINE_KERNEL_LAUNCHER(NLLLossGrad, double, double);
 DEFINE_KERNEL_LAUNCHER(NLLLossGrad, double, int64_t);
-
 #undef DEFINE_KERNEL_LAUNCHER
 
 } // namespace kernel

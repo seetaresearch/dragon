@@ -20,7 +20,6 @@ from dragon.core.ops import control_flow_ops_lib
 from dragon.core.ops.utils import ArgHelper
 from dragon.core.ops.utils import OpSchema
 from dragon.core.ops.utils import parse_args
-from dragon.core.util import nest
 
 
 @OpSchema.num_inputs(2)
@@ -43,64 +42,20 @@ def assign(inputs, starts=None, sizes=None, **kwargs):
     Returns
     -------
     dragon.Tensor
-        The input tensor.
+        The output tensor.
 
     """
     args = parse_args(locals())
+    inplace = args.pop('inplace') if 'inplace' in args else False
     inputs[1] = ops.scalar_to_tensor(inputs[1], inputs[0].dtype)
     op_lib = control_flow_ops_lib.Assign
     if context.executing_eagerly():
         return op_lib \
             .instantiate(
                 ndim=len(starts) if starts is not None else 0,
-            ).apply(inputs, starts, sizes)
+            ).apply(inputs, starts, sizes, inplace=inplace)
     else:
-        args['outputs'] = [args['inputs'][0]]
-        args['inputs'] = [args['inputs'][1]]
         return op_lib.blend(**args)
-
-
-@OpSchema.num_inputs(1, 2)
-def copy(inputs, **kwargs):
-    """Copy the input.
-
-    Examples:
-
-    ```python
-    # Copy ``x`` to ``y``
-    x = dragon.ones(shape=(2, 3))
-    y = dragon.zeros(shape=(2, 4))
-    dragon.copy([x, y])
-
-    # Copy to a new tensor from ``x``
-    y = dragon.copy(x)
-    ```
-
-    Parameters
-    ----------
-    inputs : Union[dragon.Tensor, Sequence[dragon.Tensor]]
-        The input tensor.
-
-    Returns
-    -------
-    dragon.Tensor
-        The output tensor.
-
-    """
-    args = parse_args(locals())
-    args['inputs'] = nest.flatten(inputs)
-    if len(args['inputs']) == 2:
-        args['outputs'] = [args['inputs'][1]]
-        args['inputs'] = [args['inputs'][0]]
-    else:
-        args['outputs'] = None
-    op_lib = control_flow_ops_lib.Copy
-    if context.executing_eagerly():
-        return op_lib \
-            .instantiate() \
-            .apply(args['inputs'], args['outputs'])
-    else:
-        return op_lib.blend('Copy', **args)
 
 
 @OpSchema.num_inputs(3)
@@ -126,13 +81,10 @@ def masked_assign(inputs, **kwargs):
 
     """
     args = parse_args(locals())
+    inplace = args.pop('inplace') if 'inplace' in args else False
     inputs[1] = ops.scalar_to_tensor(inputs[1], inputs[0].dtype)
     op_lib = control_flow_ops_lib.MaskedAssign
     if context.executing_eagerly():
-        return op_lib.instantiate().apply(inputs)
+        return op_lib.instantiate().apply(inputs, inplace=inplace)
     else:
-        args.update({
-            'outputs': [args['inputs'][0]],
-            'inputs': [args['inputs'][1:]],
-        })
         return op_lib.blend(**args)

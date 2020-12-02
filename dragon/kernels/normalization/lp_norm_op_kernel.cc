@@ -177,12 +177,6 @@ void L2NormalizeGrad<float16, CPUContext>(
     _##name(outer_dim, inner_dim, reduce_dim, (T)scale, (T)eps, x, y); \
   }
 
-DEFINE_KERNEL_LAUNCHER(L1Normalize, float);
-DEFINE_KERNEL_LAUNCHER(L1Normalize, double);
-DEFINE_KERNEL_LAUNCHER(L2Normalize, float);
-DEFINE_KERNEL_LAUNCHER(L2Normalize, double);
-#undef DEFINE_KERNEL_LAUNCHER
-
 #define DEFINE_GRAD_KERNEL_LAUNCHER(name, T)                                \
   template <>                                                               \
   void name<T, CPUContext>(                                                 \
@@ -198,10 +192,15 @@ DEFINE_KERNEL_LAUNCHER(L2Normalize, double);
     _##name(outer_dim, inner_dim, reduce_dim, (T)scale, (T)eps, dy, x, dx); \
   }
 
+DEFINE_KERNEL_LAUNCHER(L1Normalize, float);
+DEFINE_KERNEL_LAUNCHER(L1Normalize, double);
+DEFINE_KERNEL_LAUNCHER(L2Normalize, float);
+DEFINE_KERNEL_LAUNCHER(L2Normalize, double);
 DEFINE_GRAD_KERNEL_LAUNCHER(L1NormalizeGrad, float);
 DEFINE_GRAD_KERNEL_LAUNCHER(L1NormalizeGrad, double);
 DEFINE_GRAD_KERNEL_LAUNCHER(L2NormalizeGrad, float);
 DEFINE_GRAD_KERNEL_LAUNCHER(L2NormalizeGrad, double);
+#undef DEFINE_KERNEL_LAUNCHER
 #undef DEFINE_GRAD_KERNEL_LAUNCHER
 
 } // namespace kernel

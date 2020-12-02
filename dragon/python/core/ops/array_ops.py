@@ -588,6 +588,45 @@ def flatten(inputs, axis=0, num_axes=-1, keep_axes=None, **kwargs):
 
 
 @OpSchema.num_inputs(1)
+def identity(inputs, **kwargs):
+    """Return a tensor copied from the input.
+
+    Examples:
+
+    Examples:
+
+    ```python
+    # Copy ``x`` to ``y``
+    x = dragon.zeros(shape=(2, 3))
+    y = dragon.identity(x)
+
+    # ``x`` != ``y``
+    x += 1
+    print(x)
+    print(y)
+    ```
+
+    Parameters
+    ----------
+    inputs : dragon.Tensor
+        The input tensor.
+
+    Returns
+    -------
+    dragon.Tensor
+        The output tensor.
+
+    """
+    args = parse_args(locals())
+    inplace = args.pop('inplace') if 'inplace' in args else False
+    op_lib = array_ops_lib.Identity
+    if context.executing_eagerly():
+        return op_lib.instantiate().apply([inputs], inplace=inplace)
+    else:
+        return op_lib.blend(**args)
+
+
+@OpSchema.num_inputs(1)
 def index_select(inputs, index, axis=0, **kwargs):
     """Select the elements according to the index along the given axis.
 

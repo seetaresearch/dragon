@@ -90,10 +90,8 @@ void SmoothL1Grad<float16, CUDAContext>(
 
 DEFINE_KERNEL_LAUNCHER(SmoothL1, float);
 DEFINE_KERNEL_LAUNCHER(SmoothL1, double);
-
 DEFINE_KERNEL_LAUNCHER(SmoothL1Grad, float);
 DEFINE_KERNEL_LAUNCHER(SmoothL1Grad, double);
-
 #undef DEFINE_KERNEL_LAUNCHER
 
 } // namespace kernel

@@ -243,6 +243,7 @@ void DepthwiseConv2d<float, CPUContext>(
 DEFINE_GRAD_KERNEL_LAUNCHER(float16);
 DEFINE_GRAD_KERNEL_LAUNCHER(float);
 #undef DEFINE_GRAD_KERNEL_LAUNCHER
+#undef DISPATCH_DATA_KERNEL
 
 } // namespace kernel
 

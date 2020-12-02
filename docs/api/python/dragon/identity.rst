@@ -1,7 +1,7 @@
-copy
-====
+identity
+========
 
-.. autofunction:: dragon.copy
+.. autofunction:: dragon.identity
 
 .. raw:: html
 

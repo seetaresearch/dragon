@@ -31,6 +31,15 @@ class ReshapeGradientOpBase : public Operator<Context> {
 };
 
 template <class Context>
+class IdentityOp final : public Operator<Context> {
+ public:
+  SIMPLE_CTOR_DTOR(IdentityOp);
+  USE_OPERATOR_FUNCTIONS;
+
+  void RunOnDevice() override;
+};
+
+template <class Context>
 class ReshapeOp final : public Operator<Context> {
  public:
   ReshapeOp(const OperatorDef& def, Workspace* ws)
@@ -94,6 +103,7 @@ class SqueezeOp final : public Operator<Context> {
         : ReshapeGradientOpBase<Context>(def, ws) {}                     \
   };
 
+DEFINE_GRADIENT_OP(Identity);
 DEFINE_GRADIENT_OP(Reshape);
 DEFINE_GRADIENT_OP(Flatten);
 DEFINE_GRADIENT_OP(ExpandDims);

@@ -93,12 +93,10 @@ DEFINE_KERNEL_LAUNCHER(SparseSoftmaxCrossEntropy, float, float);
 DEFINE_KERNEL_LAUNCHER(SparseSoftmaxCrossEntropy, float, int64_t);
 DEFINE_KERNEL_LAUNCHER(SparseSoftmaxCrossEntropy, double, double);
 DEFINE_KERNEL_LAUNCHER(SparseSoftmaxCrossEntropy, double, int64_t);
-
 DEFINE_KERNEL_LAUNCHER(SparseSoftmaxCrossEntropyGrad, float, float);
 DEFINE_KERNEL_LAUNCHER(SparseSoftmaxCrossEntropyGrad, float, int64_t);
 DEFINE_KERNEL_LAUNCHER(SparseSoftmaxCrossEntropyGrad, double, double);
 DEFINE_KERNEL_LAUNCHER(SparseSoftmaxCrossEntropyGrad, double, int64_t);
-
 #undef DEFINE_KERNEL_LAUNCHER
 
 } // namespace kernel

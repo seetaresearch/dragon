@@ -24,7 +24,6 @@ from dragon.core.autograph.tensor import TensorRef
 from dragon.core.framework import context
 from dragon.core.framework import workspace
 from dragon.core.ops import array_ops
-from dragon.core.ops import control_flow_ops
 from dragon.core.ops import init_ops
 from dragon.core.ops import vision_ops
 
@@ -260,19 +259,19 @@ def gather(params, indices, axis=0, name=None):
 
 
 def identity(input, name=None):
-    """Return a new tensor copying the content of input.
+    """Return a tensor copied from the input.
 
     Examples:
 
     ```python
-    # Copy ``x`` to ``xx``
+    # Copy ``x`` to ``y``
     x = tf.zeros(shape=(2, 3))
-    xx = tf.identity(x)
+    y = tf.identity(x)
 
-    # ``x`` != ``xx``
+    # ``x`` != ``y``
     x += 1
     print(x)
-    print(xx)
+    print(y)
     ```
 
     Parameters
@@ -288,7 +287,7 @@ def identity(input, name=None):
         The output tensor.
 
     """
-    return control_flow_ops.copy(input, name=name if name else 'Identity')
+    return array_ops.identity(input, name=name if name else 'Identity')
 
 
 def ones(shape, dtype='float32', name=None):

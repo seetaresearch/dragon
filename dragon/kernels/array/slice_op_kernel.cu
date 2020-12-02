@@ -85,7 +85,6 @@ DEFINE_KERNEL_LAUNCHER(Slice, int64_t);
 DEFINE_KERNEL_LAUNCHER(Slice, float16);
 DEFINE_KERNEL_LAUNCHER(Slice, float);
 DEFINE_KERNEL_LAUNCHER(Slice, double);
-
 DEFINE_KERNEL_LAUNCHER(SliceGrad, bool);
 DEFINE_KERNEL_LAUNCHER(SliceGrad, int8_t);
 DEFINE_KERNEL_LAUNCHER(SliceGrad, uint8_t);
@@ -94,7 +93,6 @@ DEFINE_KERNEL_LAUNCHER(SliceGrad, int64_t);
 DEFINE_KERNEL_LAUNCHER(SliceGrad, float16);
 DEFINE_KERNEL_LAUNCHER(SliceGrad, float);
 DEFINE_KERNEL_LAUNCHER(SliceGrad, double);
-
 #undef DEFINE_KERNEL_LAUNCHER
 
 } // namespace kernel

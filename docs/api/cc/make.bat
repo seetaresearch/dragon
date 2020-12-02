@@ -65,7 +65,7 @@ if "%1" == "doxygen" (
 )
 
 if "%1" == "html" (
-	%SPHINXBUILD% -b html -j %NUMBER_OF_PROCESSORS% %ALLSPHINXOPTS% %BUILDDIR%
+	%SPHINXBUILD% -b html %ALLSPHINXOPTS% %BUILDDIR%
 	if errorlevel 1 exit /b 1
 	echo.
 	echo.Build finished. The HTML pages are in %BUILDDIR%.

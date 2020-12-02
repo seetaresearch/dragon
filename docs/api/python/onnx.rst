@@ -65,7 +65,7 @@ Name                     Supported Reference
 `Greater`_               |v|       :func:`dragon.math.greater`
 `HardSigmoid`_           |v|       :func:`dragon.nn.hardsigmoid`
 `Hardmax`_
-`Identity`_
+`Identity`_              |v|       :func:`dragon.identity`
 `If`_
 `InstanceNormalization`_ |v|       :func:`dragon.nn.instance_norm`
 `IsInf`_                 |v|       :func:`dragon.math.is_inf`

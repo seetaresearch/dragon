@@ -316,7 +316,6 @@ DEFINE_KERNEL_LAUNCHER(int, float);
 DEFINE_KERNEL_LAUNCHER(int64_t, float);
 DEFINE_KERNEL_LAUNCHER(float, float);
 DEFINE_KERNEL_LAUNCHER(double, double);
-
 #undef DEFINE_KERNEL_LAUNCHER
 
 } // namespace kernel

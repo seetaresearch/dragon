@@ -8,24 +8,28 @@ namespace dragon {
 template <class Context>
 template <typename T>
 void MaskedAssignOp<Context>::DoRunWithType() {
-  auto &X = Input(0), &X_mask = Input(1), *Y = Output(0);
+  auto &X = Input(1), &X_mask = Input(2);
+  auto &Y_ref = Input(0), *Y = Output(0, {0});
 
   CHECK(X_mask.template IsType<bool>() || X_mask.template IsType<uint8_t>())
       << "\nExcepted bool or uint8 mask.";
 
   vec64_t X_dims, Y_dims;
   if (math::utils::IsBinaryBroadcast(X.dims(), X_mask.dims(), X_dims) &&
-      math::utils::IsBinaryBroadcast(X_dims, Y->dims(), Y_dims) &&
-      Y_dims == Y->dims()) {
+      math::utils::IsBinaryBroadcast(X_dims, Y_ref.dims(), Y_dims) &&
+      Y_dims == Y_ref.dims()) {
+    // Copy the reference data
+    Y->ReshapeLike(Y_ref)->CopyFrom(Y_ref, ctx());
+    // Update with the new data
     math::Where(
         X.ndim(),
         X.dims().data(),
-        Y->ndim(),
-        Y->dims().data(),
+        Y_ref.ndim(),
+        Y_ref.dims().data(),
         X_mask.ndim(),
         X_mask.dims().data(),
         X.template data<T, Context>(),
-        Y->template data<T, Context>(),
+        Y_ref.template data<T, Context>(),
         (const bool*)X_mask.template raw_data<Context>(),
         Y->template mutable_data<T, Context>(),
         ctx());
@@ -46,10 +50,12 @@ DEPLOY_CUDA_OPERATOR(MaskedAssign);
 #endif
 
 OPERATOR_SCHEMA(MaskedAssign)
-    /* X, M */
-    .NumInputs(2)
+    /* Y_ref, X, X_mask */
+    .NumInputs(3)
     /* Y */
-    .NumOutputs(1);
+    .NumOutputs(1)
+    /* Y_ref => Y */
+    .AllowInplace({{0, 0}});
 
 NO_GRADIENT(MaskedAssign);
 

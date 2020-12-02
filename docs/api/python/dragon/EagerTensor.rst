@@ -174,8 +174,8 @@ __truediv__
 
 .. _dragon.assign(...): assign.html
 .. _dragon.cast(...): cast.html
-.. _dragon.copy(...): copy.html
 .. _dragon.fill(...): fill.html
+.. _dragon.identity(...): identity.html
 .. _dragon.masked_assign(...): masked_assign.html
 .. _dragon.masked_select(...): masked_select.html
 .. _dragon.math.add(...): math/add.html

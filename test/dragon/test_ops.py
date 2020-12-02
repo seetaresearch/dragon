@@ -655,6 +655,19 @@ class TestArrayOps(OpTestCase):
         with dragon.device('cuda'):
             self.test_flatten()
 
+    def test_identity(self):
+        for execution in ('EAGER_MODE', 'GRAPH_MODE'):
+            with execution_context().mode(execution):
+                data = arange((4,))
+                x = new_tensor(data)
+                y = dragon.identity(x)
+                self.assertEqual(y, data)
+
+    @unittest.skipIf(not TEST_CUDA, 'CUDA unavailable')
+    def test_identity_cuda(self):
+        with dragon.device('cuda'):
+            self.test_identity()
+
     def test_index_select(self):
         entries = [1, (1, 2)]
         for execution in ('EAGER_MODE', 'GRAPH_MODE'):
@@ -1116,30 +1129,14 @@ class TestControlFlowOps(OpTestCase):
         with dragon.device('cuda'):
             self.test_assign()
 
-    def test_copy(self):
-        for execution in ('EAGER_MODE', 'GRAPH_MODE'):
-            with execution_context().mode(execution):
-                data = arange((4,))
-                x = new_tensor(data)
-                y = dragon.zeros((4,), dtype='float32')
-                y = dragon.copy([x, y])
-                z = dragon.copy(x)
-                self.assertEqual(y, data)
-                self.assertEqual(z, data)
-
-    @unittest.skipIf(not TEST_CUDA, 'CUDA unavailable')
-    def test_copy_cuda(self):
-        with dragon.device('cuda'):
-            self.test_copy()
-
     def test_masked_assign(self):
         for execution in ('EAGER_MODE', 'GRAPH_MODE'):
             with execution_context().mode(execution):
                 data = arange((2, 3))
                 x = new_tensor(data)
-                dragon.masked_assign([x, 0, x > 2])
+                y = dragon.masked_assign([x, 0, x > 2])
                 data[data > 2] = 0
-                self.assertEqual(x, data)
+                self.assertEqual(y, data)
 
     @unittest.skipIf(not TEST_CUDA, 'CUDA unavailable')
     def test_masked_assign_cuda(self):
@@ -3021,9 +3018,12 @@ class TestTensorOps(OpTestCase):
             with execution_context().mode(execution):
                 data = arange((2, 3))
                 x = new_tensor(data)
-                x[x > 2] = 0
-                data[data > 2] = 0
-                self.assertEqual(x, data)
+                try:
+                    x[x > 2] = 0
+                    data[data > 2] = 0
+                    self.assertEqual(x, data)
+                except RuntimeError:
+                    pass
                 entries = [0,
                            slice(None, None, None),
                            slice(0, None, None),
@@ -3037,7 +3037,7 @@ class TestTensorOps(OpTestCase):
                         x.__setitem__(item, 0)
                         data.__setitem__(item, 0)
                         self.assertEqual(x, data)
-                    except (NotImplementedError, ValueError, TypeError):
+                    except (NotImplementedError, ValueError, TypeError, RuntimeError):
                         pass
 
     def test_rsub(self):

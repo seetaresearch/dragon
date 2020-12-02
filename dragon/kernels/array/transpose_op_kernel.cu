@@ -81,11 +81,9 @@ DEFINE_KERNEL_LAUNCHER(Transpose, int64_t);
 DEFINE_KERNEL_LAUNCHER(Transpose, float16);
 DEFINE_KERNEL_LAUNCHER(Transpose, float);
 DEFINE_KERNEL_LAUNCHER(Transpose, double);
-
 DEFINE_KERNEL_LAUNCHER(TransposeGrad, float16);
 DEFINE_KERNEL_LAUNCHER(TransposeGrad, float);
 DEFINE_KERNEL_LAUNCHER(TransposeGrad, double);
-
 #undef DEFINE_KERNEL_LAUNCHER
 
 } // namespace kernel

@@ -259,6 +259,20 @@ class Flatten(Operator):
         return self.dispatch(inputs, outputs)
 
 
+class Identity(Operator):
+    """Identity operator."""
+
+    def __init__(self, key, dev, **kwargs):
+        super(Identity, self).__init__(key, dev, **kwargs)
+
+    def attributes(self):
+        return {'op_type': 'Identity', 'arguments': {}}
+
+    def forward(self, inputs, inplace=False):
+        outputs = [self.alloc(inputs[0]) if inplace else self.alloc()]
+        return self.dispatch(inputs, outputs)
+
+
 class IndexSelect(Operator):
     """IndexSelect operator."""
 

@@ -79,11 +79,10 @@ def copy(self):
 
     See Also
     --------
-    `dragon.copy(...)`_
+    `dragon.identity(...)`_
 
     """
-    outputs = [Tensor(shape=self.shape, dtype=self.dtype)]
-    return OpDef.apply('Copy', [self], [outputs])
+    return OpDef.apply('Identity', [self])
 
 
 def div(self, other):
@@ -169,7 +168,7 @@ def getitem(self, item):
             if axis is not None:
                 return _index_select(self, item[axis], axis)
         starts, sizes = _process_index(item)
-        return _section_select(self, starts, sizes)
+        return _sliced_select(self, starts, sizes)
 
 
 def get_value(self):
@@ -402,10 +401,13 @@ def setitem(self, key, value):
 
     """
     if isinstance(key, Tensor):
-        _masked_assign(self, value, key)
+        raise RuntimeError(
+            'Assigning via mask is an ambiguous behavior in graph mode. '
+            'Use `dragon.masked_assign(...)` instead.')
     else:
-        starts, sizes = _process_index(key)
-        _section_assign(self, value, starts, sizes)
+        raise RuntimeError(
+            'Assigning via slices is an ambiguous behavior in graph mode. '
+            'Use `dragon.assign(...)` instead.')
 
 
 def set_value(self, value):
@@ -458,12 +460,6 @@ def _index_select(x, index, axis):
     return OpDef.apply('IndexSelect', [x, index], axis=axis, num_axes=1)
 
 
-def _masked_assign(ref, value, mask):
-    """Assign value according to the mask."""
-    value = ops.scalar_to_tensor(value, ref.dtype)
-    return OpDef.apply('MaskedAssign', [value, mask], [ref])
-
-
 def _masked_select(x, mask):
     """Select elements according to the mask."""
     return OpDef.apply('MaskedSelect', [x, mask])
@@ -502,14 +498,8 @@ def _process_index(item):
     return starts, sizes
 
 
-def _section_assign(ref, value, starts, sizes):
-    """Create the section-assign operator."""
-    value = ops.scalar_to_tensor(value, ref.dtype)
-    return OpDef.apply('Assign', [value], [ref], starts=starts, sizes=sizes)
-
-
-def _section_select(x, starts, sizes):
-    """Create the section-select operator."""
+def _sliced_select(x, starts, sizes):
+    """Select elements according to the slices."""
     return OpDef.apply('Slice', [x], starts=starts, sizes=sizes)
 
 

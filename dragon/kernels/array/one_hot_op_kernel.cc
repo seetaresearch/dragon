@@ -42,7 +42,6 @@ void _OneHot(
 DEFINE_KERNEL_LAUNCHER(int);
 DEFINE_KERNEL_LAUNCHER(int64_t);
 DEFINE_KERNEL_LAUNCHER(float);
-
 #undef DEFINE_KERNEL_LAUNCHER
 
 } // namespace kernel

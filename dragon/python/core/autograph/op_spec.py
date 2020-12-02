@@ -59,12 +59,6 @@ def arg_reduce_spec(args, inputs, outputs):
     return outputs
 
 
-@register(['Assign', 'MaskedAssign'])
-def assign_spec(args, inputs, outputs):
-    _ = locals()
-    return outputs
-
-
 def binary_shape_spec(inputs, outputs):
     if inputs[0].shape is None or inputs[1].shape is None:
         return outputs

@@ -8,18 +8,17 @@ namespace dragon {
 template <class Context>
 template <typename T>
 void AssignOp<Context>::DoRunWithType() {
-  auto &X = Input(0), *Y = Output(0);
-
-  int num_starts, num_sizes, num_dims = Y->ndim();
-  vec64_t X_dims(num_dims), X_starts(num_dims);
+  auto &Y_ref = Input(0), &X = Input(1), *Y = Output(0, {0});
 
   // Determine the interval of each dimension
+  int num_starts, num_sizes, num_dims = Y_ref.ndim();
+  vec64_t X_dims(num_dims), X_starts(num_dims);
   starts(0, &num_starts);
   sizes(0, &num_sizes);
 
   for (int i = 0; i < num_dims; i++) {
     auto dim_start = i < num_starts ? starts(i) : 0;
-    auto dim_end = Y->dim(i);
+    auto dim_end = Y_ref.dim(i);
     if (i < num_sizes) {
       auto dim_length = sizes(i);
       if (dim_length > 0) {
@@ -28,19 +27,18 @@ void AssignOp<Context>::DoRunWithType() {
         dim_end = dim_start + 1;
       }
     }
-    CHECK(dim_start >= 0 && dim_start < Y->dim(i))
+    CHECK(dim_start >= 0 && dim_start < Y_ref.dim(i))
         << "\nAssigning starts from " << dim_start << " of axis " << i << ", "
-        << "while the dimension of this axis is " << Y->dim(i) << ".";
-    CHECK(dim_end > 0 && dim_end <= Y->dim(i))
+        << "while the dimension of this axis is " << Y_ref.dim(i) << ".";
+    CHECK(dim_end > 0 && dim_end <= Y_ref.dim(i))
         << "\nAssigning ends at " << dim_end << " of axis " << i << ", "
-        << "while the dimension of this axis is " << Y->dim(i) << ".";
+        << "while the dimension of this axis is " << Y_ref.dim(i) << ".";
     X_starts[i] = dim_start;
     X_dims[i] = dim_end - dim_start;
   }
 
-  Tensor X_broadcast(X_dims);
-  auto* x = X.template data<T, Context>();
-
+  Tensor XRef(X_dims);
+  auto* new_data = X.template data<T, Context>();
   if (X.dims() != X_dims) {
     vec64_t dims1, dims2;
     if (math::utils::IsBinaryBroadcast(X.dims(), X_dims, dims1)) {
@@ -49,17 +47,17 @@ void AssignOp<Context>::DoRunWithType() {
           << Tensor::DimString(X_dims);
       math::utils::ComputeBinaryBroadcastDims(X.dims(), X_dims, dims1, dims2);
       if (dims1 != dims2) {
-        auto* scratch = ctx()->workspace()->template data<T, Context>(
-            {X_broadcast.count()})[0];
+        auto* scratch =
+            ctx()->workspace()->template data<T, Context>({XRef.count()})[0];
         math::Set(
             X.ndim(),
             X.dims().data(),
-            X_broadcast.ndim(),
-            X_broadcast.dims().data(),
-            x,
+            XRef.ndim(),
+            XRef.dims().data(),
+            new_data,
             scratch,
             ctx());
-        x = scratch;
+        new_data = scratch;
       }
     } else {
       LOG(FATAL) << "Could not broadcast together with shapes " << X.DimString()
@@ -67,12 +65,16 @@ void AssignOp<Context>::DoRunWithType() {
     }
   }
 
+  // Copy the reference data
+  Y->ReshapeLike(Y_ref)->CopyFrom(Y_ref, ctx());
+
+  // Update with the new data
   kernel::Assign(
       num_dims,
       X_dims.data(),
       Y->strides().data(),
       X_starts.data(),
-      x,
+      new_data,
       Y->template mutable_data<T, Context>(),
       ctx());
 }
@@ -88,10 +90,12 @@ DEPLOY_CUDA_OPERATOR(Assign);
 #endif
 
 OPERATOR_SCHEMA(Assign)
-    /* V */
-    .NumInputs(1)
-    /* X */
-    .NumOutputs(1);
+    /* Y_ref, X */
+    .NumInputs(2)
+    /* Y */
+    .NumOutputs(1)
+    /* Y_ref => Y */
+    .AllowInplace({{0, 0}});
 
 NO_GRADIENT(Assign);
 

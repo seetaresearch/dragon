@@ -65,6 +65,7 @@ from dragon.core.ops.array_ops import channel_shuffle
 from dragon.core.ops.array_ops import concat
 from dragon.core.ops.array_ops import expand_dims
 from dragon.core.ops.array_ops import flatten
+from dragon.core.ops.array_ops import identity
 from dragon.core.ops.array_ops import index_select
 from dragon.core.ops.array_ops import linspace
 from dragon.core.ops.array_ops import masked_select
@@ -85,7 +86,6 @@ from dragon.core.ops.array_ops import transpose
 from dragon.core.ops.array_ops import unique
 from dragon.core.ops.array_ops import where
 from dragon.core.ops.control_flow_ops import assign
-from dragon.core.ops.control_flow_ops import copy
 from dragon.core.ops.control_flow_ops import masked_assign
 from dragon.core.ops.framework_ops import python_plugin
 from dragon.core.ops.framework_ops import stop_gradient

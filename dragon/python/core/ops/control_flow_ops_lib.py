@@ -46,27 +46,14 @@ class Assign(Operator):
                 ws, '{}/sizes[{}]'.format(handle, i),
                 sizes[i], 'int64')
 
-    def forward(self, inputs, starts, sizes):
+    def forward(self, inputs, starts, sizes, inplace=False):
+        outputs = [self.alloc(inputs[0]) if inplace else self.alloc()]
         return self.dispatch(
-            [inputs[1]], [inputs[0]],
+            inputs, outputs,
             callback=lambda ws, handle:
                 self.feed(ws, handle, starts, sizes),
             no_grad=True,
         )
-
-
-class Copy(Operator):
-    """Copy operator."""
-
-    def __init__(self, key, dev, **kwargs):
-        super(Copy, self).__init__(key, dev, **kwargs)
-
-    def attributes(self):
-        return {'op_type': 'Copy', 'arguments': {}}
-
-    def forward(self, inputs, outputs):
-        outputs = outputs if outputs else [self.alloc()]
-        return self.dispatch(inputs, outputs, no_grad=True)
 
 
 class MaskedAssign(Operator):
@@ -78,5 +65,6 @@ class MaskedAssign(Operator):
     def attributes(self):
         return {'op_type': 'MaskedAssign', 'arguments': {}}
 
-    def forward(self, inputs):
-        return self.dispatch(inputs[1:], [inputs[0]], no_grad=True)
+    def forward(self, inputs, inplace=False):
+        outputs = [self.alloc(inputs[0]) if inplace else self.alloc()]
+        return self.dispatch(inputs, outputs, no_grad=True)

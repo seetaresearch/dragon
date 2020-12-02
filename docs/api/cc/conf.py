@@ -39,7 +39,7 @@ extensions = ['sphinx.ext.autodoc', 'sphinxcontrib.katex', 'breathe']
 # Project
 project = 'dragon'
 copyright = 'Copyright (c) 2017-present, SeetaTech, Co.,Ltd'
-author = 'SeetaTech'
+author = 'SeetaTech, Co.,Ltd'
 with open('../../../dragon/version.txt', 'r') as f:
     version = f.read().strip()
 
@@ -114,6 +114,7 @@ latex_elements = {
 \fvset{breaklines=true, breakanywhere=true}
 \setlength{\headheight}{13.6pt}
 \setlength{\itemindent}{-1pt}
+\addto\captionsenglish{\renewcommand{\chaptername}{}}
 \makeatletter
     \renewcommand*\l@subsection{\@dottedtocline{2}{3.8em}{3.8em}}
     \fancypagestyle{normal}{
@@ -146,13 +147,18 @@ latex_elements = {
     \vspace*{40mm}
     \LARGE \@author
 
+    \vspace*{40mm}
+    \LARGE \today
+
 \end{titlepage}
 \makeatother
 
 \pagenumbering{arabic}
 ''',
     'pointsize': '10pt',
+    'classoptions': ',oneside',
     'figure_align': 'H',
+    'fncychap': '\\usepackage[Sonny]{fncychap}',
     'printindex': '',
     'sphinxsetup': ' \
         hmargin={0.75in,0.75in}, \

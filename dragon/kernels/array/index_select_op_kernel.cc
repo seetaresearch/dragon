@@ -77,7 +77,6 @@ DEFINE_KERNEL_LAUNCHER(IndexSelect, int64_t);
 DEFINE_KERNEL_LAUNCHER(IndexSelect, float16);
 DEFINE_KERNEL_LAUNCHER(IndexSelect, float);
 DEFINE_KERNEL_LAUNCHER(IndexSelect, double);
-
 DEFINE_KERNEL_LAUNCHER(IndexSelectGrad, int8_t);
 DEFINE_KERNEL_LAUNCHER(IndexSelectGrad, uint8_t);
 DEFINE_KERNEL_LAUNCHER(IndexSelectGrad, int);
@@ -85,7 +84,6 @@ DEFINE_KERNEL_LAUNCHER(IndexSelectGrad, int64_t);
 DEFINE_KERNEL_LAUNCHER(IndexSelectGrad, float16);
 DEFINE_KERNEL_LAUNCHER(IndexSelectGrad, float);
 DEFINE_KERNEL_LAUNCHER(IndexSelectGrad, double);
-
 #undef DEFINE_KERNEL_LAUNCHER
 
 } // namespace kernel
