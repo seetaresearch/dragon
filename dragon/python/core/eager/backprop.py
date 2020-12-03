@@ -30,9 +30,10 @@ from dragon.core.util import tls
 
 
 class Tape(object):
-    def __init__(self, parent):
+    """Tape instance."""
+
+    def __init__(self):
         self._defs = []
-        self._parent = parent
         self._watched = set()
         self._empty_grads = set()
         self._gc = workspace.get_workspace().collectors
@@ -137,6 +138,8 @@ class GradientTape(object):
             raise RuntimeError(
                 'GradientTape.gradient(...) can only be called '
                 'once on non-persistent tapes.')
+
+        # Stop recording if not persistent.
         if self._recording:
             if not self._persistent:
                 self._pop_tape()
@@ -212,7 +215,7 @@ class GradientTape(object):
         if self._recording:
             raise ValueError('Tape is already recording.')
         if self._tape is None:
-            self._tape = Tape(self)
+            self._tape = Tape()
         push_new_tape(self._tape)
         self._recording = True
 

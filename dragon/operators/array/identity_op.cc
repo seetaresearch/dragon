@@ -1,3 +1,4 @@
+#include "dragon/core/workspace.h"
 #include "dragon/operators/array/reshape_ops.h"
 #include "dragon/utils/math_functions.h"
 
@@ -15,6 +16,11 @@ void IdentityOp<Context>::RunOnDevice() {
 DEPLOY_CPU_OPERATOR(Identity);
 #ifdef USE_CUDA
 DEPLOY_CUDA_OPERATOR(Identity);
+#endif
+
+DEPLOY_CPU_OPERATOR(IdentityGradient);
+#ifdef USE_CUDA
+DEPLOY_CUDA_OPERATOR(IdentityGradient);
 #endif
 
 OPERATOR_SCHEMA(Identity)

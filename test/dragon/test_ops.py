@@ -660,8 +660,11 @@ class TestArrayOps(OpTestCase):
             with execution_context().mode(execution):
                 data = arange((4,))
                 x = new_tensor(data)
-                y = dragon.identity(x)
-                self.assertEqual(y, data)
+                with dragon.GradientTape() as tape:
+                    tape.watch(x)
+                    y = dragon.identity(x)
+                dx = tape.gradient(y, [x], output_gradients=[x])[0]
+                self.assertEqual([y, dx], [data, data])
 
     @unittest.skipIf(not TEST_CUDA, 'CUDA unavailable')
     def test_identity_cuda(self):
