@@ -106,7 +106,7 @@ class AveragePooling2D(Pooling2D):
             The size(s) of sliding window.
         strides : Sequence[int], optional
             The stride(s) of sliding window.
-        padding : Union[{'valid', 'same'}, Sequence[int]], optional
+        padding : Union[str, Sequence[int]], optional
             The padding algorithm or padding sizes.
         data_format : {'channels_first', 'channels_last'}, optional
             The optional data format.
@@ -179,7 +179,7 @@ class MaxPooling2D(Pooling2D):
             The size(s) of sliding window.
         strides : Sequence[int], optional
             The stride(s) of sliding window.
-        padding : Union[{'valid', 'same'}, Sequence[int]], optional
+        padding : Union[str, Sequence[int]], optional
             The padding algorithm or padding sizes.
         data_format : {'channels_first', 'channels_last'}, optional
             The optional data format.

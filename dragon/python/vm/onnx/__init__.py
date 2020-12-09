@@ -14,9 +14,6 @@ from __future__ import absolute_import as _absolute_import
 from __future__ import division as _division
 from __future__ import print_function as _print_function
 
-# Classes
-from dragon.vm.onnx.core.shell import Shell
-
 # Attributes
-from dragon.vm.onnx.core import nodes as _nodes
+from dragon.vm.onnx.core import exporters as _import_exporters
 __all__ = [_s for _s in dir() if not _s.startswith('_')]

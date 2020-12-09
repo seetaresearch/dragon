@@ -7,11 +7,8 @@
 #
 #     <https://opensource.org/licenses/BSD-2-Clause>
 #
-# Codes are based on:
-#
-#     <https://github.com/onnx/onnx-tensorrt/blob/master/onnx_tensorrt/backend.py>
-#
 # ------------------------------------------------------------
+"""TensorRT ONNX backend."""
 
 from __future__ import absolute_import
 from __future__ import division
@@ -22,14 +19,14 @@ import numpy
 try:
     import onnx
     from onnx.backend.base import Backend
-    from onnx.backend.base import BackendRep
+    from onnx.backend.base import BackendRep as ONNXBackendRep
     from onnx.backend.base import Device
     from onnx.backend.base import DeviceType
 except ImportError:
     from dragon.core.util import deprecation
     onnx = deprecation.NotInstalled('onnx')
     Backend = object
-    BackendRep = object
+    ONNXBackendRep = object
     Device = deprecation.NotInstalled('onnx')
     DeviceType = deprecation.NotInstalled('onnx')
 
@@ -41,8 +38,8 @@ from dragon.vm.tensorrt.core.engine import trt
 from dragon.vm.tensorrt.core.engine import TRT_LOGGER
 
 
-class ONNXBackendRep(BackendRep):
-    """Load and run onnx models."""
+class BackendRep(ONNXBackendRep):
+    """ONNX-TensorRT backend to execute repeatedly."""
 
     def __init__(
         self,
@@ -53,7 +50,7 @@ class ONNXBackendRep(BackendRep):
         optimization_profiles=None,
         serialize_engine=False,
     ):
-        """Create a ``ONNXBackendRep``.
+        """Create a ``BackendRep``.
 
         Parameters
         ----------
@@ -71,6 +68,8 @@ class ONNXBackendRep(BackendRep):
             Whether to serialize engine into a file.
 
         """
+        if not isinstance(device, Device):
+            device = Device(device)
         self._set_device(device)
         self._logger = TRT_LOGGER
         self._builder = trt.Builder(self._logger)
@@ -193,12 +192,12 @@ class ONNXBackendRep(BackendRep):
         cuda.set_device(device.device_id)
 
 
-class ONNXBackend(Backend):
+class TensorRTBackend(Backend):
     """ONNX-TensorRT backend."""
 
     @classmethod
     def prepare(cls, model, device='CUDA:0', **kwargs):
-        """Build a TensorRT engine from the onnx model.
+        """Create a backend to execute repeatedly.
 
         Parameters
         ----------
@@ -209,17 +208,15 @@ class ONNXBackend(Backend):
 
         Returns
         -------
-        dragon.vm.tensorrt.ONNXBackendRep
-            The backend rep.
+        tensorrt.onnx.BackendRep
+            The backend.
 
         """
-        if not isinstance(device, Device):
-            device = Device(device)
-        return ONNXBackendRep(model, device, **kwargs)
+        return BackendRep(model, device, **kwargs)
 
     @classmethod
     def run_model(cls, model, inputs, device='CUDA:0', **kwargs):
-        """Build and run a TensorRT engine from the onnx model.
+        """Execute an onnx model once.
 
         Parameters
         ----------
@@ -240,7 +237,7 @@ class ONNXBackend(Backend):
 
     @classmethod
     def run_node(cls, node, inputs, device='CUDA:0', **kwargs):
-        """Build and run a TensorRT engine from the onnx node.
+        """Execute an onnx node once.
 
         Parameters
         ----------
@@ -248,7 +245,7 @@ class ONNXBackend(Backend):
             The onnx node.
         inputs : Union[Sequence, Dict]
             The input arrays.
-        device : str, optional
+        device : str, optional, default='CUDA:0'
             The executing device.
 
         Returns
@@ -257,7 +254,7 @@ class ONNXBackend(Backend):
             The model outputs.
 
         """
-        super(ONNXBackend, cls).run_node(node, inputs, device)
+        super(TensorRTBackend, cls).run_node(node, inputs, device)
         model = onnx_helper.make_model_from_node(node, inputs, use_weights=True)
         try:
             results = cls.prepare(model, device).run(inputs[:1])
@@ -268,7 +265,7 @@ class ONNXBackend(Backend):
 
     @classmethod
     def supports_device(cls, device_str):
-        """Query if given device is supported.
+        """Query if the given device is supported.
 
         Parameters
         ----------
@@ -285,7 +282,7 @@ class ONNXBackend(Backend):
         return device.type == DeviceType.CUDA
 
 
-prepare = ONNXBackend.prepare
-run_node = ONNXBackend.run_node
-run_model = ONNXBackend.run_model
-supports_device = ONNXBackend.supports_device
+prepare = TensorRTBackend.prepare
+run_node = TensorRTBackend.run_node
+run_model = TensorRTBackend.run_model
+supports_device = TensorRTBackend.supports_device

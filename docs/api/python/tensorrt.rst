@@ -12,15 +12,11 @@ vm.tensorrt
   `class Engine <tensorrt/Engine.html>`_
   : The executing engine with bindings.
 
-  `class ONNXBackendRep <tensorrt/ONNXBackendRep.html>`_
-  : Load and run onnx models.
-
 .. toctree::
   :hidden:
 
   tensorrt/Binding
   tensorrt/Engine
-  tensorrt/ONNXBackendRep
 
 .. raw:: html
 

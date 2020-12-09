@@ -20,8 +20,8 @@ import os
 from dragon.core.autograph import grad_maker
 from dragon.core.autograph.op_def import OpDef
 from dragon.core.autograph.op_def import OpInfo
-from dragon.core.autograph.tensor import TensorRef
 from dragon.core.framework import config
+from dragon.core.framework import context
 from dragon.core.framework import proto_util
 from dragon.core.framework import types
 from dragon.core.framework import workspace
@@ -33,12 +33,14 @@ from dragon.core.util import nest
 def add_device_option(graph_def):
     """Add the device option."""
     cfg = config.config()
-    str2idx = {'cpu': 0, 'cuda': 1, 'cnml': 2}
-    dev_opt = dragon_pb2.DeviceOption()
-    dev_opt.device_type = str2idx[cfg.device_type]
-    dev_opt.device_id = cfg.device_index
-    dev_opt.random_seed = cfg.random_seed
-    graph_def.device_option.CopyFrom(dev_opt)
+    spec = context.get_device_spec()
+    graph_def.device_option.CopyFrom(
+        dragon_pb2.DeviceOption(
+            device_type={'cpu': 0,
+                         'cuda': 1,
+                         'cnml': 2}[spec.type],
+            device_id=spec.index,
+            random_seed=cfg.random_seed))
 
 
 def add_grad_info(graph_def, targets):
@@ -226,17 +228,13 @@ class Function(object):
             f.write(str(graph_def))
         logging.info('Export meta graph into: {}'.format(path))
 
-    def import_from(self, graph_def, explicit_inputs=False):
+    def import_from(self, graph_def):
         """Import a defined function from a graph def.
-
-        Set ``explicit_inputs`` to **True** to enforce feeding.
 
         Parameters
         ----------
         graph_def : GraphDef
             The definition of graph.
-        explicit_inputs : bool
-            Whether to enforce feeding on executing.
 
         Returns
         -------
@@ -244,8 +242,9 @@ class Function(object):
             The self.
 
         """
-        self.outputs = [TensorRef(name) for name in graph_def.output]
-        self.inputs = [TensorRef(name).constant() for name in graph_def.input]
+        current_ws = workspace.get_workspace()
+        self.outputs = [current_ws.create_tensor(name) for name in graph_def.output]
+        self.inputs = [current_ws.create_tensor(name) for name in graph_def.input]
 
         # Fill with all known graph elements.
         add_device_option(graph_def)
@@ -253,18 +252,14 @@ class Function(object):
         add_phase(graph_def, self.outputs)
 
         # Notify the backend to create and optimize.
-        current_ws = workspace.get_workspace()
+        graph_def.name = self.graph_def.name
         self.graph_def = graph_def
         self.graph_name = current_ws.create_graph(graph_def)
 
         # Bind a callback to run this graph.
         self.callback = lambda *args, **kwargs: \
             current_ws.run_graph(
-                name=self.graph_name,
-                inputs_and_values=(self.inputs if explicit_inputs else [], args),
-                outputs=self.outputs,
-                **kwargs
-            )
+                name=self.graph_name, outputs=self.outputs, **kwargs)
 
         return self
 

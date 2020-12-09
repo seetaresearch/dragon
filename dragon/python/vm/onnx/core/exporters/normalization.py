@@ -13,13 +13,13 @@ from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
 
-from dragon.vm.onnx.core import exporter
 from dragon.vm.onnx.core import helper
+from dragon.vm.onnx.core.exporters import utils as export_util
 
 
-@exporter.register('BatchNorm')
-def batch_norm_exporter(op_def, shape_dict, ws):
-    node, const_tensors = exporter.translate(**locals())
+@export_util.register('BatchNorm')
+def batch_norm_exporter(op_def, context):
+    node, const_tensors = export_util.translate(**locals())
     node.op_type = 'BatchNormalization'
     for arg in op_def.arg:
         if arg.name == 'epsilon':
@@ -27,13 +27,13 @@ def batch_norm_exporter(op_def, shape_dict, ws):
         elif arg.name == 'momentum':
             helper.add_attribute(node, 'momentum', arg.f)
     # Weight, bias, running mean and running variance
-    const_tensors = [helper.from_tensor(e, ws) for e in op_def.input[1:]]
+    const_tensors = [helper.from_tensor(e, context.ws) for e in op_def.input[1:]]
     return node, const_tensors
 
 
-@exporter.register('GroupNorm')
-def group_norm_exporter(op_def, shape_dict, ws):
-    node, const_tensors = exporter.translate(**locals())
+@export_util.register('GroupNorm')
+def group_norm_exporter(op_def, context):
+    node, const_tensors = export_util.translate(**locals())
     node.op_type = 'ATen'  # Currently not supported in ai.onnx
     for arg in op_def.arg:
         if arg.name == 'epsilon':
@@ -46,13 +46,13 @@ def group_norm_exporter(op_def, shape_dict, ws):
                 helper.add_attribute(node, 'op_type', 'GroupNorm')
                 helper.add_attribute(node, 'group', arg.i)
     # Weight and bias
-    const_tensors = [helper.from_tensor(e, ws) for e in op_def.input[1:]]
+    const_tensors = [helper.from_tensor(e, context.ws) for e in op_def.input[1:]]
     return node, const_tensors
 
 
-@exporter.register('LpNormalize')
-def lp_normalize_exporter(op_def, shape_dict, ws):
-    node, const_tensors = exporter.translate(**locals())
+@export_util.register('LpNormalize')
+def lp_normalize_exporter(op_def, context):
+    node, const_tensors = export_util.translate(**locals())
     node.op_type = 'LpNormalization'
     for arg in op_def.arg:
         if arg.name == 'axis':

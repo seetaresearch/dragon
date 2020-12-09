@@ -80,7 +80,6 @@ def deprecated(date, instructions, warn_once=True):
 def not_installed(package=''):
     """Return a dummy function for the package that is not installed."""
     def dummy_fn(*args, **kwargs):
-        _ = locals()
         raise ImportError('Package <%s> is required but not installed.' % package)
     return dummy_fn
 

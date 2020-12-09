@@ -16,44 +16,40 @@ from __future__ import print_function
 import copy
 import numpy
 
-from dragon.vm.onnx.core import exporter
 from dragon.vm.onnx.core import helper
+from dragon.vm.onnx.core.exporters import utils as export_util
 
 
-@exporter.register([
+@export_util.register([
     'Conv2d',
     'ConvTranspose2d',
     'DepthwiseConv2d',
 ])
-def convolution(op_def, shape_dict, ws):
-    node, const_tensors = exporter.translate(**locals())
+def convolution(op_def, context):
+    node, const_tensors = export_util.translate(**locals())
     node.op_type = 'ConvTranspose' if 'Transpose' in op_def.type else 'Conv'
     if 'Depthwise' in op_def.type:
-        input_shape = shape_dict[op_def.input[0]]
+        input_shape = context.blob_shapes[op_def.input[0]]
         helper.add_attribute(node, 'group', input_shape[1])
-    rank = len(shape_dict[op_def.input[0]]) - 2
+    rank = len(context.blob_shapes[op_def.input[0]]) - 2
     for arg in op_def.arg:
         _assert_data_format(arg)
         if arg.name == 'kernel_shape':
             helper.add_attribute(
                 node, 'kernel_shape',
-                _normalize_tuple(arg.ints, rank)
-            )
+                _normalize_tuple(arg.ints, rank))
         elif arg.name == 'dilations':
             helper.add_attribute(
                 node, 'dilations',
-                _normalize_tuple(arg.ints, rank)
-            )
+                _normalize_tuple(arg.ints, rank))
         elif arg.name == 'strides':
             helper.add_attribute(
                 node, 'strides',
-                _normalize_tuple(arg.ints, rank)
-            )
+                _normalize_tuple(arg.ints, rank))
         elif arg.name == 'pads':
             helper.add_attribute(
                 node, 'pads',
-                _normalize_pads(arg.ints, rank)
-            )
+                _normalize_pads(arg.ints, rank))
         elif arg.name == 'padding' and arg.s != b'VALID':
             helper.add_attribute(node, 'auto_pad', arg.s)
         elif arg.name == 'group':
@@ -63,13 +59,13 @@ def convolution(op_def, shape_dict, ws):
         elif arg.name == 'output_padding':
             helper.add_attribute(node, 'output_padding', arg.ints)
     # Weights and biases
-    const_tensors = [helper.from_tensor(e, ws) for e in op_def.input[1:]]
+    const_tensors = [helper.from_tensor(e, context.ws) for e in op_def.input[1:]]
     return node, const_tensors
 
 
-@exporter.register(['DepthToSpace', 'SpaceToDepth'])
-def depth_space_exporter(op_def, shape_dict, ws):
-    node, const_tensors = exporter.translate(**locals())
+@export_util.register(['DepthToSpace', 'SpaceToDepth'])
+def depth_space_exporter(op_def, context):
+    node, const_tensors = export_util.translate(**locals())
     for arg in op_def.arg:
         _assert_data_format(arg)
         if arg.name == 'block_size':
@@ -77,28 +73,25 @@ def depth_space_exporter(op_def, shape_dict, ws):
     return node, const_tensors
 
 
-@exporter.register('Pool2d')
-def pool(op_def, shape_dict, ws):
-    node, const_tensors = exporter.translate(**locals())
-    rank = len(shape_dict[op_def.input[0]]) - 2
+@export_util.register('Pool2d')
+def pool(op_def, context):
+    node, const_tensors = export_util.translate(**locals())
+    rank = len(context.blob_shapes[op_def.input[0]]) - 2
     global_pooling, node_copy = 0, copy.deepcopy(node)
     for arg in op_def.arg:
         _assert_data_format(arg)
         if arg.name == 'kernel_shape':
             helper.add_attribute(
                 node, 'kernel_shape',
-                _normalize_tuple(arg.ints, rank)
-            )
+                _normalize_tuple(arg.ints, rank))
         elif arg.name == 'strides':
             helper.add_attribute(
                 node, 'strides',
-                _normalize_tuple(arg.ints, rank)
-            )
+                _normalize_tuple(arg.ints, rank))
         elif arg.name == 'pads':
             helper.add_attribute(
                 node, 'pads',
-                _normalize_pads(arg.ints, rank)
-            )
+                _normalize_pads(arg.ints, rank))
         elif arg.name == 'padding' and arg.s != b'VALID':
             helper.add_attribute(node, 'auto_pad', arg.s)
         elif arg.name == 'mode':
@@ -117,59 +110,53 @@ def pool(op_def, shape_dict, ws):
     return node, const_tensors
 
 
-@exporter.register('Resize-1')
-def resize_v1(op_def, shape_dict, ws):
-    _ = locals()
+@export_util.register('Resize-1')
+def resize_v1(op_def, context):
     raise RuntimeError('<Upsample> requires opset version >= 7.')
 
 
-@exporter.register('Resize-7')
-def resize_v7(op_def, shape_dict, ws):
-    node, const_tensors = exporter.translate(**locals())
+@export_util.register('Resize-7')
+def resize_v7(op_def, context):
+    node, const_tensors = export_util.translate(**locals())
     node.op_type = 'Upsample'
-    input_shape = shape_dict[op_def.input[0]]
-    output_shape = shape_dict[op_def.output[0]]
+    input_shape = context.blob_shapes[op_def.input[0]]
+    output_shape = context.blob_shapes[op_def.output[0]]
     for arg in op_def.arg:
         if arg.name == 'mode':
             helper.add_attribute(node, 'mode', arg.s.lower())
     helper.add_attribute(
-        node, 'scales', [
-            float(output_shape[i]) / input_shape[i]
-            for i in range(len(input_shape))
-        ]
-    )
+        node, 'scales', [float(output_shape[i]) / input_shape[i]
+                         for i in range(len(input_shape))])
     return node, const_tensors
 
 
-@exporter.register('Resize-9')
-def resize_v9(op_def, shape_dict, ws):
-    node, const_tensors = resize_v10(op_def, shape_dict, ws)
+@export_util.register('Resize-9')
+def resize_v9(op_def, context):
+    node, const_tensors = resize_v10(**locals())
     node.op_type = 'Upsample'
     return node, const_tensors
 
 
-@exporter.register('Resize-10')
-def resize_v10(op_def, shape_dict, ws):
-    node, const_tensors = exporter.translate(**locals())
-    input_shape = shape_dict[op_def.input[0]]
-    output_shape = shape_dict[op_def.output[0]]
+@export_util.register('Resize-10')
+def resize_v10(op_def, context):
+    node, const_tensors = export_util.translate(**locals())
+    input_shape = context.blob_shapes[op_def.input[0]]
+    output_shape = context.blob_shapes[op_def.output[0]]
     for arg in op_def.arg:
         if arg.name == 'mode':
             helper.add_attribute(node, 'mode', arg.s.lower())
     scales = helper.from_array(
-        numpy.array([
-            float(output_shape[i]) / input_shape[i]
-            for i in range(len(input_shape))
-        ], 'float32'),
-        op_def.input[0] + '/resize/scales',
+        numpy.array([float(output_shape[i]) / input_shape[i]
+                     for i in range(len(input_shape))], 'float32'),
+        context.unique_name(op_def.input[0] + '/resize/scales'),
     )
     node.input.extend([scales.name])
     return node, [scales]
 
 
-@exporter.register('Resize-11')
-def resize_v11(op_def, shape_dict, ws):
-    node, const_tensors = resize_v10(op_def, shape_dict, ws)
+@export_util.register('Resize-11')
+def resize_v11(op_def, context):
+    node, const_tensors = resize_v10(**locals())
     coord_mode = 'half_pixel'
     for arg in op_def.arg:
         if arg.name == 'mode':
@@ -179,22 +166,22 @@ def resize_v11(op_def, shape_dict, ws):
             if arg.i > 0:
                 coord_mode = 'align_corners'
     helper.add_attribute(node, 'coordinate_transformation_mode', coord_mode)
-    rank = len(shape_dict[op_def.input[0]])
+    rank = len(context.blob_shapes[op_def.input[0]])
     roi = helper.from_array(
         numpy.array(([0] * rank + [1] * rank), 'float32'),
-        op_def.input[0] + '/resize/roi',
+        context.unique_name(op_def.input[0] + '/resize/roi'),
     )
     node.input[:] = [node.input[0], roi.name, node.input[1]]
     return node, const_tensors + [roi]
 
 
-@exporter.register('RoiAlign')
-def roi_align(op_def, shape_dict, ws):
-    node, const_tensors = exporter.translate(**locals())
+@export_util.register('RoiAlign')
+def roi_align(op_def, context):
+    node, const_tensors = export_util.translate(**locals())
     # Make a dummy "batch_indices".
     batch_indices = helper.from_array(
         numpy.array([1], 'int64'),
-        op_def.input[0] + '/roi_align/batch_indices',
+        context.unique_name(op_def.input[0] + '/roi_align/batch_indices'),
     )
     node.input.extend([batch_indices.name])
     for arg in op_def.arg:
@@ -209,9 +196,9 @@ def roi_align(op_def, shape_dict, ws):
     return node, [batch_indices]
 
 
-@exporter.register('RoiPool')
-def roi_pool(op_def, shape_dict, ws):
-    node, const_tensors = exporter.translate(**locals())
+@export_util.register('RoiPool')
+def roi_pool(op_def, context):
+    node, const_tensors = export_util.translate(**locals())
     node.op_type = 'MaxRoiPool'
     pooled_shape = [None, None]
     for arg in op_def.arg:

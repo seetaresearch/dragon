@@ -38,6 +38,7 @@ Dragon
   * `dragon.math <dragon/math.html>`_
   * `dragon.metrics <dragon/metrics.html>`_
   * `dragon.nn <dragon/nn.html>`_
+  * `dragon.onnx <dragon/onnx.html>`_
   * `dragon.optimizers <dragon/optimizers.html>`_
   * `dragon.random <dragon/random.html>`_
   * `dragon.vision <dragon/vision.html>`_
@@ -146,7 +147,9 @@ ONNX
 
   This integration involves the following components:
 
-  * `onnx <onnx.html>`_
+  * `dragon.onnx <dragon/onnx.html>`_
+  * `tensorrt.onnx <tensorrt/onnx.html>`_
+  * `torch.onnx <torch/onnx.html>`_
 
 TensorRT
 ########
@@ -158,7 +161,7 @@ TensorRT
   This integration involves the following components:
 
   * `tensorrt <tensorrt.html>`_
-  * `tensorrt.backend <tensorrt/backend.html>`_
+  * `tensorrt.onnx <tensorrt/onnx.html>`_
 
 Modules
 -------
@@ -198,6 +201,9 @@ Modules
   `Module nn <dragon/nn.html>`_
   : Native API for ``dragon.nn`` namespace.
 
+  `Module onnx <dragon/onnx.html>`_
+  : Native API for ``dragon.onnx`` namespace.
+
   `Module optimizers <dragon/optimizers.html>`_
   : Native API for ``dragon.optimizers`` namespace.
 
@@ -218,9 +224,6 @@ Modules
 
   `Module vm.dali.ops <dali/ops.html>`_
   : Virtual API for ``dali.ops`` namespace.
-
-  `Module vm.onnx <onnx.html>`_
-  : Virtual API for ``onnx`` namespace.
 
   `Module vm.tensorflow <tensorflow.html>`_
   : Virtual API for ``tensorflow`` namespace.
@@ -255,8 +258,11 @@ Modules
   `Module vm.tensorlayer.models <tensorlayer/models.html>`_
   : Virtual API for ``tensorlayer.models`` namespace.
 
-  `Module vm.tensorrt.backend <tensorrt/backend.html>`_
-  : Virtual API for ``tensorrt.backend`` namespace.
+  `Module vm.tensorrt <tensorrt.html>`_
+  : Virtual API for ``tensorrt`` namespace.
+
+  `Module vm.tensorrt.onnx <tensorrt/onnx.html>`_
+  : Virtual API for ``tensorrt.onnx`` namespace.
 
   `Module vm.torch <torch.html>`_
   : Virtual API for ``torch`` namespace.
@@ -306,6 +312,7 @@ Modules
   dragon/math
   dragon/metrics
   dragon/nn
+  dragon/onnx
   dragon/optimizers
   dragon/random
   dragon/vision
@@ -313,7 +320,6 @@ Modules
   caffe/layers
   dali
   dali/ops
-  onnx
   tensorflow
   tensorflow/bitwise
   tensorflow/dtypes
@@ -326,7 +332,7 @@ Modules
   tensorlayer/layers
   tensorlayer/models
   tensorrt
-  tensorrt/backend
+  tensorrt/onnx
   torch
   torch/autograd
   torch/distributed

@@ -50,6 +50,7 @@ def constant(value, dtype=None, shape=None, name='Const'):
         The output tensor.
 
     """
+    dtype = str(dtype) if dtype else None
     if dtype is not None:
         if isinstance(value, numpy.ndarray):
             value = value.astype(dtype)

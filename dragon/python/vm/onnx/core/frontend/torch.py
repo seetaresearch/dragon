@@ -8,6 +8,7 @@
 #     <https://opensource.org/licenses/BSD-2-Clause>
 #
 # ------------------------------------------------------------
+"""PyTorch ONNX frontend."""
 
 from __future__ import absolute_import
 from __future__ import division
@@ -19,7 +20,9 @@ import numpy
 from dragon.core.framework import workspace
 from dragon.core.proto import dragon_pb2
 from dragon.core.util import nest
-from dragon.vm.onnx.core import utils as onnx_util
+from dragon.core.util import serialization
+from dragon.vm.onnx.core import helper
+from dragon.vm.onnx.core.frontend.native import graph_def_to_onnx_model
 from dragon.vm.torch.core.autograd import backprop
 
 
@@ -34,7 +37,7 @@ def export(
     verbose=False,
     enable_onnx_checker=True,
 ):
-    """Export a model into ONNX format.
+    """Export the recorded graph to an onnx model.
 
     The outputs will be obtained by calling ``model(*args)``,
     both the tensor or numpy array are allowed:
@@ -162,10 +165,8 @@ def export(
 
     # Make value info from inputs and outputs.
     value_names = graph_def.input[:] + graph_def.output[:]
-    value_info = dict([
-        (k, onnx_util.make_value_info(v.shape, v.dtype))
-        for k, v in zip(value_names, inputs + outputs)
-    ])
+    value_info = dict([(k, (helper.tensor_type(v.dtype), v.shape))
+                       for k, v in zip(value_names, inputs + outputs)])
 
     # Extract the constants from inputs and outputs.
     constants = collections.OrderedDict()
@@ -175,9 +176,8 @@ def export(
 
     # Export.
     with temporal_ws.as_default():
-        onnx_util.export_from_graph(
+        model = graph_def_to_onnx_model(
             graph_def=graph_def,
-            f=f,
             input_names=input_names,
             output_names=output_names,
             input_shapes=input_shapes,
@@ -188,3 +188,4 @@ def export(
             verbose=verbose,
             enable_onnx_checker=enable_onnx_checker,
         )
+        serialization.save_bytes(serialization.serialize_proto(model), f)

@@ -18,15 +18,14 @@ import os as _os
 import sys as _sys
 
 # Modules
-from dragon.vm.tensorrt._api import backend
+from dragon.vm.tensorrt._api import onnx
 
 # Classes
-from dragon.vm.tensorrt.core.backend import ONNXBackendRep
 from dragon.vm.tensorrt.core.engine import Binding
 from dragon.vm.tensorrt.core.engine import Engine
 
 # Attributes
-_API_MODULE = backend
+_API_MODULE = onnx
 _current_module = _sys.modules[__name__]
 _api_dir = _os.path.dirname(_os.path.dirname(_API_MODULE.__file__))
 if not hasattr(_current_module, '__path__'):

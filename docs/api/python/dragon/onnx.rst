@@ -1,13 +1,34 @@
-vm.onnx
-=======
+dragon.onnx
+===========
 
-.. toctree::
-  :hidden:
+.. only:: html
 
-  onnx/Shell
+  Classes
+  -------
+
+  `class BackendRep <onnx/BackendRep.html>`_
+  : ONNX-Dragon backend to execute repeatedly.
+
+  Functions
+  ---------
+
+  `export(...) <onnx/export.html>`_
+  : Export the recorded graph to an onnx model.
+
+  `prepare_backend(...) <onnx/prepare_backend.html>`_
+  : Create a backend to execute repeatedly.
+
+  `record(...) <onnx/record.html>`_
+  : Context-manger to record the graph.
+
+  `run_model(...) <onnx/run_model.html>`_
+  : Execute an onnx model once.
+
+  `supports_device(...) <onnx/supports_device.html>`_
+  : Query if the given device is supported to execute.
 
 Operators
-#########
+---------
 
 ======================== ========= ========================================
 Name                     Supported Reference
@@ -168,13 +189,15 @@ Name                     Supported Reference
 `Xor`_                   |v|       :func:`dragon.bitwise.bitwise_xor`
 ======================== ========= ========================================
 
-.. only:: html
+.. toctree::
+  :hidden:
 
-    Classes
-    #######
-
-    `class Shell <onnx/Shell.html>`_
-    : Context-manger to export or load onnx models.
+  onnx/BackendRep
+  onnx/prepare_backend
+  onnx/export
+  onnx/record
+  onnx/run_model
+  onnx/supports_device
 
 .. _Abs: https://github.com/onnx/onnx/blob/master/docs/Operators.md#Abs
 .. _Acos: https://github.com/onnx/onnx/blob/master/docs/Operators.md#Acos
@@ -331,14 +354,14 @@ Name                     Supported Reference
 .. _Where: https://github.com/onnx/onnx/blob/master/docs/Operators.md#Where
 .. _Xor: https://github.com/onnx/onnx/blob/master/docs/Operators.md#Xor
 
-.. |v| image:: ../_static/images/tick.png
+.. |v| image:: ../../_static/images/tick.png
   :height: 18
 
 .. raw:: html
 
   <style>
   h1:before {
-    content: "Module: dragon.";
+    content: "Module: ";
     color: #103d3e;
   }
   </style>

@@ -8,12 +8,19 @@
 #     <https://opensource.org/licenses/BSD-2-Clause>
 #
 # ------------------------------------------------------------
-"""ONNX module."""
 
 from __future__ import absolute_import as _absolute_import
 from __future__ import division as _division
 from __future__ import print_function as _print_function
 
-from dragon.vm.onnx.core.frontend.torch import export
+# Classes
+from dragon.vm.onnx.core.backend.tensorrt import BackendRep
 
+# Functions
+from dragon.vm.onnx.core.backend.tensorrt import prepare as prepare_backend
+from dragon.vm.onnx.core.backend.tensorrt import run_model
+from dragon.vm.onnx.core.backend.tensorrt import run_node
+from dragon.vm.onnx.core.backend.tensorrt import supports_device
+
+# Attributes
 __all__ = [_s for _s in dir() if not _s.startswith('_')]

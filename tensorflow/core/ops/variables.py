@@ -33,6 +33,8 @@ class VariableMetaclass(object):
 
 
 class Variable(VariableMetaclass, EagerTensor):
+    """Resource variable."""
+
     def __init__(
         self,
         initial_value,
@@ -44,6 +46,7 @@ class Variable(VariableMetaclass, EagerTensor):
         """Create a ``Variable``."""
         super(Variable, self).__init__(trainable=trainable)
         name = name if name else 'Variable'
+        dtype = str(dtype) if dtype else None
         self._name = context.get_name_scope() + name + ':0'
         # Determine th value.
         if isinstance(initial_value, EagerTensor):
@@ -52,7 +55,7 @@ class Variable(VariableMetaclass, EagerTensor):
             initial_value = initial_value.get_value()
         # Determine the data type.
         if not isinstance(initial_value, numpy.ndarray):
-            initial_value = numpy.array(initial_value, dtype if dtype else dtype)
+            initial_value = numpy.array(initial_value, dtype)
         elif dtype is not None:
             initial_value = initial_value.astype(dtype)
         # Determine the tensor shape.
@@ -103,8 +106,7 @@ def get_default_initializer(name, shape=None, dtype=dtypes.float32):
     else:
         raise ValueError(
             'An initializer for Variable({}) of {} is required.'
-            .format(name, dtype.base_dtype)
-        )
+            .format(name, dtype.base_dtype))
     return initializer
 
 

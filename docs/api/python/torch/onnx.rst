@@ -6,7 +6,7 @@ vm.torch.onnx
   Functions
   ---------
   `export(...) <onnx/export.html>`_
-  : Export a model into ONNX format.
+  : Export the recorded graph to an onnx model.
 
 .. toctree::
   :hidden:

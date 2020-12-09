@@ -8,12 +8,13 @@
 #     <https://opensource.org/licenses/BSD-2-Clause>
 #
 # ------------------------------------------------------------
-"""ONNX module."""
 
-from __future__ import absolute_import as _absolute_import
-from __future__ import division as _division
-from __future__ import print_function as _print_function
+from __future__ import absolute_import
+from __future__ import division
+from __future__ import print_function
 
-from dragon.vm.onnx.core.frontend.torch import export
-
-__all__ = [_s for _s in dir() if not _s.startswith('_')]
+from dragon.vm.onnx.core.exporters import activation
+from dragon.vm.onnx.core.exporters import array
+from dragon.vm.onnx.core.exporters import normalization
+from dragon.vm.onnx.core.exporters import math
+from dragon.vm.onnx.core.exporters import vision

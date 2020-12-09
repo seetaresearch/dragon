@@ -26,7 +26,6 @@ register = _GLOBAL_REGISTERED_SPECS.register
 
 @register('Accuracy')
 def accuracy_spec(args, inputs, outputs):
-    _ = locals()
     outputs[0].dtype, outputs[0].shape = 'float32', []
     return outputs
 
@@ -97,7 +96,6 @@ def binary_shape_spec(inputs, outputs):
     'Where',
 ])
 def binary_math_spec(args, inputs, outputs):
-    _ = locals()
     outputs = binary_shape_spec(inputs, outputs)
     outputs[0].dtype = inputs[0].dtype
     if inputs[0].dtype is None:
@@ -114,7 +112,6 @@ def binary_math_spec(args, inputs, outputs):
     'NotEqual',
 ])
 def binary_compare_spec(args, inputs, outputs):
-    _ = locals()
     outputs = binary_shape_spec(inputs, outputs)
     outputs[0].dtype = 'bool'
     return outputs
@@ -262,7 +259,6 @@ def depth_to_space_spec(args, inputs, outputs):
 
 @register('Dot')
 def dot_spec(args, inputs, outputs):
-    _ = locals()
     outputs[0].dtype = inputs[0].dtype
     try:
         a_shape, b_shape = inputs[0].shape[:], inputs[1].shape[:]
@@ -358,7 +354,6 @@ def expand_dims_spec(args, inputs, outputs):
     'TruncatedNormal',
 ])
 def fill_spec(args, inputs, outputs):
-    _ = locals()
     outputs[0].dtype = args['dtype']
     try:
         if 'dims' in args:
@@ -476,7 +471,6 @@ def index_select_spec(args, inputs, outputs):
 
 @register(['IsInf', 'IsNaN'])
 def is_spec(args, inputs, outputs):
-    _ = locals()
     outputs[0].dtype = 'bool'
     try:
         outputs[0].shape = inputs[0].shape[:]
@@ -487,7 +481,6 @@ def is_spec(args, inputs, outputs):
 
 @register('LinSpace')
 def linspace_spec(args, inputs, outputs):
-    _ = locals()
     outputs[0].dtype = args['dtype']
     outputs[0].shape = args['dims']
     return outputs
@@ -495,7 +488,6 @@ def linspace_spec(args, inputs, outputs):
 
 @register('MaskedSelect')
 def masked_select_spec(args, inputs, outputs):
-    _ = locals()
     outputs[0].dtype = inputs[0].dtype
     outputs[0].shape = (None,)
     return outputs
@@ -552,7 +544,6 @@ def multinomial_spec(args, inputs, outputs):
 
 @register('NonZero')
 def non_zero_spec(args, inputs, outputs):
-    _ = locals()
     outputs[0].dtype = 'int64'
     try:
         outputs[0].shape = (None, len(inputs[0].shape))
@@ -592,7 +583,6 @@ def pad_spec(args, inputs, outputs):
 
 @register('Permutation')
 def permutation_spec(args, inputs, outputs):
-    _ = locals()
     outputs[0].dtype = args['dtype']
     if len(inputs) == 1:
         try:
@@ -638,13 +628,11 @@ def pool_spec(args, inputs, outputs):
 
 @register(['PythonPlugin', 'PythonPluginInfer'])
 def python_spec(args, inputs, outputs):
-    _ = locals()
     return outputs
 
 
 @register('Range')
 def range_spec(args, inputs, outputs):
-    _ = locals()
     outputs[0].dtype = args['dtype']
     slice_args = args['slice']
     if len(slice_args) == 2:
@@ -749,9 +737,9 @@ def reshape_spec(args, inputs, outputs):
 def resize_spec(args, inputs, outputs):
     outputs[0].dtype = inputs[0].dtype
     if 'sizes_desc' in args or \
-       'sizes_descs' in args or \
-       'scales_desc' in args or \
-       'scales_descs' in args:
+            'sizes_descs' in args or \
+            'scales_desc' in args or \
+            'scales_descs' in args:
         return outputs
     try:
         out_shape = list(inputs[0].shape[:])
@@ -802,7 +790,6 @@ def roi_pool_spec(args, inputs, outputs):
 
 @register('Shape')
 def shape_spec(args, inputs, outputs):
-    _ = locals()
     outputs[0].dtype = 'int64'
     try:
         outputs[0].shape = [len(inputs[0].shape)]
@@ -815,9 +802,9 @@ def shape_spec(args, inputs, outputs):
 def slice_spec(args, inputs, outputs):
     outputs[0].dtype = inputs[0].dtype
     if 'starts_desc' in args or \
-       'starts_descs' in args or \
-       'sizes_desc' in args or \
-       'sizes_descs' in args:
+            'starts_descs' in args or \
+            'sizes_desc' in args or \
+            'sizes_descs' in args:
         return outputs
     starts, sizes = args['starts'], args['sizes']
     try:
@@ -861,7 +848,6 @@ def softmax_loss_spec(args, inputs, outputs):
 
 @register('Sort')
 def sort_spec(args, inputs, outputs):
-    _ = locals()
     outputs[0].dtype = inputs[0].dtype
     outputs[1].dtype = 'int64'
     try:
@@ -1054,7 +1040,6 @@ def top_k_spec(args, inputs, outputs):
 
 @register('Unchanged')
 def unchanged_spec(args, inputs, outputs):
-    _ = locals()
     outputs[0].dtype = inputs[0].dtype
     try:
         outputs[0].shape = inputs[0].shape[:]

@@ -163,7 +163,7 @@ class Conv2D(Conv):
             The shape of convolution kernel.
         strides : Sequence[int], optional, default=1
             The stride(s) of sliding window.
-        padding : Union[{'valid', 'same'}, Sequence[int]], optional
+        padding : Union[str, Sequence[int]], optional
             The padding algorithm or padding sizes.
         data_format : {'channels_first', 'channels_last'}, optional
             The optional data format.
@@ -231,7 +231,7 @@ class Conv2DTranspose(Conv2D):
             The shape of convolution kernel.
         strides : Sequence[int], optional
             The stride(s) of sliding window.
-        padding : Union[{'valid', 'same'}, Sequence[int]], optional
+        padding : Union[str, Sequence[int]], optional
             The padding algorithm or padding sizes.
         output_padding : Sequence[int], optional
             The sizes of padded to the output.
@@ -396,7 +396,7 @@ class DepthwiseConv2D(Conv2D):
             The shape of convolution kernel.
         strides : Sequence[int], optional, default=1
             The stride(s) of sliding window.
-        padding : Union[{'valid', 'same'}, Sequence[int]], optional
+        padding : Union[str, Sequence[int]], optional
             The padding algorithm or padding sizes.
         data_format : {'channels_first', 'channels_last'}, optional
             The optional data format.

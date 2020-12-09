@@ -348,9 +348,7 @@ class Layer(module.Module):
             else:
                 raise ValueError(
                     'Unknown format "%s".\n'
-                    'Excepted format in (tf, h5, pkl).'
-                    % (save_format,)
-                )
+                    'Excepted format in (tf, h5, pkl).' % (save_format,))
         if save_format == 'tf':
             raise ValueError('TensorFlow format will never be supported.')
         if save_format == 'h5':
@@ -379,12 +377,9 @@ class Layer(module.Module):
             'metrics',
         }
         if hasattr(self, '_layers'):
-            layers = layer_utils \
-                .filter_empty_layer_containers(self._layers)
-            return list(
-                itertools.chain.from_iterable(
-                    getattr(layer, attribute) for layer in layers)
-            )
+            layers = layer_utils.filter_empty_layer_containers(self._layers)
+            return list(itertools.chain.from_iterable(
+                getattr(layer, attribute) for layer in layers))
         return []
 
     def _maybe_build(self, inputs):

@@ -21,13 +21,39 @@ _GLOBAL_REGISTERED_EXPORTERS = _Registry('exporters')
 register = _GLOBAL_REGISTERED_EXPORTERS.register
 
 
-def translate(op_def, *args, **kwargs):
+class TranslatorContext(object):
+    """Context to pass translator resources."""
+
+    def __init__(
+        self,
+        workspace,
+        blob_names,
+        blob_shapes,
+        blob_versions,
+        opset_version,
+    ):
+        self.ws = workspace
+        self.blob_names = blob_names
+        self.blob_shapes = blob_shapes
+        self.blob_versions = blob_versions
+        self.opset_version = opset_version
+
+    def unique_name(self, name):
+        self.blob_versions[name] += 1
+        if self.blob_versions[name] > 1:
+            return name + '_%d' % (self.blob_versions[name] - 1)
+        return name
+
+
+def translate(op_def, context):
     """Translate the OpDef to a NodeProto.
 
     Parameters
     ----------
     op_def : OperatorDef
         The definition of a operator.
+    context : TranslatorContext
+        The context of translator.
 
     Returns
     -------
@@ -37,9 +63,8 @@ def translate(op_def, *args, **kwargs):
         The constant tensors.
 
     """
-    _ = locals()
     node = helper.make_node(
-        op_type=kwargs.get('op_type', op_def.type),
+        op_type=op_def.type,
         inputs=op_def.input,
         outputs=op_def.output,
         name=op_def.name if op_def.name != '' else None
@@ -61,7 +86,6 @@ def registered_exporters():
 
 
 @register(['PythonPlugin', 'PythonPluginInfer'])
-def _python(op_def, shape_dict, ws):
+def python_exporter(op_def, context):
     """Export the python operators."""
-    _ = locals()
     return None, None

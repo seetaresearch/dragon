@@ -13,9 +13,15 @@ from __future__ import absolute_import as _absolute_import
 from __future__ import division as _division
 from __future__ import print_function as _print_function
 
-from dragon.vm.tensorrt.core.backend import prepare
-from dragon.vm.tensorrt.core.backend import run_model
-from dragon.vm.tensorrt.core.backend import run_node
-from dragon.vm.tensorrt.core.backend import supports_device
+# Classes
+from dragon.vm.onnx.core.backend.native import BackendRep
 
+# Functions
+from dragon.vm.onnx.core.backend.native import prepare as prepare_backend
+from dragon.vm.onnx.core.backend.native import run_model
+from dragon.vm.onnx.core.backend.native import supports_device
+from dragon.vm.onnx.core.frontend.native import export
+from dragon.vm.onnx.core.frontend.native import record
+
+# Attributes
 __all__ = [_s for _s in dir() if not _s.startswith('_')]

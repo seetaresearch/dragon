@@ -44,7 +44,7 @@ def avg_pool(
         The size(s) of sliding window.
     strides : Sequence[int], optional
         The stride(s) of sliding window.
-    padding : Union[{'VALID', 'SAME'}, Sequence[int]]
+    padding : Union[str, Sequence[int]]
         The padding algorithm or padding sizes.
     data_format : {'NCHW', 'NCDHW', 'NHWC', 'NDHWC'}, optional
         The optional data format.
@@ -104,7 +104,7 @@ def avg_pool2d(
         The size(s) of sliding window.
     strides : Sequence[int], optional
         The stride(s) of sliding window.
-    padding : Union[{'VALID', 'SAME'}, Sequence[int]]
+    padding : Union[str, Sequence[int]]
         The padding algorithm or padding sizes.
     data_format : {'NCHW', 'NCDHW', 'NHWC', 'NDHWC'}, optional
         The optional data format.
@@ -157,7 +157,7 @@ def convolution(
        The weight tensor.
     strides : Sequence[int], optional
         The stride(s) of sliding window.
-    padding : Union[{'VALID', 'SAME'}, Sequence[int]], optional
+    padding : Union[str, Sequence[int]], optional
         The padding algorithm or padding size(s).
     data_format : {'NCHW', 'NCDHW', 'NHWC', 'NDHWC'}, optional
         The optional data format.
@@ -223,7 +223,7 @@ def conv_transpose(
         The determined shape of output.
     strides : Sequence[int]
         The stride(s) of sliding window.
-    padding : Union[{'VALID', 'SAME'}, Sequence[int]], optional
+    padding : Union[str, Sequence[int]], optional
         The padding algorithm or padding size(s).
     data_format : {'NCHW', 'NCDHW', 'NHWC', 'NDHWC'}, optional
         The optional data format.
@@ -292,7 +292,7 @@ def conv2d(
        The weight tensor.
     strides : Sequence[int]
         The stride(s) of sliding window.
-    padding : Union[{'VALID', 'SAME'}, Sequence[int]]
+    padding : Union[str, Sequence[int]]
         The padding algorithm or padding sizes.
     data_format : {'NCHW', 'NHWC'}, optional
         The optional data format.
@@ -332,7 +332,7 @@ def conv2d_transpose(
         The determined shape of output.
     strides : Sequence[int]
         The stride(s) of sliding window.
-    padding : Union[{'VALID', 'SAME'}, Sequence[int]]
+    padding : Union[str, Sequence[int]]
         The padding algorithm or padding sizes.
     data_format : {'NCHW', 'NHWC'}, optional
         The optional data format.
@@ -370,7 +370,7 @@ def depthwise_conv2d(
        The weight tensor.
     strides : Sequence[int]
         The stride(s) of sliding window.
-    padding : Union[{'VALID', 'SAME'}, Sequence[int]]
+    padding : Union[str, Sequence[int]]
         The padding algorithm or padding sizes.
     data_format : {'NCHW', 'NHWC'}, optional
         The optional data format.
@@ -590,7 +590,7 @@ def max_pool(
         The size(s) of sliding window.
     strides : Sequence[int]
         The stride(s) of sliding window.
-    padding : Union[{'valid', 'same'}, Sequence[int]]
+    padding : Union[str, Sequence[int]]
         The padding algorithm or padding sizes.
     data_format : {'NCHW', 'NCDHW', 'NHWC', 'NDHWC'}, optional
         The optional data format.
@@ -650,7 +650,7 @@ def max_pool2d(
         The size(s) of sliding window.
     strides : Sequence[int], optional
         The stride(s) of sliding window.
-    padding : Union[{'valid', 'same'}, Sequence[int]]
+    padding : Union[str, Sequence[int]]
         The padding algorithm or padding size(s).
     data_format : {'NCHW', 'NCDHW', 'NHWC', 'NDHWC'}, optional
         The optional data format.

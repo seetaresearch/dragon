@@ -274,7 +274,7 @@ PYBIND11_MODULE(libdragon_python, m) {
           })
 
       /*! \brief Load tensors and graph from a ONNX model */
-      .def("ImportONNXModel", [](Workspace* self, const string& model_path) {
+      .def("PrepareONNXModel", [](Workspace* self, const string& model_path) {
         GraphDef init_graph, pred_graph;
         onnx::ONNXBackend onnx_backend;
         onnx_backend.Prepare(model_path, &init_graph, &pred_graph);

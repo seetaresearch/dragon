@@ -201,15 +201,13 @@ class Module(object):
         else:
             raise ValueError(
                 "Saving format should be in ('hdf5', 'npz', 'pkl', 'npz_dict').\n"
-                "Format <%s> is not supported." % format
-            )
+                "Format <%s> is not supported." % format)
 
         if verbose:
             for info in matched_info:
                 logging.info(
                     'Weight({}) loaded, Size: ({})'
-                    .format(info[0], ', '.join([str(d) for d in info[1]]))
-                )
+                    .format(info[0], ', '.join([str(d) for d in info[1]])))
 
     def save_weights(self, filepath, format=None):
         """Save weights into a binary file.
@@ -241,8 +239,7 @@ class Module(object):
         else:
             raise ValueError(
                 "Saving format should be in ('hdf5', 'npz', 'pkl', 'npz_dict').\n"
-                "Format <%s> is not supported." % format
-            )
+                "Format <%s> is not supported." % format)
 
     @staticmethod
     def _dedupe_weights(weights):

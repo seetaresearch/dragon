@@ -29,6 +29,7 @@ from dragon._api import losses
 from dragon._api import math
 from dragon._api import metrics
 from dragon._api import nn
+from dragon._api import onnx
 from dragon._api import optimizers
 from dragon._api import random
 from dragon._api import vision

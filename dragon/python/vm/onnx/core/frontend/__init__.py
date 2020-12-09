@@ -8,13 +8,3 @@
 #     <https://opensource.org/licenses/BSD-2-Clause>
 #
 # ------------------------------------------------------------
-
-from __future__ import absolute_import
-from __future__ import division
-from __future__ import print_function
-
-from dragon.vm.onnx.core.nodes import activation
-from dragon.vm.onnx.core.nodes import array
-from dragon.vm.onnx.core.nodes import normalization
-from dragon.vm.onnx.core.nodes import math
-from dragon.vm.onnx.core.nodes import vision

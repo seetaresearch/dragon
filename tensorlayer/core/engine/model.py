@@ -3,6 +3,7 @@ from __future__ import division
 from __future__ import print_function
 
 from dragon.core.framework import context
+from dragon.core.util import string
 from dragon.vm.tensorlayer.core.engine import module
 
 
@@ -83,10 +84,10 @@ class Model(module.Module):
             return self.forward(inputs, **kwargs)
 
     def __repr__(self):
-        tmpstr = self.name + '(\n'
+        tmp_str = self.name + '(\n'
         for idx, layer in enumerate(self.all_layers):
-            modstr = layer.__repr__()
-            modstr = self._addindent(modstr, 2)
-            tmpstr = tmpstr + '  (' + layer.name + '): ' + modstr + '\n'
-        tmpstr = tmpstr + ')'
-        return tmpstr
+            mod_str = layer.__repr__()
+            mod_str = string.add_indent(mod_str, 2)
+            tmp_str = tmp_str + '  (' + layer.name + '): ' + mod_str + '\n'
+        tmp_str = tmp_str + ')'
+        return tmp_str

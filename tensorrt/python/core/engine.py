@@ -442,12 +442,10 @@ def check_input_validity(index, array, binding):
                 raise TypeError(
                     'Wrong dtype for input %i.\n'
                     'Expected %s, got %s. Cannot safely cast.' %
-                    (index, binding.dtype, array.dtype)
-                )
+                    (index, binding.dtype, array.dtype))
         else:
             raise TypeError(
                 'Wrong dtype for input %i.\n'
                 'Expected %s, got %s.' %
-                (index, binding.dtype, array.dtype)
-            )
+                (index, binding.dtype, array.dtype))
     return array

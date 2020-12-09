@@ -22,24 +22,17 @@ from dragon.core.framework import types
 from dragon.vm.tensorflow.core.framework import constant_op
 
 
-def convert_to_tensor(
-    value,
-    dtype=None,
-    name=None,
-    preferred_dtype=None,
-):
+def convert_to_tensor(value, dtype=None, name=None):
     """Converts the given value to a Tensor.
 
     Parameters
     ----------
-    value : number, sequence or numpy.ndarray
+    value : Union[number, Sequence, numpy.ndarray]
         The value to convert.
     dtype : dragon.vm.tensorflow.dtypes.DType, optional
         The optional data type.
     name : str, optional
         The Optional name.
-    preferred_dtype : dragon.vm.tensorflow.dtypes.DType, optional
-        The optional type when ``dtype`` is *None*.
 
     Returns
     -------
@@ -108,4 +101,4 @@ def device(device_name):
         id = int(id)
     except Exception:
         raise ValueError('The device id should be a integer.')
-    return context.device(device, device_id=id)
+    return context.device(device, device_index=id)
