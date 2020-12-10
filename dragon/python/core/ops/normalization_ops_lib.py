@@ -37,7 +37,7 @@ class BatchNorm(Operator):
                 'momentum': self.momentum,
                 'epsilon': self.epsilon,
                 'use_stats': self.use_stats,
-            }
+            },
         }
 
     def forward(self, inputs):
@@ -60,7 +60,7 @@ class GroupNorm(Operator):
                 'axis': self.axis,
                 'group': self.group,
                 'epsilon': self.epsilon,
-            }
+            },
         }
 
     def forward(self, inputs):
@@ -87,7 +87,7 @@ class LpNormalize(Operator):
                 'num_axes': self.num_axes,
                 'epsilon': self.epsilon,
                 'reduction': self.reduction,
-            }
+            },
         }
 
     def forward(self, inputs):
@@ -114,7 +114,7 @@ class LocalResponseNorm(Operator):
                 'beta': self.beta,
                 'bias': self.bias,
                 'data_format': self.data_format,
-            }
+            },
         }
 
     def forward(self, inputs):

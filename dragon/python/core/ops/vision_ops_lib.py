@@ -91,7 +91,9 @@ class BiasAdd(Operator):
     def attributes(self):
         return {
             'op_type': 'BiasAdd',
-            'arguments': {'data_format': self.data_format},
+            'arguments': {
+                'data_format': self.data_format,
+            },
         }
 
     def forward(self, inputs, inplace=False):
@@ -101,9 +103,6 @@ class BiasAdd(Operator):
 
 class Conv2d(ConvNd):
     """Conv2d operator."""
-
-    def __init__(self, key, dev, **kwargs):
-        super(Conv2d, self).__init__(key, dev, **kwargs)
 
 
 class ConvTranspose2d(ConvNd):
@@ -154,15 +153,9 @@ class DepthToSpace(Operator):
 class DepthwiseConv2d(ConvNd):
     """DepthwiseConv2d operator."""
 
-    def __init__(self, key, dev, **kwargs):
-        super(DepthwiseConv2d, self).__init__(key, dev, **kwargs)
-
 
 class Pool2d(PoolNd):
     """Pool2d operator."""
-
-    def __init__(self, key, dev, **kwargs):
-        super(Pool2d, self).__init__(key, dev, **kwargs)
 
 
 class Resize(Operator):
@@ -182,31 +175,25 @@ class Resize(Operator):
             'arguments': {
                 'mode': self.mode,
                 'align_corners': self.align_corners,
-                'sizes_descs': [
-                    '${{HANDLE}}/sizes[{}]'
-                    .format(n) for n in range(self.num_sizes)],
-                'scales_descs': [
-                    '${{HANDLE}}/scales[{}]'
-                    .format(n) for n in range(self.num_scales)],
                 'data_format': self.data_format,
-            }
+                'sizes_desc': '${HANDLE}/sizes'
+                if self.num_sizes > 0 else None,
+                'scales_desc': '${HANDLE}/scales'
+                if self.num_scales > 0 else None,
+            },
         }
 
-    def feed(self, ws, handle, sizes, scales):
-        for i in range(self.num_sizes):
-            self.feed_arg(
-                ws, '{}/sizes[{}]'.format(handle, i),
-                sizes[i], 'int64')
-        for i in range(self.num_scales):
-            self.feed_arg(
-                ws, '{}/scales[{}]'.format(handle, i),
-                scales[i], 'float32')
+    def setup(self, ws, handle, sizes, scales):
+        if sizes is not None:
+            self.feed_arg(ws, '%s/sizes' % handle, sizes, 'int64')
+        if scales is not None:
+            self.feed_arg(ws, '%s/scales' % handle, scales, 'float32')
 
     def forward(self, inputs, sizes=None, scales=None):
         return self.dispatch(
             inputs, [self.alloc()],
             callback=lambda ws, handle:
-                self.feed(ws, handle, sizes, scales),
+                self.setup(ws, handle, sizes, scales),
         )
 
 

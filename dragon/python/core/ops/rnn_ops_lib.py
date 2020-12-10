@@ -20,12 +20,6 @@ from dragon.core.framework.ops import Operator
 class LSTMCell(Operator):
     """LSTMCell operator."""
 
-    def __init__(self, key, dev, **kwargs):
-        super(LSTMCell, self).__init__(key, dev, **kwargs)
-
-    def attributes(self):
-        return {'op_type': 'LSTMCell', 'arguments': {}}
-
     def forward(self, inputs):
         outputs = [self.alloc() for _ in range(2)]
         return self.dispatch(inputs, outputs)
@@ -54,7 +48,7 @@ class Recurrent(Operator):
                 'rnn_input_mode': 'linear',
                 'dropout_ratio': self.dropout_ratio,
                 'phase': 'TRAIN' if self.is_training else 'TEST'
-            }
+            },
         }
 
     def forward(self, inputs):
@@ -87,7 +81,7 @@ class RNNParamSet(Operator):
                 'layer_id': self.layer_id,
                 'param_id': self.param_id,
                 'rnn_mode': self.mode,
-            }
+            },
         }
 
     def forward(self, inputs):

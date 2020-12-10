@@ -134,15 +134,9 @@ class BatchNorm(function.Function):
 class Conv2d(_ConvNd):
     """Conv2d function."""
 
-    def __init__(self, key, dev, **kwargs):
-        super(Conv2d, self).__init__(key, dev, **kwargs)
-
 
 class ConvTranspose2d(_ConvNd):
     """ConvTranspose2d function."""
-
-    def __init__(self, key, dev, **kwargs):
-        super(ConvTranspose2d, self).__init__(key, dev, **kwargs)
 
 
 class CTCLoss(_Loss):
@@ -165,30 +159,28 @@ class CTCLoss(_Loss):
 class DepthwiseConv2d(_ConvNd):
     """DepthwiseConv2d function."""
 
-    def __init__(self, key, dev, **kwargs):
-        super(DepthwiseConv2d, self).__init__(key, dev, **kwargs)
-
 
 class Dropout(function.Function):
     """Dropout function."""
 
-    def __init__(self, key, dev, **kwargs):
-        super(Dropout, self).__init__(key, dev, **kwargs)
-
     def attributes(self):
         return {
             'op_type': 'Dropout',
-            'arguments': {'ratio_desc': '${HANDLE}/ratio'},
+            'arguments': {
+                'ratio_desc': '${HANDLE}/ratio',
+            },
         }
 
-    def feed(self, ws, handle, ratio):
+    def setup(self, ws, handle, ratio):
         self.feed_arg(ws, '{}/ratio'.format(handle), ratio, 'float32')
 
     def forward(self, input, ratio, inplace=False):
         out = input if inplace else self.alloc()
-        return self.dispatch([input], [out],
-                             callback=lambda ws, handle:
-                             self.feed(ws, handle, ratio))
+        return self.dispatch(
+            [input], [out],
+            callback=lambda ws, handle:
+                self.setup(ws, handle, ratio),
+        )
 
 
 class DropBlock2d(Dropout):
@@ -202,9 +194,9 @@ class DropBlock2d(Dropout):
         return {
             'op_type': 'DropBlock2d',
             'arguments': {
-                'ratio_desc': '${HANDLE}/ratio',
-                'block_size': self.block_size,
                 'data_format': 'NCHW',
+                'block_size': self.block_size,
+                'ratio_desc': '${HANDLE}/ratio',
             }
         }
 
@@ -212,13 +204,12 @@ class DropBlock2d(Dropout):
 class DropPath(Dropout):
     """DropPath function."""
 
-    def __init__(self, key, dev, **kwargs):
-        super(DropPath, self).__init__(key, dev, **kwargs)
-
     def attributes(self):
         return {
             'op_type': 'DropPath',
-            'arguments': {'ratio_desc': '${HANDLE}/ratio'},
+            'arguments': {
+                'ratio_desc': '${HANDLE}/ratio',
+            },
         }
 
 
@@ -253,7 +244,7 @@ class GroupNorm(function.Function):
                 'axis': 1,
                 'group': self.group,
                 'epsilon': self.epsilon,
-            }
+            },
         }
 
     def forward(self, input, weight, bias):
@@ -299,24 +290,18 @@ class HardSwish(_Activation):
 class L1Loss(_Loss):
     """L1Loss function."""
 
-    def __init__(self, key, dev, **kwargs):
-        super(L1Loss, self).__init__(key, dev, **kwargs)
-
     def attributes(self):
         return {
             'op_type': 'L1Loss',
             'arguments': {
                 'scale': 1.,
                 'reduction': self.reduction,
-            }
+            },
         }
 
 
 class L2Loss(_Loss):
     """L2Loss function."""
-
-    def __init__(self, key, dev, **kwargs):
-        super(L2Loss, self).__init__(key, dev, **kwargs)
 
     def attributes(self):
         return {
@@ -324,15 +309,12 @@ class L2Loss(_Loss):
             'arguments': {
                 'scale': 2.,
                 'reduction': self.reduction,
-            }
+            },
         }
 
 
 class Linear(function.Function):
     """Linear function."""
-
-    def __init__(self, key, dev, **kwargs):
-        super(Linear, self).__init__(key, dev, **kwargs)
 
     def attributes(self):
         return {
@@ -368,7 +350,7 @@ class LocalResponseNorm(function.Function):
                 'beta': self.beta,
                 'bias': self.bias,
                 'data_format': 'NCHW',
-            }
+            },
         }
 
     def forward(self, input):
@@ -393,7 +375,7 @@ class LpNormalize(function.Function):
                 'epsilon': self.epsilon,
                 'num_axes': 1,
                 'reduction': 'SUM',
-            }
+            },
         }
 
     def forward(self, input, out=None):
@@ -402,12 +384,6 @@ class LpNormalize(function.Function):
 
 class LSTMCell(function.Function):
     """LSTMCell function."""
-
-    def __init__(self, key, dev, **kwargs):
-        super(LSTMCell, self).__init__(key, dev, **kwargs)
-
-    def attributes(self):
-        return {'op_type': 'LSTMCell', 'arguments': {}}
 
     def forward(self, input, cx):
         outputs = [self.alloc() for _ in range(2)]
@@ -428,7 +404,7 @@ class NLLLoss(_Loss):
                 'axis': 1,
                 'reduction': self.reduction,
                 'ignore_index': self.ignore_index,
-            }
+            },
         }
 
 
@@ -437,7 +413,6 @@ class Pad(function.Function):
 
     def __init__(self, key, dev, **kwargs):
         super(Pad, self).__init__(key, dev, **kwargs)
-        self.ndim = kwargs.get('ndim', 0)
         self.value = kwargs.get('value', 0.)
         self.mode = kwargs.get('mode', 'CONSTANT')
 
@@ -447,41 +422,27 @@ class Pad(function.Function):
             'arguments': {
                 'mode': self.mode,
                 'value': self.value,
-                'pads_descs': [
-                    '${{HANDLE}}/pads[{}]'
-                    .format(n) for n in range(self.ndim * 2)
-                ],
-            }
+                'pads_desc': '${HANDLE}/pads',
+            },
         }
 
-    def feed(self, ws, handle, pads):
-        for i, e in enumerate(pads):
-            self.feed_arg(
-                ws,
-                '{}/pads[{}]'.format(handle, i),
-                e, 'int64'
-            )
+    def setup(self, ws, handle, pads):
+        self.feed_arg(ws, '%s/pads' % handle, pads, 'int64')
 
     def forward(self, input, pads):
         return self.dispatch(
             [input], [self.alloc()],
             callback=lambda ws, handle:
-                self.feed(ws, handle, pads),
+                self.setup(ws, handle, pads),
         )
 
 
 class Pool2d(_PoolNd):
     """Pool2d function."""
 
-    def __init__(self, key, dev, **kwargs):
-        super(Pool2d, self).__init__(key, dev, **kwargs)
-
 
 class PRelu(function.Function):
     """PRelu function."""
-
-    def __init__(self, key, dev, **kwargs):
-        super(PRelu, self).__init__(key, dev, **kwargs)
 
     def attributes(self):
         return {
@@ -552,9 +513,6 @@ class Relu(_Activation):
 class Relu6(_Activation):
     """Relu6 function."""
 
-    def __init__(self, key, dev, **kwargs):
-        super(Relu6, self).__init__(key, dev, **kwargs)
-
     def attributes(self):
         return {
             'op_type': 'Relu',
@@ -583,30 +541,24 @@ class Resize(function.Function):
                 'mode': self.mode,
                 'align_corners': self.align_corners,
                 'data_format': 'NCHW',
-                'sizes_descs': [
-                    '${{HANDLE}}/sizes[{}]'
-                    .format(n) for n in range(self.num_sizes)],
-                'scales_descs': [
-                    '${{HANDLE}}/scales[{}]'
-                    .format(n) for n in range(self.num_scales)],
-            }
+                'sizes_desc': '${HANDLE}/sizes'
+                if self.num_sizes > 0 else None,
+                'scales_desc': '${HANDLE}/scales'
+                if self.num_scales > 0 else None,
+            },
         }
 
-    def feed(self, ws, handle, sizes, scales):
-        for i in range(self.num_sizes):
-            self.feed_arg(
-                ws, '{}/sizes[{}]'.format(handle, i),
-                sizes[i], 'int64')
-        for i in range(self.num_scales):
-            self.feed_arg(
-                ws, '{}/scales[{}]'.format(handle, i),
-                scales[i], 'float32')
+    def setup(self, ws, handle, sizes, scales):
+        if sizes is not None:
+            self.feed_arg(ws, '%s/sizes' % handle, sizes, 'int64')
+        if scales is not None:
+            self.feed_arg(ws, '%s/scales' % handle, scales, 'float32')
 
     def forward(self, input, sizes=None, scales=None):
         return self.dispatch(
             [input], [self.alloc()],
             callback=lambda ws, handle:
-                self.feed(ws, handle, sizes, scales),
+                self.setup(ws, handle, sizes, scales),
         )
 
 
@@ -646,15 +598,12 @@ class RNNParamSet(function.Function):
 class SigmoidCrossEntropy(_Loss):
     """SigmoidCrossEntropy function."""
 
-    def __init__(self, key, dev, **kwargs):
-        super(SigmoidCrossEntropy, self).__init__(key, dev, **kwargs)
-
     def attributes(self):
         return {
             'op_type': 'SigmoidCrossEntropy',
             'arguments': {
                 'reduction': self.reduction,
-            }
+            },
         }
 
 
@@ -693,7 +642,7 @@ class SmoothL1Loss(_Loss):
             'arguments': {
                 'beta': float(self.beta),
                 'reduction': self.reduction,
-            }
+            },
         }
 
 
@@ -727,7 +676,7 @@ class SparseSoftmaxCrossEntropy(_Loss):
                 'axis': 1,
                 'reduction': self.reduction,
                 'ignore_index': self.ignore_index,
-            }
+            },
         }
 
 

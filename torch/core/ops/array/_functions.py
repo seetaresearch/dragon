@@ -42,38 +42,25 @@ class ArgReduce(function.Function):
 class Assign(function.Function):
     """Assign function."""
 
-    def __init__(self, key, dev, **kwargs):
-        super(Assign, self).__init__(key, dev, **kwargs)
-        self.ndim = kwargs.get('ndim', 0)
-
     def attributes(self):
         return {
             'op_type': 'Assign',
             'arguments': {
-                'starts_descs': [
-                    '${{HANDLE}}/starts[{}]'
-                    .format(n) for n in range(self.ndim)],
-                'sizes_descs': [
-                    '${{HANDLE}}/sizes[{}]'
-                    .format(n) for n in range(self.ndim)],
+                'starts_desc': '${HANDLE}/starts',
+                'sizes_desc': '${HANDLE}/sizes',
             },
         }
 
-    def feed(self, ws, handle, starts, sizes):
-        for i in range(self.ndim):
-            self.feed_arg(
-                ws, '{}/starts[{}]'.format(handle, i),
-                starts[i], 'int64')
-            self.feed_arg(
-                ws, '{}/sizes[{}]'.format(handle, i),
-                sizes[i], 'int64')
+    def setup(self, ws, handle, starts, sizes):
+        self.feed_arg(ws, '%s/starts' % handle, starts, 'int64')
+        self.feed_arg(ws, '%s/sizes' % handle, sizes, 'int64')
 
     def forward(self, out, starts, sizes, input):
         self._check_device([input, out])
         return self.dispatch(
             [out, input], [self.alloc(out)],
             callback=lambda ws, handle:
-                self.feed(ws, handle, starts, sizes),
+                self.setup(ws, handle, starts, sizes),
             no_grad=True,
             check_device=False,
         )
@@ -128,7 +115,6 @@ class ChannelNormalize(function.Function):
     def __init__(self, key, dev, **kwargs):
         super(ChannelNormalize, self).__init__(key, dev, **kwargs)
         self.axis = kwargs.get('axis', -1)
-        self.ndim = kwargs.get('ndim', 0)
         self.mean = kwargs.get('mean', None)
         self.std = kwargs.get('std', None)
         self.dtype = kwargs.get('dtype', 'float32')
@@ -141,23 +127,18 @@ class ChannelNormalize(function.Function):
                 'mean': self.mean,
                 'std': self.std,
                 'dtype': self.dtype,
-                'perm_descs': [
-                    '${{HANDLE}}/perm[{}]'
-                    .format(n) for n in range(self.ndim)],
+                'perm_desc': '${HANDLE}/perm',
             }
         }
 
-    def feed(self, ws, handle, perm):
-        for i in range(self.ndim):
-            self.feed_arg(
-                ws, '{}/perm[{}]'.format(handle, i),
-                perm[i], 'int64')
+    def setup(self, ws, handle, perm):
+        self.feed_arg(ws, '%s/perm' % handle, perm, 'int64')
 
     def forward(self, input, perm):
         return self.dispatch(
             [input], [self.alloc()],
             callback=lambda ws, handle:
-                self.feed(ws, handle, perm),
+                self.setup(ws, handle, perm),
         )
 
 
@@ -226,31 +207,20 @@ class Cumulative(function.Function):
 class Expand(function.Function):
     """Expand function."""
 
-    def __init__(self, key, dev, **kwargs):
-        super(Expand, self).__init__(key, dev, **kwargs)
-        self.ndim = kwargs.get('ndim', 0)
-
     def attributes(self):
         return {
             'op_type': 'Expand',
-            'arguments': {
-                'dims_descs': [
-                    '${{HANDLE}}/dims[{}]'
-                    .format(n) for n in range(self.ndim)],
-            },
+            'arguments': {'dims_desc': '${HANDLE}/dims'},
         }
 
-    def feed(self, ws, handle, times):
-        for i in range(self.ndim):
-            self.feed_arg(
-                ws, '{}/dims[{}]'.format(handle, i),
-                times[i], 'int64')
+    def setup(self, ws, handle, times):
+        self.feed_arg(ws, '%s/dims' % handle, times, 'int64')
 
     def forward(self, input, dims):
         return self.dispatch(
             [input], [self.alloc()],
             callback=lambda ws, handle:
-                self.feed(ws, handle, dims),
+                self.setup(ws, handle, dims),
         )
 
 
@@ -299,24 +269,12 @@ class IndexSelect(function.Function):
 class MaskedAssign(function.Function):
     """MaskedAssign function."""
 
-    def __init__(self, key, dev, **kwargs):
-        super(MaskedAssign, self).__init__(key, dev, **kwargs)
-
-    def attributes(self):
-        return {'op_type': 'MaskedAssign', 'arguments': {}}
-
     def forward(self, out, mask, input):
         return self.dispatch([out, input, mask], [self.alloc(out)])
 
 
 class MaskedSelect(function.Function):
     """MaskedSelect function."""
-
-    def __init__(self, key, dev, **kwargs):
-        super(MaskedSelect, self).__init__(key, dev, **kwargs)
-
-    def attributes(self):
-        return {'op_type': 'MaskedSelect', 'arguments': {}}
 
     def forward(self, input, mask, out=None):
         return self.dispatch([input, mask], [self.alloc(out)])
@@ -346,12 +304,6 @@ class Multinomial(function.Function):
 
 class NonZero(function.Function):
     """NonZero function."""
-
-    def __init__(self, key, dev, **kwargs):
-        super(NonZero, self).__init__(key, dev, **kwargs)
-
-    def attributes(self):
-        return {'op_type': 'NonZero', 'arguments': {}}
 
     def forward(self, input, out=None):
         return self.dispatch([input], [self.alloc(out)], no_grad=True)
@@ -401,68 +353,46 @@ class Reduce(function.Function):
 class Reshape(function.Function):
     """Reshape function."""
 
-    def __init__(self, key, dev, **kwargs):
-        super(Reshape, self).__init__(key, dev, **kwargs)
-        self.ndim = kwargs.get('ndim', 0)
-
     def attributes(self):
         return {
             'op_type': 'Reshape',
             'arguments': {
-                'dims_descs': [
-                    '${{HANDLE}}/dims[{}]'
-                    .format(n) for n in range(self.ndim)],
+                'dims_desc': '${HANDLE}/dims',
             },
         }
 
-    def feed(self, ws, handle, shape):
-        for i in range(self.ndim):
-            self.feed_arg(
-                ws, '{}/dims[{}]'.format(handle, i),
-                shape[i], 'int64')
+    def setup(self, ws, handle, shape):
+        self.feed_arg(ws, '%s/dims' % handle, shape, 'int64')
 
     def forward(self, input, shape, out=None):
         return self.dispatch(
             [input], [self.alloc(out)],
             callback=lambda ws, handle:
-                self.feed(ws, handle, shape),
+                self.setup(ws, handle, shape),
         )
 
 
 class Slice(function.Function):
     """Slice function."""
 
-    def __init__(self, key, dev, **kwargs):
-        super(Slice, self).__init__(key, dev, **kwargs)
-        self.ndim = kwargs.get('ndim', 0)
-
     def attributes(self):
         return {
             'op_type': 'Slice',
             'arguments': {
-                'starts_descs': [
-                    '${{HANDLE}}/starts[{}]'
-                    .format(n) for n in range(self.ndim)],
-                'sizes_descs': [
-                    '${{HANDLE}}/sizes[{}]'
-                    .format(n) for n in range(self.ndim)],
+                'starts_desc': '${HANDLE}/starts',
+                'sizes_desc': '${HANDLE}/sizes',
             },
         }
 
-    def feed(self, ws, handle, starts, sizes):
-        for i in range(self.ndim):
-            self.feed_arg(
-                ws, '{}/starts[{}]'.format(handle, i),
-                starts[i], 'int64')
-            self.feed_arg(
-                ws, '{}/sizes[{}]'.format(handle, i),
-                sizes[i], 'int64')
+    def setup(self, ws, handle, starts, sizes):
+        self.feed_arg(ws, '%s/starts' % handle, starts, 'int64')
+        self.feed_arg(ws, '%s/sizes' % handle, sizes, 'int64')
 
     def forward(self, input, starts, sizes):
         return self.dispatch(
             [input], [self.alloc()],
             callback=lambda ws, handle:
-                self.feed(ws, handle, starts, sizes)
+                self.setup(ws, handle, starts, sizes)
         )
 
 
@@ -551,33 +481,22 @@ class Squeeze(function.Function):
 class Tile(function.Function):
     """Tile function."""
 
-    def __init__(self, key, dev, **kwargs):
-        super(Tile, self).__init__(key, dev, **kwargs)
-        self.ndim = kwargs.get('ndim', 0)
-
     def attributes(self):
         return {
             'op_type': 'Tile',
             'arguments': {
-                'repeats_descs': [
-                    '${{HANDLE}}/repeats[{}]'
-                    .format(n) for n in range(self.ndim)],
+                'repeats_desc': '${HANDLE}/repeats',
             },
         }
 
-    def feed(self, ws, handle, repeats):
-        for i in range(self.ndim):
-            self.feed_arg(
-                ws,
-                '{}/repeats[{}]'.format(handle, i),
-                repeats[i], 'int64',
-            )
+    def setup(self, ws, handle, repeats):
+        self.feed_arg(ws, '%s/repeats' % handle, repeats, 'int64')
 
     def forward(self, input, times):
         return self.dispatch(
             [input], [self.alloc()],
             callback=lambda ws, handle:
-                self.feed(ws, handle, times),
+                self.setup(ws, handle, times),
         )
 
 
@@ -592,23 +511,19 @@ class Transpose(function.Function):
         return {
             'op_type': 'Transpose',
             'arguments': {
-                'perm_descs': [
-                    '${{HANDLE}}/perm[{}]'
-                    .format(n) for n in range(self.ndim)],
+                'perm_desc': '${HANDLE}/perm'
+                if self.ndim > 0 else None,
             },
         }
 
-    def feed(self, ws, handle, perm):
-        for i in range(self.ndim):
-            self.feed_arg(
-                ws, '{}/perm[{}]'.format(handle, i),
-                perm[i], 'int64')
+    def setup(self, ws, handle, perm):
+        self.feed_arg(ws, '%s/perm' % handle, perm, 'int64')
 
     def forward(self, input, perm):
         return self.dispatch(
             [input], [self.alloc()],
             callback=lambda ws, handle:
-                self.feed(ws, handle, perm),
+                self.setup(ws, handle, perm),
         )
 
 
@@ -682,12 +597,6 @@ class UnSqueeze(function.Function):
 
 class Where(function.Function):
     """Where function."""
-
-    def __init__(self, key, dev, **kwargs):
-        super(Where, self).__init__(key, dev, **kwargs)
-
-    def attributes(self):
-        return {'op_type': 'Where', 'arguments': {}}
 
     def forward(self, condition, x, y):
         return self.dispatch([x, y, condition], [self.alloc()])

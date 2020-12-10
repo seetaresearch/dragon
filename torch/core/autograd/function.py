@@ -102,6 +102,7 @@ class Function(object):
             The attribute dict.
 
         """
+        return {'op_type': self.__class__.__name__, 'arguments': {}}
 
     def dispatch(
         self,
@@ -124,7 +125,7 @@ class Function(object):
             pre_callback=callback,
         )
 
-    def feed_arg(self, ws, name, value, dtype='int64'):
+    def feed_arg(self, ws, name, value, dtype):
         """Set the value of tensor argument."""
         ws.FeedTensor(name, numpy.array(value, dtype), self._arg_device)
 

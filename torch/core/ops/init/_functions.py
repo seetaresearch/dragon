@@ -22,20 +22,16 @@ class _Initializer(function.Function):
 
     def __init__(self, key, dev, **kwargs):
         super(_Initializer, self).__init__(key, dev, **kwargs)
-        self.ndim = kwargs.get('ndim', 0)
         self.dtype = kwargs.get('dtype', 'float32')
 
-    def feed(self, ws, handle, shape):
-        for i in range(self.ndim):
-            self.feed_arg(
-                ws, '{}/dims[{}]'.format(handle, i),
-                shape[i], 'int64')
+    def setup(self, ws, handle, shape):
+        self.feed_arg(ws, '%s/dims' % handle, shape, 'int64')
 
     def forward(self, out, shape, shape_like=None):
         return self.dispatch(
             [] if shape_like is None else [shape_like], [out],
             callback=lambda ws, handle:
-                self.feed(ws, handle, shape),
+                self.setup(ws, handle, shape),
             no_grad=True,
         )
 
@@ -53,9 +49,7 @@ class Eye(_Initializer):
             'arguments': {
                 'k': self.k,
                 'dtype': self.dtype,
-                'dims_descs': [
-                    '${{HANDLE}}/dims[{}]'.format(n)
-                    for n in range(self.ndim)],
+                'dims_desc': '${HANDLE}/dims',
             },
         }
 
@@ -73,9 +67,7 @@ class Fill(_Initializer):
             'arguments': {
                 'dtype': self.dtype,
                 'value': float(self.value),
-                'dims_descs': [
-                    '${{HANDLE}}/dims[{}]'.format(n)
-                    for n in range(self.ndim)],
+                'dims_desc': '${HANDLE}/dims',
             },
         }
 
@@ -85,7 +77,6 @@ class LinSpace(function.Function):
 
     def __init__(self, key, dev, **kwargs):
         super(LinSpace, self).__init__(key, dev, **kwargs)
-        self.ndim = kwargs.get('ndim', 0)
         self.num_intervals = kwargs.get('num_intervals', 1)
         self.dtype = kwargs.get('dtype', 'int64')
         self.axis = kwargs.get('axis', 0)
@@ -96,36 +87,22 @@ class LinSpace(function.Function):
             'arguments': {
                 'axis': self.axis,
                 'dtype': self.dtype,
-                'dims_descs': [
-                    '${{HANDLE}}/dims[{}]'.format(n)
-                    for n in range(self.ndim)],
-                'start_descs': [
-                    '${{HANDLE}}/start[{}]'
-                    .format(n) for n in range(self.num_intervals)],
-                'stop_descs': [
-                    '${{HANDLE}}/stop[{}]'
-                    .format(n) for n in range(self.num_intervals)],
+                'dims_desc': '${HANDLE}/dims',
+                'start_desc': '${HANDLE}/start',
+                'stop_desc': '${HANDLE}/stop',
             }
         }
 
-    def feed(self, ws, handle, shape, starts, stops):
-        for i, dim in enumerate(shape):
-            self.feed_arg(
-                ws, '{}/dims[{}]'.format(handle, i),
-                dim, 'int64')
-        for i in range(len(starts)):
-            self.feed_arg(
-                ws, '{}/start[{}]'.format(handle, i),
-                starts[i], 'float64')
-            self.feed_arg(
-                ws, '{}/stop[{}]'.format(handle, i),
-                stops[i], 'float64')
+    def setup(self, ws, handle, shape, starts, stops):
+        self.feed_arg(ws, '%s/dims' % handle, shape, 'int64')
+        self.feed_arg(ws, '%s/start' % handle, starts, 'float64')
+        self.feed_arg(ws, '%s/stop' % handle, stops, 'float64')
 
     def forward(self, shape, starts, stops, out=None):
         return self.dispatch(
             [], [self.alloc(out)],
             callback=lambda ws, handle:
-                self.feed(ws, handle, shape, starts, stops),
+                self.setup(ws, handle, shape, starts, stops),
             no_grad=True,
         )
 
@@ -146,14 +123,14 @@ class Permutation(function.Function):
             }
         }
 
-    def feed(self, ws, handle, limit):
+    def setup(self, ws, handle, limit):
         self.feed_arg(ws, '{}/limit'.format(handle), limit, 'int64')
 
     def forward(self, limit, out=None):
         return self.dispatch(
             [], [self.alloc(out)],
             callback=lambda ws, handle:
-                self.feed(ws, handle, limit),
+                self.setup(ws, handle, limit),
             no_grad=True,
         )
 
@@ -173,9 +150,7 @@ class RandomNormal(_Initializer):
                 'dtype': self.dtype,
                 'mean': float(self.mean),
                 'std': float(self.std),
-                'dims_descs': [
-                    '${{HANDLE}}/dims[{}]'.format(n)
-                    for n in range(self.ndim)],
+                'dims_desc': '${HANDLE}/dims',
             },
         }
 
@@ -195,9 +170,7 @@ class RandomUniform(_Initializer):
                 'dtype': self.dtype,
                 'low': float(self.low),
                 'high': float(self.high),
-                'dims_descs': [
-                    '${{HANDLE}}/dims[{}]'.format(n)
-                    for n in range(self.ndim)],
+                'dims_desc': '${HANDLE}/dims',
             },
         }
 
@@ -207,7 +180,6 @@ class Range(function.Function):
 
     def __init__(self, key, dev, **kwargs):
         super(Range, self).__init__(key, dev, **kwargs)
-        self.num_args = kwargs.get('num_args', 3)
         self.dtype = kwargs.get('dtype', 'int64')
 
     def attributes(self):
@@ -215,22 +187,17 @@ class Range(function.Function):
             'op_type': 'Range',
             'arguments': {
                 'dtype': self.dtype,
-                'slice_descs': [
-                    '${{HANDLE}}/slice[{}]'
-                    .format(n) for n in range(self.num_args)],
+                'slice_desc': '${HANDLE}/slice',
             }
         }
 
-    def feed(self, ws, handle, slice_args):
-        for i in range(len(slice_args)):
-            self.feed_arg(
-                ws, '{}/slice[{}]'.format(handle, i),
-                slice_args[i], 'float64')
+    def setup(self, ws, handle, slice_args):
+        self.feed_arg(ws, '%s/slice' % handle, slice_args, 'float64')
 
     def forward(self, slice_args, out=None):
         return self.dispatch(
             [], [self.alloc(out)],
             callback=lambda ws, handle:
-            self.feed(ws, handle, slice_args),
+                self.setup(ws, handle, slice_args),
             no_grad=True,
         )

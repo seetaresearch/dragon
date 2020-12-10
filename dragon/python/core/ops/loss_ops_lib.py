@@ -29,7 +29,7 @@ class Loss(Operator):
             'op_type': self.__class__.__name__,
             'arguments': {
                 'reduction': self.reduction,
-            }
+            },
         }
 
     def forward(self, inputs):
@@ -39,15 +39,9 @@ class Loss(Operator):
 class L1Loss(Loss):
     """L1Loss operator."""
 
-    def __init__(self, key, dev, **kwargs):
-        super(L1Loss, self).__init__(key, dev, **kwargs)
-
 
 class L2Loss(Loss):
     """L2Loss operator."""
-
-    def __init__(self, key, dev, **kwargs):
-        super(L2Loss, self).__init__(key, dev, **kwargs)
 
 
 class NLLLoss(Loss):
@@ -71,9 +65,6 @@ class NLLLoss(Loss):
 
 class SigmoidCrossEntropy(Loss):
     """SigmoidCrossEntropy operator."""
-
-    def __init__(self, key, dev, **kwargs):
-        super(SigmoidCrossEntropy, self).__init__(key, dev, **kwargs)
 
 
 class SmoothL1Loss(Loss):

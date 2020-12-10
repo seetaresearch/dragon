@@ -35,23 +35,24 @@ class Activation(Operator):
 class Dropout(Operator):
     """Dropout operator."""
 
-    def __init__(self, key, dev, **kwargs):
-        super(Dropout, self).__init__(key, dev, **kwargs)
-
     def attributes(self):
         return {
             'op_type': 'Dropout',
-            'arguments': {'ratio_desc': '${HANDLE}/ratio'},
+            'arguments': {
+                'ratio_desc': '${HANDLE}/ratio',
+            },
         }
 
-    def feed(self, ws, handle, ratio):
-        self.feed_arg(ws, '{}/ratio'.format(handle), ratio, 'float32')
+    def setup(self, ws, handle, ratio):
+        self.feed_arg(ws, '%s/ratio' % handle, ratio, 'float32')
 
     def forward(self, inputs, ratio, inplace=False):
         outputs = [self.alloc(inputs[0]) if inplace else self.alloc()]
-        return self.dispatch(inputs, outputs,
-                             callback=lambda ws, handle:
-                             self.feed(ws, handle, ratio))
+        return self.dispatch(
+            inputs, outputs,
+            callback=lambda ws, handle:
+                self.setup(ws, handle, ratio),
+        )
 
 
 class DropBlock2d(Dropout):
@@ -66,9 +67,9 @@ class DropBlock2d(Dropout):
         return {
             'op_type': 'DropBlock2d',
             'arguments': {
-                'ratio_desc': '${HANDLE}/ratio',
                 'block_size': self.block_size,
                 'data_format': self.data_format,
+                'ratio_desc': '${HANDLE}/ratio',
             },
         }
 
@@ -76,13 +77,12 @@ class DropBlock2d(Dropout):
 class DropPath(Dropout):
     """DropPath operator."""
 
-    def __init__(self, key, dev, **kwargs):
-        super(DropPath, self).__init__(key, dev, **kwargs)
-
     def attributes(self):
         return {
             'op_type': 'DropPath',
-            'arguments': {'ratio_desc': '${HANDLE}/ratio'},
+            'arguments': {
+                'ratio_desc': '${HANDLE}/ratio',
+            },
         }
 
 
@@ -96,7 +96,9 @@ class Elu(Activation):
     def attributes(self):
         return {
             'op_type': 'Elu',
-            'arguments': {'alpha': float(self.alpha)},
+            'arguments': {
+                'alpha': float(self.alpha),
+            },
         }
 
 
@@ -146,7 +148,9 @@ class PRelu(Operator):
     def attributes(self):
         return {
             'op_type': 'PRelu',
-            'arguments': {'data_format': self.data_format},
+            'arguments': {
+                'data_format': self.data_format,
+            },
         }
 
     def forward(self, inputs):
@@ -163,20 +167,21 @@ class Relu(Activation):
     def attributes(self):
         return {
             'op_type': 'Relu',
-            'arguments': {'alpha': float(self.alpha)},
+            'arguments': {
+                'alpha': float(self.alpha),
+            },
         }
 
 
 class Relu6(Activation):
     """Relu6 operator."""
 
-    def __init__(self, key, dev, **kwargs):
-        super(Relu6, self).__init__(key, dev, **kwargs)
-
     def attributes(self):
         return {
             'op_type': 'Relu',
-            'arguments': {'max_value': 6.},
+            'arguments': {
+                'max_value': 6.,
+            },
         }
 
 
@@ -208,5 +213,7 @@ class Softmax(Activation):
     def attributes(self):
         return {
             'op_type': 'Softmax',
-            'arguments': {'axis': self.axis},
+            'arguments': {
+                'axis': self.axis,
+            },
         }

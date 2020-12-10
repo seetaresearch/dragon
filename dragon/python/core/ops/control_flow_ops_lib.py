@@ -20,50 +20,31 @@ from dragon.core.framework.ops import Operator
 class Assign(Operator):
     """Assign operator."""
 
-    def __init__(self, key, dev, **kwargs):
-        super(Assign, self).__init__(key, dev, **kwargs)
-        self.ndim = kwargs.get('ndim', 0)
-
     def attributes(self):
         return {
             'op_type': 'Assign',
             'arguments': {
-                'starts_descs': [
-                    '${{HANDLE}}/starts[{}]'
-                    .format(n) for n in range(self.ndim)],
-                'sizes_descs': [
-                    '${{HANDLE}}/sizes[{}]'
-                    .format(n) for n in range(self.ndim)],
+                'starts_desc': '${HANDLE}/starts',
+                'sizes_desc': '${HANDLE}/sizes',
             },
         }
 
-    def feed(self, ws, handle, starts, sizes):
-        for i in range(self.ndim):
-            self.feed_arg(
-                ws, '{}/starts[{}]'.format(handle, i),
-                starts[i], 'int64')
-            self.feed_arg(
-                ws, '{}/sizes[{}]'.format(handle, i),
-                sizes[i], 'int64')
+    def setup(self, ws, handle, starts, sizes):
+        self.feed_arg(ws, '%s/starts' % handle, starts, 'int64')
+        self.feed_arg(ws, '%s/sizes' % handle, sizes, 'int64')
 
     def forward(self, inputs, starts, sizes, inplace=False):
         outputs = [self.alloc(inputs[0]) if inplace else self.alloc()]
         return self.dispatch(
             inputs, outputs,
             callback=lambda ws, handle:
-                self.feed(ws, handle, starts, sizes),
+                self.setup(ws, handle, starts, sizes),
             no_grad=True,
         )
 
 
 class MaskedAssign(Operator):
     """MaskedAssign operator."""
-
-    def __init__(self, key, dev, **kwargs):
-        super(MaskedAssign, self).__init__(key, dev, **kwargs)
-
-    def attributes(self):
-        return {'op_type': 'MaskedAssign', 'arguments': {}}
 
     def forward(self, inputs, inplace=False):
         outputs = [self.alloc(inputs[0]) if inplace else self.alloc()]
