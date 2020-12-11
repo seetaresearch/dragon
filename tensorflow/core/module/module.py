@@ -26,7 +26,7 @@ from dragon.vm.tensorflow.core.ops import variables
 
 
 class Module(object):
-    """The base class of modules.
+    """The base class of neural network modules.
 
     Inherit this class to design a new module:
 
@@ -222,19 +222,22 @@ def flatten_module(
 
 
 def valid_identifier(name):
-    """Return **True** if the name can be a python identifier."""
+    """Return if the name can be a python identifier."""
     return bool(_VALID_IDENTIFIER.match(name))
 
 
 def _is_module(obj):
+    """Return if the object is a instance of module."""
     return isinstance(obj, Module)
 
 
 def _is_variable(obj):
+    """Return if the object is a variable."""
     return isinstance(obj, variables.VariableMetaclass)
 
 
 def _is_trainable_variable(obj):
+    """Return if the object is a trainable variable."""
     return _is_variable(obj) and getattr(obj, "trainable", False)
 
 

@@ -17,8 +17,8 @@ from __future__ import print_function
 from dragon.core import distributed
 from dragon.core.eager import context
 from dragon.core.ops import normalization_ops_lib
+from dragon.core.ops.utils import ArgHelper
 from dragon.core.ops.utils import OpSchema
-from dragon.core.ops.utils import parse_args
 from dragon.core.util import nest
 
 
@@ -61,7 +61,7 @@ def batch_norm(
         The output tensor.
 
     """
-    args = parse_args(locals())
+    args = ArgHelper.parse(locals())
     args['momentum'], args['epsilon'] = float(momentum), float(epsilon)
     op_lib = normalization_ops_lib.BatchNorm
     if context.executing_eagerly():
@@ -105,7 +105,7 @@ def group_norm(inputs, axis=-1, group=32, epsilon=1e-5, **kwargs):
         The output tensor.
 
     """
-    args = parse_args(locals())
+    args = ArgHelper.parse(locals())
     args['epsilon'] = float(epsilon)
     op_lib = normalization_ops_lib.GroupNorm
     if context.executing_eagerly():
@@ -217,7 +217,7 @@ def lp_normalize(inputs, axis=None, p=2, epsilon=1e-12, reduction='sum', **kwarg
         The output tensor.
 
     """
-    args = parse_args(locals())
+    args = ArgHelper.parse(locals())
     if axis is None:
         args['axis'], args['num_axes'] = 0, -1
     else:
@@ -284,7 +284,7 @@ def local_response_norm(
         The output tensor.
 
     """
-    args = parse_args(locals())
+    args = ArgHelper.parse(locals())
     if data_format not in ('NCHW', 'NHWC'):
         raise ValueError('Unsupported data format: %s' % data_format)
     args['alpha'], args['beta'], args['bias'] = \
@@ -345,7 +345,7 @@ def sync_batch_norm(
         The output tensor.
 
     """
-    args = parse_args(locals())
+    args = ArgHelper.parse(locals())
     args['momentum'], args['epsilon'] = float(momentum), float(epsilon)
     if process_group is None:
         process_group = distributed.get_group()

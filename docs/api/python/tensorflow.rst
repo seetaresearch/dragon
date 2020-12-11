@@ -9,6 +9,9 @@ vm.tensorflow
   `class GradientTape <tensorflow/GradientTape.html>`_
   : Record the operations for auto differentiation.
 
+  `class Module <tensorflow/Module.html>`_
+  : The base class of neural network modules.
+
   `class TensorShape <tensorflow/TensorShape.html>`_
   : Represent the a sequence of dimensions.
 
@@ -35,6 +38,9 @@ vm.tensorflow
 
   `constant(...) <tensorflow/constant.html>`_
   : Return a tensor initialized from the value.
+
+  `convert_to_tensor(...) <tensorflow/convert_to_tensor.html>`_
+  : Convert the given value to a tensor.
 
   `device(...) <tensorflow/device.html>`_
   : Context-manager to nest the device spec.
@@ -118,6 +124,7 @@ vm.tensorflow
   :hidden:
 
   tensorflow/GradientTape
+  tensorflow/Module
   tensorflow/TensorShape
   tensorflow/TensorSpec
   tensorflow/argsort
@@ -126,6 +133,7 @@ vm.tensorflow
   tensorflow/clip_by_value
   tensorflow/concat
   tensorflow/constant
+  tensorflow/convert_to_tensor
   tensorflow/device
   tensorflow/expand_dims
   tensorflow/eye

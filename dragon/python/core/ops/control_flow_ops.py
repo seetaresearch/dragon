@@ -19,7 +19,6 @@ from dragon.core.framework import ops
 from dragon.core.ops import control_flow_ops_lib
 from dragon.core.ops.utils import ArgHelper
 from dragon.core.ops.utils import OpSchema
-from dragon.core.ops.utils import parse_args
 
 
 @OpSchema.num_inputs(2)
@@ -45,7 +44,7 @@ def assign(inputs, starts=None, sizes=None, **kwargs):
         The output tensor.
 
     """
-    args = parse_args(locals())
+    args = ArgHelper.parse(locals())
     inplace = args.pop('inplace') if 'inplace' in args else False
     inputs[1] = ops.scalar_to_tensor(inputs[1], inputs[0].dtype)
     op_lib = control_flow_ops_lib.Assign
@@ -80,7 +79,7 @@ def masked_assign(inputs, **kwargs):
         The input tensor.
 
     """
-    args = parse_args(locals())
+    args = ArgHelper.parse(locals())
     inplace = args.pop('inplace') if 'inplace' in args else False
     inputs[1] = ops.scalar_to_tensor(inputs[1], inputs[0].dtype)
     op_lib = control_flow_ops_lib.MaskedAssign

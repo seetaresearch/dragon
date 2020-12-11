@@ -34,8 +34,7 @@ class OpSchema(object):
                 raise ValueError(
                     'The number of <inputs> is {}, '
                     'not in range: [min={}, max={}].'
-                    .format(len(inputs), min_num, max_num)
-                )
+                    .format(len(inputs), min_num, max_num))
 
         def decorated(inner_function):
             def wrapper(*args, **kwargs):
@@ -49,10 +48,11 @@ class OpSchema(object):
 
 
 class ArgHelper(object):
-    """Generate the descriptor for dynamic arguments."""
+    """Generate and parse the descriptor for tensor arguments."""
 
-    @classmethod
-    def desc(cls, name, as_target=True):
+    @staticmethod
+    def desc(name, as_target=True):
+        """Add desc for a single argument."""
         def decorated(inner_function):
             def wrapper(*args, **kwargs):
                 def generator(arguments):
@@ -60,23 +60,32 @@ class ArgHelper(object):
                     if arg is None:
                         return arguments
                     if types.is_tensor(arg):
-                        if context.executing_eagerly():
-                            arguments[name] = arg.get_value().tolist()
-                            return arguments
-                        if as_target:
-                            if 'extra_inputs' not in arguments:
-                                arguments['extra_inputs'] = []
-                            arguments['extra_inputs'].extend([arg])
-                        arguments.pop(name)
-                        arguments[name + '_desc'] = arg.id
+                        ArgHelper._convert_to_desc(arguments, name, arg, as_target)
                     return arguments
                 kwargs.update({'gen_desc_{}'.format(name): generator})
                 return inner_function(*args, **kwargs)
             return decorator.make_decorator(inner_function, wrapper)
         return decorated
 
-    @classmethod
-    def repeated_desc(cls, name, name_v2=None, dtype='int64', as_target=True):
+    @staticmethod
+    def parse(locals):
+        """Parse all the arguments into a dict."""
+        __all__ = locals
+        kwargs = __all__['kwargs']
+        del __all__['kwargs']
+        desc_generators = {}
+        for k, v in kwargs.items():
+            if 'gen_desc' in k:
+                desc_generators[k] = v
+        for k in desc_generators.keys():
+            kwargs.pop(k)
+        for v in desc_generators.values():
+            __all__ = v(__all__)
+        return dict(__all__, **kwargs)
+
+    @staticmethod
+    def repeated_desc(name, name_v2=None, dtype='int64', as_target=True):
+        """Add desc for a repeated argument."""
         def decorated(inner_function):
             def wrapper(*args, **kwargs):
                 def generator(arguments):
@@ -87,41 +96,10 @@ class ArgHelper(object):
                     if name_v2:
                         arguments.pop(name)
                     if types.is_tensor(arg):
-                        if context.executing_eagerly():
-                            arguments[key] = arg.get_value().tolist()
-                            return arguments
-                        arguments.pop(key)
-                        arguments[key + '_desc'] = arg.id
-                        if as_target:
-                            if 'extra_inputs' not in arguments:
-                                arguments['extra_inputs'] = []
-                            arguments['extra_inputs'] += [arg]
+                        ArgHelper._convert_to_desc(arguments, key, arg, as_target)
                     else:
-                        has_tensor = False
-                        arg = nest.flatten(arg)
-                        for e in arg:
-                            if types.is_tensor(e):
-                                has_tensor = True
-                                break
-                        if has_tensor:
-                            if context.executing_eagerly():
-                                for i, e in enumerate(arg):
-                                    if types.is_tensor(e):
-                                        arg[i] = e.get_value().tolist()
-                                arguments[key] = arg
-                            else:
-                                descs = []
-                                for i, e in enumerate(arg):
-                                    if types.is_tensor(e):
-                                        if as_target:
-                                            if 'extra_inputs' not in arguments:
-                                                arguments['extra_inputs'] = []
-                                            arguments['extra_inputs'] += [e]
-                                        descs.append(e.id)
-                                    else:
-                                        descs.append(Tensor.convert_to(e, dtype).id)
-                                arguments.pop(key)
-                                arguments[key + '_descs'] = descs
+                        if any([types.is_tensor(ele) for ele in arg]):
+                            ArgHelper._convert_to_descs(arguments, dtype, key, arg, as_target)
                         else:
                             arguments[key] = arg
                     return arguments
@@ -130,18 +108,38 @@ class ArgHelper(object):
             return decorator.make_decorator(inner_function, wrapper)
         return decorated
 
+    @staticmethod
+    def _convert_to_desc(arguments, name, arg, as_target=False):
+        """Convert the argument to a desc."""
+        if context.executing_eagerly():
+            arguments[name] = arg.get_value().tolist()
+            return arguments
+        if as_target:
+            if 'extra_inputs' not in arguments:
+                arguments['extra_inputs'] = []
+            arguments['extra_inputs'] += [arg]
+        arguments.pop(name)
+        arguments[name + '_desc'] = arg.id
+        return arguments
 
-def parse_args(locals):
-    """Parse all the arguments into a dict."""
-    __all__ = locals
-    kwargs = __all__['kwargs']
-    del __all__['kwargs']
-    desc_generators = {}
-    for k, v in kwargs.items():
-        if 'gen_desc' in k:
-            desc_generators[k] = v
-    for k in desc_generators.keys():
-        kwargs.pop(k)
-    for v in desc_generators.values():
-        __all__ = v(__all__)
-    return dict(__all__, **kwargs)
+    @staticmethod
+    def _convert_to_descs(arguments, dtype, name, arg, as_target=False):
+        """Convert the argument to a sequence of descs."""
+        if context.executing_eagerly():
+            for i, ele in enumerate(arg):
+                if types.is_tensor(ele):
+                    arg[i] = ele.get_value().tolist()
+            arguments[name] = arg
+        else:
+            descs = []
+            for i, ele in enumerate(arg):
+                if types.is_tensor(ele):
+                    if as_target:
+                        if 'extra_inputs' not in arguments:
+                            arguments['extra_inputs'] = []
+                        arguments['extra_inputs'] += [ele]
+                    descs.append(ele.id)
+                else:
+                    descs.append(Tensor.from_value(ele, dtype, 'DescConst').id)
+            arguments.pop(name)
+            arguments[name + '_descs'] = descs

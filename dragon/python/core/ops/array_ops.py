@@ -21,7 +21,6 @@ from dragon.core.framework import types
 from dragon.core.ops import array_ops_lib
 from dragon.core.ops.utils import ArgHelper
 from dragon.core.ops.utils import OpSchema
-from dragon.core.ops.utils import parse_args
 from dragon.core.util import nest
 
 
@@ -58,7 +57,7 @@ def argmax(inputs, axis=None, keep_dims=False, **kwargs):
         The index of maximum elements.
 
     """
-    args = parse_args(locals())
+    args = ArgHelper.parse(locals())
     op_lib = array_ops_lib.ArgReduce
     if context.executing_eagerly():
         return op_lib \
@@ -104,7 +103,7 @@ def argmin(inputs, axis=None, keep_dims=False, **kwargs):
         The index of minimum elements.
 
     """
-    args = parse_args(locals())
+    args = ArgHelper.parse(locals())
     op_lib = array_ops_lib.ArgReduce
     if context.executing_eagerly():
         return op_lib \
@@ -152,7 +151,7 @@ def argsort(inputs, axis=-1, descending=False, **kwargs):
         The output tensor.
 
     """
-    args = parse_args(locals())
+    args = ArgHelper.parse(locals())
     op_lib = array_ops_lib.Sort
     if context.executing_eagerly():
         return op_lib \
@@ -202,7 +201,7 @@ def broadcast_to(inputs, shape, **kwargs):
         The output tensor.
 
     """
-    args = parse_args(locals())
+    args = ArgHelper.parse(locals())
     op_lib = array_ops_lib.Expand
     if context.executing_eagerly():
         return op_lib \
@@ -237,7 +236,7 @@ def cast(inputs, dtype, **kwargs):
         The output tensor.
 
     """
-    args = parse_args(locals())
+    args = ArgHelper.parse(locals())
     inplace = args.pop('inplace') if 'inplace' in args else False
     op_lib = array_ops_lib.Cast
     if context.executing_eagerly():
@@ -281,7 +280,7 @@ def channel_affine(inputs, axis=1, num_axes=1, **kwargs):
         The output tensor.
 
     """
-    args = parse_args(locals())
+    args = ArgHelper.parse(locals())
     inplace = args.pop('inplace') if 'inplace' in args else False
     op_lib = array_ops_lib.ChannelAffine
     if context.executing_eagerly():
@@ -345,7 +344,7 @@ def channel_normalize(
         The output tensor.
 
     """
-    args = parse_args(locals())
+    args = ArgHelper.parse(locals())
     op_lib = array_ops_lib.ChannelNormalize
     if context.executing_eagerly():
         return op_lib \
@@ -380,7 +379,7 @@ def channel_shuffle(inputs, axis=0, group=1, **kwargs):
         The output tensor.
 
     """
-    args = parse_args(locals())
+    args = ArgHelper.parse(locals())
     op_lib = array_ops_lib.ChannelShuffle
     if context.executing_eagerly():
         return op_lib \
@@ -425,7 +424,7 @@ def concat(inputs, axis=0, **kwargs):
         The output tensor.
 
     """
-    args = parse_args(locals())
+    args = ArgHelper.parse(locals())
     op_lib = array_ops_lib.Concat
     if context.executing_eagerly():
         return op_lib.instantiate(axis=axis).apply(inputs)
@@ -480,7 +479,7 @@ def cumsum(inputs, axis=0, exclusive=False, reverse=False, **kwargs):
         The output tensor.
 
     """
-    args = parse_args(locals())
+    args = ArgHelper.parse(locals())
     op_lib = array_ops_lib.Cumulative
     if context.executing_eagerly():
         return op_lib  \
@@ -528,7 +527,7 @@ def expand_dims(inputs, axis, **kwargs):
         The output tensor.
 
     """
-    args = parse_args(locals())
+    args = ArgHelper.parse(locals())
     args.pop('axis')
     args['axes'] = None if axis is None else nest.flatten(axis)
     inplace = args.pop('inplace') if 'inplace' in args else False
@@ -573,7 +572,7 @@ def flatten(inputs, axis=0, num_axes=-1, keep_axes=None, **kwargs):
         The output tensor.
 
     """
-    args = parse_args(locals())
+    args = ArgHelper.parse(locals())
     inplace = args.pop('inplace') if 'inplace' in args else False
     op_lib = array_ops_lib.Flatten
     if context.executing_eagerly():
@@ -617,7 +616,7 @@ def identity(inputs, **kwargs):
         The output tensor.
 
     """
-    args = parse_args(locals())
+    args = ArgHelper.parse(locals())
     inplace = args.pop('inplace') if 'inplace' in args else False
     op_lib = array_ops_lib.Identity
     if context.executing_eagerly():
@@ -661,7 +660,7 @@ def index_select(inputs, index, axis=0, **kwargs):
         The output tensor.
 
     """
-    args = parse_args(locals())
+    args = ArgHelper.parse(locals())
     axes = nest.flatten(axis)
     axes.sort()
     if axes[-1] != (axes[0] + len(axes) - 1):
@@ -677,7 +676,7 @@ def index_select(inputs, index, axis=0, **kwargs):
             ).apply([inputs, index])
     else:
         if not isinstance(index, Tensor):
-            index = Tensor.convert_to(index, 'int64')
+            index = Tensor.from_value(index, 'int64')
         args['inputs'], args['index'] = \
             [args['inputs'], index], None
         args['axis'], args['num_axes'] = axes[0], len(axes)
@@ -719,7 +718,7 @@ def linspace(start, stop, num, dtype='int64', axis=0, **kwargs):
         The output tensor.
 
     """
-    args = parse_args(locals())
+    args = ArgHelper.parse(locals())
     args['dtype'] = args['dtype'].lower()
     args['start'] = nest.flatten(start)
     args['stop'] = nest.flatten(stop)
@@ -758,7 +757,7 @@ def masked_select(inputs, **kwargs):
         The output tensor.
 
     """
-    args = parse_args(locals())
+    args = ArgHelper.parse(locals())
     op_lib = array_ops_lib.MaskedSelect
     if context.executing_eagerly():
         return op_lib.instantiate().apply(inputs)
@@ -802,7 +801,7 @@ def max(inputs, axis=None, keep_dims=False, **kwargs):
         The output tensor.
 
     """
-    args = parse_args(locals())
+    args = ArgHelper.parse(locals())
     args.pop('axis')
     args['axes'] = None if axis is None else nest.flatten(axis)
     op_lib = array_ops_lib.Reduce
@@ -853,7 +852,7 @@ def mean(inputs, axis=None, keep_dims=False, **kwargs):
         The output tensor.
 
     """
-    args = parse_args(locals())
+    args = ArgHelper.parse(locals())
     args.pop('axis')
     args['axes'] = None if axis is None else nest.flatten(axis)
     op_lib = array_ops_lib.Reduce
@@ -904,7 +903,7 @@ def min(inputs, axis=None, keep_dims=False, **kwargs):
         The output tensor.
 
     """
-    args = parse_args(locals())
+    args = ArgHelper.parse(locals())
     args.pop('axis')
     args['axes'] = None if axis is None else nest.flatten(axis)
     op_lib = array_ops_lib.Reduce
@@ -963,7 +962,7 @@ def moments(inputs, axis=None, keep_dims=False, **kwargs):
         The variance tensor.
 
     """
-    args = parse_args(locals())
+    args = ArgHelper.parse(locals())
     args.pop('axis')
     args['axes'] = None if axis is None else nest.flatten(axis)
     op_lib = array_ops_lib.Moments
@@ -1002,7 +1001,7 @@ def multinomial(inputs, num_samples=1, epsilon=0, normalize=False, **kwargs):
         The output tensor.
 
     """
-    args = parse_args(locals())
+    args = ArgHelper.parse(locals())
     args['epsilon'] = float(epsilon)
     op_lib = array_ops_lib.Multinomial
     if context.executing_eagerly():
@@ -1033,7 +1032,7 @@ def nonzero(inputs, **kwargs):
         The output tensor.
 
     """
-    args = parse_args(locals())
+    args = ArgHelper.parse(locals())
     op_lib = array_ops_lib.NonZero
     if context.executing_eagerly():
         return op_lib.instantiate().apply([inputs])
@@ -1082,7 +1081,7 @@ def one_hot(inputs, depth, on_value=1, off_value=0, **kwargs):
         The output tensor.
 
     """
-    args = parse_args(locals())
+    args = ArgHelper.parse(locals())
     op_lib = array_ops_lib.OneHot
     if context.executing_eagerly():
         return op_lib \
@@ -1140,7 +1139,7 @@ def pad(inputs, pads, mode='constant', value=0, **kwargs):
         The output tensor.
 
     """
-    args = parse_args(locals())
+    args = ArgHelper.parse(locals())
     args['value'] = float(value)
     args['mode'] = mode.upper()
     pads_begin, pads_end = [], []
@@ -1186,7 +1185,7 @@ def permutation(limit, dtype='int64', **kwargs):
         The output tensor.
 
     """
-    args = parse_args(locals())
+    args = ArgHelper.parse(locals())
     args['dtype'] = args['dtype'].lower()
     op_lib = array_ops_lib.Permutation
     trainable = args.pop('trainable') if 'trainable' in args else False
@@ -1236,7 +1235,7 @@ def range(start, limit=None, delta=1, dtype='int64', **kwargs):
         The output tensor.
 
     """
-    args = parse_args(locals())
+    args = ArgHelper.parse(locals())
     args['dtype'] = args['dtype'].lower()
     if limit is None:
         args['slice'] = (float(start), float(delta))
@@ -1278,7 +1277,7 @@ def repeat(inputs, axis=None, repeats=1, **kwargs):
         The output tensor.
 
     """
-    args = parse_args(locals())
+    args = ArgHelper.parse(locals())
     op_lib = array_ops_lib.Repeat
     if context.executing_eagerly():
         return op_lib  \
@@ -1325,7 +1324,7 @@ def reshape(inputs, shape, **kwargs):
         The output tensor.
 
     """
-    args = parse_args(locals())
+    args = ArgHelper.parse(locals())
     inplace = args.pop('inplace') if 'inplace' in args else False
     op_lib = array_ops_lib.Reshape
     if context.executing_eagerly():
@@ -1359,7 +1358,7 @@ def shape(inputs, **kwargs):
         The tensor shape.
 
     """
-    args = parse_args(locals())
+    args = ArgHelper.parse(locals())
     op_lib = array_ops_lib.Shape
     if isinstance(inputs, EagerTensor):
         return op_lib.instantiate().apply([inputs])
@@ -1408,7 +1407,7 @@ def slice(inputs, starts, sizes, **kwargs):
         The output tensor.
 
     """
-    args = parse_args(locals())
+    args = ArgHelper.parse(locals())
     op_lib = array_ops_lib.Slice
     if context.executing_eagerly():
         return op_lib \
@@ -1453,7 +1452,7 @@ def sort(inputs, axis=-1, descending=False, **kwargs):
         The value and index tensor.
 
     """
-    args = parse_args(locals())
+    args = ArgHelper.parse(locals())
     op_lib = array_ops_lib.Sort
     if context.executing_eagerly():
         return op_lib \
@@ -1519,7 +1518,7 @@ def split(
         The outputs.
 
     """
-    args = parse_args(locals())
+    args = ArgHelper.parse(locals())
     op_lib = array_ops_lib.Split
     if nest.is_sequence(num_or_size_splits):
         num_splits = len(num_or_size_splits)
@@ -1580,7 +1579,7 @@ def squeeze(inputs, axis=None, **kwargs):
         The output tensor.
 
     """
-    args = parse_args(locals())
+    args = ArgHelper.parse(locals())
     args.pop('axis')
     args['axes'] = None if axis is None else nest.flatten(axis)
     inplace = args.pop('inplace') if 'inplace' in args else False
@@ -1612,7 +1611,7 @@ def stack(inputs, axis=0, **kwargs):
         The output tensor.
 
     """
-    args = parse_args(locals())
+    args = ArgHelper.parse(locals())
     op_lib = array_ops_lib.Stack
     if context.executing_eagerly():
         return op_lib \
@@ -1658,7 +1657,7 @@ def sum(inputs, axis=None, keep_dims=False, **kwargs):
         The output tensor.
 
     """
-    args = parse_args(locals())
+    args = ArgHelper.parse(locals())
     args.pop('axis')
     args['axes'] = None if axis is None else nest.flatten(axis)
     op_lib = array_ops_lib.Reduce
@@ -1691,7 +1690,7 @@ def tile(inputs, repeats, **kwargs):
         The output tensor.
 
     """
-    args = parse_args(locals())
+    args = ArgHelper.parse(locals())
     op_lib = array_ops_lib.Tile
     if context.executing_eagerly():
         return op_lib \
@@ -1730,7 +1729,7 @@ def transpose(inputs, perm=None, **kwargs):
         The output tensor.
 
     """
-    args = parse_args(locals())
+    args = ArgHelper.parse(locals())
     op_lib = array_ops_lib.Transpose
     if context.executing_eagerly():
         return op_lib \
@@ -1780,7 +1779,7 @@ def top_k(inputs, k=1, axis=-1, largest=True, sorted=True, **kwargs):
         The value and index tensor.
 
     """
-    args = parse_args(locals())
+    args = ArgHelper.parse(locals())
     op_lib = array_ops_lib.TopK
     if context.executing_eagerly():
         return op_lib \
@@ -1836,7 +1835,7 @@ def unique(inputs, return_inverse=False, return_counts=False, **kwargs):
         The counts tensor.
 
     """
-    args = parse_args(locals())
+    args = ArgHelper.parse(locals())
     op_lib = array_ops_lib.Unique
     if context.executing_eagerly():
         return op_lib.instantiate(
@@ -1878,7 +1877,7 @@ def where(inputs, **kwargs):
     """
     if types.is_tensor(inputs) or len(inputs) == 1:
         return nonzero(inputs, **kwargs)
-    args = parse_args(locals())
+    args = ArgHelper.parse(locals())
     op_lib = array_ops_lib.Where
     if context.executing_eagerly():
         return op_lib.instantiate().apply(inputs)

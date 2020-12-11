@@ -22,8 +22,8 @@ from dragon.core.eager import context
 from dragon.core.eager.tensor import EagerTensor
 from dragon.core.framework import config
 from dragon.core.ops import rnn_ops_lib
+from dragon.core.ops.utils import ArgHelper
 from dragon.core.ops.utils import OpSchema
-from dragon.core.ops.utils import parse_args
 from dragon.core.util import nest
 
 
@@ -363,7 +363,7 @@ def LSTMCell(inputs, **kwargs):
         The **h** and **c**.
 
     """
-    args = parse_args(locals())
+    args = ArgHelper.parse(locals())
     op_lib = rnn_ops_lib.LSTMCell
     if context.executing_eagerly():
         return op_lib.instantiate().apply(inputs)

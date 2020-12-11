@@ -58,11 +58,13 @@ class EagerTensor(Tensor):
             if shape is not None:
                 self._from_shape(shape, kwargs.get('dtype', 'float32'))
         elif len(args) == 1:
-            self._from_numpy(
-                args[0] if isinstance(args[0], numpy.ndarray)
-                else numpy.array(args[0], kwargs.get('dtype', 'float32')),
-                kwargs.get('copy', True),
-            )
+            if not isinstance(args[0], numpy.ndarray):
+                dtype = kwargs.get('dtype', 'float32')
+                self._from_array(numpy.array(args[0], dtype))
+            else:
+                dtype = kwargs.get('dtype', None)
+                self._from_array(numpy.array(
+                    args[0], dtype, copy=kwargs.get('copy', True)))
         else:
             raise ValueError('Excepted at most one argument.')
 
@@ -226,6 +228,29 @@ class EagerTensor(Tensor):
         `dragon.copy(...)`_
 
         """
+
+    @classmethod
+    def from_value(cls, value, dtype=None, name=None):
+        """Return a tensor converted from the given value.
+
+        The input ``value``
+
+        Parameters
+        ----------
+        value : array_like
+            The value to convert.
+        dtype: str, optional
+            The optional data type.
+        name: str, optional
+            The optional tensor name.
+
+        Returns
+        -------
+        dragon.EagerTensor
+            The output tensor.
+
+        """
+        return EagerTensor(value, dtype=dtype, name=name, copy=False)
 
     def get_value(self):
         """Return the value of implementation.
@@ -408,17 +433,16 @@ class EagerTensor(Tensor):
 
         """
 
-    def _from_numpy(self, array, copy):
-        """Create impl from the numpy array."""
+    def _from_array(self, array):
+        """Create implementation from the array."""
         ws = workspace.get_workspace()
-        array = array.copy() if copy else array
         self._const_size = array.size
         self._gc, self._is_leaf = ws.collectors.TENSOR, True
         self._impl = ws.create_tensor(self._gc.alloc(
             context.get_eager_scope())).FromNumpy(array)
 
     def _from_shape(self, shape, dtype):
-        """Create impl from the shape and data type."""
+        """Create implementation from the shape."""
         ws = workspace.get_workspace()
         self._gc, self._is_leaf = ws.collectors.TENSOR, True
         self._impl = ws.create_tensor(self._gc.alloc(

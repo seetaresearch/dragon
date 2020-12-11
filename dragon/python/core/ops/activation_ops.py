@@ -20,7 +20,6 @@ from dragon.core.ops import math_ops
 from dragon.core.ops import array_ops
 from dragon.core.ops.utils import ArgHelper
 from dragon.core.ops.utils import OpSchema
-from dragon.core.ops.utils import parse_args
 
 
 @OpSchema.num_inputs(1)
@@ -53,7 +52,7 @@ def dropout(inputs, ratio=0.5, **kwargs):
         The output tensor.
 
     """
-    args = parse_args(locals())
+    args = ArgHelper.parse(locals())
     inplace = args.pop('inplace') if 'inplace' in args else False
     op_lib = activation_ops_lib.Dropout
     if context.executing_eagerly():
@@ -96,7 +95,7 @@ def drop_block2d(inputs, ratio=0.1, block_size=7, data_format='NCHW', **kwargs):
         The output tensor.
 
     """
-    args = parse_args(locals())
+    args = ArgHelper.parse(locals())
     inplace = args.pop('inplace') if 'inplace' in args else False
     op_lib = activation_ops_lib.DropBlock2d
     if context.executing_eagerly():
@@ -132,7 +131,7 @@ def drop_path(inputs, ratio=0.2, **kwargs):
         The output tensor.
 
     """
-    args = parse_args(locals())
+    args = ArgHelper.parse(locals())
     inplace = args.pop('inplace') if 'inplace' in args else False
     op_lib = activation_ops_lib.DropPath
     if context.executing_eagerly():
@@ -177,7 +176,7 @@ def elu(inputs, alpha=1.0, **kwargs):
         The output tensor.
 
     """
-    args = parse_args(locals())
+    args = ArgHelper.parse(locals())
     args['alpha'] = float(alpha)
     inplace = args.pop('inplace') if 'inplace' in args else False
     op_lib = activation_ops_lib.Elu
@@ -219,7 +218,7 @@ def hardsigmoid(inputs, alpha=0.2, beta=0.5, **kwargs):
         The output tensor.
 
     """
-    args = parse_args(locals())
+    args = ArgHelper.parse(locals())
     args['alpha'] = float(alpha)
     args['beta'] = float(beta)
     inplace = args.pop('inplace') if 'inplace' in args else False
@@ -265,7 +264,7 @@ def hardswish(inputs, alpha=0.2, beta=0.5, **kwargs):
         The output tensor.
 
     """
-    args = parse_args(locals())
+    args = ArgHelper.parse(locals())
     args['alpha'] = float(alpha)
     args['beta'] = float(beta)
     op_lib = activation_ops_lib.HardSwish
@@ -312,7 +311,7 @@ def leaky_relu(inputs, alpha=0.2, **kwargs):
         The output tensor.
 
     """
-    args = parse_args(locals())
+    args = ArgHelper.parse(locals())
     args['alpha'] = float(alpha)
     inplace = args.pop('inplace') if 'inplace' in args else False
     op_lib = activation_ops_lib.Relu
@@ -354,15 +353,10 @@ def log_softmax(inputs, axis=-1, **kwargs):
 
     """
     return math_ops.sub(
-        [inputs,
-         math_ops.log(
-             array_ops.sum(
-                 math_ops.exp(inputs, **kwargs),
-                 axis=[axis],
-                 keep_dims=True,
-                 **kwargs),
-             **kwargs)
-         ], **kwargs
+        [inputs, math_ops.log(array_ops.sum(
+            math_ops.exp(inputs, **kwargs),
+            axis=[axis], keep_dims=True, **kwargs), **kwargs)],
+        **kwargs
     )
 
 
@@ -403,7 +397,7 @@ def prelu(inputs, channel_shared=False, data_format='NCHW', **kwargs):
         The output tensor.
 
     """
-    args = parse_args(locals())
+    args = ArgHelper.parse(locals())
     op_lib = activation_ops_lib.PRelu
     if context.executing_eagerly():
         return op_lib \
@@ -445,7 +439,7 @@ def relu(inputs, **kwargs):
         The output tensor.
 
     """
-    args = parse_args(locals())
+    args = ArgHelper.parse(locals())
     inplace = args.pop('inplace') if 'inplace' in args else False
     op_lib = activation_ops_lib.Relu
     if context.executing_eagerly():
@@ -488,7 +482,7 @@ def relu6(inputs, **kwargs):
         The output tensor.
 
     """
-    args = parse_args(locals())
+    args = ArgHelper.parse(locals())
     inplace = args.pop('inplace') if 'inplace' in args else False
     op_lib = activation_ops_lib.Relu6
     if context.executing_eagerly():
@@ -533,7 +527,7 @@ def selu(inputs, alpha=1.67326, gamma=1.0507, **kwargs):
         The output tensor.
 
     """
-    args = parse_args(locals())
+    args = ArgHelper.parse(locals())
     args['alpha'], args['gamma'] = float(alpha), float(gamma)
     inplace = args.pop('inplace') if 'inplace' in args else False
     op_lib = activation_ops_lib.Selu
@@ -573,7 +567,7 @@ def sigmoid(inputs, **kwargs):
         The output tensor
 
     """
-    args = parse_args(locals())
+    args = ArgHelper.parse(locals())
     inplace = args.pop('inplace') if 'inplace' in args else False
     op_lib = activation_ops_lib.Activation
     if context.executing_eagerly():
@@ -613,7 +607,7 @@ def softmax(inputs, axis=-1, **kwargs):
         The output tensor.
 
     """
-    args = parse_args(locals())
+    args = ArgHelper.parse(locals())
     inplace = args.pop('inplace') if 'inplace' in args else False
     op_lib = activation_ops_lib.Softmax
     if context.executing_eagerly():
@@ -650,7 +644,7 @@ def tanh(inputs, **kwargs):
         The output tensor.
 
     """
-    args = parse_args(locals())
+    args = ArgHelper.parse(locals())
     inplace = args.pop('inplace') if 'inplace' in args else False
     op_lib = activation_ops_lib.Activation
     if context.executing_eagerly():
@@ -688,7 +682,7 @@ def swish(inputs, **kwargs):
         The output tensor.
 
     """
-    args = parse_args(locals())
+    args = ArgHelper.parse(locals())
     op_lib = activation_ops_lib.Activation
     if context.executing_eagerly():
         return op_lib \

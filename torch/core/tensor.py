@@ -77,9 +77,11 @@ class Tensor(object):
         if len(args) == 1:
             if isinstance(args[0], (list, tuple)):
                 dtype = kwargs.get('dtype', 'float32')
-                self._from_numpy(numpy.array(args[0], dtype=dtype), copy=False)
+                self._from_array(numpy.array(args[0], dtype))
             elif isinstance(args[0], numpy.ndarray):
-                self._from_numpy(args[0], copy=kwargs.get('copy', True))
+                dtype = kwargs.get('dtype', None)
+                self._from_array(numpy.array(
+                    args[0], dtype, copy=kwargs.get('copy', True)))
             else:
                 if not isinstance(args[0], six.integer_types):
                     raise ValueError('Excepted an integer as size.')
@@ -2304,16 +2306,15 @@ class Tensor(object):
         """
         return self.fill_(0)
 
-    def _from_numpy(self, array, copy):
-        """Create impl from the numpy array."""
+    def _from_array(self, array):
+        """Create implementation from the array."""
         ws = workspace.get_workspace()
-        array = array.copy() if copy else array
         self._gc, self._is_leaf = ws.collectors.TENSOR, True
         self._impl = ws.create_tensor(self._gc.alloc(
             context.get_eager_scope())).FromNumpy(array)
 
     def _from_shape(self, shape, dtype):
-        """Create impl from the shape and data type."""
+        """Create implementation from the shape."""
         ws = workspace.get_workspace()
         self._gc, self._is_leaf = ws.collectors.TENSOR, True
         self._impl = ws.create_tensor(self._gc.alloc(

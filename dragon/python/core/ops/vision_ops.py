@@ -18,7 +18,6 @@ from dragon.core.eager import context
 from dragon.core.ops import vision_ops_lib
 from dragon.core.ops.utils import ArgHelper
 from dragon.core.ops.utils import OpSchema
-from dragon.core.ops.utils import parse_args
 from dragon.core.util import nest
 
 
@@ -39,7 +38,7 @@ def bias_add(inputs, data_format='NCHW', **kwargs):
         The output tensor.
 
     """
-    args = parse_args(locals())
+    args = ArgHelper.parse(locals())
     if data_format not in ('NCHW', 'NHWC'):
         raise ValueError('Unsupported data format: %s' % data_format)
     op_lib = vision_ops_lib.BiasAdd
@@ -92,7 +91,7 @@ def conv2d(
         The output tensor.
 
     """
-    args = parse_args(locals())
+    args = ArgHelper.parse(locals())
     if padding not in ('VALID', 'SAME', 'SAME_UPPER', 'SAME_LOWER'):
         raise ValueError('Unsupported padding algorithm: %s' % padding)
     if data_format not in ('NCHW', 'NHWC'):
@@ -172,7 +171,7 @@ def conv2d_transpose(
         The output tensor.
 
     """
-    args = parse_args(locals())
+    args = ArgHelper.parse(locals())
     if padding not in ('VALID', 'SAME', 'SAME_UPPER', 'SAME_LOWER'):
         raise ValueError('Unsupported padding algorithm: %s' % padding)
     if data_format not in ('NCHW', 'NHWC'):
@@ -246,7 +245,7 @@ def depthwise_conv2d(
         The output tensor.
 
     """
-    args = parse_args(locals())
+    args = ArgHelper.parse(locals())
     if padding not in ('VALID', 'SAME', 'SAME_UPPER', 'SAME_LOWER'):
         raise ValueError('Unsupported padding algorithm: %s' % padding)
     if data_format not in ('NCHW', 'NHWC'):
@@ -306,7 +305,7 @@ def depth_to_space(inputs, block_size, data_format='NCHW', **kwargs):
         The output tensor.
 
     """
-    args = parse_args(locals())
+    args = ArgHelper.parse(locals())
     if data_format not in ('NCHW', 'NHWC'):
         raise ValueError('Unsupported data format: %s' % data_format)
     op_lib = vision_ops_lib.DepthToSpace
@@ -366,7 +365,7 @@ def pool2d(
         The output tensor.
 
     """
-    args = parse_args(locals())
+    args = ArgHelper.parse(locals())
     args['mode'] = mode.upper()
     if args['mode'] not in ('MAX', 'AVG'):
         raise ValueError('Unsupported pooling mode: %s' % mode)
@@ -453,7 +452,7 @@ def resize(
         The output tensor.
 
     """
-    args = parse_args(locals())
+    args = ArgHelper.parse(locals())
     args['mode'] = mode.upper()
     if sizes is None and scales is None:
         raise ValueError('Specify either <sizes> or <scales>.')
@@ -513,7 +512,7 @@ def roi_align(
         The output tensor.
 
     """
-    args = parse_args(locals())
+    args = ArgHelper.parse(locals())
     args['spatial_scale'] = float(spatial_scale)
     op_lib = vision_ops_lib.RoiAlign
     if context.executing_eagerly():
@@ -561,7 +560,7 @@ def roi_pool(
         The output tensor.
 
     """
-    args = parse_args(locals())
+    args = ArgHelper.parse(locals())
     args['spatial_scale'] = float(spatial_scale)
     op_lib = vision_ops_lib.RoiPool
     if context.executing_eagerly():
@@ -605,7 +604,7 @@ def space_to_depth(inputs, block_size, data_format='NCHW', **kwargs):
         The output tensor.
 
     """
-    args = parse_args(locals())
+    args = ArgHelper.parse(locals())
     if data_format not in ('NCHW', 'NHWC'):
         raise ValueError('Unsupported data format: %s' % data_format)
     op_lib = vision_ops_lib.SpaceToDepth

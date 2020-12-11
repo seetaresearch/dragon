@@ -17,8 +17,8 @@ from __future__ import print_function
 from dragon.core.eager import context
 from dragon.core.framework import ops
 from dragon.core.ops import math_ops_lib
+from dragon.core.ops.utils import ArgHelper
 from dragon.core.ops.utils import OpSchema
-from dragon.core.ops.utils import parse_args
 
 
 @OpSchema.num_inputs(1)
@@ -45,7 +45,7 @@ def abs(inputs, **kwargs):
         The output tensor.
 
     """
-    args = parse_args(locals())
+    args = ArgHelper.parse(locals())
     op_lib = math_ops_lib.UnaryOp
     if context.executing_eagerly():
         return op_lib.instantiate(op_type='Abs').apply([inputs])
@@ -79,7 +79,7 @@ def add(inputs, **kwargs):
         The output tensor.
 
     """
-    args = parse_args(locals())
+    args = ArgHelper.parse(locals())
     inputs = ops.remove_binary_scalar(inputs)
     op_lib = math_ops_lib.BinaryOp
     if context.executing_eagerly():
@@ -113,7 +113,7 @@ def axpby(inputs, outputs=None, alpha=1., beta=1., **kwargs):
         The output tensor.
 
     """
-    args = parse_args(locals())
+    args = ArgHelper.parse(locals())
     args['alpha'], args['beta'] = float(alpha), float(beta)
     op_lib = math_ops_lib.Axpby
     if context.executing_eagerly():
@@ -235,7 +235,7 @@ def ceil(inputs, **kwargs):
         The output tensor.
 
     """
-    args = parse_args(locals())
+    args = ArgHelper.parse(locals())
     op_lib = math_ops_lib.UnaryOp
     if context.executing_eagerly():
         return op_lib.instantiate(op_type='Ceil').apply([inputs])
@@ -264,7 +264,7 @@ def clip(inputs, low=None, high=None, **kwargs):
         The output tensor.
 
     """
-    args = parse_args(locals())
+    args = ArgHelper.parse(locals())
     if low is not None:
         args['low'] = float(args['low'])
     if high is not None:
@@ -304,7 +304,7 @@ def cos(inputs, **kwargs):
         The output tensor.
 
     """
-    args = parse_args(locals())
+    args = ArgHelper.parse(locals())
     op_lib = math_ops_lib.UnaryOp
     if context.executing_eagerly():
         return op_lib.instantiate(op_type='Cos').apply([inputs])
@@ -338,7 +338,7 @@ def div(inputs, **kwargs):
         The output tensor.
 
     """
-    args = parse_args(locals())
+    args = ArgHelper.parse(locals())
     inputs = ops.remove_binary_scalar(inputs)
     op_lib = math_ops_lib.BinaryOp
     if context.executing_eagerly():
@@ -389,7 +389,7 @@ def dot(inputs, **kwargs):
         The output tensor.
 
     """
-    args = parse_args(locals())
+    args = ArgHelper.parse(locals())
     op_lib = math_ops_lib.BinaryOp
     if context.executing_eagerly():
         return op_lib.instantiate(op_type='Dot').apply(inputs)
@@ -424,7 +424,7 @@ def equal(inputs, **kwargs):
         The output tensor.
 
     """
-    args = parse_args(locals())
+    args = ArgHelper.parse(locals())
     inputs = ops.remove_binary_scalar(inputs)
     op_lib = math_ops_lib.BinaryOp
     if context.executing_eagerly():
@@ -457,7 +457,7 @@ def exp(inputs, **kwargs):
         The output tensor.
 
     """
-    args = parse_args(locals())
+    args = ArgHelper.parse(locals())
     op_lib = math_ops_lib.UnaryOp
     if context.executing_eagerly():
         return op_lib.instantiate(op_type='Exp').apply([inputs])
@@ -489,7 +489,7 @@ def floor(inputs, **kwargs):
         The output tensor.
 
     """
-    args = parse_args(locals())
+    args = ArgHelper.parse(locals())
     op_lib = math_ops_lib.UnaryOp
     if context.executing_eagerly():
         return op_lib.instantiate(op_type='Floor').apply([inputs])
@@ -522,7 +522,7 @@ def fully_connected(inputs, axis=1, transpose_w=True, **kwargs):
         The output tensor.
 
     """
-    args = parse_args(locals())
+    args = ArgHelper.parse(locals())
     op_lib = math_ops_lib.FullyConnected
     if context.executing_eagerly():
         return op_lib \
@@ -561,7 +561,7 @@ def greater(inputs, **kwargs):
         The output tensor.
 
     """
-    args = parse_args(locals())
+    args = ArgHelper.parse(locals())
     op_lib = math_ops_lib.BinaryOp
     inputs = ops.remove_binary_scalar(inputs)
     if context.executing_eagerly():
@@ -597,7 +597,7 @@ def greater_equal(inputs, **kwargs):
         The output tensor.
 
     """
-    args = parse_args(locals())
+    args = ArgHelper.parse(locals())
     inputs = ops.remove_binary_scalar(inputs)
     op_lib = math_ops_lib.BinaryOp
     if context.executing_eagerly():
@@ -635,7 +635,7 @@ def invert(inputs, **kwargs):
         The output tensor.
 
     """
-    args = parse_args(locals())
+    args = ArgHelper.parse(locals())
     op_lib = math_ops_lib.UnaryOp
     if context.executing_eagerly():
         return op_lib.instantiate(op_type='Invert').apply([inputs])
@@ -667,7 +667,7 @@ def is_inf(inputs, **kwargs):
         The output tensor.
 
     """
-    args = parse_args(locals())
+    args = ArgHelper.parse(locals())
     op_lib = math_ops_lib.UnaryOp
     if context.executing_eagerly():
         return op_lib.instantiate(op_type='IsInf').apply([inputs])
@@ -699,7 +699,7 @@ def is_nan(inputs, **kwargs):
         The output tensor.
 
     """
-    args = parse_args(locals())
+    args = ArgHelper.parse(locals())
     op_lib = math_ops_lib.UnaryOp
     if context.executing_eagerly():
         return op_lib.instantiate(op_type='IsNaN').apply([inputs])
@@ -731,7 +731,7 @@ def log(inputs, **kwargs):
         The output tensor.
 
     """
-    args = parse_args(locals())
+    args = ArgHelper.parse(locals())
     op_lib = math_ops_lib.UnaryOp
     if context.executing_eagerly():
         return op_lib.instantiate(op_type='Log').apply([inputs])
@@ -766,7 +766,7 @@ def less(inputs, **kwargs):
         The output tensor.
 
     """
-    args = parse_args(locals())
+    args = ArgHelper.parse(locals())
     inputs = ops.remove_binary_scalar(inputs)
     op_lib = math_ops_lib.BinaryOp
     if context.executing_eagerly():
@@ -802,7 +802,7 @@ def less_equal(inputs, **kwargs):
         The output tensor.
 
     """
-    args = parse_args(locals())
+    args = ArgHelper.parse(locals())
     inputs = ops.remove_binary_scalar(inputs)
     op_lib = math_ops_lib.BinaryOp
     if context.executing_eagerly():
@@ -855,7 +855,7 @@ def matmul(inputs, transpose_a=False, transpose_b=False, **kwargs):
         The output tensor.
 
     """
-    args = parse_args(locals())
+    args = ArgHelper.parse(locals())
     op_lib = math_ops_lib.MatMul
     if context.executing_eagerly():
         return op_lib \
@@ -886,7 +886,7 @@ def maximum(inputs, **kwargs):
         The output tensor.
 
     """
-    args = parse_args(locals())
+    args = ArgHelper.parse(locals())
     inputs = ops.remove_binary_scalar(inputs)
     op_lib = math_ops_lib.BinaryOp
     if context.executing_eagerly():
@@ -912,7 +912,7 @@ def minimum(inputs, **kwargs):
         The output tensor.
 
     """
-    args = parse_args(locals())
+    args = ArgHelper.parse(locals())
     inputs = ops.remove_binary_scalar(inputs)
     op_lib = math_ops_lib.BinaryOp
     if context.executing_eagerly():
@@ -947,7 +947,7 @@ def mul(inputs, **kwargs):
         The output tensor.
 
     """
-    args = parse_args(locals())
+    args = ArgHelper.parse(locals())
     inputs = ops.remove_binary_scalar(inputs)
     op_lib = math_ops_lib.BinaryOp
     if context.executing_eagerly():
@@ -978,7 +978,7 @@ def negative(inputs, **kwargs):
         The output tensor.
 
     """
-    args = parse_args(locals())
+    args = ArgHelper.parse(locals())
     op_lib = math_ops_lib.UnaryOp
     if context.executing_eagerly():
         return op_lib.instantiate(op_type='Neg').apply([inputs])
@@ -1013,7 +1013,7 @@ def not_equal(inputs, **kwargs):
         The output tensor.
 
     """
-    args = parse_args(locals())
+    args = ArgHelper.parse(locals())
     inputs = ops.remove_binary_scalar(inputs)
     op_lib = math_ops_lib.BinaryOp
     if context.executing_eagerly():
@@ -1048,7 +1048,7 @@ def pow(inputs, **kwargs):
         The output tensor.
 
     """
-    args = parse_args(locals())
+    args = ArgHelper.parse(locals())
     inputs = ops.remove_binary_scalar(inputs)
     op_lib = math_ops_lib.BinaryOp
     if context.executing_eagerly():
@@ -1081,7 +1081,7 @@ def reciprocal(inputs, **kwargs):
         The output tensor.
 
     """
-    args = parse_args(locals())
+    args = ArgHelper.parse(locals())
     op_lib = math_ops_lib.UnaryOp
     if context.executing_eagerly():
         return op_lib.instantiate(op_type='Reciprocal').apply([inputs])
@@ -1113,7 +1113,7 @@ def round(inputs, **kwargs):
         The output tensor.
 
     """
-    args = parse_args(locals())
+    args = ArgHelper.parse(locals())
     op_lib = math_ops_lib.UnaryOp
     if context.executing_eagerly():
         return op_lib.instantiate(op_type='Round').apply([inputs])
@@ -1145,7 +1145,7 @@ def rsqrt(inputs, **kwargs):
         The output tensor.
 
     """
-    args = parse_args(locals())
+    args = ArgHelper.parse(locals())
     op_lib = math_ops_lib.UnaryOp
     if context.executing_eagerly():
         return op_lib.instantiate(op_type='Rsqrt').apply([inputs])
@@ -1183,7 +1183,7 @@ def sign(inputs, **kwargs):
         The output tensor.
 
     """
-    args = parse_args(locals())
+    args = ArgHelper.parse(locals())
     op_lib = math_ops_lib.UnaryOp
     if context.executing_eagerly():
         return op_lib.instantiate(op_type='Sign').apply([inputs])
@@ -1215,7 +1215,7 @@ def sin(inputs, **kwargs):
         The output tensor.
 
     """
-    args = parse_args(locals())
+    args = ArgHelper.parse(locals())
     op_lib = math_ops_lib.UnaryOp
     if context.executing_eagerly():
         return op_lib.instantiate(op_type='Sin').apply([inputs])
@@ -1247,7 +1247,7 @@ def sqrt(inputs, **kwargs):
         The output tensor.
 
     """
-    args = parse_args(locals())
+    args = ArgHelper.parse(locals())
     op_lib = math_ops_lib.UnaryOp
     if context.executing_eagerly():
         return op_lib.instantiate(op_type='Sqrt').apply([inputs])
@@ -1279,7 +1279,7 @@ def square(inputs, **kwargs):
         The output tensor.
 
     """
-    args = parse_args(locals())
+    args = ArgHelper.parse(locals())
     op_lib = math_ops_lib.UnaryOp
     if context.executing_eagerly():
         return op_lib.instantiate(op_type='Square').apply([inputs])
@@ -1313,7 +1313,7 @@ def sub(inputs, **kwargs):
         The output tensor.
 
     """
-    args = parse_args(locals())
+    args = ArgHelper.parse(locals())
     inputs = ops.remove_binary_scalar(inputs)
     op_lib = math_ops_lib.BinaryOp
     if context.executing_eagerly():

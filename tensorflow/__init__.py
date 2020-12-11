@@ -33,6 +33,7 @@ from dragon.vm.tensorflow._api.keras import optimizers
 from dragon.vm.tensorflow.core.eager.backprop import GradientTape
 from dragon.vm.tensorflow.core.framework.tensor_shape import TensorShape
 from dragon.vm.tensorflow.core.framework.tensor_spec import TensorSpec
+from dragon.vm.tensorflow.core.module.module import Module
 
 # Functions
 from dragon.vm.tensorflow.core.eager.def_function import function

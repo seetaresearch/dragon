@@ -17,8 +17,8 @@ from __future__ import print_function
 from dragon.core.eager import context
 from dragon.core.ops import activation_ops
 from dragon.core.ops import loss_ops_lib
+from dragon.core.ops.utils import ArgHelper
 from dragon.core.ops.utils import OpSchema
-from dragon.core.ops.utils import parse_args
 
 
 @OpSchema.num_inputs(2)
@@ -46,7 +46,7 @@ def ctc_loss(inputs, padding_mask=-1, **kwargs):
         The output tensor.
 
     """
-    args = parse_args(locals())
+    args = ArgHelper.parse(locals())
     inputs[0] = activation_ops.softmax(inputs[0], axis=2)
     op_lib = loss_ops_lib.Operator
     if context.executing_eagerly():
@@ -84,7 +84,7 @@ def l1_loss(inputs, reduction='mean', **kwargs):
         The output tensor.
 
     """
-    args = parse_args(locals())
+    args = ArgHelper.parse(locals())
     args['reduction'] = reduction.upper()
     op_lib = loss_ops_lib.L1Loss
     if context.executing_eagerly():
@@ -124,7 +124,7 @@ def l2_loss(inputs, reduction='mean', **kwargs):
         The output tensor.
 
     """
-    args = parse_args(locals())
+    args = ArgHelper.parse(locals())
     args['reduction'] = reduction.upper()
     op_lib = loss_ops_lib.L2Loss
     if context.executing_eagerly():
@@ -166,7 +166,7 @@ def nll_loss(
         The output tensor.
 
     """
-    args = parse_args(locals())
+    args = ArgHelper.parse(locals())
     args['reduction'] = reduction.upper()
     op_lib = loss_ops_lib.NLLLoss
     if context.executing_eagerly():
@@ -209,7 +209,7 @@ def sigmoid_cross_entropy(inputs, reduction='valid', **kwargs):
         The output tensor.
 
     """
-    args = parse_args(locals())
+    args = ArgHelper.parse(locals())
     args['reduction'] = reduction.upper()
     op_lib = loss_ops_lib.SigmoidCrossEntropy
     if context.executing_eagerly():
@@ -258,7 +258,7 @@ def sigmoid_focal_loss(
         The output tensor.
 
     """
-    args = parse_args(locals())
+    args = ArgHelper.parse(locals())
     args['alpha'] = float(args['alpha'])
     args['gamma'] = float(args['gamma'])
     args['reduction'] = reduction.upper()
@@ -305,7 +305,7 @@ def smooth_l1_loss(inputs, beta=1., reduction='mean', **kwargs):
         The output tensor.
 
     """
-    args = parse_args(locals())
+    args = ArgHelper.parse(locals())
     args['beta'] = float(args['beta'])
     args['reduction'] = reduction.upper()
     op_lib = loss_ops_lib.SmoothL1Loss
@@ -350,7 +350,7 @@ def softmax_cross_entropy(inputs, axis=1, reduction='mean', **kwargs):
         The output tensor.
 
     """
-    args = parse_args(locals())
+    args = ArgHelper.parse(locals())
     args['reduction'] = reduction.upper()
     op_lib = loss_ops_lib.SoftmaxCrossEntropy
     if context.executing_eagerly():
@@ -402,7 +402,7 @@ def sparse_softmax_cross_entropy(
         The output tensor.
 
     """
-    args = parse_args(locals())
+    args = ArgHelper.parse(locals())
     args['reduction'] = reduction.upper()
     op_lib = loss_ops_lib.SparseSoftmaxCrossEntropy
     if context.executing_eagerly():

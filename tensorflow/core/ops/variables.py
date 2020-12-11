@@ -49,19 +49,20 @@ class Variable(VariableMetaclass, EagerTensor):
         dtype = str(dtype) if dtype else None
         self._name = context.get_name_scope() + name + ':0'
         # Determine th value.
-        if isinstance(initial_value, EagerTensor):
-            initial_value = initial_value.numpy()
+        if isinstance(initial_value, numpy.ndarray):
+            if dtype is None or initial_value.dtype == dtype:
+                initial_value = initial_value.copy()
+        elif isinstance(initial_value, EagerTensor):
+            initial_value = initial_value.get_value()
+            if dtype is None or initial_value.dtype == dtype:
+                initial_value = initial_value.copy()
         elif isinstance(initial_value, Tensor):
             initial_value = initial_value.get_value()
-        # Determine the data type.
-        if not isinstance(initial_value, numpy.ndarray):
-            initial_value = numpy.array(initial_value, dtype)
-        elif dtype is not None:
-            initial_value = initial_value.astype(dtype)
-        # Determine the tensor shape.
+        # Determine the data type and shape.
+        initial_value = numpy.array(initial_value, dtype, copy=False)
         if shape is not None:
             initial_value = initial_value.reshape(shape)
-        self._from_numpy(initial_value, copy=False)
+        self._from_array(initial_value)
 
     @property
     def trainable(self):

@@ -58,17 +58,17 @@ class TestFunction(unittest.TestCase):
     """Test the graph function."""
 
     @dragon.function(input_signature=[
-        dragon.Tensor(dtype='int32'),
-        dragon.Tensor(dtype='int32'),
-        dragon.Tensor(dtype='int32'),
+        dragon.Tensor((1,), dtype='int32'),
+        dragon.Tensor((1,), dtype='int32'),
+        dragon.Tensor((1,), dtype='int32'),
     ])
     def func1(self, a, b, c=0, **kwargs):
         _ = kwargs
         return a + b + c
 
     def test_create_function(self):
-        a = dragon.Tensor(dtype='int32').set_value(1)
-        b = dragon.Tensor(dtype='int32').set_value(2)
+        a = dragon.Tensor((), dtype='int32').set_value(1)
+        b = dragon.Tensor((), dtype='int32').set_value(2)
         y = a + 1
         try:
             dragon.create_function(outputs=y, optimizer=dragon.optimizers.SGD())
@@ -85,7 +85,7 @@ class TestFunction(unittest.TestCase):
         self.assertEqual(int(f()), 3)
 
     def test_def_function(self):
-        @dragon.function(input_signature=[dragon.Tensor()])
+        @dragon.function(input_signature=[dragon.Tensor(None)])
         def func2(a, b):
             return a + b
         self.assertEqual(self.func1([1, 2], [3, 4]).get_value().tolist(), [4, 6])
@@ -109,8 +109,8 @@ class TestFunction(unittest.TestCase):
             _ = optimizer.op_type
         except KeyError:
             pass
-        value = dragon.Tensor(dtype='float32').set_value(1.)
-        grad = dragon.Tensor(dtype='float32').set_value(1.)
+        value = dragon.Tensor((), dtype='float32').set_value(1.)
+        grad = dragon.Tensor((), dtype='float32').set_value(1.)
         optimizer.apply_gradients([(value, grad)])
         dragon.create_function(optimizer=optimizer)()
 

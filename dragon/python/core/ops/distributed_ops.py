@@ -17,8 +17,8 @@ from __future__ import print_function
 from dragon.core import distributed
 from dragon.core.eager import context
 from dragon.core.ops import distributed_ops_lib
+from dragon.core.ops.utils import ArgHelper
 from dragon.core.ops.utils import OpSchema
-from dragon.core.ops.utils import parse_args
 
 
 @OpSchema.num_inputs(1)
@@ -40,7 +40,7 @@ def all_reduce(inputs, operation='MEAN', group=None, **kwargs):
         The output tensor.
 
     """
-    args = parse_args(locals())
+    args = ArgHelper.parse(locals())
     if group is None:
         group = distributed.get_group()
     if group is None:
@@ -80,7 +80,7 @@ def broadcast(inputs, root=0, group=None, **kwargs):
         The output tensor.
 
     """
-    args = parse_args(locals())
+    args = ArgHelper.parse(locals())
     if group is None:
         group = distributed.get_group()
     if group is None:

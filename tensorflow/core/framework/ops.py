@@ -23,13 +23,20 @@ from dragon.vm.tensorflow.core.framework import constant_op
 
 
 def convert_to_tensor(value, dtype=None, name=None):
-    """Converts the given value to a Tensor.
+    """Convert the given value to a tensor.
+
+    Examples:
+
+    ```python
+    x = tf.convert_to_tensor([1, 2])
+    y = tf.constant([1, 2])  # Equivalent
+    ```
 
     Parameters
     ----------
     value : Union[number, Sequence, numpy.ndarray]
         The value to convert.
-    dtype : dragon.vm.tensorflow.dtypes.DType, optional
+    dtype : str, optional
         The optional data type.
     name : str, optional
         The Optional name.
@@ -38,6 +45,10 @@ def convert_to_tensor(value, dtype=None, name=None):
     -------
     dragon.Tensor
         The output tensor.
+
+    See Also
+    --------
+    `tf.constant(...)`_
 
     """
     if types.is_tensor(value):

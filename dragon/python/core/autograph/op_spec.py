@@ -1007,10 +1007,10 @@ def tile_spec(args, inputs, outputs):
 @register('Transpose')
 def transpose_spec(args, inputs, outputs):
     outputs[0].dtype = inputs[0].dtype
-    perm = args['perm']
     if 'perm_desc' in args or 'perm_descs' in args:
         return outputs
     try:
+        perm = args['perm']
         if perm is None:
             perm = list(range(((len(inputs[0].shape)) - 1), -1, -1))
         out_shape = list(inputs[0].shape[:])

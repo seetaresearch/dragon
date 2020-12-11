@@ -72,17 +72,17 @@ class TestTensor(unittest.TestCase):
     """Test the tensor class."""
 
     def test_properties(self):
-        a, b = dragon.Tensor(), dragon.EagerTensor(0)
-        self.assertEqual(dragon.Tensor().ndim, 0)
+        a, b = dragon.Tensor(()), dragon.EagerTensor(0)
+        self.assertEqual(dragon.Tensor(()).ndim, 0)
         self.assertEqual(dragon.Tensor(shape=(2,)).ndim, 1)
-        self.assertEqual(dragon.Tensor().shape, None)
+        self.assertEqual(dragon.Tensor(None).shape, None)
         self.assertEqual(dragon.Tensor(shape=(2,)).shape, (2,))
-        self.assertEqual(dragon.Tensor().size, 0)
+        self.assertEqual(dragon.Tensor(None).size, 0)
         self.assertEqual(dragon.Tensor(()).size, 1)
         self.assertEqual(dragon.Tensor(shape=(2, None)).size, math.inf)
         self.assertEqual(dragon.Tensor(shape=(2,)).size, 2)
-        self.assertEqual(dragon.Tensor().dtype, None)
-        self.assertEqual(dragon.Tensor(dtype='float32').dtype, 'float32')
+        self.assertEqual(dragon.Tensor(None, None).dtype, None)
+        self.assertEqual(dragon.Tensor(None, dtype='float32').dtype, 'float32')
         self.assertEqual(dragon.EagerTensor(shape=(2,)).ndim, 1)
         self.assertEqual(dragon.EagerTensor(shape=(2,)).shape, (2,))
         self.assertEqual(dragon.EagerTensor(shape=(2,)).size, 2)
@@ -92,7 +92,8 @@ class TestTensor(unittest.TestCase):
         self.assertNotEqual(a.__repr__(), b.__repr__())
         self.assertNotEqual(b.__repr__(), dragon.EagerTensor((2,)).__repr__())
         self.assertEqual(int(a.constant().set_value(1)), 1)
-        self.assertEqual(float(dragon.Tensor.convert_to(1)), 1.)
+        self.assertEqual(float(dragon.Tensor.from_value(1)), 1.)
+        self.assertEqual(float(dragon.EagerTensor.from_value(1)), 1.)
         self.assertEqual(int(b.set_value(1)), 1)
         self.assertEqual(float(b), 1.)
         self.assertEqual(int(b.get_value()), 1)
@@ -160,7 +161,7 @@ class TestWorkspace(unittest.TestCase):
         w = dragon.Workspace()
         with w.as_default():
             v1, v2 = dragon.EagerTensor(1), np.array(2)
-            x = dragon.Tensor(name='test_feed_tensor/x')
+            x = dragon.Tensor((), name='test_feed_tensor/x')
             w.feed_tensor(x, v1)
             self.assertEqual(int(x), 1)
             w.feed_tensor(x, v2)
@@ -169,7 +170,7 @@ class TestWorkspace(unittest.TestCase):
     def test_merge_form(self):
         w1, w2 = dragon.Workspace(), dragon.Workspace()
         with w1.as_default():
-            x = dragon.Tensor(name='test_merge_from/x').set_value(0)
+            x = dragon.Tensor((), name='test_merge_from/x').set_value(0)
         w2.merge_from(w1)
         with w2.as_default():
             self.assertEqual(int(x), 0)

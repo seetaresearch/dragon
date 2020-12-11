@@ -16,8 +16,8 @@ from __future__ import print_function
 
 from dragon.core.eager import context
 from dragon.core.ops import metric_ops_lib
+from dragon.core.ops.utils import ArgHelper
 from dragon.core.ops.utils import OpSchema
-from dragon.core.ops.utils import parse_args
 
 
 @OpSchema.num_inputs(2)
@@ -41,7 +41,7 @@ def accuracy(inputs, axis=-1, top_k=1, ignore_index=None, **kwargs):
         The output tensor.
 
     """
-    args = parse_args(locals())
+    args = ArgHelper.parse(locals())
     op_lib = metric_ops_lib.Accuracy
     if context.executing_eagerly():
         return op_lib \

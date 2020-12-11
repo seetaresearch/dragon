@@ -27,22 +27,24 @@ from dragon.core.util import nest
 class Tensor(types.TensorMetaclass):
     """Tensor abstraction for graph executing."""
 
-    def __init__(self, shape=None, dtype=None, name=None):
+    def __init__(self, shape, dtype='float32', name=None):
         """Create a ``Tensor``.
 
         Parameters
         ----------
-        shape : Sequence[int], optional
-            The optional tensor shape.
-        dtype : str, optional
+        shape : Sequence[int]
+            The tensor shape.
+        dtype : str, optional, default='float32'
             The optional data type.
         name : str, optional
             The optional tensor name.
 
         """
-        self._op, self._grad = None, None
-        self._name, self._shape, self._dtype = None, None, None
-        self.name, self.shape, self.dtype = name, shape, dtype
+        self._shape = self.shape = shape
+        self._dtype = self.dtype = dtype
+        self._name = self.name = name
+        self._op = None
+        self._grad = None
 
     @property
     def dtype(self):
@@ -229,6 +231,34 @@ class Tensor(types.TensorMetaclass):
 
         """
 
+    @classmethod
+    def from_value(cls, value, dtype=None, name=None):
+        """Return a tensor converted from the given value.
+
+        Parameters
+        ----------
+        value : array_like
+            The value to convert.
+        dtype: str, optional
+            The optional data type.
+        name: str, optional
+            The optional tensor name.
+
+        Returns
+        -------
+        dragon.Tensor
+            The output tensor.
+
+        """
+        if not isinstance(value, numpy.ndarray):
+            value = numpy.array(value, dtype if dtype else 'float32')
+        name = workspace.get_workspace().unique_name(
+            name=context.get_name_scope() + (name if name else 'Const'),
+            suffix=':0',
+            namespace='Tensor')
+        ref = TensorRef(name, list(value.shape), str(value.dtype))
+        return ref.set_value(value)
+
     def get_value(self):
         """Return the value of implementation.
 
@@ -393,36 +423,6 @@ class Tensor(types.TensorMetaclass):
 
         """
         return self._register_as('uniform', low=low, high=high)
-
-    @classmethod
-    def convert_to(cls, value, dtype=None, name=None):
-        """Convert the given ``value`` to a ``dragon.Tensor``.
-
-        Parameters
-        ----------
-        value : array_like
-            The value to convert.
-        dtype: str, optional
-            The optional data type.
-        name: str, optional
-            The optional name for this tensor.
-
-        Returns
-        -------
-        dragon.Tensor
-            The constant contains the value.
-
-        """
-        if not isinstance(value, numpy.ndarray):
-            value = numpy.array(value, dtype if dtype else 'float32')
-        return TensorRef(
-            name=workspace.get_workspace().unique_name(
-                name=context.get_name_scope() + (name if name else 'Const'),
-                suffix=':0',
-                namespace='Tensor'),
-            shape=list(value.shape),
-            dtype=str(value.dtype),
-        ).set_value(value)
 
     def _register_as(self, type, **kwargs):
         """Fill self with the specific type of filler."""

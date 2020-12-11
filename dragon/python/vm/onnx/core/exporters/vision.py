@@ -180,7 +180,7 @@ def roi_align(op_def, context):
     node, const_tensors = export_util.translate(**locals())
     # Make a dummy "batch_indices".
     batch_indices = helper.from_array(
-        numpy.array([1], 'int64'),
+        numpy.zeros((context.blob_shapes[node.input[1]][0],), 'int64'),
         context.unique_name(op_def.input[0] + '/roi_align/batch_indices'),
     )
     node.input.extend([batch_indices.name])

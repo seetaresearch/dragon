@@ -49,6 +49,10 @@ copy
 ####
 .. automethod:: dragon.Tensor.copy
 
+from_value
+##########
+.. automethod:: dragon.Tensor.from_value
+
 get_value
 ##########
 .. automethod:: dragon.Tensor.get_value

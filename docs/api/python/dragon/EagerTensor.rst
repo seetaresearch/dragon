@@ -49,6 +49,10 @@ copy
 ####
 .. automethod:: dragon.EagerTensor.copy
 
+from_value
+##########
+.. automethod:: dragon.EagerTensor.from_value
+
 get_value
 #########
 .. automethod:: dragon.EagerTensor.get_value

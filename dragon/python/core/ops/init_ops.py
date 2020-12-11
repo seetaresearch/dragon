@@ -24,7 +24,6 @@ from dragon.core.framework import types
 from dragon.core.ops import init_ops_lib
 from dragon.core.ops.utils import ArgHelper
 from dragon.core.ops.utils import OpSchema
-from dragon.core.ops.utils import parse_args
 
 
 def constant(value, dtype=None, shape=None, name=None):
@@ -55,17 +54,33 @@ def constant(value, dtype=None, shape=None, name=None):
         The output tensor.
 
     """
-    if types.is_eager_tensor(value):
-        value = value.numpy(True)
-        if dtype is not None:
-            value = value.astype(dtype)
+    # Determine the initial value.
+    if types.is_tensor(value):
+        initial_value = value.get_value()
     else:
-        value = numpy.array(value, dtype=dtype)
-    value = value.reshape(shape) if shape else value
+        initial_value = value
+    # Determine the data type and shape.
+    initial_value = numpy.array(initial_value, dtype)
+    if not hasattr(value, 'dtype'):
+        # Discard the default 64 bit types.
+        if initial_value.dtype == numpy.float64:
+            initial_value = initial_value.astype(numpy.float32)
+        elif initial_value.dtype == numpy.int64:
+            initial_value = initial_value.astype(numpy.int32)
+    # Determine the shape.
+    if shape is not None:
+        if initial_value.size == 1:
+            # Broadcast with scalar value.
+            scalar = initial_value.flatten()[0]
+            initial_value = numpy.empty(shape, initial_value.dtype)
+            initial_value.fill(scalar)
+        else:
+            # Reshape.
+            initial_value = initial_value.reshape(shape)
     if context.executing_eagerly():
-        return EagerTensor(value)
+        return EagerTensor(initial_value, name=name)
     else:
-        return Tensor.convert_to(value, str(value.dtype), name)
+        return Tensor.from_value(initial_value, dtype, name)
 
 
 def eye(n, m=None, k=0, dtype='float32', **kwargs):
@@ -105,7 +120,7 @@ def eye(n, m=None, k=0, dtype='float32', **kwargs):
         The output tensor.
 
     """
-    args = parse_args(locals())
+    args = ArgHelper.parse(locals())
     m = n if m is None else m
     trainable = args.pop('trainable') if 'trainable' in args else False
     op_lib = init_ops_lib.Eye
@@ -165,7 +180,7 @@ def eye_like(other, k=0, dtype='float32', **kwargs):
         The output tensor.
 
     """
-    args = parse_args(locals())
+    args = ArgHelper.parse(locals())
     trainable = args.pop('trainable') if 'trainable' in args else False
     op_lib = init_ops_lib.Eye
     if context.executing_eagerly():
@@ -198,7 +213,7 @@ def fill(shape, value=0, dtype=None, **kwargs):
         The output tensor.
 
     """
-    args = parse_args(locals())
+    args = ArgHelper.parse(locals())
     args['value'] = float(value)
     if dtype is None:
         args['dtype'] = str(numpy.array(value).dtype)
@@ -242,7 +257,7 @@ def glorot_normal(shape, scale=2.0, mode='fan_in', dtype='float32', **kwargs):
         The output tensor.
 
     """
-    args = parse_args(locals())
+    args = ArgHelper.parse(locals())
     args['scale'] = float(scale)
     args['mode'] = mode.lower()
     trainable = args.pop('trainable') if 'trainable' in args else False
@@ -284,7 +299,7 @@ def glorot_uniform(shape, mode='fan_in', scale=3.0, dtype='float32', **kwargs):
         The output tensor.
 
     """
-    args = parse_args(locals())
+    args = ArgHelper.parse(locals())
     args['scale'] = float(scale)
     args['mode'] = mode.lower()
     trainable = args.pop('trainable') if 'trainable' in args else False
@@ -352,7 +367,7 @@ def ones_like(other, dtype='float32', **kwargs):
         The output tensor.
 
     """
-    args = parse_args(locals())
+    args = ArgHelper.parse(locals())
     trainable = args.pop('trainable') if 'trainable' in args else False
     op_lib = init_ops_lib.Fill
     if context.executing_eagerly():
@@ -387,7 +402,7 @@ def random_normal(shape, mean=0, std=1, dtype='float32', **kwargs):
         The output tensor.
 
     """
-    args = parse_args(locals())
+    args = ArgHelper.parse(locals())
     args['mean'] = float(mean)
     args['std'] = float(std)
     trainable = args.pop('trainable') if 'trainable' in args else False
@@ -427,7 +442,7 @@ def random_normal_like(other, mean=0, std=1, dtype='float32', **kwargs):
         The output tensor.
 
     """
-    args = parse_args(locals())
+    args = ArgHelper.parse(locals())
     args['mean'] = float(mean)
     args['std'] = float(std)
     trainable = args.pop('trainable') if 'trainable' in args else False
@@ -467,7 +482,7 @@ def random_uniform(shape, low=-1, high=1, dtype='float32', **kwargs):
         The output tensor.
 
     """
-    args = parse_args(locals())
+    args = ArgHelper.parse(locals())
     args['low'], args['high'] = float(low), float(high)
     trainable = args.pop('trainable') if 'trainable' in args else False
     op_lib = init_ops_lib.RandomUniform
@@ -506,7 +521,7 @@ def random_uniform_like(other, low=-1, high=1, dtype='float32', **kwargs):
         The output tensor.
 
     """
-    args = parse_args(locals())
+    args = ArgHelper.parse(locals())
     args['low'], args['high'] = float(low), float(high)
     trainable = args.pop('trainable') if 'trainable' in args else False
     op_lib = init_ops_lib.RandomUniform
@@ -545,7 +560,7 @@ def truncated_normal(shape, mean=0, std=1, dtype='float32', **kwargs):
         The output tensor.
 
     """
-    args = parse_args(locals())
+    args = ArgHelper.parse(locals())
     args['mean'], args['std'] = float(mean), float(std)
     trainable = args.pop('trainable') if 'trainable' in args else False
     op_lib = init_ops_lib.TruncatedNormal
@@ -613,7 +628,7 @@ def zeros_like(other, dtype='float32', **kwargs):
         The output tensor.
 
     """
-    args = parse_args(locals())
+    args = ArgHelper.parse(locals())
     trainable = args.pop('trainable') if 'trainable' in args else False
     op_lib = init_ops_lib.Fill
     if context.executing_eagerly():

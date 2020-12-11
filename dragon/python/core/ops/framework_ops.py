@@ -16,8 +16,8 @@ from __future__ import print_function
 
 from dragon.core.autograph.op_def import OpDef
 from dragon.core.eager import context
+from dragon.core.ops.utils import ArgHelper
 from dragon.core.ops.utils import OpSchema
-from dragon.core.ops.utils import parse_args
 
 
 def python_plugin(
@@ -52,7 +52,7 @@ def python_plugin(
         The outputs.
 
     """
-    args = parse_args(locals())
+    args = ArgHelper.parse(locals())
     if context.executing_eagerly():
         raise RuntimeError('Excepted the graph execution mode.')
     else:
@@ -77,7 +77,7 @@ def stop_gradient(inputs, **kwargs):
         An identity of input.
 
     """
-    args = parse_args(locals())
+    args = ArgHelper.parse(locals())
     if context.executing_eagerly():
         raise RuntimeError('Excepted the graph execution mode.')
     else:
