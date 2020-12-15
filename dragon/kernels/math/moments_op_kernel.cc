@@ -8,20 +8,20 @@ namespace kernel {
 
 namespace {
 
-template <typename Tx, typename Ty>
+template <typename T, typename AccT>
 void _RowwiseMoments(
     const int rows,
     const int cols,
-    const Tx* x,
-    Ty* mean,
-    Ty* var) {
-  const Ty scale = Ty(1) / (Ty)rows;
+    const T* x,
+    AccT* mean,
+    AccT* var) {
+  const AccT scale = AccT(1) / AccT(rows);
 #ifdef USE_OPENMP
 #pragma omp parallel for num_threads(OMP_THREADS(cols))
 #endif
   for (int i = 0; i < cols; ++i) {
-    Tx x_val;
-    Ty m_val = 0, v_val = 0, mu;
+    T x_val;
+    AccT m_val = AccT(0), v_val = AccT(0), mu;
     for (int j = 0; j < rows; ++j) {
       x_val = x[j * cols + i];
       m_val += x_val;
@@ -32,20 +32,20 @@ void _RowwiseMoments(
   }
 }
 
-template <typename Tx, typename Ty>
+template <typename T, typename AccT>
 void _ColwiseMoments(
     const int rows,
     const int cols,
-    const Tx* x,
-    Ty* mean,
-    Ty* var) {
-  const Ty scale = Ty(1) / (Ty)cols;
+    const T* x,
+    AccT* mean,
+    AccT* var) {
+  const AccT scale = AccT(1) / AccT(cols);
 #ifdef USE_OPENMP
 #pragma omp parallel for num_threads(OMP_THREADS(rows))
 #endif
   for (int i = 0; i < rows; ++i) {
-    Tx x_val;
-    Ty m_val = 0, v_val = 0, mu;
+    T x_val;
+    AccT m_val = AccT(0), v_val = AccT(0), mu;
     for (int j = 0; j < cols; ++j) {
       x_val = x[i * cols + j];
       m_val += x_val;
@@ -56,23 +56,23 @@ void _ColwiseMoments(
   }
 }
 
-template <typename Tx, typename Ty>
+template <typename T, typename AccT>
 void _GenericMoments(
     const int rows,
     const int cols,
     const int num_dims,
     const int* x_dims,
     const int* x_strides,
-    const Tx* x,
-    Ty* mean,
-    Ty* var) {
-  const Ty scale = Ty(1) / (Ty)cols;
+    const T* x,
+    AccT* mean,
+    AccT* var) {
+  const AccT scale = AccT(1) / AccT(cols);
 #ifdef USE_OPENMP
 #pragma omp parallel for num_threads(OMP_THREADS(rows))
 #endif
   for (int i = 0; i < rows; ++i) {
-    Tx x_val;
-    Ty m_val = 0, v_val = 0, mu;
+    T x_val;
+    AccT m_val = AccT(0), v_val = AccT(0), mu;
     int xi, c, r;
     for (int j = 0; j < cols; ++j) {
       xi = 0;
@@ -90,52 +90,58 @@ void _GenericMoments(
   }
 }
 
-template <typename Tx, typename Ty>
+template <typename T, typename AccT>
 void _Moments(
     const int num_dims,
     const int* dims,
     const int num_axes,
     const int* axes,
-    const Tx* x,
-    Ty* mean,
-    Ty* var,
+    const T* x,
+    AccT* mean,
+    AccT* var,
     CPUContext* ctx) {
   int rows, cols;
-  vec32_t y_dims(dims, dims + num_dims);
-  for (int i = 0; i < num_axes; ++i)
-    y_dims[axes[i]] = 1;
-
-  // Case #1: Rowwise Reduce
+  vec32_t out_dims(dims, dims + num_dims);
+  for (int i = 0; i < num_axes; ++i) {
+    out_dims[axes[i]] = 1;
+  }
   if (math::utils::IsRowwiseReduce(
-          num_dims, dims, y_dims.data(), &rows, &cols)) {
+          num_dims, dims, out_dims.data(), &rows, &cols)) {
     _RowwiseMoments(rows, cols, x, mean, var);
     return;
   }
-
-  // Case #2: Colwise Reduce
   if (math::utils::IsColwiseReduce(
-          num_dims, dims, y_dims.data(), &rows, &cols)) {
+          num_dims, dims, out_dims.data(), &rows, &cols)) {
     _ColwiseMoments(rows, cols, x, mean, var);
     return;
   }
-
-  // Case #3: Generic Reduce
-  vec32_t axesT(num_dims), stridesT(num_dims), dimsT(num_dims);
-  math::utils::TransposeAxesForReduce(num_dims, num_axes, axes, axesT.data());
+  vec32_t transpose_axes(num_dims);
+  vec32_t transpose_strides(num_dims);
+  vec32_t transpose_dims(num_dims);
+  math::utils::TransposeAxesForReduce(
+      num_dims, num_axes, axes, transpose_axes.data());
   math::utils::ComputeTransposeStrides(
-      num_dims, dims, axesT.data(), stridesT.data());
-
+      num_dims, dims, transpose_axes.data(), transpose_strides.data());
   rows = cols = 1;
   const int pivot = num_dims - num_axes;
-  for (int i = 0; i < pivot; ++i)
-    rows *= dims[axesT[i]];
-  for (int i = pivot; i < num_dims; ++i)
-    cols *= dims[axesT[i]];
-  for (int i = 0; i < num_dims; ++i)
-    dimsT[i] = dims[axesT[i]];
-
+  for (int i = 0; i < pivot; ++i) {
+    rows *= dims[transpose_axes[i]];
+  }
+  for (int i = pivot; i < num_dims; ++i) {
+    cols *= dims[transpose_axes[i]];
+  }
+  for (int i = 0; i < num_dims; ++i) {
+    transpose_dims[i] = dims[transpose_axes[i]];
+  }
   _GenericMoments(
-      rows, cols, num_dims, dimsT.data(), stridesT.data(), x, mean, var);
+      rows,
+      cols,
+      num_dims,
+      transpose_dims.data(),
+      transpose_strides.data(),
+      x,
+      mean,
+      var);
 }
 
 } // namespace
@@ -155,16 +161,16 @@ void Moments<float16, float, CPUContext>(
   CPU_FP16_NOT_SUPPORTED;
 }
 
-#define DEFINE_KERNEL_LAUNCHER(Tx, Ty)                           \
+#define DEFINE_KERNEL_LAUNCHER(T, AccT)                          \
   template <>                                                    \
-  void Moments<Tx, Ty, CPUContext>(                              \
+  void Moments<T, AccT, CPUContext>(                             \
       const int num_dims,                                        \
       const int* dims,                                           \
       const int num_axes,                                        \
       const int* axes,                                           \
-      const Tx* x,                                               \
-      Ty* mean,                                                  \
-      Ty* var,                                                   \
+      const T* x,                                                \
+      AccT* mean,                                                \
+      AccT* var,                                                 \
       CPUContext* ctx) {                                         \
     _Moments(num_dims, dims, num_axes, axes, x, mean, var, ctx); \
   }

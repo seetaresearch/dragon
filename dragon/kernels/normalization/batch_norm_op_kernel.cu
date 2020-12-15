@@ -9,6 +9,8 @@ namespace dragon {
 
 namespace kernel {
 
+namespace {
+
 #if __CUDA_ARCH__ >= 350
 #define LDG(x, i) __ldg(x + i)
 #define LDG2(x, i) convert::To<AccT>(__ldg(x + i))
@@ -17,22 +19,18 @@ namespace kernel {
 #define LDG2(x, i) convert::To<AccT>(x[i])
 #endif
 
-namespace {
-
 template <typename T, typename AccT, StorageOrder kOrder>
 __global__ void _BatchNormExpectation(
     const int N,
     const int C,
     const int S,
-    const AccT denorm,
+    const AccT normalizer,
     const T* x,
     AccT* ex,
     AccT* ex2) {
   const int outer_dim = N * S;
-  __shared__ union {
-    typename BlockReduce<AccT>::TempStorage ex;
-    typename BlockReduce<AccT>::TempStorage ex2;
-  } storage;
+  __shared__ typename BlockReduce<AccT>::TempStorage ex_storage;
+  __shared__ typename BlockReduce<AccT>::TempStorage ex2_storage;
   CUDA_2D_KERNEL_LOOP1(i, C) {
     AccT ex_val = AccT(0), ex2_val = AccT(0);
     CUDA_2D_KERNEL_LOOP2(j, outer_dim) {
@@ -41,11 +39,11 @@ __global__ void _BatchNormExpectation(
       ex_val += LDG2(x, xi);
       ex2_val += math::utils::Square(LDG2(x, xi));
     }
-    ex_val = BlockReduce<AccT>(storage.ex).Reduce(ex_val, cub::Sum());
-    ex2_val = BlockReduce<AccT>(storage.ex2).Reduce(ex2_val, cub::Sum());
+    ex_val = BlockReduce<AccT>(ex_storage).Reduce(ex_val, cub::Sum());
+    ex2_val = BlockReduce<AccT>(ex2_storage).Reduce(ex2_val, cub::Sum());
     if (threadIdx.x == 0) {
-      ex[i] = ex_val * denorm;
-      ex2[i] = ex2_val * denorm;
+      ex[i] = ex_val / normalizer;
+      ex2[i] = ex2_val / normalizer;
     }
   }
 }
@@ -82,22 +80,19 @@ __global__ void _BatchNormAffine(
 }
 
 template <typename T, typename AccT, StorageOrder kOrder>
-__global__ void _BatchNormInternalGrad(
+__global__ void _BatchNormWGrad(
     const int N,
     const int C,
     const int S,
     const T* x,
     const AccT* mu,
     const AccT* rsig,
-    const AccT* gamma,
     const T* dy,
     AccT* dgamma,
     AccT* dbeta) {
   const int outer_dim = N * S;
-  __shared__ union {
-    typename BlockReduce<AccT>::TempStorage dg;
-    typename BlockReduce<AccT>::TempStorage db;
-  } storage;
+  __shared__ typename BlockReduce<AccT>::TempStorage dg_storage;
+  __shared__ typename BlockReduce<AccT>::TempStorage db_storage;
   CUDA_2D_KERNEL_LOOP1(i, C) {
     AccT dg_val = AccT(0), db_val = AccT(0);
     CUDA_2D_KERNEL_LOOP2(j, outer_dim) {
@@ -106,8 +101,8 @@ __global__ void _BatchNormInternalGrad(
       dg_val += LDG2(dy, xi) * (LDG2(x, xi) - LDG(mu, i)) * LDG(rsig, i);
       db_val += LDG2(dy, xi);
     }
-    dg_val = BlockReduce<AccT>(storage.dg).Reduce(dg_val, cub::Sum());
-    db_val = BlockReduce<AccT>(storage.db).Reduce(db_val, cub::Sum());
+    dg_val = BlockReduce<AccT>(dg_storage).Sum(dg_val);
+    db_val = BlockReduce<AccT>(db_storage).Sum(db_val);
     if (threadIdx.x == 0) {
       dgamma[i] = dg_val;
       dbeta[i] = db_val;
@@ -121,6 +116,7 @@ __global__ void _BatchNormTrainingGrad(
     const int N,
     const int C,
     const int S,
+    const AccT normalizer,
     const T* x,
     const AccT* mu,
     const AccT* rsig,
@@ -129,46 +125,15 @@ __global__ void _BatchNormTrainingGrad(
     const AccT* dbeta,
     const T* dy,
     T* dx) {
-  const AccT denom = AccT(1) / AccT(N * S);
   CUDA_1D_KERNEL_LOOP(i, nthreads) {
     const int pi = kOrder == StorageOrder::NCHW ? (i / S) % C : i % C;
-    const AccT xnorm = (LDG2(x, i) - LDG(mu, pi)) * LDG(rsig, pi);
     dx[i] = convert::To<T>(
         LDG(gamma, pi) * LDG(rsig, pi) *
-        (LDG2(dy, i) - fma(xnorm, LDG(dgamma, pi), LDG(dbeta, pi)) * denom));
-  }
-}
-
-template <typename T, typename AccT, StorageOrder kOrder>
-__global__ void _BatchNormWGrad(
-    const int N,
-    const int C,
-    const int S,
-    const T* x,
-    const AccT* mu,
-    const AccT* rsig,
-    const T* dy,
-    AccT* dgamma,
-    AccT* dbeta) {
-  const int outer_dim = N * S;
-  __shared__ union {
-    typename BlockReduce<AccT>::TempStorage dg;
-    typename BlockReduce<AccT>::TempStorage db;
-  } storage;
-  CUDA_2D_KERNEL_LOOP1(i, C) {
-    AccT dg_val = AccT(0), db_val = AccT(0);
-    CUDA_2D_KERNEL_LOOP2(j, outer_dim) {
-      const int xi = kOrder == StorageOrder::NCHW ? (j / S * C + i) * S + j % S
-                                                  : j * C + i;
-      dg_val += LDG2(dy, xi) * (LDG2(x, xi) - LDG(mu, i)) * LDG(rsig, i);
-      db_val += LDG2(dy, xi);
-    }
-    dg_val = BlockReduce<AccT>(storage.db).Reduce(dg_val, cub::Sum());
-    db_val = BlockReduce<AccT>(storage.db).Reduce(db_val, cub::Sum());
-    if (threadIdx.x == 0) {
-      dgamma[i] = dg_val;
-      dbeta[i] = db_val;
-    }
+        (LDG2(dy, i) -
+         fma((LDG2(x, i) - LDG(mu, pi)) * LDG(rsig, pi),
+             LDG(dgamma, pi),
+             LDG(dbeta, pi)) /
+             normalizer));
   }
 }
 
@@ -248,7 +213,7 @@ __global__ void _BatchNormInferenceGrad(
       const int N,                                    \
       const int C,                                    \
       const int S,                                    \
-      const AccT denorm,                              \
+      const float normalizer,                         \
       const string& data_format,                      \
       const T* x,                                     \
       AccT* ex,                                       \
@@ -263,13 +228,13 @@ __global__ void _BatchNormInferenceGrad(
         N,                                            \
         C,                                            \
         S,                                            \
-        denorm,                                       \
+        normalizer,                                   \
         reinterpret_cast<const ScalarT*>(x),          \
         ex,                                           \
         ex2);                                         \
   }                                                   \
   template <>                                         \
-  void BatchNormInternalGrad<T, AccT, CUDAContext>(   \
+  void BatchNormWGrad<T, AccT, CUDAContext>(          \
       const int N,                                    \
       const int C,                                    \
       const int S,                                    \
@@ -277,13 +242,12 @@ __global__ void _BatchNormInferenceGrad(
       const T* x,                                     \
       const AccT* mu,                                 \
       const AccT* rsig,                               \
-      const AccT* gamma,                              \
       const T* dy,                                    \
       AccT* dgamma,                                   \
       AccT* dbeta,                                    \
       CUDAContext* ctx) {                             \
     DISPATCH_BATCHNORM_KERNEL(                        \
-        _BatchNormInternalGrad,                       \
+        _BatchNormWGrad,                              \
         ScalarT,                                      \
         AccT,                                         \
         CUDA_2D_BLOCKS(C),                            \
@@ -294,7 +258,6 @@ __global__ void _BatchNormInferenceGrad(
         reinterpret_cast<const ScalarT*>(x),          \
         mu,                                           \
         rsig,                                         \
-        gamma,                                        \
         reinterpret_cast<const ScalarT*>(dy),         \
         dgamma,                                       \
         dbeta);                                       \
@@ -304,6 +267,7 @@ __global__ void _BatchNormInferenceGrad(
       const int N,                                    \
       const int C,                                    \
       const int S,                                    \
+      const float normalizer,                         \
       const string& data_format,                      \
       const T* x,                                     \
       const AccT* mu,                                 \
@@ -325,6 +289,7 @@ __global__ void _BatchNormInferenceGrad(
         N,                                            \
         C,                                            \
         S,                                            \
+        normalizer,                                   \
         reinterpret_cast<const ScalarT*>(x),          \
         mu,                                           \
         rsig,                                         \
@@ -384,8 +349,10 @@ __global__ void _BatchNormInferenceGrad(
 
 DEFINE_KERNEL_LAUNCHER(float16, half, float);
 DEFINE_KERNEL_LAUNCHER(float, float, float);
+DEFINE_KERNEL_LAUNCHER(double, double, double);
 DEFINE_GRAD_KERNEL_LAUNCHER(float16, half, float);
 DEFINE_GRAD_KERNEL_LAUNCHER(float, float, float);
+DEFINE_GRAD_KERNEL_LAUNCHER(double, double, double);
 #undef DEFINE_KERNEL_LAUNCHER
 #undef DEFINE_GRAD_KERNEL_LAUNCHER
 #undef DISPATCH_BATCHNORM_KERNEL

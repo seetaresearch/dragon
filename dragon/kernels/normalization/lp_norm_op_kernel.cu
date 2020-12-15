@@ -16,8 +16,8 @@ __global__ void _L1Normalize(
     const int nblocks,
     const int inner_dim,
     const int reduce_dim,
-    const AccT scale,
-    const AccT eps,
+    const AccT normalizer,
+    const AccT epsilon,
     const T* x,
     T* y) {
   __shared__ AccT norm;
@@ -30,7 +30,7 @@ __global__ void _L1Normalize(
     }
     sum = BlockReduce<AccT>(storage).Sum(sum);
     if (threadIdx.x == 0) {
-      norm = max(sum * scale, eps);
+      norm = max(sum / normalizer, epsilon);
     }
     __syncthreads();
     CUDA_2D_KERNEL_LOOP2(j, reduce_dim) {
@@ -45,8 +45,8 @@ __global__ void _L2Normalize(
     const int nblocks,
     const int inner_dim,
     const int reduce_dim,
-    const AccT scale,
-    const AccT eps,
+    const AccT normalizer,
+    const AccT epsilon,
     const T* x,
     T* y) {
   __shared__ AccT norm;
@@ -59,7 +59,7 @@ __global__ void _L2Normalize(
     }
     sum = BlockReduce<AccT>(storage).Sum(sum);
     if (threadIdx.x == 0) {
-      norm = max(sqrt(sum * scale), eps);
+      norm = max(sqrt(sum / normalizer), epsilon);
     }
     __syncthreads();
     CUDA_2D_KERNEL_LOOP2(j, reduce_dim) {
@@ -74,8 +74,8 @@ __global__ void _L1NormalizeGrad(
     const int nblocks,
     const int inner_dim,
     const int reduce_dim,
-    const AccT scale,
-    const AccT eps,
+    const AccT normalizer,
+    const AccT epsilon,
     const T* dy,
     const T* x,
     T* dx) {
@@ -92,9 +92,9 @@ __global__ void _L1NormalizeGrad(
     val1 = BlockReduce<AccT>(storage).Sum(val1);
     val2 = BlockReduce<AccT>(storage).Sum(val2);
     if (threadIdx.x == 0) {
-      norm = max(val1 * scale, eps);
+      norm = max(val1 / normalizer, epsilon);
       norm2 = pow(norm, 2);
-      sum = val2 * scale;
+      sum = val2 / normalizer;
     }
     __syncthreads();
     CUDA_2D_KERNEL_LOOP2(j, reduce_dim) {
@@ -111,8 +111,8 @@ __global__ void _L2NormalizeGrad(
     const int nblocks,
     const int inner_dim,
     const int reduce_dim,
-    const AccT scale,
-    const AccT eps,
+    const AccT normalizer,
+    const AccT epsilon,
     const T* dy,
     const T* x,
     T* dx) {
@@ -129,9 +129,9 @@ __global__ void _L2NormalizeGrad(
     val1 = BlockReduce<AccT>(storage).Sum(val1);
     val2 = BlockReduce<AccT>(storage).Sum(val2);
     if (threadIdx.x == 0) {
-      norm = max(sqrt(val1 * scale), eps);
+      norm = max(sqrt(val1 / normalizer), epsilon);
       norm3 = pow(norm, 3);
-      sum = val2 * scale;
+      sum = val2 / normalizer;
     }
     __syncthreads();
     CUDA_2D_KERNEL_LOOP2(j, reduce_dim) {
@@ -153,8 +153,8 @@ __global__ void _L2NormalizeGrad(
       const int outer_dim,                                                  \
       const int inner_dim,                                                  \
       const int reduce_dim,                                                 \
-      const float scale,                                                    \
-      const float eps,                                                      \
+      const float normalizer,                                               \
+      const float epsilon,                                                  \
       const T* x,                                                           \
       T* y,                                                                 \
       CUDAContext* ctx) {                                                   \
@@ -164,8 +164,8 @@ __global__ void _L2NormalizeGrad(
             nblocks,                                                        \
             inner_dim,                                                      \
             reduce_dim,                                                     \
-            scale,                                                          \
-            eps,                                                            \
+            AccT(normalizer),                                               \
+            AccT(epsilon),                                                  \
             reinterpret_cast<const ScalarT*>(x),                            \
             reinterpret_cast<ScalarT*>(y));                                 \
   }
@@ -176,8 +176,8 @@ __global__ void _L2NormalizeGrad(
       const int outer_dim,                                                  \
       const int inner_dim,                                                  \
       const int reduce_dim,                                                 \
-      const float scale,                                                    \
-      const float eps,                                                      \
+      const float normalizer,                                               \
+      const float epsilon,                                                  \
       const T* dy,                                                          \
       const T* x,                                                           \
       T* dx,                                                                \
@@ -188,8 +188,8 @@ __global__ void _L2NormalizeGrad(
             nblocks,                                                        \
             inner_dim,                                                      \
             reduce_dim,                                                     \
-            scale,                                                          \
-            eps,                                                            \
+            AccT(normalizer),                                               \
+            AccT(epsilon),                                                  \
             reinterpret_cast<const ScalarT*>(dy),                           \
             reinterpret_cast<const ScalarT*>(x),                            \
             reinterpret_cast<ScalarT*>(dx));                                \

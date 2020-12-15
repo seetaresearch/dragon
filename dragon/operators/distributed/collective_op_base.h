@@ -26,6 +26,10 @@ class CollectiveOpBase : public Operator<Context> {
  public:
   CollectiveOpBase(const OperatorDef& def, Workspace* ws)
       : Operator<Context>(def, ws),
+        comm_rank_(0),
+        comm_size_(1),
+        comm_root_(0),
+        enable_nccl_(false),
         comm_((MPI_Comm)OP_SINGLE_ARG(int64_t, "comm", 0)),
         group_((MPI_Group)OP_SINGLE_ARG(int64_t, "group", 0)) {
     if ((int64_t)comm_ == 0) return;

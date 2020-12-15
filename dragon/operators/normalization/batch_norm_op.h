@@ -91,11 +91,20 @@ class BatchNormOp : public BatchNormOpBase<Context> {
 
   void RunOnDevice() override;
 
-  template <typename InputType, typename ParamType>
+  template <typename T>
   void TrainingImpl();
 
-  template <typename InputType, typename ParamType>
+  template <typename T>
   void InferenceImpl();
+
+  template <typename T>
+  void DoRunWithType() {
+    if (is_training_) {
+      TrainingImpl<T>();
+    } else {
+      InferenceImpl<T>();
+    }
+  };
 };
 
 template <class Context>
@@ -111,11 +120,20 @@ class BatchNormGradientOp : public BatchNormOpBase<Context> {
 
   void RunOnDevice() override;
 
-  template <typename InputType, typename ParamType>
+  template <typename T>
   void TrainingImpl();
 
-  template <typename InputType, typename ParamType>
+  template <typename T>
   void InferenceImpl();
+
+  template <typename T>
+  void DoRunWithType() {
+    if (is_training_) {
+      TrainingImpl<T>();
+    } else {
+      InferenceImpl<T>();
+    }
+  };
 };
 
 #ifdef USE_CUDNN
@@ -178,6 +196,15 @@ class CuDNNBatchNormGradientOp final : public BatchNormGradientOp<Context> {
 
   template <typename T>
   void TrainingImpl();
+
+  template <typename T>
+  void DoRunWithType() {
+    if (is_training_) {
+      TrainingImpl<T>();
+    } else {
+      this->template InferenceImpl<T>();
+    }
+  };
 
  protected:
   cudnnTensorDescriptor_t input_desc_, bn_desc_;

@@ -165,37 +165,47 @@ void _GenericReduceSum(
       return;                                                                \
     }                                                                        \
     int rows, cols;                                                          \
-    vec32_t y_dims(dims, dims + num_dims);                                   \
-    for (int i = 0; i < num_axes; ++i)                                       \
-      y_dims[axes[i]] = 1;                                                   \
-    /* Case #1: Rowwise Reduce */                                            \
+    vec32_t out_dims(dims, dims + num_dims);                                 \
+    for (int i = 0; i < num_axes; ++i) {                                     \
+      out_dims[axes[i]] = 1;                                                 \
+    }                                                                        \
     if (math::utils::IsRowwiseReduce(                                        \
-            num_dims, dims, y_dims.data(), &rows, &cols)) {                  \
+            num_dims, dims, out_dims.data(), &rows, &cols)) {                \
       _RowwiseReduce##name(rows, cols, scale, x, y);                         \
       return;                                                                \
     }                                                                        \
-    /* Case #2: Colwise Reduce */                                            \
     if (math::utils::IsColwiseReduce(                                        \
-            num_dims, dims, y_dims.data(), &rows, &cols)) {                  \
+            num_dims, dims, out_dims.data(), &rows, &cols)) {                \
       _ColwiseReduce##name(rows, cols, scale, x, y);                         \
       return;                                                                \
     }                                                                        \
-    /* Case #3: Generic Reduce */                                            \
-    vec32_t axesT(num_dims), stridesT(num_dims), dimsT(num_dims);            \
+    vec32_t transpose_axes(num_dims);                                        \
+    vec32_t transpose_strides(num_dims);                                     \
+    vec32_t transpose_dims(num_dims);                                        \
     math::utils::TransposeAxesForReduce(                                     \
-        num_dims, num_axes, axes, axesT.data());                             \
+        num_dims, num_axes, axes, transpose_axes.data());                    \
     math::utils::ComputeTransposeStrides(                                    \
-        num_dims, dims, axesT.data(), stridesT.data());                      \
+        num_dims, dims, transpose_axes.data(), transpose_strides.data());    \
     rows = cols = 1;                                                         \
     const int pivot = num_dims - num_axes;                                   \
-    for (int i = 0; i < pivot; ++i)                                          \
-      rows *= dims[axesT[i]];                                                \
-    for (int i = pivot; i < num_dims; ++i)                                   \
-      cols *= dims[axesT[i]];                                                \
-    for (int i = 0; i < num_dims; ++i)                                       \
-      dimsT[i] = dims[axesT[i]];                                             \
+    for (int i = 0; i < pivot; ++i) {                                        \
+      rows *= dims[transpose_axes[i]];                                       \
+    }                                                                        \
+    for (int i = pivot; i < num_dims; ++i) {                                 \
+      cols *= dims[transpose_axes[i]];                                       \
+    }                                                                        \
+    for (int i = 0; i < num_dims; ++i) {                                     \
+      transpose_dims[i] = dims[transpose_axes[i]];                           \
+    }                                                                        \
     _GenericReduce##name(                                                    \
-        rows, cols, num_dims, dimsT.data(), stridesT.data(), scale, x, y);   \
+        rows,                                                                \
+        cols,                                                                \
+        num_dims,                                                            \
+        transpose_dims.data(),                                               \
+        transpose_strides.data(),                                            \
+        scale,                                                               \
+        x,                                                                   \
+        y);                                                                  \
   }
 
 DEFINE_REDUCE_FUNC(Max);

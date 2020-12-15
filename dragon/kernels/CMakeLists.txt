@@ -15,14 +15,13 @@ endif()
 
 # ---[ Merge CUDA kernels to speed up compiling
 if (USE_CUDA)
-  file(WRITE ${CMAKE_CURRENT_BINARY_DIR}/op_kernels.cu "")
+  set(_gen_file ${CMAKE_CURRENT_BINARY_DIR}/../codegen/op_kernels.cu)
+  file(WRITE ${_gen_file} "")
   foreach(_file ${KERNEL_CUDA_SOURCES})
     file(STRINGS ${_file} tmp NEWLINE_CONSUME)
-    file(APPEND ${CMAKE_CURRENT_BINARY_DIR}/op_kernels.cu ${tmp} "\n")
+    file(APPEND ${_gen_file} ${tmp} "\n")
   endforeach()
-  set(MODULE_CUDA_SOURCES
-      ${MODULE_CUDA_SOURCES}
-      ${CMAKE_CURRENT_BINARY_DIR}/op_kernels.cu)
+  set(MODULE_CUDA_SOURCES ${MODULE_CUDA_SOURCES} ${_gen_file})
 endif()
 
 # ---[ Submit to the parent scope

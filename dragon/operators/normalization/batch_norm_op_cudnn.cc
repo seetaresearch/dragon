@@ -9,9 +9,13 @@ namespace dragon {
 template <class Context>
 template <typename T>
 void CuDNNBatchNormOp<Context>::DoRunWithType() {
-  typedef typename CuDNNType<T>::BNParamType ParamType;
+  using ParamType = typename CuDNNType<T>::BNParamType;
+  TENSOR_FILL_WITH_TYPE(Input(1), vec64_t({C_}), ParamType);
+  TENSOR_FILL_WITH_TYPE(Input(2), vec64_t({C_}), ParamType);
+  TENSOR_FILL_WITH_TYPE(Input(3), vec64_t({C_}), ParamType);
+  TENSOR_FILL_WITH_TYPE(Input(4), vec64_t({C_}), ParamType);
 
-  // Determine the bn desc
+  // Determine the descriptors
   if (Input(0).ndim() == 2) {
     bn_mode_ = CUDNN_BATCHNORM_PER_ACTIVATION;
     CuDNNSetTensorDesc<T>(&input_desc_, vec64_t({N_, C_, 1, 1}));
@@ -19,15 +23,9 @@ void CuDNNBatchNormOp<Context>::DoRunWithType() {
     bn_mode_ = CUDNN_BATCHNORM_SPATIAL;
     CuDNNSetTensorDesc<T>(&input_desc_, Input(0).dims(), data_format());
   }
-
-  // Derive the bn desc
   CUDNN_CHECK(cudnnDeriveBNTensorDescriptor(bn_desc_, input_desc_, bn_mode_));
 
-  TENSOR_FILL_WITH_TYPE(Input(1), vec64_t({C_}), ParamType);
-  TENSOR_FILL_WITH_TYPE(Input(2), vec64_t({C_}), ParamType);
-  TENSOR_FILL_WITH_TYPE(Input(3), vec64_t({C_}), ParamType);
-  TENSOR_FILL_WITH_TYPE(Input(4), vec64_t({C_}), ParamType);
-
+  // Dispatch the training or inference implementation
   if (is_training_ > 0) {
     auto* X_mu = Buffer("X_mu")->Reshape({C_});
     auto* X_rsig = Buffer("X_rsig")->Reshape({C_});
@@ -78,24 +76,17 @@ void CuDNNBatchNormOp<Context>::RunOnDevice() {
 
   // Dispatch the training or inference impl
   Output(0)->ReshapeLike(Input(0));
-  if (Input(0).template IsType<float>()) {
-    DoRunWithType<float>();
-  } else if (Input(0).template IsType<float16>()) {
-    DoRunWithType<float16>();
-  } else {
-    LOG(FATAL) << MessageForUnsupported(
-        types::to_string(Input(0).meta()), {"float16", "float32"});
-  }
+  DispatchHelper<FloatingTensorTypes>::Call(this, Input(0));
 }
 
 template <class Context>
 template <typename T>
 void CuDNNBatchNormGradientOp<Context>::TrainingImpl() {
-  typedef typename CuDNNType<T>::BNParamType ParamType;
+  using ParamType = typename CuDNNType<T>::BNParamType;
   auto *dX = Output(0), *dW = Output(1), *dB = Output(2);
   auto *X_mu = Buffer("X_mu"), *X_rsig = Buffer("X_rsig");
 
-  // Determine the bn desc
+  // Determine the descriptors
   if (Input(0).ndim() == 2) {
     bn_mode_ = CUDNN_BATCHNORM_PER_ACTIVATION;
     CuDNNSetTensorDesc<T>(&input_desc_, vec64_t({N_, C_, 1, 1}));
@@ -103,8 +94,6 @@ void CuDNNBatchNormGradientOp<Context>::TrainingImpl() {
     bn_mode_ = CUDNN_BATCHNORM_SPATIAL;
     CuDNNSetTensorDesc<T>(&input_desc_, Input(0).dims(), data_format());
   }
-
-  // Derive the bn desc
   CUDNN_CHECK(cudnnDeriveBNTensorDescriptor(bn_desc_, input_desc_, bn_mode_));
 
   // Gradient w.r.t. gamma, beta and input
@@ -134,25 +123,9 @@ template <class Context>
 void CuDNNBatchNormGradientOp<Context>::RunOnDevice() {
   DetermineBaseArguments();
 
-  // Dispatch the training or inference impl
+  // Dispatch the training or inference implementation
   Output(0)->ReshapeLike(Input(0));
-  if (Input(0).template IsType<float>()) {
-    if (is_training_ > 0) {
-      TrainingImpl<float>();
-    } else {
-      this->template InferenceImpl<float, float>();
-    }
-  } else if (Input(0).template IsType<float16>()) {
-    if (is_training_ > 0) {
-      TrainingImpl<float16>();
-    } else {
-      LOG(FATAL) << MessageForUnsupported(
-          types::to_string(Input(0).meta()), {"float32"});
-    }
-  } else {
-    LOG(FATAL) << MessageForUnsupported(
-        types::to_string(Input(0).meta()), {"float16", "float32"});
-  }
+  DispatchHelper<FloatingTensorTypes>::Call(this, Input(0));
 }
 
 DEPLOY_CUDNN_OPERATOR(BatchNorm);

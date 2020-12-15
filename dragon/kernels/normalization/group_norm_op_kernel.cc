@@ -228,7 +228,9 @@ void GroupNormGrad<float16, float, CPUContext>(
   }
 
 DEFINE_KERNEL_LAUNCHER(float, float);
+DEFINE_KERNEL_LAUNCHER(double, double);
 DEFINE_GRAD_KERNEL_LAUNCHER(float, float);
+DEFINE_GRAD_KERNEL_LAUNCHER(double, double);
 #undef DEFINE_KERNEL_LAUNCHER
 #undef DEFINE_GRAD_KERNEL_LAUNCHER
 

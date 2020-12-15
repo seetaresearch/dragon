@@ -6,8 +6,9 @@
 namespace dragon {
 
 template <class Context>
-template <typename InputType, typename ParamType>
+template <typename T>
 void GroupNormOp<Context>::DoRunWithType() {
+  using ParamType = typename math::utils::AccmulatorType<T>::type;
   TENSOR_FILL_WITH_TYPE(Input(1), vec64_t({C_}), ParamType);
   TENSOR_FILL_WITH_TYPE(Input(2), vec64_t({C_}), ParamType);
 
@@ -16,7 +17,7 @@ void GroupNormOp<Context>::DoRunWithType() {
   auto* X_scale = Buffer("X_scale")->Reshape({N_, C_});
   auto* X_bias = Buffer("X_bias")->Reshape({N_, C_});
 
-  auto* x = Input(0).template data<InputType, Context>();
+  auto* x = Input(0).template data<T, Context>();
   auto* mu = X_mu->template mutable_data<ParamType, Context>();
   auto* rsig = X_rsig->template mutable_data<ParamType, Context>();
 
@@ -48,7 +49,7 @@ void GroupNormOp<Context>::DoRunWithType() {
       Input(2).template data<ParamType, Context>(), // beta
       X_scale->template mutable_data<ParamType, Context>(),
       X_bias->template mutable_data<ParamType, Context>(),
-      Output(0)->template mutable_data<InputType, Context>(),
+      Output(0)->template mutable_data<T, Context>(),
       ctx());
 }
 
@@ -56,21 +57,15 @@ template <class Context>
 void GroupNormOp<Context>::RunOnDevice() {
   DetermineBaseArguments();
   Output(0)->ReshapeLike(Input(0));
-
-  if (Input(0).template IsType<float>()) {
-    DoRunWithType<float, float>();
-  } else if (Input(0).template IsType<float16>()) {
-    DoRunWithType<float16, float>();
-  } else {
-    LOG(FATAL) << MessageForUnsupported(
-        types::to_string(Input(0).meta()), {"float16", "float32"});
-  }
+  DispatchHelper<FloatingTensorTypes>::Call(this, Input(0));
 }
 
 template <class Context>
-template <typename InputType, typename ParamType>
+template <typename T>
 void GroupNormGradientOp<Context>::DoRunWithType() {
+  using ParamType = typename math::utils::AccmulatorType<T>::type;
   auto *dX = Output(0), *dW = Output(1), *dB = Output(2);
+
   auto *X_mu = Buffer("X_mu"), *X_rsig = Buffer("X_rsig");
   auto* X_scale = Buffer("X_scale")->Reshape({N_, G_});
   auto* X_bias = Buffer("X_bias")->Reshape({N_, G_});
@@ -82,16 +77,16 @@ void GroupNormGradientOp<Context>::DoRunWithType() {
       D_,
       S_,
       data_format(),
-      Input(0).template data<InputType, Context>(), // x
+      Input(0).template data<T, Context>(), // x
       X_mu->template data<ParamType, Context>(),
       X_rsig->template data<ParamType, Context>(),
       Input(1).template data<ParamType, Context>(), // gamma
-      Input(2).template data<InputType, Context>(), // dy
+      Input(2).template data<T, Context>(), // dy
       X_scale->template mutable_data<ParamType, Context>(),
       X_bias->template mutable_data<ParamType, Context>(),
       dW->Reshape({C_})->template mutable_data<ParamType, Context>(),
       dB->Reshape({C_})->template mutable_data<ParamType, Context>(),
-      dX->template mutable_data<InputType, Context>(),
+      dX->template mutable_data<T, Context>(),
       ctx());
 }
 
@@ -99,15 +94,7 @@ template <class Context>
 void GroupNormGradientOp<Context>::RunOnDevice() {
   DetermineBaseArguments();
   Output(0)->ReshapeLike(Input(0));
-
-  if (Input(0).template IsType<float>()) {
-    DoRunWithType<float, float>();
-  } else if (Input(0).template IsType<float16>()) {
-    DoRunWithType<float16, float>();
-  } else {
-    LOG(FATAL) << MessageForUnsupported(
-        types::to_string(Input(0).meta()), {"float16", "float32"});
-  }
+  DispatchHelper<FloatingTensorTypes>::Call(this, Input(0));
 }
 
 DEPLOY_CPU_OPERATOR(GroupNorm);

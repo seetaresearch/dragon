@@ -7,7 +7,7 @@
 #      ARCH_AND_PTX : NAME | NUM.NUM | NUM.NUM(NUM.NUM) | NUM.NUM+PTX
 #      NAME: Kepler Maxwell Kepler+Tesla Maxwell+Tegra Pascal Volta Turing Ampere
 #      NUM: Any number. Only those pairs are currently accepted by NVCC though:
-#            3.5 3.7 5.0 5.2 5.3 6.0 6.1 6.2 7.0 7.2 7.5 8.0
+#            3.5 3.7 5.0 5.2 5.3 6.0 6.1 6.2 7.0 7.2 7.5 8.0 8.6
 #      Returns LIST of flags to be added to CUDA_NVCC_FLAGS in ${out_variable}
 #      Additionally, sets ${out_variable}_readable to the resulting numeric list
 #      Example:
@@ -84,10 +84,21 @@ endif()
 
 if(CUDA_VERSION VERSION_GREATER "10.5")
   list(APPEND CUDA_KNOWN_GPU_ARCHITECTURES "Ampere")
-  list(APPEND CUDA_COMMON_GPU_ARCHITECTURES "8.0" "8.0+PTX")
+  list(APPEND CUDA_COMMON_GPU_ARCHITECTURES "8.0")
   list(APPEND CUDA_ALL_GPU_ARCHITECTURES "8.0")
 
+  if(CUDA_VERSION VERSION_LESS "11.1")
+    list(APPEND CUDA_COMMON_GPU_ARCHITECTURES "8.0+PTX")
+    set(CUDA_LIMIT_GPU_ARCHITECTURE "8.0")
+  endif()
+endif()
+
+if(NOT CUDA_VERSION VERSION_LESS "11.1")
+  list(APPEND CUDA_COMMON_GPU_ARCHITECTURES "8.6")
+  list(APPEND CUDA_ALL_GPU_ARCHITECTURES "8.6")
+
   if(CUDA_VERSION VERSION_LESS "12.0")
+    list(APPEND CUDA_COMMON_GPU_ARCHITECTURES "8.6+PTX")
     set(CUDA_LIMIT_GPU_ARCHITECTURE "9.0")
   endif()
 endif()
@@ -150,7 +161,7 @@ function(CUDA_DETECT_INSTALLED_GPUS OUT_VARIABLE)
     set(CUDA_GPU_DETECT_OUTPUT_FILTERED "")
     separate_arguments(CUDA_GPU_DETECT_OUTPUT)
     foreach(ITEM IN ITEMS ${CUDA_GPU_DETECT_OUTPUT})
-        if(CUDA_LIMIT_GPU_ARCHITECTURE AND (ITEM VERSION_GREATER CUDA_LIMIT_GPU_ARCHITECTURE OR
+      if(CUDA_LIMIT_GPU_ARCHITECTURE AND (ITEM VERSION_GREATER CUDA_LIMIT_GPU_ARCHITECTURE OR
                                             ITEM VERSION_EQUAL CUDA_LIMIT_GPU_ARCHITECTURE))
         list(GET CUDA_COMMON_GPU_ARCHITECTURES -1 NEWITEM)
         string(APPEND CUDA_GPU_DETECT_OUTPUT_FILTERED " ${NEWITEM}")
@@ -224,8 +235,8 @@ function(CUDA_SELECT_NVCC_ARCH_FLAGS out_variable)
         set(arch_bin 7.5)
         set(arch_ptx 7.5)
       elseif(${arch_name} STREQUAL "Ampere")
-        set(arch_bin 8.0)
-        set(arch_ptx 8.0)
+        set(arch_bin 8.0 8.6)
+        set(arch_ptx 8.6)
       else()
         message(SEND_ERROR "Unknown CUDA Architecture Name ${arch_name} in CUDA_SELECT_NVCC_ARCH_FLAGS")
       endif()

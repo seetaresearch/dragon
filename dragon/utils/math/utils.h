@@ -34,6 +34,24 @@ namespace math {
 
 namespace utils {
 
+template <typename T>
+class AccmulatorType {
+ public:
+  typedef float type;
+};
+
+template <>
+class AccmulatorType<int64_t> {
+ public:
+  typedef double type;
+};
+
+template <>
+class AccmulatorType<double> {
+ public:
+  typedef double type;
+};
+
 template <
     typename T,
     typename std::enable_if<std::is_integral<T>::value, int>::type = 0>

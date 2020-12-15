@@ -9,6 +9,8 @@ namespace dragon {
 
 namespace kernel {
 
+namespace {
+
 #if __CUDA_ARCH__ >= 350
 #define LDG(x, i) __ldg(x + i)
 #define LDG2(x, i) convert::To<AccT>(__ldg(x + i))
@@ -16,8 +18,6 @@ namespace kernel {
 #define LDG(x, i) x[i]
 #define LDG2(x, i) convert::To<AccT>(x[i])
 #endif
-
-namespace {
 
 template <typename T>
 __global__ void _GroupNormFusedParams(
@@ -99,10 +99,8 @@ __global__ void _GroupNormWGrad(
     AccT* dbeta) {
   const int outer_dim = G * D;
   const int inner_dim = N * S;
-  __shared__ union {
-    typename BlockReduce<AccT>::TempStorage dg;
-    typename BlockReduce<AccT>::TempStorage db;
-  } storage;
+  __shared__ typename BlockReduce<AccT>::TempStorage dg_storage;
+  __shared__ typename BlockReduce<AccT>::TempStorage db_storage;
   CUDA_2D_KERNEL_LOOP1(i, outer_dim) {
     AccT dg_val = AccT(0), db_val = AccT(0);
     CUDA_2D_KERNEL_LOOP2(j, inner_dim) {
@@ -114,8 +112,8 @@ __global__ void _GroupNormWGrad(
       dg_val += LDG2(dy, xi) * (LDG2(x, xi) - LDG(mu, mi)) * LDG(rsig, mi);
       db_val += LDG2(dy, xi);
     }
-    dg_val = BlockReduce<AccT>(storage.dg).Reduce(dg_val, cub::Sum());
-    db_val = BlockReduce<AccT>(storage.db).Reduce(db_val, cub::Sum());
+    dg_val = BlockReduce<AccT>(dg_storage).Sum(dg_val);
+    db_val = BlockReduce<AccT>(db_storage).Sum(db_val);
     if (threadIdx.x == 0) {
       dgamma[i] = dg_val;
       dbeta[i] = db_val;
@@ -136,10 +134,8 @@ __global__ void _GroupNormInternalGrad(
     AccT* db) {
   const int outer_dim = N * G;
   const int inner_dim = D * S;
-  __shared__ union {
-    typename BlockReduce<AccT>::TempStorage ds;
-    typename BlockReduce<AccT>::TempStorage db;
-  } storage;
+  __shared__ typename BlockReduce<AccT>::TempStorage ds_storage;
+  __shared__ typename BlockReduce<AccT>::TempStorage db_storage;
   CUDA_2D_KERNEL_LOOP1(i, outer_dim) {
     AccT ds_val = AccT(0), db_val = AccT(0);
     CUDA_2D_KERNEL_LOOP2(j, inner_dim) {
@@ -150,8 +146,8 @@ __global__ void _GroupNormInternalGrad(
       ds_val += LDG(gamma, gi) * LDG2(dy, xi) * LDG2(x, xi);
       db_val += LDG(gamma, gi) * LDG2(dy, xi);
     }
-    ds_val = BlockReduce<AccT>(storage.ds).Reduce(ds_val, cub::Sum());
-    db_val = BlockReduce<AccT>(storage.db).Reduce(db_val, cub::Sum());
+    ds_val = BlockReduce<AccT>(ds_storage).Sum(ds_val);
+    db_val = BlockReduce<AccT>(db_storage).Sum(db_val);
     if (threadIdx.x == 0) {
       ds[i] = ds_val;
       db[i] = db_val;
@@ -330,8 +326,10 @@ __global__ void _GroupNormGrad(
 
 DEFINE_KERNEL_LAUNCHER(float16, half, float);
 DEFINE_KERNEL_LAUNCHER(float, float, float);
+DEFINE_KERNEL_LAUNCHER(double, double, double);
 DEFINE_GRAD_KERNEL_LAUNCHER(float16, half, float);
 DEFINE_GRAD_KERNEL_LAUNCHER(float, float, float);
+DEFINE_GRAD_KERNEL_LAUNCHER(double, double, double);
 #undef DEFINE_KERNEL_LAUNCHER
 #undef DEFINE_GRAD_KERNEL_LAUNCHER
 #undef DISPATCH_GROUPNORM_KERNEL

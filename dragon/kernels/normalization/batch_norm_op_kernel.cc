@@ -12,7 +12,7 @@ namespace {
 template <typename T, typename AccT, StorageOrder kOrder>
 void _BatchNormExpectation(
     const std::array<int, 3>& dims,
-    const AccT denorm,
+    const AccT normalizer,
     const T* x,
     AccT* ex,
     AccT* ex2) {
@@ -27,8 +27,8 @@ void _BatchNormExpectation(
     math::utils::IncreaseIndexInDims(3, dims.data(), idx.data());
   }
   for (int i = 0; i < dims[kCDim]; ++i) {
-    ex[i] = ex[i] * denorm;
-    ex2[i] = ex2[i] * denorm;
+    ex[i] = ex[i] / normalizer;
+    ex2[i] = ex2[i] / normalizer;
   }
 }
 
@@ -85,12 +85,11 @@ void _BatchNormAffineNHWC(
 }
 
 template <typename T, typename AccT, StorageOrder kOrder>
-void _BatchNormInternalGrad(
+void _BatchNormWGrad(
     const std::array<int, 3>& dims,
     const T* x,
     const AccT* mu,
     const AccT* rsig,
-    const AccT* gamma,
     const T* dy,
     AccT* dgamma,
     AccT* dbeta) {
@@ -108,6 +107,7 @@ void _BatchNormInternalGrad(
 template <typename T, typename AccT, StorageOrder kOrder>
 void _BatchNormTrainingGrad(
     const std::array<int, 3>& dims,
+    const AccT normalizer,
     const T* x,
     const AccT* mu,
     const AccT* rsig,
@@ -118,33 +118,12 @@ void _BatchNormTrainingGrad(
     T* dx) {
   const int kCDim = kOrder == StorageOrder::NCHW ? 1 : 2;
   const int count = dims[0] * dims[1] * dims[2];
-  const AccT denom = AccT(1) / static_cast<AccT>(count / dims[kCDim]);
   std::array<int, 3> idx = {0, 0, 0};
   for (int i = 0; i < count; ++i) {
     const int pi = idx[kCDim];
     const AccT x_norm = (x[i] - mu[pi]) * rsig[pi];
     dx[i] = gamma[pi] * rsig[pi] *
-        (dy[i] - (x_norm * dgamma[pi] + dbeta[pi]) * denom);
-    math::utils::IncreaseIndexInDims(3, dims.data(), idx.data());
-  }
-}
-
-template <typename T, typename AccT, StorageOrder kOrder>
-void _BatchNormWGrad(
-    const std::array<int, 3>& dims,
-    const T* x,
-    const AccT* mu,
-    const AccT* rsig,
-    const T* dy,
-    AccT* dgamma,
-    AccT* dbeta) {
-  const int kCDim = kOrder == StorageOrder::NCHW ? 1 : 2;
-  const int count = dims[0] * dims[1] * dims[2];
-  std::array<int, 3> idx = {0, 0, 0};
-  for (int i = 0; i < count; ++i) {
-    const int pi = idx[kCDim];
-    dgamma[pi] += dy[i] * (x[i] - mu[pi]) * rsig[pi];
-    dbeta[pi] += dy[i];
+        (dy[i] - (x_norm * dgamma[pi] + dbeta[pi]) / normalizer);
     math::utils::IncreaseIndexInDims(3, dims.data(), idx.data());
   }
 }
@@ -180,6 +159,20 @@ void _BatchNormInferenceGrad(
 /* ------------------- Launcher Separator ------------------- */
 
 template <>
+void BatchNormExpectation<float16, float, CPUContext>(
+    const int N,
+    const int C,
+    const int S,
+    const float denorm,
+    const string& data_format,
+    const float16* x,
+    float* ex,
+    float* ex2,
+    CPUContext* ctx) {
+  CPU_FP16_NOT_SUPPORTED;
+}
+
+template <>
 void BatchNorm<float16, float, CPUContext>(
     const int N,
     const int C,
@@ -198,21 +191,7 @@ void BatchNorm<float16, float, CPUContext>(
 }
 
 template <>
-void BatchNormExpectation<float16, float, CPUContext>(
-    const int N,
-    const int C,
-    const int S,
-    const float denorm,
-    const string& data_format,
-    const float16* x,
-    float* ex,
-    float* ex2,
-    CPUContext* ctx) {
-  CPU_FP16_NOT_SUPPORTED;
-}
-
-template <>
-void BatchNormInternalGrad<float16, float, CPUContext>(
+void BatchNormWGrad<float16, float, CPUContext>(
     const int N,
     const int C,
     const int S,
@@ -220,19 +199,19 @@ void BatchNormInternalGrad<float16, float, CPUContext>(
     const float16* x,
     const float* mu,
     const float* rsig,
-    const float* gamma,
     const float16* dy,
     float* dgamma,
     float* dbeta,
     CPUContext* ctx) {
   CPU_FP16_NOT_SUPPORTED;
-} // BatchNormInternalGrad
+} // BatchNormWGrad
 
 template <>
 void BatchNormTrainingGrad<float16, float, CPUContext>(
     const int N,
     const int C,
     const int S,
+    const float normalizer,
     const string& data_format,
     const float16* x,
     const float* mu,
@@ -288,113 +267,115 @@ void BatchNormInferenceGrad<float16, float, CPUContext>(
     }                                                             \
   }
 
-#define DEFINE_GRAD_KERNEL_LAUNCHER(T, AccT)                     \
-  template <>                                                    \
-  void BatchNormExpectation<T, AccT, CPUContext>(                \
-      const int N,                                               \
-      const int C,                                               \
-      const int S,                                               \
-      const AccT denorm,                                         \
-      const string& data_format,                                 \
-      const T* x,                                                \
-      AccT* ex,                                                  \
-      AccT* ex2,                                                 \
-      CPUContext* ctx) {                                         \
-    math::Set(C, AccT(0), ex, ctx);                              \
-    math::Set(C, AccT(0), ex2, ctx);                             \
-    if (data_format == "NCHW") {                                 \
-      _BatchNormExpectation<T, AccT, StorageOrder::NCHW>(        \
-          {N, C, S}, denorm, x, ex, ex2);                        \
-    } else if (data_format == "NHWC") {                          \
-      _BatchNormExpectation<T, AccT, StorageOrder::NHWC>(        \
-          {N, S, C}, denorm, x, ex, ex2);                        \
-    }                                                            \
-  }                                                              \
-  template <>                                                    \
-  void BatchNormInternalGrad<T, AccT, CPUContext>(               \
-      const int N,                                               \
-      const int C,                                               \
-      const int S,                                               \
-      const string& data_format,                                 \
-      const T* x,                                                \
-      const AccT* mu,                                            \
-      const AccT* rsig,                                          \
-      const AccT* gamma,                                         \
-      const T* dy,                                               \
-      AccT* dgamma,                                              \
-      AccT* dbeta,                                               \
-      CPUContext* ctx) {                                         \
-    math::Set(C, AccT(0), dgamma, ctx);                          \
-    math::Set(C, AccT(0), dbeta, ctx);                           \
-    if (data_format == "NCHW") {                                 \
-      _BatchNormInternalGrad<T, AccT, StorageOrder::NCHW>(       \
-          {N, C, S}, x, mu, rsig, gamma, dy, dgamma, dbeta);     \
-    } else if (data_format == "NHWC") {                          \
-      _BatchNormInternalGrad<T, AccT, StorageOrder::NHWC>(       \
-          {N, S, C}, x, mu, rsig, gamma, dy, dgamma, dbeta);     \
-    }                                                            \
-  }                                                              \
-  template <>                                                    \
-  void BatchNormTrainingGrad<T, AccT, CPUContext>(               \
-      const int N,                                               \
-      const int C,                                               \
-      const int S,                                               \
-      const string& data_format,                                 \
-      const T* x,                                                \
-      const AccT* mu,                                            \
-      const AccT* rsig,                                          \
-      const AccT* gamma,                                         \
-      const AccT* dgamma,                                        \
-      const AccT* dbeta,                                         \
-      const T* dy,                                               \
-      T* dx,                                                     \
-      CPUContext* ctx) {                                         \
-    if (data_format == "NCHW") {                                 \
-      _BatchNormTrainingGrad<T, AccT, StorageOrder::NCHW>(       \
-          {N, C, S}, x, mu, rsig, gamma, dgamma, dbeta, dy, dx); \
-    } else if (data_format == "NHWC") {                          \
-      _BatchNormTrainingGrad<T, AccT, StorageOrder::NHWC>(       \
-          {N, S, C}, x, mu, rsig, gamma, dgamma, dbeta, dy, dx); \
-    }                                                            \
-  }                                                              \
-  template <>                                                    \
-  void BatchNormInferenceGrad<T, AccT, CPUContext>(              \
-      const int N,                                               \
-      const int C,                                               \
-      const int S,                                               \
-      const string& data_format,                                 \
-      const T* x,                                                \
-      const AccT* mu,                                            \
-      const AccT* rsig,                                          \
-      const AccT* gamma,                                         \
-      const T* dy,                                               \
-      AccT* dgamma,                                              \
-      AccT* dbeta,                                               \
-      T* dx,                                                     \
-      CPUContext* ctx) {                                         \
-    if (data_format == "NCHW") {                                 \
-      if (dgamma != nullptr) {                                   \
-        math::Set(C, AccT(0), dgamma, ctx);                      \
-        math::Set(C, AccT(0), dbeta, ctx);                       \
-        _BatchNormWGrad<T, AccT, StorageOrder::NCHW>(            \
-            {N, C, S}, x, mu, rsig, dy, dgamma, dbeta);          \
-      }                                                          \
-      _BatchNormInferenceGrad<T, AccT, StorageOrder::NCHW>(      \
-          N, C, S, rsig, gamma, dy, dx);                         \
-    } else if (data_format == "NHWC") {                          \
-      if (dgamma != nullptr) {                                   \
-        math::Set(C, AccT(0), dgamma, ctx);                      \
-        math::Set(C, AccT(0), dbeta, ctx);                       \
-        _BatchNormWGrad<T, AccT, StorageOrder::NHWC>(            \
-            {N, S, C}, x, mu, rsig, dy, dgamma, dbeta);          \
-      }                                                          \
-      _BatchNormInferenceGrad<T, AccT, StorageOrder::NHWC>(      \
-          N, C, S, rsig, gamma, dy, dx);                         \
-    }                                                            \
+#define DEFINE_GRAD_KERNEL_LAUNCHER(T, AccT)                                 \
+  template <>                                                                \
+  void BatchNormExpectation<T, AccT, CPUContext>(                            \
+      const int N,                                                           \
+      const int C,                                                           \
+      const int S,                                                           \
+      const float normalizer,                                                \
+      const string& data_format,                                             \
+      const T* x,                                                            \
+      AccT* ex,                                                              \
+      AccT* ex2,                                                             \
+      CPUContext* ctx) {                                                     \
+    math::Set(C, AccT(0), ex, ctx);                                          \
+    math::Set(C, AccT(0), ex2, ctx);                                         \
+    if (data_format == "NCHW") {                                             \
+      _BatchNormExpectation<T, AccT, StorageOrder::NCHW>(                    \
+          {N, C, S}, normalizer, x, ex, ex2);                                \
+    } else if (data_format == "NHWC") {                                      \
+      _BatchNormExpectation<T, AccT, StorageOrder::NHWC>(                    \
+          {N, S, C}, normalizer, x, ex, ex2);                                \
+    }                                                                        \
+  }                                                                          \
+  template <>                                                                \
+  void BatchNormWGrad<T, AccT, CPUContext>(                                  \
+      const int N,                                                           \
+      const int C,                                                           \
+      const int S,                                                           \
+      const string& data_format,                                             \
+      const T* x,                                                            \
+      const AccT* mu,                                                        \
+      const AccT* rsig,                                                      \
+      const T* dy,                                                           \
+      AccT* dgamma,                                                          \
+      AccT* dbeta,                                                           \
+      CPUContext* ctx) {                                                     \
+    math::Set(C, AccT(0), dgamma, ctx);                                      \
+    math::Set(C, AccT(0), dbeta, ctx);                                       \
+    if (data_format == "NCHW") {                                             \
+      _BatchNormWGrad<T, AccT, StorageOrder::NCHW>(                          \
+          {N, C, S}, x, mu, rsig, dy, dgamma, dbeta);                        \
+    } else if (data_format == "NHWC") {                                      \
+      _BatchNormWGrad<T, AccT, StorageOrder::NHWC>(                          \
+          {N, S, C}, x, mu, rsig, dy, dgamma, dbeta);                        \
+    }                                                                        \
+  }                                                                          \
+  template <>                                                                \
+  void BatchNormTrainingGrad<T, AccT, CPUContext>(                           \
+      const int N,                                                           \
+      const int C,                                                           \
+      const int S,                                                           \
+      const float normalizer,                                                \
+      const string& data_format,                                             \
+      const T* x,                                                            \
+      const AccT* mu,                                                        \
+      const AccT* rsig,                                                      \
+      const AccT* gamma,                                                     \
+      const AccT* dgamma,                                                    \
+      const AccT* dbeta,                                                     \
+      const T* dy,                                                           \
+      T* dx,                                                                 \
+      CPUContext* ctx) {                                                     \
+    if (data_format == "NCHW") {                                             \
+      _BatchNormTrainingGrad<T, AccT, StorageOrder::NCHW>(                   \
+          {N, C, S}, normalizer, x, mu, rsig, gamma, dgamma, dbeta, dy, dx); \
+    } else if (data_format == "NHWC") {                                      \
+      _BatchNormTrainingGrad<T, AccT, StorageOrder::NHWC>(                   \
+          {N, S, C}, normalizer, x, mu, rsig, gamma, dgamma, dbeta, dy, dx); \
+    }                                                                        \
+  }                                                                          \
+  template <>                                                                \
+  void BatchNormInferenceGrad<T, AccT, CPUContext>(                          \
+      const int N,                                                           \
+      const int C,                                                           \
+      const int S,                                                           \
+      const string& data_format,                                             \
+      const T* x,                                                            \
+      const AccT* mu,                                                        \
+      const AccT* rsig,                                                      \
+      const AccT* gamma,                                                     \
+      const T* dy,                                                           \
+      AccT* dgamma,                                                          \
+      AccT* dbeta,                                                           \
+      T* dx,                                                                 \
+      CPUContext* ctx) {                                                     \
+    if (data_format == "NCHW") {                                             \
+      if (dgamma != nullptr) {                                               \
+        math::Set(C, AccT(0), dgamma, ctx);                                  \
+        math::Set(C, AccT(0), dbeta, ctx);                                   \
+        _BatchNormWGrad<T, AccT, StorageOrder::NCHW>(                        \
+            {N, C, S}, x, mu, rsig, dy, dgamma, dbeta);                      \
+      }                                                                      \
+      _BatchNormInferenceGrad<T, AccT, StorageOrder::NCHW>(                  \
+          N, C, S, rsig, gamma, dy, dx);                                     \
+    } else if (data_format == "NHWC") {                                      \
+      if (dgamma != nullptr) {                                               \
+        math::Set(C, AccT(0), dgamma, ctx);                                  \
+        math::Set(C, AccT(0), dbeta, ctx);                                   \
+        _BatchNormWGrad<T, AccT, StorageOrder::NHWC>(                        \
+            {N, S, C}, x, mu, rsig, dy, dgamma, dbeta);                      \
+      }                                                                      \
+      _BatchNormInferenceGrad<T, AccT, StorageOrder::NHWC>(                  \
+          N, C, S, rsig, gamma, dy, dx);                                     \
+    }                                                                        \
   }
 
 DEFINE_KERNEL_LAUNCHER(float, float);
+DEFINE_KERNEL_LAUNCHER(double, double);
 DEFINE_GRAD_KERNEL_LAUNCHER(float, float);
+DEFINE_GRAD_KERNEL_LAUNCHER(double, double);
 #undef DEFINE_KERNEL_LAUNCHER
 #undef DEFINE_GRAD_KERNEL_LAUNCHER
 

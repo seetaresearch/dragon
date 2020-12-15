@@ -70,7 +70,7 @@ class GroupNormOp final : public GroupNormOpBase<Context> {
 
   void RunOnDevice() override;
 
-  template <typename InputType, typename ParamType>
+  template <typename T>
   void DoRunWithType();
 };
 
@@ -84,7 +84,7 @@ class GroupNormGradientOp final : public GroupNormOpBase<Context> {
 
   void RunOnDevice() override;
 
-  template <typename InputType, typename ParamType>
+  template <typename T>
   void DoRunWithType();
 };
 

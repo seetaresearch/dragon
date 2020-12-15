@@ -811,15 +811,15 @@ void CosGrad(const int count, const T* dy, const T* x, T* dx, Context* ctx);
 
 /* math.moments */
 
-template <typename Tx, typename Ty, class Context>
+template <typename T, typename AccT, class Context>
 void Moments(
     const int num_dims,
     const int* dims,
     const int num_axes,
     const int* axes,
-    const Tx* x,
-    Ty* mean,
-    Ty* var,
+    const T* x,
+    AccT* mean,
+    AccT* var,
     Context* ctx);
 
 /* math.reciprocal */
@@ -845,6 +845,18 @@ void SinGrad(const int count, const T* dy, const T* x, T* dx, Context* ctx);
 /* normalization.batch_norm */
 
 template <typename T, typename AccT, class Context>
+void BatchNormExpectation(
+    const int N,
+    const int C,
+    const int S,
+    const float normalizer,
+    const string& data_format,
+    const T* x,
+    AccT* ex,
+    AccT* ex2,
+    Context* ctx);
+
+template <typename T, typename AccT, class Context>
 void BatchNorm(
     const int N,
     const int C,
@@ -861,19 +873,7 @@ void BatchNorm(
     Context* ctx);
 
 template <typename T, typename AccT, class Context>
-void BatchNormExpectation(
-    const int N,
-    const int C,
-    const int S,
-    const AccT denorm,
-    const string& data_format,
-    const T* x,
-    AccT* ex,
-    AccT* ex2,
-    Context* ctx);
-
-template <typename T, typename AccT, class Context>
-void BatchNormInternalGrad(
+void BatchNormWGrad(
     const int N,
     const int C,
     const int S,
@@ -881,7 +881,6 @@ void BatchNormInternalGrad(
     const T* x,
     const AccT* mu,
     const AccT* rsig,
-    const AccT* gamma,
     const T* dy,
     AccT* dgamma,
     AccT* dbeta,
@@ -892,6 +891,7 @@ void BatchNormTrainingGrad(
     const int N,
     const int C,
     const int S,
+    const float normalizer,
     const string& data_format,
     const T* x,
     const AccT* mu,
@@ -964,8 +964,8 @@ void L1Normalize(
     const int outer_dim,
     const int inner_dim,
     const int reduce_dim,
-    const float scale,
-    const float eps,
+    const float normalizer,
+    const float epsilon,
     const T* x,
     T* y,
     Context* ctx);
@@ -975,8 +975,8 @@ void L1NormalizeGrad(
     const int outer_dim,
     const int inner_dim,
     const int reduce_dim,
-    const float scale,
-    const float eps,
+    const float normalizer,
+    const float epsilon,
     const T* dy,
     const T* x,
     T* dx,
@@ -987,8 +987,8 @@ void L2Normalize(
     const int outer_dim,
     const int inner_dim,
     const int reduce_dim,
-    const float scale,
-    const float eps,
+    const float normalizer,
+    const float epsilon,
     const T* x,
     T* y,
     Context* ctx);
@@ -998,8 +998,8 @@ void L2NormalizeGrad(
     const int outer_dim,
     const int inner_dim,
     const int reduce_dim,
-    const float scale,
-    const float eps,
+    const float normalizer,
+    const float epsilon,
     const T* dy,
     const T* x,
     T* dx,
