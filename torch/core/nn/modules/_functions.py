@@ -111,24 +111,31 @@ class BatchNorm(function.Function):
 
     def __init__(self, key, dev, **kwargs):
         super(BatchNorm, self).__init__(key, dev, **kwargs)
-        self.momentum = kwargs.get('momentum', 0.1)
         self.epsilon = kwargs.get('epsilon', 1e-5)
         self.training = kwargs.get('training', False)
+        self.track_stats = kwargs.get('track_stats', True)
+
+    def setup(self, ws, handle, momentum):
+        self.feed_arg(ws, '{}/momentum'.format(handle), 1.0 - momentum, 'float32')
 
     def attributes(self):
         return {
             'op_type': 'BatchNorm',
             'arguments': {
                 'axis': 1,
-                'momentum': 1. - self.momentum,
                 'epsilon': self.epsilon,
                 'use_stats': int(not self.training),
+                'momentum_desc': '${HANDLE}/momentum',
             }
         }
 
-    def forward(self, input, running_mean, running_var, weight, bias):
+    def forward(self, input, running_mean, running_var, weight, bias, momentum):
         inputs = [input, weight, bias, running_mean, running_var]
-        return self.dispatch(inputs, [self.alloc()])
+        return self.dispatch(
+            inputs, [self.alloc()],
+            callback=lambda ws, handle:
+                self.setup(ws, handle, momentum),
+        )
 
 
 class Conv2d(_ConvNd):

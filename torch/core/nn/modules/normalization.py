@@ -61,7 +61,7 @@ class AffineChannel(Module):
         fix_bias=False,
         inplace=False,
     ):
-        """Create an ``Affine`` module.
+        """Create an ``AffineChannel`` module.
 
         Parameters
         ----------
@@ -141,7 +141,7 @@ class GroupNorm(Module):
         eps=1e-5,
         affine=True,
     ):
-        """Create a ``GroupNorm`` module.
+        r"""Create a ``GroupNorm`` module.
 
         Parameters
         ----------
@@ -150,7 +150,7 @@ class GroupNorm(Module):
         num_channels : int
             The number of channels.
         eps : float, optional, default=1e-5
-            The epsilon value.
+            The value to :math:`\epsilon`.
         affine : bool, optional, default=True
             **True** to apply a affine transformation.
 
@@ -228,11 +228,11 @@ class LocalResponseNorm(Module):
         size : int, required
             The number of neighbouring channels to sum over.
         alpha : float, optional, default=0.0001
-            The scale value :math:`\alpha`.
+            The value to :math:`\alpha`.
         beta : float, optional, default=0.75
-            The exponent value :math:`\beta`.
+            The value to :math:`\beta`.
         k : float, optional, default=1.
-            The bias constant :math:`k`.
+            The value to :math:`k`.
 
         """
         super(LocalResponseNorm, self).__init__()

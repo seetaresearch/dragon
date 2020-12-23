@@ -41,8 +41,8 @@ def batch_normalization(
 
     The moving average of stats are calculated as:
 
-    .. math::
-        x_{moving} \leftarrow momentum * x_{moving} + (1 - momentum) * x_{stat}
+    .. math:: x_{\text{running}} = \text{momentum} * x_{\text{running}} +
+                                   (1 - \text{momentum}) * x_{\text{batch}}
 
     Parameters
     ----------
@@ -58,10 +58,10 @@ def batch_normalization(
         The :math:`\gamma` tensor.
     axis : int, optional, default=-1
         The channel axis.
-    momentum : float, optional, default=0.9
-        The momentum of moving average.
+    momentum : Union[float, dragon.Tensor], optional
+        The value to :math:`\text{momentum}`.
     variance_epsilon : float, optional, default=1e-5
-        The value of epsilon.
+        The value to :math:`\epsilon`.
     trainable : bool, optional, default=False
         The optional training flag.
     name : str, optional

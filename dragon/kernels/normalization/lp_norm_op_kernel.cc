@@ -70,7 +70,7 @@ void _L1NormalizeGrad(
       auto X = ConstEigenStridedVectorMap<T>(
           x + offset, 1, reduce_dim, EigenInnerStride(inner_dim));
       auto norm = std::max(X.template lpNorm<1>() / normalizer, epsilon);
-      auto norm2 = std::pow(norm, 2);
+      auto norm2 = std::pow(norm, T(2));
       EigenStridedVectorMap<T>(
           dx + offset, 1, reduce_dim, EigenInnerStride(inner_dim)) =
           (dY / norm) -
@@ -98,7 +98,7 @@ void _L2NormalizeGrad(
       auto X = ConstEigenStridedVectorMap<T>(
           x + offset, 1, reduce_dim, EigenInnerStride(inner_dim));
       auto norm = std::max(std::sqrt(X.squaredNorm() / normalizer), epsilon);
-      auto norm3 = std::pow(norm, 3);
+      auto norm3 = std::pow(norm, T(3));
       EigenStridedVectorMap<T>(
           dx + offset, 1, reduce_dim, EigenInnerStride(inner_dim)) =
           (dY / norm) - ((X / norm3) * dY.dot(X) / normalizer);

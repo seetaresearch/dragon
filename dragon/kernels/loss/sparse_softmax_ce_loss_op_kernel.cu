@@ -9,54 +9,54 @@ namespace kernel {
 
 namespace {
 
-template <typename LogitType, typename TargetType>
+template <typename LogitT, typename TargetT>
 __global__ void _SparseSoftmaxCrossEntropy(
     const int nthreads,
     const int inner_dim,
     const int axis_dim,
     const int ignore_index,
-    const LogitType* prob,
-    const TargetType* target,
-    LogitType* loss,
-    LogitType* mask) {
+    const LogitT* prob,
+    const TargetT* target,
+    LogitT* loss,
+    LogitT* mask) {
   CUDA_1D_KERNEL_LOOP(yi, nthreads) {
     const int i = yi / inner_dim;
     const int j = yi % inner_dim;
     const int label = target[i * inner_dim + j];
     if (label == ignore_index) {
-      loss[yi] = mask[yi] = LogitType(0);
+      loss[yi] = mask[yi] = LogitT(0);
     } else {
-      loss[yi] = -log(max(
-          prob[(i * axis_dim + label) * inner_dim + j], LogitType(FLT_MIN)));
-      mask[yi] = LogitType(1);
+      loss[yi] = -log(
+          max(prob[(i * axis_dim + label) * inner_dim + j], LogitT(FLT_MIN)));
+      mask[yi] = LogitT(1);
     }
   }
 }
 
-template <typename LogitType, typename TargetType>
+template <typename LogitT, typename TargetT>
 __global__ void _SparseSoftmaxCrossEntropyGrad(
     const int nthreads,
     const int inner_dim,
     const int axis_dim,
     const int ignore_index,
-    const LogitType* prob,
-    const TargetType* target,
-    LogitType* dx,
-    LogitType* mask) {
+    const LogitT* prob,
+    const TargetT* target,
+    LogitT* dx,
+    LogitT* mask) {
   CUDA_1D_KERNEL_LOOP(yi, nthreads) {
     const int i = yi / inner_dim;
     const int j = yi % inner_dim;
     const int label = target[i * inner_dim + j];
     if (label == ignore_index) {
-      LogitType* offset_dx = dx + i * axis_dim * inner_dim + j;
+      LogitT* offset_dx = dx + i * axis_dim * inner_dim + j;
       for (int k = 0; k < axis_dim; ++k) {
-        (*offset_dx) = LogitType(0);
+        (*offset_dx) = LogitT(0);
         offset_dx += inner_dim;
       }
-      mask[yi] = LogitType(0);
+      mask[yi] = LogitT(0);
     } else {
-      dx[(i * axis_dim + label) * inner_dim + j] -= LogitType(1);
-      mask[yi] = LogitType(1);
+      dx[(i * axis_dim + label) * inner_dim + j] -= LogitT(1);
+      mask[yi] = LogitT(1);
     }
   }
 }
@@ -65,17 +65,17 @@ __global__ void _SparseSoftmaxCrossEntropyGrad(
 
 /* ------------------- Launcher Separator ------------------- */
 
-#define DEFINE_KERNEL_LAUNCHER(name, LogitType, TargetType)                  \
+#define DEFINE_KERNEL_LAUNCHER(name, LogitT, TargetT)                        \
   template <>                                                                \
-  void name<LogitType, TargetType, CUDAContext>(                             \
+  void name<LogitT, TargetT, CUDAContext>(                                   \
       const int outer_dim,                                                   \
       const int inner_dim,                                                   \
       const int axis_dim,                                                    \
       const int ignore_index,                                                \
-      const LogitType* prob,                                                 \
-      const TargetType* target,                                              \
-      LogitType* loss,                                                       \
-      LogitType* mask,                                                       \
+      const LogitT* prob,                                                    \
+      const TargetT* target,                                                 \
+      LogitT* loss,                                                          \
+      LogitT* mask,                                                          \
       CUDAContext* ctx) {                                                    \
     const auto nthreads = outer_dim * inner_dim;                             \
     _##name<<<CUDA_BLOCKS(nthreads), CUDA_THREADS, 0, ctx->cuda_stream()>>>( \

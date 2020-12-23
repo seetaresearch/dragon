@@ -89,7 +89,8 @@ def batch_norm(
 
     The moving average of stats are calculated as:
 
-    .. math:: x_{moving} \leftarrow (1 - momentum) * x_{moving} + momentum * x_{stat}
+    .. math:: x_{\text{running}} = (1 - \text{momentum}) * x_{\text{running}} +
+                                   \text{momentum} * x_{\text{batch}}
 
     Parameters
     ----------
@@ -124,9 +125,9 @@ def batch_norm(
         .instantiate(
             input.device,
             training=training,
-            momentum=momentum,
             epsilon=eps,
-        ).apply(input, running_mean, running_var, weight, bias)
+        ).apply(input, running_mean, running_var,
+                weight, bias, momentum)
 
 
 def binary_cross_entropy_with_logits(
@@ -1598,7 +1599,7 @@ def sync_batch_norm(
     The moving average of stats are calculated as:
 
     .. math::
-        x_{moving} \leftarrow (1 - momentum) * x_{moving} + momentum * x_{stat}
+        x_{moving} \leftarrow (1 - momentum) * x_{moving} + momentum * x_{\text{batch}}
 
     Additionally, you can specify ``process_group`` to perform synchronization.
 

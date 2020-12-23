@@ -28,7 +28,7 @@ class MomentsOp final : public Operator<Context> {
 
   void RunOnDevice() override;
 
-  template <typename Tx, typename Ty>
+  template <typename T>
   void DoRunWithType();
 
  protected:

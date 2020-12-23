@@ -176,13 +176,16 @@ def conv2d_transpose(
         raise ValueError('Unsupported padding algorithm: %s' % padding)
     if data_format not in ('NCHW', 'NHWC'):
         raise ValueError('Unsupported data format: %s' % data_format)
+    if 'SAME' in padding and output_shape is None:
+        raise ValueError('Excepted <output_shape> for same padding.')
     if output_shape is not None and 'SAME' not in padding:
         args['padding'] = 'SAME'
     for key in ('kernel_shape', 'strides', 'pads', 'dilations'):
-        if key == 'pads':
-            args[key] = _normalize_pads(args[key], 2)
-        else:
-            args[key] = _normalize_tuple(args[key], 2)
+        if key in args and args[key] is not None:
+            if key == 'pads':
+                args[key] = _normalize_pads(args[key], 2)
+            else:
+                args[key] = _normalize_tuple(args[key], 2)
     op_lib = vision_ops_lib.ConvTranspose2d
     if context.executing_eagerly():
         weight_shape = inputs[1].shape

@@ -205,9 +205,8 @@ def broadcast_to(inputs, shape, **kwargs):
     op_lib = array_ops_lib.Expand
     if context.executing_eagerly():
         return op_lib \
-            .instantiate(
-                ndim=len(args['dims']),
-            ).apply([inputs], args['dims'])
+            .instantiate(ndim=len(args['dims'])) \
+            .apply([inputs], args['dims'])
     else:
         return op_lib.blend(**args)
 
@@ -1163,6 +1162,7 @@ def pad(inputs, pads, mode='constant', value=0, **kwargs):
         return op_lib.blend(**args)
 
 
+@ArgHelper.desc('limit', as_target=True)
 def permutation(limit, dtype='int64', **kwargs):
     r"""Return a tensor with value in the permuted range.
 
@@ -1174,7 +1174,7 @@ def permutation(limit, dtype='int64', **kwargs):
 
     Parameters
     ----------
-    limit: number
+    limit: Union[number, dragon.Tensor]
         The end of interval.
     dtype : str, optional, default='int64'
         The optional data type.
@@ -1192,7 +1192,7 @@ def permutation(limit, dtype='int64', **kwargs):
     if context.executing_eagerly():
         return op_lib \
             .instantiate(dtype=dtype) \
-            .apply(limit, trainable=trainable)
+            .apply(args['limit'], trainable=trainable)
     else:
         return op_lib.blend(**args)
 

@@ -3,7 +3,7 @@
 namespace dragon {
 
 template <class Context>
-template <typename LogitType, typename TargetType>
+template <typename LogitT, typename TargetT>
 void AccuracyOp<Context>::DoRunWithType() {
   auto &X = Input(0), *Y = Output(0);
   CANONICALIZE_AXIS_WITH_TENSOR(X);
@@ -18,21 +18,21 @@ void AccuracyOp<Context>::DoRunWithType() {
   int64_t acc = 0, count = 0;
   int64_t cols = X.count() / outer_dim;
 
-  auto* logit = X.template data<LogitType, CPUContext>();
-  auto* target = Input(1).template data<TargetType, CPUContext>();
+  auto* logit = X.template data<LogitT, CPUContext>();
+  auto* target = Input(1).template data<TargetT, CPUContext>();
 
   for (int i = 0; i < outer_dim; ++i) {
     for (int j = 0; j < inner_dim; ++j) {
       const int label = target[i * inner_dim + j];
       if (label == ignore_index_) continue;
-      vector<pair<LogitType, int>> vec;
+      vector<pair<LogitT, int>> vec;
       for (int k = 0; k < axis_dim; k++)
         vec.push_back(std::make_pair(logit[i * cols + k * inner_dim + j], k));
       std::partial_sort(
           vec.begin(),
           vec.begin() + top_k_,
           vec.end(),
-          std::greater<pair<LogitType, int>>());
+          std::greater<pair<LogitT, int>>());
       for (int k = 0; k < top_k_; k++) {
         if (vec[k].second == label) {
           acc++;

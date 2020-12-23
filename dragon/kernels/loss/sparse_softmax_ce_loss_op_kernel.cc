@@ -7,58 +7,58 @@ namespace kernel {
 
 namespace {
 
-template <typename LogitType, typename TargetType>
+template <typename LogitT, typename TargetT>
 void _SparseSoftmaxCrossEntropy(
     const int outer_dim,
     const int inner_dim,
     const int axis_dim,
     const int ignore_index,
-    const LogitType* prob,
-    const TargetType* target,
-    LogitType* loss,
-    LogitType* mask) {
+    const LogitT* prob,
+    const TargetT* target,
+    LogitT* loss,
+    LogitT* mask) {
   std::array<int, 2> idx = {0, 0};
   std::array<int, 2> dims = {outer_dim, inner_dim};
   int count = dims[0] * dims[1], k;
   for (int i = 0; i < count; ++i) {
     const int label = (int)target[i];
     if (label == ignore_index) {
-      loss[i] = mask[i] = LogitType(0);
+      loss[i] = mask[i] = LogitT(0);
     } else {
       k = (idx[0] * axis_dim + label) * inner_dim + idx[1];
-      loss[i] = -std::log(std::max(prob[k], LogitType(FLT_MIN)));
-      mask[i] = LogitType(1);
+      loss[i] = -std::log(std::max(prob[k], LogitT(FLT_MIN)));
+      mask[i] = LogitT(1);
     }
     math::utils::IncreaseIndexInDims(2, dims.data(), idx.data());
   }
 }
 
-template <typename LogitType, typename TargetType>
+template <typename LogitT, typename TargetT>
 void _SparseSoftmaxCrossEntropyGrad(
     const int outer_dim,
     const int inner_dim,
     const int axis_dim,
     const int ignore_index,
-    const LogitType* prob,
-    const TargetType* target,
-    LogitType* dx,
-    LogitType* mask) {
+    const LogitT* prob,
+    const TargetT* target,
+    LogitT* dx,
+    LogitT* mask) {
   std::array<int, 2> idx = {0, 0};
   std::array<int, 2> dims = {outer_dim, inner_dim};
   int count = dims[0] * dims[1], k;
   for (int i = 0; i < count; ++i) {
     const int label = (int)target[i];
     if (label == ignore_index) {
-      LogitType* offset_dx = dx + idx[0] * axis_dim * inner_dim + idx[1];
+      LogitT* offset_dx = dx + idx[0] * axis_dim * inner_dim + idx[1];
       for (int j = 0; j < axis_dim; ++j) {
-        (*offset_dx) = LogitType(0);
+        (*offset_dx) = LogitT(0);
         offset_dx += inner_dim;
       }
-      mask[i] = LogitType(0);
+      mask[i] = LogitT(0);
     } else {
       k = (idx[0] * axis_dim + label) * inner_dim + idx[1];
-      dx[k] -= LogitType(1);
-      mask[i] = LogitType(1);
+      dx[k] -= LogitT(1);
+      mask[i] = LogitT(1);
     }
     math::utils::IncreaseIndexInDims(2, dims.data(), idx.data());
   }
@@ -68,27 +68,27 @@ void _SparseSoftmaxCrossEntropyGrad(
 
 /* ------------------- Launcher Separator ------------------- */
 
-#define DEFINE_KERNEL_LAUNCHER(name, LogitType, TargetType) \
-  template <>                                               \
-  void name<LogitType, TargetType, CPUContext>(             \
-      const int outer_dim,                                  \
-      const int inner_dim,                                  \
-      const int axis_dim,                                   \
-      const int ignore_index,                               \
-      const LogitType* prob,                                \
-      const TargetType* target,                             \
-      LogitType* loss,                                      \
-      LogitType* mask,                                      \
-      CPUContext* ctx) {                                    \
-    _##name(                                                \
-        outer_dim,                                          \
-        inner_dim,                                          \
-        axis_dim,                                           \
-        ignore_index,                                       \
-        prob,                                               \
-        target,                                             \
-        loss,                                               \
-        mask);                                              \
+#define DEFINE_KERNEL_LAUNCHER(name, LogitT, TargetT) \
+  template <>                                         \
+  void name<LogitT, TargetT, CPUContext>(             \
+      const int outer_dim,                            \
+      const int inner_dim,                            \
+      const int axis_dim,                             \
+      const int ignore_index,                         \
+      const LogitT* prob,                             \
+      const TargetT* target,                          \
+      LogitT* loss,                                   \
+      LogitT* mask,                                   \
+      CPUContext* ctx) {                              \
+    _##name(                                          \
+        outer_dim,                                    \
+        inner_dim,                                    \
+        axis_dim,                                     \
+        ignore_index,                                 \
+        prob,                                         \
+        target,                                       \
+        loss,                                         \
+        mask);                                        \
   }
 
 DEFINE_KERNEL_LAUNCHER(SparseSoftmaxCrossEntropy, float, float);

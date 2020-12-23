@@ -55,7 +55,7 @@ class BatchNormalization(Layer):
         axis : int, optional, default=-1
             The channel axis.
         momentum : float, optional, default=0.99
-            The momentum of moving average.
+            The decay factor of running average.
         epsilon : float, optional, default=1e-3
             The epsilon value.
         center : bool, optional, default=True

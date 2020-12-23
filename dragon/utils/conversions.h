@@ -123,23 +123,51 @@ CONVERSIONS_DECL float16 To<float16, half>(half val) {
 }
 
 template <>
-CONVERSIONS_DECL half To<half, float>(float val) {
-  return __float2half(val);
-}
-
-template <>
 CONVERSIONS_DECL half To<half, float16>(float16 val) {
   return __half_raw{val.x};
 }
 
 template <>
-CONVERSIONS_DECL half2 To<half2, float>(float val) {
-  return __float2half2_rn(val);
+CONVERSIONS_DECL half2 To<half2, float16>(float16 val) {
+  return half2(__half2_raw{val.x, val.x});
 }
 
 template <>
-CONVERSIONS_DECL half2 To<half2, float16>(float16 val) {
-  return half2(__half2_raw{val.x, val.x});
+CONVERSIONS_DECL half To<half, float>(float val) {
+#if CUDA_VERSION_MIN(9, 2, 0)
+  return __float2half(val);
+#else
+#if defined(__CUDA_ARCH__)
+#define __HALF_TO_US(var) *(reinterpret_cast<unsigned short*>(&(var)))
+  __half ret;
+  asm("{  cvt.rn.f16.f32 %0, %1;}\n" : "=h"(__HALF_TO_US(ret)) : "f"(val));
+  return ret;
+#undef __HALF_TO_US
+#else
+  return To<half>(To<float16>(val));
+#endif
+#endif
+}
+
+template <>
+CONVERSIONS_DECL half2 To<half2, float>(float val) {
+#if CUDA_VERSION_MIN(9, 2, 0)
+  return __float2half2_rn(val);
+#else
+#if defined(__CUDA_ARCH__)
+#define __HALF2_TO_UI(var) *(reinterpret_cast<unsigned int*>(&(var)))
+  __half2 ret;
+  asm("{.reg .f16 low;\n"
+      "  cvt.rn.f16.f32 low, %1;\n"
+      "  mov.b32 %0, {low,low};}\n"
+      : "=r"(__HALF2_TO_UI(ret))
+      : "f"(val));
+  return ret;
+#undef __HALF2_TO_UI
+#else
+  return To<half2>(To<float16>(val));
+#endif
+#endif
 }
 
 #endif // USE_CUDA

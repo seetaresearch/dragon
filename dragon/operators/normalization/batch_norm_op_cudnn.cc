@@ -9,11 +9,11 @@ namespace dragon {
 template <class Context>
 template <typename T>
 void CuDNNBatchNormOp<Context>::DoRunWithType() {
-  using ParamType = typename CuDNNType<T>::BNParamType;
-  TENSOR_FILL_WITH_TYPE(Input(1), vec64_t({C_}), ParamType);
-  TENSOR_FILL_WITH_TYPE(Input(2), vec64_t({C_}), ParamType);
-  TENSOR_FILL_WITH_TYPE(Input(3), vec64_t({C_}), ParamType);
-  TENSOR_FILL_WITH_TYPE(Input(4), vec64_t({C_}), ParamType);
+  using ParamT = typename CuDNNType<T>::BNParamType;
+  TENSOR_FILL_WITH_TYPE(Input(1), vec64_t({C_}), ParamT);
+  TENSOR_FILL_WITH_TYPE(Input(2), vec64_t({C_}), ParamT);
+  TENSOR_FILL_WITH_TYPE(Input(3), vec64_t({C_}), ParamT);
+  TENSOR_FILL_WITH_TYPE(Input(4), vec64_t({C_}), ParamT);
 
   // Determine the descriptors
   if (Input(0).ndim() == 2) {
@@ -39,14 +39,14 @@ void CuDNNBatchNormOp<Context>::DoRunWithType() {
         input_desc_,
         Output(0)->template mutable_data<T, Context>(), // y
         bn_desc_,
-        Input(1).template data<ParamType, Context>(), // gamma
-        Input(2).template data<ParamType, Context>(), // beta
-        is_recomputing_ > 0 ? 0.f : 1.f - this->momentum_,
-        Input(3).template mutable_data<ParamType, Context>(), // rm
-        Input(4).template mutable_data<ParamType, Context>(), // rv
+        Input(1).template data<ParamT, Context>(), // gamma
+        Input(2).template data<ParamT, Context>(), // beta
+        is_recomputing_ == 0 ? 1.f - momentum() : 0.f,
+        Input(3).template mutable_data<ParamT, Context>(), // rm
+        Input(4).template mutable_data<ParamT, Context>(), // rv
         epsilon_,
-        X_mu->template mutable_data<ParamType, Context>(), // sm
-        X_rsig->template mutable_data<ParamType, Context>())); // sv
+        X_mu->template mutable_data<ParamT, Context>(), // sm
+        X_rsig->template mutable_data<ParamT, Context>())); // sv
   } else {
     CUDNN_CHECK(cudnnBatchNormalizationForwardInference(
         ctx()->cudnn_handle(),
@@ -58,10 +58,10 @@ void CuDNNBatchNormOp<Context>::DoRunWithType() {
         input_desc_,
         Output(0)->template mutable_data<T, Context>(), // y
         bn_desc_,
-        Input(1).template data<ParamType, Context>(), // gamma
-        Input(2).template data<ParamType, Context>(), // beta
-        Input(3).template data<ParamType, Context>(), // rm
-        Input(4).template data<ParamType, Context>(), // rv
+        Input(1).template data<ParamT, Context>(), // gamma
+        Input(2).template data<ParamT, Context>(), // beta
+        Input(3).template data<ParamT, Context>(), // rm
+        Input(4).template data<ParamT, Context>(), // rv
         epsilon_));
   }
 }
@@ -82,7 +82,7 @@ void CuDNNBatchNormOp<Context>::RunOnDevice() {
 template <class Context>
 template <typename T>
 void CuDNNBatchNormGradientOp<Context>::TrainingImpl() {
-  using ParamType = typename CuDNNType<T>::BNParamType;
+  using ParamT = typename CuDNNType<T>::BNParamType;
   auto *dX = Output(0), *dW = Output(1), *dB = Output(2);
   auto *X_mu = Buffer("X_mu"), *X_rsig = Buffer("X_rsig");
 
@@ -111,12 +111,12 @@ void CuDNNBatchNormGradientOp<Context>::TrainingImpl() {
       input_desc_,
       Output(0)->template mutable_data<T, Context>(), // dx
       bn_desc_,
-      Input(1).template data<ParamType, Context>(), // gamma
-      dW->Reshape({C_})->template mutable_data<ParamType, Context>(), // dw
-      dB->Reshape({C_})->template mutable_data<ParamType, Context>(), // db
+      Input(1).template data<ParamT, Context>(), // gamma
+      dW->Reshape({C_})->template mutable_data<ParamT, Context>(), // dw
+      dB->Reshape({C_})->template mutable_data<ParamT, Context>(), // db
       epsilon_,
-      X_mu->template data<ParamType, Context>(), // mu
-      X_rsig->template data<ParamType, Context>())); // rsig
+      X_mu->template data<ParamT, Context>(), // mu
+      X_rsig->template data<ParamT, Context>())); // rsig
 }
 
 template <class Context>

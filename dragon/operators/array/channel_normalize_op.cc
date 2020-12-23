@@ -5,7 +5,7 @@
 namespace dragon {
 
 template <class Context>
-template <typename Tx, typename Ty>
+template <typename InputT, typename OutputT>
 void ChannelNormalizeOp<Context>::DoRunWithTypeAndCast() {
   auto &X = Input(0), *Y = Output(0);
   CANONICALIZE_AXIS_WITH_TENSOR(X);
@@ -35,10 +35,10 @@ void ChannelNormalizeOp<Context>::DoRunWithTypeAndCast() {
       num_dims,
       X_strides.data(),
       Y_dims.data(),
-      X.template data<Tx, Context>(),
+      X.template data<InputT, Context>(),
       X_mean_.template data<float, Context>(),
       X_std_.template data<float, Context>(),
-      Y->Reshape(Y_dims)->template mutable_data<Ty, Context>(),
+      Y->Reshape(Y_dims)->template mutable_data<OutputT, Context>(),
       ctx());
 }
 

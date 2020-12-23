@@ -23,7 +23,6 @@ class BatchNorm(Operator):
     def __init__(self, key, dev, **kwargs):
         super(BatchNorm, self).__init__(key, dev, **kwargs)
         self.axis = kwargs.get('axis', -1)
-        self.momentum = kwargs.get('momentum', 0.9)
         self.epsilon = kwargs.get('epsilon', 1e-5)
         self.use_stats = kwargs.get('use_stats', 0)
         if self.use_stats not in (0, 1):
@@ -34,14 +33,21 @@ class BatchNorm(Operator):
             'op_type': 'BatchNorm',
             'arguments': {
                 'axis': self.axis,
-                'momentum': self.momentum,
                 'epsilon': self.epsilon,
                 'use_stats': self.use_stats,
+                'momentum_desc': '${HANDLE}/momentum',
             },
         }
 
-    def forward(self, inputs):
-        return self.dispatch(inputs, [self.alloc()])
+    def setup(self, ws, handle, momentum):
+        self.feed_arg(ws, '%s/momentum' % handle, momentum, 'float32')
+
+    def forward(self, inputs, momentum):
+        return self.dispatch(
+            inputs, [self.alloc()],
+            callback=lambda ws, handle:
+                self.setup(ws, handle, momentum),
+        )
 
 
 class GroupNorm(Operator):

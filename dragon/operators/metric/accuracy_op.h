@@ -28,7 +28,7 @@ class AccuracyOp final : public Operator<Context> {
 
   void RunOnDevice() override;
 
-  template <typename LogitType, typename TargetType>
+  template <typename LogitT, typename TargetT>
   void DoRunWithType();
 
  protected:

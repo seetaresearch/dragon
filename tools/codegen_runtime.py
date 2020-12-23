@@ -8,7 +8,6 @@
 #      <https://opensource.org/licenses/BSD-2-Clause>
 #
 # ------------------------------------------------------------
-
 """Code generator for Runtime API."""
 
 from __future__ import absolute_import

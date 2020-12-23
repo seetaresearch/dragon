@@ -20,15 +20,15 @@ void _RowwiseMoments(
 #pragma omp parallel for num_threads(OMP_THREADS(cols))
 #endif
   for (int i = 0; i < cols; ++i) {
-    T x_val;
-    AccT m_val = AccT(0), v_val = AccT(0), mu;
+    AccT x_val, m_val = AccT(0), v_val = AccT(0);
     for (int j = 0; j < rows; ++j) {
-      x_val = x[j * cols + i];
+      x_val = convert::To<AccT>(x[j * cols + i]);
       m_val += x_val;
       v_val += x_val * x_val;
     }
-    mean[i] = mu = m_val * scale;
-    var[i] = v_val * scale - mu * mu;
+    m_val *= scale;
+    mean[i] = m_val;
+    var[i] = v_val * scale - m_val * m_val;
   }
 }
 
@@ -44,15 +44,15 @@ void _ColwiseMoments(
 #pragma omp parallel for num_threads(OMP_THREADS(rows))
 #endif
   for (int i = 0; i < rows; ++i) {
-    T x_val;
-    AccT m_val = AccT(0), v_val = AccT(0), mu;
+    AccT x_val, m_val = AccT(0), v_val = AccT(0);
     for (int j = 0; j < cols; ++j) {
-      x_val = x[i * cols + j];
+      x_val = convert::To<AccT>(x[i * cols + j]);
       m_val += x_val;
       v_val += x_val * x_val;
     }
-    mean[i] = mu = m_val * scale;
-    var[i] = v_val * scale - mu * mu;
+    m_val *= scale;
+    mean[i] = m_val;
+    var[i] = v_val * scale - m_val * m_val;
   }
 }
 
@@ -71,8 +71,7 @@ void _GenericMoments(
 #pragma omp parallel for num_threads(OMP_THREADS(rows))
 #endif
   for (int i = 0; i < rows; ++i) {
-    T x_val;
-    AccT m_val = AccT(0), v_val = AccT(0), mu;
+    AccT x_val, m_val = AccT(0), v_val = AccT(0);
     int xi, c, r;
     for (int j = 0; j < cols; ++j) {
       xi = 0;
@@ -81,12 +80,13 @@ void _GenericMoments(
         FIXED_DIVISOR_DIV_MOD(x_dims[d], c, &c, &r);
         xi += r * x_strides[d];
       }
-      x_val = x[xi];
+      x_val = convert::To<AccT>(x[xi]);
       m_val += x_val;
       v_val += x_val * x_val;
     }
-    mean[i] = mu = m_val * scale;
-    var[i] = v_val * scale - mu * mu;
+    m_val *= scale;
+    mean[i] = m_val;
+    var[i] = v_val * scale - m_val * m_val;
   }
 }
 
@@ -148,19 +148,6 @@ void _Moments(
 
 /* ------------------- Launcher Separator ------------------- */
 
-template <>
-void Moments<float16, float, CPUContext>(
-    const int num_dims,
-    const int* dims,
-    const int num_axes,
-    const int* axes,
-    const float16* x,
-    float* mean,
-    float* var,
-    CPUContext* ctx) {
-  CPU_FP16_NOT_SUPPORTED;
-}
-
 #define DEFINE_KERNEL_LAUNCHER(T, AccT)                          \
   template <>                                                    \
   void Moments<T, AccT, CPUContext>(                             \
@@ -178,7 +165,8 @@ void Moments<float16, float, CPUContext>(
 DEFINE_KERNEL_LAUNCHER(int8_t, float);
 DEFINE_KERNEL_LAUNCHER(uint8_t, float);
 DEFINE_KERNEL_LAUNCHER(int, float);
-DEFINE_KERNEL_LAUNCHER(int64_t, float);
+DEFINE_KERNEL_LAUNCHER(int64_t, double);
+DEFINE_KERNEL_LAUNCHER(float16, float);
 DEFINE_KERNEL_LAUNCHER(float, float);
 DEFINE_KERNEL_LAUNCHER(double, double);
 #undef DEFINE__KERNEL_LAUNCHER

@@ -5,8 +5,9 @@
 namespace dragon {
 
 template <class Context>
-template <typename Tx, typename Ty>
+template <typename T>
 void MomentsOp<Context>::DoRunWithType() {
+  using OutputT = typename math::utils::AccmulatorType<T>::type;
   auto &X = Input(0), *Y1 = Output(0), *Y2 = Output(1);
 
   // Determine the reduce axes
@@ -35,13 +36,13 @@ void MomentsOp<Context>::DoRunWithType() {
   if (X.count() == 1) {
     math::Cast(
         1,
-        X.template data<Tx, Context>(),
-        Y1->Reshape(Y_shape)->template mutable_data<Ty, Context>(),
+        X.template data<T, Context>(),
+        Y1->Reshape(Y_shape)->template mutable_data<OutputT, Context>(),
         ctx());
     math::Set(
         1,
-        convert::To<Ty>(0.f),
-        Y2->Reshape(Y_shape)->template mutable_data<Ty, Context>(),
+        convert::To<OutputT>(0.f),
+        Y2->Reshape(Y_shape)->template mutable_data<OutputT, Context>(),
         ctx());
   } else {
     kernel::Moments(
@@ -49,35 +50,16 @@ void MomentsOp<Context>::DoRunWithType() {
         X_dims.data(),
         reduce_axes.size(),
         reduce_axes.data(),
-        X.template data<Tx, Context>(),
-        Y1->Reshape(Y_shape)->template mutable_data<Ty, Context>(),
-        Y2->Reshape(Y_shape)->template mutable_data<Ty, Context>(),
+        X.template data<T, Context>(),
+        Y1->Reshape(Y_shape)->template mutable_data<OutputT, Context>(),
+        Y2->Reshape(Y_shape)->template mutable_data<OutputT, Context>(),
         ctx());
   }
 }
 
 template <class Context>
 void MomentsOp<Context>::RunOnDevice() {
-  auto& X = Input(0);
-  if (X.template IsType<int8_t>()) {
-    DoRunWithType<int8_t, float>();
-  } else if (X.template IsType<uint8_t>()) {
-    DoRunWithType<uint8_t, float>();
-  } else if (X.template IsType<int>()) {
-    DoRunWithType<int, float>();
-  } else if (X.template IsType<int64_t>()) {
-    DoRunWithType<int64_t, float>();
-  } else if (X.template IsType<float16>()) {
-    DoRunWithType<float16, float>();
-  } else if (X.template IsType<float>()) {
-    DoRunWithType<float, float>();
-  } else if (X.template IsType<double>()) {
-    DoRunWithType<double, double>();
-  } else {
-    LOG(FATAL) << MessageForUnsupported(
-        types::to_string(X.meta()),
-        {"int8", "uint8", "int32", "int64", "float16", "float32", "float64"});
-  }
+  DispatchHelper<NumericalTensorTypes>::Call(this, Input(0));
 }
 
 DEPLOY_CPU_OPERATOR(Moments);

@@ -8,11 +8,11 @@ namespace dragon {
 template <class Context>
 template <typename T>
 void BatchNormOp<Context>::TrainingImpl() {
-  using ParamType = typename math::utils::AccmulatorType<T>::type;
-  TENSOR_FILL_WITH_TYPE(Input(1), vec64_t({C_}), ParamType);
-  TENSOR_FILL_WITH_TYPE(Input(2), vec64_t({C_}), ParamType);
-  TENSOR_FILL_WITH_TYPE(Input(3), vec64_t({C_}), ParamType);
-  TENSOR_FILL_WITH_TYPE(Input(4), vec64_t({C_}), ParamType);
+  using ParamT = typename math::utils::AccmulatorType<T>::type;
+  TENSOR_FILL_WITH_TYPE(Input(1), vec64_t({C_}), ParamT);
+  TENSOR_FILL_WITH_TYPE(Input(2), vec64_t({C_}), ParamT);
+  TENSOR_FILL_WITH_TYPE(Input(3), vec64_t({C_}), ParamT);
+  TENSOR_FILL_WITH_TYPE(Input(4), vec64_t({C_}), ParamT);
 
   auto* X_mu = Buffer("X_mu")->Reshape({C_});
   auto* X_rsig = Buffer("X_rsig")->Reshape({C_});
@@ -20,11 +20,11 @@ void BatchNormOp<Context>::TrainingImpl() {
   auto* X_bias = Buffer("X_bias")->Reshape({C_});
 
   auto* x = Input(0).template data<T, Context>();
-  auto* rm = Input(3).template mutable_data<ParamType, Context>();
-  auto* rv = Input(4).template mutable_data<ParamType, Context>();
-  auto* mu = X_mu->template mutable_data<ParamType, Context>();
-  auto* rsig = X_rsig->template mutable_data<ParamType, Context>();
-  auto* scale = X_scale->template mutable_data<ParamType, Context>();
+  auto* rm = Input(3).template mutable_data<ParamT, Context>();
+  auto* rv = Input(4).template mutable_data<ParamT, Context>();
+  auto* mu = X_mu->template mutable_data<ParamT, Context>();
+  auto* rsig = X_rsig->template mutable_data<ParamT, Context>();
+  auto* scale = X_scale->template mutable_data<ParamT, Context>();
 
   // Compute moments
   if (sync_stats_ > 0) {
@@ -45,7 +45,7 @@ void BatchNormOp<Context>::TrainingImpl() {
     if (enable_nccl_) {
 #ifdef USE_NCCL
       auto coll_comm = this->nccl_comm();
-      auto coll_dtype = this->template nccl_dtype<ParamType>();
+      auto coll_dtype = this->template nccl_dtype<ParamT>();
       NCCL_CHECK(ncclAllReduce(
           (void*)mu,
           (void*)mu,
@@ -84,8 +84,9 @@ void BatchNormOp<Context>::TrainingImpl() {
 
   // Compute running statistics
   if (is_recomputing_ == 0) {
-    math::Axpby(C_, 1.f - momentum_, mu, momentum_, rm, ctx());
-    math::Axpby(C_, 1.f - momentum_, rsig, momentum_, rv, ctx());
+    auto decay_factor = momentum();
+    math::Axpby(C_, 1.f - decay_factor, mu, decay_factor, rm, ctx());
+    math::Axpby(C_, 1.f - decay_factor, rsig, decay_factor, rv, ctx());
   }
 
   // Inverse stddev from variance
@@ -100,10 +101,10 @@ void BatchNormOp<Context>::TrainingImpl() {
       x,
       mu,
       rsig,
-      Input(1).template data<ParamType, Context>(), // gamma
-      Input(2).template data<ParamType, Context>(), // beta
+      Input(1).template data<ParamT, Context>(), // gamma
+      Input(2).template data<ParamT, Context>(), // beta
       scale,
-      X_bias->template mutable_data<ParamType, Context>(),
+      X_bias->template mutable_data<ParamT, Context>(),
       Output(0)->template mutable_data<T, Context>(),
       ctx());
 }
@@ -111,17 +112,17 @@ void BatchNormOp<Context>::TrainingImpl() {
 template <class Context>
 template <typename T>
 void BatchNormOp<Context>::InferenceImpl() {
-  using ParamType = typename math::utils::AccmulatorType<T>::type;
-  TENSOR_FILL_WITH_TYPE(Input(1), vec64_t({C_}), ParamType);
-  TENSOR_FILL_WITH_TYPE(Input(2), vec64_t({C_}), ParamType);
-  TENSOR_FILL_WITH_TYPE(Input(3), vec64_t({C_}), ParamType);
-  TENSOR_FILL_WITH_TYPE(Input(4), vec64_t({C_}), ParamType);
+  using ParamT = typename math::utils::AccmulatorType<T>::type;
+  TENSOR_FILL_WITH_TYPE(Input(1), vec64_t({C_}), ParamT);
+  TENSOR_FILL_WITH_TYPE(Input(2), vec64_t({C_}), ParamT);
+  TENSOR_FILL_WITH_TYPE(Input(3), vec64_t({C_}), ParamT);
+  TENSOR_FILL_WITH_TYPE(Input(4), vec64_t({C_}), ParamT);
 
   auto* X_rsig = Buffer("X_rsig")->Reshape({C_});
   auto* X_scale = Buffer("X_scale")->Reshape({C_});
   auto* X_bias = Buffer("X_bias")->Reshape({C_});
-  auto* rv = Input(4).template data<ParamType, Context>();
-  auto* rsig = X_rsig->template mutable_data<ParamType, Context>();
+  auto* rv = Input(4).template data<ParamT, Context>();
+  auto* rsig = X_rsig->template mutable_data<ParamT, Context>();
 
   // Inverse stddev from variance
   math::InvStd(C_, epsilon_, rv, rsig, ctx());
@@ -133,12 +134,12 @@ void BatchNormOp<Context>::InferenceImpl() {
       S_,
       data_format(),
       Input(0).template data<T, Context>(),
-      Input(3).template data<ParamType, Context>(),
+      Input(3).template data<ParamT, Context>(),
       rsig,
-      Input(1).template data<ParamType, Context>(), // gamma
-      Input(2).template data<ParamType, Context>(), // beta
-      X_scale->template mutable_data<ParamType, Context>(),
-      X_bias->template mutable_data<ParamType, Context>(),
+      Input(1).template data<ParamT, Context>(), // gamma
+      Input(2).template data<ParamT, Context>(), // beta
+      X_scale->template mutable_data<ParamT, Context>(),
+      X_bias->template mutable_data<ParamT, Context>(),
       Output(0)->template mutable_data<T, Context>(),
       ctx());
 }
@@ -159,17 +160,17 @@ void BatchNormOp<Context>::RunOnDevice() {
 template <class Context>
 template <typename T>
 void BatchNormGradientOp<Context>::TrainingImpl() {
-  using ParamType = typename math::utils::AccmulatorType<T>::type;
+  using ParamT = typename math::utils::AccmulatorType<T>::type;
   auto *dX = Output(0), *dW = Output(1), *dB = Output(2);
   auto *X_mu = Buffer("X_mu"), *X_rsig = Buffer("X_rsig");
 
   auto* x = Input(0).template data<T, Context>();
-  auto* gamma = Input(1).template data<ParamType, Context>();
+  auto* gamma = Input(1).template data<ParamT, Context>();
   auto* dy = Input(4).template data<T, Context>();
-  auto* mu = X_mu->template data<ParamType, Context>();
-  auto* rsig = X_rsig->template data<ParamType, Context>();
-  auto* dgamma = dW->Reshape({C_})->template mutable_data<ParamType, Context>();
-  auto* dbeta = dB->Reshape({C_})->template mutable_data<ParamType, Context>();
+  auto* mu = X_mu->template data<ParamT, Context>();
+  auto* rsig = X_rsig->template data<ParamT, Context>();
+  auto* dgamma = dW->Reshape({C_})->template mutable_data<ParamT, Context>();
+  auto* dbeta = dB->Reshape({C_})->template mutable_data<ParamT, Context>();
 
   // Gradient w.r.t. gamma and beta
   kernel::BatchNormWGrad(
@@ -181,7 +182,7 @@ void BatchNormGradientOp<Context>::TrainingImpl() {
     if (enable_nccl_) {
 #ifdef USE_NCCL
       auto coll_comm = this->nccl_comm();
-      auto coll_dtype = this->template nccl_dtype<ParamType>();
+      auto coll_dtype = this->template nccl_dtype<ParamT>();
       NCCL_CHECK(ncclAllReduce(
           (void*)dgamma,
           (void*)dgamma,
@@ -231,18 +232,18 @@ void BatchNormGradientOp<Context>::TrainingImpl() {
 template <class Context>
 template <typename T>
 void BatchNormGradientOp<Context>::InferenceImpl() {
-  using ParamType = typename math::utils::AccmulatorType<T>::type;
+  using ParamT = typename math::utils::AccmulatorType<T>::type;
   auto *dX = Output(0), *dW = Output(1), *dB = Output(2);
   auto* X_scale = Buffer("X_scale")->Reshape({C_});
 
-  auto* rv = Input(3).template data<ParamType, Context>();
-  auto* rsig = X_scale->template mutable_data<ParamType, Context>();
+  auto* rv = Input(3).template data<ParamT, Context>();
+  auto* rsig = X_scale->template mutable_data<ParamT, Context>();
 
   // Gradient w.r.t. gamma or beta if necessary
-  ParamType *dgamma = nullptr, *dbeta = nullptr;
+  ParamT *dgamma = nullptr, *dbeta = nullptr;
   if (dW->has_name() || dB->has_name()) {
-    dgamma = dW->Reshape({C_})->template mutable_data<ParamType, Context>();
-    dbeta = dB->Reshape({C_})->template mutable_data<ParamType, Context>();
+    dgamma = dW->Reshape({C_})->template mutable_data<ParamT, Context>();
+    dbeta = dB->Reshape({C_})->template mutable_data<ParamT, Context>();
   }
 
   // Inverse stddev from variance
@@ -255,9 +256,9 @@ void BatchNormGradientOp<Context>::InferenceImpl() {
       S_,
       data_format(),
       Input(0).template data<T, Context>(), // x
-      Input(2).template data<ParamType, Context>(), // rm
+      Input(2).template data<ParamT, Context>(), // rm
       rsig,
-      Input(1).template data<ParamType, Context>(), // gamma
+      Input(1).template data<ParamT, Context>(), // gamma
       Input(4).template data<T, Context>(), // dy
       dgamma,
       dbeta,

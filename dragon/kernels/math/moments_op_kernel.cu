@@ -201,7 +201,7 @@ void _Moments(
 DEFINE_KERNEL_LAUNCHER(int8_t, int8_t, float);
 DEFINE_KERNEL_LAUNCHER(uint8_t, uint8_t, float);
 DEFINE_KERNEL_LAUNCHER(int, int, float);
-DEFINE_KERNEL_LAUNCHER(int64_t, int64_t, float);
+DEFINE_KERNEL_LAUNCHER(int64_t, int64_t, double);
 DEFINE_KERNEL_LAUNCHER(float16, half, float);
 DEFINE_KERNEL_LAUNCHER(float, float, float);
 DEFINE_KERNEL_LAUNCHER(double, double, double);

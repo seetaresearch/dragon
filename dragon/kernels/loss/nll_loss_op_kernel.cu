@@ -9,48 +9,48 @@ namespace kernel {
 
 namespace {
 
-template <typename LogitType, typename TargetType>
+template <typename LogitT, typename TargetT>
 __global__ void _NLLLoss(
     const int nthreads,
     const int inner_dim,
     const int axis_dim,
     const int ignore_index,
-    const LogitType* logit,
-    const TargetType* target,
-    LogitType* loss,
-    LogitType* mask) {
+    const LogitT* logit,
+    const TargetT* target,
+    LogitT* loss,
+    LogitT* mask) {
   CUDA_1D_KERNEL_LOOP(yi, nthreads) {
     const int i = yi / inner_dim;
     const int j = yi % inner_dim;
     const int label = target[i * inner_dim + j];
     if (label == ignore_index) {
-      loss[yi] = mask[yi] = LogitType(0);
+      loss[yi] = mask[yi] = LogitT(0);
     } else {
       loss[yi] = -logit[(i * axis_dim + label) * inner_dim + j];
-      mask[yi] = LogitType(1);
+      mask[yi] = LogitT(1);
     }
   }
 }
 
-template <typename LogitType, typename TargetType>
+template <typename LogitT, typename TargetT>
 __global__ void _NLLLossGrad(
     const int nthreads,
     const int inner_dim,
     const int axis_dim,
     const int ignore_index,
-    const LogitType* logit,
-    const TargetType* target,
-    LogitType* dlogit,
-    LogitType* mask) {
+    const LogitT* logit,
+    const TargetT* target,
+    LogitT* dlogit,
+    LogitT* mask) {
   CUDA_1D_KERNEL_LOOP(yi, nthreads) {
     const int i = yi / inner_dim;
     const int j = yi % inner_dim;
     const int label = target[i * inner_dim + j];
     if (label == ignore_index) {
-      mask[yi] = LogitType(0);
+      mask[yi] = LogitT(0);
     } else {
-      dlogit[(i * axis_dim + label) * inner_dim + j] = LogitType(-1);
-      mask[yi] = LogitType(1);
+      dlogit[(i * axis_dim + label) * inner_dim + j] = LogitT(-1);
+      mask[yi] = LogitT(1);
     }
   }
 }
@@ -59,17 +59,17 @@ __global__ void _NLLLossGrad(
 
 /* ------------------- Launcher Separator ------------------- */
 
-#define DEFINE_KERNEL_LAUNCHER(name, LogitType, TargetType)                  \
+#define DEFINE_KERNEL_LAUNCHER(name, LogitT, TargetT)                        \
   template <>                                                                \
-  void name<LogitType, TargetType, CUDAContext>(                             \
+  void name<LogitT, TargetT, CUDAContext>(                                   \
       const int outer_dim,                                                   \
       const int inner_dim,                                                   \
       const int axis_dim,                                                    \
       const int ignore_index,                                                \
-      const LogitType* logit,                                                \
-      const TargetType* target,                                              \
-      LogitType* loss,                                                       \
-      LogitType* mask,                                                       \
+      const LogitT* logit,                                                   \
+      const TargetT* target,                                                 \
+      LogitT* loss,                                                          \
+      LogitT* mask,                                                          \
       CUDAContext* ctx) {                                                    \
     const auto nthreads = outer_dim * inner_dim;                             \
     _##name<<<CUDA_BLOCKS(nthreads), CUDA_THREADS, 0, ctx->cuda_stream()>>>( \

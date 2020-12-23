@@ -6,7 +6,7 @@
 namespace dragon {
 
 template <class Context>
-template <typename LogitType, typename TargetType>
+template <typename LogitT, typename TargetT>
 void SigmoidFocalLossOp<Context>::DoRunWithType() {
   auto &X = Input(0), *Y = Output(0);
   CANONICALIZE_AXIS_WITH_TENSOR(X);
@@ -18,11 +18,11 @@ void SigmoidFocalLossOp<Context>::DoRunWithType() {
       << "\nNumber of preds must match the number of targets.";
 
   auto scratches = ctx()->workspace()->template data<Context>({
-      X.size() * sizeof(LogitType), // loss
-      X.size() * sizeof(LogitType) + sizeof(LogitType), // mask
+      X.size() * sizeof(LogitT), // loss
+      X.size() * sizeof(LogitT) + sizeof(LogitT), // mask
   });
-  auto* loss = static_cast<LogitType*>(scratches[0]);
-  auto* mask = static_cast<LogitType*>(scratches[1]);
+  auto* loss = static_cast<LogitT*>(scratches[0]);
+  auto* mask = static_cast<LogitT*>(scratches[1]);
 
   kernel::SigmoidFocalLoss(
       outer_dim,
@@ -32,8 +32,8 @@ void SigmoidFocalLossOp<Context>::DoRunWithType() {
       neg_alpha_,
       gamma_,
       negative_index_,
-      X.template data<LogitType, Context>(),
-      Input(1).template data<TargetType, Context>(),
+      X.template data<LogitT, Context>(),
+      Input(1).template data<TargetT, Context>(),
       loss,
       mask,
       ctx());
@@ -42,7 +42,7 @@ void SigmoidFocalLossOp<Context>::DoRunWithType() {
     math::Copy(
         X.count(),
         loss,
-        Y->ReshapeLike(X)->template mutable_data<LogitType, Context>(),
+        Y->ReshapeLike(X)->template mutable_data<LogitT, Context>(),
         ctx());
   } else {
     int64_t normalizer = 1;
@@ -59,7 +59,7 @@ void SigmoidFocalLossOp<Context>::DoRunWithType() {
         normalizer,
         loss,
         mask,
-        Y->Reshape({})->template mutable_data<LogitType, Context>(),
+        Y->Reshape({})->template mutable_data<LogitT, Context>(),
         ctx());
   }
 }
@@ -91,7 +91,7 @@ void SigmoidFocalLossOp<Context>::RunOnDevice() {
 }
 
 template <class Context>
-template <typename LogitType, typename TargetType>
+template <typename LogitT, typename TargetT>
 void SigmoidFocalLossGradientOp<Context>::DoRunWithType() {
   auto &X = Input(0), &dY = Input(-1), *dX = Output(0);
   CANONICALIZE_AXIS_WITH_TENSOR(X);
@@ -100,10 +100,10 @@ void SigmoidFocalLossGradientOp<Context>::DoRunWithType() {
   auto outer_dim = dX->count(0, axis);
   auto inner_dim = dX->count(axis + 1);
 
-  auto* dy = dY.template data<LogitType, Context>();
-  auto* dx = dX->template mutable_data<LogitType, Context>();
-  auto* mask = ctx()->workspace()->template data<LogitType, Context>(
-      {dX->count() + 1})[0];
+  auto* dy = dY.template data<LogitT, Context>();
+  auto* dx = dX->template mutable_data<LogitT, Context>();
+  auto* mask =
+      ctx()->workspace()->template data<LogitT, Context>({dX->count() + 1})[0];
 
   kernel::SigmoidFocalLossGrad(
       outer_dim,
@@ -113,8 +113,8 @@ void SigmoidFocalLossGradientOp<Context>::DoRunWithType() {
       neg_alpha_,
       gamma_,
       negative_index_,
-      X.template data<LogitType, Context>(),
-      Input(1).template data<TargetType, Context>(),
+      X.template data<LogitT, Context>(),
+      Input(1).template data<TargetT, Context>(),
       dx,
       mask,
       ctx());

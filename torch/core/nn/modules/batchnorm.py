@@ -25,6 +25,8 @@ from dragon.vm.torch.core.tensor import Tensor
 
 
 class _BatchNorm(Module):
+    """BatchNorm base module."""
+
     def __init__(
         self,
         num_features,
@@ -45,20 +47,26 @@ class _BatchNorm(Module):
         else:
             self.register_buffer('weight', init_funcs.ones(num_features))
             self.register_buffer('bias', init_funcs.zeros(num_features))
+        if self.track_running_stats:
+            self.num_batches_tracked = 0
+        else:
+            self.num_batches_tracked = None
         self.register_buffer('running_mean', init_funcs.zeros(num_features))
         self.register_buffer('running_var', init_funcs.ones(num_features))
         self.inputs = [self.running_mean, self.running_var, self.weight, self.bias]
         self.reset_parameters()
 
-    def reset_parameters(self):
-        if self.affine:
-            self.weight.data.one_()
-            self.bias.data.zero_()
-
     def reset_running_stats(self):
         if self.track_running_stats:
             self.running_mean.zero_()
             self.running_var.fill_(1)
+            self.num_batches_tracked = 0
+
+    def reset_parameters(self):
+        self.reset_running_stats()
+        if self.affine:
+            self.weight.data.one_()
+            self.bias.data.zero_()
 
     def extra_repr(self):
         return '{num_features}, ' \
@@ -72,7 +80,7 @@ class _BatchNorm(Module):
         return F.batch_norm(
             input, *self.inputs,
             training=self.training,
-            momentum=self.momentum,
+            momentum=self._get_momentum(),
             eps=self.eps
         )
 
@@ -81,6 +89,19 @@ class _BatchNorm(Module):
         if 'half_()' in lambda_source:
             return self  # Float32 parameters are required.
         return super(_BatchNorm, self)._apply(fn)
+
+    def _get_momentum(self):
+        """Return the current momentum value."""
+        momentum = 0.0 if self.momentum is None else self.momentum
+        if self.track_running_stats:
+            if self.training:
+                if self.num_batches_tracked is not None:
+                    self.num_batches_tracked += 1
+                if self.momentum is None:
+                    momentum = 1.0 / float(self.num_batches_tracked)
+        else:
+            momentum = 0.0
+        return momentum
 
 
 class BatchNorm1d(_BatchNorm):
@@ -93,7 +114,8 @@ class BatchNorm1d(_BatchNorm):
 
     The running average of statistics are calculated as:
 
-    .. math:: x_{\text{running}} = (1 - \text{momentum}) * x_{\text{running}} + \text{momentum} * x_{\text{stat}}
+    .. math:: x_{\text{running}} = (1 - \text{momentum}) * x_{\text{running}} +
+                                   \text{momentum} * x_{\text{batch}}
 
     See Also
     --------
@@ -109,16 +131,16 @@ class BatchNorm1d(_BatchNorm):
         affine=True,
         track_running_stats=True,
     ):
-        """Create a ``BatchNorm1d`` module.
+        r"""Create a ``BatchNorm1d`` module.
 
         Parameters
         ----------
         num_features : int
             The number of channels.
         eps : float, optional, default=1e-5
-            The epsilon value.
+            The value to :math:`\epsilon`.
         momentum : float, optional, default=0.1
-            The momentum of moving average.
+            The value to :math:`\text{momentum}`.
         affine : bool, optional, default=True
             **True** to apply a affine transformation.
         track_running_stats : bool, optional, default=True
@@ -142,7 +164,8 @@ class BatchNorm2d(_BatchNorm):
 
     The running average of statistics are calculated as:
 
-    .. math:: x_{\text{running}} = (1 - \text{momentum}) * x_{\text{running}} + \text{momentum} * x_{\text{stat}}
+    .. math:: x_{\text{running}} = (1 - \text{momentum}) * x_{\text{running}} +
+                                   \text{momentum} * x_{\text{batch}}
 
     See Also
     --------
@@ -158,16 +181,16 @@ class BatchNorm2d(_BatchNorm):
         affine=True,
         track_running_stats=True,
     ):
-        """Create a ``BatchNorm2d`` module.
+        r"""Create a ``BatchNorm2d`` module.
 
         Parameters
         ----------
         num_features : int
             The number of channels.
         eps : float, optional, default=1e-5
-            The epsilon value.
+            The value to :math:`\epsilon`.
         momentum : float, optional, default=0.1
-            The momentum of moving average.
+            The value to :math:`\text{momentum}`.
         affine : bool, optional, default=True
             **True** to apply a affine transformation.
         track_running_stats : bool, optional, default=True
@@ -191,7 +214,8 @@ class BatchNorm3d(_BatchNorm):
 
     The running average of statistics are calculated as:
 
-    .. math:: x_{\text{running}} = (1 - \text{momentum}) * x_{\text{running}} + \text{momentum} * x_{\text{stat}}
+    .. math:: x_{\text{running}} = (1 - \text{momentum}) * x_{\text{running}} +
+                                   \text{momentum} * x_{\text{batch}}
 
     See Also
     --------
@@ -207,16 +231,16 @@ class BatchNorm3d(_BatchNorm):
         affine=True,
         track_running_stats=True,
     ):
-        """Create a ``BatchNorm3d`` module.
+        r"""Create a ``BatchNorm3d`` module.
 
         Parameters
         ----------
         num_features : int
             The number of channels.
         eps : float, optional, default=1e-5
-            The epsilon value.
+            The value to :math:`\epsilon`.
         momentum : float, optional, default=0.1
-            The momentum of moving average.
+            The value to :math:`\text{momentum}`.
         affine : bool, optional, default=True
             **True** to apply a affine transformation.
         track_running_stats : bool, optional, default=True
@@ -240,7 +264,8 @@ class SyncBatchNorm(_BatchNorm):
 
     The running average of statistics are calculated as:
 
-    .. math:: x_{\text{running}} = (1 - \text{momentum}) * x_{\text{running}} + \text{momentum} * x_{\text{stat}}
+    .. math:: x_{\text{running}} = (1 - \text{momentum}) * x_{\text{running}} +
+                                   \text{momentum} * x_{\text{batch}}
 
     Additionally, specify ``process_group`` to perform synchronization.
 
@@ -261,16 +286,16 @@ class SyncBatchNorm(_BatchNorm):
         track_running_stats=True,
         process_group=None,
     ):
-        """Create a ``SyncBatchNorm`` module.
+        r"""Create a ``SyncBatchNorm`` module.
 
         Parameters
         ----------
         num_features : int
             The number of channels.
         eps : float, optional, default=1e-5
-            The epsilon value.
+            The value to :math:`\epsilon`.
         momentum : float, optional, default=0.1
-            The momentum of moving average.
+            The value to :math:`\text{momentum}`.
         affine : bool, optional, default=True
             **True** to apply a affine transformation.
         track_running_stats : bool, optional, default=True
@@ -292,7 +317,7 @@ class SyncBatchNorm(_BatchNorm):
             return F.sync_batch_norm(
                 input, *self.inputs,
                 training=self.training,
-                momentum=self.momentum,
+                momentum=self._get_momentum(),
                 eps=self.eps,
                 process_group=self.process_group
             )
@@ -300,6 +325,6 @@ class SyncBatchNorm(_BatchNorm):
             return F.batch_norm(
                 input, *self.inputs,
                 training=self.training,
-                momentum=self.momentum,
+                momentum=self._get_momentum(),
                 eps=self.eps
             )

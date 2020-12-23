@@ -58,7 +58,7 @@ def dropout(inputs, ratio=0.5, **kwargs):
     if context.executing_eagerly():
         return op_lib \
             .instantiate() \
-            .apply([inputs], ratio, inplace=inplace)
+            .apply([inputs], args['ratio'], inplace=inplace)
     else:
         return op_lib.blend(**args)
 
@@ -103,7 +103,7 @@ def drop_block2d(inputs, ratio=0.1, block_size=7, data_format='NCHW', **kwargs):
             .instantiate(
                 block_size=block_size,
                 data_format=data_format,
-            ).apply([inputs], ratio, inplace=inplace)
+            ).apply([inputs], args['ratio'], inplace=inplace)
     else:
         return op_lib.blend(**args)
 
@@ -137,7 +137,7 @@ def drop_path(inputs, ratio=0.2, **kwargs):
     if context.executing_eagerly():
         return op_lib \
             .instantiate() \
-            .apply([inputs], ratio, inplace=inplace)
+            .apply([inputs], args['ratio'], inplace=inplace)
     else:
         return op_lib.blend(**args)
 

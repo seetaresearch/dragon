@@ -49,10 +49,11 @@ def assign(inputs, starts=None, sizes=None, **kwargs):
     inputs[1] = ops.scalar_to_tensor(inputs[1], inputs[0].dtype)
     op_lib = control_flow_ops_lib.Assign
     if context.executing_eagerly():
+        starts = args['starts'] if starts is not None else [0]
+        sizes = args['sizes'] if sizes is not None else [-1]
         return op_lib \
-            .instantiate(
-                ndim=len(starts) if starts is not None else 0,
-            ).apply(inputs, starts, sizes, inplace=inplace)
+            .instantiate(ndim=len(starts)) \
+            .apply(inputs, starts, sizes, inplace=inplace)
     else:
         return op_lib.blend(**args)
 

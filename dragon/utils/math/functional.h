@@ -26,7 +26,7 @@ namespace math {
 
 template <typename T>
 struct MaxFunctor {
-#if defined(__CUDACC__)
+#if defined(__CUDA_ARCH__)
   inline __device__ T operator()(const T& lhs, const T& rhs) const {
     return lhs < rhs ? rhs : lhs;
   }
@@ -39,7 +39,7 @@ struct MaxFunctor {
 
 template <>
 struct MaxFunctor<float16> {
-#if defined(__CUDACC__)
+#if defined(__CUDA_ARCH__)
   inline __device__ float16
   operator()(const float16& lhs, const float16& rhs) const {
 #if __CUDA_ARCH__ >= 530
@@ -62,7 +62,7 @@ struct MaxFunctor<float16> {
 #endif
 };
 
-#if defined(__CUDACC__)
+#if defined(__CUDA_ARCH__)
 template <>
 struct MaxFunctor<half> {
   inline __device__ half operator()(const half& lhs, const half& rhs) const {
@@ -87,7 +87,7 @@ struct MaxFunctor<half2> {
 
 template <typename T>
 struct MinFunctor {
-#if defined(__CUDACC__)
+#if defined(__CUDA_ARCH__)
   inline __device__ T operator()(const T& lhs, const T& rhs) const {
     return lhs < rhs ? lhs : rhs;
   }
@@ -100,7 +100,7 @@ struct MinFunctor {
 
 template <>
 struct MinFunctor<float16> {
-#if defined(__CUDACC__)
+#if defined(__CUDA_ARCH__)
   inline __device__ float16
   operator()(const float16& lhs, const float16& rhs) const {
 #if __CUDA_ARCH__ >= 530
@@ -123,7 +123,7 @@ struct MinFunctor<float16> {
 #endif
 };
 
-#if defined(__CUDACC__)
+#if defined(__CUDA_ARCH__)
 template <>
 struct MinFunctor<half> {
   inline __device__ half operator()(const half& lhs, const half& rhs) const {
@@ -148,7 +148,7 @@ struct MinFunctor<half2> {
 
 template <typename T>
 struct PlusFunctor {
-#if defined(__CUDACC__)
+#if defined(__CUDA_ARCH__)
   inline __device__ T operator()(const T& lhs, const T& rhs) const {
     return lhs + rhs;
   }
@@ -161,7 +161,7 @@ struct PlusFunctor {
 
 template <>
 struct PlusFunctor<float16> {
-#if defined(__CUDACC__)
+#if defined(__CUDA_ARCH__)
   inline __device__ float16
   operator()(const float16& lhs, const float16& rhs) const {
 #if __CUDA_ARCH__ >= 530
@@ -183,7 +183,7 @@ struct PlusFunctor<float16> {
 #endif
 };
 
-#if defined(__CUDACC__)
+#if defined(__CUDA_ARCH__)
 template <>
 struct PlusFunctor<half> {
   inline __device__ half operator()(const half& lhs, const half& rhs) const {
@@ -211,7 +211,7 @@ struct PlusFunctor<half2> {
 
 template <typename T>
 struct MinusFunctor {
-#if defined(__CUDACC__)
+#if defined(__CUDA_ARCH__)
   inline __device__ T operator()(const T& lhs, const T& rhs) const {
     return lhs - rhs;
   }
@@ -224,7 +224,7 @@ struct MinusFunctor {
 
 template <>
 struct MinusFunctor<float16> {
-#if defined(__CUDACC__)
+#if defined(__CUDA_ARCH__)
   inline __device__ float16
   operator()(const float16& lhs, const float16& rhs) const {
 #if __CUDA_ARCH__ >= 530
@@ -246,7 +246,7 @@ struct MinusFunctor<float16> {
 #endif
 };
 
-#if defined(__CUDACC__)
+#if defined(__CUDA_ARCH__)
 template <>
 struct MinusFunctor<half> {
   inline __device__ half operator()(const half& lhs, const half& rhs) const {
@@ -274,7 +274,7 @@ struct MinusFunctor<half2> {
 
 template <typename T>
 struct MultipliesFunctor {
-#if defined(__CUDACC__)
+#if defined(__CUDA_ARCH__)
   inline __device__ T operator()(const T& lhs, const T& rhs) const {
     return lhs * rhs;
   }
@@ -287,7 +287,7 @@ struct MultipliesFunctor {
 
 template <>
 struct MultipliesFunctor<float16> {
-#if defined(__CUDACC__)
+#if defined(__CUDA_ARCH__)
   inline __device__ float16
   operator()(const float16& lhs, const float16& rhs) const {
 #if __CUDA_ARCH__ >= 530
@@ -309,7 +309,7 @@ struct MultipliesFunctor<float16> {
 #endif
 };
 
-#if defined(__CUDACC__)
+#if defined(__CUDA_ARCH__)
 template <>
 struct MultipliesFunctor<half> {
   inline __device__ half operator()(const half& lhs, const half& rhs) const {
@@ -337,7 +337,7 @@ struct MultipliesFunctor<half2> {
 
 template <typename T>
 struct DividesFunctor {
-#if defined(__CUDACC__)
+#if defined(__CUDA_ARCH__)
   inline __device__ T operator()(const T& lhs, const T& rhs) const {
     return lhs / rhs;
   }
@@ -350,7 +350,7 @@ struct DividesFunctor {
 
 template <>
 struct DividesFunctor<float16> {
-#if defined(__CUDACC__)
+#if defined(__CUDA_ARCH__)
   inline __device__ float16
   operator()(const float16& lhs, const float16& rhs) const {
 #if __CUDA_ARCH__ >= 530
@@ -372,7 +372,7 @@ struct DividesFunctor<float16> {
 #endif
 };
 
-#if defined(__CUDACC__)
+#if defined(__CUDA_ARCH__)
 template <>
 struct DividesFunctor<half> {
   inline __device__ half operator()(const half& lhs, const half& rhs) const {
@@ -396,7 +396,7 @@ struct DividesFunctor<half2> {
 
 template <typename T>
 struct PowFunctor {
-#if defined(__CUDACC__)
+#if defined(__CUDA_ARCH__)
   inline __device__ T operator()(const T& lhs, const T& rhs) const {
     return pow(lhs, rhs);
   }
@@ -409,7 +409,7 @@ struct PowFunctor {
 
 template <>
 struct PowFunctor<float16> {
-#if defined(__CUDACC__)
+#if defined(__CUDA_ARCH__)
   inline __device__ float16
   operator()(const float16& lhs, const float16& rhs) const {
     half ret = __float2half(
@@ -425,7 +425,7 @@ struct PowFunctor<float16> {
 #endif
 };
 
-#if defined(__CUDACC__)
+#if defined(__CUDA_ARCH__)
 template <>
 struct PowFunctor<half> {
   inline __device__ half operator()(const half& lhs, const half& rhs) const {
@@ -449,7 +449,7 @@ struct PowFunctor<half2> {
 
 template <typename T>
 struct EqualFunctor {
-#if defined(__CUDACC__)
+#if defined(__CUDA_ARCH__)
   inline __device__ bool operator()(const T& lhs, const T& rhs) const {
     return lhs == rhs;
   }
@@ -462,7 +462,7 @@ struct EqualFunctor {
 
 template <>
 struct EqualFunctor<float16> {
-#if defined(__CUDACC__)
+#if defined(__CUDA_ARCH__)
   inline __device__ bool operator()(const float16& lhs, const float16& rhs)
       const {
 #if __CUDA_ARCH__ >= 530
@@ -481,7 +481,7 @@ struct EqualFunctor<float16> {
 #endif
 };
 
-#if defined(__CUDACC__)
+#if defined(__CUDA_ARCH__)
 template <>
 struct EqualFunctor<half> {
   inline __device__ bool operator()(const half& lhs, const half& rhs) const {
@@ -496,7 +496,7 @@ struct EqualFunctor<half> {
 
 template <typename T>
 struct NotEqualFunctor {
-#if defined(__CUDACC__)
+#if defined(__CUDA_ARCH__)
   inline __device__ bool operator()(const T& lhs, const T& rhs) const {
     return lhs != rhs;
   }
@@ -509,7 +509,7 @@ struct NotEqualFunctor {
 
 template <>
 struct NotEqualFunctor<float16> {
-#if defined(__CUDACC__)
+#if defined(__CUDA_ARCH__)
   inline __device__ bool operator()(const float16& lhs, const float16& rhs)
       const {
 #if __CUDA_ARCH__ >= 530
@@ -528,7 +528,7 @@ struct NotEqualFunctor<float16> {
 #endif
 };
 
-#if defined(__CUDACC__)
+#if defined(__CUDA_ARCH__)
 template <>
 struct NotEqualFunctor<half> {
   inline __device__ bool operator()(const half& lhs, const half& rhs) const {
@@ -543,7 +543,7 @@ struct NotEqualFunctor<half> {
 
 template <typename T>
 struct GreaterFunctor {
-#if defined(__CUDACC__)
+#if defined(__CUDA_ARCH__)
   inline __device__ bool operator()(const T& lhs, const T& rhs) const {
     return lhs > rhs;
   }
@@ -556,7 +556,7 @@ struct GreaterFunctor {
 
 template <>
 struct GreaterFunctor<float16> {
-#if defined(__CUDACC__)
+#if defined(__CUDA_ARCH__)
   inline __device__ bool operator()(const float16& lhs, const float16& rhs)
       const {
 #if __CUDA_ARCH__ >= 530
@@ -575,7 +575,7 @@ struct GreaterFunctor<float16> {
 #endif
 };
 
-#if defined(__CUDACC__)
+#if defined(__CUDA_ARCH__)
 template <>
 struct GreaterFunctor<half> {
   inline __device__ bool operator()(const half& lhs, const half& rhs) const {
@@ -590,7 +590,7 @@ struct GreaterFunctor<half> {
 
 template <typename T>
 struct LessFunctor {
-#if defined(__CUDACC__)
+#if defined(__CUDA_ARCH__)
   inline __device__ bool operator()(const T& lhs, const T& rhs) const {
     return lhs < rhs;
   }
@@ -603,7 +603,7 @@ struct LessFunctor {
 
 template <>
 struct LessFunctor<float16> {
-#if defined(__CUDACC__)
+#if defined(__CUDA_ARCH__)
   inline __device__ bool operator()(const float16& lhs, const float16& rhs)
       const {
 #if __CUDA_ARCH__ >= 530
@@ -622,7 +622,7 @@ struct LessFunctor<float16> {
 #endif
 };
 
-#if defined(__CUDACC__)
+#if defined(__CUDA_ARCH__)
 template <>
 struct LessFunctor<half> {
   inline __device__ bool operator()(const half& lhs, const half& rhs) const {
@@ -637,7 +637,7 @@ struct LessFunctor<half> {
 
 template <typename T>
 struct GreaterEqualFunctor {
-#if defined(__CUDACC__)
+#if defined(__CUDA_ARCH__)
   inline __device__ bool operator()(const T& lhs, const T& rhs) const {
     return lhs >= rhs;
   }
@@ -650,7 +650,7 @@ struct GreaterEqualFunctor {
 
 template <>
 struct GreaterEqualFunctor<float16> {
-#if defined(__CUDACC__)
+#if defined(__CUDA_ARCH__)
   inline __device__ bool operator()(const float16& lhs, const float16& rhs)
       const {
 #if __CUDA_ARCH__ >= 530
@@ -669,7 +669,7 @@ struct GreaterEqualFunctor<float16> {
 #endif
 };
 
-#if defined(__CUDACC__)
+#if defined(__CUDA_ARCH__)
 template <>
 struct GreaterEqualFunctor<half> {
   inline __device__ bool operator()(const half& lhs, const half& rhs) const {
@@ -684,7 +684,7 @@ struct GreaterEqualFunctor<half> {
 
 template <typename T>
 struct LessEqualFunctor {
-#if defined(__CUDACC__)
+#if defined(__CUDA_ARCH__)
   inline __device__ bool operator()(const T& lhs, const T& rhs) const {
     return lhs <= rhs;
   }
@@ -697,7 +697,7 @@ struct LessEqualFunctor {
 
 template <>
 struct LessEqualFunctor<float16> {
-#if defined(__CUDACC__)
+#if defined(__CUDA_ARCH__)
   inline __device__ bool operator()(const float16& lhs, const float16& rhs)
       const {
 #if __CUDA_ARCH__ >= 530
@@ -716,7 +716,7 @@ struct LessEqualFunctor<float16> {
 #endif
 };
 
-#if defined(__CUDACC__)
+#if defined(__CUDA_ARCH__)
 template <>
 struct LessEqualFunctor<half> {
   inline __device__ bool operator()(const half& lhs, const half& rhs) const {

@@ -26,7 +26,7 @@ def dropout_exporter(op_def, context):
             drop_ratio = arg.f
         elif arg.name == 'prob_desc':
             drop_ratio = helper.fetch_argument(op_def, arg, context.ws)
-    helper.add_attribute(node, 'ratio', drop_ratio)
+    helper.add_attribute(node, 'ratio', float(drop_ratio))
     return node, const_tensors
 
 

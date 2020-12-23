@@ -50,7 +50,7 @@ class BatchNorm(layer.Layer):
         Parameters
         ----------
         decay : float, optional, default=0.9
-            The decay factor for moving average.
+            The decay factor of running average.
         epsilon : float, optional, default=1e-5
             The epsilon.
         act : callable, optional

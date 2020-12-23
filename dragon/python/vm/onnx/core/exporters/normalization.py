@@ -26,6 +26,9 @@ def batch_norm_exporter(op_def, context):
             helper.add_attribute(node, 'epsilon', arg.f)
         elif arg.name == 'momentum':
             helper.add_attribute(node, 'momentum', arg.f)
+        elif arg.name == 'momentum_desc':
+            momentum = helper.fetch_argument(op_def, arg, context.ws)
+            helper.add_attribute(node, 'momentum', float(momentum))
     # Weight, bias, running mean and running variance
     const_tensors = [helper.from_tensor(e, context.ws) for e in op_def.input[1:]]
     return node, const_tensors

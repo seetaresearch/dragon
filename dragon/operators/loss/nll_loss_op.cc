@@ -6,7 +6,7 @@
 namespace dragon {
 
 template <class Context>
-template <typename LogitType, typename TargetType>
+template <typename LogitT, typename TargetT>
 void NLLLossOp<Context>::DoRunWithType() {
   auto &X = Input(0), *Y = Output(0);
   CANONICALIZE_AXIS_WITH_TENSOR(X);
@@ -19,19 +19,19 @@ void NLLLossOp<Context>::DoRunWithType() {
       << "\nNumber of preds must match the number of targets.";
 
   auto scratches = ctx()->workspace()->template data<Context>({
-      (size_t)num_preds * sizeof(LogitType), // loss
-      (size_t)num_preds * sizeof(LogitType) + sizeof(LogitType), // mask
+      (size_t)num_preds * sizeof(LogitT), // loss
+      (size_t)num_preds * sizeof(LogitT) + sizeof(LogitT), // mask
   });
-  auto* loss = static_cast<LogitType*>(scratches[0]);
-  auto* mask = static_cast<LogitType*>(scratches[1]);
+  auto* loss = static_cast<LogitT*>(scratches[0]);
+  auto* mask = static_cast<LogitT*>(scratches[1]);
 
   kernel::NLLLoss(
       outer_dim,
       inner_dim,
       X.dim(axis),
       ignore_index_,
-      X.template data<LogitType, Context>(),
-      Input(1).template data<TargetType, Context>(),
+      X.template data<LogitT, Context>(),
+      Input(1).template data<TargetT, Context>(),
       loss,
       mask,
       ctx());
@@ -42,7 +42,7 @@ void NLLLossOp<Context>::DoRunWithType() {
     math::Copy(
         num_preds,
         loss,
-        Y->Reshape(out_shape)->template mutable_data<LogitType, Context>(),
+        Y->Reshape(out_shape)->template mutable_data<LogitT, Context>(),
         ctx());
   } else {
     int64_t normalizer = 1;
@@ -59,7 +59,7 @@ void NLLLossOp<Context>::DoRunWithType() {
         normalizer,
         loss,
         mask,
-        Y->Reshape({})->template mutable_data<LogitType, Context>(),
+        Y->Reshape({})->template mutable_data<LogitT, Context>(),
         ctx());
   }
 }
@@ -91,7 +91,7 @@ void NLLLossOp<Context>::RunOnDevice() {
 }
 
 template <class Context>
-template <typename LogitType, typename TargetType>
+template <typename LogitT, typename TargetT>
 void NLLLossGradientOp<Context>::DoRunWithType() {
   auto &X = Input(0), &dY = Input(-1), *dX = Output(0);
   CANONICALIZE_AXIS_WITH_TENSOR(X);
@@ -101,19 +101,19 @@ void NLLLossGradientOp<Context>::DoRunWithType() {
   auto inner_dim = dX->count(axis + 1);
   auto num_preds = outer_dim * inner_dim;
 
-  auto* dy = dY.template data<LogitType, Context>();
-  auto* dx = dX->template mutable_data<LogitType, Context>();
+  auto* dy = dY.template data<LogitT, Context>();
+  auto* dx = dX->template mutable_data<LogitT, Context>();
   auto* mask =
-      ctx()->workspace()->template data<LogitType, Context>({num_preds + 1})[0];
-  math::Set(dX->count(), convert::To<LogitType>(0.f), dx, ctx());
+      ctx()->workspace()->template data<LogitT, Context>({num_preds + 1})[0];
+  math::Set(dX->count(), convert::To<LogitT>(0.f), dx, ctx());
 
   kernel::NLLLossGrad(
       outer_dim,
       inner_dim,
       dX->dim(axis),
       ignore_index_,
-      X.template data<LogitType, Context>(),
-      Input(1).template data<TargetType, Context>(),
+      X.template data<LogitT, Context>(),
+      Input(1).template data<TargetT, Context>(),
       dx,
       mask,
       ctx());

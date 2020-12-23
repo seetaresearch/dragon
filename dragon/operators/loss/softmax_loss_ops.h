@@ -45,7 +45,7 @@ class SparseSoftmaxCrossEntropyOp : public Operator<Context> {
 
   void RunOnDevice() override;
 
-  template <typename LogitType, typename TargetType>
+  template <typename LogitT, typename TargetT>
   void DoRunWithType();
 
  protected:
@@ -81,7 +81,7 @@ class SparseSoftmaxCrossEntropyGradientOp : public Operator<Context> {
 
   void RunOnDevice() override;
 
-  template <typename LogitType, typename TargetType>
+  template <typename LogitT, typename TargetT>
   void DoRunWithType();
 
  protected:

@@ -93,7 +93,7 @@ __global__ void _L1NormalizeGrad(
     val2 = BlockReduce<AccT>(storage).Sum(val2);
     if (threadIdx.x == 0) {
       norm = max(val1 / normalizer, epsilon);
-      norm2 = pow(norm, 2);
+      norm2 = pow(norm, AccT(2));
       sum = val2 / normalizer;
     }
     __syncthreads();
@@ -130,7 +130,7 @@ __global__ void _L2NormalizeGrad(
     val2 = BlockReduce<AccT>(storage).Sum(val2);
     if (threadIdx.x == 0) {
       norm = max(sqrt(val1 / normalizer), epsilon);
-      norm3 = pow(norm, 3);
+      norm3 = pow(norm, AccT(3));
       sum = val2 / normalizer;
     }
     __syncthreads();

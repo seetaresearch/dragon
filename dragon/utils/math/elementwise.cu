@@ -162,23 +162,17 @@ __global__ void _InvStd(const int n, const T eps, const T* x, T* y) {
   }
 }
 
-template <>
-__global__ void
-_InvStd<half>(const int n, const half eps, const half* x, half* y) {
+__global__ void _InvStd(const int n, const float eps, const half* x, half* y) {
   CUDA_1D_KERNEL_LOOP(i, n) {
-#if __CUDA_ARCH__ >= 530
-    y[i] = hrsqrt(__hadd(x[i], eps));
-#endif
+    y[i] = __float2half(rsqrt(__half2float(x[i]) + eps));
   }
 }
 
-template <>
 __global__ void
-_InvStd<half2>(const int n, const half2 eps, const half2* x, half2* y) {
+_InvStd(const int n, const float eps, const half2* x, half2* y) {
   CUDA_1D_KERNEL_LOOP(i, n) {
-#if __CUDA_ARCH__ >= 530
-    y[i] = h2rsqrt(__hadd2(x[i], eps));
-#endif
+    const float2 val = __half22float2(x[i]);
+    y[i] = __floats2half2_rn(rsqrt(val.x + eps), rsqrt(val.y + eps));
   }
 }
 
@@ -206,19 +200,15 @@ __global__ void _Powx(const int n, const T exponent, const T* x, T* y) {
 __global__ void
 _Powx(const int n, const float exponent, const half* x, half* y) {
   CUDA_1D_KERNEL_LOOP(i, n) {
-#if __CUDA_ARCH__ >= 530
     y[i] = __float2half(pow(__half2float(x[i]), exponent));
-#endif
   }
 }
 
 __global__ void
 _Powx(const int n, const float exponent, const half2* x, half2* y) {
   CUDA_1D_KERNEL_LOOP(i, n) {
-#if __CUDA_ARCH__ >= 530
     const float2 val = __half22float2(x[i]);
     y[i] = __floats2half2_rn(pow(val.x, exponent), pow(val.y, exponent));
-#endif
   }
 }
 
@@ -269,20 +259,16 @@ __global__ void _Square(const int n, const T* x, T* y) {
 
 template <typename T>
 __global__ void _NotZero(const int nthreads, const T* x, bool* y) {
-  const T kZero = T(0);
   CUDA_1D_KERNEL_LOOP(i, nthreads) {
-    y[i] = x[i] != kZero ? true : false;
+    y[i] = x[i] != T(0) ? true : false;
   }
 }
 
 template <>
 __global__ void _NotZero<half>(const int nthreads, const half* x, bool* y) {
-#if __CUDA_ARCH__ >= 530
-  const half kZero = __float2half(0.f);
   CUDA_1D_KERNEL_LOOP(i, nthreads) {
-    y[i] = __hne(x[i], kZero) ? true : false;
+    y[i] = __half2float(x[i]) != 0.f ? true : false;
   }
-#endif
 }
 
 template <typename T>
@@ -560,15 +546,12 @@ DRAGON_API void InvStd<float16, CUDAContext>(
   if ((n & 1) == 0) {
     _InvStd<<<CUDA_BLOCKS(n >> 1), CUDA_THREADS, 0, ctx->cuda_stream()>>>(
         n >> 1,
-        convert::To<half2>(eps),
+        eps,
         reinterpret_cast<const half2*>(x),
         reinterpret_cast<half2*>(y));
   } else {
     _InvStd<<<CUDA_BLOCKS(n), CUDA_THREADS, 0, ctx->cuda_stream()>>>(
-        n,
-        convert::To<half>(eps),
-        reinterpret_cast<const half*>(x),
-        reinterpret_cast<half*>(y));
+        n, eps, reinterpret_cast<const half*>(x), reinterpret_cast<half*>(y));
   }
 }
 

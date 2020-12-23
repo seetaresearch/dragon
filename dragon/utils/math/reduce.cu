@@ -239,8 +239,8 @@ void ReduceSum<float16, CUDAContext>(
         num_axes,                                                          \
         axes,                                                              \
         Reducer<AccT>(),                                                   \
-        AccT(kInit),                                                       \
-        AccT(scale),                                                       \
+        convert::To<AccT>(kInit),                                          \
+        convert::To<AccT>(scale),                                          \
         x,                                                                 \
         y,                                                                 \
         ctx);                                                              \

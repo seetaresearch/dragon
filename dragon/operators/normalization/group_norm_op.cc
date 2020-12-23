@@ -8,9 +8,9 @@ namespace dragon {
 template <class Context>
 template <typename T>
 void GroupNormOp<Context>::DoRunWithType() {
-  using ParamType = typename math::utils::AccmulatorType<T>::type;
-  TENSOR_FILL_WITH_TYPE(Input(1), vec64_t({C_}), ParamType);
-  TENSOR_FILL_WITH_TYPE(Input(2), vec64_t({C_}), ParamType);
+  using ParamT = typename math::utils::AccmulatorType<T>::type;
+  TENSOR_FILL_WITH_TYPE(Input(1), vec64_t({C_}), ParamT);
+  TENSOR_FILL_WITH_TYPE(Input(2), vec64_t({C_}), ParamT);
 
   auto* X_mu = Buffer("X_mu")->Reshape({N_, G_});
   auto* X_rsig = Buffer("X_rsig")->Reshape({N_, G_});
@@ -18,8 +18,8 @@ void GroupNormOp<Context>::DoRunWithType() {
   auto* X_bias = Buffer("X_bias")->Reshape({N_, C_});
 
   auto* x = Input(0).template data<T, Context>();
-  auto* mu = X_mu->template mutable_data<ParamType, Context>();
-  auto* rsig = X_rsig->template mutable_data<ParamType, Context>();
+  auto* mu = X_mu->template mutable_data<ParamT, Context>();
+  auto* rsig = X_rsig->template mutable_data<ParamT, Context>();
 
   // Compute the moments
   if (data_format() == "NCHW") {
@@ -45,10 +45,10 @@ void GroupNormOp<Context>::DoRunWithType() {
       x,
       mu,
       rsig,
-      Input(1).template data<ParamType, Context>(), // gamma
-      Input(2).template data<ParamType, Context>(), // beta
-      X_scale->template mutable_data<ParamType, Context>(),
-      X_bias->template mutable_data<ParamType, Context>(),
+      Input(1).template data<ParamT, Context>(), // gamma
+      Input(2).template data<ParamT, Context>(), // beta
+      X_scale->template mutable_data<ParamT, Context>(),
+      X_bias->template mutable_data<ParamT, Context>(),
       Output(0)->template mutable_data<T, Context>(),
       ctx());
 }
@@ -63,7 +63,7 @@ void GroupNormOp<Context>::RunOnDevice() {
 template <class Context>
 template <typename T>
 void GroupNormGradientOp<Context>::DoRunWithType() {
-  using ParamType = typename math::utils::AccmulatorType<T>::type;
+  using ParamT = typename math::utils::AccmulatorType<T>::type;
   auto *dX = Output(0), *dW = Output(1), *dB = Output(2);
 
   auto *X_mu = Buffer("X_mu"), *X_rsig = Buffer("X_rsig");
@@ -78,14 +78,14 @@ void GroupNormGradientOp<Context>::DoRunWithType() {
       S_,
       data_format(),
       Input(0).template data<T, Context>(), // x
-      X_mu->template data<ParamType, Context>(),
-      X_rsig->template data<ParamType, Context>(),
-      Input(1).template data<ParamType, Context>(), // gamma
+      X_mu->template data<ParamT, Context>(),
+      X_rsig->template data<ParamT, Context>(),
+      Input(1).template data<ParamT, Context>(), // gamma
       Input(2).template data<T, Context>(), // dy
-      X_scale->template mutable_data<ParamType, Context>(),
-      X_bias->template mutable_data<ParamType, Context>(),
-      dW->Reshape({C_})->template mutable_data<ParamType, Context>(),
-      dB->Reshape({C_})->template mutable_data<ParamType, Context>(),
+      X_scale->template mutable_data<ParamT, Context>(),
+      X_bias->template mutable_data<ParamT, Context>(),
+      dW->Reshape({C_})->template mutable_data<ParamT, Context>(),
+      dB->Reshape({C_})->template mutable_data<ParamT, Context>(),
       dX->template mutable_data<T, Context>(),
       ctx());
 }

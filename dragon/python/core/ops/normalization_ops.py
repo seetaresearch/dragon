@@ -23,6 +23,7 @@ from dragon.core.util import nest
 
 
 @OpSchema.num_inputs(5)
+@ArgHelper.desc('momentum', as_target=False)
 def batch_norm(
     inputs,
     axis=-1,
@@ -40,7 +41,8 @@ def batch_norm(
 
     The running average of statistics are calculated as:
 
-    .. math:: x_{\text{running}} = \text{momentum} * x_{\text{running}} + (1 - \text{momentum}) * x_{\text{stat}}
+    .. math:: x_{\text{running}} = \text{momentum} * x_{\text{running}} +
+                                   (1 - \text{momentum}) * x_{\text{batch}}
 
     Parameters
     ----------
@@ -48,8 +50,8 @@ def batch_norm(
         The tensor ``x``, ``gamma``, ``beta``, ``mean`` and ``var``.
     axis : int, optional, default=-1
         The channel axis.
-    momentum : float, optional, default=0.9
-        The momentum for running average.
+    momentum : Union[float, dragon.Tensor], optional
+        The value to :math:`\text{momentum}`.
     epsilon : float, optional, default=1e-5
         The value to :math:`\epsilon`.
     use_stats : int, optional, default=-1
@@ -62,16 +64,15 @@ def batch_norm(
 
     """
     args = ArgHelper.parse(locals())
-    args['momentum'], args['epsilon'] = float(momentum), float(epsilon)
+    args['epsilon'] = float(epsilon)
     op_lib = normalization_ops_lib.BatchNorm
     if context.executing_eagerly():
         return op_lib \
             .instantiate(
                 axis=axis,
-                momentum=args['momentum'],
                 epsilon=args['epsilon'],
                 use_stats=use_stats,
-            ).apply(inputs)
+            ).apply(inputs, args['momentum'])
     else:
         return op_lib.blend(**args)
 
@@ -304,6 +305,7 @@ def local_response_norm(
 
 
 @OpSchema.num_inputs(5)
+@ArgHelper.desc('momentum', as_target=False)
 def sync_batch_norm(
     inputs,
     axis=-1,
@@ -322,7 +324,8 @@ def sync_batch_norm(
 
     The running average of statistics are calculated as:
 
-    .. math:: x_{\text{running}} = \text{momentum} * x_{\text{running}} + (1 - \text{momentum}) * x_{\text{stat}}
+    .. math:: x_{\text{running}} = \text{momentum} * x_{\text{running}} +
+                                   (1 - \text{momentum}) * x_{\text{batch}}
 
     Parameters
     ----------
@@ -330,8 +333,8 @@ def sync_batch_norm(
         The tensor ``x``, ``gamma``, ``beta``, ``mean`` and ``var``.
     axis : int, optional, default=-1
         The channel axis.
-    momentum : float, optional, default=0.9
-        The momentum for average.
+    momentum : Union[float, dragon.Tensor], optional
+        The value to :math:`\text{momentum}`.
     epsilon : float, optional, default=1e-5
         The value to :math:`\epsilon`.
     use_stats : int, optional, default=-1
@@ -346,7 +349,7 @@ def sync_batch_norm(
 
     """
     args = ArgHelper.parse(locals())
-    args['momentum'], args['epsilon'] = float(momentum), float(epsilon)
+    args['epsilon'] = float(epsilon)
     if process_group is None:
         process_group = distributed.get_group()
     if process_group is None:
@@ -356,11 +359,10 @@ def sync_batch_norm(
         return op_lib \
             .instantiate(
                 axis=axis,
-                momentum=args['momentum'],
                 epsilon=args['epsilon'],
                 use_stats=use_stats,
                 process_group=process_group,
-            ).apply(inputs)
+            ).apply(inputs, args['momentum'])
     else:
         args.update(process_group.arguments)
         return op_lib.blend(**args)

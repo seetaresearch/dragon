@@ -6,7 +6,7 @@
 namespace dragon {
 
 template <class Context>
-template <typename LogitType, typename TargetType>
+template <typename LogitT, typename TargetT>
 void SparseSoftmaxCrossEntropyOp<Context>::DoRunWithType() {
   auto &X = Input(0), *Y = Output(0);
   CANONICALIZE_AXIS_WITH_TENSOR(X);
@@ -18,20 +18,20 @@ void SparseSoftmaxCrossEntropyOp<Context>::DoRunWithType() {
   CHECK_EQ(num_preds, Input(1).count())
       << "\nNumber of preds must match the number of targets.";
   auto* X_prob = Buffer("prob")->ReshapeLike(X);
-  auto* prob = X_prob->template mutable_data<LogitType, Context>();
+  auto* prob = X_prob->template mutable_data<LogitT, Context>();
 
   auto scratches = ctx()->workspace()->template data<Context>({
-      (size_t)num_preds * sizeof(LogitType), // loss
-      (size_t)num_preds * sizeof(LogitType) + sizeof(LogitType), // mask
+      (size_t)num_preds * sizeof(LogitT), // loss
+      (size_t)num_preds * sizeof(LogitT) + sizeof(LogitT), // mask
   });
-  auto* loss = static_cast<LogitType*>(scratches[0]);
-  auto* mask = static_cast<LogitType*>(scratches[1]);
+  auto* loss = static_cast<LogitT*>(scratches[0]);
+  auto* mask = static_cast<LogitT*>(scratches[1]);
 
   kernel::Softmax(
       outer_dim,
       inner_dim,
       X.dim(axis),
-      X.template data<LogitType, Context>(),
+      X.template data<LogitT, Context>(),
       prob,
       ctx());
 
@@ -41,7 +41,7 @@ void SparseSoftmaxCrossEntropyOp<Context>::DoRunWithType() {
       X.dim(axis),
       ignore_index_,
       prob,
-      Input(1).template data<TargetType, Context>(),
+      Input(1).template data<TargetT, Context>(),
       loss,
       mask,
       ctx());
@@ -52,7 +52,7 @@ void SparseSoftmaxCrossEntropyOp<Context>::DoRunWithType() {
     math::Copy(
         num_preds,
         loss,
-        Y->Reshape(out_shape)->template mutable_data<LogitType, Context>(),
+        Y->Reshape(out_shape)->template mutable_data<LogitT, Context>(),
         ctx());
   } else {
     int64_t normalizer = 1;
@@ -69,7 +69,7 @@ void SparseSoftmaxCrossEntropyOp<Context>::DoRunWithType() {
         normalizer,
         loss,
         mask,
-        Y->Reshape({})->template mutable_data<LogitType, Context>(),
+        Y->Reshape({})->template mutable_data<LogitT, Context>(),
         ctx());
   }
 }
@@ -101,7 +101,7 @@ void SparseSoftmaxCrossEntropyOp<Context>::RunOnDevice() {
 }
 
 template <class Context>
-template <typename LogitType, typename TargetType>
+template <typename LogitT, typename TargetT>
 void SparseSoftmaxCrossEntropyGradientOp<Context>::DoRunWithType() {
   auto &dY = Input(-1), *dX = Output(0);
   CANONICALIZE_AXIS_WITH_TENSOR(Input(0));
@@ -110,11 +110,11 @@ void SparseSoftmaxCrossEntropyGradientOp<Context>::DoRunWithType() {
   auto inner_dim = dX->count(axis + 1);
   auto num_preds = outer_dim * inner_dim;
 
-  auto* prob = Buffer("prob")->template data<LogitType, Context>();
-  auto* dy = Input(-1).template data<LogitType, Context>();
-  auto* dx = Output(0)->template mutable_data<LogitType, Context>();
+  auto* prob = Buffer("prob")->template data<LogitT, Context>();
+  auto* dy = Input(-1).template data<LogitT, Context>();
+  auto* dx = Output(0)->template mutable_data<LogitT, Context>();
   auto* mask =
-      ctx()->workspace()->template data<LogitType, Context>({num_preds + 1})[0];
+      ctx()->workspace()->template data<LogitT, Context>({num_preds + 1})[0];
 
   math::Copy(dX->count(), prob, dx, ctx());
 
@@ -124,7 +124,7 @@ void SparseSoftmaxCrossEntropyGradientOp<Context>::DoRunWithType() {
       dX->dim(axis),
       ignore_index_,
       prob,
-      Input(1).template data<TargetType, Context>(),
+      Input(1).template data<TargetT, Context>(),
       dx,
       mask,
       ctx());

@@ -33,7 +33,6 @@ class BatchNormOpBase : public GenericOpBase<Context> {
  public:
   BatchNormOpBase(const OperatorDef& def, Workspace* ws)
       : GenericOpBase<Context>(def, ws),
-        momentum_(OP_SINGLE_ARG(float, "momentum", 0.9f)),
         epsilon_(OP_SINGLE_ARG(double, "epsilon", 1e-5)),
         use_stats_(OP_SINGLE_ARG(int64_t, "use_stats", -1)),
         sync_stats_(OP_SINGLE_ARG(int64_t, "comm", 0) > 0 ? 1 : 0) {}
@@ -57,7 +56,6 @@ class BatchNormOpBase : public GenericOpBase<Context> {
   }
 
  protected:
-  float momentum_;
   double epsilon_;
   int64_t N_, C_, S_;
   int64_t use_stats_, sync_stats_;
@@ -68,7 +66,6 @@ class BatchNormOpBase : public GenericOpBase<Context> {
 
 #define USE_BATCHNORM_FUNCTIONS                           \
   using BatchNormOpBase<Context>::DetermineBaseArguments; \
-  using BatchNormOpBase<Context>::momentum_;              \
   using BatchNormOpBase<Context>::epsilon_;               \
   using BatchNormOpBase<Context>::use_stats_;             \
   using BatchNormOpBase<Context>::sync_stats_;            \
@@ -82,7 +79,9 @@ template <class Context>
 class BatchNormOp : public BatchNormOpBase<Context> {
  public:
   BatchNormOp(const OperatorDef& def, Workspace* ws)
-      : BatchNormOpBase<Context>(def, ws) {}
+      : BatchNormOpBase<Context>(def, ws) {
+    INIT_OP_SINGLE_ARG_WITH_DESC(float, momentum, 0.9f);
+  }
   USE_OPERATOR_FUNCTIONS;
   USE_BATCHNORM_FUNCTIONS;
 #ifdef USE_MPI
@@ -105,6 +104,8 @@ class BatchNormOp : public BatchNormOpBase<Context> {
       InferenceImpl<T>();
     }
   };
+
+  DECLARE_OP_SINGLE_ARG_WITH_DESC(float, momentum);
 };
 
 template <class Context>
@@ -146,11 +147,9 @@ class CuDNNBatchNormOp final : public BatchNormOpBase<Context> {
     CuDNNCreateTensorDesc(&bn_desc_);
     CuDNNCreateTensorDesc(&input_desc_);
     if (epsilon_ <= CUDNN_BN_MIN_EPSILON) {
-      LOG(ERROR) << "Provided epsilon is smaller than "
-                 << "CUDNN_BN_MIN_EPSILON. \nSet it to "
-                 << "CUDNN_BN_MIN_EPSILON instead.";
       epsilon_ = CUDNN_BN_MIN_EPSILON;
     }
+    INIT_OP_SINGLE_ARG_WITH_DESC(float, momentum, 0.9f);
   }
   USE_OPERATOR_FUNCTIONS;
   USE_BATCHNORM_FUNCTIONS;
@@ -168,6 +167,7 @@ class CuDNNBatchNormOp final : public BatchNormOpBase<Context> {
  protected:
   cudnnTensorDescriptor_t input_desc_, bn_desc_;
   cudnnBatchNormMode_t bn_mode_;
+  DECLARE_OP_SINGLE_ARG_WITH_DESC(float, momentum);
 };
 
 template <class Context>
@@ -178,9 +178,6 @@ class CuDNNBatchNormGradientOp final : public BatchNormGradientOp<Context> {
     CuDNNCreateTensorDesc(&bn_desc_);
     CuDNNCreateTensorDesc(&input_desc_);
     if (epsilon_ <= CUDNN_BN_MIN_EPSILON) {
-      LOG(ERROR) << "Provided epsilon is smaller than "
-                 << "CUDNN_BN_MIN_EPSILON. \nSet it to "
-                 << "CUDNN_BN_MIN_EPSILON instead.";
       epsilon_ = CUDNN_BN_MIN_EPSILON;
     }
   }
@@ -211,7 +208,11 @@ class CuDNNBatchNormGradientOp final : public BatchNormGradientOp<Context> {
   cudnnBatchNormMode_t bn_mode_;
 };
 
+DEFINE_OP_SINGLE_ARG_WITH_DESC(float, CuDNNBatchNormOp, momentum);
+
 #endif // USE_CUDNN
+
+DEFINE_OP_SINGLE_ARG_WITH_DESC(float, BatchNormOp, momentum);
 
 } // namespace dragon
 

@@ -118,7 +118,8 @@ class ArgHelper(object):
             if 'extra_inputs' not in arguments:
                 arguments['extra_inputs'] = []
             arguments['extra_inputs'] += [arg]
-        arguments.pop(name)
+        if name in arguments:
+            arguments.pop(name)
         arguments[name + '_desc'] = arg.id
         return arguments
 
@@ -141,5 +142,6 @@ class ArgHelper(object):
                     descs.append(ele.id)
                 else:
                     descs.append(Tensor.from_value(ele, dtype, 'DescConst').id)
-            arguments.pop(name)
+            if name in arguments:
+                arguments.pop(name)
             arguments[name + '_descs'] = descs
