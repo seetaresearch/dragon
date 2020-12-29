@@ -206,7 +206,6 @@ class BuildExtension(_build_ext):
                             cflags = self.cflags
                         else:
                             cflags = []
-
                         cflags = COMMON_NVCC_FLAGS + cflags + _get_cuda_arch_flags(cflags)
                         for flag in COMMON_MSVC_FLAGS:
                             cflags = ['-Xcompiler', flag] + cflags
@@ -217,6 +216,9 @@ class BuildExtension(_build_ext):
                     elif isinstance(self.cflags, list):
                         cflags = COMMON_MSVC_FLAGS + self.cflags
                         cmd += cflags
+
+                if '/MD' in cmd:
+                    cmd.remove('/MD')
 
                 return original_spawn(cmd)
 
@@ -362,7 +364,7 @@ IS_WINDOWS = _sys.platform == 'win32'
 CUDA_HOME = _find_cuda()
 CUDNN_HOME = _os.environ.get('CUDNN_HOME') or _os.environ.get('CUDNN_PATH')
 COMMON_CC_FLAGS = ['-Wno-sign-compare', '-Wno-unused-variable', '-Wno-reorder']
-COMMON_MSVC_FLAGS = ['/EHsc', '/wd4819', '/wd4244', '/wd4251', '/wd4275', '/wd4800', '/wd4996']
+COMMON_MSVC_FLAGS = ['/MT', '/EHsc', '/wd4819', '/wd4244', '/wd4251', '/wd4275', '/wd4800', '/wd4996']
 COMMON_NVCC_FLAGS = ['-w'] if IS_WINDOWS else ['-std=c++14']
 COMMON_LINK_LIBRARIES = ['protobuf'] if IS_WINDOWS else []
 DLLIMPORT_STR = '__declspec(dllimport)' if IS_WINDOWS else ''

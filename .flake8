@@ -1,7 +1,7 @@
 [flake8]
 max-line-length = 120
 ignore = E741, # ambiguous variable name
-         F403, # ‘from module import *’ used; unable to detect undefined names
+         F403, # 'from module import *' used; unable to detect undefined names
          F405, # name may be undefined, or defined from star imports: module
          F811, # redefinition of unused name from line N
          F821, # undefined name

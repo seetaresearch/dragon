@@ -72,7 +72,8 @@ def configure():
     # Copy "torchvision" => "dragon.vm.torchvision"
     shutil.copytree('../torchvision', 'dragon/vm/torchvision')
     # Copy the pre-built libraries.
-    os.makedirs('dragon/lib')
+    if not os.path.exists('dragon/lib'):
+        os.makedirs('dragon/lib')
     for src, dest in find_libraries().items():
         if os.path.exists(src):
             shutil.copy(src, dest)

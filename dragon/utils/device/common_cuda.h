@@ -104,7 +104,7 @@ inline int CUDA_NUM_DEVICES() {
 
 inline int GetCUDADevice() {
   int device_id;
-  cudaGetDevice(&device_id);
+  CUDA_CHECK(cudaGetDevice(&device_id));
   return device_id;
 }
 
@@ -144,7 +144,7 @@ inline bool TENSOR_CORE_AVAILABLE() {
 class CUDADeviceGuard {
  public:
   explicit CUDADeviceGuard(int new_id) {
-    cudaGetDevice(&prev_id_);
+    CUDA_CHECK(cudaGetDevice(&prev_id_));
     if (prev_id_ != new_id) {
       CUDA_CHECK(cudaSetDevice(new_id));
     }

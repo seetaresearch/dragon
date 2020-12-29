@@ -159,14 +159,15 @@ class TestOpSpec(unittest.TestCase):
                 [self.sym1, self.sym1]).shape, None)
 
     def test_broadcast(self):
-        self.assertEqual(dragon.broadcast_to(
-            self.sym1, shape=(1,)).shape, None)
-        self.assertEqual(dragon.broadcast_to(
-            self.sym2, shape=(1, 2)).shape, (1, 2))
-        self.assertEqual(dragon.broadcast_to(
-            self.sym3, shape=(2,)).shape, self.sym3.shape[:-1] + (2,))
-        self.assertEqual(dragon.broadcast_to(
-            self.sym3, shape=(-1, 2, 2)).shape, (1, 2, 2))
+        with dragon.graph_mode():
+            self.assertEqual(dragon.broadcast_to(
+                self.sym1, shape=(1,)).shape, None)
+            self.assertEqual(dragon.broadcast_to(
+                self.sym2, shape=(1, 2)).shape, (1, 2))
+            self.assertEqual(dragon.broadcast_to(
+                self.sym3, shape=(2,)).shape, self.sym3.shape[:-1] + (2,))
+            self.assertEqual(dragon.broadcast_to(
+                self.sym3, shape=(-1, 2, 2)).shape, (1, 2, 2))
 
     def test_cast(self):
         with dragon.graph_mode():
