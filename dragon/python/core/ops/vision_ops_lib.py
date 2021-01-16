@@ -17,11 +17,11 @@ from __future__ import print_function
 from dragon.core.framework.ops import Operator
 
 
-class ConvNd(Operator):
-    """ConvNd operator."""
+class Conv(Operator):
+    """Conv operator."""
 
     def __init__(self, key, dev, **kwargs):
-        super(ConvNd, self).__init__(key, dev, **kwargs)
+        super(Conv, self).__init__(key, dev, **kwargs)
         self.num_output = kwargs.get('dim_out', 1)
         self.kernel_shape = kwargs.get('kernel_shape', 1)
         self.strides = kwargs.get('strides', 1)
@@ -48,18 +48,18 @@ class ConvNd(Operator):
         return self.dispatch(inputs, [self.alloc()])
 
 
-class PoolNd(Operator):
-    """PoolNd operator."""
+class Pool(Operator):
+    """Pool operator."""
 
     def __init__(self, key, dev, **kwargs):
-        super(PoolNd, self).__init__(key, dev, **kwargs)
+        super(Pool, self).__init__(key, dev, **kwargs)
         self.kernel_shape = kwargs.get('kernel_shape', 1)
         self.strides = kwargs.get('strides', 1)
         self.pads = kwargs.get('pads', 0)
         self.padding = kwargs.get('padding', 'VALID')
         self.ceil_mode = kwargs.get('ceil_mode', False)
         self.mode = kwargs.get('mode', 'MAX')
-        self.global_pooling = kwargs.get('global_pooling', False)
+        self.global_pool = kwargs.get('global_pool', False)
         self.data_format = kwargs.get('data_format', 'NCHW')
 
     def attributes(self):
@@ -73,7 +73,7 @@ class PoolNd(Operator):
                 'ceil_mode': self.ceil_mode,
                 'mode': self.mode,
                 'data_format': self.data_format,
-                'global_pooling': self.global_pooling,
+                'global_pool': self.global_pool,
             },
         }
 
@@ -101,15 +101,11 @@ class BiasAdd(Operator):
         return self.dispatch(inputs, outputs)
 
 
-class Conv2d(ConvNd):
-    """Conv2d operator."""
-
-
-class ConvTranspose2d(ConvNd):
-    """ConvTranspose2d operator."""
+class ConvTranspose(Conv):
+    """ConvTranspose operator."""
 
     def __init__(self, key, dev, **kwargs):
-        super(ConvTranspose2d, self).__init__(key, dev, **kwargs)
+        super(ConvTranspose, self).__init__(key, dev, **kwargs)
         self.output_padding = kwargs.get('output_padding', None)
         self.output_shape = kwargs.get('output_shape', None)
 
@@ -150,11 +146,11 @@ class DepthToSpace(Operator):
         return self.dispatch(inputs, [self.alloc()])
 
 
-class DepthwiseConv2d(ConvNd):
-    """DepthwiseConv2d operator."""
+class DepthwiseConv(Conv):
+    """DepthwiseConv operator."""
 
 
-class Pool2d(PoolNd):
+class Pool2d(Pool):
     """Pool2d operator."""
 
 

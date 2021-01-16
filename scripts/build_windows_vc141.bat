@@ -75,7 +75,7 @@ echo=
 
 cmake --build . --target INSTALL --config Release -- /maxcpucount:%NUMBER_OF_PROCESSORS% || goto :label_error
 cd %DRAGON_ROOT%
-%PYTHON_EXECUTABLE% setup.py install || goto :label_error
+%PYTHON_EXECUTABLE% setup.py -q install || goto :label_error
 
 echo=
 echo Built successfully

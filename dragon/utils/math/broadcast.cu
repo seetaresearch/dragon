@@ -58,14 +58,14 @@ __global__ void _BroadcastSet(
   }
 }
 
-template <typename TIn, typename TOut, class Operator, bool BroadcastA>
+template <typename InputT, typename OutputT, class Functor, bool BroadcastA>
 __global__ void _RowwiseBinaryFunc(
     const int nthreads,
     const int cols,
-    const Operator op,
-    const TIn* a,
-    const TIn* b,
-    TOut* y) {
+    const Functor op,
+    const InputT* a,
+    const InputT* b,
+    OutputT* y) {
   CUDA_1D_KERNEL_LOOP(yi, nthreads) {
     const int i = yi % cols;
     const int ai = BroadcastA ? i : yi;
@@ -78,14 +78,14 @@ __global__ void _RowwiseBinaryFunc(
   }
 }
 
-template <typename TIn, typename TOut, class Operator, bool BroadcastA>
+template <typename InputT, typename OutputT, class Functor, bool BroadcastA>
 __global__ void _ColwiseBinaryFunc(
     const int nthreads,
     const int cols,
-    const Operator op,
-    const TIn* a,
-    const TIn* b,
-    TOut* y) {
+    const Functor op,
+    const InputT* a,
+    const InputT* b,
+    OutputT* y) {
   CUDA_1D_KERNEL_LOOP(yi, nthreads) {
     const int i = yi / cols;
     const int ai = BroadcastA ? i : yi;
@@ -98,17 +98,17 @@ __global__ void _ColwiseBinaryFunc(
   }
 }
 
-template <typename TIn, typename TOut, class Operator, int D>
+template <typename InputT, typename OutputT, class Functor, int D>
 __global__ void _BroadcastBinaryFunc(
     const int nthreads,
     const int num_dims,
     const SimpleArray<int, D> a_strides,
     const SimpleArray<int, D> b_strides,
     const SimpleArray<int, D> y_dims,
-    const Operator op,
-    const TIn* a,
-    const TIn* b,
-    TOut* y) {
+    const Functor op,
+    const InputT* a,
+    const InputT* b,
+    OutputT* y) {
   CUDA_1D_KERNEL_LOOP(yi, nthreads) {
     int ai = 0, bi = 0, tmp = yi;
     for (int d = num_dims - 1; d >= 0; --d) {
@@ -240,16 +240,16 @@ DEFINE_SET_FUNC(float16, half);
 DEFINE_SET_FUNC(double, double);
 #undef DEFINE_SET_FUNC
 
-#define DEFINE_BINARY_FUNC(name, TIn, TOut, Functor)                          \
+#define DEFINE_BINARY_FUNC(name, InputT, OutputT, Functor)                    \
   template <>                                                                 \
-  DRAGON_API void name<TIn, CUDAContext>(                                     \
+  DRAGON_API void name<InputT, CUDAContext>(                                  \
       const int a_ndim,                                                       \
       const int64_t* a_dims,                                                  \
       const int b_ndim,                                                       \
       const int64_t* b_dims,                                                  \
-      const TIn* a,                                                           \
-      const TIn* b,                                                           \
-      TOut* y,                                                                \
+      const InputT* a,                                                        \
+      const InputT* b,                                                        \
+      OutputT* y,                                                             \
       CUDAContext* ctx) {                                                     \
     int rows, cols, broadcast_1st;                                            \
     vec64_t A_dims(a_dims, a_dims + a_ndim);                                  \
@@ -267,13 +267,13 @@ DEFINE_SET_FUNC(double, double);
             A_dims, B_dims, &rows, &cols, &broadcast_1st)) {                  \
       const auto nthreads = rows * cols;                                      \
       if (broadcast_1st > 0) {                                                \
-        _RowwiseBinaryFunc<TIn, TOut, Functor<TIn>, true>                     \
+        _RowwiseBinaryFunc<InputT, OutputT, Functor<InputT>, true>            \
             <<<CUDA_BLOCKS(nthreads), CUDA_THREADS, 0, ctx->cuda_stream()>>>( \
-                nthreads, cols, Functor<TIn>(), a, b, y);                     \
+                nthreads, cols, Functor<InputT>(), a, b, y);                  \
       } else {                                                                \
-        _RowwiseBinaryFunc<TIn, TOut, Functor<TIn>, false>                    \
+        _RowwiseBinaryFunc<InputT, OutputT, Functor<InputT>, false>           \
             <<<CUDA_BLOCKS(nthreads), CUDA_THREADS, 0, ctx->cuda_stream()>>>( \
-                nthreads, cols, Functor<TIn>(), a, b, y);                     \
+                nthreads, cols, Functor<InputT>(), a, b, y);                  \
       }                                                                       \
       return;                                                                 \
     }                                                                         \
@@ -281,13 +281,13 @@ DEFINE_SET_FUNC(double, double);
             A_dims, B_dims, &rows, &cols, &broadcast_1st)) {                  \
       const auto nthreads = rows * cols;                                      \
       if (broadcast_1st > 0) {                                                \
-        _ColwiseBinaryFunc<TIn, TOut, Functor<TIn>, true>                     \
+        _ColwiseBinaryFunc<InputT, OutputT, Functor<InputT>, true>            \
             <<<CUDA_BLOCKS(nthreads), CUDA_THREADS, 0, ctx->cuda_stream()>>>( \
-                nthreads, cols, Functor<TIn>(), a, b, y);                     \
+                nthreads, cols, Functor<InputT>(), a, b, y);                  \
       } else {                                                                \
-        _ColwiseBinaryFunc<TIn, TOut, Functor<TIn>, false>                    \
+        _ColwiseBinaryFunc<InputT, OutputT, Functor<InputT>, false>           \
             <<<CUDA_BLOCKS(nthreads), CUDA_THREADS, 0, ctx->cuda_stream()>>>( \
-                nthreads, cols, Functor<TIn>(), a, b, y);                     \
+                nthreads, cols, Functor<InputT>(), a, b, y);                  \
       }                                                                       \
       return;                                                                 \
     }                                                                         \
@@ -303,14 +303,18 @@ DEFINE_SET_FUNC(double, double);
       b_strides.data[i] = B_broadcast_strides[i];                             \
       y_dims.data[i] = Y_dims[i];                                             \
     }                                                                         \
-    _BroadcastBinaryFunc<TIn, TOut, Functor<TIn>, CUDA_TENSOR_MAX_DIMS>       \
+    _BroadcastBinaryFunc<                                                     \
+        InputT,                                                               \
+        OutputT,                                                              \
+        Functor<InputT>,                                                      \
+        CUDA_TENSOR_MAX_DIMS>                                                 \
         <<<CUDA_BLOCKS(nthreads), CUDA_THREADS, 0, ctx->cuda_stream()>>>(     \
             nthreads,                                                         \
             Y_dims.size(),                                                    \
             a_strides,                                                        \
             b_strides,                                                        \
             y_dims,                                                           \
-            Functor<TIn>(),                                                   \
+            Functor<InputT>(),                                                \
             a,                                                                \
             b,                                                                \
             y);                                                               \
@@ -419,7 +423,7 @@ DEFINE_BINARY_FUNC(Sub, bool, uint8_t); // Xor
 DEFINE_BINARY_FUNC(Mul, bool, uint8_t); // And
 #undef DEFINE_BINARY_FUNC
 
-#define DEFINE_BINARY_FUNC(name, TOut1, TOut2, Functor)                       \
+#define DEFINE_BINARY_FUNC(name, OutputT1, OutputT2, Functor)                 \
   template <>                                                                 \
   DRAGON_API void name<float16, CUDAContext>(                                 \
       const int a_ndim,                                                       \
@@ -428,7 +432,7 @@ DEFINE_BINARY_FUNC(Mul, bool, uint8_t); // And
       const int64_t* b_dims,                                                  \
       const float16* a,                                                       \
       const float16* b,                                                       \
-      TOut1* y,                                                               \
+      OutputT1* y,                                                            \
       CUDAContext* ctx) {                                                     \
     int rows, cols, broadcast_1st;                                            \
     vec64_t A_dims(a_dims, a_dims + a_ndim);                                  \
@@ -446,23 +450,23 @@ DEFINE_BINARY_FUNC(Mul, bool, uint8_t); // And
             A_dims, B_dims, &rows, &cols, &broadcast_1st)) {                  \
       auto nthreads = rows * cols;                                            \
       if (broadcast_1st > 0) {                                                \
-        _RowwiseBinaryFunc<half, TOut2, Functor<half>, true>                  \
+        _RowwiseBinaryFunc<half, OutputT2, Functor<half>, true>               \
             <<<CUDA_BLOCKS(nthreads), CUDA_THREADS, 0, ctx->cuda_stream()>>>( \
                 nthreads,                                                     \
                 cols,                                                         \
                 Functor<half>(),                                              \
                 reinterpret_cast<const half*>(a),                             \
                 reinterpret_cast<const half*>(b),                             \
-                reinterpret_cast<TOut2*>(y));                                 \
+                reinterpret_cast<OutputT2*>(y));                              \
       } else {                                                                \
-        _RowwiseBinaryFunc<half, TOut2, Functor<half>, false>                 \
+        _RowwiseBinaryFunc<half, OutputT2, Functor<half>, false>              \
             <<<CUDA_BLOCKS(nthreads), CUDA_THREADS, 0, ctx->cuda_stream()>>>( \
                 nthreads,                                                     \
                 cols,                                                         \
                 Functor<half>(),                                              \
                 reinterpret_cast<const half*>(a),                             \
                 reinterpret_cast<const half*>(b),                             \
-                reinterpret_cast<TOut2*>(y));                                 \
+                reinterpret_cast<OutputT2*>(y));                              \
       }                                                                       \
       return;                                                                 \
     }                                                                         \
@@ -470,23 +474,23 @@ DEFINE_BINARY_FUNC(Mul, bool, uint8_t); // And
             A_dims, B_dims, &rows, &cols, &broadcast_1st)) {                  \
       auto nthreads = rows * cols;                                            \
       if (broadcast_1st > 0) {                                                \
-        _ColwiseBinaryFunc<half, TOut2, Functor<half>, true>                  \
+        _ColwiseBinaryFunc<half, OutputT2, Functor<half>, true>               \
             <<<CUDA_BLOCKS(nthreads), CUDA_THREADS, 0, ctx->cuda_stream()>>>( \
                 nthreads,                                                     \
                 cols,                                                         \
                 Functor<half>(),                                              \
                 reinterpret_cast<const half*>(a),                             \
                 reinterpret_cast<const half*>(b),                             \
-                reinterpret_cast<TOut2*>(y));                                 \
+                reinterpret_cast<OutputT2*>(y));                              \
       } else {                                                                \
-        _ColwiseBinaryFunc<half, TOut2, Functor<half>, false>                 \
+        _ColwiseBinaryFunc<half, OutputT2, Functor<half>, false>              \
             <<<CUDA_BLOCKS(nthreads), CUDA_THREADS, 0, ctx->cuda_stream()>>>( \
                 nthreads,                                                     \
                 cols,                                                         \
                 Functor<half>(),                                              \
                 reinterpret_cast<const half*>(a),                             \
                 reinterpret_cast<const half*>(b),                             \
-                reinterpret_cast<TOut2*>(y));                                 \
+                reinterpret_cast<OutputT2*>(y));                              \
       }                                                                       \
       return;                                                                 \
     }                                                                         \
@@ -502,7 +506,7 @@ DEFINE_BINARY_FUNC(Mul, bool, uint8_t); // And
       b_strides.data[i] = B_broadcast_strides[i];                             \
       y_dims.data[i] = Y_dims[i];                                             \
     }                                                                         \
-    _BroadcastBinaryFunc<half, TOut2, Functor<half>, CUDA_TENSOR_MAX_DIMS>    \
+    _BroadcastBinaryFunc<half, OutputT2, Functor<half>, CUDA_TENSOR_MAX_DIMS> \
         <<<CUDA_BLOCKS(nthreads), CUDA_THREADS, 0, ctx->cuda_stream()>>>(     \
             nthreads,                                                         \
             Y_dims.size(),                                                    \
@@ -512,7 +516,7 @@ DEFINE_BINARY_FUNC(Mul, bool, uint8_t); // And
             Functor<half>(),                                                  \
             reinterpret_cast<const half*>(a),                                 \
             reinterpret_cast<const half*>(b),                                 \
-            reinterpret_cast<TOut2*>(y));                                     \
+            reinterpret_cast<OutputT2*>(y));                                  \
   }
 
 DEFINE_BINARY_FUNC(Add, float16, half, math::PlusFunctor);

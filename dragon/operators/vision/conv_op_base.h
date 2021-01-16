@@ -14,8 +14,6 @@
 #define DRAGON_OPERATORS_VISION_CONV_OP_BASE_H_
 
 #include "dragon/core/operator.h"
-#include "dragon/utils/math_functions.h"
-#include "dragon/utils/op_kernels.h"
 
 namespace dragon {
 
@@ -40,131 +38,212 @@ class ConvOpBase : public Operator<Context> {
   }
   USE_OPERATOR_FUNCTIONS;
 
-  vec64_t kshape_, stride_;
-  vec64_t pad_l_, pad_r_, dilation_;
-  vec64_t in_shape_, w_shape_, b_shape_, out_shape_;
+ protected:
+  virtual bool HasBias() = 0;
+
+  virtual bool Transposed() {
+    return false;
+  }
+
+  void GetBaseArguments();
+
+  void Reshape(bool backward = false);
+
+  template <typename T>
+  void WeightedX(const T* x, const T* w, T* y);
+
+  template <typename T>
+  void AddBias(const T* b, T* y);
+
+  template <typename T>
+  void GradX(const T* dy, const T* w, T* dx);
+
+  template <typename T>
+  void GradW(const T* dy, const T* x, T* dw, bool = false);
+
+  template <typename T>
+  void GradBias(const T* dy, T* db);
+
+  vec64_t kshape_, dilations_, strides_;
+  vec64_t pads_begin_, pads_end_;
+  vec64_t in_shape_, out_shape_;
+  vec64_t w_shape_, b_shape_;
 
   string padding_;
   int64_t group_;
   int64_t axis_, num_axes_;
-  int64_t in_channels_, out_channels_, out_dim_;
-  int64_t x_offset_, w_offset_, y_offset_;
+  int64_t in_channels_, out_channels_;
+  int64_t conv_in_channels_, conv_out_channels_;
+  int64_t X_stride_, W_stride_, Y_stride_;
 
   DECLARE_OP_REPEATED_ARG_WITH_DESC(int64_t, output_shape);
   DECLARE_OP_REPEATED_ARG_WITH_DESC(int64_t, output_padding);
-
-  void Setup(int num_axes);
-  void Reshape(bool backward = false);
-
-  virtual bool HasBias() = 0;
-  virtual bool Transposed() = 0;
-
-  template <typename T>
-  void Wx(const T*, const T*, T*, bool = false);
-
-  template <typename T>
-  void Pb(const T*, T*);
-
-  template <typename T>
-  void Dx(const T*, const T*, T*);
-
-  template <typename T>
-  void Dw(const T*, const T*, T*, bool = false);
-
-  template <typename T>
-  void Db(const T*, T*);
 
  private:
   void ComputeOutShape();
 
   template <typename T>
-  void Im2Col(const T* im, T* col) {
-    if (Input(0).ndim() == 4) {
-      kernel::Im2Col2d(
-          conv_in_channels_,
-          in_shape_[0],
-          in_shape_[1],
-          out_shape_[0],
-          out_shape_[1],
-          kshape_[0],
-          kshape_[1],
-          stride_[0],
-          stride_[1],
-          pad_l_[0],
-          pad_l_[1],
-          dilation_[0],
-          dilation_[1],
-          data_format(),
-          im,
-          col,
-          ctx());
-    } else {
-      LOG(FATAL) << "ConvNd has not been implemented.";
-    }
-  }
+  void Im2Col(const T* im, T* col);
 
   template <typename T>
-  void Col2Im(const T* col, T* im) {
-    if (Input(0).ndim() == 4) {
-      kernel::Col2Im2d(
-          conv_in_channels_,
-          in_shape_[0],
-          in_shape_[1],
-          out_shape_[0],
-          out_shape_[1],
-          kshape_[0],
-          kshape_[1],
-          stride_[0],
-          stride_[1],
-          pad_l_[0],
-          pad_l_[1],
-          dilation_[0],
-          dilation_[1],
-          data_format(),
-          col,
-          im,
-          ctx());
-    } else {
-      LOG(FATAL) << "ConvNd has not been implemented.";
-    }
-  }
+  void Col2Im(const T* col, T* im);
 
-  int64_t is_1x1_;
-  int64_t kernel_dim_, col_dim_;
-  int64_t col_offset_, out_offset_;
-  int64_t conv_in_channels_, conv_out_channels_, conv_out_dim_;
+  int64_t skip_im2col_;
+  int64_t kernel_dim_;
+  int64_t col_dim_, col_stride_;
+  int64_t out_dim_, conv_out_dim_;
+  int64_t Y_stride1_;
 };
 
 DEFINE_OP_REPEATED_ARG_WITH_DESC(int64_t, ConvOpBase, output_shape);
 DEFINE_OP_REPEATED_ARG_WITH_DESC(int64_t, ConvOpBase, output_padding);
 
-#define USE_CONVOLUTION_FUNCTIONS           \
-  using ConvOpBase<Context>::Setup;         \
-  using ConvOpBase<Context>::Reshape;       \
-  using ConvOpBase<Context>::Transposed;    \
-  using ConvOpBase<Context>::HasBias;       \
-  using ConvOpBase<Context>::Wx;            \
-  using ConvOpBase<Context>::Pb;            \
-  using ConvOpBase<Context>::Dx;            \
-  using ConvOpBase<Context>::Dw;            \
-  using ConvOpBase<Context>::Db;            \
-  using ConvOpBase<Context>::kshape_;       \
-  using ConvOpBase<Context>::stride_;       \
-  using ConvOpBase<Context>::pad_l_;        \
-  using ConvOpBase<Context>::pad_r_;        \
-  using ConvOpBase<Context>::dilation_;     \
-  using ConvOpBase<Context>::group_;        \
-  using ConvOpBase<Context>::in_channels_;  \
-  using ConvOpBase<Context>::out_channels_; \
-  using ConvOpBase<Context>::axis_;         \
-  using ConvOpBase<Context>::num_axes_;     \
-  using ConvOpBase<Context>::x_offset_;     \
-  using ConvOpBase<Context>::w_offset_;     \
-  using ConvOpBase<Context>::y_offset_;     \
-  using ConvOpBase<Context>::in_shape_;     \
-  using ConvOpBase<Context>::w_shape_;      \
-  using ConvOpBase<Context>::b_shape_;      \
+#define USE_CONV_FUNCTIONS                       \
+  using ConvOpBase<Context>::GetBaseArguments;   \
+  using ConvOpBase<Context>::Reshape;            \
+  using ConvOpBase<Context>::Transposed;         \
+  using ConvOpBase<Context>::HasBias;            \
+  using ConvOpBase<Context>::WeightedX;          \
+  using ConvOpBase<Context>::AddBias;            \
+  using ConvOpBase<Context>::GradX;              \
+  using ConvOpBase<Context>::GradW;              \
+  using ConvOpBase<Context>::GradBias;           \
+  using ConvOpBase<Context>::kshape_;            \
+  using ConvOpBase<Context>::dilations_;         \
+  using ConvOpBase<Context>::strides_;           \
+  using ConvOpBase<Context>::pads_begin_;        \
+  using ConvOpBase<Context>::pads_end_;          \
+  using ConvOpBase<Context>::group_;             \
+  using ConvOpBase<Context>::in_channels_;       \
+  using ConvOpBase<Context>::out_channels_;      \
+  using ConvOpBase<Context>::conv_in_channels_;  \
+  using ConvOpBase<Context>::conv_out_channels_; \
+  using ConvOpBase<Context>::axis_;              \
+  using ConvOpBase<Context>::num_axes_;          \
+  using ConvOpBase<Context>::X_stride_;          \
+  using ConvOpBase<Context>::W_stride_;          \
+  using ConvOpBase<Context>::Y_stride_;          \
+  using ConvOpBase<Context>::in_shape_;          \
+  using ConvOpBase<Context>::w_shape_;           \
+  using ConvOpBase<Context>::b_shape_;           \
   using ConvOpBase<Context>::out_shape_
+
+#ifdef USE_CUDNN
+
+template <class Context>
+class CuDNNConvOpBase : public ConvOpBase<Context> {
+ public:
+  CuDNNConvOpBase(const OperatorDef& def, Workspace* ws)
+      : ConvOpBase<Context>(def, ws) {
+    GetBaseArguments();
+#if CUDNN_VERSION_MIN(7, 0, 0)
+    group_v2_ = 1;
+#else
+    group_v2_ = group_;
+#endif
+    if (data_format() == "NCHW") {
+      tensor_format_ = CUDNN_TENSOR_NCHW;
+    } else if (data_format() == "NHWC") {
+      tensor_format_ = CUDNN_TENSOR_NHWC;
+    } else {
+      LOG(FATAL) << "Unknown DataFormat: " << data_format();
+    }
+  }
+  USE_OPERATOR_FUNCTIONS;
+  USE_CONV_FUNCTIONS;
+
+ protected:
+  template <typename T>
+  void SetConvDesc() {
+    auto input_type = TypeMeta::Id<T>();
+    if (input_type == TypeMeta::Id<float16>()) {
+      compute_type_ = CUDNN_DATA_FLOAT;
+    } else if (input_type == TypeMeta::Id<float>()) {
+      compute_type_ = CUDNN_DATA_FLOAT;
+    } else if (input_type == TypeMeta::Id<double>()) {
+      compute_type_ = CUDNN_DATA_DOUBLE;
+    }
+    if (num_axes_ == 1 || num_axes_ == 2) {
+      CUDNN_CHECK(cudnnSetConvolution2dDescriptor(
+          conv_desc_,
+          pads_begin_[0],
+          num_axes_ == 1 ? 0 : pads_begin_[1],
+          strides_[0],
+          num_axes_ == 1 ? 1 : strides_[1],
+          dilations_[0],
+          num_axes_ == 1 ? 1 : dilations_[1],
+          CUDNN_CROSS_CORRELATION,
+          compute_type_));
+    } else {
+      CUDNN_CHECK(cudnnSetConvolutionNdDescriptor(
+          conv_desc_,
+          num_axes_,
+          vec32_t{pads_begin_.begin(), pads_begin_.end()}.data(),
+          vec32_t{strides_.begin(), strides_.end()}.data(),
+          vec32_t{dilations_.begin(), dilations_.end()}.data(),
+          CUDNN_CROSS_CORRELATION,
+          compute_type_));
+    }
+#if CUDNN_VERSION_MIN(7, 0, 0)
+    CUDNN_CHECK(cudnnSetConvolutionGroupCount(conv_desc_, group_));
+    if (TENSOR_CORE_AVAILABLE()) {
+      cudnnMathType_t math_type;
+      if (input_type == TypeMeta::Id<float16>()) {
+        math_type = CUDNN_TENSOR_OP_MATH;
+      } else {
+        math_type = CUDNN_DEFAULT_MATH;
+#if CUDNN_VERSION_MIN(8, 0, 0)
+        if (!CUDAContext::objects().cudnn_allow_tf32_) {
+          math_type = CUDNN_FMA_MATH;
+        }
+#endif
+      }
+      CUDNN_CHECK(cudnnSetConvolutionMathType(conv_desc_, math_type));
+    }
+#endif
+  }
+
+  template <typename T>
+  void SetFilterDesc() {
+    if (num_axes_ == 1 || num_axes_ == 2) {
+      CUDNN_CHECK(cudnnSetFilter4dDescriptor(
+          filter_desc_,
+          CuDNNType<T>::type,
+          tensor_format_,
+          conv_out_channels_ / group_v2_,
+          conv_in_channels_ / group_,
+          kshape_[0],
+          num_axes_ == 1 ? 1 : kshape_[1]));
+    } else {
+      vec64_t dims = {conv_out_channels_ / group_v2_,
+                      conv_in_channels_ / group_};
+      dims.insert(dims.end(), kshape_.begin(), kshape_.end());
+      CUDNN_CHECK(cudnnSetFilterNdDescriptor(
+          filter_desc_,
+          CuDNNType<T>::type,
+          tensor_format_,
+          dims.size(),
+          vec32_t{dims.begin(), dims.end()}.data()));
+    }
+  }
+
+  int64_t group_v2_;
+  cudnnConvolutionDescriptor_t conv_desc_;
+  cudnnFilterDescriptor_t filter_desc_;
+  cudnnDataType_t compute_type_;
+  cudnnTensorFormat_t tensor_format_;
+};
+
+#define USE_CUDNN_CONV_FUNCTIONS                  \
+  using CuDNNConvOpBase<Context>::SetConvDesc;    \
+  using CuDNNConvOpBase<Context>::SetFilterDesc;  \
+  using CuDNNConvOpBase<Context>::conv_desc_;     \
+  using CuDNNConvOpBase<Context>::filter_desc_;   \
+  using CuDNNConvOpBase<Context>::compute_type_;  \
+  using CuDNNConvOpBase<Context>::tensor_format_; \
+  using CuDNNConvOpBase<Context>::group_v2_;
+
+#endif // USE_CUDNN
 
 } // namespace dragon
 

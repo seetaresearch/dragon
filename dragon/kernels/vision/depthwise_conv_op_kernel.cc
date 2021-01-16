@@ -1,3 +1,4 @@
+#include "dragon/utils/math_functions.h"
 #include "dragon/utils/op_kernels.h"
 
 namespace dragon {
@@ -23,40 +24,36 @@ void _DepthwiseConv2dNCHW(
     const int dilation_h,
     const int dilation_w,
     const T* x,
-    const T* w,
+    const T* filter,
     T* y) {
-  T sum_val;
-  int ih, iw, xi, wi;
-  int yc_offset, xc_start, yc_start;
-  int ih_start, yh_start, iw_start;
   for (int n = 0; n < N; ++n) {
     for (int c = 0; c < C; ++c) {
-      yc_offset = n * C + c;
-      xc_start = yc_offset * H * W;
-      yc_start = yc_offset * out_h;
-      for (int oh = 0; oh < out_h; ++oh) {
-        ih_start = oh * stride_h - pad_h;
-        yh_start = (yc_start + oh) * out_w;
-        for (int ow = 0; ow < out_w; ++ow) {
-          sum_val = T(0);
-          wi = c * kernel_h * kernel_w;
-          iw_start = ow * stride_w - pad_w;
-          for (int kh = 0; kh < kernel_h; ++kh) {
-            for (int kw = 0; kw < kernel_w; ++kw) {
-              ih = ih_start + kh * dilation_h;
-              iw = iw_start + kw * dilation_w;
-              if (ih >= 0 && ih < H && iw >= 0 && iw < W) {
-                xi = xc_start + ih * W + iw;
-                sum_val += x[xi] * w[wi];
+      const int base_offset = n * C + c;
+      const int x_offset = base_offset * H * W;
+      const int y_offset = base_offset * out_h * out_w;
+      for (int h_out = 0; h_out < out_h; ++h_out) {
+        const int hstart = h_out * stride_h - pad_h;
+        for (int w_out = 0; w_out < out_w; ++w_out) {
+          T val = T(0);
+          int fi = c * kernel_h * kernel_w;
+          const int wstart = w_out * stride_w - pad_w;
+          for (int h_k = 0; h_k < kernel_h; ++h_k) {
+            for (int w_k = 0; w_k < kernel_w; ++w_k) {
+              const int h = hstart + h_k * dilation_h;
+              const int w = wstart + w_k * dilation_w;
+              if (math::utils::IsAGeZeroAndALtB(h, H) &&
+                  math::utils::IsAGeZeroAndALtB(w, W)) {
+                const int xi = x_offset + h * W + w;
+                val += x[xi] * filter[fi];
               }
-              ++wi;
-            } // End kw
-          } // End kh
-          y[yh_start + ow] = sum_val;
-        } // End ow
-      } // End oh
-    }
-  } // End c && n
+              ++fi;
+            } // End w_k
+          } // End h_k
+          y[y_offset + h_out * out_w + w_out] = val;
+        } // End w_out
+      } // End h_out
+    } // End c
+  } // End n
 }
 
 template <typename T>
@@ -76,40 +73,34 @@ void _DepthwiseConv2dNHWC(
     const int dilation_h,
     const int dilation_w,
     const T* x,
-    const T* w,
+    const T* filter,
     T* y) {
-  T sum_val;
-  int ih, iw, xi, wi;
-  int xn_start, yn_start;
-  int ih_start, yh_start;
-  int iw_start, yw_start;
   for (int n = 0; n < N; ++n) {
-    xn_start = n * H;
-    yn_start = n * out_h;
-    for (int oh = 0; oh < out_h; ++oh) {
-      ih_start = oh * stride_h - pad_h;
-      yh_start = (yn_start + oh) * out_w;
-      for (int ow = 0; ow < out_w; ++ow) {
-        iw_start = ow * stride_w - pad_w;
-        yw_start = (yh_start + ow) * C;
+    const int x_offset = n * H * W * C;
+    const int y_offset = n * out_h * out_w * C;
+    for (int h_out = 0; h_out < out_h; ++h_out) {
+      const int hstart = h_out * stride_h - pad_h;
+      for (int w_out = 0; w_out < out_w; ++w_out) {
+        const int wstart = w_out * stride_w - pad_w;
         for (int c = 0; c < C; ++c) {
-          sum_val = T(0);
-          wi = c * kernel_h * kernel_w;
-          for (int kh = 0; kh < kernel_h; ++kh) {
-            for (int kw = 0; kw < kernel_w; ++kw) {
-              ih = ih_start + kh * dilation_h;
-              iw = iw_start + kw * dilation_w;
-              if (ih >= 0 && ih < H && iw >= 0 && iw < W) {
-                xi = ((xn_start + ih) * W + iw) * C + c;
-                sum_val += x[xi] * w[wi];
+          T val = T(0);
+          int fi = c * kernel_h * kernel_w;
+          for (int h_k = 0; h_k < kernel_h; ++h_k) {
+            for (int w_k = 0; w_k < kernel_w; ++w_k) {
+              const int h = hstart + h_k * dilation_h;
+              const int w = wstart + w_k * dilation_w;
+              if (math::utils::IsAGeZeroAndALtB(h, H) &&
+                  math::utils::IsAGeZeroAndALtB(w, W)) {
+                const int xi = x_offset + (h * W + w) * C + c;
+                val += x[xi] * filter[fi];
               }
-              ++wi;
-            } // End kw
-          } // End kh
-          y[yw_start + c] = sum_val;
+              ++fi;
+            } // End w_k
+          } // End h_k
+          y[y_offset + ((h_out * out_w) + w_out) * C + c] = val;
         } // End c
-      } // End ow
-    } // End oh
+      } // End w_out
+    } // End h_out
   } // End n
 }
 
@@ -144,7 +135,7 @@ void DepthwiseConv2d<float16, CPUContext>(
     const int dilation_w,
     const string& data_format,
     const float16* x,
-    const float16* w,
+    const float16* filter,
     float16* y,
     CPUContext* ctx) {
   CPU_FP16_NOT_SUPPORTED;
@@ -168,7 +159,7 @@ void DepthwiseConv2d<float, CPUContext>(
     const int dilation_w,
     const string& data_format,
     const float* x,
-    const float* w,
+    const float* filter,
     float* y,
     CPUContext* ctx) {
   DISPATCH_DATA_KERNEL(
@@ -188,7 +179,7 @@ void DepthwiseConv2d<float, CPUContext>(
       dilation_h,
       dilation_w,
       x,
-      w,
+      filter,
       y);
 }
 
@@ -211,7 +202,7 @@ void DepthwiseConv2d<float, CPUContext>(
       const int dilation_w,                 \
       const string& data_format,            \
       const T* dy,                          \
-      const T* w,                           \
+      const T* filter,                      \
       T* dx,                                \
       CPUContext* ctx) {                    \
     NOT_IMPLEMENTED;                        \
@@ -235,7 +226,7 @@ void DepthwiseConv2d<float, CPUContext>(
       const string& data_format,            \
       const T* dy,                          \
       const T* x,                           \
-      T* dw,                                \
+      T* dfilter,                           \
       CPUContext* ctx) {                    \
     NOT_IMPLEMENTED;                        \
   }

@@ -8,9 +8,3 @@
 #     <https://opensource.org/licenses/BSD-2-Clause>
 #
 # ------------------------------------------------------------
-
-from __future__ import absolute_import
-from __future__ import division
-from __future__ import print_function
-
-from dragon.vm.tensorflow.core.keras.layers.convolutional import Conv2D

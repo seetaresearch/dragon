@@ -19,7 +19,6 @@ from dragon.core.eager.tensor import EagerTensor
 from dragon.core.framework import ops
 from dragon.core.ops import array_ops
 from dragon.core.ops import array_ops_lib
-from dragon.core.ops import control_flow_ops_lib
 from dragon.core.ops import init_ops_lib
 from dragon.core.ops import math_ops_lib
 
@@ -703,7 +702,7 @@ def _index_select(x, index, axis):
 def _masked_assign(ref, value, mask):
     """Assign value according to the mask."""
     value = ops.scalar_to_tensor(value, ref.dtype)
-    return control_flow_ops_lib.MaskedAssign \
+    return array_ops_lib.MaskedAssign \
         .instantiate().apply([ref, value, mask], inplace=True)
 
 
@@ -749,7 +748,7 @@ def _process_index(item):
 def _sliced_assign(ref, value, starts, sizes):
     """Assign value according to the slices."""
     value = ops.scalar_to_tensor(value, ref.dtype)
-    return control_flow_ops_lib.Assign \
+    return array_ops_lib.Assign \
         .instantiate(ndim=len(starts) if starts is not None else 0) \
         .apply([ref, value], starts, sizes, inplace=True)
 

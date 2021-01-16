@@ -86,8 +86,8 @@ def drop_block2d(inputs, ratio=0.1, block_size=7, data_format='NCHW', **kwargs):
         The dropping ratio.
     block_size : int, optional, default=7
         The spatial block size.
-    data_format : {'NCHW', 'NHWC'}, optional
-        The optional data format.
+    data_format : str, optional, default='NCHW'
+        ``'NCHW'`` or ``'NHWC'``.
 
     Returns
     -------
@@ -355,7 +355,7 @@ def log_softmax(inputs, axis=-1, **kwargs):
     return math_ops.sub(
         [inputs, math_ops.log(array_ops.sum(
             math_ops.exp(inputs, **kwargs),
-            axis=[axis], keep_dims=True, **kwargs), **kwargs)],
+            axis=[axis], keepdims=True, **kwargs), **kwargs)],
         **kwargs
     )
 
@@ -388,8 +388,8 @@ def prelu(inputs, channel_shared=False, data_format='NCHW', **kwargs):
         The input and weight.
     channel_shared : bool, optional, default=False.
         Whether to share the weight across channels.
-    data_format : {'NCHW', 'NHWC'}, optional
-        The data format.
+    data_format : str, optional, default='NCHW'
+        ``'NCHW'`` or ``'NHWC'``.
 
     Returns
     -------

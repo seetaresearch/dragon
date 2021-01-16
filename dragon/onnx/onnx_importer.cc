@@ -138,17 +138,12 @@ ONNXImporterReturns ONNXBackend::ConvPoolImporter(
     attributes.AddRewrittenAttribute("mode")->set_s("AVG");
   } else if (onnx_op_type == "GlobalMaxPool") {
     attributes.AddRewrittenAttribute("mode")->set_s("MAX");
-    attributes.AddRewrittenAttribute("global_pooling")->set_i(1);
+    attributes.AddRewrittenAttribute("global_pool")->set_i(1);
   } else if (onnx_op_type == "GlobalAveragePool") {
     attributes.AddRewrittenAttribute("mode")->set_s("AVG");
-    attributes.AddRewrittenAttribute("global_pooling")->set_i(1);
+    attributes.AddRewrittenAttribute("global_pool")->set_i(1);
   }
-  auto returns = GenericImporter(onnx_node, ctx);
-  // Determine the op type
-  OperatorDef* op_def = returns.GetOp(0);
-  auto ks = attributes.get<ONNX_INTS>("kernel_shape");
-  *(op_def->mutable_type()) += (str::to(ks.size() > 0 ? ks.size() : 2) + "d");
-  return returns;
+  return GenericImporter(onnx_node, ctx);
 }
 
 ONNXImporterReturns ONNXBackend::GenericImporter(
@@ -251,7 +246,11 @@ ONNXImporterReturns ONNXBackend::ResizeImporter(
   auto node = NodeProto(onnx_node->node);
   auto onnx_node_v2 = ONNXNode(node);
   auto& attributes = onnx_node_v2.attributes;
+  auto coord_mode = attributes.get<string>("coordinate_transformation_mode");
   attributes.remove("coordinate_transformation_mode");
+  if (coord_mode == "align_corners") {
+    attributes.AddRewrittenAttribute("align_corners")->set_i(1);
+  }
   if (ctx.opset_version() >= 9) {
     node.mutable_input()->Clear();
     node.add_input(onnx_node->node.input(0));

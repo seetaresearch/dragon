@@ -58,7 +58,7 @@ class Layer(module.Module):
         trainable : bool, optional, default=True
             The initial training flag.
         name : str, optional
-            The optional layer name.
+            The layer name.
         dtype : dragon.vm.tensorflow.dtypes.DType
             The optional data type.
 

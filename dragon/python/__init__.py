@@ -58,6 +58,7 @@ from dragon.core.framework.workspace import reset_workspace
 from dragon.core.ops import tensorbind_eager as _
 from dragon.core.ops import tensorbind_symbol as _
 from dragon.core.ops.array_ops import argsort
+from dragon.core.ops.array_ops import assign
 from dragon.core.ops.array_ops import broadcast_to
 from dragon.core.ops.array_ops import cast
 from dragon.core.ops.array_ops import channel_affine
@@ -69,6 +70,7 @@ from dragon.core.ops.array_ops import flatten
 from dragon.core.ops.array_ops import identity
 from dragon.core.ops.array_ops import index_select
 from dragon.core.ops.array_ops import linspace
+from dragon.core.ops.array_ops import masked_assign
 from dragon.core.ops.array_ops import masked_select
 from dragon.core.ops.array_ops import nonzero
 from dragon.core.ops.array_ops import one_hot
@@ -86,8 +88,6 @@ from dragon.core.ops.array_ops import tile
 from dragon.core.ops.array_ops import transpose
 from dragon.core.ops.array_ops import unique
 from dragon.core.ops.array_ops import where
-from dragon.core.ops.control_flow_ops import assign
-from dragon.core.ops.control_flow_ops import masked_assign
 from dragon.core.ops.framework_ops import python_plugin
 from dragon.core.ops.framework_ops import stop_gradient
 from dragon.core.ops.init_ops import constant

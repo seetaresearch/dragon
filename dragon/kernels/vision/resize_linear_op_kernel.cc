@@ -30,7 +30,7 @@ float TransformCoordinate(
 }
 
 template <typename T>
-void _ResizeLinearNCHW(
+void _ResizeLinear2dNCHW(
     const int N,
     const int C,
     const int H,
@@ -42,32 +42,33 @@ void _ResizeLinearNCHW(
     const bool align_corners,
     const T* x,
     T* y) {
-  auto count = N * C * out_h * out_w;
-  std::array<int, 4> idx = {0, 0, 0, 0};
+  std::array<int, 4> index = {0, 0, 0, 0};
   std::array<int, 4> dims = {N, C, out_h, out_w};
-  float h_in, w_in, u, v, t, b, tl, tr, bl, br;
-  int ti, bi, li, ri, offset, h_max = H - 1, w_max = W - 1;
+  const int h_max = H - 1, w_max = W - 1;
+  const auto count = N * C * out_h * out_w;
   for (int i = 0; i < count; ++i) {
-    h_in = TransformCoordinate(idx[2], scale_h, align_corners);
-    w_in = TransformCoordinate(idx[3], scale_w, align_corners);
-    ti = std::floor(h_in), li = std::floor(w_in);
-    bi = (h_in < h_max) ? std::ceil(h_in) : h_max;
-    ri = (w_in < w_max) ? std::ceil(w_in) : w_max;
-    v = h_in - ti, u = w_in - li;
-    offset = (idx[0] * C + idx[1]) * H;
-    tl = (float)x[(offset + ti) * W + li];
-    tr = (float)x[(offset + ti) * W + ri];
-    bl = (float)x[(offset + bi) * W + li];
-    br = (float)x[(offset + bi) * W + ri];
-    t = tl + (tr - tl) * u;
-    b = bl + (br - bl) * u;
-    y[i] = static_cast<T>(t + (b - t) * v);
-    math::utils::IncreaseIndexInDims(4, dims.data(), idx.data());
+    const float h = TransformCoordinate(index[2], scale_h, align_corners);
+    const float w = TransformCoordinate(index[3], scale_w, align_corners);
+    const int ti = std::floor(h);
+    const int li = std::floor(w);
+    const int bi = (h < h_max) ? std::ceil(h) : h_max;
+    const int ri = (w < w_max) ? std::ceil(w) : w_max;
+    const float v = h - ti;
+    const float u = w - li;
+    const int offset = (index[0] * C + index[1]) * H;
+    const float tl = convert::To<float>(x[(offset + ti) * W + li]);
+    const float tr = convert::To<float>(x[(offset + ti) * W + ri]);
+    const float bl = convert::To<float>(x[(offset + bi) * W + li]);
+    const float br = convert::To<float>(x[(offset + bi) * W + ri]);
+    const float t = tl + (tr - tl) * u;
+    const float b = bl + (br - bl) * u;
+    y[i] = convert::To<T>(t + (b - t) * v);
+    math::utils::IncreaseIndexInDims(4, dims.data(), index.data());
   }
 }
 
 template <typename T>
-void _ResizeLinearNHWC(
+void _ResizeLinear2dNHWC(
     const int N,
     const int C,
     const int H,
@@ -79,32 +80,33 @@ void _ResizeLinearNHWC(
     const bool align_corners,
     const T* x,
     T* y) {
-  auto count = N * C * out_h * out_w;
-  std::array<int, 4> idx = {0, 0, 0, 0};
+  std::array<int, 4> index = {0, 0, 0, 0};
   std::array<int, 4> dims = {N, out_h, out_w, C};
-  float h_in, w_in, u, v, t, b, tl, tr, bl, br;
-  int ti, bi, li, ri, offset, h_max = H - 1, w_max = W - 1;
+  const int h_max = H - 1, w_max = W - 1;
+  const auto count = N * C * out_h * out_w;
   for (int i = 0; i < count; ++i) {
-    h_in = TransformCoordinate(idx[1], scale_h, align_corners);
-    w_in = TransformCoordinate(idx[2], scale_w, align_corners);
-    ti = std::floor(h_in), li = std::floor(w_in);
-    bi = (h_in < h_max) ? std::ceil(h_in) : h_max;
-    ri = (w_in < w_max) ? std::ceil(w_in) : w_max;
-    v = h_in - ti, u = w_in - li;
-    offset = idx[0] * H;
-    tl = (float)x[((offset + ti) * W + li) * C + idx[3]];
-    tr = (float)x[((offset + ti) * W + ri) * C + idx[3]];
-    bl = (float)x[((offset + bi) * W + li) * C + idx[3]];
-    br = (float)x[((offset + bi) * W + ri) * C + idx[3]];
-    t = tl + (tr - tl) * u;
-    b = bl + (br - bl) * u;
-    y[i] = static_cast<T>(t + (b - t) * v);
-    math::utils::IncreaseIndexInDims(4, dims.data(), idx.data());
+    const float h = TransformCoordinate(index[1], scale_h, align_corners);
+    const float w = TransformCoordinate(index[2], scale_w, align_corners);
+    const int ti = std::floor(h);
+    const int li = std::floor(w);
+    const int bi = (h < h_max) ? std::ceil(h) : h_max;
+    const int ri = (w < w_max) ? std::ceil(w) : w_max;
+    const float v = h - ti;
+    const float u = w - li;
+    const int offset = index[0] * H * W * C + index[3];
+    const float tl = convert::To<float>(x[offset + (ti * W + li) * C]);
+    const float tr = convert::To<float>(x[offset + (ti * W + ri) * C]);
+    const float bl = convert::To<float>(x[offset + (bi * W + li) * C]);
+    const float br = convert::To<float>(x[offset + (bi * W + ri) * C]);
+    const float t = tl + (tr - tl) * u;
+    const float b = bl + (br - bl) * u;
+    y[i] = convert::To<T>(t + (b - t) * v);
+    math::utils::IncreaseIndexInDims(4, dims.data(), index.data());
   }
 }
 
 template <typename T>
-void _ResizeLinearGradNCHW(
+void _ResizeLinear2dGradNCHW(
     const int N,
     const int C,
     const int H,
@@ -116,31 +118,32 @@ void _ResizeLinearGradNCHW(
     const bool align_corners,
     const T* dy,
     float* dx) {
-  auto count = N * C * out_h * out_w;
-  std::array<int, 4> idx = {0, 0, 0, 0};
+  std::array<int, 4> index = {0, 0, 0, 0};
   std::array<int, 4> dims = {N, C, out_h, out_w};
-  float h_in, w_in, u, v, dt, db, tl, tr, bl, br;
-  int ti, bi, li, ri, offset, h_max = H - 1, w_max = W - 1;
+  const int h_max = H - 1, w_max = W - 1;
+  const auto count = N * C * out_h * out_w;
   for (int i = 0; i < count; ++i) {
-    h_in = TransformCoordinate(idx[2], scale_h, align_corners);
-    w_in = TransformCoordinate(idx[3], scale_w, align_corners);
-    ti = std::floor(h_in), li = std::floor(w_in);
-    bi = (h_in < h_max) ? std::ceil(h_in) : h_max;
-    ri = (w_in < w_max) ? std::ceil(w_in) : w_max;
-    v = h_in - ti, u = w_in - li;
-    offset = (idx[0] * C + idx[1]) * H;
-    dt = (1.f - v) * static_cast<float>(dy[i]);
-    db = v * static_cast<float>(dy[i]);
-    dx[(offset + ti) * W + li] += (1.f - u) * dt; // tl
-    dx[(offset + ti) * W + ri] += u * dt; // tr
-    dx[(offset + bi) * W + li] += (1.f - u) * db; // bl
-    dx[(offset + bi) * W + ri] += u * db; // br
-    math::utils::IncreaseIndexInDims(4, dims.data(), idx.data());
+    const float h = TransformCoordinate(index[2], scale_h, align_corners);
+    const float w = TransformCoordinate(index[3], scale_w, align_corners);
+    const int ti = std::floor(h);
+    const int li = std::floor(w);
+    const int bi = (h < h_max) ? std::ceil(h) : h_max;
+    const int ri = (w < w_max) ? std::ceil(w) : w_max;
+    const float v = h - ti;
+    const float u = w - li;
+    const int offset = (index[0] * C + index[1]) * H;
+    const float dt = (1.f - v) * convert::To<float>(dy[i]);
+    const float db = v * convert::To<float>(dy[i]);
+    dx[(offset + ti) * W + li] += (1.f - u) * dt;
+    dx[(offset + ti) * W + ri] += u * dt;
+    dx[(offset + bi) * W + li] += (1.f - u) * db;
+    dx[(offset + bi) * W + ri] += u * db;
+    math::utils::IncreaseIndexInDims(4, dims.data(), index.data());
   }
 }
 
 template <typename T>
-void _ResizeLinearGradNHWC(
+void _ResizeLinear2dGradNHWC(
     const int N,
     const int C,
     const int H,
@@ -152,26 +155,27 @@ void _ResizeLinearGradNHWC(
     const bool align_corners,
     const T* dy,
     float* dx) {
-  auto count = N * C * out_h * out_w;
-  std::array<int, 4> idx = {0, 0, 0, 0};
+  std::array<int, 4> index = {0, 0, 0, 0};
   std::array<int, 4> dims = {N, out_h, out_w, C};
-  float h_in, w_in, u, v, dt, db, tl, tr, bl, br;
-  int ti, bi, li, ri, offset, h_max = H - 1, w_max = W - 1;
+  const int h_max = H - 1, w_max = W - 1;
+  const auto count = N * C * out_h * out_w;
   for (int i = 0; i < count; ++i) {
-    h_in = TransformCoordinate(idx[1], scale_h, align_corners);
-    w_in = TransformCoordinate(idx[2], scale_w, align_corners);
-    ti = std::floor(h_in), li = std::floor(w_in);
-    bi = (h_in < h_max) ? std::ceil(h_in) : h_max;
-    ri = (w_in < w_max) ? std::ceil(w_in) : w_max;
-    v = h_in - ti, u = w_in - li;
-    offset = idx[0] * H;
-    dt = (1.f - v) * static_cast<float>(dy[i]);
-    db = v * static_cast<float>(dy[i]);
-    dx[((offset + ti) * W + li) * C + idx[3]] += (1.f - u) * dt; // tl
-    dx[((offset + ti) * W + ri) * C + idx[3]] += u * dt; // tr
-    dx[((offset + bi) * W + li) * C + idx[3]] += (1.f - u) * db; // bl
-    dx[((offset + bi) * W + ri) * C + idx[3]] += u * db; // br
-    math::utils::IncreaseIndexInDims(4, dims.data(), idx.data());
+    const float h = TransformCoordinate(index[1], scale_h, align_corners);
+    const float w = TransformCoordinate(index[2], scale_w, align_corners);
+    const int ti = std::floor(h);
+    const int li = std::floor(w);
+    const int bi = (h < h_max) ? std::ceil(h) : h_max;
+    const int ri = (w < w_max) ? std::ceil(w) : w_max;
+    const float v = h - ti;
+    const float u = w - li;
+    const int offset = index[0] * H * W * C + index[3];
+    const float dt = (1.f - v) * convert::To<float>(dy[i]);
+    const float db = v * convert::To<float>(dy[i]);
+    dx[offset + (ti * W + li) * C] += (1.f - u) * dt;
+    dx[offset + (ti * W + ri) * C] += u * dt;
+    dx[offset + (bi * W + li) * C] += (1.f - u) * db;
+    dx[offset + (bi * W + ri) * C] += u * db;
+    math::utils::IncreaseIndexInDims(4, dims.data(), index.data());
   }
 }
 
@@ -179,103 +183,59 @@ void _ResizeLinearGradNHWC(
 
 /* ------------------- Launcher Separator ------------------- */
 
-template <>
-void ResizeLinear<float16, CPUContext>(
-    const int N,
-    const int C,
-    const int H,
-    const int W,
-    const int out_h,
-    const int out_w,
-    const bool align_corners,
-    const string& data_format,
-    const float16* x,
-    float16* y,
-    CPUContext* ctx) {
-  CPU_FP16_NOT_SUPPORTED;
-}
-
-template <>
-void ResizeLinearGrad<float16, CPUContext>(
-    const int N,
-    const int C,
-    const int H,
-    const int W,
-    const int out_h,
-    const int out_w,
-    const bool align_corners,
-    const string& data_format,
-    const float16* dy,
-    float* dx,
-    CPUContext* ctx) {
-  CPU_FP16_NOT_SUPPORTED;
-} // ResizeLinearGrad
-
-#define DEFINE_KERNEL_LAUNCHER(T)                                           \
-  template <>                                                               \
-  void ResizeLinear<T, CPUContext>(                                         \
-      const int N,                                                          \
-      const int C,                                                          \
-      const int H,                                                          \
-      const int W,                                                          \
-      const int out_h,                                                      \
-      const int out_w,                                                      \
-      const bool align_corners,                                             \
-      const string& data_format,                                            \
-      const T* x,                                                           \
-      T* y,                                                                 \
-      CPUContext* ctx) {                                                    \
-    auto scale_h = ComputeScale(H, out_h, align_corners);                   \
-    auto scale_w = ComputeScale(W, out_w, align_corners);                   \
-    if (data_format == "NCHW") {                                            \
-      _ResizeLinearNCHW(                                                    \
-          N, C, H, W, out_h, out_w, scale_h, scale_w, align_corners, x, y); \
-    } else if (data_format == "NHWC") {                                     \
-      _ResizeLinearNHWC(                                                    \
-          N, C, H, W, out_h, out_w, scale_h, scale_w, align_corners, x, y); \
-    } else {                                                                \
-      LOG(FATAL) << "Unknown data format: " << data_format;                 \
-    }                                                                       \
+#define DISPATCH_RESIZE_KERNEL(name, ...)                \
+  if (data_format == "NCHW") {                           \
+    name##NCHW(__VA_ARGS__);                             \
+  } else if (data_format == "NHWC") {                    \
+    name##NHWC(__VA_ARGS__);                             \
+  } else {                                               \
+    LOG(FATAL) << "Unknown DataFormat: " << data_format; \
   }
 
-#define DEFINE_GRAD_KERNEL_LAUNCHER(T)                                        \
-  template <>                                                                 \
-  void ResizeLinearGrad<T, CPUContext>(                                       \
-      const int N,                                                            \
-      const int C,                                                            \
-      const int H,                                                            \
-      const int W,                                                            \
-      const int out_h,                                                        \
-      const int out_w,                                                        \
-      const bool align_corners,                                               \
-      const string& data_format,                                              \
-      const T* dy,                                                            \
-      float* dx,                                                              \
-      CPUContext* ctx) {                                                      \
-    auto scale_h = ComputeScale(H, out_h, align_corners);                     \
-    auto scale_w = ComputeScale(W, out_w, align_corners);                     \
-    math::Set(N* C* H* W, 0.f, dx, ctx);                                      \
-    if (data_format == "NCHW") {                                              \
-      _ResizeLinearGradNCHW(                                                  \
-          N, C, H, W, out_h, out_w, scale_h, scale_w, align_corners, dy, dx); \
-    } else if (data_format == "NHWC") {                                       \
-      _ResizeLinearGradNHWC(                                                  \
-          N, C, H, W, out_h, out_w, scale_h, scale_w, align_corners, dy, dx); \
-    } else {                                                                  \
-      LOG(FATAL) << "Unknown data format: " << data_format;                   \
-    }                                                                         \
+#define DEFINE_KERNEL_LAUNCHER(name, kBackward, InputT, OutputT) \
+  template <>                                                    \
+  void name<InputT, CPUContext>(                                 \
+      const int N,                                               \
+      const int C,                                               \
+      const int H,                                               \
+      const int W,                                               \
+      const int out_h,                                           \
+      const int out_w,                                           \
+      const bool align_corners,                                  \
+      const string& data_format,                                 \
+      const InputT* x,                                           \
+      OutputT* y,                                                \
+      CPUContext* ctx) {                                         \
+    if (kBackward) {                                             \
+      math::Set(N* C* H* W, convert::To<OutputT>(0.f), y, ctx);  \
+    }                                                            \
+    DISPATCH_RESIZE_KERNEL(                                      \
+        _##name,                                                 \
+        N,                                                       \
+        C,                                                       \
+        H,                                                       \
+        W,                                                       \
+        out_h,                                                   \
+        out_w,                                                   \
+        ComputeScale(H, out_h, align_corners),                   \
+        ComputeScale(W, out_w, align_corners),                   \
+        align_corners,                                           \
+        x,                                                       \
+        y);                                                      \
   }
 
-DEFINE_KERNEL_LAUNCHER(int8_t);
-DEFINE_KERNEL_LAUNCHER(uint8_t);
-DEFINE_KERNEL_LAUNCHER(int);
-DEFINE_KERNEL_LAUNCHER(int64_t);
-DEFINE_KERNEL_LAUNCHER(float);
-DEFINE_KERNEL_LAUNCHER(double);
-DEFINE_GRAD_KERNEL_LAUNCHER(float);
-DEFINE_GRAD_KERNEL_LAUNCHER(double);
+DEFINE_KERNEL_LAUNCHER(ResizeLinear2d, false, int8_t, int8_t);
+DEFINE_KERNEL_LAUNCHER(ResizeLinear2d, false, uint8_t, uint8_t);
+DEFINE_KERNEL_LAUNCHER(ResizeLinear2d, false, int, int);
+DEFINE_KERNEL_LAUNCHER(ResizeLinear2d, false, int64_t, int64_t);
+DEFINE_KERNEL_LAUNCHER(ResizeLinear2d, false, float16, float16);
+DEFINE_KERNEL_LAUNCHER(ResizeLinear2d, false, float, float);
+DEFINE_KERNEL_LAUNCHER(ResizeLinear2d, false, double, double);
+DEFINE_KERNEL_LAUNCHER(ResizeLinear2dGrad, true, float16, float); // Grad
+DEFINE_KERNEL_LAUNCHER(ResizeLinear2dGrad, true, float, float); // Grad
+DEFINE_KERNEL_LAUNCHER(ResizeLinear2dGrad, true, double, float); // Grad
 #undef DEFINE_KERNEL_LAUNCHER
-#undef DEFINE_GRAD_KERNEL_LAUNCHER
+#undef DISPATCH_RESIZE_KERNEL
 
 } // namespace kernel
 

@@ -50,13 +50,13 @@ class Adam(optimizer.Optimizer):
         Parameters
         ----------
         learning_rate : float, optional, default=0.001
-            The initial value for :math:`\text{lr}`.
+            The initial value to :math:`\text{lr}`.
         beta_1 : float, optional, default=0.9
-            The initial value for :math:`\beta_{1}`.
+            The initial value to :math:`\beta_{1}`.
         beta_2 : float, optional, default=0.999
-            The initial value for :math:`\beta_{2}`.
+            The initial value to :math:`\beta_{2}`.
         epsilon : float, optional, default=1e-7
-            The initial value for :math:`\epsilon`.
+            The initial value to :math:`\epsilon`.
         name : str, optional
             The optional optimizer name.
 

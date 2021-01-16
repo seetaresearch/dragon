@@ -24,14 +24,14 @@ class ArgReduce(function.Function):
         super(ArgReduce, self).__init__(key, dev, **kwargs)
         self.op_type = kwargs.get('op_type', 'ArgMax')
         self.axis = kwargs.get('axis', None)
-        self.keep_dims = kwargs.get('keep_dims', True)
+        self.keepdims = kwargs.get('keepdims', True)
 
     def attributes(self):
         return {
             'op_type': self.op_type,
             'arguments': {
                 'axis': self.axis,
-                'keep_dims': self.keep_dims,
+                'keepdims': self.keepdims,
             },
         }
 
@@ -334,7 +334,7 @@ class Reduce(function.Function):
     def __init__(self, key, dev, **kwargs):
         super(Reduce, self).__init__(key, dev, **kwargs)
         self.axes = kwargs.get('axes', None)
-        self.keep_dims = kwargs.get('keep_dims', True)
+        self.keepdims = kwargs.get('keepdims', True)
         self.operation = kwargs.get('operation', 'Sum')
 
     def attributes(self):
@@ -342,7 +342,7 @@ class Reduce(function.Function):
             'op_type': 'Reduce' + self.operation,
             'arguments': {
                 'axes': self.axes,
-                'keep_dims': self.keep_dims,
+                'keepdims': self.keepdims,
             },
         }
 

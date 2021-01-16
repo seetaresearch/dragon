@@ -32,7 +32,23 @@ namespace dragon {
 
 namespace math {
 
-namespace utils {
+/*
+ * Math Wrappers
+ */
+
+template <typename T>
+class ScalarType {
+ public:
+  typedef T type;
+};
+
+#if defined(__CUDACC__)
+template <>
+class ScalarType<float16> {
+ public:
+  typedef half type;
+};
+#endif
 
 template <typename T>
 class AccmulatorType {
@@ -51,6 +67,12 @@ class AccmulatorType<double> {
  public:
   typedef double type;
 };
+
+namespace utils {
+
+/*
+ * Common Functions
+ */
 
 template <
     typename T,
@@ -97,6 +119,11 @@ inline bool IsNaN(float16 x) {
 }
 
 template <typename T>
+MATH_UTILS_DECL bool IsAGeZeroAndALtB(const T a, const T b) {
+  return static_cast<unsigned int>(a) < static_cast<unsigned int>(b);
+}
+
+template <typename T>
 MATH_UTILS_DECL T Sign(const T x) {
   return x > T(0) ? T(1) : (x < T(0) ? T(-1) : T(0));
 }
@@ -111,7 +138,55 @@ MATH_UTILS_DECL T Cube(const T x) {
   return x * x * x;
 }
 
+/*
+ * CUDA Functions
+ */
+
 #if defined(__CUDACC__)
+
+template <typename T>
+inline __device__ T AtomicAdd(T* address, T val) {
+  return atomicAdd(address, val);
+}
+
+#if __CUDA_ARCH__ < 600
+inline __device__ double AtomicAdd(double* address, double val) {
+  unsigned long long int* address_as_ull = (unsigned long long int*)address;
+  unsigned long long int old = *address_as_ull, assumed;
+  do {
+    assumed = old;
+    old = atomicCAS(
+        address_as_ull,
+        assumed,
+        __double_as_longlong(val + __longlong_as_double(assumed)));
+  } while (assumed != old);
+  return __longlong_as_double(old);
+}
+#endif
+
+#if __CUDA_ARCH__ < 700
+inline __device__ half AtomicAdd(half* address, half val) {
+  unsigned int* address_as_ui =
+      (unsigned int*)((char*)address - ((size_t)address & 2));
+  unsigned int old = *address_as_ui, assumed;
+  __half_raw result;
+  do {
+    assumed = old;
+    result.x = (size_t)address & 2 ? (old >> 16) : (old & 0xffff);
+#if __CUDA_ARCH__ >= 530
+    result = __hadd(half(result), val);
+#else
+    result = __float2half(__half2float(half(result)) + __half2float(val));
+#endif
+    old = (size_t)address & 2 ? (old & 0xffff) | (result.x << 16)
+                              : (old & 0xffff0000) | result.x;
+    old = atomicCAS(address_as_ui, assumed, old);
+  } while (assumed != old);
+  result.x = (size_t)address & 2 ? (old >> 16) : (old & 0xffff);
+  return half(result);
+}
+#endif
+
 inline __device__ bool IsInf(half x) {
 #if __CUDA_ARCH__ >= 530
   return __hisinf(x);
@@ -163,6 +238,10 @@ inline __device__ half2 Cube(half2 x) {
 #endif
 }
 #endif // defined(__CUDACC__)
+
+/*
+ * Math Utilities
+ */
 
 template <typename T>
 inline void ArgPartition(
@@ -247,14 +326,36 @@ DRAGON_API void TransposeAxesForReduce(
     const int* reduce_axes,
     int* transpose_axes);
 
-DRAGON_API void ComputeTransposeStrides(
-    const int num_dims,
-    const int* dims,
-    const int* transpose_axes,
-    int* transpose_strides);
+template <typename dim_t, typename stride_t>
+inline void
+ComputeStrides(const int num_dims, const dim_t* dims, stride_t* strides) {
+  int64_t cur_stride = 1;
+  for (int i = num_dims - 1; i >= 0; --i) {
+    strides[i] = stride_t(cur_stride);
+    cur_stride *= int64_t(dims[i]);
+  }
+}
 
-template <typename T>
-inline void IncreaseIndexInDims(const int num_dims, const T* dims, T* index) {
+template <typename dim_t, typename axis_t, typename stride_t>
+inline void ComputeTransposeStrides(
+    const int num_dims,
+    const dim_t* dims,
+    const axis_t* axes,
+    stride_t* strides) {
+  vec64_t buf(num_dims);
+  int64_t cur_stride = 1;
+  for (int i = num_dims - 1; i >= 0; --i) {
+    buf[i] = cur_stride;
+    cur_stride *= int64_t(dims[i]);
+  }
+  for (int i = 0; i < num_dims; ++i) {
+    strides[i] = stride_t(buf[axes[i]]);
+  }
+}
+
+template <typename dim_t, typename index_t>
+inline void
+IncreaseIndexInDims(const int num_dims, const dim_t* dims, index_t* index) {
   for (int i = num_dims - 1; i >= 0; --i) {
     ++index[i];
     if (index[i] >= dims[i]) {

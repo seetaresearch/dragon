@@ -45,7 +45,7 @@ class Sequential(base_layer.Layer):
         layers : Sequence[dragon.vm.tensorflow.keras.layers.Layer]
             The layers to stack.
         name : str, optional
-            The optional layer name.
+            The layer name.
 
         """
         super(Sequential, self).__init__(name=name)

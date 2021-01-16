@@ -56,15 +56,15 @@ class RMSprop(Optimizer):
         params : Sequence[dragon.vm.torch.nn.Parameter]
             The parameters to optimize.
         lr : float, required
-            The initial value for :math:`\text{lr}`.
+            The initial value to :math:`\text{lr}`.
         alpha : float, optional, default=0.99
-            The initial value for :math:`\alpha`.
+            The initial value to :math:`\alpha`.
         eps : float, optional, default=1e-7
-            The initial value for :math:`\epsilon`.
+            The initial value to :math:`\epsilon`.
         weight_decay : float, optional, default=0
             The L2 penalty factor to weight.
         momentum : float, optional, default=0
-            The initial value for :math:`\text{momentum}`.
+            The initial value to :math:`\text{momentum}`.
         scale : float, optional, default=1
             The scaling factor to gradient.
         clip_norm : float, optional, default=0

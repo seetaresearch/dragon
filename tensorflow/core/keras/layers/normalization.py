@@ -27,7 +27,7 @@ from dragon.vm.tensorflow.core.ops import nn
 
 
 class BatchNormalization(Layer):
-    r"""The batch normalization layer.
+    r"""Batch normalization layer.
     `[Ioffe & Szegedy, 2015] <https://arxiv.org/abs/1502.03167>`_.
 
     """
@@ -63,17 +63,17 @@ class BatchNormalization(Layer):
         scale : bool, optional, default=True
             **False** to freeze the ``gamma`` anyway.
         beta_initializer : Union[callable, str], optional
-            The initializer for ``beta``.
+            The initializer for beta tensor.
         gamma_initializer : Union[callable, str], optional
-            The initializer for ``gamma``.
+            The initializer for gamma tensor.
         moving_mean_initializer : Union[callable, str], optional
-            The initializer for ``moving_mean``.
+            The initializer for moving mean tensor.
         moving_variance_initializer : Union[callable, str], optional
-            The initializer for ``moving_variance``.
+            The initializer for moving variance tensor.
         beta_regularizer : Union[callable, str], optional
-            The regularizer for ``beta``.
+            The regularizer for beta tensor.
         gamma_regularizer : Union[callable, str], optional
-            The regularizer for ``gamma``.
+            The regularizer for gamma tensor.
 
         """
         super(BatchNormalization, self).__init__(name=name, **kwargs)
@@ -96,7 +96,7 @@ class BatchNormalization(Layer):
     def build(self, input_shape):
         input_shape = tensor_shape.TensorShape(input_shape)
         if not input_shape.ndims:
-            raise ValueError('Input has undefined rank: ' + input_shape)
+            raise ValueError('Input has undefined rank: ' + str(input_shape))
         param_shape = [input_shape.dims[self.axis]]
         self.input_spec = InputSpec(
             # Each layer should adapt to the:

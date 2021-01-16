@@ -20,7 +20,7 @@ from dragon.vm.tensorlayer.core.layers.convolution import conv_utils
 
 
 class MaxPool2d(layer.Layer):
-    """The max 2d pooling layer.
+    """2d max pooling layer.
 
     Examples:
 
@@ -43,16 +43,16 @@ class MaxPool2d(layer.Layer):
 
         Parameters
         -----------
-        filter_size : Sequence[int], optional, default=3
-            The size of sliding window.
-        strides : Sequence[int], optional, default=2
-            The stride of sliding window.
+        filter_size : Union[int, Sequence[int]], default=3, optional, default=3
+            The size of pooling window.
+        strides : Union[int, Sequence[int]], default=2, optional, default=2
+            The stride of pooling window.
         padding : Union[{'VALID', 'SAME'}, Sequence[int]]
             The padding algorithm or padding sizes.
         data_format : {'channels_first', 'channels_last'}, optional
-             The optional data format.
+             ``'channels_first'`` or ``'channels_last'``.
         name : str, optional
-            The optional layer name.
+            The layer name.
 
         """
         super(MaxPool2d, self).__init__(name)
@@ -75,21 +75,19 @@ class MaxPool2d(layer.Layer):
     def forward(self, inputs, **kwargs):
         data_format = conv_utils.convert_data_format(self.data_format)
         padding, pads = conv_utils.normalize_2d_args('padding', self.padding)
-
         return vision_ops.pool2d(
             inputs,
             kernel_shape=self.filter_size,
             strides=self.strides,
             pads=pads,
             padding=padding,
-            mode='MAX',
-            global_pooling=False,
+            mode='max',
             data_format=data_format,
         )
 
 
 class MeanPool2d(layer.Layer):
-    """The mean 2d pooling layer.
+    """2d mean pooling layer.
 
     Examples:
 
@@ -100,16 +98,16 @@ class MeanPool2d(layer.Layer):
 
     Parameters
     -----------
-    filter_size : Sequence[int]
-        The size of sliding window.
-    strides : Sequence[int]
-        The stride of sliding window.
+    filter_size : Union[int, Sequence[int]], default=3
+        The size of pooling window.
+    strides : Union[int, Sequence[int]], default=2
+        The stride of pooling window.
     padding : Union[{'VALID', 'SAME'}, Sequence[int]]
         The padding algorithm or padding sizes.
-    data_format : {'channels_last', 'channels_first'}, optional
-        The optional data format.
+    data_format : str, optional, default='channels_first'
+        ``'channels_first'`` or ``'channels_last'``.
     name : str, optional
-        The optional name.
+        The layer name.
 
     """
 
@@ -141,21 +139,19 @@ class MeanPool2d(layer.Layer):
     def forward(self, inputs, **kwargs):
         data_format = conv_utils.convert_data_format(self.data_format)
         padding, pads = conv_utils.normalize_2d_args('padding', self.padding)
-
         return vision_ops.pool2d(
             inputs,
             kernel_shape=self.filter_size,
             strides=self.strides,
             pads=pads,
             padding=padding,
-            mode='AVG',
-            global_pooling=False,
+            mode='avg',
             data_format=data_format,
         )
 
 
 class GlobalMaxPool2d(layer.Layer):
-    """The global max 2d pooling layer.
+    """2d global max pooling layer.
 
     Examples:
 
@@ -172,9 +168,9 @@ class GlobalMaxPool2d(layer.Layer):
         Parameters
         ------------
         data_format : {'channels_last', 'channels_first'}
-            The optional data format.
+            ``'channels_first'`` or ``'channels_last'``.
         name : str, optional
-            The optional layer name.
+            The layer name.
 
         """
         super(GlobalMaxPool2d, self).__init__(name)
@@ -190,17 +186,16 @@ class GlobalMaxPool2d(layer.Layer):
     def forward(self, inputs, **kwargs):
         return vision_ops.pool2d(
             inputs,
-            kernel_shape=1,
+            kernel_shape=0,
             strides=1,
-            pads=0,
-            mode='MAX',
-            global_pooling=True,
+            mode='max',
+            global_pool=True,
             data_format=conv_utils.convert_data_format(self.data_format),
         )
 
 
 class GlobalMeanPool2d(layer.Layer):
-    """The global mean 2d pooling layer.
+    """2d global mean pooling layer.
 
     Examples:
 
@@ -211,10 +206,10 @@ class GlobalMeanPool2d(layer.Layer):
 
     Parameters
     ------------
-    data_format : {'channels_last', 'channels_first'}, optional
-         The optional data format.
+    data_format : str, optional, default='channels_first'
+         ``'channels_first'`` or ``'channels_last'``.
     name : str, optional
-        The optional layer name.
+        The layer name.
 
     """
 
@@ -232,10 +227,9 @@ class GlobalMeanPool2d(layer.Layer):
     def forward(self, inputs, **kwargs):
         return vision_ops.pool2d(
             inputs,
-            kernel_shape=1,
+            kernel_shape=0,
             strides=1,
-            pads=0,
-            mode='AVG',
-            global_pooling=True,
+            mode='avg',
+            global_pool=True,
             data_format=conv_utils.convert_data_format(self.data_format),
         )

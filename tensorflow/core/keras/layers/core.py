@@ -32,7 +32,7 @@ from dragon.vm.tensorflow.core.keras.utils import conv_utils
 
 
 class Dense(Layer):
-    """The fully-connected layer."""
+    """Fully-connected layer."""
 
     def __init__(
         self,
@@ -56,13 +56,13 @@ class Dense(Layer):
         use_bias : bool, optional, default=True
             **True** to apply a ``bias``.
         kernel_initializer : Union[callable, str], optional
-            The initializer for ``kernel``.
+            The initializer for kernel tensor.
         bias_initializer : Union[callable, str], optional
-            The initializer for ``bias``.
+            The initializer for bias tensor.
         kernel_regularizer : Union[callable, str], optional
-            The regularizer for ``kernel``.
+            The regularizer for kernel tensor.
         bias_regularizer : Union[callable, str], optional
-            The regularizer for ``bias``.
+            The regularizer for bias tensor.
 
         """
         super(Dense, self).__init__(**kwargs)
@@ -128,7 +128,7 @@ class Dense(Layer):
 
 
 class Dropout(Layer):
-    r"""The dropout layer.
+    r"""Layer to apply the dropout function.
     `[Srivastava et.al, 2014] <http://jmlr.org/papers/v15/srivastava14a.html>`_.
 
     The **Dropout** function is defined as:
@@ -168,7 +168,7 @@ class Dropout(Layer):
 
 
 class Flatten(Layer):
-    """The layer to reshape input into a matrix.
+    """Layer to reshape input into a matrix.
 
     Examples:
 
@@ -210,7 +210,7 @@ class Flatten(Layer):
 
 
 class Permute(Layer):
-    """The layer to permute the dimensions of input.
+    """Layer to permute the dimensions of input.
 
     Examples:
 
@@ -246,7 +246,7 @@ class Permute(Layer):
 
 
 class Reshape(Layer):
-    """The layer to change the dimensions of input.
+    """Layer to change the dimensions of input.
 
     Examples:
 

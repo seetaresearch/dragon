@@ -176,35 +176,35 @@ void _Moments(
 
 /* ------------------- Launcher Separator ------------------- */
 
-#define DEFINE_KERNEL_LAUNCHER(T, ScalarT, AccT) \
-  template <>                                    \
-  void Moments<T, AccT, CUDAContext>(            \
-      const int num_dims,                        \
-      const int* dims,                           \
-      const int num_axes,                        \
-      const int* axes,                           \
-      const T* x,                                \
-      AccT* mean,                                \
-      AccT* var,                                 \
-      CUDAContext* ctx) {                        \
-    _Moments(                                    \
-        num_dims,                                \
-        dims,                                    \
-        num_axes,                                \
-        axes,                                    \
-        reinterpret_cast<const ScalarT*>(x),     \
-        mean,                                    \
-        var,                                     \
-        ctx);                                    \
+#define DEFINE_KERNEL_LAUNCHER(T, AccT)                        \
+  template <>                                                  \
+  void Moments<T, AccT, CUDAContext>(                          \
+      const int num_dims,                                      \
+      const int* dims,                                         \
+      const int num_axes,                                      \
+      const int* axes,                                         \
+      const T* x,                                              \
+      AccT* mean,                                              \
+      AccT* var,                                               \
+      CUDAContext* ctx) {                                      \
+    _Moments(                                                  \
+        num_dims,                                              \
+        dims,                                                  \
+        num_axes,                                              \
+        axes,                                                  \
+        reinterpret_cast<const math::ScalarType<T>::type*>(x), \
+        mean,                                                  \
+        var,                                                   \
+        ctx);                                                  \
   }
 
-DEFINE_KERNEL_LAUNCHER(int8_t, int8_t, float);
-DEFINE_KERNEL_LAUNCHER(uint8_t, uint8_t, float);
-DEFINE_KERNEL_LAUNCHER(int, int, float);
-DEFINE_KERNEL_LAUNCHER(int64_t, int64_t, double);
-DEFINE_KERNEL_LAUNCHER(float16, half, float);
-DEFINE_KERNEL_LAUNCHER(float, float, float);
-DEFINE_KERNEL_LAUNCHER(double, double, double);
+DEFINE_KERNEL_LAUNCHER(int8_t, float);
+DEFINE_KERNEL_LAUNCHER(uint8_t, float);
+DEFINE_KERNEL_LAUNCHER(int, float);
+DEFINE_KERNEL_LAUNCHER(int64_t, double);
+DEFINE_KERNEL_LAUNCHER(float16, float);
+DEFINE_KERNEL_LAUNCHER(float, float);
+DEFINE_KERNEL_LAUNCHER(double, double);
 #undef DEFINE_KERNEL_LAUNCHER
 
 } // namespace kernel

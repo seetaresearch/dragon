@@ -30,24 +30,44 @@ def avg_pool(
     input,
     ksize,
     strides,
-    padding,
-    data_format=None,
+    padding='VALID',
+    data_format='NHWC',
     name=None,
 ):
-    """Apply the n-dimension average pooling.
+    r"""Apply the n-dimension average pooling.
+
+    * If :attr:`data_format` is ``'NCHW'``, excepts input shape
+      :math:`(N, C, D1, D2, ...)`, and output shape is
+      :math:`(N, C, D1_{\text{out}}, D2_{\text{out}}, ...)`.
+
+    * If :attr:`data_format` is ``'NHWC'``, excepts input shape
+      :math:`(N, D1, D2, ..., C)`, and output shape is
+      :math:`(N, D1_{\text{out}}, D2_{\text{out}}, ..., C)`.
+
+    * :attr:`padding` could be ``'VALID'``, ``'SAME'`` or explicit padding size.
+
+    Examples:
+
+    ```python
+    for i in range(3):
+        ndim = i + 1
+        x = tf.ones((1,) + (2,) * ndim + (2,))
+        y = tf.nn.avg_pool(x, ksize=(2,) * ndim, strides=2)
+        assert y.shape == (1,) + (1,) * ndim + (2,)
+    ```
 
     Parameters
     ----------
     input : dragon.Tensor
         The input tensor.
-    ksize : Sequence[int]
-        The size(s) of sliding window.
-    strides : Sequence[int], optional
-        The stride(s) of sliding window.
-    padding : Union[str, Sequence[int]]
-        The padding algorithm or padding sizes.
-    data_format : {'NCHW', 'NCDHW', 'NHWC', 'NDHWC'}, optional
-        The optional data format.
+    ksize : Union[int, Sequence[int]]
+        The size of pooling window.
+    strides : Union[int, Sequence[int]]
+        The stride of pooling window.
+    padding : Union[int, Sequence[int], str], optional, default='VALID'
+        The padding algorithm or size.
+    data_format : str, optional, default='NHWC'
+        ``'NCHW'`` or ``'NHWC'``.
     name : str, optional
         The operation name.
 
@@ -64,50 +84,64 @@ def avg_pool(
     num_spatial_dims = num_total_dims - 2
     data_format = data_format if data_format else 'NHWC'
     start_axis = 2 if data_format.startswith('NC') else 1
-    normalize_spatial_args = \
-        functools.partial(
-            _normalize_spatial_args,
-            num_total_dims=num_total_dims,
-            num_spatial_dims=num_spatial_dims,
-            start_axis=start_axis,
-        )
+    normalize_spatial_args = functools.partial(
+        _normalize_spatial_args,
+        num_total_dims=num_total_dims,
+        num_spatial_dims=num_spatial_dims,
+        start_axis=start_axis)
     ksize = normalize_spatial_args('ksize', ksize)
     strides = normalize_spatial_args('strides', strides)
     padding, pads = normalize_spatial_args('padding', padding)
     return getattr(vision_ops, 'pool{}d'.format(num_spatial_dims))(
-        [input],
-        kernel_shape=ksize.shape[start_axis:start_axis + num_spatial_dims],
+        input,
+        kernel_shape=ksize[start_axis:start_axis + num_spatial_dims],
         strides=strides[start_axis:start_axis + num_spatial_dims],
         padding=padding,
         pads=pads,
+        mode='avg',
         data_format='NCHW' if data_format.startswith('NC') else 'NHWC',
         name=name,
-        mode='AVG',
     )
 
 
-def avg_pool2d(
+def avg_pool1d(
     input,
     ksize,
     strides,
-    padding,
+    padding='VALID',
     data_format='NHWC',
     name=None,
 ):
-    """Apply the 2d average pooling.
+    r"""Apply the 1d average pooling.
+
+    * If :attr:`data_format` is ``'NCHW'``, excepts input shape
+      :math:`(N, C, H)`, and output shape is :math:`(N, C, H_{\text{out}})`.
+
+    * If :attr:`data_format` is ``'NHWC'``, excepts input shape
+      :math:`(N, H, C)`, and output shape is :math:`(N, H_{\text{out}}, C)`.
+
+    * :attr:`padding` could be ``'VALID'``, ``'SAME'`` or explicit padding size.
+
+    Examples:
+
+    ```python
+    x = tf.ones((1, 2, 2))
+    y = tf.nn.avg_pool1d(x, ksize=2, strides=2)
+    assert y.shape == (1, 1, 2)
+    ```
 
     Parameters
     ----------
     input : dragon.Tensor
         The input tensor.
-    ksize : Sequence[int]
-        The size(s) of sliding window.
-    strides : Sequence[int], optional
-        The stride(s) of sliding window.
-    padding : Union[str, Sequence[int]]
-        The padding algorithm or padding sizes.
-    data_format : {'NCHW', 'NCDHW', 'NHWC', 'NDHWC'}, optional
-        The optional data format.
+    ksize : Union[int, Sequence[int]]
+        The size of pooling window.
+    strides : Union[int, Sequence[int]]
+        The stride of pooling window.
+    padding : Union[int, Sequence[int], str], optional, default='VALID'
+        The padding algorithm or size.
+    data_format : str, optional, default='NHWC'
+        ``'NCHW'`` or ``'NHWC'``.
     name : str, optional
         The operation name.
 
@@ -118,10 +152,129 @@ def avg_pool2d(
 
     """
     start_axis = 2 if data_format.startswith('NC') else 1
-    ksize = _normalize_spatial_args('ksize', ksize, 4, 2, start_axis)
     return avg_pool(
         input=input,
-        ksize=ksize,
+        ksize=_normalize_spatial_args('ksize', ksize, 3, 1, start_axis),
+        strides=strides,
+        padding=padding,
+        data_format=data_format,
+        name=name,
+    )
+
+
+def avg_pool2d(
+    input,
+    ksize,
+    strides,
+    padding='VALID',
+    data_format='NHWC',
+    name=None,
+):
+    r"""Apply the 2d average pooling.
+
+    * If :attr:`data_format` is ``'NCHW'``, excepts input shape
+      :math:`(N, C, H, W)`, and output shape is
+      :math:`(N, C, H_{\text{out}}, W_{\text{out}})`.
+
+    * If :attr:`data_format` is ``'NHWC'``, excepts input shape
+      :math:`(N, H, W, C)`, and output shape is
+      :math:`(N, H_{\text{out}}, W_{\text{out}}, C)`.
+
+    * :attr:`padding` could be ``'VALID'``, ``'SAME'`` or explicit padding size.
+
+    Examples:
+
+    ```python
+    x = tf.ones((1, 2, 2, 2))
+    y = tf.nn.avg_pool2d(x, ksize=2, strides=2)
+    assert y.shape == (1, 1, 1, 2)
+    ```
+
+    Parameters
+    ----------
+    input : dragon.Tensor
+        The input tensor.
+    ksize : Union[int, Sequence[int]]
+        The size of pooling window.
+    strides : Union[int, Sequence[int]]
+        The stride of pooling window.
+    padding : Union[int, Sequence[int], str], optional, default='VALID'
+        The padding algorithm or size.
+    data_format : str, optional, default='NHWC'
+        ``'NCHW'`` or ``'NHWC'``.
+    name : str, optional
+        The operation name.
+
+    Returns
+    -------
+    dragon.Tensor
+        The output tensor.
+
+    """
+    start_axis = 2 if data_format.startswith('NC') else 1
+    return avg_pool(
+        input=input,
+        ksize=_normalize_spatial_args('ksize', ksize, 4, 2, start_axis),
+        strides=strides,
+        padding=padding,
+        data_format=data_format,
+        name=name,
+    )
+
+
+def avg_pool3d(
+    input,
+    ksize,
+    strides,
+    padding='VALID',
+    data_format='NHWC',
+    name=None,
+):
+    r"""Apply the 3d average pooling.
+
+    * If :attr:`data_format` is ``'NCHW'``, excepts input shape
+      :math:`(N, C, D, H, W)`, and output shape is
+      :math:`(N, C, D_{\text{out}}, H_{\text{out}}, W_{\text{out}})`.
+
+    * If :attr:`data_format` is ``'NHWC'``, excepts input shape
+      :math:`(N, D, H, W, C)`, and output shape is
+      :math:`(N, D_{\text{out}}, H_{\text{out}}, W_{\text{out}}, C)`.
+
+    * :attr:`padding` could be ``'VALID'``, ``'SAME'`` or explicit padding size.
+
+    Examples:
+
+    ```python
+    x = tf.ones((1, 2, 2, 2, 2))
+    y = tf.nn.avg_pool3d(x, ksize=2, strides=2)
+    assert y.shape == (1, 1, 1, 1, 2)
+    ```
+
+    Parameters
+    ----------
+    input : dragon.Tensor
+        The input tensor.
+    ksize : Union[int, Sequence[int]]
+        The size of pooling window.
+    strides : Union[int, Sequence[int]]
+        The stride of pooling window.
+    padding : Union[int, Sequence[int], str], optional, default='VALID'
+        The padding algorithm or size.
+    data_format : str, optional, default='NHWC'
+        ``'NCHW'`` or ``'NHWC'``.
+    name : str, optional
+        The operation name.
+
+    Returns
+    -------
+    dragon.Tensor
+        The output tensor.
+
+    """
+    start_axis = 2 if data_format.startswith('NC') else 1
+    return avg_pool(
+        input=input,
+        ksize=_normalize_spatial_args('ksize', ksize, 5, 3, start_axis),
         strides=strides,
         padding=padding,
         data_format=data_format,
@@ -130,39 +283,16 @@ def avg_pool2d(
 
 
 def bias_add(value, bias, data_format='NHWC', name=None):
-    return vision_ops.bias_add(
-        [value, bias],
-        data_format=data_format,
-        name=name,
-    )
-
-
-def convolution(
-    input,
-    filters,
-    strides=None,
-    padding='VALID',
-    data_format=None,
-    dilations=None,
-    name=None,
-    **kwargs
-):
-    """Apply the n-dimension convolution.
+    """Add the bias across channels to input.
 
     Parameters
     ----------
-    input : dragon.Tensor
-       The input tensor.
-    filters : dragon.Tensor
-       The weight tensor.
-    strides : Sequence[int], optional
-        The stride(s) of sliding window.
-    padding : Union[str, Sequence[int]], optional
-        The padding algorithm or padding size(s).
-    data_format : {'NCHW', 'NCDHW', 'NHWC', 'NDHWC'}, optional
-        The optional data format.
-    dilations : Sequence[int], optional
-        The rate(s) of dilated kernel.
+    value : dragon.Tensor
+        The input tensor.
+    bias : dragon.Tensor
+        The bias tensor.
+    data_format : str, optional, default='NHWC'
+        ``'NCHW'`` or ``'NHWC'``.
     name : str, optional
         The operation name.
 
@@ -172,63 +302,58 @@ def convolution(
         The output tensor.
 
     """
-    if filters.shape is not None:
-        num_total_dims = len(filters.shape)
-    else:
-        raise ValueError('Rank of <filters> must be determined.')
-    num_spatial_dims = num_total_dims - 2
-    data_format = data_format if data_format else 'NHWC'
-    start_axis = 2 if data_format.startswith('NC') else 1
-    normalize_spatial_args = \
-        functools.partial(
-            _normalize_spatial_args,
-            num_total_dims=num_total_dims,
-            num_spatial_dims=num_spatial_dims,
-            start_axis=start_axis,
-        )
-    strides = normalize_spatial_args('strides', strides)
-    dilations = normalize_spatial_args('dilations', dilations)
-    padding, pads = normalize_spatial_args('padding', padding)
-    return getattr(vision_ops, '{}{}d'.format(
-        kwargs.get('conv_type', 'conv'), num_spatial_dims))(
-            [input, filters],
-            kernel_shape=filters.shape[2:],
-            strides=strides[start_axis:start_axis + num_spatial_dims],
-            dilations=dilations[start_axis:start_axis + num_spatial_dims],
-            padding=padding,
-            pads=pads,
-            data_format='NCHW' if data_format.startswith('NC') else 'NHWC',
-            name=name)
+    return vision_ops.bias_add([value, bias], data_format=data_format, name=name)
 
 
-def conv_transpose(
+def convolution(
     input,
     filters,
-    output_shape,
-    strides,
-    padding='SAME',
-    data_format=None,
-    dilations=None,
+    strides=1,
+    padding='VALID',
+    data_format='NHWC',
+    dilations=1,
     name=None,
+    **kwargs
 ):
-    """Apply the n-dimension deconvolution.
+    r"""Apply the n-dimension convolution.
+
+    * If :attr:`data_format` is ``'NCHW'``, excepts input shape
+      :math:`(N, C_{\text{in}}, D1, D2, ...)`, filters shape
+      :math:`(C_{\text{out}}, C_{\text{in}}, D1_{\text{f}}, D2_{\text{f}}, ...)`,
+      and output shape is :math:`(N, C_{\text{out}}, D1_{\text{out}}, D2_{\text{out}}, ...)`.
+
+    * If :attr:`data_format` is ``'NHWC'``, excepts input shape
+      :math:`(N, D1, D2, ..., C_{\text{in}})`, filters shape
+      :math:`(C_{\text{out}}, D1_{\text{f}}, D2_{\text{f}}, ..., C_{\text{in}})`,
+      and output shape is :math:`(N, D1_{\text{out}}, D2_{\text{out}}, ..., C_{\text{out}})`.
+
+    * :attr:`padding` could be ``'VALID'``, ``'SAME'`` or explicit padding size.
+
+    Examples:
+
+    ```python
+    for i in range(3):
+        ndim = i + 1
+        x = tf.ones((1,) + (2,) * ndim + (2,))
+        filters = tf.ones((3,) + (1,) * ndim + (2,))
+        y = tf.nn.convolution(x, filters)
+        assert y.shape == (1,) + (2,) * ndim + (3,)
+    ```
 
     Parameters
     ----------
     input : dragon.Tensor
        The input tensor.
     filters : dragon.Tensor
-       The weight tensor.
-    output_shape : Union[Sequence[int], dragon.Tensor], optional
-        The determined shape of output.
-    strides : Sequence[int]
-        The stride(s) of sliding window.
-    padding : Union[str, Sequence[int]], optional
-        The padding algorithm or padding size(s).
-    data_format : {'NCHW', 'NCDHW', 'NHWC', 'NDHWC'}, optional
-        The optional data format.
-    dilations : Sequence[int], optional
-        The rate(s) of dilated kernel.
+       The filters tensor.
+    strides : Union[int, Sequence[int]], optional, default=1
+        The stride of convolution window.
+    padding : Union[int, Sequence[int], str], optional, default='VALID'
+        The padding algorithm or size.
+    data_format : str, optional, default='NHWC'
+        ``'NCHW'`` or ``'NHWC'``.
+    dilations : Union[int, Sequence[int]], optional, default=1
+        The rate of dilated filters.
     name : str, optional
         The operation name.
 
@@ -247,13 +372,103 @@ def conv_transpose(
     num_spatial_dims = num_total_dims - 2
     data_format = data_format if data_format else 'NHWC'
     start_axis = 2 if data_format.startswith('NC') else 1
-    normalize_spatial_args = \
-        functools.partial(
-            _normalize_spatial_args,
-            num_total_dims=num_total_dims,
-            num_spatial_dims=num_spatial_dims,
-            start_axis=start_axis,
-        )
+    normalize_spatial_args = functools.partial(
+        _normalize_spatial_args,
+        num_total_dims=num_total_dims,
+        num_spatial_dims=num_spatial_dims,
+        start_axis=start_axis)
+    strides = normalize_spatial_args('strides', strides)
+    dilations = normalize_spatial_args('dilations', dilations)
+    padding, pads = normalize_spatial_args('padding', padding)
+    return getattr(vision_ops, '{}{}d'.format(
+        kwargs.get('conv_type', 'conv'), num_spatial_dims))(
+            [input, filters],
+            kernel_shape=filters.shape[start_axis:start_axis + num_spatial_dims],
+            strides=strides[start_axis:start_axis + num_spatial_dims],
+            dilations=dilations[start_axis:start_axis + num_spatial_dims],
+            padding=padding,
+            pads=pads,
+            data_format='NCHW' if data_format.startswith('NC') else 'NHWC',
+            name=name)
+
+
+def conv_transpose(
+    input,
+    filters,
+    output_shape=None,
+    strides=1,
+    padding='SAME',
+    output_padding=None,
+    data_format='NHWC',
+    dilations=1,
+    name=None,
+):
+    r"""Apply the n-dimension deconvolution.
+
+    * If :attr:`data_format` is ``'NCHW'``, excepts input shape
+      :math:`(N, C_{\text{in}}, D1, D2, ...)`, filters shape
+      :math:`(C_{\text{in}}, C_{\text{out}}, D1_{\text{f}}, D2_{\text{f}}, ...)`,
+      and output shape is :math:`(N, C_{\text{out}}, D1_{\text{out}}, D2_{\text{out}}, ...)`.
+
+    * If :attr:`data_format` is ``'NHWC'``, excepts input shape
+      :math:`(N, D1, D2, ..., C_{\text{in}})`, filters shape
+      :math:`(C_{\text{in}}, D1_{\text{f}}, D2_{\text{f}}, ..., C_{\text{out}})`,
+      and output shape is :math:`(N, D1_{\text{out}}, D2_{\text{out}}, ..., C_{\text{out}})`.
+
+    * :attr:`padding` could be ``'VALID'``, ``'SAME'`` or explicit padding size.
+
+    Examples:
+
+    ```python
+    for i in range(3):
+        ndim = i + 1
+        x = tf.ones((1,) + (2,) * ndim + (2,))
+        filters = tf.ones((3,) + (1,) * ndim + (2,))
+        y = tf.nn.conv_transpose(x, filters, output_shape=(2,) * ndim)
+        assert y.shape == (1,) + (2,) * ndim + (3,)
+    ```
+
+    Parameters
+    ----------
+    input : dragon.Tensor
+       The input tensor.
+    filters : dragon.Tensor
+       The filters tensor.
+    output_shape : Union[Sequence[int], dragon.Tensor], optional
+        The optional output shape.
+    strides : Union[int, Sequence[int]], default=1
+        The stride of convolution window.
+    padding : Union[int, Sequence[int], str], optional
+        The padding algorithm or size.
+    output_padding : Union[Sequence[int], dragon.Tensor], optional
+        The additional size added to the output shape.
+    data_format : str, optional, default='NHWC'
+        ``'NCHW'`` or ``'NHWC'``.
+    dilations : Union[int, Sequence[int]], optional, default=1
+        The rate of dilated filters.
+    name : str, optional
+        The operation name.
+
+    Returns
+    -------
+    dragon.Tensor
+        The output tensor.
+
+    """
+    if filters.shape is not None:
+        num_total_dims = len(filters.shape)
+    elif input.shape is not None:
+        num_total_dims = len(input.shape)
+    else:
+        raise ValueError('Rank of <input> or <filters> must be known.')
+    num_spatial_dims = num_total_dims - 2
+    data_format = data_format if data_format else 'NHWC'
+    start_axis = 2 if data_format.startswith('NC') else 1
+    normalize_spatial_args = functools.partial(
+        _normalize_spatial_args,
+        num_total_dims=num_total_dims,
+        num_spatial_dims=num_spatial_dims,
+        start_axis=start_axis)
     strides = normalize_spatial_args('strides', strides)
     dilations = normalize_spatial_args('dilations', dilations)
     padding, pads = normalize_spatial_args('padding', padding)
@@ -262,10 +477,11 @@ def conv_transpose(
     output_shape = normalize_spatial_args('output_shape', output_shape)
     return getattr(vision_ops, 'conv{}d_transpose'.format(num_spatial_dims))(
         [input, filters],
-        kernel_shape=filters.shape[2:],
+        kernel_shape=filters.shape[start_axis:start_axis + num_spatial_dims],
         strides=strides[start_axis:start_axis + num_spatial_dims],
         dilations=dilations[start_axis:start_axis + num_spatial_dims],
         padding=padding,
+        output_padding=output_padding,
         output_shape=output_shape,
         pads=pads,
         data_format='NCHW' if data_format.startswith('NC') else 'NHWC',
@@ -273,31 +489,52 @@ def conv_transpose(
     )
 
 
-def conv2d(
+def conv1d(
     input,
     filters,
-    strides,
-    padding,
+    strides=1,
+    padding='VALID',
     data_format='NHWC',
     dilations=None,
     name=None,
 ):
-    """Apply the 2d convolution.
+    r"""Apply the 1d convolution.
+
+    * If :attr:`data_format` is ``'NCHW'``, excepts input shape
+      :math:`(N, C_{\text{in}}, H)`, filters shape
+      :math:`(C_{\text{out}}, C_{\text{in}}, H_{\text{f}})`,
+      and output shape is :math:`(N, C_{\text{out}}, H_{\text{out}})`.
+
+    * If :attr:`data_format` is ``'NHWC'``, excepts input shape
+      :math:`(N, H, C_{\text{in}})`, filters shape
+      :math:`(C_{\text{out}}, H_{\text{f}}, C_{\text{in}})`,
+      and output shape is :math:`(N, H_{\text{out}}, C_{\text{out}})`.
+
+    * :attr:`padding` could be ``'VALID'``, ``'SAME'`` or explicit padding size.
+
+    Examples:
+
+    ```python
+    x = tf.ones((1, 2, 2))
+    filters = tf.ones((3, 1, 2))
+    y = tf.nn.conv1d(x, filters)
+    assert y.shape == (1, 2, 3)
+    ```
 
     Parameters
     ----------
     input : dragon.Tensor
        The input tensor.
     filters : dragon.Tensor
-       The weight tensor.
-    strides : Sequence[int]
-        The stride(s) of sliding window.
-    padding : Union[str, Sequence[int]]
-        The padding algorithm or padding sizes.
-    data_format : {'NCHW', 'NHWC'}, optional
-        The optional data format.
-    dilations : Sequence[int], optional
-        The rate(s) of dilated kernel.
+       The filters tensor.
+    strides : Union[int, Sequence[int]], optional, default=1
+        The stride of convolution window.
+    padding : Union[int, Sequence[int], str], optional, default='VALID'
+        The padding algorithm or size.
+    data_format : str, optional, default='NHWC'
+        ``'NCHW'`` or ``'NHWC'``.
+    dilations : Union[int, Sequence[int]], optional, default=1
+        The rate of dilated filters.
     name : str, optional
         The operation name.
 
@@ -310,34 +547,302 @@ def conv2d(
     return convolution(**locals())
 
 
-def conv2d_transpose(
+def conv2d(
     input,
     filters,
-    output_shape,
-    strides,
-    padding='SAME',
+    strides=1,
+    padding='VALID',
     data_format='NHWC',
     dilations=None,
     name=None,
 ):
-    """Apply the 2d deconvolution.
+    r"""Apply the 2d convolution.
+
+    * If :attr:`data_format` is ``'NCHW'``, excepts input shape
+      :math:`(N, C_{\text{in}}, H, W)`, filters shape
+      :math:`(C_{\text{out}}, C_{\text{in}}, H_{\text{f}}, W_{\text{f}})`,
+      and output shape is :math:`(N, C_{\text{out}}, H_{\text{out}}, W_{\text{out}})`.
+
+    * If :attr:`data_format` is ``'NHWC'``, excepts input shape
+      :math:`(N, H, W, C_{\text{in}})`, filters shape
+      :math:`(C_{\text{out}}, H_{\text{f}}, W_{\text{f}}, C_{\text{in}})`,
+      and output shape is :math:`(N, H_{\text{out}}, W_{\text{out}}, C_{\text{out}})`.
+
+    * :attr:`padding` could be ``'VALID'``, ``'SAME'`` or explicit padding size.
+
+    Examples:
+
+    ```python
+    x = tf.ones((1, 2, 2, 2))
+    filters = tf.ones((3, 1, 1, 2))
+    y = tf.nn.conv2d(x, filters)
+    assert y.shape == (1, 2, 2, 3)
+    ```
 
     Parameters
     ----------
     input : dragon.Tensor
        The input tensor.
     filters : dragon.Tensor
-       The weight tensor.
+       The filters tensor.
+    strides : Union[int, Sequence[int]], optional, default=1
+        The stride of convolution window.
+    padding : Union[int, Sequence[int], str], optional, default='VALID'
+        The padding algorithm or size.
+    data_format : str, optional, default='NHWC'
+        ``'NCHW'`` or ``'NHWC'``.
+    dilations : Union[int, Sequence[int]], optional, default=1
+        The rate of dilated filters.
+    name : str, optional
+        The operation name.
+
+    Returns
+    -------
+    dragon.Tensor
+        The output tensor.
+
+    """
+    return convolution(**locals())
+
+
+def conv3d(
+    input,
+    filters,
+    strides,
+    padding,
+    data_format='NHWC',
+    dilations=1,
+    name=None,
+):
+    r"""Apply the 3d convolution.
+
+    * If :attr:`data_format` is ``'NCHW'``, excepts input shape
+      :math:`(N, C_{\text{in}}, D, H, W)`, filters shape
+      :math:`(C_{\text{out}}, C_{\text{in}}, D_{\text{f}}, H_{\text{f}}, W_{\text{f}})`,
+      and output shape is :math:`(N, C_{\text{out}}, D_{\text{out}}, H_{\text{out}}, W_{\text{out}})`.
+
+    * If :attr:`data_format` is ``'NHWC'``, excepts input shape
+      :math:`(N, D, H, W, C_{\text{in}})`, filters shape
+      :math:`(C_{\text{out}}, D_{\text{f}}, H_{\text{f}}, W_{\text{f}}, C_{\text{in}})`,
+      and output shape is :math:`(N, D_{\text{out}}, H_{\text{out}}, W_{\text{out}}, C_{\text{out}})`.
+
+    * :attr:`padding` could be ``'VALID'``, ``'SAME'`` or explicit padding size.
+
+    Examples:
+
+    ```python
+    x = tf.ones((1, 2, 2, 2, 2))
+    filters = tf.ones((3, 1, 1, 1, 2))
+    y = tf.nn.conv3d(x, filters)
+    assert y.shape == (1, 2, 2, 2, 3)
+    ```
+
+    Parameters
+    ----------
+    input : dragon.Tensor
+       The input tensor.
+    filters : dragon.Tensor
+       The filters tensor.
+    strides : Union[int, Sequence[int]], optional, default=1
+        The stride of convolution window.
+    padding : Union[int, Sequence[int], str], optional, default='VALID'
+        The padding algorithm or size.
+    data_format : str, optional, default='NHWC'
+        ``'NCHW'`` or ``'NHWC'``.
+    dilations : Union[int, Sequence[int]], optional, default=1
+        The rate of dilated filters.
+    name : str, optional
+        The operation name.
+
+    Returns
+    -------
+    dragon.Tensor
+        The output tensor.
+
+    """
+    return convolution(**locals())
+
+
+def conv1d_transpose(
+    input,
+    filters,
+    output_shape=None,
+    strides=1,
+    padding='SAME',
+    output_padding=None,
+    data_format='NHWC',
+    dilations=None,
+    name=None,
+):
+    r"""Apply the 1d deconvolution.
+
+    * If :attr:`data_format` is ``'NCHW'``, excepts input shape
+      :math:`(N, C_{\text{in}}, H)`, filters shape
+      :math:`(C_{\text{in}}, C_{\text{out}}, H_{\text{f}})`,
+      and output shape is :math:`(N, C_{\text{out}}, H_{\text{out}})`.
+
+    * If :attr:`data_format` is ``'NHWC'``, excepts input shape
+      :math:`(N, H, C_{\text{in}})`, filters shape
+      :math:`(C_{\text{in}}, H_{\text{f}}, C_{\text{out}})`,
+      and output shape is :math:`(N, H_{\text{out}}, C_{\text{out}})`.
+
+    * :attr:`padding` could be ``'VALID'``, ``'SAME'`` or explicit padding size.
+
+    Examples:
+
+    ```python
+    x = tf.ones((1, 2, 2))
+    filters = tf.ones((3, 1, 2))
+    y = tf.nn.conv1d_transpose(x, filters, output_shape=(2,))
+    assert y.shape == (1, 2, 3)
+    ```
+
+    Parameters
+    ----------
+    input : dragon.Tensor
+       The input tensor.
+    filters : dragon.Tensor
+       The filters tensor.
     output_shape : Union[Sequence[int], dragon.Tensor], optional
-        The determined shape of output.
-    strides : Sequence[int]
-        The stride(s) of sliding window.
-    padding : Union[str, Sequence[int]]
-        The padding algorithm or padding sizes.
-    data_format : {'NCHW', 'NHWC'}, optional
-        The optional data format.
-    dilations : Sequence[int], optional
-        The rate(s) of dilated kernel.
+        The optional output shape.
+    strides : Union[int, Sequence[int]], default=1
+        The stride of convolution window.
+    padding : Union[int, Sequence[int], str]
+        The padding algorithm or size.
+    output_padding : Union[Sequence[int], dragon.Tensor], optional
+        The additional size added to the output shape.
+    data_format : str, optional, default='NHWC'
+        ``'NCHW'`` or ``'NHWC'``.
+    dilations : Union[int, Sequence[int]], optional, default=1
+        The rate of dilated filters.
+    name : str, optional
+        The operation name.
+
+    Returns
+    -------
+    dragon.Tensor
+        The output tensor.
+
+    """
+    return conv_transpose(**locals())
+
+
+def conv2d_transpose(
+    input,
+    filters,
+    output_shape=None,
+    strides=1,
+    padding='SAME',
+    output_padding=None,
+    data_format='NHWC',
+    dilations=None,
+    name=None,
+):
+    r"""Apply the 2d deconvolution.
+
+    * If :attr:`data_format` is ``'NCHW'``, excepts input shape
+      :math:`(N, C_{\text{in}}, H, W)`, filters shape
+      :math:`(C_{\text{in}}, C_{\text{out}}, H_{\text{f}}, W_{\text{f}})`,
+      and output shape is :math:`(N, C_{\text{out}}, H_{\text{out}}, W_{\text{out}})`.
+
+    * If :attr:`data_format` is ``'NHWC'``, excepts input shape
+      :math:`(N, H, W, C_{\text{in}})`, filters shape
+      :math:`(C_{\text{in}}, H_{\text{f}}, W_{\text{f}}, C_{\text{out}})`,
+      and output shape is :math:`(N, H_{\text{out}}, W_{\text{out}}, C_{\text{out}})`.
+
+    * :attr:`padding` could be ``'VALID'``, ``'SAME'`` or explicit padding size.
+
+    Examples:
+
+    ```python
+    x = tf.ones((1, 2, 2, 2))
+    filters = tf.ones((3, 1, 1, 2))
+    y = tf.nn.conv2d_transpose(x, filters, output_shape=(2, 2))
+    assert y.shape == (1, 2, 2, 3)
+    ```
+
+    Parameters
+    ----------
+    input : dragon.Tensor
+       The input tensor.
+    filters : dragon.Tensor
+       The filters tensor.
+    output_shape : Union[Sequence[int], dragon.Tensor], optional
+        The optional output shape.
+    strides : Union[int, Sequence[int]], default=1
+        The stride of convolution window.
+    padding : Union[int, Sequence[int], str]
+        The padding algorithm or size.
+    output_padding : Union[Sequence[int], dragon.Tensor], optional
+        The additional size added to the output shape.
+    data_format : str, optional, default='NHWC'
+        ``'NCHW'`` or ``'NHWC'``.
+    dilations : Union[int, Sequence[int]], optional, default=1
+        The rate of dilated filters.
+    name : str, optional
+        The operation name.
+
+    Returns
+    -------
+    dragon.Tensor
+        The output tensor.
+
+    """
+    return conv_transpose(**locals())
+
+
+def conv3d_transpose(
+    input,
+    filters,
+    output_shape=None,
+    strides=1,
+    padding='SAME',
+    output_padding=None,
+    data_format='NHWC',
+    dilations=None,
+    name=None,
+):
+    r"""Apply the 3d deconvolution.
+
+    * If :attr:`data_format` is ``'NCHW'``, excepts input shape
+      :math:`(N, C_{\text{in}}, D, H, W)`, filters shape
+      :math:`(C_{\text{in}}, C_{\text{out}}, D_{\text{f}}, H_{\text{f}}, W_{\text{f}})`,
+      and output shape is :math:`(N, C_{\text{out}}, D_{\text{out}}, H_{\text{out}}, W_{\text{out}})`.
+
+    * If :attr:`data_format` is ``'NHWC'``, excepts input shape
+      :math:`(N, D, H, W, C_{\text{in}})`, filters shape
+      :math:`(C_{\text{in}}, D_{\text{f}}, H_{\text{f}}, W_{\text{f}}, C_{\text{out}})`,
+      and output shape is :math:`(N, D_{\text{out}}, H_{\text{out}}, W_{\text{out}}, C_{\text{out}})`.
+
+    * :attr:`padding` could be ``'VALID'``, ``'SAME'`` or explicit padding size.
+
+    Examples:
+
+    ```python
+    x = tf.ones((1, 2, 2, 2, 2))
+    filters = tf.ones((3, 1, 1, 1, 2))
+    y = tf.nn.conv3d_transpose(x, filters, output_shape=(2, 2, 2))
+    assert y.shape == (1, 2, 2, 2, 3)
+    ```
+
+    Parameters
+    ----------
+    input : dragon.Tensor
+       The input tensor.
+    filters : dragon.Tensor
+       The filters tensor.
+    output_shape : Union[Sequence[int], dragon.Tensor], optional
+        The optional output shape.
+    strides : Union[int, Sequence[int]], default=1
+        The stride of convolution window.
+    padding : Union[int, Sequence[int], str]
+        The padding algorithm or size.
+    output_padding : Union[Sequence[int], dragon.Tensor], optional
+        The additional size added to the output shape.
+    data_format : str, optional, default='NHWC'
+        ``'NCHW'`` or ``'NHWC'``.
+    dilations : Union[int, Sequence[int]], optional, default=1
+        The rate of dilated filters.
     name : str, optional
         The operation name.
 
@@ -353,29 +858,48 @@ def conv2d_transpose(
 def depthwise_conv2d(
     input,
     filters,
-    strides,
-    padding,
+    strides=1,
+    padding='VALID',
     data_format='NHWC',
-    dilations=None,
+    dilations=1,
     name=None,
 ):
-    """Apply the 2d depthwise convolution.
+    r"""Apply the 2d depthwise convolution.
     `[Chollet, 2016] <https://arxiv.org/abs/1610.02357>`_.
+
+    * If :attr:`data_format` is ``'NCHW'``, excepts input shape
+      :math:`(N, C_{\text{in}}, H, W)`, filters shape
+      :math:`(C_{\text{out}}, 1, H_{\text{f}}, W_{\text{f}})`,
+      and output shape is :math:`(N, C_{\text{out}}, H_{\text{out}}, W_{\text{out}})`.
+
+    * If :attr:`data_format` is ``'NHWC'``, excepts input shape
+      :math:`(N, H, W, C_{\text{in}})`, filters shape
+      :math:`(C_{\text{out}}, H_{\text{f}}, W_{\text{f}}, 1)`,
+      and output shape is :math:`(N, H_{\text{out}}, W_{\text{out}}, C_{\text{out}})`.
+
+    * :attr:`padding` could be ``'VALID'``, ``'SAME'`` or explicit padding size.
+
+    ```python
+    x = tf.ones((1, 2, 2, 2))
+    filters = tf.ones((2, 1, 1, 1))
+    y = tf.nn.depthwise_conv2d(x, filters)
+    assert y.shape == (1, 2, 2, 2)
+    ```
 
     Parameters
     ----------
     input : dragon.Tensor
        The input tensor.
     filters : dragon.Tensor
-       The weight tensor.
-    strides : Sequence[int]
-        The stride(s) of sliding window.
-    padding : Union[str, Sequence[int]]
-        The padding algorithm or padding sizes.
-    data_format : {'NCHW', 'NHWC'}, optional
-        The optional data format.
-    dilations : Sequence[int], optional
-        The rate(s) of dilated kernel.
+       The filters tensor.
+    strides : Union[int, Sequence[int]]
+        The stride of convolution window.
+    padding : Union[int, Sequence[int], str]
+        The padding algorithm or size.
+    data_format : str, optional, default='NHWC'
+        ``'NCHW'`` or ``'NHWC'``.
+    dilations : Union[int, Sequence[int]], optional, default=1
+        The rate of dilated filters.
     name : str, optional
         The operation name.
 
@@ -517,8 +1041,8 @@ def local_response_normalization(
         The scale value :math:`\alpha`.
     beta : float, optional, default=0.5
         The exponent value :math:`\beta`.
-    data_format : {'NCHW', 'NHWC'}, optional
-        The optional data format.
+    data_format : str, optional, default='NHWC'
+        ``'NCHW'`` or ``'NHWC'``.
     name : str, optional
         The operation name.
 
@@ -576,24 +1100,44 @@ def max_pool(
     input,
     ksize,
     strides,
-    padding,
-    data_format=None,
+    padding='VALID',
+    data_format='NHWC',
     name=None,
 ):
-    """Apply the n-dimension max pooling.
+    r"""Apply the n-dimension max pooling.
+
+    * If :attr:`data_format` is ``'NCHW'``, excepts input shape
+      :math:`(N, C, D1, D2, ...)`, and output shape is
+      :math:`(N, C, D1_{\text{out}}, D2_{\text{out}}, ...)`.
+
+    * If :attr:`data_format` is ``'NHWC'``, excepts input shape
+      :math:`(N, D1, D2, ..., C)`, and output shape is
+      :math:`(N, D1_{\text{out}}, D2_{\text{out}}, ..., C)`.
+
+    * :attr:`padding` could be ``'VALID'``, ``'SAME'`` or explicit padding size.
+
+    Examples:
+
+    ```python
+    for i in range(3):
+        ndim = i + 1
+        x = tf.ones((1,) + (2,) * ndim + (2,))
+        y = tf.nn.max_pool(x, ksize=(2,) * ndim, strides=2)
+        assert y.shape == (1,) + (1,) * ndim + (2,)
+    ```
 
     Parameters
     ----------
     input : dragon.Tensor
         The input tensor.
-    ksize : Sequence[int]
-        The size(s) of sliding window.
-    strides : Sequence[int]
-        The stride(s) of sliding window.
-    padding : Union[str, Sequence[int]]
-        The padding algorithm or padding sizes.
-    data_format : {'NCHW', 'NCDHW', 'NHWC', 'NDHWC'}, optional
-        The optional data format.
+    ksize : Union[int, Sequence[int]]
+        The size of pooling window.
+    strides : Union[int, Sequence[int]]
+        The stride of pooling window.
+    padding : Union[int, Sequence[int], str], optional, default='VALID'
+        The padding algorithm or size.
+    data_format : str, optional, default='NHWC'
+        ``'NCHW'`` or ``'NHWC'``.
     name : str, optional
         The operation name.
 
@@ -610,50 +1154,66 @@ def max_pool(
     num_spatial_dims = num_total_dims - 2
     data_format = data_format if data_format else 'NHWC'
     start_axis = 2 if data_format.startswith('NC') else 1
-    normalize_spatial_args = \
-        functools.partial(
-            _normalize_spatial_args,
-            num_total_dims=num_total_dims,
-            num_spatial_dims=num_spatial_dims,
-            start_axis=start_axis,
-        )
+    normalize_spatial_args = functools.partial(
+        _normalize_spatial_args,
+        num_total_dims=num_total_dims,
+        num_spatial_dims=num_spatial_dims,
+        start_axis=start_axis)
     ksize = normalize_spatial_args('ksize', ksize)
     strides = normalize_spatial_args('strides', strides)
     padding, pads = normalize_spatial_args('padding', padding)
     return getattr(vision_ops, 'pool{}d'.format(num_spatial_dims))(
-        [input],
+        input,
         kernel_shape=ksize[start_axis:start_axis + num_spatial_dims],
         strides=strides[start_axis:start_axis + num_spatial_dims],
         padding=padding,
         pads=pads,
+        mode='max',
         data_format='NCHW' if data_format.startswith('NC') else 'NHWC',
         name=name,
-        mode='MAX',
     )
 
 
-def max_pool2d(
+def max_pool1d(
     input,
     ksize,
     strides,
-    padding,
+    padding='VALID',
     data_format='NHWC',
     name=None,
 ):
-    """Apply the 2d max pooling.
+    r"""Apply the 1d max pooling.
+
+    * If :attr:`data_format` is ``'NCHW'``, excepts input shape
+      :math:`(N, C, H)`, and output shape is
+      :math:`(N, C, H_{\text{out}})`.
+
+    * If :attr:`data_format` is ``'NHWC'``, excepts input shape
+      :math:`(N, H, C)`, and output shape is
+      :math:`(N, H_{\text{out}}, C)`.
+
+    * :attr:`padding` could be ``'VALID'``, ``'SAME'`` or explicit padding size.
+
+    Examples:
+
+    ```python
+    x = tf.ones((1, 2, 2))
+    y = tf.nn.max_pool1d(x, ksize=2, strides=2)
+    assert y.shape == (1, 1, 2)
+    ```
 
     Parameters
     ----------
     input : dragon.Tensor
         The input tensor.
-    ksize : Sequence[int]
-        The size(s) of sliding window.
-    strides : Sequence[int], optional
-        The stride(s) of sliding window.
-    padding : Union[str, Sequence[int]]
-        The padding algorithm or padding size(s).
-    data_format : {'NCHW', 'NCDHW', 'NHWC', 'NDHWC'}, optional
-        The optional data format.
+    ksize : Union[int, Sequence[int]]
+        The size of pooling window.
+    strides : Union[int, Sequence[int]]
+        The stride of pooling window.
+    padding : Union[int, Sequence[int], str], optional, default='VALID'
+        The padding algorithm or size.
+    data_format : str, optional, default='NHWC'
+        ``'NCHW'`` or ``'NHWC'``.
     name : str, optional
         The operation name.
 
@@ -664,10 +1224,129 @@ def max_pool2d(
 
     """
     start_axis = 2 if data_format.startswith('NC') else 1
-    ksize = _normalize_spatial_args('ksize', ksize, 4, 2, start_axis)
     return max_pool(
         input=input,
-        ksize=ksize,
+        ksize=_normalize_spatial_args('ksize', ksize, 3, 1, start_axis),
+        strides=strides,
+        padding=padding,
+        data_format=data_format,
+        name=name,
+    )
+
+
+def max_pool2d(
+    input,
+    ksize,
+    strides,
+    padding='VALID',
+    data_format='NHWC',
+    name=None,
+):
+    r"""Apply the 2d max pooling.
+
+    * If :attr:`data_format` is ``'NCHW'``, excepts input shape
+      :math:`(N, C, H, W)`, and output shape is
+      :math:`(N, C, H_{\text{out}}, W_{\text{out}})`.
+
+    * If :attr:`data_format` is ``'NHWC'``, excepts input shape
+      :math:`(N, H, W, C)`, and output shape is
+      :math:`(N, H_{\text{out}}, W_{\text{out}}, C)`.
+
+    * :attr:`padding` could be ``'VALID'``, ``'SAME'`` or explicit padding size.
+
+    Examples:
+
+    ```python
+    x = tf.ones((1, 2, 2, 2))
+    y = tf.nn.max_pool2d(x, ksize=2, strides=2)
+    assert y.shape == (1, 1, 1, 2)
+    ```
+
+    Parameters
+    ----------
+    input : dragon.Tensor
+        The input tensor.
+    ksize : Union[int, Sequence[int]]
+        The size of pooling window.
+    strides : Union[int, Sequence[int]], optional
+        The stride of pooling window.
+    padding : Union[int, Sequence[int], str], optional, default='VALID'
+        The padding algorithm or size.
+    data_format : str, optional, default='NHWC'
+        ``'NCHW'`` or ``'NHWC'``.
+    name : str, optional
+        The operation name.
+
+    Returns
+    -------
+    dragon.Tensor
+        The output tensor.
+
+    """
+    start_axis = 2 if data_format.startswith('NC') else 1
+    return max_pool(
+        input=input,
+        ksize=_normalize_spatial_args('ksize', ksize, 4, 2, start_axis),
+        strides=strides,
+        padding=padding,
+        data_format=data_format,
+        name=name,
+    )
+
+
+def max_pool3d(
+    input,
+    ksize,
+    strides,
+    padding='VALID',
+    data_format='NHWC',
+    name=None,
+):
+    r"""Apply the 3d max pooling.
+
+    * If :attr:`data_format` is ``'NCHW'``, excepts input shape
+      :math:`(N, C, D, H, W)`, and output shape is
+      :math:`(N, C, D_{\text{out}}, H_{\text{out}}, W_{\text{out}})`.
+
+    * If :attr:`data_format` is ``'NHWC'``, excepts input shape
+      :math:`(N, D, H, W, C)`, and output shape is
+      :math:`(N, D_{\text{out}}, H_{\text{out}}, W_{\text{out}}, C)`.
+
+    * :attr:`padding` could be ``'VALID'``, ``'SAME'`` or explicit padding size.
+
+    Examples:
+
+    ```python
+    x = tf.ones((1, 2, 2, 2, 2))
+    y = tf.nn.max_pool3d(x, ksize=2, strides=2)
+    assert y.shape == (1, 1, 1, 1, 2)
+    ```
+
+    Parameters
+    ----------
+    input : dragon.Tensor
+        The input tensor.
+    ksize : Union[int, Sequence[int]]
+        The size of pooling window.
+    strides : Union[int, Sequence[int]]
+        The stride of pooling window.
+    padding : Union[int, Sequence[int], str], optional, default='VALID'
+        The padding algorithm or size.
+    data_format : str, optional, default='NHWC'
+        ``'NCHW'`` or ``'NHWC'``.
+    name : str, optional
+        The operation name.
+
+    Returns
+    -------
+    dragon.Tensor
+        The output tensor.
+
+    """
+    start_axis = 2 if data_format.startswith('NC') else 1
+    return max_pool(
+        input=input,
+        ksize=_normalize_spatial_args('ksize', ksize, 5, 3, start_axis),
         strides=strides,
         padding=padding,
         data_format=data_format,
@@ -913,7 +1592,14 @@ def _normalize_spatial_args(
             values = nest.flatten(values)
             if len(values) != num_total_dims:
                 defaults, n_provides = [1] * num_total_dims, len(values)
-                defaults[start_axis:start_axis + n_provides] = values
+                if n_provides != num_spatial_dims:
+                    if n_provides == 1:
+                        values = values * num_spatial_dims
+                    else:
+                        raise ValueError(
+                            'Except 1, {} or {} values for <{}>.'
+                            .format(num_spatial_dims, num_spatial_dims * 2, name))
+                defaults[start_axis:start_axis + len(values)] = values
                 return defaults
             return values
     elif name == 'padding':
@@ -935,8 +1621,7 @@ def _normalize_spatial_args(
             else:
                 raise ValueError(
                     'Except 1, {} or {} values if <padding> set as explict pads.'
-                    .format(num_spatial_dims, num_spatial_dims * 2)
-                )
+                    .format(num_spatial_dims, num_spatial_dims * 2))
         return padding, pads
     elif name == 'output_shape':
         if values is not None:
@@ -954,6 +1639,5 @@ def _normalize_spatial_args(
                 else:
                     raise ValueError(
                         'Except {} or {} values for <output_shape>.'
-                        .format(num_spatial_dims, num_spatial_dims * 2)
-                    )
+                        .format(num_spatial_dims, num_spatial_dims * 2))
         return values

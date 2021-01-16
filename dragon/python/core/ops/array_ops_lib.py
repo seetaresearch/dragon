@@ -25,19 +25,45 @@ class ArgReduce(Operator):
         super(ArgReduce, self).__init__(key, dev, **kwargs)
         self.op_type = kwargs.get('op_type', 'ArgMax')
         self.axis = kwargs.get('axis', None)
-        self.keep_dims = kwargs.get('keep_dims', True)
+        self.keepdims = kwargs.get('keepdims', True)
 
     def attributes(self):
         return {
             'op_type': self.op_type,
             'arguments': {
                 'axis': self.axis,
-                'keep_dims': self.keep_dims,
+                'keepdims': self.keepdims,
             }
         }
 
     def forward(self, inputs):
         return self.dispatch(inputs, [self.alloc()], no_grad=True)
+
+
+class Assign(Operator):
+    """Assign operator."""
+
+    def attributes(self):
+        return {
+            'op_type': 'Assign',
+            'arguments': {
+                'starts_desc': '${HANDLE}/starts',
+                'sizes_desc': '${HANDLE}/sizes',
+            },
+        }
+
+    def setup(self, ws, handle, starts, sizes):
+        self.feed_arg(ws, '%s/starts' % handle, starts, 'int64')
+        self.feed_arg(ws, '%s/sizes' % handle, sizes, 'int64')
+
+    def forward(self, inputs, starts, sizes, inplace=False):
+        outputs = [self.alloc(inputs[0]) if inplace else self.alloc()]
+        return self.dispatch(
+            inputs, outputs,
+            callback=lambda ws, handle:
+                self.setup(ws, handle, starts, sizes),
+            no_grad=True,
+        )
 
 
 class Cast(Operator):
@@ -320,6 +346,14 @@ class LinSpace(Operator):
         return out
 
 
+class MaskedAssign(Operator):
+    """MaskedAssign operator."""
+
+    def forward(self, inputs, inplace=False):
+        outputs = [self.alloc(inputs[0]) if inplace else self.alloc()]
+        return self.dispatch(inputs, outputs, no_grad=True)
+
+
 class MaskedSelect(Operator):
     """MaskedSelect operator."""
 
@@ -333,14 +367,14 @@ class Moments(Operator):
     def __init__(self, key, dev, **kwargs):
         super(Moments, self).__init__(key, dev, **kwargs)
         self.axes = kwargs.get('axes', None)
-        self.keep_dims = kwargs.get('keep_dims', True)
+        self.keepdims = kwargs.get('keepdims', True)
 
     def attributes(self):
         return {
             'op_type': 'Moments',
             'arguments': {
                 'axes': self.axes,
-                'keep_dims': self.keep_dims,
+                'keepdims': self.keepdims,
             }
         }
 
@@ -498,7 +532,7 @@ class Reduce(Operator):
     def __init__(self, key, dev, **kwargs):
         super(Reduce, self).__init__(key, dev, **kwargs)
         self.axes = kwargs.get('axes', None)
-        self.keep_dims = kwargs.get('keep_dims', True)
+        self.keepdims = kwargs.get('keepdims', True)
         self.operation = kwargs.get('operation', 'Sum')
 
     def attributes(self):
@@ -506,7 +540,7 @@ class Reduce(Operator):
             'op_type': 'Reduce' + self.operation,
             'arguments': {
                 'axes': self.axes,
-                'keep_dims': self.keep_dims,
+                'keepdims': self.keepdims,
             }
         }
 

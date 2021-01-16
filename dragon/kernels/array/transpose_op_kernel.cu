@@ -13,14 +13,14 @@ namespace {
 template <typename T, int D>
 __global__ void _Transpose(
     const int nthreads,
-    const int ndims,
+    const int num_dims,
     const SimpleArray<int, D> x_strides,
     const SimpleArray<int, D> y_dims,
     const T* x,
     T* y) {
   CUDA_1D_KERNEL_LOOP(yi, nthreads) {
     int xi = 0, tmp = yi;
-    for (int d = ndims - 1; d >= 0; --d) {
+    for (int d = num_dims - 1; d >= 0; --d) {
       int r;
       FIXED_DIVISOR_DIV_MOD(y_dims.data[d], tmp, &tmp, &r);
       xi += r * x_strides.data[d];
@@ -32,14 +32,14 @@ __global__ void _Transpose(
 template <typename T, int D>
 __global__ void _TransposeGrad(
     const int nthreads,
-    const int ndims,
+    const int num_dims,
     const SimpleArray<int, D> x_strides,
     const SimpleArray<int, D> y_dims,
     const T* dy,
     T* dx) {
   CUDA_1D_KERNEL_LOOP(yi, nthreads) {
     int xi = 0, tmp = yi;
-    for (int d = ndims - 1; d >= 0; --d) {
+    for (int d = num_dims - 1; d >= 0; --d) {
       int r;
       FIXED_DIVISOR_DIV_MOD(y_dims.data[d], tmp, &tmp, &r);
       xi += r * x_strides.data[d];

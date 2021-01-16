@@ -21,7 +21,7 @@ from dragon.vm.tensorlayer.core.layers.convolution import conv_utils
 
 
 class Conv2d(layer.Layer):
-    r"""The 2d convolution layer.
+    r"""2d convolution layer.
 
     Examples:
 
@@ -54,25 +54,25 @@ class Conv2d(layer.Layer):
         n_filter : int, required
             The number of output filters.
         filter_size : Sequence[int], optional, default=3
-            The size of filter.
-        strides : Sequence[int], optional, default=1
-            The stride(s) of sliding window.
+            The size of convolution window.
+        strides : Union[int, Sequence[int]], optional, default=1
+            The stride of convolution window.
         act : callable, optional
             The optional activation function.
-        padding : Union[{'VALID', 'SAME'}, Sequence[int]]
-            The padding algorithm or padding sizes.
-        data_format : {'channels_first', 'channels_last'}, optional
-             The optional data format.
+        padding : Union[int, Sequence[int], str], optional, default='SAME'
+            The padding algorithm or size.
+        data_format : str, optional, default='channels_first'
+            ``'channels_first'`` or ``'channels_last'``.
         dilation_rate : Sequence[int], optional
-            The rate(s) of dilated kernel.
+            The rate of dilated convolution.
         W_init : Union[callable, str], optional
-            The initializer for weight matrix.
+            The initializer for weight tensor.
         b_init : Union[callable, str], optional
-            The initializer for bias vector.
+            The initializer for bias tensor.
         in_channels : int, optional
             The number of input channels.
         name : str, optional
-            The optional layer name.
+            The layer name.
 
         """
         super().__init__(name, act)
@@ -114,9 +114,11 @@ class Conv2d(layer.Layer):
                 self.in_channels = inputs_shape[-1]
             else:
                 self.in_channels = inputs_shape[1]
-        # Fake shape with ``channels_first`` format,
-        # to indicate the backend to compute fans correctly.
-        filter_shape = [self.n_filter, self.in_channels] + self.filter_size
+        filter_shape = [self.n_filter] + list(self.filter_size)
+        if self.data_format == 'channels_first':
+            filter_shape.insert(1, self.in_channels)
+        else:
+            filter_shape.append(self.in_channels)
         self.W = self.add_weight(
             name='filters',
             shape=filter_shape,

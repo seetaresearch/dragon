@@ -15,45 +15,64 @@ void ResizeOp<Context>::DoRunWithType() {
   Buffer("in_dims")->template CopyFrom<int64_t>(in_dims_);
   Buffer("out_dims")->template CopyFrom<int64_t>(out_dims_);
 
-  if (out_dims_.size() == 2) {
-    if (mode_ == "NEAREST") {
-      kernel::ResizeNearest(
+  // Dispatch kernel according to mode and dimensions
+  if (mode_ == "NEAREST") {
+    if (out_dims_.size() == 1 || out_dims_.size() == 2) {
+      kernel::ResizeNearest2d(
           in_dims_[0],
           in_dims_[1],
           in_dims_[2],
-          in_dims_[3],
+          out_dims_.size() == 1 ? 1 : in_dims_[3],
           out_dims_[0],
-          out_dims_[1],
+          out_dims_.size() == 1 ? 1 : out_dims_[1],
           data_format(),
           X.template data<T, Context>(),
           Y->Reshape(out_shape_)->template mutable_data<T, Context>(),
           ctx());
-    } else if (mode_ == "LINEAR") {
-      kernel::ResizeLinear(
+    } else if (out_dims_.size() == 3) {
+      kernel::ResizeNearest3d(
           in_dims_[0],
           in_dims_[1],
           in_dims_[2],
           in_dims_[3],
+          in_dims_[4],
           out_dims_[0],
           out_dims_[1],
+          out_dims_[2],
+          data_format(),
+          X.template data<T, Context>(),
+          Y->Reshape(out_shape_)->template mutable_data<T, Context>(),
+          ctx());
+    } else {
+      LOG(FATAL) << "ResizeNearest" << out_dims_.size()
+                 << "d is not supported.";
+    }
+  } else if (mode_ == "LINEAR") {
+    if (out_dims_.size() == 1 || out_dims_.size() == 2) {
+      kernel::ResizeLinear2d(
+          in_dims_[0],
+          in_dims_[1],
+          in_dims_[2],
+          out_dims_.size() == 1 ? 1 : in_dims_[3],
+          out_dims_[0],
+          out_dims_.size() == 1 ? 1 : out_dims_[1],
           align_corners_ > 0,
           data_format(),
           X.template data<T, Context>(),
           Y->Reshape(out_shape_)->template mutable_data<T, Context>(),
           ctx());
     } else {
-      LOG(FATAL) << "Unknown interpolation mode: " << mode_;
+      LOG(FATAL) << "ResizeLinear" << out_dims_.size() << "d is not supported.";
     }
   } else {
-    LOG(FATAL) << "Resize" << out_dims_.size() << "d is not supported.";
+    LOG(FATAL) << "Unknown interpolation mode: " << mode_;
   }
 }
 
 template <class Context>
 void ResizeOp<Context>::RunOnDevice() {
   auto& X = Input(0);
-  CHECK(X.ndim() >= 3 && X.ndim() <= 5)
-      << "\nOnly 3d/4d/5d input are supported.";
+  CHECK(X.ndim() >= 3) << "\nExcept 3 or more dimensions.";
 
   int axis = 1;
   int num_axes = X.ndim() - 2;
@@ -117,75 +136,73 @@ void ResizeOp<Context>::RunOnDevice() {
 }
 
 template <class Context>
-template <typename Ty, typename Tx>
-void ResizeGradientOp<Context>::NearestImpl(const Ty* dy, Tx* dx) {
-  if (out_dims_.size() == 2) {
-    kernel::ResizeNearestGrad(
-        in_dims_[0],
-        in_dims_[1],
-        in_dims_[2],
-        in_dims_[3],
-        out_dims_[0],
-        out_dims_[1],
-        data_format(),
-        dy,
-        dx,
-        ctx());
-  } else {
-    LOG(FATAL) << "Resize" << out_dims_.size() << "d is not supported.";
-  }
-}
-
-template <class Context>
-template <typename Ty, typename Tx>
-void ResizeGradientOp<Context>::LinearImpl(const Ty* dy, Tx* dx) {
-  if (out_dims_.size() == 2) {
-    kernel::ResizeLinearGrad(
-        in_dims_[0],
-        in_dims_[1],
-        in_dims_[2],
-        in_dims_[3],
-        out_dims_[0],
-        out_dims_[1],
-        align_corners_ > 0,
-        data_format(),
-        dy,
-        dx,
-        ctx());
-  } else {
-    LOG(FATAL) << "Resize" << out_dims_.size() << "d is not supported.";
-  }
-}
-
-template <class Context>
 template <typename T>
 void ResizeGradientOp<Context>::DoRunWithType() {
-  auto* dy = Input(0).template data<T, Context>();
-  auto* dx = Output(0)->template mutable_data<T, Context>();
-  if (mode_ == "NEAREST") {
-    NearestImpl(dy, dx);
-  } else if (mode_ == "LINEAR") {
-    LinearImpl(dy, dx);
-  } else {
-    LOG(FATAL) << "Unknown interpolation mode: " << mode_;
-  }
-}
+  auto &dY = Input(0), *dX = Output(0);
 
-template <class Context>
-template <typename T>
-void ResizeGradientOp<Context>::DoRunWithTypeAndCast() {
-  auto* dy = Input(0).template data<T, Context>();
-  auto* dx = Output(0)->template mutable_data<T, Context>();
-  auto* scratch = ctx()->workspace()->template data<float, Context>(
-      {Output(0)->count()})[0];
+  auto* dy = dY.template data<T, Context>();
+  auto* dx = dX->template mutable_data<T, Context>();
+  auto* dx_acc = (TypeMeta::Id<T>() == TypeMeta::Id<float>())
+      ? (float*)nullptr
+      : ctx()->workspace()->template data<float, Context>({dX->count()})[0];
+
+  // Accumulate gradient to dX or a float32 buffer
   if (mode_ == "NEAREST") {
-    NearestImpl(dy, scratch);
+    if (out_dims_.size() == 1 || out_dims_.size() == 2) {
+      kernel::ResizeNearest2dGrad(
+          in_dims_[0],
+          in_dims_[1],
+          in_dims_[2],
+          out_dims_.size() == 1 ? 1 : in_dims_[3],
+          out_dims_[0],
+          out_dims_.size() == 1 ? 1 : out_dims_[1],
+          data_format(),
+          dy,
+          dx_acc != nullptr ? dx_acc : reinterpret_cast<float*>(dx),
+          ctx());
+    } else if (out_dims_.size() == 3) {
+      kernel::ResizeNearest3dGrad(
+          in_dims_[0],
+          in_dims_[1],
+          in_dims_[2],
+          in_dims_[3],
+          in_dims_[4],
+          out_dims_[0],
+          out_dims_[1],
+          out_dims_[2],
+          data_format(),
+          dy,
+          dx_acc != nullptr ? dx_acc : reinterpret_cast<float*>(dx),
+          ctx());
+    } else {
+      LOG(FATAL) << "ResizeNearest" << out_dims_.size()
+                 << "d is not supported.";
+    }
   } else if (mode_ == "LINEAR") {
-    LinearImpl(dy, scratch);
+    if (out_dims_.size() == 1 || out_dims_.size() == 2) {
+      kernel::ResizeLinear2dGrad(
+          in_dims_[0],
+          in_dims_[1],
+          in_dims_[2],
+          out_dims_.size() == 1 ? 1 : in_dims_[3],
+          out_dims_[0],
+          out_dims_.size() == 1 ? 1 : out_dims_[1],
+          align_corners_ > 0,
+          data_format(),
+          dy,
+          dx_acc != nullptr ? dx_acc : reinterpret_cast<float*>(dx),
+          ctx());
+    } else {
+      LOG(FATAL) << "ResizeLinear" << out_dims_.size() << "d is not supported.";
+    }
   } else {
     LOG(FATAL) << "Unknown interpolation mode: " << mode_;
   }
-  math::Cast(Output(0)->count(), scratch, dx, ctx());
+
+  // Convert buffer data to dX if necessary
+  if (dx_acc != nullptr) {
+    math::Cast(dX->count(), dx_acc, dx, ctx());
+  }
 }
 
 template <class Context>
@@ -193,17 +210,7 @@ void ResizeGradientOp<Context>::RunOnDevice() {
   Output(0)->ReshapeLike(RESTORE_INPUT_SPEC(0));
   Buffer("in_dims")->template CopyTo<int64_t>(in_dims_);
   Buffer("out_dims")->template CopyTo<int64_t>(out_dims_);
-
-  if (Input(0).template IsType<float16>()) {
-    DoRunWithTypeAndCast<float16>();
-  } else if (Input(0).template IsType<float>()) {
-    DoRunWithType<float>();
-  } else if (Input(0).template IsType<double>()) {
-    DoRunWithTypeAndCast<double>();
-  } else {
-    LOG(FATAL) << MessageForUnsupported(
-        types::to_string(Input(0).meta()), {"float16", "float32", "float64"});
-  };
+  DispatchHelper<FloatingTensorTypes>::Call(this, Input(0));
 }
 
 DEPLOY_CPU_OPERATOR(Resize);

@@ -47,13 +47,13 @@ class RMSprop(optimizer.Optimizer):
         Parameters
         ----------
         learning_rate : float, optional, default=0.001
-            The initial value for :math:`\text{lr}`.
+            The initial value to :math:`\text{lr}`.
         rho : float, optional, default=0.9
-            The initial value for :math:`\alpha`.
+            The initial value to :math:`\alpha`.
         momentum : float, optional, default=0
-            The initial value for :math:`\text{momentum}`.
+            The initial value to :math:`\text{momentum}`.
         epsilon : float, optional, default=1e-7
-            The initial value for :math:`\epsilon`.
+            The initial value to :math:`\epsilon`.
         name : str, optional
             The optional optimizer name.
 

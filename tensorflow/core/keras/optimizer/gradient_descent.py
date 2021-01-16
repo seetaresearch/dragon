@@ -73,9 +73,9 @@ class SGD(optimizer.Optimizer):
         Parameters
         ----------
         learning_rate : float, optional, default=0.01
-            The initial value for :math:`\text{lr}`.
+            The initial value to :math:`\text{lr}`.
         momentum : float, optional, default=0
-            The initial value for :math:`\text{momentum}`.
+            The initial value to :math:`\text{momentum}`.
         nesterov : bool, optional, default=False
             **True** to switch to **NesterovSGD** optimizer.
         name : str, optional

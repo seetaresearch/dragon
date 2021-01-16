@@ -7,35 +7,34 @@ namespace dragon {
 #define ELIGIBLE_TENSOR_TYPES \
   { "bool", "int8", "uint8", "int32", "int64", "float16", "float32", "float64" }
 
-#define DISPATCH_TYPE_TO(InputType, OutputType)                           \
-  if (dtype() == types::to_string<OutputType>()) {                        \
-    if (InputSize() != 0) {                                               \
-      Output(0)->ReshapeLike(Input(0));                                   \
-      auto* x = Input(0).template data<InputType, Context>();             \
-      auto* y = Output(0)->template mutable_data<OutputType, Context>();  \
-      math::Cast(Input(0).count(), x, y, ctx());                          \
-    } else {                                                              \
-      auto n = Output(0)->count();                                        \
-      auto* x = Output(0)->template data<InputType, Context>();           \
-      auto* scratch =                                                     \
-          ctx()->workspace()->template data<OutputType, Context>({n})[0]; \
-      math::Cast(n, x, scratch, ctx());                                   \
-      ctx()->FinishDeviceComputation();                                   \
-      auto* y = Output(0)->template mutable_data<OutputType, Context>();  \
-      math::Copy(n, scratch, y, ctx());                                   \
-    }                                                                     \
-    return;                                                               \
+#define DISPATCH_TYPE_TO(InputT, OutputT)                                    \
+  if (dtype() == types::to_string<OutputT>()) {                              \
+    if (InputSize() != 0) {                                                  \
+      Output(0)->ReshapeLike(Input(0));                                      \
+      auto* x = Input(0).template data<InputT, Context>();                   \
+      auto* y = Output(0)->template mutable_data<OutputT, Context>();        \
+      math::Cast(Input(0).count(), x, y, ctx());                             \
+    } else {                                                                 \
+      auto n = Output(0)->count();                                           \
+      auto* x = Output(0)->template data<InputT, Context>();                 \
+      auto* y = ctx()->workspace()->template data<OutputT, Context>({n})[0]; \
+      math::Cast(n, x, y, ctx());                                            \
+      ctx()->FinishDeviceComputation();                                      \
+      auto* z = Output(0)->template mutable_data<OutputT, Context>();        \
+      math::Copy(n, y, z, ctx());                                            \
+    }                                                                        \
+    return;                                                                  \
   }
 
-#define DISPATCH_TYPE_TO_ALL(InputType) \
-  DISPATCH_TYPE_TO(InputType, bool);    \
-  DISPATCH_TYPE_TO(InputType, int8_t);  \
-  DISPATCH_TYPE_TO(InputType, uint8_t); \
-  DISPATCH_TYPE_TO(InputType, int);     \
-  DISPATCH_TYPE_TO(InputType, int64_t); \
-  DISPATCH_TYPE_TO(InputType, float16); \
-  DISPATCH_TYPE_TO(InputType, float);   \
-  DISPATCH_TYPE_TO(InputType, double);  \
+#define DISPATCH_TYPE_TO_ALL(InputT) \
+  DISPATCH_TYPE_TO(InputT, bool);    \
+  DISPATCH_TYPE_TO(InputT, int8_t);  \
+  DISPATCH_TYPE_TO(InputT, uint8_t); \
+  DISPATCH_TYPE_TO(InputT, int);     \
+  DISPATCH_TYPE_TO(InputT, int64_t); \
+  DISPATCH_TYPE_TO(InputT, float16); \
+  DISPATCH_TYPE_TO(InputT, float);   \
+  DISPATCH_TYPE_TO(InputT, double);  \
   LOG(FATAL) << MessageForUnsupported(dtype(), ELIGIBLE_TENSOR_TYPES);
 
 #define DISPATCH_WITH_TENSOR(X)                             \

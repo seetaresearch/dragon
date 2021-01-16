@@ -14,11 +14,17 @@ from __future__ import absolute_import as _absolute_import
 from __future__ import division as _division
 from __future__ import print_function as _print_function
 
+from dragon.vm.torch.core.nn.functional import avg_pool1d
 from dragon.vm.torch.core.nn.functional import avg_pool2d
+from dragon.vm.torch.core.nn.functional import avg_pool3d
 from dragon.vm.torch.core.nn.functional import batch_norm
 from dragon.vm.torch.core.nn.functional import binary_cross_entropy_with_logits
+from dragon.vm.torch.core.nn.functional import conv1d
 from dragon.vm.torch.core.nn.functional import conv2d
+from dragon.vm.torch.core.nn.functional import conv3d
+from dragon.vm.torch.core.nn.functional import conv_transpose1d
 from dragon.vm.torch.core.nn.functional import conv_transpose2d
+from dragon.vm.torch.core.nn.functional import conv_transpose3d
 from dragon.vm.torch.core.nn.functional import cross_entropy
 from dragon.vm.torch.core.nn.functional import ctc_loss
 from dragon.vm.torch.core.nn.functional import depthwise_conv2d
@@ -36,7 +42,9 @@ from dragon.vm.torch.core.nn.functional import linear
 from dragon.vm.torch.core.nn.functional import local_response_norm
 from dragon.vm.torch.core.nn.functional import log_softmax
 from dragon.vm.torch.core.nn.functional import interpolate
+from dragon.vm.torch.core.nn.functional import max_pool1d
 from dragon.vm.torch.core.nn.functional import max_pool2d
+from dragon.vm.torch.core.nn.functional import max_pool3d
 from dragon.vm.torch.core.nn.functional import mse_loss
 from dragon.vm.torch.core.nn.functional import nll_loss
 from dragon.vm.torch.core.nn.functional import normalize

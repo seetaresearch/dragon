@@ -147,7 +147,7 @@ __global__ void _L2NormalizeGrad(
 
 /* ------------------- Launcher Separator ------------------- */
 
-#define DEFINE_KERNEL_LAUNCHER(name, T, ScalarT, AccT)                      \
+#define DEFINE_KERNEL_LAUNCHER(name, T, AccT)                               \
   template <>                                                               \
   void name<T, CUDAContext>(                                                \
       const int outer_dim,                                                  \
@@ -159,18 +159,18 @@ __global__ void _L2NormalizeGrad(
       T* y,                                                                 \
       CUDAContext* ctx) {                                                   \
     const auto nblocks = outer_dim * inner_dim;                             \
-    _##name<ScalarT, AccT>                                                  \
+    _##name<math::ScalarType<T>::type, AccT>                                \
         <<<CUDA_2D_BLOCKS(nblocks), CUDA_THREADS, 0, ctx->cuda_stream()>>>( \
             nblocks,                                                        \
             inner_dim,                                                      \
             reduce_dim,                                                     \
             AccT(normalizer),                                               \
             AccT(epsilon),                                                  \
-            reinterpret_cast<const ScalarT*>(x),                            \
-            reinterpret_cast<ScalarT*>(y));                                 \
+            reinterpret_cast<const math::ScalarType<T>::type*>(x),          \
+            reinterpret_cast<math::ScalarType<T>::type*>(y));               \
   }
 
-#define DEFINE_GRAD_KERNEL_LAUNCHER(name, T, ScalarT, AccT)                 \
+#define DEFINE_GRAD_KERNEL_LAUNCHER(name, T, AccT)                          \
   template <>                                                               \
   void name<T, CUDAContext>(                                                \
       const int outer_dim,                                                  \
@@ -183,30 +183,30 @@ __global__ void _L2NormalizeGrad(
       T* dx,                                                                \
       CUDAContext* ctx) {                                                   \
     const auto nblocks = outer_dim * inner_dim;                             \
-    _##name<ScalarT, AccT>                                                  \
+    _##name<math::ScalarType<T>::type, AccT>                                \
         <<<CUDA_2D_BLOCKS(nblocks), CUDA_THREADS, 0, ctx->cuda_stream()>>>( \
             nblocks,                                                        \
             inner_dim,                                                      \
             reduce_dim,                                                     \
             AccT(normalizer),                                               \
             AccT(epsilon),                                                  \
-            reinterpret_cast<const ScalarT*>(dy),                           \
-            reinterpret_cast<const ScalarT*>(x),                            \
-            reinterpret_cast<ScalarT*>(dx));                                \
+            reinterpret_cast<const math::ScalarType<T>::type*>(dy),         \
+            reinterpret_cast<const math::ScalarType<T>::type*>(x),          \
+            reinterpret_cast<math::ScalarType<T>::type*>(dx));              \
   }
 
-DEFINE_KERNEL_LAUNCHER(L1Normalize, float16, half, float);
-DEFINE_KERNEL_LAUNCHER(L1Normalize, float, float, float);
-DEFINE_KERNEL_LAUNCHER(L1Normalize, double, double, double);
-DEFINE_KERNEL_LAUNCHER(L2Normalize, float16, half, float);
-DEFINE_KERNEL_LAUNCHER(L2Normalize, float, float, float);
-DEFINE_KERNEL_LAUNCHER(L2Normalize, double, double, double);
-DEFINE_GRAD_KERNEL_LAUNCHER(L1NormalizeGrad, float16, half, float);
-DEFINE_GRAD_KERNEL_LAUNCHER(L1NormalizeGrad, float, float, float);
-DEFINE_GRAD_KERNEL_LAUNCHER(L1NormalizeGrad, double, double, double);
-DEFINE_GRAD_KERNEL_LAUNCHER(L2NormalizeGrad, float16, half, float);
-DEFINE_GRAD_KERNEL_LAUNCHER(L2NormalizeGrad, float, float, float);
-DEFINE_GRAD_KERNEL_LAUNCHER(L2NormalizeGrad, double, double, double);
+DEFINE_KERNEL_LAUNCHER(L1Normalize, float16, float);
+DEFINE_KERNEL_LAUNCHER(L1Normalize, float, float);
+DEFINE_KERNEL_LAUNCHER(L1Normalize, double, double);
+DEFINE_KERNEL_LAUNCHER(L2Normalize, float16, float);
+DEFINE_KERNEL_LAUNCHER(L2Normalize, float, float);
+DEFINE_KERNEL_LAUNCHER(L2Normalize, double, double);
+DEFINE_GRAD_KERNEL_LAUNCHER(L1NormalizeGrad, float16, float);
+DEFINE_GRAD_KERNEL_LAUNCHER(L1NormalizeGrad, float, float);
+DEFINE_GRAD_KERNEL_LAUNCHER(L1NormalizeGrad, double, double);
+DEFINE_GRAD_KERNEL_LAUNCHER(L2NormalizeGrad, float16, float);
+DEFINE_GRAD_KERNEL_LAUNCHER(L2NormalizeGrad, float, float);
+DEFINE_GRAD_KERNEL_LAUNCHER(L2NormalizeGrad, double, double);
 #undef DEFINE_KERNEL_LAUNCHER
 #undef DEFINE_GRAD_KERNEL_LAUNCHER
 

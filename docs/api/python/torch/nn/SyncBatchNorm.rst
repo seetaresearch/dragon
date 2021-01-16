@@ -7,7 +7,7 @@ __init__
 --------
 .. automethod:: dragon.vm.torch.nn.SyncBatchNorm.__init__
 
-.. _torch.nn.functional.batch_norm(...): functional/batch_norm.html
+.. _torch.nn.functional.sync_batch_norm(...): functional/sync_batch_norm.html
 
 .. raw:: html
 

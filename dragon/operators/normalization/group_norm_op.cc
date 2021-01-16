@@ -8,7 +8,7 @@ namespace dragon {
 template <class Context>
 template <typename T>
 void GroupNormOp<Context>::DoRunWithType() {
-  using ParamT = typename math::utils::AccmulatorType<T>::type;
+  using ParamT = typename math::AccmulatorType<T>::type;
   TENSOR_FILL_WITH_TYPE(Input(1), vec64_t({C_}), ParamT);
   TENSOR_FILL_WITH_TYPE(Input(2), vec64_t({C_}), ParamT);
 
@@ -55,7 +55,7 @@ void GroupNormOp<Context>::DoRunWithType() {
 
 template <class Context>
 void GroupNormOp<Context>::RunOnDevice() {
-  DetermineBaseArguments();
+  GetBaseArguments();
   Output(0)->ReshapeLike(Input(0));
   DispatchHelper<FloatingTensorTypes>::Call(this, Input(0));
 }
@@ -63,7 +63,7 @@ void GroupNormOp<Context>::RunOnDevice() {
 template <class Context>
 template <typename T>
 void GroupNormGradientOp<Context>::DoRunWithType() {
-  using ParamT = typename math::utils::AccmulatorType<T>::type;
+  using ParamT = typename math::AccmulatorType<T>::type;
   auto *dX = Output(0), *dW = Output(1), *dB = Output(2);
 
   auto *X_mu = Buffer("X_mu"), *X_rsig = Buffer("X_rsig");
@@ -92,7 +92,7 @@ void GroupNormGradientOp<Context>::DoRunWithType() {
 
 template <class Context>
 void GroupNormGradientOp<Context>::RunOnDevice() {
-  DetermineBaseArguments();
+  GetBaseArguments();
   Output(0)->ReshapeLike(Input(0));
   DispatchHelper<FloatingTensorTypes>::Call(this, Input(0));
 }

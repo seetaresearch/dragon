@@ -68,9 +68,7 @@ void CuDNNBatchNormOp<Context>::DoRunWithType() {
 
 template <class Context>
 void CuDNNBatchNormOp<Context>::RunOnDevice() {
-  DetermineBaseArguments();
-
-  // Get the recomputing flag
+  GetBaseArguments();
   auto* flag = workspace()->GetTensor("/share/flag/recomputing");
   is_recomputing_ = flag->template data<bool, CPUContext>()[0] ? 1 : 0;
 
@@ -121,7 +119,7 @@ void CuDNNBatchNormGradientOp<Context>::TrainingImpl() {
 
 template <class Context>
 void CuDNNBatchNormGradientOp<Context>::RunOnDevice() {
-  DetermineBaseArguments();
+  GetBaseArguments();
 
   // Dispatch the training or inference implementation
   Output(0)->ReshapeLike(Input(0));

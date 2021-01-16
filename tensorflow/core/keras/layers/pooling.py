@@ -20,17 +20,17 @@ from __future__ import print_function
 import functools
 
 from dragon.core.ops import vision_ops
-from dragon.vm.tensorflow.core.ops import nn
 from dragon.vm.tensorflow.core.keras.engine.base_layer import Layer
 from dragon.vm.tensorflow.core.keras.engine.input_spec import InputSpec
 from dragon.vm.tensorflow.core.keras.utils import conv_utils
 
 
-class Pooling2D(Layer):
-    """The generic 2d pooling layer."""
+class Pooling(Layer):
+    """Pooling layer."""
 
     def __init__(
         self,
+        rank,
         pool_function,
         pool_size,
         strides,
@@ -39,81 +39,55 @@ class Pooling2D(Layer):
         name=None,
         **kwargs
     ):
-        super(Pooling2D, self).__init__(name=name, **kwargs)
+        super(Pooling, self).__init__(name=name, **kwargs)
         if strides is None:
             strides = pool_size
+        self.rank = rank
         self.pool_function = pool_function
-        self.pool_size = conv_utils.normalize_tuple(pool_size, 2)
-        self.strides = conv_utils.normalize_tuple(strides, 2)
+        self.pool_size = conv_utils.normalize_tuple(pool_size, rank)
+        self.strides = conv_utils.normalize_tuple(strides, rank)
         self.padding = conv_utils.normalize_padding(padding)
         self.data_format = conv_utils.normalize_data_format(data_format)
-        self.input_spec = InputSpec(ndim=4)
+        self.input_spec = InputSpec(ndim=rank + 2)
 
     def call(self, inputs):
-        if self.data_format == 'channels_last':
-            pool_shape = (1,) + self.pool_size + (1,)
-            strides = (1,) + self.strides + (1,)
-        else:
-            pool_shape = (1, 1) + self.pool_size
-            strides = (1, 1) + self.strides
-        outputs = self.pool_function(
+        return self.pool_function(
             inputs,
-            ksize=pool_shape,
-            strides=strides,
-            padding=self.padding,
-            data_format=conv_utils.convert_data_format(self.data_format, 4),
+            kernel_shape=self.pool_size,
+            strides=self.strides,
+            padding=self.padding.upper(),
+            data_format=conv_utils.convert_data_format(self.data_format),
         )
-        return outputs
 
 
-class GlobalPooling2D(Layer):
-    """The generic 2d global pooling layer."""
-
-    def __init__(self, pool_function, data_format=None, **kwargs):
-        super(GlobalPooling2D, self).__init__(**kwargs)
-        self.pool_function = pool_function
-        self.data_format = conv_utils.normalize_data_format(data_format)
-        self.input_spec = InputSpec(ndim=4)
-
-    def call(self, inputs):
-        outputs = self.pool_function(
-            inputs,
-            kernel_shape=1,
-            strides=1,
-            pads=0,
-            global_pooling=True,
-            data_format=conv_utils.convert_data_format(self.data_format, 4),
-        )
-        return outputs
-
-
-class AveragePooling2D(Pooling2D):
-    """The average 2d pooling layer."""
+class AveragePooling1D(Pooling):
+    """1D average pooling layer."""
 
     def __init__(
         self,
-        pool_size=(2, 2),
+        pool_size=2,
         strides=None,
         padding='valid',
-        data_format=None,
+        data_format='channels_last',
         **kwargs
     ):
-        """Create a ``MaxPooling2D`` Layer.
+        """Create a ``AveragePooling1D`` Layer.
 
         Parameters
         ----------
-        pool_size : Sequence[int]
-            The size(s) of sliding window.
+        pool_size : Union[int, Sequence[int]], optional, default=2
+            The size of pooling window.
         strides : Sequence[int], optional
-            The stride(s) of sliding window.
-        padding : Union[str, Sequence[int]], optional
-            The padding algorithm or padding sizes.
-        data_format : {'channels_first', 'channels_last'}, optional
-            The optional data format.
+            The stride of pooling window.
+        padding : Union[int, Sequence[int], str], optional, default='valid'
+            The padding algorithm or size.
+        data_format : str, optional, default='channels_last'
+            ``'channels_first'`` or ``'channels_last'``.
 
         """
-        super(AveragePooling2D, self).__init__(
-            nn.avg_pool2d,
+        super(AveragePooling1D, self).__init__(
+            rank=1,
+            pool_function=functools.partial(vision_ops.pool, mode='avg'),
             pool_size=pool_size,
             strides=strides,
             padding=padding,
@@ -122,50 +96,264 @@ class AveragePooling2D(Pooling2D):
         )
 
 
-class GlobalAveragePooling2D(GlobalPooling2D):
-    """The global average 2d pooling layer."""
+class AveragePooling2D(Pooling):
+    """2D average pooling layer."""
+
+    def __init__(
+        self,
+        pool_size=2,
+        strides=None,
+        padding='valid',
+        data_format='channels_last',
+        **kwargs
+    ):
+        """Create a ``AveragePooling2D`` Layer.
+
+        Parameters
+        ----------
+        pool_size : Union[int, Sequence[int]], optional, default=2
+            The size of pooling window.
+        strides : Sequence[int], optional
+            The stride of pooling window.
+        padding : Union[int, Sequence[int], str], optional, default='valid'
+            The padding algorithm or size.
+        data_format : str, optional, default='channels_last'
+            ``'channels_first'`` or ``'channels_last'``.
+
+        """
+        super(AveragePooling2D, self).__init__(
+            rank=2,
+            pool_function=functools.partial(vision_ops.pool, mode='avg'),
+            pool_size=pool_size,
+            strides=strides,
+            padding=padding,
+            data_format=data_format,
+            **kwargs
+        )
+
+
+class AveragePooling3D(Pooling):
+    """3D average pooling layer."""
+
+    def __init__(
+        self,
+        pool_size=2,
+        strides=None,
+        padding='valid',
+        data_format='channels_last',
+        **kwargs
+    ):
+        """Create a ``AveragePooling3D`` Layer.
+
+        Parameters
+        ----------
+        pool_size : Union[int, Sequence[int]], optional, default=2
+            The size of pooling window.
+        strides : Sequence[int], optional
+            The stride of pooling window.
+        padding : Union[int, Sequence[int], str], optional, default='valid'
+            The padding algorithm or size.
+        data_format : str, optional, default='channels_last'
+            ``'channels_first'`` or ``'channels_last'``.
+
+        """
+        super(AveragePooling3D, self).__init__(
+            rank=3,
+            pool_function=functools.partial(vision_ops.pool, mode='avg'),
+            pool_size=pool_size,
+            strides=strides,
+            padding=padding,
+            data_format=data_format,
+            **kwargs
+        )
+
+
+class GlobalAveragePooling1D(Pooling):
+    """1D global average pooling layer."""
+
+    def __init__(self, data_format=None, **kwargs):
+        """Create a ``GlobalAveragePooling1D`` Layer.
+
+        Parameters
+        ----------
+        data_format : str, optional, default='channels_last'
+            ``'channels_first'`` or ``'channels_last'``.
+
+        """
+        super(GlobalAveragePooling1D, self).__init__(
+            rank=1,
+            pool_function=functools.partial(
+                vision_ops.pool, mode='avg', global_pool=True),
+            pool_size=0,
+            strides=1,
+            padding='valid',
+            data_format=data_format,
+            **kwargs
+        )
+
+
+class GlobalAveragePooling2D(Pooling):
+    """2D global average pooling layer."""
 
     def __init__(self, data_format=None, **kwargs):
         """Create a ``GlobalAveragePooling2D`` Layer.
 
         Parameters
         ----------
-        data_format : {'channels_first', 'channels_last'}, optional
-            The optional data format.
+        data_format : str, optional, default='channels_last'
+            ``'channels_first'`` or ``'channels_last'``.
 
         """
         super(GlobalAveragePooling2D, self).__init__(
-            functools.partial(vision_ops.pool2d, mode='AVG'),
+            rank=2,
+            pool_function=functools.partial(
+                vision_ops.pool, mode='avg', global_pool=True),
+            pool_size=0,
+            strides=1,
+            padding='valid',
             data_format=data_format,
             **kwargs
         )
 
 
-class GlobalMaxPooling2D(GlobalPooling2D):
-    """The global max 2d pooling layer."""
+class GlobalAveragePooling3D(Pooling):
+    """3D global average pooling layer."""
+
+    def __init__(self, data_format=None, **kwargs):
+        """Create a ``GlobalAveragePooling3D`` Layer.
+
+        Parameters
+        ----------
+        data_format : str, optional, default='channels_last'
+            ``'channels_first'`` or ``'channels_last'``.
+
+        """
+        super(GlobalAveragePooling3D, self).__init__(
+            rank=3,
+            pool_function=functools.partial(
+                vision_ops.pool, mode='avg', global_pool=True),
+            pool_size=0,
+            strides=1,
+            padding='valid',
+            data_format=data_format,
+            **kwargs
+        )
+
+
+class GlobalMaxPooling1D(Pooling):
+    """1D global max pooling layer."""
+
+    def __init__(self, data_format=None, **kwargs):
+        """Create a ``GlobalMaxPooling1D`` Layer.
+
+        Parameters
+        ----------
+        data_format : str, optional, default='channels_last'
+            ``'channels_first'`` or ``'channels_last'``.
+
+        """
+        super(GlobalMaxPooling1D, self).__init__(
+            rank=1,
+            pool_function=functools.partial(
+                vision_ops.pool, mode='max', global_pool=True),
+            pool_size=0,
+            strides=1,
+            padding='valid',
+            data_format=data_format,
+            **kwargs
+        )
+
+
+class GlobalMaxPooling2D(Pooling):
+    """2D global max pooling layer."""
 
     def __init__(self, data_format=None, **kwargs):
         """Create a ``GlobalMaxPooling2D`` Layer.
 
         Parameters
         ----------
-        data_format : {'channels_first', 'channels_last'}, optional
-            The optional data format.
+        data_format : str, optional, default='channels_last'
+            ``'channels_first'`` or ``'channels_last'``.
 
         """
         super(GlobalMaxPooling2D, self).__init__(
-            functools.partial(vision_ops.pool2d, mode='MAX'),
+            rank=2,
+            pool_function=functools.partial(
+                vision_ops.pool, mode='max', global_pool=True),
+            pool_size=0,
+            strides=1,
+            padding='valid',
             data_format=data_format,
             **kwargs
         )
 
 
-class MaxPooling2D(Pooling2D):
-    """The max 2d pooling layer."""
+class GlobalMaxPooling3D(Pooling):
+    """3D global max pooling layer."""
+
+    def __init__(self, data_format=None, **kwargs):
+        """Create a ``GlobalMaxPooling3D`` Layer.
+
+        Parameters
+        ----------
+        data_format : str, optional, default='channels_last'
+            ``'channels_first'`` or ``'channels_last'``.
+
+        """
+        super(GlobalMaxPooling3D, self).__init__(
+            rank=3,
+            pool_function=functools.partial(
+                vision_ops.pool, mode='max', global_pool=True),
+            pool_size=0,
+            strides=1,
+            padding='valid',
+            data_format=data_format,
+            **kwargs
+        )
+
+
+class MaxPooling1D(Pooling):
+    """1D max pooling layer."""
 
     def __init__(
         self,
-        pool_size=(2, 2),
+        pool_size=2,
+        strides=None,
+        padding='valid',
+        data_format=None,
+        **kwargs
+    ):
+        """Create a ``MaxPooling1D`` Layer.
+
+        Parameters
+        ----------
+        pool_size : Union[int, Sequence[int]], optional, default=2
+            The size of pooling window.
+        strides : Sequence[int], optional
+            The stride of pooling window.
+        padding : Union[int, Sequence[int], str], optional, default='valid'
+            The padding algorithm or size.
+        data_format : str, optional, default='channels_last'
+            ``'channels_first'`` or ``'channels_last'``.
+
+        """
+        super(MaxPooling1D, self).__init__(
+            rank=1,
+            pool_function=functools.partial(vision_ops.pool, mode='max'),
+            pool_size=pool_size,
+            strides=strides,
+            padding=padding,
+            data_format=data_format,
+            **kwargs
+        )
+
+
+class MaxPooling2D(Pooling):
+    """2D max pooling layer."""
+
+    def __init__(
+        self,
+        pool_size=2,
         strides=None,
         padding='valid',
         data_format=None,
@@ -175,18 +363,55 @@ class MaxPooling2D(Pooling2D):
 
         Parameters
         ----------
-        pool_size : Sequence[int]
-            The size(s) of sliding window.
+        pool_size : Union[int, Sequence[int]], optional, default=2
+            The size of pooling window.
         strides : Sequence[int], optional
-            The stride(s) of sliding window.
-        padding : Union[str, Sequence[int]], optional
-            The padding algorithm or padding sizes.
-        data_format : {'channels_first', 'channels_last'}, optional
-            The optional data format.
+            The stride of pooling window.
+        padding : Union[int, Sequence[int], str], optional, default='valid'
+            The padding algorithm or size.
+        data_format : str, optional, default='channels_last'
+            ``'channels_first'`` or ``'channels_last'``.
 
         """
         super(MaxPooling2D, self).__init__(
-            nn.max_pool2d,
+            rank=2,
+            pool_function=functools.partial(vision_ops.pool, mode='max'),
+            pool_size=pool_size,
+            strides=strides,
+            padding=padding,
+            data_format=data_format,
+            **kwargs
+        )
+
+
+class MaxPooling3D(Pooling):
+    """3D max pooling layer."""
+
+    def __init__(
+        self,
+        pool_size=2,
+        strides=None,
+        padding='valid',
+        data_format=None,
+        **kwargs
+    ):
+        """Create a ``MaxPooling3D`` Layer.
+
+        Parameters
+        ----------
+        pool_size : Union[int, Sequence[int]], optional, default=2
+            The size of pooling window.
+        strides : Sequence[int], optional
+            The stride of pooling window.
+        padding : Union[int, Sequence[int], str], optional, default='valid'
+            The padding algorithm or size.
+        data_format : str, optional, default='channels_last'
+            ``'channels_first'`` or ``'channels_last'``.
+
+        """
+        super(MaxPooling3D, self).__init__(
+            rank=3,
+            pool_function=functools.partial(vision_ops.pool, mode='max'),
             pool_size=pool_size,
             strides=strides,
             padding=padding,
@@ -196,7 +421,15 @@ class MaxPooling2D(Pooling2D):
 
 
 # Aliases
+AvgPool1D = AveragePooling1D
 AvgPool2D = AveragePooling2D
+AvgPool3D = AveragePooling3D
+MaxPool1D = MaxPooling1D
 MaxPool2D = MaxPooling2D
+MaxPool3D = MaxPooling3D
+GlobalAvgPool1D = GlobalAveragePooling1D
 GlobalAvgPool2D = GlobalAveragePooling2D
+GlobalAvgPool3D = GlobalAveragePooling3D
+GlobalMaxPool1D = GlobalMaxPooling1D
 GlobalMaxPool2D = GlobalMaxPooling2D
+GlobalMaxPool3D = GlobalMaxPooling3D

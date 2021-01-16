@@ -28,11 +28,29 @@ dragon.nn
   `bias_add(...) <nn/bias_add.html>`_
   : Add the bias across channels to input.
 
+  `conv(...) <nn/conv.html>`_
+  : Apply the n-dimension convolution.
+
+  `conv_transpose(...) <nn/conv_transpose.html>`_
+  : Apply the n-dimension deconvolution.
+
+  `conv1d(...) <nn/conv1d.html>`_
+  : Apply the 1d convolution.
+
+  `conv1d_transpose(...) <nn/conv1d_transpose.html>`_
+  : Apply the 1d deconvolution.
+
   `conv2d(...) <nn/conv2d.html>`_
   : Apply the 2d convolution.
 
   `conv2d_transpose(...) <nn/conv2d_transpose.html>`_
   : Apply the 2d deconvolution.
+
+  `conv3d(...) <nn/conv3d.html>`_
+  : Apply the 3d convolution.
+
+  `conv3d_transpose(...) <nn/conv3d_transpose.html>`_
+  : Apply the 3d deconvolution.
 
   `depthwise_conv2d(...) <nn/depthwise_conv2d.html>`_
   : Apply the 2d depthwise convolution.
@@ -92,8 +110,14 @@ dragon.nn
   : Apply the parametric rectified linear unit.
   `[He et.al, 2015] <https://arxiv.org/abs/1502.01852>`_.
 
+  `pool1d(...) <nn/pool1d.html>`_
+  : Apply the 1d pooling.
+
   `pool2d(...) <nn/pool2d.html>`_
   : Apply the 2d pooling.
+
+  `pool3d(...) <nn/pool3d.html>`_
+  : Apply the 3d pooling.
 
   `relu(...) <nn/relu.html>`_
   : Apply the rectified linear unit.
@@ -129,8 +153,14 @@ dragon.nn
   nn/RNN
   nn/batch_norm
   nn/bias_add
+  nn/conv
+  nn/conv_transpose
+  nn/conv1d
+  nn/conv1d_transpose
   nn/conv2d
   nn/conv2d_transpose
+  nn/conv3d
+  nn/conv3d_transpose
   nn/depthwise_conv2d
   nn/depth_to_space
   nn/dropout
@@ -146,7 +176,10 @@ dragon.nn
   nn/leaky_relu
   nn/local_response_norm
   nn/log_softmax
+  nn/pool
+  nn/pool1d
   nn/pool2d
+  nn/pool3d
   nn/prelu
   nn/relu
   nn/relu6

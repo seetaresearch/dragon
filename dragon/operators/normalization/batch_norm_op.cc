@@ -8,7 +8,7 @@ namespace dragon {
 template <class Context>
 template <typename T>
 void BatchNormOp<Context>::TrainingImpl() {
-  using ParamT = typename math::utils::AccmulatorType<T>::type;
+  using ParamT = typename math::AccmulatorType<T>::type;
   TENSOR_FILL_WITH_TYPE(Input(1), vec64_t({C_}), ParamT);
   TENSOR_FILL_WITH_TYPE(Input(2), vec64_t({C_}), ParamT);
   TENSOR_FILL_WITH_TYPE(Input(3), vec64_t({C_}), ParamT);
@@ -112,7 +112,7 @@ void BatchNormOp<Context>::TrainingImpl() {
 template <class Context>
 template <typename T>
 void BatchNormOp<Context>::InferenceImpl() {
-  using ParamT = typename math::utils::AccmulatorType<T>::type;
+  using ParamT = typename math::AccmulatorType<T>::type;
   TENSOR_FILL_WITH_TYPE(Input(1), vec64_t({C_}), ParamT);
   TENSOR_FILL_WITH_TYPE(Input(2), vec64_t({C_}), ParamT);
   TENSOR_FILL_WITH_TYPE(Input(3), vec64_t({C_}), ParamT);
@@ -146,9 +146,7 @@ void BatchNormOp<Context>::InferenceImpl() {
 
 template <class Context>
 void BatchNormOp<Context>::RunOnDevice() {
-  DetermineBaseArguments();
-
-  // Get the recomputing flag
+  GetBaseArguments();
   auto* flag = workspace()->GetTensor("/share/flag/recomputing");
   is_recomputing_ = flag->template data<bool, CPUContext>()[0] ? 1 : 0;
 
@@ -160,7 +158,7 @@ void BatchNormOp<Context>::RunOnDevice() {
 template <class Context>
 template <typename T>
 void BatchNormGradientOp<Context>::TrainingImpl() {
-  using ParamT = typename math::utils::AccmulatorType<T>::type;
+  using ParamT = typename math::AccmulatorType<T>::type;
   auto *dX = Output(0), *dW = Output(1), *dB = Output(2);
   auto *X_mu = Buffer("X_mu"), *X_rsig = Buffer("X_rsig");
 
@@ -232,7 +230,7 @@ void BatchNormGradientOp<Context>::TrainingImpl() {
 template <class Context>
 template <typename T>
 void BatchNormGradientOp<Context>::InferenceImpl() {
-  using ParamT = typename math::utils::AccmulatorType<T>::type;
+  using ParamT = typename math::AccmulatorType<T>::type;
   auto *dX = Output(0), *dW = Output(1), *dB = Output(2);
   auto* X_scale = Buffer("X_scale")->Reshape({C_});
 
@@ -268,7 +266,7 @@ void BatchNormGradientOp<Context>::InferenceImpl() {
 
 template <class Context>
 void BatchNormGradientOp<Context>::RunOnDevice() {
-  DetermineBaseArguments();
+  GetBaseArguments();
 
   // Dispatch the training or inference implementation
   Output(0)->ReshapeLike(Input(0));

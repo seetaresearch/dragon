@@ -35,7 +35,7 @@ class DataTransformer(multiprocessing.Process):
         resize : int, optional, default=0
             The size for the shortest edge.
         padding : int, optional, default=0
-            The size for zero-padding on two sides.
+            The size for zero padding on two sides.
         fill_value : int or sequence, optional, default=127
             The value(s) to fill for padding or cutout.
         crop_size : int, optional, default=0

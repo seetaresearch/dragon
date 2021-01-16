@@ -274,11 +274,7 @@ void CuDNNRecurrentGradientOp<Context>::DoRunWithType() {
       &reserve_size_));
   auto* reserve_tensor = Buffer("reserve");
   CHECK_EQ(reserve_size_, reserve_tensor->nbytes());
-#if CUDNN_VERSION_MIN(6, 0, 0)
   auto* reserve = reserve_tensor->template mutable_data<uint8_t, Context>();
-#else
-  auto* reserve = reserve_tensor->template data<uint8_t, Context>();
-#endif
 
   if (Output(0)->has_name() || Output(1)->has_name() || Output(2)->has_name() ||
       Output(3)->has_name()) {

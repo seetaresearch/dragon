@@ -53,8 +53,7 @@ if sys.version_info >= (3, 0):
             raise ValueError(
                 'Unknown argument type: '
                 'key = {}, value = {}, value_type = {}.'
-                .format(key, value, type(value).__name__)
-            )
+                .format(key, value, type(value).__name__))
         return argument
 else:
     def make_argument(key, value):

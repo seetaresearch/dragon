@@ -1,7 +1,7 @@
 #ifdef USE_CUDA
 
 #include "dragon/core/context_cuda.h"
-#include "dragon/utils/conversions.h"
+#include "dragon/utils/math_functions.h"
 #include "dragon/utils/op_kernels.h"
 
 namespace dragon {
@@ -54,6 +54,7 @@ _RoiAlignIntp(const int H, const int W, float h, float w, const T* x) {
   return t + (b - t) * v;
 }
 
+template <typename T>
 __device__ void _RoiAlignIntpParam(
     const int H,
     const int W,
@@ -63,8 +64,8 @@ __device__ void _RoiAlignIntpParam(
     int& bi,
     int& li,
     int& ri,
-    float& v,
-    float& u) {
+    T& v,
+    T& u) {
   if (h < -1.f || h > H || w < -1.f || w > W) {
     li = ri = ti = bi = -1;
     return;
@@ -108,8 +109,8 @@ __global__ void _RoiAlign(
     const float* rois,
     T* y) {
   CUDA_1D_KERNEL_LOOP(yi, nthreads) {
-    const int ow = yi % out_w;
-    const int oh = (yi / out_w) % out_h;
+    const int w_out = yi % out_w;
+    const int h_out = (yi / out_w) % out_h;
     const int c = (yi / out_w / out_h) % C;
     const int n = yi / out_w / out_h / C;
 
@@ -121,26 +122,25 @@ __global__ void _RoiAlign(
       continue;
     }
 
-    const float roi_start_w = roi[1] * spatial_scale;
-    const float roi_start_h = roi[2] * spatial_scale;
-    const float roi_end_w = roi[3] * spatial_scale;
-    const float roi_end_h = roi[4] * spatial_scale;
+    const float roi_wstart = roi[1] * spatial_scale;
+    const float roi_hstart = roi[2] * spatial_scale;
+    const float roi_wend = roi[3] * spatial_scale;
+    const float roi_hend = roi[4] * spatial_scale;
 
-    const float roi_w = max(roi_end_w - roi_start_w, 1.f);
-    const float roi_h = max(roi_end_h - roi_start_h, 1.f);
+    const float roi_w = max(roi_wend - roi_wstart, 1.f);
+    const float roi_h = max(roi_hend - roi_hstart, 1.f);
     const float bin_h = roi_h / (float)out_h;
     const float bin_w = roi_w / (float)out_w;
+
+    const float hstart = roi_hstart + h_out * bin_h;
+    const float wstart = roi_wstart + w_out * bin_w;
 
     const int grid_h =
         sampling_ratio > 0 ? sampling_ratio : ceil(roi_h / out_h);
     const int grid_w =
         sampling_ratio > 0 ? sampling_ratio : ceil(roi_w / out_w);
 
-    const float hstart = roi_start_h + oh * bin_h;
-    const float wstart = roi_start_w + ow * bin_w;
-
     const T* offset_x = x + (batch_ind * C + c) * H * W;
-
     AccT val = AccT(0);
     for (int i = 0; i < grid_h; i++) {
       const float h = hstart + (i + .5f) * bin_h / grid_h;
@@ -149,7 +149,6 @@ __global__ void _RoiAlign(
         val += _RoiAlignIntp(H, W, h, w, offset_x);
       }
     }
-
     y[yi] = convert::To<T>(val / AccT(grid_h * grid_w));
   }
 }
@@ -168,8 +167,8 @@ __global__ void _RoiAlignGrad(
     const float* rois,
     AccT* dx) {
   CUDA_1D_KERNEL_LOOP(yi, nthreads) {
-    const int ow = yi % out_w;
-    const int oh = (yi / out_w) % out_h;
+    const int w_out = yi % out_w;
+    const int h_out = (yi / out_w) % out_h;
     const int c = (yi / out_w / out_h) % C;
     const int n = yi / out_w / out_h / C;
 
@@ -178,24 +177,23 @@ __global__ void _RoiAlignGrad(
 
     if (batch_ind < 0) continue;
 
-    const float roi_start_w = roi[1] * spatial_scale;
-    const float roi_start_h = roi[2] * spatial_scale;
-    const float roi_end_w = roi[3] * spatial_scale;
-    const float roi_end_h = roi[4] * spatial_scale;
+    const float roi_wstart = roi[1] * spatial_scale;
+    const float roi_hstart = roi[2] * spatial_scale;
+    const float roi_wend = roi[3] * spatial_scale;
+    const float roi_hend = roi[4] * spatial_scale;
 
-    const float roi_w = max(roi_end_w - roi_start_w, 1.f);
-    const float roi_h = max(roi_end_h - roi_start_h, 1.f);
+    const float roi_w = max(roi_wend - roi_wstart, 1.f);
+    const float roi_h = max(roi_hend - roi_hstart, 1.f);
     const float bin_h = roi_h / (float)out_h;
     const float bin_w = roi_w / (float)out_w;
+
+    const float hstart = roi_hstart + h_out * bin_h;
+    const float wstart = roi_wstart + w_out * bin_w;
 
     const int grid_h =
         sampling_ratio > 0 ? sampling_ratio : ceil(roi_h / out_h);
     const int grid_w =
         sampling_ratio > 0 ? sampling_ratio : ceil(roi_w / out_w);
-
-    const float hstart = roi_start_h + oh * bin_h;
-    const float wstart = roi_start_w + ow * bin_w;
-
     const float dyi = convert::To<float>(dy[yi]) / float(grid_h * grid_w);
     float* offset_dx = dx + (batch_ind * C + c) * H * W;
 
@@ -209,10 +207,10 @@ __global__ void _RoiAlignGrad(
         if (li >= 0 && ri >= 0 && ti >= 0 && bi >= 0) {
           const float db = dyi * v;
           const float dt = dyi * (1.f - v);
-          atomicAdd(offset_dx + ti * W + li, (1.f - u) * dt);
-          atomicAdd(offset_dx + ti * W + ri, u * dt);
-          atomicAdd(offset_dx + bi * W + li, (1.f - u) * db);
-          atomicAdd(offset_dx + bi * W + ri, u * db);
+          math::utils::AtomicAdd(offset_dx + ti * W + li, (1.f - u) * dt);
+          math::utils::AtomicAdd(offset_dx + ti * W + ri, u * dt);
+          math::utils::AtomicAdd(offset_dx + bi * W + li, (1.f - u) * db);
+          math::utils::AtomicAdd(offset_dx + bi * W + ri, u * db);
         }
       } // End i
     } // End j
@@ -225,9 +223,9 @@ __global__ void _RoiAlignGrad(
 
 /* ------------------- Launcher Separator ------------------- */
 
-#define DEFINE_KERNEL_LAUNCHER(T, ScalarT)                                \
+#define DEFINE_KERNEL_LAUNCHER(name, InputT, OutputT)                     \
   template <>                                                             \
-  void RoiAlign<T, CUDAContext>(                                          \
+  void name<InputT, CUDAContext>(                                         \
       const int C,                                                        \
       const int H,                                                        \
       const int W,                                                        \
@@ -236,12 +234,12 @@ __global__ void _RoiAlignGrad(
       const int num_rois,                                                 \
       const float spatial_scale,                                          \
       const int sampling_ratio,                                           \
-      const T* x,                                                         \
+      const InputT* x,                                                    \
       const float* rois,                                                  \
-      T* y,                                                               \
+      OutputT* y,                                                         \
       CUDAContext* ctx) {                                                 \
     auto nthreads = num_rois * C * out_h * out_w;                         \
-    _RoiAlign<ScalarT, float>                                             \
+    _##name<math::ScalarType<InputT>::type, float>                        \
         <<<CUDA_BLOCKS(nthreads), CUDA_THREADS, 0, ctx->cuda_stream()>>>( \
             nthreads,                                                     \
             C,                                                            \
@@ -251,53 +249,18 @@ __global__ void _RoiAlignGrad(
             out_w,                                                        \
             spatial_scale,                                                \
             sampling_ratio,                                               \
-            reinterpret_cast<const ScalarT*>(x),                          \
+            reinterpret_cast<const math::ScalarType<InputT>::type*>(x),   \
             rois,                                                         \
-            reinterpret_cast<ScalarT*>(y));                               \
+            reinterpret_cast<math::ScalarType<OutputT>::type*>(y));       \
   }
 
-#define DEFINE_GRAD_KERNEL_LAUNCHER(T, ScalarT)   \
-  template <>                                     \
-  void RoiAlignGrad<T, CUDAContext>(              \
-      const int C,                                \
-      const int H,                                \
-      const int W,                                \
-      const int out_h,                            \
-      const int out_w,                            \
-      const int num_rois,                         \
-      const float spatial_scale,                  \
-      const int sampling_ratio,                   \
-      const T* dy,                                \
-      const float* rois,                          \
-      float* dx,                                  \
-      CUDAContext* ctx) {                         \
-    auto nthreads = num_rois * C * out_h * out_w; \
-    _RoiAlignGrad<<<                              \
-        CUDA_BLOCKS(nthreads),                    \
-        CUDA_THREADS,                             \
-        0,                                        \
-        ctx->cuda_stream()>>>(                    \
-        nthreads,                                 \
-        C,                                        \
-        H,                                        \
-        W,                                        \
-        out_h,                                    \
-        out_w,                                    \
-        spatial_scale,                            \
-        sampling_ratio,                           \
-        reinterpret_cast<const ScalarT*>(dy),     \
-        rois,                                     \
-        dx);                                      \
-  }
-
-DEFINE_KERNEL_LAUNCHER(float16, half);
-DEFINE_KERNEL_LAUNCHER(float, float);
-DEFINE_KERNEL_LAUNCHER(double, double);
-DEFINE_GRAD_KERNEL_LAUNCHER(float16, half);
-DEFINE_GRAD_KERNEL_LAUNCHER(float, float);
-DEFINE_GRAD_KERNEL_LAUNCHER(double, double);
+DEFINE_KERNEL_LAUNCHER(RoiAlign, float16, float16);
+DEFINE_KERNEL_LAUNCHER(RoiAlign, float, float);
+DEFINE_KERNEL_LAUNCHER(RoiAlign, double, double);
+DEFINE_KERNEL_LAUNCHER(RoiAlignGrad, float16, float); // RoiAlignGrad
+DEFINE_KERNEL_LAUNCHER(RoiAlignGrad, float, float); // RoiAlignGrad
+DEFINE_KERNEL_LAUNCHER(RoiAlignGrad, double, float); // RoiAlignGrad
 #undef DEFINE_KERNEL_LAUNCHER
-#undef DEFINE_GRAD_KERNEL_LAUNCHER
 
 } // namespace kernel
 

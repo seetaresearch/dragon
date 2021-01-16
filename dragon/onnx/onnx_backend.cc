@@ -197,9 +197,7 @@ const Map<string, Map<string, string>>& ONNXBackend::get_node_renamed_attrs()
 }
 
 const Map<string, string>& ONNXBackend::get_renamed_attrs() const {
-  const static Map<string, string> kRenamedAttrs{
-      {"keepdims", "keep_dims"},
-  };
+  const static Map<string, string> kRenamedAttrs;
   return kRenamedAttrs;
 }
 

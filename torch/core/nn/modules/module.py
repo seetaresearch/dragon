@@ -205,7 +205,7 @@ class Module(object):
         )
 
     def forward(self, *inputs, **kwargs):
-        """Define the implementation of forward.
+        """Define the computation performed at every call.
 
         All subclasses should override this method:
 

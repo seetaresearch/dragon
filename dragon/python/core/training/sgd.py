@@ -33,9 +33,9 @@ class SGD(optimizer.Optimizer):
         Parameters
         ----------
         base_lr : float, optional, default=0.01
-            The initial value for :math:`\text{lr}`.
+            The initial value to :math:`\text{lr}`.
         momentum : float, optional, default=0.9
-            The initial value for :math:`\text{momentum}`.
+            The initial value to :math:`\text{momentum}`.
 
         """
         super(SGD, self).__init__(**kwargs)
@@ -64,9 +64,9 @@ class Nesterov(optimizer.Optimizer):
         Parameters
         ----------
         base_lr : float, optional, default=0.01
-            The initial value for :math:`\text{lr}`.
+            The initial value to :math:`\text{lr}`.
         momentum : float, optional, default=0.9
-            The initial value for :math:`\text{momentum}`.
+            The initial value to :math:`\text{momentum}`.
 
         """
         super(Nesterov, self).__init__(**kwargs)

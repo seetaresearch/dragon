@@ -20,7 +20,7 @@ from dragon.vm.tensorlayer.core.layers import utils
 
 
 class Flatten(layer.Layer):
-    """The layer to reshape input into a matrix.
+    """Layer to reshape input into a matrix.
 
     Examples:
 
@@ -37,7 +37,7 @@ class Flatten(layer.Layer):
         Parameters
         ----------
         name : str, optional
-            The optional layer name.
+            The layer name.
 
         """
         super(Flatten, self).__init__(name)
@@ -53,7 +53,7 @@ class Flatten(layer.Layer):
 
 
 class Reshape(layer.Layer):
-    """The layer to change the dimensions of input.
+    """Layer to change the dimensions of input.
 
     Examples:
 
@@ -72,7 +72,7 @@ class Reshape(layer.Layer):
         shape : Sequence[int]
             The output shape.
         name : str, optional
-            The optional layer name.
+            The layer name.
 
         """
         super(Reshape, self).__init__(name)
@@ -90,7 +90,7 @@ class Reshape(layer.Layer):
 
 
 class Transpose(layer.Layer):
-    """The layer to permute the dimensions of input.
+    """Layer to permute the dimensions of input.
 
     Examples:
 
@@ -114,7 +114,7 @@ class Transpose(layer.Layer):
         perm: Sequence[int], optional
             The permutation of new dimensions.
         name : str, optional
-            The optional layer name.
+            The layer name.
 
         """
         super(Transpose, self).__init__(name)

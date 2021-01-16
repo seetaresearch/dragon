@@ -182,7 +182,7 @@ def moments(x, axes=None, keepdims=False, name=None):
         The variance tensor.
 
     """
-    return array_ops.moments(x, axis=axes, keep_dims=keepdims, name=name)
+    return array_ops.moments(x, axis=axes, keepdims=keepdims, name=name)
 
 
 def swish(features):

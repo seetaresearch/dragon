@@ -77,8 +77,6 @@ def path_remove_gradient(project_source_dir):
         glob_recurse(kernels_dir, '.cc', '.cu'), [
             r'DEFINE.*GRAD.*LAUNCHER.*[;]',
             r'DEFINE.*LAUNCHER.*Grad.*[;]',
-            r'template <> void .*Grad[\s\S]*[}]  [/][/].*Grad',
-            r'template <> void .*Backward[\s\S]*[}]  [/][/].*Backward',
         ]
     )
     FileWriter().apply_regex(

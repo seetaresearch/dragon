@@ -71,13 +71,13 @@ void _RoiAlign(
       continue;
     }
 
-    const float roi_start_w = roi[1] * spatial_scale;
-    const float roi_start_h = roi[2] * spatial_scale;
-    const float roi_end_w = roi[3] * spatial_scale;
-    const float roi_end_h = roi[4] * spatial_scale;
+    const float roi_wstart = roi[1] * spatial_scale;
+    const float roi_hstart = roi[2] * spatial_scale;
+    const float roi_wend = roi[3] * spatial_scale;
+    const float roi_hend = roi[4] * spatial_scale;
 
-    const float roi_w = std::max(roi_end_w - roi_start_w, 1.f);
-    const float roi_h = std::max(roi_end_h - roi_start_h, 1.f);
+    const float roi_w = std::max(roi_wend - roi_wstart, 1.f);
+    const float roi_h = std::max(roi_hend - roi_hstart, 1.f);
     const float bin_h = roi_h / (float)out_h;
     const float bin_w = roi_w / (float)out_w;
 
@@ -94,10 +94,10 @@ void _RoiAlign(
 
     for (int c = 0; c < C; ++c) {
       yi = 0;
-      for (int oh = 0; oh < out_h; ++oh) {
-        hstart = roi_start_h + oh * bin_h;
-        for (int ow = 0; ow < out_w; ++ow) {
-          wstart = roi_start_w + ow * bin_w;
+      for (int h_out = 0; h_out < out_h; ++h_out) {
+        hstart = roi_hstart + h_out * bin_h;
+        for (int w_out = 0; w_out < out_w; ++w_out) {
+          wstart = roi_wstart + w_out * bin_w;
           val = T(0);
           for (int i = 0; i < grid_h; ++i) {
             h = hstart + (i + .5f) * bin_h / (float)grid_h;
@@ -108,7 +108,7 @@ void _RoiAlign(
           } // End i
           offset_y[yi++] = val / num_grids;
         }
-      } // End oh && ow
+      } // End h_out && w_out
       offset_x += x_inner_dim;
       offset_y += y_inner_dim;
     } // End c

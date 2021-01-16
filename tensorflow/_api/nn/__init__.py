@@ -16,11 +16,17 @@ from __future__ import print_function as _print_function
 from dragon.vm.tensorflow.core.ops.array_ops import depth_to_space
 from dragon.vm.tensorflow.core.ops.array_ops import space_to_depth
 from dragon.vm.tensorflow.core.ops.nn import avg_pool
+from dragon.vm.tensorflow.core.ops.nn import avg_pool1d
 from dragon.vm.tensorflow.core.ops.nn import avg_pool2d
+from dragon.vm.tensorflow.core.ops.nn import avg_pool3d
 from dragon.vm.tensorflow.core.ops.nn import bias_add
 from dragon.vm.tensorflow.core.ops.nn import batch_normalization
+from dragon.vm.tensorflow.core.ops.nn import conv1d
 from dragon.vm.tensorflow.core.ops.nn import conv2d
+from dragon.vm.tensorflow.core.ops.nn import conv3d
+from dragon.vm.tensorflow.core.ops.nn import conv1d_transpose
 from dragon.vm.tensorflow.core.ops.nn import conv2d_transpose
+from dragon.vm.tensorflow.core.ops.nn import conv3d_transpose
 from dragon.vm.tensorflow.core.ops.nn import convolution
 from dragon.vm.tensorflow.core.ops.nn import conv_transpose
 from dragon.vm.tensorflow.core.ops.nn import depthwise_conv2d
@@ -32,7 +38,9 @@ from dragon.vm.tensorflow.core.ops.nn import leaky_relu
 from dragon.vm.tensorflow.core.ops.nn import local_response_normalization
 from dragon.vm.tensorflow.core.ops.nn import log_softmax
 from dragon.vm.tensorflow.core.ops.nn import max_pool
+from dragon.vm.tensorflow.core.ops.nn import max_pool1d
 from dragon.vm.tensorflow.core.ops.nn import max_pool2d
+from dragon.vm.tensorflow.core.ops.nn import max_pool3d
 from dragon.vm.tensorflow.core.ops.nn import moments
 from dragon.vm.tensorflow.core.ops.nn import relu
 from dragon.vm.tensorflow.core.ops.nn import relu6

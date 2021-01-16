@@ -34,7 +34,7 @@ def arg_reduce_exporter(op_def, context):
     for arg in op_def.arg:
         if arg.name == 'axis':
             helper.add_attribute(node, 'axis', arg.i)
-        elif arg.name == 'keep_dims':
+        elif arg.name == 'keepdims':
             helper.add_attribute(node, 'keepdims', arg.i)
     return node, None
 
@@ -317,7 +317,7 @@ def reduce_exporter(op_def, context):
     for arg in op_def.arg:
         if arg.name == 'axes':
             axes = arg.ints
-        elif arg.name == 'keep_dims':
+        elif arg.name == 'keepdims':
             helper.add_attribute(node, 'keepdims', arg.i)
     helper.add_attribute(node, 'axes', axes)
     return node, const_tensors

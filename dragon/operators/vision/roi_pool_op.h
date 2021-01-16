@@ -52,9 +52,6 @@ class RoiPoolGradientOp final : public Operator<Context> {
   template <typename T>
   void DoRunWithType();
 
-  template <typename T>
-  void DoRunWithTypeAndCast();
-
  protected:
   float spatial_scale_;
   int64_t out_h_, out_w_;

@@ -1001,7 +1001,7 @@ def reduce_max(input_tensor, axis=None, keepdims=False, name=None):
     return array_ops.max(
         input_tensor,
         axis=axis,
-        keep_dims=keepdims,
+        keepdims=keepdims,
         name=name,
     )
 
@@ -1046,7 +1046,7 @@ def reduce_mean(input_tensor, axis=None, keepdims=False, name=None):
     return array_ops.mean(
         input_tensor,
         axis=axis,
-        keep_dims=keepdims,
+        keepdims=keepdims,
         name=name,
     )
 
@@ -1088,7 +1088,7 @@ def reduce_min(input_tensor, axis=None, keepdims=False, name=None):
     return array_ops.min(
         input_tensor,
         axis=axis,
-        keep_dims=keepdims,
+        keepdims=keepdims,
         name=name,
     )
 
@@ -1133,7 +1133,7 @@ def reduce_sum(input_tensor, axis=None, keepdims=False, name=None):
     return array_ops.sum(
         input_tensor,
         axis=axis,
-        keep_dims=keepdims,
+        keepdims=keepdims,
         name=name,
     )
 

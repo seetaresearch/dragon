@@ -1,6 +1,7 @@
 #ifdef USE_CUDA
 
 #include "dragon/core/context_cuda.h"
+#include "dragon/utils/math_functions.h"
 #include "dragon/utils/op_kernels.h"
 
 namespace dragon {
@@ -9,9 +10,16 @@ namespace kernel {
 
 namespace {
 
+#if __CUDA_ARCH__ >= 350
+#define LDG(x, i) __ldg(x + i)
+#else
+#define LDG(x, i) x[i]
+#endif
+
 template <typename T>
 __global__ void _Im2Col2dNCHW(
     const int nthreads,
+    const int C,
     const int H,
     const int W,
     const int out_h,
@@ -27,33 +35,25 @@ __global__ void _Im2Col2dNCHW(
     const T* im,
     T* col) {
   CUDA_1D_KERNEL_LOOP(i, nthreads) {
-    const int hi = i / out_w;
-    const int ow = i % out_w;
-    const int oh = hi % out_h;
-    const int ic = hi / out_h;
-    const int oc = ic * kernel_h * kernel_w;
+    const int w_out = i % out_w;
+    const int h_out = (i / out_w) % out_h;
+    const int c = i / out_w / out_h;
+    const int c_out = c * kernel_h * kernel_w;
 
-    const int ih_start = oh * stride_h - pad_h;
-    const int iw_start = ow * stride_w - pad_w;
+    const int hstart = h_out * stride_h - pad_h;
+    const int wstart = w_out * stride_w - pad_w;
+    const T* offset_im = im + ((c * H + hstart) * W + wstart);
+    T* offset_col = col + ((c_out * out_h + h_out) * out_w + w_out);
 
-    int ih, iw;
-    T* y = col + ((oc * out_h + oh) * out_w + ow);
-    const T* x = im + ((ic * H + ih_start) * W + iw_start);
-
-    for (int kh = 0; kh < kernel_h; kh++) {
-      for (int kw = 0; kw < kernel_w; kw++) {
-        ih = ih_start + kh * dilation_h;
-        iw = iw_start + kw * dilation_w;
-#if __CUDA_ARCH__ >= 350
-        *y = (ih >= 0 && iw >= 0 && ih < H && iw < W)
-            ? __ldg(x + (kh * dilation_h * W + kw * dilation_w))
+    for (int h_k = 0; h_k < kernel_h; h_k++) {
+      for (int w_k = 0; w_k < kernel_w; w_k++) {
+        const int h = hstart + h_k * dilation_h;
+        const int w = wstart + w_k * dilation_w;
+        *offset_col = (math::utils::IsAGeZeroAndALtB(h, H) &&
+                       math::utils::IsAGeZeroAndALtB(w, W))
+            ? LDG(offset_im, h_k * dilation_h * W + w_k * dilation_w)
             : T(0);
-#else
-        *y = (ih >= 0 && iw >= 0 && ih < H && iw < W)
-            ? x[kh * dilation_h * W + kw * dilation_w]
-            : T(0);
-#endif
-        y += (out_h * out_w);
+        offset_col += (out_h * out_w);
       }
     }
   }
@@ -78,29 +78,23 @@ __global__ void _Im2Col2dNHWC(
     const T* im,
     T* col) {
   CUDA_1D_KERNEL_LOOP(i, nthreads) {
-    const int ic = i % C;
-    const int ow = (i / C) % out_w;
-    const int oh = i / C / out_w;
+    const int c = i % C;
+    const int w_out = (i / C) % out_w;
+    const int h_out = i / C / out_w;
 
-    int ih, iw, yi;
-    const int ih_start = oh * stride_h - pad_h;
-    const int iw_start = ow * stride_w - pad_w;
-    const int yi_start = ((oh * out_w) + ow) * kernel_h;
+    const int hstart = h_out * stride_h - pad_h;
+    const int wstart = w_out * stride_w - pad_w;
+    const int col_start = ((h_out * out_w) + w_out) * kernel_h;
 
-    for (int kh = 0; kh < kernel_h; kh++) {
-      for (int kw = 0; kw < kernel_w; kw++) {
-        ih = ih_start + kh * dilation_h;
-        iw = iw_start + kw * dilation_w;
-        yi = (((yi_start + kh) * kernel_w + kw) * C + ic);
-#if __CUDA_ARCH__ >= 350
-        col[yi] = (ih >= 0 && iw >= 0 && ih < H && iw < W)
-            ? __ldg(im + ((ih * W + iw) * C + ic))
+    for (int h_k = 0; h_k < kernel_h; h_k++) {
+      for (int w_k = 0; w_k < kernel_w; w_k++) {
+        const int h = hstart + h_k * dilation_h;
+        const int w = wstart + w_k * dilation_w;
+        const int col_idx = (((col_start + h_k) * kernel_w + w_k) * C + c);
+        col[col_idx] = (math::utils::IsAGeZeroAndALtB(h, H) &&
+                        math::utils::IsAGeZeroAndALtB(w, W))
+            ? LDG(im, (h * W + w) * C + c)
             : T(0);
-#else
-        col[yi] = (ih >= 0 && iw >= 0 && ih < H && iw < W)
-            ? im[(ih * W + iw) * C + ic]
-            : T(0);
-#endif
       }
     }
   }
@@ -109,6 +103,7 @@ __global__ void _Im2Col2dNHWC(
 template <typename T>
 __global__ void _Col2Im2dNCHW(
     const int nthreads,
+    const int C,
     const int H,
     const int W,
     const int out_h,
@@ -123,40 +118,34 @@ __global__ void _Col2Im2dNCHW(
     const int dilation_w,
     const T* col,
     T* im) {
-  const int DKH = (kernel_h - 1) * dilation_h + 1;
-  const int DKW = (kernel_w - 1) * dilation_w + 1;
-  CUDA_1D_KERNEL_LOOP(xi, nthreads) {
-    const int iw = xi % W + pad_w;
-    const int ih = (xi / W) % H + pad_h;
-    const int ic = xi / W / H;
+  const int field_h = (kernel_h - 1) * dilation_h + 1;
+  const int field_w = (kernel_w - 1) * dilation_w + 1;
+  CUDA_1D_KERNEL_LOOP(im_idx, nthreads) {
+    const int w = im_idx % W + pad_w;
+    const int h = (im_idx / W) % H + pad_h;
+    const int c = im_idx / W / H;
 
-    const int oh_start = (ih < DKH) ? 0 : (ih - DKH) / stride_h + 1;
-    const int ow_start = (iw < DKW) ? 0 : (iw - DKW) / stride_w + 1;
-    const int oh_end = min(ih / stride_h + 1, out_h);
-    const int ow_end = min(iw / stride_w + 1, out_w);
+    const int out_hstart = (h < field_h) ? 0 : (h - field_h) / stride_h + 1;
+    const int out_wstart = (w < field_w) ? 0 : (w - field_w) / stride_w + 1;
+    const int out_hend = min(h / stride_h + 1, out_h);
+    const int out_wend = min(w / stride_w + 1, out_w);
 
-    int kh, kw, yi;
-
-    T sum_val = T(0);
-    for (int oh = oh_start; oh < oh_end; ++oh) {
-      for (int ow = ow_start; ow < ow_end; ++ow) {
-        kh = (ih - oh * stride_h);
-        kw = (iw - ow * stride_w);
-        if (kh % dilation_h == 0 && kw % dilation_w == 0) {
-          kh /= dilation_h;
-          kw /= dilation_w;
-          yi = (((ic * kernel_h + kh) * kernel_w + kw) * out_h + oh) * out_w +
-              ow;
-#if __CUDA_ARCH__ >= 350
-          sum_val += __ldg(col + yi);
-#else
-          sum_val += col[yi];
-#endif
+    float val = 0.f;
+    int h_k, w_k, col_idx;
+    for (int h_out = out_hstart; h_out < out_hend; ++h_out) {
+      for (int w_out = out_wstart; w_out < out_wend; ++w_out) {
+        h_k = (h - h_out * stride_h);
+        w_k = (w - w_out * stride_w);
+        if (h_k % dilation_h == 0 && w_k % dilation_w == 0) {
+          h_k /= dilation_h;
+          w_k /= dilation_w;
+          col_idx = (c * kernel_h + h_k) * kernel_w + w_k;
+          col_idx = (col_idx * out_h + h_out) * out_w + w_out;
+          val += convert::To<float>(LDG(col, col_idx));
         }
-      } // End ow
-    } // End oh
-
-    im[xi] = sum_val;
+      }
+    }
+    im[im_idx] = convert::To<T>(val);
   }
 }
 
@@ -178,185 +167,283 @@ __global__ void _Col2Im2dNHWC(
     const int dilation_w,
     const T* col,
     T* im) {
-  const int DKH = (kernel_h - 1) * dilation_h + 1;
-  const int DKW = (kernel_w - 1) * dilation_w + 1;
-  CUDA_1D_KERNEL_LOOP(xi, nthreads) {
-    const int ic = xi % C;
-    const int iw = (xi / C) % W + pad_w;
-    const int ih = (xi / C / W) + pad_h;
+  const int field_h = (kernel_h - 1) * dilation_h + 1;
+  const int field_w = (kernel_w - 1) * dilation_w + 1;
+  CUDA_1D_KERNEL_LOOP(im_idx, nthreads) {
+    const int c = im_idx % C;
+    const int w = (im_idx / C) % W + pad_w;
+    const int h = (im_idx / C / W) + pad_h;
 
-    const int oh_start = (ih < DKH) ? 0 : (ih - DKH) / stride_h + 1;
-    const int ow_start = (iw < DKW) ? 0 : (iw - DKW) / stride_w + 1;
-    const int oh_end = min(ih / stride_h + 1, out_h);
-    const int ow_end = min(iw / stride_w + 1, out_w);
+    const int out_hstart = (h < field_h) ? 0 : (h - field_h) / stride_h + 1;
+    const int out_wstart = (w < field_w) ? 0 : (w - field_w) / stride_w + 1;
+    const int out_hend = min(h / stride_h + 1, out_h);
+    const int out_wend = min(w / stride_w + 1, out_w);
 
-    int kh, kw, yi;
-
-    T sum_val = T(0);
-    for (int oh = oh_start; oh < oh_end; ++oh) {
-      for (int ow = ow_start; ow < ow_end; ++ow) {
-        kh = (ih - oh * stride_h);
-        kw = (iw - ow * stride_w);
-        if (kh % dilation_h == 0 && kw % dilation_w == 0) {
-          kh /= dilation_h;
-          kw /= dilation_w;
-          yi = (((oh * out_w + ow) * kernel_h + kh) * kernel_w + kw) * C + ic;
-#if __CUDA_ARCH__ >= 350
-          sum_val += __ldg(col + yi);
-#else
-          sum_val += col[yi];
-#endif
+    float val = 0.f;
+    int h_k, w_k, col_idx;
+    for (int h_out = out_hstart; h_out < out_hend; ++h_out) {
+      for (int w_out = out_wstart; w_out < out_wend; ++w_out) {
+        h_k = (h - h_out * stride_h);
+        w_k = (w - w_out * stride_w);
+        if (h_k % dilation_h == 0 && w_k % dilation_w == 0) {
+          h_k /= dilation_h;
+          w_k /= dilation_w;
+          col_idx = (h_out * out_w) + w_out;
+          col_idx = ((col_idx * kernel_h) + h_k) * kernel_w + w_k;
+          val += convert::To<float>(LDG(col, col_idx * C + c));
         }
       }
     }
-
-    im[xi] = sum_val;
+    im[im_idx] = convert::To<T>(val);
   }
 }
+
+template <typename T, int D, bool Transposed>
+__global__ void _Im2ColNdNCHW(
+    const int kernel_dim,
+    const int outer_dim,
+    const int inner_dim,
+    const int num_dims,
+    const SimpleArray<int, D> in_shape,
+    const SimpleArray<int, D> out_shape,
+    const SimpleArray<int, D> kshape,
+    const SimpleArray<int, D> strides,
+    const SimpleArray<int, D> pads,
+    const SimpleArray<int, D> dilations,
+    const T* x,
+    T* y) {
+  CUDA_2D_KERNEL_LOOP1(i, outer_dim) {
+    int tmp = i;
+    int kstarts[D];
+#pragma unroll
+    for (int d = num_dims - 1; d >= 0; --d) {
+      int r;
+      FIXED_DIVISOR_DIV_MOD(kshape.data[d], tmp, &tmp, &r);
+      kstarts[d] = -pads.data[d] + r * dilations.data[d];
+    }
+    CUDA_2D_KERNEL_LOOP2(j, inner_dim) {
+      tmp = j;
+      int in_idx[D];
+      bool is_padding = false;
+#pragma unroll
+      for (int d = num_dims - 1; d >= 0; --d) {
+        int r;
+        FIXED_DIVISOR_DIV_MOD(out_shape.data[d], tmp, &tmp, &r);
+        in_idx[d] = r = kstarts[d] + r * strides.data[d];
+        is_padding |= !math::utils::IsAGeZeroAndALtB(r, in_shape.data[d]);
+      }
+      const int col_idx = i * inner_dim + j;
+      int im_idx = i / kernel_dim;
+#pragma unroll
+      for (int d = 0; d < num_dims; ++d) {
+        im_idx = im_idx * in_shape.data[d] + in_idx[d];
+      }
+      if (!Transposed) {
+        y[col_idx] = is_padding ? T(0) : LDG(x, im_idx);
+      } else if (!is_padding) {
+        math::utils::AtomicAdd(y + im_idx, x[col_idx]);
+      }
+    }
+  }
+}
+
+template <typename T, int D, bool Transposed>
+__global__ void _Im2ColNdNHWC(
+    const int channel_dim,
+    const int outer_dim,
+    const int inner_dim,
+    const int num_dims,
+    const SimpleArray<int, D> in_shape,
+    const SimpleArray<int, D> out_shape,
+    const SimpleArray<int, D> kshape,
+    const SimpleArray<int, D> strides,
+    const SimpleArray<int, D> pads,
+    const SimpleArray<int, D> dilations,
+    const T* x,
+    T* y) {
+  CUDA_2D_KERNEL_LOOP1(i, outer_dim) {
+    int tmp = i / channel_dim;
+    int kstarts[D];
+#pragma unroll
+    for (int d = num_dims - 1; d >= 0; --d) {
+      int r;
+      FIXED_DIVISOR_DIV_MOD(kshape.data[d], tmp, &tmp, &r);
+      kstarts[d] = -pads.data[d] + r * dilations.data[d];
+    }
+    CUDA_2D_KERNEL_LOOP2(j, inner_dim) {
+      tmp = j;
+      int in_idx[D];
+      bool is_padding = false;
+#pragma unroll
+      for (int d = num_dims - 1; d >= 0; --d) {
+        int r;
+        FIXED_DIVISOR_DIV_MOD(out_shape.data[d], tmp, &tmp, &r);
+        in_idx[d] = r = kstarts[d] + r * strides.data[d];
+        is_padding |= !math::utils::IsAGeZeroAndALtB(r, in_shape.data[d]);
+      }
+      const int col_idx = j * outer_dim + i;
+      int im_idx = in_idx[0];
+#pragma unroll
+      for (int d = 1; d < num_dims; ++d) {
+        im_idx = im_idx * in_shape.data[d] + in_idx[d];
+      }
+      im_idx = im_idx * channel_dim + i % channel_dim;
+      if (!Transposed) {
+        y[col_idx] = is_padding ? T(0) : LDG(x, im_idx);
+      } else if (!is_padding) {
+        math::utils::AtomicAdd(y + im_idx, x[col_idx]);
+      }
+    }
+  }
+}
+
+#undef LDG
 
 } // namespace
 
 /* ------------------- Launcher Separator ------------------- */
 
-#define DEFINE_KERNEL_LAUNCHER(T)                          \
-  template <>                                              \
-  void Im2Col2d<T, CUDAContext>(                           \
-      const int C,                                         \
-      const int H,                                         \
-      const int W,                                         \
-      const int out_h,                                     \
-      const int out_w,                                     \
-      const int kernel_h,                                  \
-      const int kernel_w,                                  \
-      const int stride_h,                                  \
-      const int stride_w,                                  \
-      const int pad_h,                                     \
-      const int pad_w,                                     \
-      const int dilation_h,                                \
-      const int dilation_w,                                \
-      const string& data_format,                           \
-      const T* im,                                         \
-      T* col,                                              \
-      CUDAContext* ctx) {                                  \
-    const int nthreads = C * out_h * out_w;                \
-    if (data_format == "NCHW") {                           \
-      _Im2Col2dNCHW<<<                                     \
-          CUDA_BLOCKS(nthreads),                           \
-          CUDA_THREADS,                                    \
-          0,                                               \
-          ctx->cuda_stream()>>>(                           \
-          nthreads,                                        \
-          H,                                               \
-          W,                                               \
-          out_h,                                           \
-          out_w,                                           \
-          kernel_h,                                        \
-          kernel_w,                                        \
-          stride_h,                                        \
-          stride_w,                                        \
-          pad_h,                                           \
-          pad_w,                                           \
-          dilation_h,                                      \
-          dilation_w,                                      \
-          im,                                              \
-          col);                                            \
-    } else if (data_format == "NHWC") {                    \
-      _Im2Col2dNHWC<<<                                     \
-          CUDA_BLOCKS(nthreads),                           \
-          CUDA_THREADS,                                    \
-          0,                                               \
-          ctx->cuda_stream()>>>(                           \
-          nthreads,                                        \
-          C,                                               \
-          H,                                               \
-          W,                                               \
-          out_h,                                           \
-          out_w,                                           \
-          kernel_h,                                        \
-          kernel_w,                                        \
-          stride_h,                                        \
-          stride_w,                                        \
-          pad_h,                                           \
-          pad_w,                                           \
-          dilation_h,                                      \
-          dilation_w,                                      \
-          im,                                              \
-          col);                                            \
-    } else {                                               \
-      LOG(FATAL) << "Unknown DataFormat: " << data_format; \
-    }                                                      \
-  }                                                        \
-  template <>                                              \
-  void Col2Im2d<T, CUDAContext>(                           \
-      const int C,                                         \
-      const int H,                                         \
-      const int W,                                         \
-      const int out_h,                                     \
-      const int out_w,                                     \
-      const int kernel_h,                                  \
-      const int kernel_w,                                  \
-      const int stride_h,                                  \
-      const int stride_w,                                  \
-      const int pad_h,                                     \
-      const int pad_w,                                     \
-      const int dilation_h,                                \
-      const int dilation_w,                                \
-      const string& data_format,                           \
-      const T* col,                                        \
-      T* im,                                               \
-      CUDAContext* ctx) {                                  \
-    const int nthreads = C * H * W;                        \
-    if (data_format == "NCHW") {                           \
-      _Col2Im2dNCHW<<<                                     \
-          CUDA_BLOCKS(nthreads),                           \
-          CUDA_THREADS,                                    \
-          0,                                               \
-          ctx->cuda_stream()>>>(                           \
-          nthreads,                                        \
-          H,                                               \
-          W,                                               \
-          out_h,                                           \
-          out_w,                                           \
-          kernel_h,                                        \
-          kernel_w,                                        \
-          stride_h,                                        \
-          stride_w,                                        \
-          pad_h,                                           \
-          pad_w,                                           \
-          dilation_h,                                      \
-          dilation_w,                                      \
-          col,                                             \
-          im);                                             \
-    } else if (data_format == "NHWC") {                    \
-      _Col2Im2dNHWC<<<                                     \
-          CUDA_BLOCKS(nthreads),                           \
-          CUDA_THREADS,                                    \
-          0,                                               \
-          ctx->cuda_stream()>>>(                           \
-          nthreads,                                        \
-          C,                                               \
-          H,                                               \
-          W,                                               \
-          out_h,                                           \
-          out_w,                                           \
-          kernel_h,                                        \
-          kernel_w,                                        \
-          stride_h,                                        \
-          stride_w,                                        \
-          pad_h,                                           \
-          pad_w,                                           \
-          dilation_h,                                      \
-          dilation_w,                                      \
-          col,                                             \
-          im);                                             \
-    } else {                                               \
-      LOG(FATAL) << "Unknown DataFormat: " << data_format; \
-    }                                                      \
+#define DISPATCH_CONV_KERNEL(name, nblocks, nthreads, ...)                 \
+  if (data_format == "NCHW") {                                             \
+    name##NCHW<<<nblocks, nthreads, 0, ctx->cuda_stream()>>>(__VA_ARGS__); \
+  } else if (data_format == "NHWC") {                                      \
+    name##NHWC<<<nblocks, nthreads, 0, ctx->cuda_stream()>>>(__VA_ARGS__); \
+  } else {                                                                 \
+    LOG(FATAL) << "Unknown DataFormat: " << data_format;                   \
   }
 
-DEFINE_KERNEL_LAUNCHER(float);
-DEFINE_KERNEL_LAUNCHER(double);
+#define DEFINE_KERNEL_LAUNCHER(name, kTransposed, T)                   \
+  template <>                                                          \
+  void name<T, CUDAContext>(                                           \
+      const int C,                                                     \
+      const int H,                                                     \
+      const int W,                                                     \
+      const int out_h,                                                 \
+      const int out_w,                                                 \
+      const int kernel_h,                                              \
+      const int kernel_w,                                              \
+      const int stride_h,                                              \
+      const int stride_w,                                              \
+      const int pad_h,                                                 \
+      const int pad_w,                                                 \
+      const int dilation_h,                                            \
+      const int dilation_w,                                            \
+      const string& data_format,                                       \
+      const T* x,                                                      \
+      T* y,                                                            \
+      CUDAContext* ctx) {                                              \
+    const int nthreads = !kTransposed ? C * out_h * out_w : C * H * W; \
+    DISPATCH_CONV_KERNEL(                                              \
+        _##name,                                                       \
+        CUDA_BLOCKS(nthreads),                                         \
+        CUDA_THREADS,                                                  \
+        nthreads,                                                      \
+        C,                                                             \
+        H,                                                             \
+        W,                                                             \
+        out_h,                                                         \
+        out_w,                                                         \
+        kernel_h,                                                      \
+        kernel_w,                                                      \
+        stride_h,                                                      \
+        stride_w,                                                      \
+        pad_h,                                                         \
+        pad_w,                                                         \
+        dilation_h,                                                    \
+        dilation_w,                                                    \
+        x,                                                             \
+        y);                                                            \
+  }
+
+DEFINE_KERNEL_LAUNCHER(Im2Col2d, false, float);
+DEFINE_KERNEL_LAUNCHER(Im2Col2d, false, double);
+DEFINE_KERNEL_LAUNCHER(Col2Im2d, true, float);
+DEFINE_KERNEL_LAUNCHER(Col2Im2d, true, double);
 #undef DEFINE_KERNEL_LAUNCHER
+#undef DISPATCH_CONV_KERNEL
+
+#define DISPATCH_CONV_KERNEL(                                              \
+    name, kTransposed, T, nblocks, nthreads, channel_dim, kernel_dim, ...) \
+  if (data_format == "NCHW") {                                             \
+    name##NCHW<T, 3, kTransposed>                                          \
+        <<<nblocks, nthreads, 0, ctx->cuda_stream()>>>(                    \
+            kernel_dim, __VA_ARGS__);                                      \
+  } else if (data_format == "NHWC") {                                      \
+    name##NHWC<T, 3, kTransposed>                                          \
+        <<<nblocks, nthreads, 0, ctx->cuda_stream()>>>(                    \
+            channel_dim, __VA_ARGS__);                                     \
+  } else {                                                                 \
+    LOG(FATAL) << "Unknown DataFormat: " << data_format;                   \
+  }
+
+#define DEFINE_KERNEL_LAUNCHER(name, kTransposed, T)                           \
+  template <>                                                                  \
+  void name<T, CUDAContext>(                                                   \
+      const int num_dims,                                                      \
+      const int channels,                                                      \
+      const int* in_shape,                                                     \
+      const int* out_shape,                                                    \
+      const int* kshape,                                                       \
+      const int* strides,                                                      \
+      const int* pads,                                                         \
+      const int* dilations,                                                    \
+      const string& data_format,                                               \
+      const T* x,                                                              \
+      T* y,                                                                    \
+      CUDAContext* ctx) {                                                      \
+    CHECK_LE(num_dims, 3) << "Too many (> " << 3                               \
+                          << ") dimensions to launch the cuda kernel.";        \
+    SimpleArray<int, 3> in_shape_arr;                                          \
+    SimpleArray<int, 3> out_shape_arr;                                         \
+    SimpleArray<int, 3> kshape_arr;                                            \
+    SimpleArray<int, 3> strides_arr;                                           \
+    SimpleArray<int, 3> pads_arr;                                              \
+    SimpleArray<int, 3> dilations_arr;                                         \
+    for (int i = 0; i < num_dims; ++i) {                                       \
+      in_shape_arr.data[i] = in_shape[i];                                      \
+      out_shape_arr.data[i] = out_shape[i];                                    \
+      kshape_arr.data[i] = kshape[i];                                          \
+      strides_arr.data[i] = strides[i];                                        \
+      pads_arr.data[i] = pads[i];                                              \
+      dilations_arr.data[i] = dilations[i];                                    \
+    }                                                                          \
+    const auto kernel_dim =                                                    \
+        std::accumulate(kshape, kshape + num_dims, 1, std::multiplies<int>()); \
+    const auto inner_dim = std::accumulate(                                    \
+        out_shape, out_shape + num_dims, 1, std::multiplies<int>());           \
+    const auto outer_dim = channels * kernel_dim;                              \
+    if (kTransposed) {                                                         \
+      const auto in_dim = std::accumulate(                                     \
+          in_shape, in_shape + num_dims, 1, std::multiplies<int>());           \
+      math::Set(channels* in_dim, T(0), y, ctx);                               \
+    }                                                                          \
+    DISPATCH_CONV_KERNEL(                                                      \
+        _Im2ColNd,                                                             \
+        kTransposed,                                                           \
+        T,                                                                     \
+        CUDA_2D_BLOCKS(outer_dim),                                             \
+        CUDA_THREADS,                                                          \
+        channels,                                                              \
+        kernel_dim,                                                            \
+        outer_dim,                                                             \
+        inner_dim,                                                             \
+        num_dims,                                                              \
+        in_shape_arr,                                                          \
+        out_shape_arr,                                                         \
+        kshape_arr,                                                            \
+        strides_arr,                                                           \
+        pads_arr,                                                              \
+        dilations_arr,                                                         \
+        x,                                                                     \
+        y);                                                                    \
+  }
+
+DEFINE_KERNEL_LAUNCHER(Im2ColNd, false, float);
+DEFINE_KERNEL_LAUNCHER(Im2ColNd, false, double);
+DEFINE_KERNEL_LAUNCHER(Col2ImNd, true, float);
+DEFINE_KERNEL_LAUNCHER(Col2ImNd, true, double);
+#undef DEFINE_KERNEL_LAUNCHER
+#undef DISPATCH_CONV_KERNEL
 
 } // namespace kernel
 

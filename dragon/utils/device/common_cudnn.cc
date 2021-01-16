@@ -89,13 +89,13 @@ void CuDNNSetTensorDesc(
   const int C = (data_format == "NCHW" ? dims[1] : dims.back()) / group;
   int D, H, W;
   if (dims.size() == 3) {
-    D = H = 1;
+    D = W = 1;
     if (data_format == "NCHW") {
-      W = dims[2]; // NCW -> NC1W
+      H = dims[2]; // NCH -> NCH1
       CUDNN_CHECK(cudnnSetTensor4dDescriptorEx(
           *desc, CuDNNType<T>::type, N, C, H, W, C * H * W, H * W, W, 1));
     } else if (data_format == "NHWC") {
-      W = dims[1]; // NWC -> N1WC
+      H = dims[1]; // NHC -> NH1C
       CUDNN_CHECK(cudnnSetTensor4dDescriptorEx(
           *desc, CuDNNType<T>::type, N, C, H, W, H * W * C, 1, W * C, C));
     }
@@ -115,7 +115,7 @@ void CuDNNSetTensorDesc(
     if (data_format == "NCHW") {
       D = dims[2], H = dims[3], W = dims[4];
       dims32 = {N, C, D, H, W};
-      strides32 = {C * H * W * D, H * W * D, W * D, D, 1};
+      strides32 = {C * D * H * W, D * H * W, H * W, W, 1};
     } else if (data_format == "NHWC") {
       D = dims[1], H = dims[2], W = dims[3];
       dims32 = {N, C, D, H, W};
@@ -128,7 +128,7 @@ void CuDNNSetTensorDesc(
         dims32.data(),
         strides32.data()));
   } else {
-    LOG(FATAL) << "Excepted 3d/4d/5d tensor only, got " << dims.size() << "d.";
+    LOG(FATAL) << "Excepted 3d/4d/5d tensor, got " << dims.size() << "d.";
   }
 }
 

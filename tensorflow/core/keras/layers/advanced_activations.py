@@ -22,7 +22,7 @@ from dragon.vm.tensorflow.core.keras.engine.base_layer import Layer
 
 
 class ELU(Layer):
-    r"""The layer to apply the exponential linear unit.
+    r"""Layer to apply the exponential linear unit.
     `[Clevert et.al, 2015] <https://arxiv.org/abs/1511.07289>`_.
 
     The **ELU** function is defined as:
@@ -65,7 +65,7 @@ class ELU(Layer):
 
 
 class LeakyReLU(Layer):
-    r"""The layer to apply the leaky rectified linear unit.
+    r"""Layer to apply the leaky rectified linear unit.
     `[Clevert et.al, 2015] <https://arxiv.org/abs/1511.07289>`_.
 
     The **LeakyReLU** function is defined as:
@@ -108,7 +108,7 @@ class LeakyReLU(Layer):
 
 
 class ReLU(Layer):
-    r"""The layer to apply the rectified linear unit.
+    r"""Layer to apply the rectified linear unit.
     `[Nair & Hinton, 2010] <http://www.csri.utoronto.ca/~hinton/absps/reluICML.pdf>`_.
 
     The **ReLU** function is defined as:
@@ -155,7 +155,7 @@ class ReLU(Layer):
 
 
 class SELU(Layer):
-    r"""The layer to apply the scaled exponential linear unit.
+    r"""Layer to apply the scaled exponential linear unit.
     `[Klambauer et.al, 2017] <https://arxiv.org/abs/1706.02515>`_.
 
     .. math::
@@ -184,7 +184,7 @@ class SELU(Layer):
 
 
 class Softmax(Layer):
-    r"""The layer to apply the softmax function.
+    r"""Layer to apply the softmax function.
 
     The **Softmax** function is defined as:
 

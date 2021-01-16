@@ -20,7 +20,7 @@ from dragon.vm.tensorlayer.core.layers import utils
 
 
 class BatchNorm(layer.Layer):
-    r"""The layer to apply the batch normalization.
+    r"""Batch normalization layer.
     `[Ioffe & Szegedy, 2015] <https://arxiv.org/abs/1502.03167>`_.
 
     Examples:
@@ -68,7 +68,7 @@ class BatchNorm(layer.Layer):
         data_format : {'channels_first', 'channels_last'}, optional
              The optional data format.
         name : str, optional
-            The optional layer name.
+            The layer name.
 
         """
         super(BatchNorm, self).__init__(name, act)

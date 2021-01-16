@@ -17,6 +17,7 @@ from __future__ import print_function
 from dragon.core.autograph.tensor import Tensor
 from dragon.core.eager import context
 from dragon.core.eager.tensor import EagerTensor
+from dragon.core.framework import ops
 from dragon.core.framework import types
 from dragon.core.ops import array_ops_lib
 from dragon.core.ops.utils import ArgHelper
@@ -25,7 +26,7 @@ from dragon.core.util import nest
 
 
 @OpSchema.num_inputs(1)
-def argmax(inputs, axis=None, keep_dims=False, **kwargs):
+def argmax(inputs, axis=None, keepdims=False, **kwargs):
     """Compute the index of maximum elements along the given axis.
 
     The argument ``axis`` could be negative or **None**:
@@ -48,7 +49,7 @@ def argmax(inputs, axis=None, keep_dims=False, **kwargs):
         The input tensor.
     axis : int, optional
         The axis to reduce.
-    keep_dims : bool, optional, default=False
+    keepdims : bool, optional, default=False
         Keep the reduced dimension or not.
 
     Returns
@@ -64,14 +65,14 @@ def argmax(inputs, axis=None, keep_dims=False, **kwargs):
             .instantiate(
                 op_type='ArgMax',
                 axis=axis,
-                keep_dims=keep_dims,
+                keepdims=keepdims,
             ).apply([inputs])
     else:
         return op_lib.blend('ArgMax', **args)
 
 
 @OpSchema.num_inputs(1)
-def argmin(inputs, axis=None, keep_dims=False, **kwargs):
+def argmin(inputs, axis=None, keepdims=False, **kwargs):
     """Compute the index of minimum elements along the given axis.
 
     The argument ``axis`` could be negative or **None**:
@@ -94,7 +95,7 @@ def argmin(inputs, axis=None, keep_dims=False, **kwargs):
         The input tensor.
     axis : int, optional
         The axis to reduce.
-    keep_dims : bool, optional, default=False
+    keepdims : bool, optional, default=False
         Keep the reduced dimension or not.
 
     Returns
@@ -110,7 +111,7 @@ def argmin(inputs, axis=None, keep_dims=False, **kwargs):
             .instantiate(
                 op_type='ArgMin',
                 axis=axis,
-                keep_dims=keep_dims,
+                keepdims=keepdims,
             ).apply([inputs])
     else:
         return op_lib.blend('ArgMin', **args)
@@ -162,6 +163,43 @@ def argsort(inputs, axis=-1, descending=False, **kwargs):
     else:
         args['num_outputs'] = 2
         return op_lib.blend(**args)[1]
+
+
+@OpSchema.num_inputs(2)
+@ArgHelper.repeated_desc('starts')
+@ArgHelper.repeated_desc('sizes')
+def assign(inputs, starts=None, sizes=None, **kwargs):
+    r"""Assign the value to input.
+
+    .. math:: \text{input}[\text{start}:\text{start} + \text{size}, ...] = \text{value}
+
+    Parameters
+    ----------
+    inputs : Sequence[dragon.Tensor]
+        The input and value tensor.
+    starts : Sequence[Union[int, dragon.Tensor]], optional
+        The start location for each dimension.
+    sizes : Sequence[Union[int, dragon.Tensor]], optional
+        The number of elements assigned from start.
+
+    Returns
+    -------
+    dragon.Tensor
+        The output tensor.
+
+    """
+    args = ArgHelper.parse(locals())
+    inplace = args.pop('inplace') if 'inplace' in args else False
+    inputs[1] = ops.scalar_to_tensor(inputs[1], inputs[0].dtype)
+    op_lib = array_ops_lib.Assign
+    if context.executing_eagerly():
+        starts = args['starts'] if starts is not None else [0]
+        sizes = args['sizes'] if sizes is not None else [-1]
+        return op_lib \
+            .instantiate(ndim=len(starts)) \
+            .apply(inputs, starts, sizes, inplace=inplace)
+    else:
+        return op_lib.blend(**args)
 
 
 @OpSchema.num_inputs(1)
@@ -741,6 +779,38 @@ def linspace(start, stop, num, dtype='int64', axis=0, **kwargs):
         return op_lib.blend(**args)
 
 
+@OpSchema.num_inputs(3)
+def masked_assign(inputs, **kwargs):
+    r"""Assign the value to input where mask is 1.
+
+    .. math::
+        \text{input}_{i} =
+            \begin{cases}
+                \text{value}_{i}, & \text{ if } \text{mask}_{i} = 1 \\
+                \text{input}_{i}, & \text{ otherwise }
+        \end{cases}
+
+    Parameters
+    ----------
+    inputs : Sequence[dragon.Tensor]
+        The input, value and mask tensor.
+
+    Returns
+    -------
+    dragon.Tensor
+        The input tensor.
+
+    """
+    args = ArgHelper.parse(locals())
+    inplace = args.pop('inplace') if 'inplace' in args else False
+    inputs[1] = ops.scalar_to_tensor(inputs[1], inputs[0].dtype)
+    op_lib = array_ops_lib.MaskedAssign
+    if context.executing_eagerly():
+        return op_lib.instantiate().apply(inputs, inplace=inplace)
+    else:
+        return op_lib.blend(**args)
+
+
 @OpSchema.num_inputs(2)
 def masked_select(inputs, **kwargs):
     """Select the elements of input where mask is 1.
@@ -765,7 +835,7 @@ def masked_select(inputs, **kwargs):
 
 
 @OpSchema.num_inputs(1)
-def max(inputs, axis=None, keep_dims=False, **kwargs):
+def max(inputs, axis=None, keepdims=False, **kwargs):
     """Compute the max value of elements along the given axis.
 
     The argument ``axis`` could be negative or **None**:
@@ -791,7 +861,7 @@ def max(inputs, axis=None, keep_dims=False, **kwargs):
         The input tensor.
     axis : int, optional
         The axis to reduce.
-    keep_dims : bool, optional, default=False
+    keepdims : bool, optional, default=False
         Keep the reduced dimensions or not.
 
     Returns
@@ -809,14 +879,14 @@ def max(inputs, axis=None, keep_dims=False, **kwargs):
             .instantiate(
                 operation='Max',
                 axes=args['axes'],
-                keep_dims=keep_dims,
+                keepdims=keepdims,
             ).apply([inputs])
     else:
         return op_lib.blend('ReduceMax', **args)
 
 
 @OpSchema.num_inputs(1)
-def mean(inputs, axis=None, keep_dims=False, **kwargs):
+def mean(inputs, axis=None, keepdims=False, **kwargs):
     """Compute the mean value of elements along the given axis.
 
     The argument ``axis`` could be negative or **None**:
@@ -842,7 +912,7 @@ def mean(inputs, axis=None, keep_dims=False, **kwargs):
         The input tensor.
     axis : Union[int, Sequence[int]], optional
         The axis to reduce.
-    keep_dims : bool, optional, default=False
+    keepdims : bool, optional, default=False
         Keep the reduced dimensions or not.
 
     Returns
@@ -860,14 +930,14 @@ def mean(inputs, axis=None, keep_dims=False, **kwargs):
             .instantiate(
                 operation='Mean',
                 axes=args['axes'],
-                keep_dims=keep_dims,
+                keepdims=keepdims,
             ).apply([inputs])
     else:
         return op_lib.blend('ReduceMean', **args)
 
 
 @OpSchema.num_inputs(1)
-def min(inputs, axis=None, keep_dims=False, **kwargs):
+def min(inputs, axis=None, keepdims=False, **kwargs):
     """Compute the min value of elements along the given axis.
 
     The argument ``axis`` could be negative or **None**:
@@ -893,7 +963,7 @@ def min(inputs, axis=None, keep_dims=False, **kwargs):
         The input tensor.
     axis : int, optional
         The axis to reduce.
-    keep_dims : bool, optional, default=False
+    keepdims : bool, optional, default=False
         Keep the reduced dimensions or not.
 
     Returns
@@ -911,14 +981,14 @@ def min(inputs, axis=None, keep_dims=False, **kwargs):
             .instantiate(
                 operation='Min',
                 axes=args['axes'],
-                keep_dims=keep_dims,
+                keepdims=keepdims,
             ).apply([inputs])
     else:
         return op_lib.blend('ReduceMin', **args)
 
 
 @OpSchema.num_inputs(1)
-def moments(inputs, axis=None, keep_dims=False, **kwargs):
+def moments(inputs, axis=None, keepdims=False, **kwargs):
     r"""Compute the mean and variance of input along the given axes.
 
     .. math::
@@ -950,7 +1020,7 @@ def moments(inputs, axis=None, keep_dims=False, **kwargs):
         The tensor :math:`x`.
     axis : Union[int, Sequence[int]], optional
         The axis to reduce.
-    keep_dims : bool, optional, default=False
+    keepdims : bool, optional, default=False
         Keep the reduced dimensions or not.
 
     Returns
@@ -969,7 +1039,7 @@ def moments(inputs, axis=None, keep_dims=False, **kwargs):
         return op_lib \
             .instantiate(
                 axes=args['axes'],
-                keep_dims=keep_dims,
+                keepdims=keepdims,
             ).apply([inputs])
     else:
         return op_lib.blend(num_outputs=2, **args)
@@ -1622,7 +1692,7 @@ def stack(inputs, axis=0, **kwargs):
 
 
 @OpSchema.num_inputs(1)
-def sum(inputs, axis=None, keep_dims=False, **kwargs):
+def sum(inputs, axis=None, keepdims=False, **kwargs):
     """Compute the sum value of elements along the given axis.
 
     The argument ``axis`` could be negative or **None**:
@@ -1648,7 +1718,7 @@ def sum(inputs, axis=None, keep_dims=False, **kwargs):
         The input tensor.
     axis : Union[int, Sequence[int]], optional
         The axis to reduce.
-    keep_dims : bool, optional
+    keepdims : bool, optional, default=False
         Keep the reduced dimensions or not.
 
     Returns
@@ -1666,7 +1736,7 @@ def sum(inputs, axis=None, keep_dims=False, **kwargs):
             .instantiate(
                 operation='Sum',
                 axes=args['axes'],
-                keep_dims=keep_dims,
+                keepdims=keepdims,
             ).apply([inputs])
     else:
         return op_lib.blend('ReduceSum', **args)

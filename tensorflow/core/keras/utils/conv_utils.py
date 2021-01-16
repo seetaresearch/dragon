@@ -21,7 +21,8 @@ from dragon.core.util import nest
 from dragon.core.util import six
 
 
-def convert_data_format(data_format, ndim):
+def convert_data_format(data_format, ndim=4):
+    """Return the tf data format."""
     if data_format == 'channels_last':
         if ndim == 3:
             return 'NWC'
@@ -30,7 +31,7 @@ def convert_data_format(data_format, ndim):
         elif ndim == 5:
             return 'NDHWC'
         else:
-            raise ValueError('Input rank not supported: ' + ndim)
+            raise ValueError('Input rank not supported: ' + str(ndim))
     elif data_format == 'channels_first':
         if ndim == 3:
             return 'NCW'
@@ -39,42 +40,13 @@ def convert_data_format(data_format, ndim):
         elif ndim == 5:
             return 'NCDHW'
         else:
-            raise ValueError('Input rank not supported: ' + ndim)
+            raise ValueError('Input rank not supported: ' + str(ndim))
     else:
         raise ValueError('Invalid data_format: ' + data_format)
 
 
-def deconv_output_length(
-    input_length,
-    filter_size,
-    padding,
-    output_padding=None,
-    stride=0,
-    dilation=1,
-):
-    assert padding in {'same', 'valid', 'full'}
-    if input_length is None:
-        return None
-    filter_size = filter_size + (filter_size - 1) * (dilation - 1)
-    if output_padding is None:
-        if padding == 'full':
-            length = input_length * stride - (stride + filter_size - 2)
-        elif padding == 'same':
-            length = input_length * stride
-        else:
-            length = input_length * stride + max(filter_size - stride, 0)
-    else:
-        if padding == 'same':
-            pad = filter_size // 2
-        elif padding == 'full':
-            pad = filter_size - 1
-        else:
-            pad = 0
-        length = ((input_length - 1) * stride + filter_size - 2 * pad + output_padding)
-    return length
-
-
 def normalize_data_format(value):
+    """Normalize the keras data format."""
     if value is None:
         value = 'channels_last'
     data_format = value.lower()
@@ -106,3 +78,19 @@ def normalize_tuple(value, rank):
     else:
         return tuple([value[i] for i in range(len(value))] +
                      [value[-1] for _ in range(len(value), rank)])
+
+
+def normalize_paddings(value, rank):
+    """Repeat the paddings according to the rank."""
+    if isinstance(value, int):
+        return ((value, value),) * rank
+    elif nest.is_sequence(value):
+        if isinstance(value[0], int):
+            return normalize_tuple(value, rank)
+        elif nest.is_sequence(value[0]):
+            value = [normalize_tuple(v, 2) for v in value]
+            if len(value) > rank:
+                return (value[i] for i in range(rank))
+            else:
+                return tuple([value[i] for i in range(len(value))] +
+                             [value[-1] for _ in range(len(value), rank)])

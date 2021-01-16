@@ -118,5 +118,8 @@ class Data(Layer):
             'num_outputs': 2,
         }
         data, label = framework_ops.python_plugin([], **args)
+        data.shape = (self.data_args['batch_size'],
+                      None, None, len(self.norm_args['mean']))
+        label.shape = (self.data_args['batch_size'], None)
         data = array_ops.channel_normalize(data, **self.norm_args)
         return data, label

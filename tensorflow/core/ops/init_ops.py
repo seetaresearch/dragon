@@ -227,7 +227,7 @@ class VarianceScaling(Initializer):
     def __init__(
         self,
         scale=1.0,
-        mode='fan_in',
+        mode='fan_out',
         distribution='normal',
         dtype='float32',
     ):
@@ -308,7 +308,7 @@ class GlorotNormal(VarianceScaling):
         """
         super(GlorotNormal, self).__init__(
             scale=1.0,
-            mode='fan_avg',
+            mode='fan_out',
             distribution='normal',
             dtype=dtype,
         )
@@ -333,7 +333,7 @@ class GlorotUniform(VarianceScaling):
         """
         super(GlorotUniform, self).__init__(
             scale=1.,
-            mode='fan_avg',
+            mode='fan_out',
             distribution='uniform',
             dtype=dtype,
         )
@@ -418,7 +418,7 @@ class Zeros(Initializer):
 def glorot_uniform_initializer(dtype='float32'):
     return variance_scaling_initializer(
         scale=1.0,
-        mode='fan_avg',
+        mode='fan_out',
         distribution='uniform',
         dtype=dtype,
     )
@@ -427,7 +427,7 @@ def glorot_uniform_initializer(dtype='float32'):
 def glorot_normal_initializer(dtype='float32'):
     return variance_scaling_initializer(
         scale=1.0,
-        mode='fan_avg',
+        mode='fan_out',
         distribution='normal',
         dtype=dtype,
     )

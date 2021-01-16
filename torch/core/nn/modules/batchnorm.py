@@ -273,7 +273,7 @@ class SyncBatchNorm(_BatchNorm):
 
     See Also
     --------
-    `torch.nn.functional.batch_norm(...)`_
+    `torch.nn.functional.sync_batch_norm(...)`_
 
     """
 

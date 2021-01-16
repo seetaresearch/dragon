@@ -920,6 +920,42 @@ def _int_(self):
     return array_funcs.cast(self, 'int32', True)
 
 
+def isinf(self):
+    r"""Return if the elements are infinite.
+
+    .. math:: \text{out} = \text{isinf}(\text{self})
+
+    Returns
+    -------
+    dragon.vm.torch.Tensor
+        The output tensor.
+
+    See Also
+    --------
+    `torch.isinf(...)`_
+
+    """
+    return math_funcs.isinf(self)
+
+
+def isnan(self):
+    r"""Return if the elements are NaN.
+
+    .. math:: \text{out} = \text{isnan}(\text{self})
+
+    Returns
+    -------
+    dragon.vm.torch.Tensor
+        The output tensor.
+
+    See Also
+    --------
+    `torch.isnan(...)`_
+
+    """
+    return math_funcs.isnan(self)
+
+
 def le(self, other):
     r"""Compute the element-wise less-equal comparison.
 
@@ -1083,8 +1119,35 @@ def max(self, dim=None, keepdim=False):
     dragon.vm.torch.Tensor
         The output tensor.
 
+    See Also
+    --------
+    `torch.max(...)`_
+
     """
     return array_funcs.max(self, dim, keepdim)
+
+
+def maximum(self, other):
+    r"""Compute the maximum value of inputs.
+
+    .. math:: \text{out} = \max(\text{self}, \text{other})
+
+    Parameters
+    ----------
+    other : Union[dragon.vm.torch.Tensor, number]
+        The second input tensor.
+
+    Returns
+    -------
+    dragon.vm.torch.Tensor
+        The output tensor.
+
+    See Also
+    --------
+    `torch.maximum(...)`_
+
+    """
+    return math_funcs.maximum(self, other)
 
 
 def mean(self, dim=None, keepdim=False):
@@ -1121,8 +1184,58 @@ def min(self, dim=None, keepdim=False):
     dragon.vm.torch.Tensor
         The output tensor.
 
+    See Also
+    --------
+    `torch.min(...)`_
+
     """
     return array_funcs.min(self, dim, keepdim)
+
+
+def minimum(self, other):
+    r"""Compute the minimum value of inputs.
+
+    .. math:: \text{out} = \min(\text{self}, \text{other})
+
+    Parameters
+    ----------
+    other : Union[dragon.vm.torch.Tensor, number]
+        The second input tensor.
+
+    Returns
+    -------
+    dragon.vm.torch.Tensor
+        The output tensor.
+
+    See Also
+    --------
+    `torch.minimum(...)`_
+
+    """
+    return math_funcs.minimum(self, other)
+
+
+def mm(self, mat2):
+    r"""Compute the matrix-matrix multiplication.
+
+    .. math:: \text{out} = \text{self} \times \text{mat2}
+
+    Parameters
+    ----------
+    mat2 : dragon.vm.torch.Tensor
+        The second matrix.
+
+    Returns
+    -------
+    dragon.vm.torch.Tensor
+        The output tensor.
+
+    See Also
+    --------
+    `torch.mm(...)`_
+
+    """
+    return math_funcs.mm(self, mat2)
 
 
 def mul(self, other):
@@ -1621,6 +1734,29 @@ def sort(self, dim=-1, descending=False):
     return array_funcs.sort(self, dim, descending)
 
 
+def split(self, split_size_or_sections, dim=0):
+    """Return the splited chunks along the given dimension.
+
+    Parameters
+    ----------
+    split_size_or_sections : Union[int, Sequence[int]
+        The number or size of chunks.
+    dim : int, optional, default=0
+        The dimension to split.
+
+    Returns
+    -------
+    Sequence[dragon.vm.torch.Tensor]
+        The output tensors.
+
+    See Also
+    --------
+    `torch.split(...)`_
+
+    """
+    return array_funcs.split(split_size_or_sections, dim)
+
+
 def sqrt(self):
     r"""Compute the square root.
 
@@ -2038,6 +2174,8 @@ Tensor.half_ = half_
 Tensor.index_select = index_select
 Tensor.int = _int
 Tensor.int_ = _int_
+Tensor.isinf = isinf
+Tensor.isnan = isnan
 Tensor.le = le
 Tensor.long = long
 Tensor.long_ = long_
@@ -2047,8 +2185,11 @@ Tensor.lt = lt
 Tensor.masked_fill_ = masked_fill_
 Tensor.masked_select = masked_select
 Tensor.max = max
+Tensor.maximum = maximum
 Tensor.mean = mean
 Tensor.min = min
+Tensor.minimum = minimum
+Tensor.mm = mm
 Tensor.mul = mul
 Tensor.mul_ = mul_
 Tensor.multinomial = multinomial
@@ -2076,6 +2217,7 @@ Tensor.sin = sin
 Tensor.sort = sort
 Tensor.sqrt = sqrt
 Tensor.sqrt_ = sqrt_
+Tensor.split = split
 Tensor.squeeze = squeeze
 Tensor.squeeze_ = squeeze_
 Tensor.sum = sum

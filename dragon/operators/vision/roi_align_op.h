@@ -58,9 +58,6 @@ class RoiAlignGradientOp final : public Operator<Context> {
   template <typename T>
   void DoRunWithType();
 
-  template <typename T>
-  void DoRunWithTypeAndCast();
-
  protected:
   float spatial_scale_;
   int64_t sampling_ratio_;

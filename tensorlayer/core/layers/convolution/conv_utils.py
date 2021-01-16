@@ -74,8 +74,7 @@ def normalize_spatial_args(name, values, num_spatial_dims):
             else:
                 raise ValueError(
                     'Except 1, {} or {} values if <padding> set as explict pads.'
-                    .format(num_spatial_dims, num_spatial_dims * 2)
-                )
+                    .format(num_spatial_dims, num_spatial_dims * 2))
         return padding, pads
 
 

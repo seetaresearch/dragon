@@ -40,12 +40,19 @@ void RoiAlignGradientOp<Context>::DoRunWithType() {
   auto &RoI = Input(0), &dY = Input(1);
   auto* dX = Output(0)->ReshapeLike(RESTORE_INPUT_SPEC(0));
 
+  auto* dx = dX->template mutable_data<T, Context>();
+  auto* dx_acc = (TypeMeta::Id<T>() == TypeMeta::Id<float>())
+      ? (float*)nullptr
+      : ctx()->workspace()->template data<float, Context>({dX->count()})[0];
+
+  // Zero the accumulated float32 buffer
   math::Set(
       dX->count(),
-      convert::To<T>(0.f),
-      dX->template mutable_data<T, Context>(),
+      0.f,
+      dx_acc != nullptr ? dx_acc : reinterpret_cast<float*>(dx),
       ctx());
 
+  // Accumulate gradient to dX
   kernel::RoiAlignGrad(
       dX->dim(1),
       dX->dim(2),
@@ -57,48 +64,18 @@ void RoiAlignGradientOp<Context>::DoRunWithType() {
       sampling_ratio_,
       dY.template data<T, Context>(),
       RoI.template data<float, Context>(),
-      dX->template mutable_data<T, Context>(),
+      dx_acc != nullptr ? dx_acc : reinterpret_cast<float*>(dx),
       ctx());
-}
 
-template <class Context>
-template <typename T>
-void RoiAlignGradientOp<Context>::DoRunWithTypeAndCast() {
-  auto &RoI = Input(0), &dY = Input(1);
-  auto* dX = Output(0)->ReshapeLike(RESTORE_INPUT_SPEC(0));
-
-  auto* scratch =
-      ctx()->workspace()->template data<float, Context>({dX->count()})[0];
-  math::Set(dX->count(), 0.f, scratch, ctx());
-  kernel::RoiAlignGrad(
-      dX->dim(1),
-      dX->dim(2),
-      dX->dim(3),
-      out_h_,
-      out_w_,
-      RoI.dim(0),
-      spatial_scale_,
-      sampling_ratio_,
-      dY.template data<T, Context>(),
-      RoI.template data<float, Context>(),
-      scratch,
-      ctx());
-  math::Cast(
-      dX->count(), scratch, dX->template mutable_data<T, Context>(), ctx());
+  // Convert buffer data to dX if necessary
+  if (dx_acc != nullptr) {
+    math::Cast(dX->count(), dx_acc, dx, ctx());
+  }
 }
 
 template <class Context>
 void RoiAlignGradientOp<Context>::RunOnDevice() {
-  if (Input(1).template IsType<float16>()) {
-    DoRunWithTypeAndCast<float16>();
-  } else if (Input(1).template IsType<float>()) {
-    DoRunWithType<float>();
-  } else if (Input(1).template IsType<double>()) {
-    DoRunWithTypeAndCast<double>();
-  } else {
-    LOG(FATAL) << MessageForUnsupported(
-        types::to_string(Input(1).meta()), {"float16", "float32", "float64"});
-  };
+  DispatchHelper<FloatingTensorTypes>::Call(this, Input(1));
 }
 
 DEPLOY_CPU_OPERATOR(RoiAlign);

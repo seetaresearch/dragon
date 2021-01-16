@@ -38,15 +38,15 @@ class BatchNormOpBase : public GenericOpBase<Context> {
         sync_stats_(OP_SINGLE_ARG(int64_t, "comm", 0) > 0 ? 1 : 0) {}
   USE_OPERATOR_FUNCTIONS;
 
-  void DetermineBaseArguments() {
+  void GetBaseArguments() {
     auto& X = Input(0);
-    // Determine the training mode
+    // Set the training mode
     if (use_stats_ == -1) {
       is_training_ = phase() == "TRAIN" ? 1 : 0;
     } else {
       is_training_ = use_stats_ > 0 ? 0 : 1;
     }
-    // Determine the data format
+    // Set the data format
     this->data_format_ = "NCHW";
     auto axis = OP_SINGLE_ARG(int64_t, "axis", -1);
     if (axis == -1) axis += X.ndim();
@@ -64,15 +64,15 @@ class BatchNormOpBase : public GenericOpBase<Context> {
 
 #undef GenericOpBase
 
-#define USE_BATCHNORM_FUNCTIONS                           \
-  using BatchNormOpBase<Context>::DetermineBaseArguments; \
-  using BatchNormOpBase<Context>::epsilon_;               \
-  using BatchNormOpBase<Context>::use_stats_;             \
-  using BatchNormOpBase<Context>::sync_stats_;            \
-  using BatchNormOpBase<Context>::N_;                     \
-  using BatchNormOpBase<Context>::C_;                     \
-  using BatchNormOpBase<Context>::S_;                     \
-  using BatchNormOpBase<Context>::is_training_;           \
+#define USE_BATCHNORM_FUNCTIONS                     \
+  using BatchNormOpBase<Context>::GetBaseArguments; \
+  using BatchNormOpBase<Context>::epsilon_;         \
+  using BatchNormOpBase<Context>::use_stats_;       \
+  using BatchNormOpBase<Context>::sync_stats_;      \
+  using BatchNormOpBase<Context>::N_;               \
+  using BatchNormOpBase<Context>::C_;               \
+  using BatchNormOpBase<Context>::S_;               \
+  using BatchNormOpBase<Context>::is_training_;     \
   using BatchNormOpBase<Context>::is_recomputing_
 
 template <class Context>

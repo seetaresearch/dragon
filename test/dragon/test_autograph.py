@@ -133,17 +133,17 @@ class TestOpSpec(unittest.TestCase):
     def test_arg_reduce(self):
         with dragon.graph_mode():
             self.assertEqual(dragon.math.argmax(
-                self.sym1, axis=0, keep_dims=True).shape, None)
+                self.sym1, axis=0, keepdims=True).shape, None)
             self.assertEqual(dragon.math.argmax(
-                self.sym1, axis=0, keep_dims=False).shape, None)
+                self.sym1, axis=0, keepdims=False).shape, None)
             self.assertEqual(dragon.math.argmax(
-                self.sym1, axis=None, keep_dims=True).shape, (1,))
+                self.sym1, axis=None, keepdims=True).shape, (1,))
             self.assertEqual(dragon.math.argmax(
-                self.sym1, axis=None, keep_dims=False).shape, ())
+                self.sym1, axis=None, keepdims=False).shape, ())
             self.assertEqual(dragon.math.argmax(
-                self.sym2, axis=0, keep_dims=True).shape, (1,))
+                self.sym2, axis=0, keepdims=True).shape, (1,))
             self.assertEqual(dragon.math.argmax(
-                self.sym2, axis=0, keep_dims=False).shape, ())
+                self.sym2, axis=0, keepdims=False).shape, ())
 
     def test_binary_ops(self):
         with dragon.graph_mode():
@@ -337,11 +337,11 @@ class TestOpSpec(unittest.TestCase):
         with dragon.graph_mode():
             self.assertEqual(dragon.math.moments(self.sym1)[0].shape, ())
             self.assertEqual(dragon.math.moments(self.sym1, axis=0)[0].shape, None)
-            self.assertEqual(dragon.math.moments(self.sym1, keep_dims=True)[0].shape, (1,))
+            self.assertEqual(dragon.math.moments(self.sym1, keepdims=True)[0].shape, (1,))
             self.assertEqual(dragon.math.moments(self.sym2)[0].shape, ())
             self.assertEqual(dragon.math.moments(self.sym2, axis=0)[0].shape, ())
             self.assertEqual(dragon.math.moments(self.sym2, axis=1)[0].shape, (1,))
-            self.assertEqual(dragon.math.moments(self.sym2, axis=0, keep_dims=True)[0].shape, (1,))
+            self.assertEqual(dragon.math.moments(self.sym2, axis=0, keepdims=True)[0].shape, (1,))
             self.assertEqual(dragon.math.moments(dragon.Tensor(None, 'float64'))[0].dtype, 'float64')
             self.assertEqual(dragon.math.moments(dragon.Tensor(None, 'int64'))[0].dtype, 'float64')
 
@@ -376,7 +376,7 @@ class TestOpSpec(unittest.TestCase):
             self.assertEqual(func(self.sym1).shape, None)
             self.assertEqual(func(self.sym3).shape, (1, None))
             self.assertEqual(func(self.sym4).shape, (1, None, None, None))
-            self.assertEqual(func(self.sym4, global_pooling=True).shape, (1, None, 1, 1))
+            self.assertEqual(func(self.sym4, global_pool=True).shape, (1, None, 1, 1))
             self.assertEqual(func(dragon.Tensor((1, 3, 4, 4))).shape, (1, 3, 4, 4))
             self.assertEqual(func(dragon.Tensor((1, 3, 4, 4)), padding='SAME').shape, (1, 3, 4, 4))
 
@@ -397,10 +397,10 @@ class TestOpSpec(unittest.TestCase):
         with dragon.graph_mode():
             self.assertEqual(dragon.math.sum(self.sym1).shape, ())
             self.assertEqual(dragon.math.sum(self.sym1, axis=0).shape, None)
-            self.assertEqual(dragon.math.sum(self.sym1, keep_dims=True).shape, ())
+            self.assertEqual(dragon.math.sum(self.sym1, keepdims=True).shape, ())
             self.assertEqual(dragon.math.sum(self.sym2, axis=0).shape, ())
             self.assertEqual(dragon.math.sum(self.sym2, axis=1).shape, (1,))
-            self.assertEqual(dragon.math.sum(self.sym2, axis=0, keep_dims=True).shape, (1,))
+            self.assertEqual(dragon.math.sum(self.sym2, axis=0, keepdims=True).shape, (1,))
 
     def test_repeat(self):
         with dragon.graph_mode():

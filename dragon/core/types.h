@@ -43,6 +43,12 @@ typedef struct {
 
 #endif
 
+/*! \brief Order in which the values are laid out in memory */
+typedef enum {
+  NCHW = 0,
+  NHWC = 1,
+} StorageOrder;
+
 /*! \brief Array that packs a fixed number of elements */
 template <typename T, int N>
 struct SimpleArray {

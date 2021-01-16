@@ -22,6 +22,29 @@ from dragon.vm.torch.core.nn.parameter import Parameter
 from dragon.vm.torch.core.tensor import Tensor
 
 
+class Identity(Module):
+    r"""Apply the identity transformation.
+
+    .. math:: y = x
+
+    Examples:
+
+    ```python
+    m = torch.nn.Identity(1, unused_arg=2)
+    x = torch.ones(2, 2)
+    y = m(x)
+    ```
+
+    """
+
+    def __init__(self, *args, **kwargs):
+        """Create an ``Identity`` module."""
+        super(Identity, self).__init__()
+
+    def forward(self, input: Tensor) -> Tensor:
+        return input
+
+
 class Linear(Module):
     r"""Apply the linear transformation.
 
@@ -51,7 +74,7 @@ class Linear(Module):
         out_features : int
             The number of output features.
         bias : bool, optional, default=True
-            **True** to add a bias on the output.
+            Add a bias tensor to output or not.
 
         """
         super(Linear, self).__init__()

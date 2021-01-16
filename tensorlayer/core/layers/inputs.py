@@ -28,7 +28,7 @@ class _InputLayer(layer.Layer):
     dtype: str, optional, default='float32'
         The data type of input values.
     name : str, optional
-       The optional layer name.
+       The layer name.
 
     """
 

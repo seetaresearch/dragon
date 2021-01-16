@@ -126,7 +126,7 @@ template <class Context>
 void CollectiveOp<Context>::RunOnDevice() {
   if (comm_size_ <= 1) return;
   // Wait stream to finish the enqueued kernels.
-  // Otherwise, data corruption will happen through GPUDirect(UVA)
+  // Otherwise, data corruption will happen through UVA
   // during executing collectives asynchronously.
   ctx()->FinishDeviceComputation();
   for (int i = 0; i < InputSize(); i++) {

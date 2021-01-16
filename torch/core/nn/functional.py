@@ -21,21 +21,15 @@ from dragon.vm.torch.core.nn.modules import utils
 from dragon.vm.torch.core.ops.math import functional as math_funcs
 
 
-def avg_pool2d(
+def avg_pool1d(
     input,
     kernel_size,
     stride=1,
     padding=0,
     ceil_mode=False,
-    global_pooling=False,
+    global_pool=False,
 ):
-    r"""Apply the 2d average pooling to input.
-
-    The spatial output dimension is computed as:
-
-    .. math::
-        \text{Dim}_{out} = (\text{Dim}_{in} +
-            2 * pad - \text{K}_{size}) / stride + 1
+    r"""Apply the 1d average pooling to input.
 
     Parameters
     ----------
@@ -46,11 +40,49 @@ def avg_pool2d(
     stride : Union[int, Sequence[int]], optional, default=1
         The stride of sliding window.
     padding : Union[int, Sequence[int]], optional, default=0
-        The zero-padding size.
+        The zero padding size.
     ceil_mode : bool, optional, default=False
         Ceil or floor the boundary.
-    global_pooling : bool, optional
-        **True** to pool globally regardless of ``kernel_size``.
+    global_pool : bool, optional, default=False
+        Apply the global pooling or not.
+
+    Returns
+    -------
+    dragon.vm.torch.Tensor
+        The output tensor.
+
+    See Also
+    --------
+    `torch.nn.AvgPool1d(...)`_
+
+    """
+    return _pool(_pool_mode='AVG', _nd_util=utils._single, **locals())
+
+
+def avg_pool2d(
+    input,
+    kernel_size,
+    stride=1,
+    padding=0,
+    ceil_mode=False,
+    global_pool=False,
+):
+    r"""Apply the 2d average pooling to input.
+
+    Parameters
+    ----------
+    input : dragon.vm.torch.Tensor
+        The input tensor.
+    kernel_size : Union[int, Sequence[int]]
+        The size of sliding window.
+    stride : Union[int, Sequence[int]], optional, default=1
+        The stride of sliding window.
+    padding : Union[int, Sequence[int]], optional, default=0
+        The zero padding size.
+    ceil_mode : bool, optional, default=False
+        Ceil or floor the boundary.
+    global_pool : bool, optional, default=False
+        Apply the global pooling or not.
 
     Returns
     -------
@@ -62,12 +94,45 @@ def avg_pool2d(
     `torch.nn.AvgPool2d(...)`_
 
     """
-    return _pool(
-        _pool_mode='AVG',
-        _nd_util=utils._pair,
-        _pool_fn=_functions.Pool2d,
-        **locals()
-    )
+    return _pool(_pool_mode='AVG', _nd_util=utils._pair, **locals())
+
+
+def avg_pool3d(
+    input,
+    kernel_size,
+    stride=1,
+    padding=0,
+    ceil_mode=False,
+    global_pool=False,
+):
+    r"""Apply the 3d average pooling to input.
+
+    Parameters
+    ----------
+    input : dragon.vm.torch.Tensor
+        The input tensor.
+    kernel_size : Union[int, Sequence[int]]
+        The size of sliding window.
+    stride : Union[int, Sequence[int]], optional, default=1
+        The stride of sliding window.
+    padding : Union[int, Sequence[int]], optional, default=0
+        The zero padding size.
+    ceil_mode : bool, optional, default=False
+        Ceil or floor the boundary.
+    global_pool : bool, optional, default=False
+        Apply the global pooling or not.
+
+    Returns
+    -------
+    dragon.vm.torch.Tensor
+        The output tensor.
+
+    See Also
+    --------
+    `torch.nn.AvgPool3d(...)`_
+
+    """
+    return _pool(_pool_mode='AVG', _nd_util=utils._triple, **locals())
 
 
 def batch_norm(
@@ -179,7 +244,7 @@ def binary_cross_entropy_with_logits(
         ).apply([input, target])
 
 
-def conv2d(
+def conv1d(
     input,
     weight,
     bias=None,
@@ -188,17 +253,7 @@ def conv2d(
     dilation=1,
     groups=1,
 ):
-    r"""Apply the 2d convolution to input.
-
-    The spatial output dimension is computed as:
-
-    .. math::
-        \begin{cases}
-            \text{DK}_{size} = dilation *
-                (\text{K}_{size} - 1) + 1 \\
-            \text{Dim}_{out} = (\text{Dim}_{in} +
-                2 * pad - \text{DK}_{size}) / stride + 1
-        \end{cases}
+    r"""Apply the 1d convolution to input.
 
     Parameters
     ----------
@@ -211,7 +266,48 @@ def conv2d(
     stride : Union[int, Sequence[int]], optional, default=1
         The stride of sliding window.
     padding : Union[int, Sequence[int]], optional, default=0
-        The zero-padding size.
+        The zero padding size.
+    dilation : Union[int, Sequence[int]], optional, default=1
+        The rate of dilated kernel.
+    groups : int, optional, default=1
+        The number of groups to split input channels.
+
+    Returns
+    -------
+    dragon.vm.torch.Tensor
+        The output tensor.
+
+    See Also
+    --------
+    `torch.nn.Conv1d(...)`_
+
+    """
+    return _conv(_nd_util=utils._single, **locals())
+
+
+def conv2d(
+    input,
+    weight,
+    bias=None,
+    stride=1,
+    padding=0,
+    dilation=1,
+    groups=1,
+):
+    r"""Apply the 2d convolution to input.
+
+    Parameters
+    ----------
+    input : dragon.vm.torch.Tensor
+        The input tensor.
+    weight : dragon.vm.torch.Tensor
+        The weight tensor.
+    bias : dragon.vm.torch.Tensor, optional
+        The optional bias tensor.
+    stride : Union[int, Sequence[int]], optional, default=1
+        The stride of sliding window.
+    padding : Union[int, Sequence[int]], optional, default=0
+        The zero padding size.
     dilation : Union[int, Sequence[int]], optional, default=1
         The rate of dilated kernel.
     groups : int, optional, default=1
@@ -227,11 +323,92 @@ def conv2d(
     `torch.nn.Conv2d(...)`_
 
     """
-    return _conv(
-        _nd_util=utils._pair,
-        _conv_fn=_functions.Conv2d,
-        **locals()
-    )
+    return _conv(_nd_util=utils._pair, **locals())
+
+
+def conv3d(
+    input,
+    weight,
+    bias=None,
+    stride=1,
+    padding=0,
+    dilation=1,
+    groups=1,
+):
+    r"""Apply the 3d convolution to input.
+
+    Parameters
+    ----------
+    input : dragon.vm.torch.Tensor
+        The input tensor.
+    weight : dragon.vm.torch.Tensor
+        The weight tensor.
+    bias : dragon.vm.torch.Tensor, optional
+        The optional bias tensor.
+    stride : Union[int, Sequence[int]], optional, default=1
+        The stride of sliding window.
+    padding : Union[int, Sequence[int]], optional, default=0
+        The zero padding size.
+    dilation : Union[int, Sequence[int]], optional, default=1
+        The rate of dilated kernel.
+    groups : int, optional, default=1
+        The number of groups to split input channels.
+
+    Returns
+    -------
+    dragon.vm.torch.Tensor
+        The output tensor.
+
+    See Also
+    --------
+    `torch.nn.Conv3d(...)`_
+
+    """
+    return _conv(_nd_util=utils._triple, **locals())
+
+
+def conv_transpose1d(
+    input,
+    weight,
+    bias=None,
+    stride=1,
+    padding=0,
+    output_padding=0,
+    groups=1,
+    dilation=1,
+):
+    r"""Apply the 1d deconvolution to input.
+
+    Parameters
+    ----------
+    input : dragon.vm.torch.Tensor
+        The input tensor.
+    weight : dragon.vm.torch.Tensor
+        The weight tensor.
+    bias : dragon.vm.torch.Tensor, optional
+        The optional bias.
+    stride : Union[int, Sequence[int]], optional, default=1
+        The stride of slidaing window.
+    padding : Union[int, Sequence[int]], optional, default=0
+        The zero padding size.
+    output_padding : int, optional, default=1
+        The additional size added to the output shape.
+    groups : int, optional, default=1
+        The number of groups to split input channels.
+    dilation : Union[int, Sequence[int]], optional, default=1
+        The rate of dilated kernel.
+
+    Returns
+    -------
+    dragon.vm.torch.Tensor
+        The output tensor.
+
+    See Also
+    --------
+    `torch.nn.ConvTranspose1d(...)`_
+
+    """
+    return _conv_transpose(_nd_util=utils._single, **locals())
 
 
 def conv_transpose2d(
@@ -246,16 +423,6 @@ def conv_transpose2d(
 ):
     r"""Apply the 2d deconvolution to input.
 
-    The spatial output dimension is computed as:
-
-    .. math::
-        \begin{cases}
-            \text{DK}_{size} = dilation *
-                (\text{K}_{size} - 1) + 1 \\
-            \text{Dim}_{out} = (\text{Dim}_{in} - 1) *
-                stride + \text{DK}_{size} - 2 * pad
-        \end{cases}
-
     Parameters
     ----------
     input : dragon.vm.torch.Tensor
@@ -267,9 +434,9 @@ def conv_transpose2d(
     stride : Union[int, Sequence[int]], optional, default=1
         The stride of sliding window.
     padding : Union[int, Sequence[int]], optional, default=0
-        The zero-padding size.
+        The zero padding size.
     output_padding : int, optional, default=1
-        The additional padding size.
+        The additional size added to the output shape.
     groups : int, optional, default=1
         The number of groups to split input channels.
     dilation : Union[int, Sequence[int]], optional, default=1
@@ -285,11 +452,51 @@ def conv_transpose2d(
     `torch.nn.ConvTranspose2d(...)`_
 
     """
-    return _conv_transpose(
-        _nd_util=utils._pair,
-        _conv_fn=_functions.ConvTranspose2d,
-        **locals()
-    )
+    return _conv_transpose(_nd_util=utils._pair, **locals())
+
+
+def conv_transpose3d(
+    input,
+    weight,
+    bias=None,
+    stride=1,
+    padding=0,
+    output_padding=0,
+    groups=1,
+    dilation=1,
+):
+    r"""Apply the 3d deconvolution to input.
+
+    Parameters
+    ----------
+    input : dragon.vm.torch.Tensor
+        The input tensor.
+    weight : dragon.vm.torch.Tensor
+        The weight tensor.
+    bias : dragon.vm.torch.Tensor, optional
+        The optional bias.
+    stride : Union[int, Sequence[int]], optional, default=1
+        The stride of sliding window.
+    padding : Union[int, Sequence[int]], optional, default=0
+        The zero padding size.
+    output_padding : int, optional, default=1
+        The additional size added to the output shape.
+    groups : int, optional, default=1
+        The number of groups to split input channels.
+    dilation : Union[int, Sequence[int]], optional, default=1
+        The rate of dilated kernel.
+
+    Returns
+    -------
+    dragon.vm.torch.Tensor
+        The output tensor.
+
+    See Also
+    --------
+    `torch.nn.ConvTranspose3d(...)`_
+
+    """
+    return _conv_transpose(_nd_util=utils._triple, **locals())
 
 
 def cross_entropy(
@@ -401,7 +608,7 @@ def depthwise_conv2d(
     stride : Sequence[int], default=1
         The stride of sliding window.
     padding : Sequence[int], default=0
-        The zero-padding size.
+        The zero padding size.
     dilation : Sequence[int], default=1
         The rate of dilated kernel.
 
@@ -415,11 +622,8 @@ def depthwise_conv2d(
     `torch.nn.DepthwiseConv2d(...)`_
 
     """
-    return _conv(
-        _nd_util=utils._pair,
-        _conv_fn=_functions.DepthwiseConv2d,
-        **locals()
-    )
+    return _conv(_nd_util=utils._pair,
+                 _conv_fn=_functions.DepthwiseConv, **locals())
 
 
 def dropout(input, p=0.5, training=True, inplace=False):
@@ -1007,21 +1211,15 @@ def lstm_cell(input, cx):
     return _functions.LSTMCell.instantiate(input.device).apply(input, cx)
 
 
-def max_pool2d(
+def max_pool1d(
     input,
     kernel_size,
     stride=1,
     padding=0,
     ceil_mode=False,
-    global_pooling=False,
+    global_pool=False,
 ):
-    r"""Apply the 2d max pooling to input.
-
-    The spatial output dimension is computed as:
-
-    .. math::
-        \text{Dim}_{out} = (\text{Dim}_{in} +
-            2 * pad - \text{K}_{size}) / stride + 1
+    r"""Apply the 1d max pooling to input.
 
     Parameters
     ----------
@@ -1032,11 +1230,49 @@ def max_pool2d(
     stride : Union[int, Sequence[int]], optional, default=1
         The stride of sliding window.
     padding : Union[int, Sequence[int]], optional, default=0
-        The zero-padding size.
+        The zero padding size.
     ceil_mode : bool, optional, default=False
         Ceil or floor the boundary.
-    global_pooling : bool, optional
-        **True** to pool globally regardless of ``kernel_size``.
+    global_pool : bool, optional, default=False
+        Apply the global pooling or not.
+
+    Returns
+    -------
+    dragon.vm.torch.Tensor
+        The output tensor.
+
+    See Also
+    --------
+    `torch.nn.MaxPool1d(...)`_
+
+    """
+    return _pool(_pool_mode='MAX', _nd_util=utils._single, **locals())
+
+
+def max_pool2d(
+    input,
+    kernel_size,
+    stride=1,
+    padding=0,
+    ceil_mode=False,
+    global_pool=False,
+):
+    r"""Apply the 2d max pooling to input.
+
+    Parameters
+    ----------
+    input : dragon.vm.torch.Tensor
+        The input tensor.
+    kernel_size : Union[int, Sequence[int]]
+        The size of sliding window.
+    stride : Union[int, Sequence[int]], optional, default=1
+        The stride of sliding window.
+    padding : Union[int, Sequence[int]], optional, default=0
+        The zero padding size.
+    ceil_mode : bool, optional, default=False
+        Ceil or floor the boundary.
+    global_pool : bool, optional, default=False
+        Apply the global pooling or not.
 
     Returns
     -------
@@ -1048,12 +1284,45 @@ def max_pool2d(
     `torch.nn.MaxPool2d(...)`_
 
     """
-    return _pool(
-        _pool_mode='MAX',
-        _nd_util=utils._pair,
-        _pool_fn=_functions.Pool2d,
-        **locals()
-    )
+    return _pool(_pool_mode='MAX', _nd_util=utils._pair, **locals())
+
+
+def max_pool3d(
+    input,
+    kernel_size,
+    stride=1,
+    padding=0,
+    ceil_mode=False,
+    global_pool=False,
+):
+    r"""Apply the 3d max pooling to input.
+
+    Parameters
+    ----------
+    input : dragon.vm.torch.Tensor
+        The input tensor.
+    kernel_size : Union[int, Sequence[int]]
+        The size of sliding window.
+    stride : Union[int, Sequence[int]], optional, default=1
+        The stride of sliding window.
+    padding : Union[int, Sequence[int]], optional, default=0
+        The zero padding size.
+    ceil_mode : bool, optional, default=False
+        Ceil or floor the boundary.
+    global_pool : bool, optional, default=False
+        Apply the global pooling or not.
+
+    Returns
+    -------
+    dragon.vm.torch.Tensor
+        The output tensor.
+
+    See Also
+    --------
+    `torch.nn.MaxPool3d(...)`_
+
+    """
+    return _pool(_pool_mode='MAX', _nd_util=utils._triple, **locals())
 
 
 def mse_loss(
@@ -1636,16 +1905,14 @@ def sync_batch_norm(
     `torch.nn.SyncBatchNorm(...)`_
 
     """
-    if process_group is None:
-        raise ValueError('<process_group> is required.')
     return _functions.SyncBatchNorm \
         .instantiate(
             input.device,
             training=training,
-            momentum=momentum,
             epsilon=eps,
             process_group=process_group,
-        ).apply(input, running_mean, running_var, weight, bias)
+        ).apply(input, running_mean, running_var,
+                weight, bias, momentum)
 
 
 def tanh(input, inplace=False):
@@ -1799,7 +2066,7 @@ def upsample_nearest(input, size=None, scale_factor=None):
 
 
 def _activation(input, inplace=False, _op_type=''):
-    return _functions._Activation \
+    return _functions.Activation \
         .instantiate(input.device, op_type=_op_type) \
         .apply(input, inplace=inplace)
 
@@ -1813,7 +2080,7 @@ def _conv(
     dilation=1,
     groups=None,
     _nd_util=utils._pair,
-    _conv_fn=_functions.Conv2d,
+    _conv_fn=_functions.Conv,
 ):
     weight_shape = list(weight.shape)
     kernel_shape = weight_shape[2:]
@@ -1841,7 +2108,7 @@ def _conv_transpose(
     groups=1,
     dilation=1,
     _nd_util=utils._pair,
-    _conv_fn=_functions.ConvTranspose2d,
+    _conv_fn=_functions.ConvTranspose,
 ):
     weight_shape = list(weight.shape)
     kernel_shape = weight_shape[2:]
@@ -1866,10 +2133,10 @@ def _pool(
     stride=1,
     padding=0,
     ceil_mode=False,
-    global_pooling=False,
+    global_pool=False,
     _pool_mode='MAX',
     _nd_util=utils._pair,
-    _pool_fn=_functions.Pool2d,
+    _pool_fn=_functions.Pool,
 ):
     return _pool_fn.instantiate(
         input.device,
@@ -1878,5 +2145,5 @@ def _pool(
         pads=_nd_util(padding),
         mode=_pool_mode,
         ceil_mode=ceil_mode,
-        global_pooling=global_pooling,
+        global_pool=global_pool,
     ).apply(input)

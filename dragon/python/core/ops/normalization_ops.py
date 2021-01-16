@@ -276,8 +276,8 @@ def local_response_norm(
         The exponent value :math:`\beta`.
     bias : float, optional, default=1.
         The bias constant :math:`k`.
-    data_format : {'NCHW', 'NHWC'}, optional
-        The optional data format.
+    data_format : str, optional, default='NCHW'
+        ``'NCHW'`` or ``'NHWC'``.
 
     Returns
     -------

@@ -593,20 +593,20 @@ def minimum(input, other, out=None):
 
 
 def mm(input, mat2, transpose_a=False, transpose_b=False, out=None):
-    r"""Compute matrix-matrix multiplication.
+    r"""Compute the matrix-matrix multiplication.
 
-    .. math:: y = a \times b
+    .. math:: \text{out} = \text{input} \times \text{mat2}
 
     Parameters
     ----------
     input : dragon.vm.torch.Tensor
-        The matrix :math:`a`.
+        The first matrix.
     mat2 : dragon.vm.torch.Tensor
-        The matrix :math:`b`.
+        The second matrix.
     transpose_a : bool, optional, default=False
-        **True** to transpose :math:`a` before computation.
+        Transpose the first matrix before computation or not.
     transpose_b : bool, optional, default=False
-        **True** to transpose :math:`b` before computation.
+        Transpose the second matrix before computation or not.
     out : dragon.vm.torch.Tensor, optional
         The optional output.
 

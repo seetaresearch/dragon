@@ -21,9 +21,9 @@ from dragon.vm.onnx.core.exporters import utils as export_util
 
 
 @export_util.register([
-    'Conv2d',
-    'ConvTranspose2d',
-    'DepthwiseConv2d',
+    'Conv',
+    'ConvTranspose',
+    'DepthwiseConv',
 ])
 def convolution(op_def, context):
     node, const_tensors = export_util.translate(**locals())
@@ -73,11 +73,11 @@ def depth_space_exporter(op_def, context):
     return node, const_tensors
 
 
-@export_util.register('Pool2d')
+@export_util.register('Pool')
 def pool(op_def, context):
     node, const_tensors = export_util.translate(**locals())
     rank = len(context.blob_shapes[op_def.input[0]]) - 2
-    global_pooling, node_copy = 0, copy.deepcopy(node)
+    global_pool, node_copy = 0, copy.deepcopy(node)
     for arg in op_def.arg:
         _assert_data_format(arg)
         if arg.name == 'kernel_shape':
@@ -101,9 +101,9 @@ def pool(op_def, context):
                 node.op_type = 'AveragePool'
         elif arg.name == 'ceil_mode':
             helper.add_attribute(node, 'ceil_mode', arg.i)
-        elif arg.name == 'global_pooling':
-            global_pooling = arg.i
-    if global_pooling > 0:
+        elif arg.name == 'global_pool':
+            global_pool = arg.i
+    if global_pool > 0:
         # Remove regular pooling attributes.
         node_copy.op_type = 'Global' + node.op_type
         node = node_copy

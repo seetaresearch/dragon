@@ -18,14 +18,14 @@
 namespace dragon {
 
 template <class Context>
-class Pool2dOp final : public PoolOpBase<Context> {
+class PoolOp final : public PoolOpBase<Context> {
  public:
-  Pool2dOp(const OperatorDef& def, Workspace* ws)
+  explicit PoolOp(const OperatorDef& def, Workspace* ws)
       : PoolOpBase<Context>(def, ws) {
-    Setup(2);
+    GetBaseArguments();
   }
   USE_OPERATOR_FUNCTIONS;
-  USE_POOLING_FUNCTIONS;
+  USE_POOL_FUNCTIONS;
 
   void RunOnDevice() override;
 
@@ -34,14 +34,14 @@ class Pool2dOp final : public PoolOpBase<Context> {
 };
 
 template <class Context>
-class Pool2dGradientOp final : public PoolOpBase<Context> {
+class PoolGradientOp final : public PoolOpBase<Context> {
  public:
-  Pool2dGradientOp(const OperatorDef& def, Workspace* ws)
+  PoolGradientOp(const OperatorDef& def, Workspace* ws)
       : PoolOpBase<Context>(def, ws) {
-    Setup(2);
+    GetBaseArguments();
   }
   USE_OPERATOR_FUNCTIONS;
-  USE_POOLING_FUNCTIONS;
+  USE_POOL_FUNCTIONS;
 
   void RunOnDevice() override;
 
@@ -52,30 +52,19 @@ class Pool2dGradientOp final : public PoolOpBase<Context> {
 #ifdef USE_CUDNN
 
 template <class Context>
-class CuDNNPool2dOp final : public PoolOpBase<Context> {
+class CuDNNPoolOp final : public CuDNNPoolOpBase<Context> {
  public:
-  CuDNNPool2dOp(const OperatorDef& def, Workspace* ws)
-      : PoolOpBase<Context>(def, ws) {
-    Setup(2);
+  CuDNNPoolOp(const OperatorDef& def, Workspace* ws)
+      : CuDNNPoolOpBase<Context>(def, ws) {
     CuDNNCreateTensorDesc(&input_desc_);
     CuDNNCreateTensorDesc(&output_desc_);
     CUDNN_CHECK(cudnnCreatePoolingDescriptor(&pool_desc_));
-    if (mode_ == "MAX") {
-#if CUDNN_VERSION_MIN(6, 0, 0)
-      pool_mode_ = CUDNN_POOLING_MAX_DETERMINISTIC;
-#else
-      pool_mode_ = CUDNN_POOLING_MAX;
-#endif
-    } else if (mode_ == "AVG") {
-      pool_mode_ = CUDNN_POOLING_AVERAGE_COUNT_INCLUDE_PADDING;
-    } else {
-      LOG(FATAL) << "Unknown Mode: " << mode_;
-    }
   }
   USE_OPERATOR_FUNCTIONS;
-  USE_POOLING_FUNCTIONS;
+  USE_POOL_FUNCTIONS;
+  USE_CUDNN_POOL_FUNCTIONS;
 
-  ~CuDNNPool2dOp() {
+  ~CuDNNPoolOp() {
     CuDNNDestroyTensorDesc(&input_desc_);
     CuDNNDestroyTensorDesc(&output_desc_);
     CUDNN_CHECK(cudnnDestroyPoolingDescriptor(pool_desc_));
@@ -89,35 +78,22 @@ class CuDNNPool2dOp final : public PoolOpBase<Context> {
  protected:
   cudnnTensorDescriptor_t input_desc_;
   cudnnTensorDescriptor_t output_desc_;
-  cudnnPoolingDescriptor_t pool_desc_;
-  cudnnPoolingMode_t pool_mode_;
 };
 
 template <class Context>
-class CuDNNPool2dGradientOp final : public PoolOpBase<Context> {
+class CuDNNPoolGradientOp final : public CuDNNPoolOpBase<Context> {
  public:
-  CuDNNPool2dGradientOp(const OperatorDef& def, Workspace* ws)
-      : PoolOpBase<Context>(def, ws) {
-    Setup(2);
+  CuDNNPoolGradientOp(const OperatorDef& def, Workspace* ws)
+      : CuDNNPoolOpBase<Context>(def, ws) {
     CuDNNCreateTensorDesc(&input_desc_);
     CuDNNCreateTensorDesc(&output_desc_);
     CUDNN_CHECK(cudnnCreatePoolingDescriptor(&pool_desc_));
-    if (mode_ == "MAX") {
-#if CUDNN_VERSION_MIN(6, 0, 0)
-      pool_mode_ = CUDNN_POOLING_MAX_DETERMINISTIC;
-#else
-      pool_mode_ = CUDNN_POOLING_MAX;
-#endif
-    } else if (mode_ == "AVG") {
-      pool_mode_ = CUDNN_POOLING_AVERAGE_COUNT_INCLUDE_PADDING;
-    } else {
-      LOG(FATAL) << "Unknown Mode: " << mode_;
-    }
   }
   USE_OPERATOR_FUNCTIONS;
-  USE_POOLING_FUNCTIONS;
+  USE_POOL_FUNCTIONS;
+  USE_CUDNN_POOL_FUNCTIONS;
 
-  ~CuDNNPool2dGradientOp() {
+  ~CuDNNPoolGradientOp() {
     CuDNNDestroyTensorDesc(&input_desc_);
     CuDNNDestroyTensorDesc(&output_desc_);
     CUDNN_CHECK(cudnnDestroyPoolingDescriptor(pool_desc_));
@@ -131,12 +107,10 @@ class CuDNNPool2dGradientOp final : public PoolOpBase<Context> {
  protected:
   cudnnTensorDescriptor_t input_desc_;
   cudnnTensorDescriptor_t output_desc_;
-  cudnnPoolingDescriptor_t pool_desc_;
-  cudnnPoolingMode_t pool_mode_;
 };
 
 #endif // USE_CUDNN
 
 } // namespace dragon
 
-#endif // DRAGON_OPERATORS_VISION_POOLING_OP_H_
+#endif // DRAGON_OPERATORS_VISION_POOL_OP_H_

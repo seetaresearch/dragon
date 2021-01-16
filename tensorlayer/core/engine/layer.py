@@ -40,7 +40,7 @@ class Layer(module.Module):
         Parameters
         ----------
         name : str, optional.
-            The optional layer name.
+            The layer name.
         act : str or function, optional
             The optional activation.
 

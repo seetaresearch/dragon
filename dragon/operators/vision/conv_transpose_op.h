@@ -19,15 +19,21 @@
 namespace dragon {
 
 template <class Context>
-class ConvTranspose2dOp : public ConvOpBase<Context> {
+class ConvTransposeOp final : public ConvOpBase<Context> {
  public:
-  ConvTranspose2dOp(const OperatorDef& def, Workspace* ws)
+  ConvTransposeOp(const OperatorDef& def, Workspace* ws)
       : ConvOpBase<Context>(def, ws) {
-    Setup(2);
+    GetBaseArguments();
   }
   USE_OPERATOR_FUNCTIONS;
-  USE_CONVOLUTION_FUNCTIONS;
+  USE_CONV_FUNCTIONS;
 
+  void RunOnDevice() override;
+
+  template <typename T>
+  void DoRunWithType();
+
+ protected:
   bool Transposed() override {
     return true;
   }
@@ -35,64 +41,56 @@ class ConvTranspose2dOp : public ConvOpBase<Context> {
   bool HasBias() override {
     return InputSize() > 2;
   }
+};
+
+template <class Context>
+class ConvTransposeGradientOp final : public ConvOpBase<Context> {
+ public:
+  ConvTransposeGradientOp(const OperatorDef& def, Workspace* ws)
+      : ConvOpBase<Context>(def, ws) {
+    GetBaseArguments();
+  }
+  USE_OPERATOR_FUNCTIONS;
+  USE_CONV_FUNCTIONS;
 
   void RunOnDevice() override;
 
   template <typename T>
   void DoRunWithType();
-};
 
-template <class Context>
-class ConvTranspose2dGradientOp : public ConvTranspose2dOp<Context> {
- public:
-  ConvTranspose2dGradientOp(const OperatorDef& def, Workspace* ws)
-      : ConvTranspose2dOp<Context>(def, ws) {}
-  USE_OPERATOR_FUNCTIONS;
-  USE_CONVOLUTION_FUNCTIONS;
+ protected:
+  bool Transposed() override {
+    return true;
+  }
 
   bool HasBias() override {
     return Output(2)->has_name();
   }
-
-  void RunOnDevice() override;
-
-  template <typename T>
-  void DoRunWithType();
 };
 
 #ifdef USE_CUDNN
 
 template <class Context>
-class CuDNNConvTranspose2dOp final : public ConvTranspose2dOp<Context> {
+class CuDNNConvTransposeOp final : public CuDNNConvOpBase<Context> {
  public:
-  CuDNNConvTranspose2dOp(const OperatorDef& def, Workspace* ws)
-      : ConvTranspose2dOp<Context>(def, ws),
-        enable_tensor_core_(TENSOR_CORE_AVAILABLE() ? 1 : 0) {
-#if CUDNN_VERSION_MIN(7, 0, 0)
-    cudnn_group_ = 1;
-#else
-    cudnn_group_ = group_;
-#endif
+  CuDNNConvTransposeOp(const OperatorDef& def, Workspace* ws)
+      : CuDNNConvOpBase<Context>(def, ws) {
     CuDNNCreateTensorDesc(&input_desc_);
     CuDNNCreateTensorDesc(&bias_desc_);
     CuDNNCreateTensorDesc(&output_desc_);
-    CuDNNCreateTensorDesc(&output2b_desc_);
+    CuDNNCreateTensorDesc(&output_desc_for_bias_);
     CUDNN_CHECK(cudnnCreateFilterDescriptor(&filter_desc_));
     CUDNN_CHECK(cudnnCreateConvolutionDescriptor(&conv_desc_));
-    if (data_format() == "NCHW") {
-      format_ = CUDNN_TENSOR_NCHW;
-    } else if (data_format() == "NHWC") {
-      format_ = CUDNN_TENSOR_NHWC;
-    }
   }
   USE_OPERATOR_FUNCTIONS;
-  USE_CONVOLUTION_FUNCTIONS;
+  USE_CONV_FUNCTIONS;
+  USE_CUDNN_CONV_FUNCTIONS;
 
-  ~CuDNNConvTranspose2dOp() {
+  ~CuDNNConvTransposeOp() {
     CuDNNDestroyTensorDesc(&input_desc_);
     CuDNNDestroyTensorDesc(&bias_desc_);
     CuDNNDestroyTensorDesc(&output_desc_);
-    CuDNNDestroyTensorDesc(&output2b_desc_);
+    CuDNNDestroyTensorDesc(&output_desc_for_bias_);
     CUDNN_CHECK(cudnnDestroyFilterDescriptor(filter_desc_));
     CUDNN_CHECK(cudnnDestroyConvolutionDescriptor(conv_desc_));
   }
@@ -100,62 +98,51 @@ class CuDNNConvTranspose2dOp final : public ConvTranspose2dOp<Context> {
   void RunOnDevice() override;
 
   template <typename T>
-  void SetConvDesc();
+  void DoRunWithType();
+
+ protected:
+  bool HasBias() override {
+    return InputSize() > 2;
+  }
+
+  bool Transposed() override {
+    return true;
+  }
 
   template <typename T>
   void ResetDesc();
 
-  template <typename T>
-  void DoRunWithType();
-
- protected:
-  cudnnDataType_t compute_type_;
-  cudnnTensorFormat_t format_;
-  cudnnConvolutionBwdDataAlgo_t fwd_algo_;
-  cudnnTensorDescriptor_t input_desc_, output_desc_;
-  cudnnTensorDescriptor_t bias_desc_, output2b_desc_;
-  cudnnConvolutionDescriptor_t conv_desc_;
-  cudnnFilterDescriptor_t filter_desc_;
   size_t cudnn_ws_nbytes_;
   vec64_t input_dims_, filter_dims_;
-  int64_t cudnn_group_, enable_tensor_core_;
   bool exhaustive_search_ = false;
+  cudnnConvolutionBwdDataAlgo_t fwd_algo_;
+  cudnnTensorDescriptor_t input_desc_, output_desc_;
+  cudnnTensorDescriptor_t bias_desc_, output_desc_for_bias_;
   using FwdAlgoWithCost = std::tuple<cudnnConvolutionBwdDataAlgo_t, float>;
   ConvAlgorithmCache<FwdAlgoWithCost> algo_cache_;
 };
 
 template <class Context>
-class CuDNNConvTranspose2dGradientOp final
-    : public ConvTranspose2dGradientOp<Context> {
+class CuDNNConvTransposeGradientOp final : public CuDNNConvOpBase<Context> {
  public:
-  CuDNNConvTranspose2dGradientOp(const OperatorDef& def, Workspace* ws)
-      : ConvTranspose2dGradientOp<Context>(def, ws),
-        enable_tensor_core_(TENSOR_CORE_AVAILABLE() ? 1 : 0) {
-#if CUDNN_VERSION_MIN(7, 0, 0)
-    cudnn_group_ = 1;
-#else
-    cudnn_group_ = group_;
-#endif
+  CuDNNConvTransposeGradientOp(const OperatorDef& def, Workspace* ws)
+      : CuDNNConvOpBase<Context>(def, ws) {
     CuDNNCreateTensorDesc(&input_desc_);
     CuDNNCreateTensorDesc(&bias_desc_);
     CuDNNCreateTensorDesc(&output_desc_);
-    CuDNNCreateTensorDesc(&input2b_desc_);
+    CuDNNCreateTensorDesc(&input_desc_for_bias_);
     CUDNN_CHECK(cudnnCreateFilterDescriptor(&filter_desc_));
     CUDNN_CHECK(cudnnCreateConvolutionDescriptor(&conv_desc_));
-    if (data_format() == "NCHW") {
-      format_ = CUDNN_TENSOR_NCHW;
-    } else if (data_format() == "NHWC") {
-      format_ = CUDNN_TENSOR_NHWC;
-    }
   }
   USE_OPERATOR_FUNCTIONS;
-  USE_CONVOLUTION_FUNCTIONS;
+  USE_CONV_FUNCTIONS;
+  USE_CUDNN_CONV_FUNCTIONS;
 
-  ~CuDNNConvTranspose2dGradientOp() {
+  ~CuDNNConvTransposeGradientOp() {
     CuDNNDestroyTensorDesc(&input_desc_);
     CuDNNDestroyTensorDesc(&bias_desc_);
     CuDNNDestroyTensorDesc(&output_desc_);
-    CuDNNDestroyTensorDesc(&input2b_desc_);
+    CuDNNDestroyTensorDesc(&input_desc_for_bias_);
     CUDNN_CHECK(cudnnDestroyFilterDescriptor(filter_desc_));
     CUDNN_CHECK(cudnnDestroyConvolutionDescriptor(conv_desc_));
   }
@@ -163,28 +150,28 @@ class CuDNNConvTranspose2dGradientOp final
   void RunOnDevice() override;
 
   template <typename T>
-  void SetConvDesc();
+  void DoRunWithType();
+
+ protected:
+  bool HasBias() override {
+    return Output(2)->has_name();
+  }
+
+  bool Transposed() override {
+    return true;
+  }
 
   template <typename T>
   void ResetDesc();
 
-  template <typename T>
-  void DoRunWithType();
-
- protected:
-  cudnnDataType_t compute_type_;
-  cudnnTensorFormat_t format_;
+  size_t cudnn_ws_nbytes_;
+  vec64_t input_dims_, filter_dims_;
+  bool exhaustive_search_data_ = false;
+  bool exhaustive_search_filter_ = false;
   cudnnConvolutionBwdFilterAlgo_t bwd_filter_algo_;
   cudnnConvolutionFwdAlgo_t bwd_data_algo_;
   cudnnTensorDescriptor_t input_desc_, output_desc_;
-  cudnnTensorDescriptor_t bias_desc_, input2b_desc_;
-  cudnnConvolutionDescriptor_t conv_desc_;
-  cudnnFilterDescriptor_t filter_desc_;
-  size_t cudnn_ws_nbytes_;
-  vec64_t input_dims_, filter_dims_;
-  int64_t cudnn_group_, enable_tensor_core_;
-  bool exhaustive_search_data_ = false;
-  bool exhaustive_search_filter_ = false;
+  cudnnTensorDescriptor_t bias_desc_, input_desc_for_bias_;
   using BwdDataAlgoWithCost = std::tuple<cudnnConvolutionFwdAlgo_t, float>;
   using BwdFilterAlgoWithCost =
       std::tuple<cudnnConvolutionBwdFilterAlgo_t, float>;

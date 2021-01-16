@@ -21,7 +21,7 @@ from dragon.vm.tensorlayer.core.layers import utils
 
 
 class Concat(layer.Layer):
-    """The layer to concat tensors according to the given axis."""
+    """Layer to concat tensors according to the given axis."""
 
     def __init__(self, concat_dim=-1, name=None):
         """Create a ``Concat`` layer.
@@ -31,7 +31,7 @@ class Concat(layer.Layer):
         concat_dim : int, optional, default=-1
             The dimension to concatenate.
         name : str, optional
-            The optional layer name.
+            The layer name.
 
         """
         super(Concat, self).__init__(name)
@@ -50,7 +50,7 @@ class Concat(layer.Layer):
 
 
 class Elementwise(layer.Layer):
-    """The layer to combine inputs by applying element-wise operation."""
+    """Layer to combine inputs by applying element-wise operation."""
 
     def __init__(self, operation='add', act=None, name=None):
         """Create a ``Elementwise`` layer.
@@ -62,7 +62,7 @@ class Elementwise(layer.Layer):
         act : callable, optional
             The optional activation function.
         name : str, optional
-            The optional layer name.
+            The layer name.
 
         """
         super(Elementwise, self).__init__(name, act)

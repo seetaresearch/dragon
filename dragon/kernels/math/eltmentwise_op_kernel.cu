@@ -23,7 +23,7 @@ _CosGrad<half>(const int nthreads, const half* dy, const half* x, half* dx) {
   CUDA_1D_KERNEL_LOOP(i, nthreads) {
     dx[i] = __float2half(-__half2float(dy[i]) * sin(__half2float(x[i])));
   }
-}
+} // CosGrad
 
 template <>
 __global__ void _CosGrad<half2>(
@@ -36,7 +36,7 @@ __global__ void _CosGrad<half2>(
     const float2 grad = __half22float2(dy[i]);
     dx[i] = __floats2half2_rn(-grad.x * sin(val.x), -grad.y * sin(val.y));
   }
-}
+} // CosGrad
 
 template <typename T>
 __global__ void _SinGrad(const int nthreads, const T* dy, const T* x, T* dx) {
@@ -51,7 +51,7 @@ _SinGrad<half>(const int nthreads, const half* dy, const half* x, half* dx) {
   CUDA_1D_KERNEL_LOOP(i, nthreads) {
     dx[i] = __float2half(__half2float(dy[i]) * cos(__half2float(x[i])));
   }
-}
+} // SinGrad
 
 template <>
 __global__ void _SinGrad<half2>(
@@ -64,7 +64,7 @@ __global__ void _SinGrad<half2>(
     const float2 grad = __half22float2(dy[i]);
     dx[i] = __floats2half2_rn(grad.x * cos(val.x), grad.y * cos(val.y));
   }
-}
+} // SinGrad
 
 template <typename T>
 __global__ void
@@ -84,7 +84,7 @@ __global__ void _ReciprocalGrad<half>(
     dx[i] = __float2half(
         -__half2float(dy[i]) * math::utils::Square(__half2float(y[i])));
   }
-}
+} // ReciprocalGrad
 
 template <>
 __global__ void _ReciprocalGrad<half2>(
@@ -98,7 +98,7 @@ __global__ void _ReciprocalGrad<half2>(
     dx[i] =
         __floats2half2_rn(-grad.x * (val.x * val.x), -grad.y * (val.y * val.y));
   }
-}
+} // ReciprocalGrad
 
 template <typename T>
 __global__ void _RsqrtGrad(const int nthreads, const T* dy, const T* y, T* dx) {
@@ -114,7 +114,7 @@ _RsqrtGrad<half>(const int nthreads, const half* dy, const half* y, half* dx) {
     dx[i] = __float2half(
         -0.5f * __half2float(dy[i]) * math::utils::Cube(__half2float(y[i])));
   }
-}
+} // ReciprocalGrad
 
 template <>
 __global__ void _RsqrtGrad<half2>(
@@ -129,7 +129,7 @@ __global__ void _RsqrtGrad<half2>(
         -0.5f * grad.x * (val.x * val.x * val.x),
         -0.5f * grad.y * (val.y * val.y * val.y));
   }
-}
+} // ReciprocalGrad
 
 } // namespace
 

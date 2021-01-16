@@ -47,13 +47,13 @@ class RMSprop(optimizer.Optimizer):
         Parameters
         ----------
         base_lr : float, optional, default=0.01
-            The initial value for :math:`\text{lr}`.
+            The initial value to :math:`\text{lr}`.
         momentum : float, optional, default=0.
-            The initial value for :math:`\text{momentum}`.
+            The initial value to :math:`\text{momentum}`.
         decay : float, optional, default=0.9
-            The initial value for :math:`\text{decay}`.
+            The initial value to :math:`\text{decay}`.
         eps : float, optional, default=1e-8
-            The initial value for :math:`\epsilon`.
+            The initial value to :math:`\epsilon`.
 
         """
         super(RMSprop, self).__init__(**kwargs)

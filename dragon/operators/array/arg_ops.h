@@ -22,7 +22,7 @@ class ArgMaxOp final : public Operator<Context> {
  public:
   ArgMaxOp(const OperatorDef& def, Workspace* ws)
       : Operator<Context>(def, ws),
-        keep_dims_(OP_SINGLE_ARG(int64_t, "keep_dims", 0)) {}
+        keep_dims_(OP_SINGLE_ARG(int64_t, "keepdims", 0)) {}
   USE_OPERATOR_FUNCTIONS;
 
   void RunOnDevice() override;
@@ -39,7 +39,7 @@ class ArgMinOp final : public Operator<Context> {
  public:
   ArgMinOp(const OperatorDef& def, Workspace* ws)
       : Operator<Context>(def, ws),
-        keep_dims_(OP_SINGLE_ARG(int64_t, "keep_dims", 0)) {}
+        keep_dims_(OP_SINGLE_ARG(int64_t, "keepdims", 0)) {}
   USE_OPERATOR_FUNCTIONS;
 
   void RunOnDevice() override;

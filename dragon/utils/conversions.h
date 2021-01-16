@@ -32,6 +32,11 @@ CONVERSIONS_DECL DestType To(SrcType val) {
 }
 
 template <>
+inline float16 To<float16, float16>(float16 val) {
+  return val;
+}
+
+template <>
 inline float16 To<float16, float>(float val) {
   float16 ret;
   unsigned* xp = reinterpret_cast<unsigned int*>(&val);
@@ -130,6 +135,11 @@ CONVERSIONS_DECL half To<half, float16>(float16 val) {
 template <>
 CONVERSIONS_DECL half2 To<half2, float16>(float16 val) {
   return half2(__half2_raw{val.x, val.x});
+}
+
+template <>
+CONVERSIONS_DECL half To<half, half>(half val) {
+  return val;
 }
 
 template <>

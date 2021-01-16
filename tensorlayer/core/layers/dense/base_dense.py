@@ -19,7 +19,7 @@ from dragon.vm.tensorlayer.core.engine import layer
 
 
 class Dense(layer.Layer):
-    r"""The fully connected layer.
+    r"""Fully connected layer.
 
     Examples:
 
@@ -55,7 +55,7 @@ class Dense(layer.Layer):
         in_channels : int, optional
             The number of input units.
         name : str, optional
-            The optional layer name.
+            The layer name.
 
         """
         super(Dense, self).__init__(name, act=act)
@@ -64,17 +64,15 @@ class Dense(layer.Layer):
         self.W_init = W_init
         self.b_init = b_init
         self.in_channels = in_channels
-
         self.W = None
         self.b = None
-
         if self.in_channels is not None:
-            self.build(self.in_channels)
+            self.build((None, None))
             self._built = True
 
     def __repr__(self):
-        actstr = self.act.__name__ if self.act is not None else 'No Activation'
-        s = ('{classname}(n_units={n_units}, ' + actstr)
+        act_str = self.act.__name__ if self.act is not None else 'No Activation'
+        s = ('{classname}(n_units={n_units}, ' + act_str)
         if self.in_channels is not None:
             s += ', in_channels=\'{in_channels}\''
         if self.name is not None:
@@ -86,7 +84,6 @@ class Dense(layer.Layer):
         if self.in_channels is None and len(inputs_shape) != 2:
             raise AssertionError('The input dimension must be rank 2.'
                                  'Please reshape or flatten it.')
-        # Fake shape with *NC* format is required to compute fans.
         if self.in_channels:
             shape = [self.n_units, self.in_channels]
         else:

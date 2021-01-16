@@ -96,24 +96,24 @@ class TestTensorOps(OpTestCase):
             self.assertEqual(a, data1 + data2)
 
     def test_argmax(self):
-        entries = [(0, True), (0, False), (1, True), (1, False)]
-        for axis, keep_dims in entries:
+        entries = [(0, True), (0, False), (1, True), (1, False), (None, False)]
+        for axis, keepdims in entries:
             data = arange((2, 3))
             x = new_tensor(data)
             result = np.argmax(data, axis)
-            if keep_dims:
+            if keepdims:
                 result = np.expand_dims(result, axis)
-            self.assertEqual(x.argmax(axis, keep_dims), result)
+            self.assertEqual(x.argmax(axis, keepdims), result)
 
     def test_argmin(self):
-        entries = [(0, True), (0, False), (1, True), (1, False)]
-        for axis, keep_dims in entries:
+        entries = [(0, True), (0, False), (1, True), (1, False), (None, False)]
+        for axis, keepdims in entries:
             data = arange((2, 3))
             x = new_tensor(data)
             result = np.argmin(data, axis)
-            if keep_dims:
+            if keepdims:
                 result = np.expand_dims(result, axis)
-            self.assertEqual(x.argmin(axis, keep_dims), result)
+            self.assertEqual(x.argmin(axis, keepdims), result)
 
     def test_bitwise_not(self):
         for shape in self.unary_test_shapes:
@@ -295,6 +295,16 @@ class TestTensorOps(OpTestCase):
             self.assertEqual(
                 y, np.take(data.reshape(flatten_shape), index, axis=axes[0]))
 
+    def test_isinf(self):
+        data = np.array([0., 1., float('inf')])
+        x = new_tensor(data)
+        self.assertEqual(x.isinf(), np.isinf(data))
+
+    def test_isnan(self):
+        data = np.array([0., 1., float('nan')])
+        x = new_tensor(data)
+        self.assertEqual(x.isnan(), np.isnan(data))
+
     def test_less(self):
         for a_shape, b_shape in self.binary_test_shapes:
             data1, data2 = uniform(a_shape), uniform(b_shape)
@@ -328,34 +338,64 @@ class TestTensorOps(OpTestCase):
         entries = [(0, True), (0, False),
                    (1, True), (1, False),
                    ((0, 1), True), ((0, 1), False)]
-        for axis, keep_dims in entries:
+        for axis, keepdims in entries:
             data = arange((2, 3))
             x = new_tensor(data)
-            y = x.max(axis, keepdim=keep_dims)
-            result = np.max(data, axis, keepdims=keep_dims)
+            y = x.max(axis, keepdim=keepdims)
+            result = np.max(data, axis, keepdims=keepdims)
             self.assertEqual(y, result)
+
+    def test_maximum(self):
+        for a_shape, b_shape in self.binary_test_shapes:
+            data1, data2 = uniform(a_shape), uniform(b_shape)
+            a, b = new_tensor(data1), new_tensor(data2)
+            y = a.maximum(b)
+            self.assertEqual(y, np.maximum(data1, data2))
 
     def test_mean(self):
         entries = [(0, True), (0, False),
                    (1, True), (1, False),
                    ((0, 1), True), ((0, 1), False)]
-        for axis, keep_dims in entries:
+        for axis, keepdims in entries:
             data = arange((2, 3))
             x = new_tensor(data)
-            y = x.mean(axis, keepdim=keep_dims)
-            result = np.mean(data, axis, keepdims=keep_dims)
+            y = x.mean(axis, keepdim=keepdims)
+            result = np.mean(data, axis, keepdims=keepdims)
             self.assertEqual(y, result)
 
     def test_min(self):
         entries = [(0, True), (0, False),
                    (1, True), (1, False),
                    ((0, 1), True), ((0, 1), False)]
-        for axis, keep_dims in entries:
+        for axis, keepdims in entries:
             data = arange((2, 3))
             x = new_tensor(data)
-            y = x.min(axis, keepdim=keep_dims)
-            result = np.min(data, axis, keepdims=keep_dims)
+            y = x.min(axis, keepdim=keepdims)
+            result = np.min(data, axis, keepdims=keepdims)
             self.assertEqual(y, result)
+
+    def test_minimum(self):
+        for a_shape, b_shape in self.binary_test_shapes:
+            data1, data2 = uniform(a_shape), uniform(b_shape)
+            a, b = new_tensor(data1), new_tensor(data2)
+            y = a.minimum(b)
+            self.assertEqual(y, np.minimum(data1, data2))
+
+    def test_mm(self):
+        entries = [
+            ((2, 3), (3, 4), False, False),
+            ((2, 3), (4, 3), False, True),
+            ((3, 2), (3, 4), True, False),
+            ((3, 2), (4, 3), True, True)]
+        for a_shape, b_shape, trans_a, trans_b in entries:
+            data1, data2 = arange(a_shape), arange(b_shape)
+            a, b = new_tensor(data1), new_tensor(data2)
+            if trans_a or trans_b:
+                y = torch.mm(a, b, trans_a, trans_b)
+            else:
+                y = a.mm(b)
+            self.assertEqual(y, np.matmul(data1.T if trans_a else data1,
+                                          data2.T if trans_b else data2))
 
     def test_mul(self):
         for a_shape, b_shape in self.binary_test_shapes:
@@ -522,6 +562,16 @@ class TestTensorOps(OpTestCase):
             self.assertEqual(idx1, result_idx)
             self.assertEqual(idx2, result_idx)
 
+    def test_split(self):
+        entries = [((2, 4), 2, 1),
+                   ((2, 3), 2, 1),
+                   ((2, 3), (2, 1), 1)]
+        for shape, size_or_sections, dim in entries:
+            data = arange(shape)
+            x = new_tensor(data)
+            y = torch.split(x, size_or_sections, dim)
+            self.assertEqual(y, np.split(data, (2,), axis=1))
+
     def test_sqrt(self):
         data = np.array([4., 9., 16], 'float32')
         x = new_tensor(data)
@@ -633,6 +683,37 @@ class TestTorchOps(OpTestCase):
             x = torch.arange(*args, **kwargs)
             self.assertEqual(x, data)
 
+    def test_cat(self):
+        entries = [0, 1]
+        for axis in entries:
+            data = arange((2, 2))
+            x = new_tensor(data)
+            y = torch.cat([x, x], dim=axis)
+            self.assertEqual(y, np.concatenate([data, data], axis=axis))
+
+    def test_channel_normalize(self):
+        entries = [((2, 3, 4), [(1., 2., 3.), (3., 2., 1.), 1], {'dims': (0, 1, 2)}),
+                   ((2, 3, 4), [(1., 2., 3.), (3., 2., 1.), 2], {'dims': (0, 2, 1)})]
+        for shape, args, kwargs in entries:
+            perm = kwargs['dims']
+            data = np.ones(shape, dtype='uint8').transpose(perm)
+            mean = np.array(args[0]).reshape((1, 3, 1)).transpose(perm)
+            std = np.array(args[1]).reshape((1, 3, 1)).transpose(perm)
+            x = torch.ones(shape, dtype='uint8')
+            y = torch.channel_normalize(x, *args, **kwargs)
+            self.assertEqual(y, (data - mean) / std)
+
+    def test_channel_shuffle(self):
+        entries = [(0, 2), (1, 4)]
+        for axis, group in entries:
+            data = arange((2, 8))
+            g, k = group, data.shape[axis] // group
+            shape = data.shape[:axis] + (g, k) + data.shape[axis + 1:]
+            perm = list(range(0, axis)) + [axis + 1, axis] + list(range(axis + 2, len(shape)))
+            x = new_tensor(data)
+            y = torch.channel_shuffle(x, axis, group)
+            self.assertEqual(y, data.reshape(shape).transpose(perm).reshape(data.shape))
+
     def test_linspace(self):
         entries = [([[0., 5.], [10., 40.], 5], {'dim': 0, 'dtype': 'float32'}),
                    ([[0., 5.], [10., 40.], 5], {'dim': 1, 'dtype': 'float32'}),
@@ -647,6 +728,14 @@ class TestTorchOps(OpTestCase):
             data = np.linspace(*args, **kwargs)
             self.assertEqual(x, data)
 
+    def test_one_hot(self):
+        entries = [(2, 3, 3), (1, 2, 3), (2, 2, 2)]
+        for index in entries:
+            index = np.array(index, 'int64')
+            x = new_tensor(index)
+            y = torch.one_hot(x, depth=10)
+            self.assertEqual(y, np.eye(10, dtype='int64')[index])
+
     def test_ones_like(self):
         data = np.ones((2, 3), dtype='float32')
         x = new_tensor(data)
@@ -660,6 +749,14 @@ class TestTorchOps(OpTestCase):
 
     def test_randperm(self):
         self.assertEqual(torch.randperm(4).shape, (4,))
+
+    def test_stack(self):
+        entries = [0, 1]
+        for axis in entries:
+            data = arange((2, 2))
+            x = new_tensor(data)
+            y = torch.stack([x, x], dim=axis)
+            self.assertEqual(y, np.stack([data, data], axis=axis))
 
     def test_zeros_like(self):
         data = np.zeros((2, 3), dtype='float32')

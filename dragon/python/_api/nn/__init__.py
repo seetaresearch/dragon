@@ -41,11 +41,20 @@ from dragon.core.ops.normalization_ops import layer_norm
 from dragon.core.ops.normalization_ops import local_response_norm
 from dragon.core.ops.normalization_ops import sync_batch_norm
 from dragon.core.ops.vision_ops import bias_add
+from dragon.core.ops.vision_ops import conv
+from dragon.core.ops.vision_ops import conv_transpose
+from dragon.core.ops.vision_ops import conv1d
+from dragon.core.ops.vision_ops import conv1d_transpose
 from dragon.core.ops.vision_ops import conv2d
 from dragon.core.ops.vision_ops import conv2d_transpose
+from dragon.core.ops.vision_ops import conv3d
+from dragon.core.ops.vision_ops import conv3d_transpose
 from dragon.core.ops.vision_ops import depthwise_conv2d
 from dragon.core.ops.vision_ops import depth_to_space
+from dragon.core.ops.vision_ops import pool
+from dragon.core.ops.vision_ops import pool1d
 from dragon.core.ops.vision_ops import pool2d
+from dragon.core.ops.vision_ops import pool3d
 from dragon.core.ops.vision_ops import space_to_depth
 
 __all__ = [_s for _s in dir() if not _s.startswith('_')]

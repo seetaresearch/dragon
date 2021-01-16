@@ -26,9 +26,9 @@ class GroupNormOpBase : public Operator<Context> {
         epsilon_(OP_SINGLE_ARG(double, "epsilon", 1e-5)) {}
   USE_OPERATOR_FUNCTIONS;
 
-  void DetermineBaseArguments() {
+  void GetBaseArguments() {
     auto& X = Input(0);
-    // Determine the data format
+    // Set the data format
     this->data_format_ = "NCHW";
     auto axis = OP_SINGLE_ARG(int64_t, "axis", -1);
     if (axis == -1) axis += X.ndim();
@@ -50,14 +50,14 @@ class GroupNormOpBase : public Operator<Context> {
   int64_t N_, C_, G_, D_, S_;
 };
 
-#define USE_GROUPNORM_FUNCTIONS                           \
-  using GroupNormOpBase<Context>::DetermineBaseArguments; \
-  using GroupNormOpBase<Context>::group_;                 \
-  using GroupNormOpBase<Context>::epsilon_;               \
-  using GroupNormOpBase<Context>::N_;                     \
-  using GroupNormOpBase<Context>::C_;                     \
-  using GroupNormOpBase<Context>::G_;                     \
-  using GroupNormOpBase<Context>::D_;                     \
+#define USE_GROUPNORM_FUNCTIONS                     \
+  using GroupNormOpBase<Context>::GetBaseArguments; \
+  using GroupNormOpBase<Context>::group_;           \
+  using GroupNormOpBase<Context>::epsilon_;         \
+  using GroupNormOpBase<Context>::N_;               \
+  using GroupNormOpBase<Context>::C_;               \
+  using GroupNormOpBase<Context>::G_;               \
+  using GroupNormOpBase<Context>::D_;               \
   using GroupNormOpBase<Context>::S_
 
 template <class Context>

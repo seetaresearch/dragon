@@ -84,7 +84,7 @@ class ArgMax(Layer):
         param = layer_param.argmax_param
         if param.top_k != 1:
             raise ValueError('Top-k argmax is not supported.')
-        self.arguments = {'axis': param.axis, 'keep_dims': True}
+        self.arguments = {'axis': param.axis, 'keepdims': True}
 
     def __call__(self, bottom):
         return array_ops.argmax(bottom, **self.arguments)

@@ -78,11 +78,12 @@ class Convolution(Layer):
 
     def __call__(self, bottom):
         inputs = [bottom] + [blob['data'] for blob in self._blobs]
-        return vision_ops.conv2d(inputs, **self.arguments)
+        conv_op = 'conv{}d'.format(len(bottom.shape) - 2)
+        return getattr(vision_ops, conv_op)(inputs, **self.arguments)
 
 
 class Deconvolution(Convolution):
-    r"""Apply the 2d deconvolution.
+    r"""Apply the n-dimension deconvolution.
 
     Examples:
 
@@ -117,7 +118,8 @@ class Deconvolution(Convolution):
 
     def __call__(self, bottom):
         inputs = [bottom] + [blob['data'] for blob in self._blobs]
-        return vision_ops.conv2d_transpose(inputs, **self.arguments)
+        conv_op = 'conv{}d_transpose'.format(len(bottom.shape) - 2)
+        return getattr(vision_ops, conv_op)(inputs, **self.arguments)
 
 
 class LRN(Layer):
@@ -186,7 +188,7 @@ class Pooling(Layer):
             'ceil_mode': True,
             'mode': {0: 'MAX', 1: 'AVG'}[param.pool],
             'data_format': 'NCHW',
-            'global_pooling': param.global_pooling,
+            'global_pool': param.global_pooling,
         }
         if not param.HasField('kernel_h'):
             self.arguments['kernel_shape'] = [param.kernel_size]
@@ -202,7 +204,8 @@ class Pooling(Layer):
             self.arguments['strides'] = [param.stride_h, param.stride_w]
 
     def __call__(self, bottom):
-        return vision_ops.pool2d(bottom, **self.arguments)
+        pool_op = 'pool{}d'.format(len(bottom.shape) - 2)
+        return getattr(vision_ops, pool_op)(bottom, **self.arguments)
 
 
 class ROIAlign(Layer):

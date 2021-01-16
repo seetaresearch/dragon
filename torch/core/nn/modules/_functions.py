@@ -18,11 +18,11 @@ from dragon.core.util import nest
 from dragon.vm.torch.core.autograd import function
 
 
-class _Activation(function.Function):
-    """Base activation function class."""
+class Activation(function.Function):
+    """Activation function."""
 
     def __init__(self, key, dev, **kwargs):
-        super(_Activation, self).__init__(key, dev, **kwargs)
+        super(Activation, self).__init__(key, dev, **kwargs)
         self.op_type = kwargs.get('op_type', '')
 
     def attributes(self):
@@ -33,11 +33,11 @@ class _Activation(function.Function):
         return self.dispatch([input], [out])
 
 
-class _ConvNd(function.Function):
-    """Base convolution function class."""
+class Conv(function.Function):
+    """Conv function."""
 
     def __init__(self, key, dev, **kwargs):
-        super(_ConvNd, self).__init__(key, dev, **kwargs)
+        super(Conv, self).__init__(key, dev, **kwargs)
         self.num_output = kwargs.get('out_channels', 1)
         self.kernel_shape = kwargs.get('kernel_shape', 1)
         self.strides = kwargs.get('strides', 1)
@@ -65,28 +65,28 @@ class _ConvNd(function.Function):
         return self.dispatch(inputs, [self.alloc()])
 
 
-class _Loss(function.Function):
-    """Base loss function class."""
+class Loss(function.Function):
+    """Loss function."""
 
     def __init__(self, key, dev, **kwargs):
-        super(_Loss, self).__init__(key, dev, **kwargs)
+        super(Loss, self).__init__(key, dev, **kwargs)
         self.reduction = kwargs.get('reduction', 'mean').upper()
 
     def forward(self, inputs):
         return self.dispatch(inputs, [self.alloc()])
 
 
-class _PoolNd(function.Function):
-    """Base pooling function class."""
+class Pool(function.Function):
+    """Pool function."""
 
     def __init__(self, key, dev, **kwargs):
-        super(_PoolNd, self).__init__(key, dev, **kwargs)
+        super(Pool, self).__init__(key, dev, **kwargs)
         self.kernel_shape = kwargs.get('kernel_shape', 1)
         self.strides = kwargs.get('strides', 1)
         self.pads = kwargs.get('pads', 0)
         self.ceil_mode = kwargs.get('ceil_mode', False)
         self.mode = kwargs.get('mode', 'MAX')
-        self.global_pooling = kwargs.get('global_pooling', False)
+        self.global_pool = kwargs.get('global_pool', False)
 
     def attributes(self):
         return {
@@ -98,7 +98,7 @@ class _PoolNd(function.Function):
                 'ceil_mode': self.ceil_mode,
                 'mode': self.mode,
                 'data_format': 'NCHW',
-                'global_pooling': self.global_pooling,
+                'global_pool': self.global_pool,
             }
         }
 
@@ -138,15 +138,11 @@ class BatchNorm(function.Function):
         )
 
 
-class Conv2d(_ConvNd):
-    """Conv2d function."""
+class ConvTranspose(Conv):
+    """ConvTranspose function."""
 
 
-class ConvTranspose2d(_ConvNd):
-    """ConvTranspose2d function."""
-
-
-class CTCLoss(_Loss):
+class CTCLoss(Loss):
     """CTCLoss function."""
 
     def __init__(self, key, dev, **kwargs):
@@ -163,8 +159,8 @@ class CTCLoss(_Loss):
         }
 
 
-class DepthwiseConv2d(_ConvNd):
-    """DepthwiseConv2d function."""
+class DepthwiseConv(Conv):
+    """DepthwiseConv function."""
 
 
 class Dropout(function.Function):
@@ -220,7 +216,7 @@ class DropPath(Dropout):
         }
 
 
-class Elu(_Activation):
+class Elu(Activation):
     """ELU function."""
 
     def __init__(self, key, dev, **kwargs):
@@ -258,7 +254,7 @@ class GroupNorm(function.Function):
         return self.dispatch([input, weight, bias], [self.alloc()])
 
 
-class HardSigmoid(_Activation):
+class HardSigmoid(Activation):
     """HardSigmoid function."""
 
     def __init__(self, key, dev, **kwargs):
@@ -276,7 +272,7 @@ class HardSigmoid(_Activation):
         }
 
 
-class HardSwish(_Activation):
+class HardSwish(Activation):
     """HardSwish function."""
 
     def __init__(self, key, dev, **kwargs):
@@ -294,7 +290,7 @@ class HardSwish(_Activation):
         }
 
 
-class L1Loss(_Loss):
+class L1Loss(Loss):
     """L1Loss function."""
 
     def attributes(self):
@@ -307,7 +303,7 @@ class L1Loss(_Loss):
         }
 
 
-class L2Loss(_Loss):
+class L2Loss(Loss):
     """L2Loss function."""
 
     def attributes(self):
@@ -397,7 +393,7 @@ class LSTMCell(function.Function):
         return self.dispatch([input, cx], outputs)
 
 
-class NLLLoss(_Loss):
+class NLLLoss(Loss):
     """NLLLoss function."""
 
     def __init__(self, key, dev, **kwargs):
@@ -442,10 +438,6 @@ class Pad(function.Function):
             callback=lambda ws, handle:
                 self.setup(ws, handle, pads),
         )
-
-
-class Pool2d(_PoolNd):
-    """Pool2d function."""
 
 
 class PRelu(function.Function):
@@ -501,7 +493,7 @@ class Recurrent(function.Function):
         return outputs
 
 
-class Relu(_Activation):
+class Relu(Activation):
     """Relu function."""
 
     def __init__(self, key, dev, **kwargs):
@@ -517,7 +509,7 @@ class Relu(_Activation):
         }
 
 
-class Relu6(_Activation):
+class Relu6(Activation):
     """Relu6 function."""
 
     def attributes(self):
@@ -602,7 +594,7 @@ class RNNParamSet(function.Function):
         return self.dispatch([param], [weights], no_grad=True)
 
 
-class SigmoidCrossEntropy(_Loss):
+class SigmoidCrossEntropy(Loss):
     """SigmoidCrossEntropy function."""
 
     def attributes(self):
@@ -614,7 +606,7 @@ class SigmoidCrossEntropy(_Loss):
         }
 
 
-class SigmoidFocalLoss(_Loss):
+class SigmoidFocalLoss(Loss):
     """SigmoidFocalLoss function."""
 
     def __init__(self, key, dev, **kwargs):
@@ -636,7 +628,7 @@ class SigmoidFocalLoss(_Loss):
         }
 
 
-class SmoothL1Loss(_Loss):
+class SmoothL1Loss(Loss):
     """SmoothL1Loss function."""
 
     def __init__(self, key, dev, **kwargs):
@@ -653,7 +645,7 @@ class SmoothL1Loss(_Loss):
         }
 
 
-class Softmax(_Activation):
+class Softmax(Activation):
     """Softmax function."""
 
     def __init__(self, key, dev, **kwargs):
@@ -669,7 +661,7 @@ class Softmax(_Activation):
         }
 
 
-class SparseSoftmaxCrossEntropy(_Loss):
+class SparseSoftmaxCrossEntropy(Loss):
     """SparseSoftmaxCrossEntropy function."""
 
     def __init__(self, key, dev, **kwargs):
@@ -696,6 +688,7 @@ class SyncBatchNorm(BatchNorm):
 
     def attributes(self):
         attrs = BatchNorm.attributes(self)
-        attrs['op_type'] = 'SyncBatchNorm'
-        attrs['arguments'].update(self.process_group.arguments)
+        if self.process_group is not None:
+            attrs['op_type'] = 'SyncBatchNorm'
+            attrs['arguments'].update(self.process_group.arguments)
         return attrs

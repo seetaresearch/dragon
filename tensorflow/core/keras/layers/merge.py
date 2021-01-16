@@ -24,7 +24,7 @@ from dragon.vm.tensorflow.core.keras.engine.base_layer import Layer
 
 
 class _Merge(Layer):
-    """The base layer for elementwise merge functions."""
+    """Base layer to call elementwise merge function."""
 
     def __init__(self, **kwargs):
         super(_Merge, self).__init__(**kwargs)
@@ -47,7 +47,7 @@ class _Merge(Layer):
 
 
 class Add(_Merge):
-    """The layer to add a sequence of inputs.
+    """Layer to add a sequence of inputs.
 
     Examples:
 
@@ -73,7 +73,7 @@ class Add(_Merge):
 
 
 class Concatenate(_Merge):
-    """The layer to concatenate a sequence of inputs.
+    """Layer to concatenate a sequence of inputs.
 
     Examples:
 
@@ -101,7 +101,7 @@ class Concatenate(_Merge):
 
 
 class Maximum(_Merge):
-    """The layer to compute the minimum of a sequence of inputs.
+    """Layer to compute the minimum of a sequence of inputs.
 
     Examples:
 
@@ -124,7 +124,7 @@ class Maximum(_Merge):
 
 
 class Minimum(_Merge):
-    """The layer to compute the minimum of a sequence of inputs.
+    """Layer to compute the minimum of a sequence of inputs.
 
     Examples:
 
@@ -147,7 +147,7 @@ class Minimum(_Merge):
 
 
 class Multiply(_Merge):
-    """The layer to multiply a sequence of inputs.
+    """Layer to multiply a sequence of inputs.
 
     Examples:
 
@@ -170,7 +170,7 @@ class Multiply(_Merge):
 
 
 class Subtract(_Merge):
-    """The layer to subtract two inputs.
+    """Layer to subtract two inputs.
 
     Examples:
 

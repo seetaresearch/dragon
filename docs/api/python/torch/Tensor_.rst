@@ -245,6 +245,14 @@ int\_
 ######
 .. automethod:: dragon.vm.torch.Tensor.int_
 
+isinf
+#####
+.. automethod:: dragon.vm.torch.Tensor.isinf
+
+isnan
+#####
+.. automethod:: dragon.vm.torch.Tensor.isnan
+
 is_floating_point
 #################
 .. automethod:: dragon.vm.torch.Tensor.is_floating_point
@@ -281,6 +289,10 @@ max
 ###
 .. automethod:: dragon.vm.torch.Tensor.max
 
+maximum
+#######
+.. automethod:: dragon.vm.torch.Tensor.maximum
+
 masked_select
 #############
 .. automethod:: dragon.vm.torch.Tensor.masked_select
@@ -292,6 +304,14 @@ mean
 min
 ###
 .. automethod:: dragon.vm.torch.Tensor.min
+
+minimum
+#######
+.. automethod:: dragon.vm.torch.Tensor.minimum
+
+mm
+###
+.. automethod:: dragon.vm.torch.Tensor.mm
 
 mul
 ###
@@ -429,6 +449,10 @@ sort
 ####
 .. automethod:: dragon.vm.torch.Tensor.sort
 
+split
+#####
+.. automethod:: dragon.vm.torch.Tensor.split
+
 sqrt
 ####
 .. automethod:: dragon.vm.torch.Tensor.sqrt
@@ -529,8 +553,15 @@ zero\_
 .. _torch.full(...): full.html
 .. _torch.ge(...): ge.html
 .. _torch.gt(...): gt.html
+.. _torch.isinf(...): isinf.html
+.. _torch.isnan(...): isnan.html
 .. _torch.le(...): le.html
 .. _torch.lt(...): lt.html
+.. _torch.max(...): max.html
+.. _torch.maximum(...): maximum.html
+.. _torch.min(...): min.html
+.. _torch.minimum(...): minimum.html
+.. _torch.mm(...): mm.html
 .. _torch.mul(...): mul.html
 .. _torch.ne(...): ne.html
 .. _torch.neg(...): neg.html
@@ -544,6 +575,7 @@ zero\_
 .. _torch.sign(...): sign.html
 .. _torch.sin(...): sin.html
 .. _torch.sort(...): sort.html
+.. _torch.split(...): split.html
 .. _torch.sqrt(...): sqrt.html
 .. _torch.squeeze(...): squeeze.html
 .. _torch.sub(...): sub.html

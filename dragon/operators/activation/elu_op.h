@@ -53,8 +53,6 @@ class EluGradientOp : public Operator<Context> {
 
 #ifdef USE_CUDNN
 
-#if CUDNN_VERSION_MIN(6, 0, 0)
-
 template <class Context>
 class CuDNNEluOp final : public EluOp<Context> {
  public:
@@ -107,8 +105,6 @@ class CuDNNEluGradientOp final : public EluGradientOp<Context> {
   cudnnTensorDescriptor_t input_desc_;
   cudnnActivationDescriptor_t act_desc_;
 };
-
-#endif // CUDNN_VERSION_MIN(6, 0, 0)
 
 #endif // USE_CUDNN
 

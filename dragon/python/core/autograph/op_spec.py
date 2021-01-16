@@ -34,7 +34,7 @@ def accuracy_spec(args, inputs, outputs):
 def arg_reduce_spec(args, inputs, outputs):
     outputs[0].dtype = 'int64'
     axis = args['axis']
-    if args['keep_dims']:
+    if args['keepdims']:
         if axis is None:
             outputs[0].shape = (1,)
         else:
@@ -159,7 +159,7 @@ def concat_spec(args, inputs, outputs):
     return outputs
 
 
-@register(['Conv2d', 'DepthwiseConv2d'])
+@register(['Conv', 'DepthwiseConv'])
 def conv_spec(args, inputs, outputs):
     outputs[0].dtype = inputs[0].dtype
     try:
@@ -192,7 +192,7 @@ def conv_spec(args, inputs, outputs):
     return outputs
 
 
-@register('ConvTranspose2d')
+@register('ConvTranspose')
 def conv_transpose_spec(args, inputs, outputs):
     outputs[0].dtype = inputs[0].dtype
     try:
@@ -530,13 +530,13 @@ def moments_spec(args, inputs, outputs):
     elif inputs[0].dtype == 'int64':
         out_dtype = 'float64'
     outputs[0].dtype = outputs[1].dtype = out_dtype
-    axes, keep_dims = args['axes'], args['keep_dims']
+    axes, keepdims = args['axes'], args['keepdims']
     try:
         out_shape = list(inputs[0].shape[:])
         for axis in axes:
             if axis < len(out_shape):
                 out_shape[axis] = -1
-        if not keep_dims:
+        if not keepdims:
             squeezed_shape = []
             for d in out_shape:
                 if d >= 0:
@@ -546,7 +546,7 @@ def moments_spec(args, inputs, outputs):
             out_shape = [1 if d < 0 else d for d in out_shape]
     except TypeError:
         if axes is None:
-            out_shape = (1,) if keep_dims else ()
+            out_shape = (1,) if keepdims else ()
         else:
             out_shape = None
     outputs[0].shape = outputs[1].shape = out_shape
@@ -614,7 +614,7 @@ def permutation_spec(args, inputs, outputs):
     return outputs
 
 
-@register('Pool2d')
+@register('Pool')
 def pool_spec(args, inputs, outputs):
     outputs[0].dtype = inputs[0].dtype
     out_shape = None
@@ -623,7 +623,7 @@ def pool_spec(args, inputs, outputs):
         num_axes = len(out_shape) - 2
         spatial_axis = 2 if args['data_format'] == 'NCHW' else 1
         for i in range(num_axes):
-            if not args['global_pooling']:
+            if not args['global_pool']:
                 try:
                     k = args['kernel_shape'][i]
                     s = args['strides'][i]
@@ -674,7 +674,7 @@ def range_spec(args, inputs, outputs):
 ])
 def reduce_spec(args, inputs, outputs):
     outputs[0].dtype = inputs[0].dtype
-    axes, keep_dims = args['axes'], args['keep_dims']
+    axes, keepdims = args['axes'], args['keepdims']
     if axes is None:
         outputs[0].shape = ()
     else:
@@ -683,7 +683,7 @@ def reduce_spec(args, inputs, outputs):
             for axis in axes:
                 if axis < len(out_shape):
                     out_shape[axis] = -1
-            if not keep_dims:
+            if not keepdims:
                 squeezed_shape = []
                 for d in out_shape:
                     if d >= 0:

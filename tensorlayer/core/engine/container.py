@@ -29,7 +29,7 @@ class LayerList(module.Module):
         layers : Sequence[dragon.vm.tensorlayer.layers.Layer]
             The layers to stack.
         name : str, optional
-            The optional layer name.
+            The layer name.
 
         """
         super(LayerList, self).__init__(name=name)

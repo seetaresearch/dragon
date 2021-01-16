@@ -13,23 +13,19 @@
 #ifndef DRAGON_OPERATORS_VISION_DEPTHWISE_CONV_OP_H_
 #define DRAGON_OPERATORS_VISION_DEPTHWISE_CONV_OP_H_
 
-#include "dragon/operators/vision/conv_op.h"
+#include "dragon/operators/vision/conv_op_base.h"
 
 namespace dragon {
 
 template <class Context>
-class DepthwiseConv2dOp : public ConvOpBase<Context> {
+class DepthwiseConvOp final : public ConvOpBase<Context> {
  public:
-  DepthwiseConv2dOp(const OperatorDef& def, Workspace* ws)
+  DepthwiseConvOp(const OperatorDef& def, Workspace* ws)
       : ConvOpBase<Context>(def, ws) {
-    Setup(2);
+    GetBaseArguments();
   }
   USE_OPERATOR_FUNCTIONS;
-  USE_CONVOLUTION_FUNCTIONS;
-
-  bool Transposed() override {
-    return false;
-  }
+  USE_CONV_FUNCTIONS;
 
   bool HasBias() override {
     return InputSize() > 2;
@@ -42,12 +38,14 @@ class DepthwiseConv2dOp : public ConvOpBase<Context> {
 };
 
 template <class Context>
-class DepthwiseConv2dGradientOp : public DepthwiseConv2dOp<Context> {
+class DepthwiseConvGradientOp final : public ConvOpBase<Context> {
  public:
-  DepthwiseConv2dGradientOp(const OperatorDef& def, Workspace* ws)
-      : DepthwiseConv2dOp<Context>(def, ws) {}
+  DepthwiseConvGradientOp(const OperatorDef& def, Workspace* ws)
+      : ConvOpBase<Context>(def, ws) {
+    GetBaseArguments();
+  }
   USE_OPERATOR_FUNCTIONS;
-  USE_CONVOLUTION_FUNCTIONS;
+  USE_CONV_FUNCTIONS;
 
   bool HasBias() override {
     return Output(2)->has_name();
@@ -62,19 +60,24 @@ class DepthwiseConv2dGradientOp : public DepthwiseConv2dOp<Context> {
 #ifdef USE_CUDNN
 
 template <class Context>
-class CuDNNDepthwiseConv2dOp final : public DepthwiseConv2dOp<Context> {
+class CuDNNDepthwiseConvOp final : public ConvOpBase<Context> {
  public:
-  CuDNNDepthwiseConv2dOp(const OperatorDef& def, Workspace* ws)
-      : DepthwiseConv2dOp<Context>(def, ws) {
+  CuDNNDepthwiseConvOp(const OperatorDef& def, Workspace* ws)
+      : ConvOpBase<Context>(def, ws) {
+    GetBaseArguments();
     CuDNNCreateTensorDesc(&bias_desc_);
     CuDNNCreateTensorDesc(&output_desc_);
   }
   USE_OPERATOR_FUNCTIONS;
-  USE_CONVOLUTION_FUNCTIONS;
+  USE_CONV_FUNCTIONS;
 
-  ~CuDNNDepthwiseConv2dOp() {
+  ~CuDNNDepthwiseConvOp() {
     CuDNNDestroyTensorDesc(&bias_desc_);
     CuDNNDestroyTensorDesc(&output_desc_);
+  }
+
+  bool HasBias() override {
+    return InputSize() > 2;
   }
 
   void RunOnDevice() override;
@@ -88,19 +91,24 @@ class CuDNNDepthwiseConv2dOp final : public DepthwiseConv2dOp<Context> {
 };
 
 template <class Context>
-class CuDNNDepthwiseConv2dGradientOp final : public Conv2dGradientOp<Context> {
+class CuDNNDepthwiseConvGradientOp final : public ConvOpBase<Context> {
  public:
-  CuDNNDepthwiseConv2dGradientOp(const OperatorDef& def, Workspace* ws)
-      : Conv2dGradientOp<Context>(def, ws) {
+  CuDNNDepthwiseConvGradientOp(const OperatorDef& def, Workspace* ws)
+      : ConvOpBase<Context>(def, ws) {
+    GetBaseArguments();
     CuDNNCreateTensorDesc(&bias_desc_);
     CuDNNCreateTensorDesc(&input_desc_);
   }
   USE_OPERATOR_FUNCTIONS;
-  USE_CONVOLUTION_FUNCTIONS;
+  USE_CONV_FUNCTIONS;
 
-  ~CuDNNDepthwiseConv2dGradientOp() {
+  ~CuDNNDepthwiseConvGradientOp() {
     CuDNNDestroyTensorDesc(&bias_desc_);
     CuDNNDestroyTensorDesc(&input_desc_);
+  }
+
+  bool HasBias() override {
+    return Output(2)->has_name();
   }
 
   void RunOnDevice() override;

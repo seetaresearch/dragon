@@ -263,22 +263,6 @@ void TransposeAxesForReduce(
   }
 }
 
-void ComputeTransposeStrides(
-    const int num_dims,
-    const int* dims,
-    const int* transpose_axes,
-    int* transpose_strides) {
-  vec32_t buf(num_dims);
-  int cur_stride = 1;
-  for (int i = num_dims - 1; i >= 0; --i) {
-    buf[i] = cur_stride;
-    cur_stride *= dims[i];
-  }
-  for (int i = 0; i < num_dims; ++i) {
-    transpose_strides[i] = buf[transpose_axes[i]];
-  }
-}
-
 } // namespace utils
 
 } // namespace math

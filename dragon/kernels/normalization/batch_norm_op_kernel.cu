@@ -1,6 +1,6 @@
 #ifdef USE_CUDA
 
-#include "dragon/core/memory.h"
+#include "dragon/core/context_cuda.h"
 #include "dragon/utils/device/common_cub.h"
 #include "dragon/utils/math_functions.h"
 #include "dragon/utils/op_kernels.h"
@@ -170,7 +170,7 @@ __global__ void _BatchNormInferenceGrad(
     LOG(FATAL) << "Unknown DataFormat: " << data_format;                 \
   }
 
-#define DEFINE_KERNEL_LAUNCHER(T, ScalarT, AccT)                      \
+#define DEFINE_KERNEL_LAUNCHER(T, AccT)                               \
   template <>                                                         \
   void BatchNorm<T, AccT, CUDAContext>(                               \
       const int N,                                                    \
@@ -194,165 +194,165 @@ __global__ void _BatchNormInferenceGrad(
         ctx->cuda_stream()>>>(C, mu, rsig, gamma, beta, scale, bias); \
     DISPATCH_BATCHNORM_KERNEL(                                        \
         _BatchNormAffine,                                             \
-        ScalarT,                                                      \
+        math::ScalarType<T>::type,                                    \
         AccT,                                                         \
         CUDA_BLOCKS(nthreads),                                        \
         CUDA_THREADS,                                                 \
         nthreads,                                                     \
         C,                                                            \
         S,                                                            \
-        reinterpret_cast<const ScalarT*>(x),                          \
+        reinterpret_cast<const math::ScalarType<T>::type*>(x),        \
         scale,                                                        \
         bias,                                                         \
-        reinterpret_cast<ScalarT*>(y));                               \
+        reinterpret_cast<math::ScalarType<T>::type*>(y));             \
   }
 
-#define DEFINE_GRAD_KERNEL_LAUNCHER(T, ScalarT, AccT) \
-  template <>                                         \
-  void BatchNormExpectation<T, AccT, CUDAContext>(    \
-      const int N,                                    \
-      const int C,                                    \
-      const int S,                                    \
-      const float normalizer,                         \
-      const string& data_format,                      \
-      const T* x,                                     \
-      AccT* ex,                                       \
-      AccT* ex2,                                      \
-      CUDAContext* ctx) {                             \
-    DISPATCH_BATCHNORM_KERNEL(                        \
-        _BatchNormExpectation,                        \
-        ScalarT,                                      \
-        AccT,                                         \
-        CUDA_2D_BLOCKS(C),                            \
-        CUDA_THREADS,                                 \
-        N,                                            \
-        C,                                            \
-        S,                                            \
-        normalizer,                                   \
-        reinterpret_cast<const ScalarT*>(x),          \
-        ex,                                           \
-        ex2);                                         \
-  }                                                   \
-  template <>                                         \
-  void BatchNormWGrad<T, AccT, CUDAContext>(          \
-      const int N,                                    \
-      const int C,                                    \
-      const int S,                                    \
-      const string& data_format,                      \
-      const T* x,                                     \
-      const AccT* mu,                                 \
-      const AccT* rsig,                               \
-      const T* dy,                                    \
-      AccT* dgamma,                                   \
-      AccT* dbeta,                                    \
-      CUDAContext* ctx) {                             \
-    DISPATCH_BATCHNORM_KERNEL(                        \
-        _BatchNormWGrad,                              \
-        ScalarT,                                      \
-        AccT,                                         \
-        CUDA_2D_BLOCKS(C),                            \
-        CUDA_THREADS,                                 \
-        N,                                            \
-        C,                                            \
-        S,                                            \
-        reinterpret_cast<const ScalarT*>(x),          \
-        mu,                                           \
-        rsig,                                         \
-        reinterpret_cast<const ScalarT*>(dy),         \
-        dgamma,                                       \
-        dbeta);                                       \
-  }                                                   \
-  template <>                                         \
-  void BatchNormTrainingGrad<T, AccT, CUDAContext>(   \
-      const int N,                                    \
-      const int C,                                    \
-      const int S,                                    \
-      const float normalizer,                         \
-      const string& data_format,                      \
-      const T* x,                                     \
-      const AccT* mu,                                 \
-      const AccT* rsig,                               \
-      const AccT* gamma,                              \
-      const AccT* dgamma,                             \
-      const AccT* dbeta,                              \
-      const T* dy,                                    \
-      T* dx,                                          \
-      CUDAContext* ctx) {                             \
-    const auto nthreads = N * C * S;                  \
-    DISPATCH_BATCHNORM_KERNEL(                        \
-        _BatchNormTrainingGrad,                       \
-        ScalarT,                                      \
-        AccT,                                         \
-        CUDA_BLOCKS(nthreads),                        \
-        CUDA_THREADS,                                 \
-        nthreads,                                     \
-        N,                                            \
-        C,                                            \
-        S,                                            \
-        normalizer,                                   \
-        reinterpret_cast<const ScalarT*>(x),          \
-        mu,                                           \
-        rsig,                                         \
-        gamma,                                        \
-        dgamma,                                       \
-        dbeta,                                        \
-        reinterpret_cast<const ScalarT*>(dy),         \
-        reinterpret_cast<ScalarT*>(dx));              \
-  }                                                   \
-  template <>                                         \
-  void BatchNormInferenceGrad<T, AccT, CUDAContext>(  \
-      const int N,                                    \
-      const int C,                                    \
-      const int S,                                    \
-      const string& data_format,                      \
-      const T* x,                                     \
-      const AccT* mu,                                 \
-      const AccT* rsig,                               \
-      const AccT* gamma,                              \
-      const T* dy,                                    \
-      AccT* dgamma,                                   \
-      AccT* dbeta,                                    \
-      T* dx,                                          \
-      CUDAContext* ctx) {                             \
-    const auto nthreads = N * C * S;                  \
-    if (dgamma != nullptr) {                          \
-      DISPATCH_BATCHNORM_KERNEL(                      \
-          _BatchNormWGrad,                            \
-          ScalarT,                                    \
-          AccT,                                       \
-          CUDA_2D_BLOCKS(C),                          \
-          CUDA_THREADS,                               \
-          N,                                          \
-          C,                                          \
-          S,                                          \
-          reinterpret_cast<const ScalarT*>(x),        \
-          mu,                                         \
-          rsig,                                       \
-          reinterpret_cast<const ScalarT*>(dy),       \
-          dgamma,                                     \
-          dbeta);                                     \
-    }                                                 \
-    DISPATCH_BATCHNORM_KERNEL(                        \
-        _BatchNormInferenceGrad,                      \
-        ScalarT,                                      \
-        AccT,                                         \
-        CUDA_BLOCKS(nthreads),                        \
-        CUDA_THREADS,                                 \
-        nthreads,                                     \
-        C,                                            \
-        S,                                            \
-        rsig,                                         \
-        gamma,                                        \
-        reinterpret_cast<const ScalarT*>(dy),         \
-        reinterpret_cast<ScalarT*>(dx));              \
+#define DEFINE_GRAD_KERNEL_LAUNCHER(T, AccT)                      \
+  template <>                                                     \
+  void BatchNormExpectation<T, AccT, CUDAContext>(                \
+      const int N,                                                \
+      const int C,                                                \
+      const int S,                                                \
+      const float normalizer,                                     \
+      const string& data_format,                                  \
+      const T* x,                                                 \
+      AccT* ex,                                                   \
+      AccT* ex2,                                                  \
+      CUDAContext* ctx) {                                         \
+    DISPATCH_BATCHNORM_KERNEL(                                    \
+        _BatchNormExpectation,                                    \
+        math::ScalarType<T>::type,                                \
+        AccT,                                                     \
+        CUDA_2D_BLOCKS(C),                                        \
+        CUDA_THREADS,                                             \
+        N,                                                        \
+        C,                                                        \
+        S,                                                        \
+        normalizer,                                               \
+        reinterpret_cast<const math::ScalarType<T>::type*>(x),    \
+        ex,                                                       \
+        ex2);                                                     \
+  }                                                               \
+  template <>                                                     \
+  void BatchNormWGrad<T, AccT, CUDAContext>(                      \
+      const int N,                                                \
+      const int C,                                                \
+      const int S,                                                \
+      const string& data_format,                                  \
+      const T* x,                                                 \
+      const AccT* mu,                                             \
+      const AccT* rsig,                                           \
+      const T* dy,                                                \
+      AccT* dgamma,                                               \
+      AccT* dbeta,                                                \
+      CUDAContext* ctx) {                                         \
+    DISPATCH_BATCHNORM_KERNEL(                                    \
+        _BatchNormWGrad,                                          \
+        math::ScalarType<T>::type,                                \
+        AccT,                                                     \
+        CUDA_2D_BLOCKS(C),                                        \
+        CUDA_THREADS,                                             \
+        N,                                                        \
+        C,                                                        \
+        S,                                                        \
+        reinterpret_cast<const math::ScalarType<T>::type*>(x),    \
+        mu,                                                       \
+        rsig,                                                     \
+        reinterpret_cast<const math::ScalarType<T>::type*>(dy),   \
+        dgamma,                                                   \
+        dbeta);                                                   \
+  }                                                               \
+  template <>                                                     \
+  void BatchNormTrainingGrad<T, AccT, CUDAContext>(               \
+      const int N,                                                \
+      const int C,                                                \
+      const int S,                                                \
+      const float normalizer,                                     \
+      const string& data_format,                                  \
+      const T* x,                                                 \
+      const AccT* mu,                                             \
+      const AccT* rsig,                                           \
+      const AccT* gamma,                                          \
+      const AccT* dgamma,                                         \
+      const AccT* dbeta,                                          \
+      const T* dy,                                                \
+      T* dx,                                                      \
+      CUDAContext* ctx) {                                         \
+    const auto nthreads = N * C * S;                              \
+    DISPATCH_BATCHNORM_KERNEL(                                    \
+        _BatchNormTrainingGrad,                                   \
+        math::ScalarType<T>::type,                                \
+        AccT,                                                     \
+        CUDA_BLOCKS(nthreads),                                    \
+        CUDA_THREADS,                                             \
+        nthreads,                                                 \
+        N,                                                        \
+        C,                                                        \
+        S,                                                        \
+        normalizer,                                               \
+        reinterpret_cast<const math::ScalarType<T>::type*>(x),    \
+        mu,                                                       \
+        rsig,                                                     \
+        gamma,                                                    \
+        dgamma,                                                   \
+        dbeta,                                                    \
+        reinterpret_cast<const math::ScalarType<T>::type*>(dy),   \
+        reinterpret_cast<math::ScalarType<T>::type*>(dx));        \
+  }                                                               \
+  template <>                                                     \
+  void BatchNormInferenceGrad<T, AccT, CUDAContext>(              \
+      const int N,                                                \
+      const int C,                                                \
+      const int S,                                                \
+      const string& data_format,                                  \
+      const T* x,                                                 \
+      const AccT* mu,                                             \
+      const AccT* rsig,                                           \
+      const AccT* gamma,                                          \
+      const T* dy,                                                \
+      AccT* dgamma,                                               \
+      AccT* dbeta,                                                \
+      T* dx,                                                      \
+      CUDAContext* ctx) {                                         \
+    const auto nthreads = N * C * S;                              \
+    if (dgamma != nullptr) {                                      \
+      DISPATCH_BATCHNORM_KERNEL(                                  \
+          _BatchNormWGrad,                                        \
+          math::ScalarType<T>::type,                              \
+          AccT,                                                   \
+          CUDA_2D_BLOCKS(C),                                      \
+          CUDA_THREADS,                                           \
+          N,                                                      \
+          C,                                                      \
+          S,                                                      \
+          reinterpret_cast<const math::ScalarType<T>::type*>(x),  \
+          mu,                                                     \
+          rsig,                                                   \
+          reinterpret_cast<const math::ScalarType<T>::type*>(dy), \
+          dgamma,                                                 \
+          dbeta);                                                 \
+    }                                                             \
+    DISPATCH_BATCHNORM_KERNEL(                                    \
+        _BatchNormInferenceGrad,                                  \
+        math::ScalarType<T>::type,                                \
+        AccT,                                                     \
+        CUDA_BLOCKS(nthreads),                                    \
+        CUDA_THREADS,                                             \
+        nthreads,                                                 \
+        C,                                                        \
+        S,                                                        \
+        rsig,                                                     \
+        gamma,                                                    \
+        reinterpret_cast<const math::ScalarType<T>::type*>(dy),   \
+        reinterpret_cast<math::ScalarType<T>::type*>(dx));        \
   }
 
-DEFINE_KERNEL_LAUNCHER(float16, half, float);
-DEFINE_KERNEL_LAUNCHER(float, float, float);
-DEFINE_KERNEL_LAUNCHER(double, double, double);
-DEFINE_GRAD_KERNEL_LAUNCHER(float16, half, float);
-DEFINE_GRAD_KERNEL_LAUNCHER(float, float, float);
-DEFINE_GRAD_KERNEL_LAUNCHER(double, double, double);
+DEFINE_KERNEL_LAUNCHER(float16, float);
+DEFINE_KERNEL_LAUNCHER(float, float);
+DEFINE_KERNEL_LAUNCHER(double, double);
+DEFINE_GRAD_KERNEL_LAUNCHER(float16, float);
+DEFINE_GRAD_KERNEL_LAUNCHER(float, float);
+DEFINE_GRAD_KERNEL_LAUNCHER(double, double);
 #undef DEFINE_KERNEL_LAUNCHER
 #undef DEFINE_GRAD_KERNEL_LAUNCHER
 #undef DISPATCH_BATCHNORM_KERNEL

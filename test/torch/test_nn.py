@@ -132,6 +132,7 @@ class TestModule(unittest.TestCase):
         del m2[0]
         del m2[0:2]
         self.assertEqual(len(m2), 0)
+        self.assertEqual(m1(1), None)
 
     def test_list(self):
         m = torch.nn.ModuleList([torch.nn.Module()])
@@ -221,49 +222,127 @@ class TestModules(OpTestCase):
             x = new_tensor(data1)
             w, b = new_tensor(data2.flatten()), new_tensor(data3.flatten())
             rm, rv = new_tensor(data4.flatten()), new_tensor(data5.flatten())
-            m = getattr(torch.nn, 'BatchNorm{}d'.format(max(1, len(x_shape) - 2)))(
-                num_features=3, eps=eps, affine=use_stats == 1).half().float()
+            m1 = getattr(torch.nn, 'BatchNorm{}d'.format(max(1, len(x_shape) - 2)))(
+                num_features=3, eps=eps, affine=use_stats == 1,
+                momentum=None if use_stats == 0 else 0.9,
+                track_running_stats=use_stats == 0).half().float()
+            m2 = torch.nn.SyncBatchNorm(
+                num_features=3, eps=eps, affine=use_stats == 1,
+                momentum=None if use_stats == 0 else 0.9,
+                track_running_stats=use_stats == 0)
+            for m in (m1, m2):
+                m.weight.copy_(w)
+                m.bias.copy_(b)
+                m.running_mean.copy_(rm)
+                m.running_var.copy_(rv)
+                if use_stats == 0:
+                    axes = list(range(0, len(data1.shape)))
+                    axes.pop(1)
+                    mean = np.mean(data1, tuple(axes), keepdims=True)
+                    sig = np.sqrt(np.var(data1, tuple(axes), keepdims=True) + eps)
+                    result = (data1 - mean) / sig
+                    m.train()
+                else:
+                    sig = np.sqrt(data5 + eps)
+                    result = (data1 - data4) / sig
+                    m.eval()
+                result = result * data2 + data3
+                y, _ = m(x), repr(m)
+                self.assertEqual(y, result)
+
+    def test_conv1d(self):
+        entries = [((2, 2, 2), (3, 2, 1), (3,), 1, 1, 0, 1, 1),
+                   ((2, 2, 2), (3, 2, 3), (3,), 3, 1, 1, 1, 1)]
+        results = [[[[0.02, 0.03], [0.16, 0.21], [0.3, 0.39]],
+                    [[0.06, 0.07], [0.36, 0.41], [0.66, 0.75]]],
+                   [[[0.25, 0.19], [0.71, 0.65], [1.17, 1.11]],
+                    [[0.73, 0.51], [2.15, 1.93], [3.57, 3.35]]]]
+        for (x_shape, w_shape, b_shape, kernel_shape,
+                strides, pads, dilations, group), result in zip(entries, results):
+            data1, data2, data3 = arange(x_shape) * .1, arange(w_shape) * .1, arange(b_shape) * .1
+            x, w, b = new_tensor(data1), new_tensor(data2), new_tensor(data3)
+            m = torch.nn.Conv1d(2, 3, kernel_shape, strides, pads)
             m.weight.copy_(w)
             m.bias.copy_(b)
-            m.running_mean.copy_(rm)
-            m.running_var.copy_(rv)
-            if use_stats == 0:
-                axes = list(range(0, len(data1.shape)))
-                axes.pop(1)
-                mean = np.mean(data1, tuple(axes), keepdims=True)
-                sig = np.sqrt(np.var(data1, tuple(axes), keepdims=True) + eps)
-                result = (data1 - mean) / sig
-                m.train()
-            else:
-                sig = np.sqrt(data5 + eps)
-                result = (data1 - data4) / sig
-                m.eval()
-            result = result * data2 + data3
             y, _ = m(x), repr(m)
-            self.assertEqual(y, result)
+            self.assertEqual(y, np.array(result), prec=1e-3)
 
     def test_conv2d(self):
         entries = [((2, 2, 2, 2), (3, 2, 1, 1), (3,), 1, 1, 0, 1, 1),
                    ((2, 2, 2, 2), (3, 2, 3, 3), (3,), 3, 1, 1, 1, 1)]
-        results = [[[[[0.04, 0.05], [0.06, 0.07]], [[0.22, 0.27], [0.32, 0.37]], [[0.4, 0.49], [0.58, 0.67]]],
-                    [[[0.12, 0.13], [0.14, 0.15]], [[0.62, 0.67], [0.72, 0.77]], [[1.12, 1.21], [1.3, 1.39]]]],
-                   [[[[3.8, 3.52], [2.96, 2.68]], [[8.94, 8.66], [8.1, 7.82]], [[14.08, 13.8], [13.24, 12.96]]],
-                    [[[10.52, 9.6], [7.76, 6.84]], [[27.18, 26.26], [24.42, 23.5]], [[43.84, 42.92], [41.08, 40.16]]]]]
+        results = [[[[[0.04, 0.05], [0.06, 0.07]],
+                     [[0.22, 0.27], [0.32, 0.37]],
+                     [[0.4, 0.49], [0.58, 0.67]]],
+                    [[[0.12, 0.13], [0.14, 0.15]],
+                     [[0.62, 0.67], [0.72, 0.77]],
+                     [[1.12, 1.21], [1.3, 1.39]]]],
+                   [[[[3.8, 3.52], [2.96, 2.68]],
+                     [[8.94, 8.66], [8.1, 7.82]],
+                     [[14.08, 13.8], [13.24, 12.96]]],
+                    [[[10.52, 9.6], [7.76, 6.84]],
+                     [[27.18, 26.26], [24.42, 23.5]],
+                     [[43.84, 42.92], [41.08, 40.16]]]]]
         for (x_shape, w_shape, b_shape, kernel_shape,
-             strides, pads, dilations, group), result in zip(entries, results):
+                strides, pads, dilations, group), result in zip(entries, results):
             data1, data2, data3 = arange(x_shape) * .1, arange(w_shape) * .1, arange(b_shape) * .1
             x, w, b = new_tensor(data1), new_tensor(data2), new_tensor(data3)
             m = torch.nn.Conv2d(2, 3, kernel_shape, strides, pads)
             m.weight.copy_(w)
             m.bias.copy_(b)
             y, _ = m(x), repr(m)
-            self.assertEqual(y, np.array(result))
+            self.assertEqual(y, np.array(result), prec=1e-3)
+
+    def test_conv3d(self):
+        entries = [((2, 2, 2, 2, 2), (3, 2, 1, 1, 1), (3,), 1, 1, 0, 1, 1),
+                   ((2, 2, 2, 2, 2), (3, 2, 3, 3, 3), (3,), 3, 1, 1, 1, 1)]
+        results = [[[[[[0.08, 0.09], [0.1, 0.11]], [[0.12, 0.13], [0.14, 0.15]]],
+                     [[[0.34, 0.39], [0.44, 0.49]], [[0.54, 0.59], [0.64, 0.69]]],
+                     [[[0.6, 0.69], [0.78, 0.87]], [[0.96, 1.05], [1.14, 1.23]]]],
+                    [[[[0.24, 0.25], [0.26, 0.27]], [[0.28, 0.29], [0.3, 0.31]]],
+                     [[[1.14, 1.19], [1.24, 1.29]], [[1.34, 1.39], [1.44, 1.49]]],
+                     [[[2.04, 2.13], [2.22, 2.31]], [[2.4, 2.49], [2.58, 2.67]]]]],
+                   [[[[[49.96, 48.76], [46.36, 45.16]], [[39.16, 37.96], [35.56, 34.36]]],
+                     [[[114.86, 113.66], [111.26, 110.06]], [[104.06, 102.86], [100.46, 99.26]]],
+                     [[[179.76, 178.56], [176.16, 174.96]], [[168.96, 167.76], [165.36, 164.16]]]],
+                    [[[[134.44, 130.68], [123.16, 119.40]], [[100.60, 96.84], [89.32, 85.56]]],
+                     [[[337.58, 333.82], [326.30, 322.54]], [[303.74, 299.98], [292.46, 288.70]]],
+                     [[[540.72, 536.96], [529.44, 525.68]], [[506.88, 503.12], [495.60, 491.84]]]]]]
+        for (x_shape, w_shape, b_shape, kernel_shape,
+                strides, pads, dilations, group), result in zip(entries, results):
+            data1, data2, data3 = arange(x_shape) * .1, arange(w_shape) * .1, arange(b_shape) * .1
+            x, w, b = new_tensor(data1), new_tensor(data2), new_tensor(data3)
+            m = torch.nn.Conv3d(2, 3, kernel_shape, strides, pads)
+            m.weight.copy_(w)
+            m.bias.copy_(b)
+            y, _ = m(x), repr(m)
+            self.assertEqual(y, np.array(result), prec=1e-3)
+
+    def test_conv1d_transpose(self):
+        entries = [((2, 2, 2), (2, 3, 1), (3,), 1, 1, 0, 1, 1),
+                   ((2, 2, 2), (2, 3, 3), (3,), 3, 1, 1, 1, 1)]
+        results = [[[[0.06, 0.09], [0.18, 0.23], [0.3, 0.37]],
+                    [[0.18, 0.21], [0.38, 0.43], [0.58, 0.65]]],
+                   [[[0.47, 0.53], [0.75, 0.81], [1.03, 1.09]],
+                    [[1.27, 1.49], [2.03, 2.25], [2.79, 3.01]]]]
+        for (x_shape, w_shape, b_shape, kernel_shape,
+                strides, pads, dilations, group), result in zip(entries, results):
+            data1, data2, data3 = arange(x_shape) * .1, arange(w_shape) * .1, arange(b_shape) * .1
+            x, w, b = new_tensor(data1), new_tensor(data2), new_tensor(data3)
+            m = torch.nn.ConvTranspose1d(2, 3, kernel_shape, strides, pads)
+            m.weight.copy_(w)
+            m.bias.copy_(b)
+            y, _ = m(x), repr(m)
+            self.assertEqual(y, np.array(result), prec=1e-3)
 
     def test_conv2d_transpose(self):
         entries = [((2, 2, 2, 2), (2, 3, 1, 1), (3,), 1, 1, 0, 1, 1),
                    ((2, 2, 2, 2), (2, 3, 3, 3), (3,), 3, 1, 1, 1, 1)]
-        results = [[[[[0.12, 0.15], [0.18, 0.21]], [[0.26, 0.31], [0.36, 0.41]], [[0.4, 0.47], [0.54, 0.61]]],
-                    [[[0.36, 0.39], [0.42, 0.45]], [[0.66, 0.71], [0.76, 0.81]], [[0.96, 1.03], [1.1, 1.17]]]],
+        results = [[[[[0.12, 0.15], [0.18, 0.21]],
+                     [[0.26, 0.31], [0.36, 0.41]],
+                     [[0.4, 0.47], [0.54, 0.61]]],
+                    [[[0.36, 0.39], [0.42, 0.45]],
+                     [[0.66, 0.71], [0.76, 0.81]],
+                     [[0.96, 1.03], [1.1, 1.17]]]],
                    [[[[6.36, 6.64], [7.2, 7.48]],
                      [[8.98, 9.26], [9.82, 10.1]],
                      [[11.6, 11.88], [12.44, 12.72]]],
@@ -271,14 +350,39 @@ class TestModules(OpTestCase):
                      [[24.66, 25.58], [27.42, 28.34]],
                      [[33.04, 33.96], [35.8, 36.72]]]]]
         for (x_shape, w_shape, b_shape, kernel_shape,
-             strides, pads, dilations, group), result in zip(entries, results):
+                strides, pads, dilations, group), result in zip(entries, results):
             data1, data2, data3 = arange(x_shape) * .1, arange(w_shape) * .1, arange(b_shape) * .1
             x, w, b = new_tensor(data1), new_tensor(data2), new_tensor(data3)
             m = torch.nn.ConvTranspose2d(2, 3, kernel_shape, strides, pads)
             m.weight.copy_(w)
             m.bias.copy_(b)
             y, _ = m(x), repr(m)
-            self.assertEqual(y, np.array(result))
+            self.assertEqual(y, np.array(result), prec=1e-3)
+
+    def test_conv3d_transpose(self):
+        entries = [((2, 2, 2, 2, 2), (2, 3, 1, 1, 1), (3,), 1, 1, 0, 1, 1),
+                   ((2, 2, 2, 2, 2), (2, 3, 3, 3, 3), (3,), 3, 1, 1, 1, 1)]
+        results = [[[[[[0.24, 0.27], [0.3, 0.33]], [[0.36, 0.39], [0.42, 0.45]]],
+                     [[[0.42, 0.47], [0.52, 0.57]], [[0.62, 0.67], [0.72, 0.77]]],
+                     [[[0.6, 0.67], [0.74, 0.81]], [[0.88, 0.95], [1.02, 1.09]]]],
+                    [[[[0.72, 0.75], [0.78, 0.81]], [[0.84, 0.87], [0.9, 0.93]]],
+                     [[[1.22, 1.27], [1.32, 1.37]], [[1.42, 1.47], [1.52, 1.57]]],
+                     [[[1.72, 1.79], [1.86, 1.93]], [[2., 2.07], [2.14, 2.21]]]]],  # 1
+                   [[[[[80.6, 81.8], [84.2, 85.4]], [[91.4, 92.6], [95., 96.2]]],
+                     [[[113.1, 114.3], [116.7, 117.9]], [[123.9, 125.1], [127.5, 128.7]]],
+                     [[[145.6, 146.8], [149.2, 150.4]], [[156.4, 157.6], [160., 161.2]]]],
+                    [[[[200.92, 204.68], [212.2, 215.96]], [[234.76, 238.52], [246.04, 249.8]]],
+                     [[[302.54, 306.3], [313.82, 317.58]], [[336.38, 340.14], [347.66, 351.42]]],
+                     [[[404.16, 407.92], [415.44, 419.2]], [[438., 441.76], [449.28, 453.04]]]]]]
+        for (x_shape, w_shape, b_shape, kernel_shape,
+                strides, pads, dilations, group), result in zip(entries, results):
+            data1, data2, data3 = arange(x_shape) * .1, arange(w_shape) * .1, arange(b_shape) * .1
+            x, w, b = new_tensor(data1), new_tensor(data2), new_tensor(data3)
+            m = torch.nn.ConvTranspose3d(2, 3, kernel_shape, strides, pads)
+            m.weight.copy_(w)
+            m.bias.copy_(b)
+            y, _ = m(x), repr(m)
+            self.assertEqual(y, np.array(result), prec=1e-3)
 
     def test_cross_entropy_loss(self):
         for reduction in ('mean', 'sum', 'none'):
@@ -290,6 +394,23 @@ class TestModules(OpTestCase):
             y, _ = m(a, b), repr(m)
             result = reduce(-data1[np.arange(2), data2], reduction=reduction)
             self.assertEqual(y, result)
+
+    def test_depthwise_conv2d(self):
+        entries = [((2, 2, 2, 2), (2, 1, 1, 1), (2,), 1, 1, 0, 1),
+                   ((2, 2, 2, 2), (2, 1, 3, 3), (2,), 3, 1, 1, 1)]
+        results = [[[[[0., 0.], [0., 0.]], [[0.14, 0.15], [0.16, 0.17]]],
+                    [[[0., 0.], [0., 0.]], [[0.22, 0.23], [0.24, 0.25]]]],
+                   [[[[0.43, 0.37], [0.25, 0.19]], [[3.47, 3.25], [2.81, 2.59]]],
+                    [[[2.35, 1.97], [1.21, 0.83]], [[8.27, 7.73], [6.65, 6.11]]]]]
+        for (x_shape, w_shape, b_shape, kernel_shape,
+                strides, pads, dilations), result in zip(entries, results):
+            data1, data2, data3 = arange(x_shape) * .1, arange(w_shape) * .1, arange(b_shape) * .1
+            x, w, b = new_tensor(data1), new_tensor(data2), new_tensor(data3)
+            m = torch.nn.DepthwiseConv2d(2, 2, kernel_shape, strides, pads)
+            m.weight.copy_(w)
+            m.bias.copy_(b)
+            y, _ = m(x), repr(m)
+            self.assertEqual(y, np.array(result), prec=1e-3)
 
     def test_dropout(self):
         p = 0.
@@ -323,6 +444,20 @@ class TestModules(OpTestCase):
         y, _ = m(x), repr(m)
         result = np.maximum(data, 0.) + alpha * (np.exp(np.minimum(data, 0.)) - 1.)
         self.assertEqual(y, result)
+
+    def test_flatten(self):
+        entries = [(1, -1), (1, 1), (1, 2)]
+        for start_dim, end_dim in entries:
+            data = arange((2, 3, 4, 5))
+            x = new_tensor(data)
+            m = torch.nn.Flatten(start_dim, end_dim)
+            y, _ = m(x), repr(m)
+            if end_dim == -1:
+                end_dim = len(data.shape) - 1
+            new_shape = data.shape[:start_dim]
+            new_shape += (int(np.prod(data.shape[start_dim:end_dim + 1])),)
+            new_shape += data.shape[end_dim + 1:]
+            self.assertEqual(y, data.reshape(new_shape))
 
     def test_group_norm(self):
         eps = 1e-5
@@ -371,6 +506,26 @@ class TestModules(OpTestCase):
         y, _ = m(x), repr(m)
         result = data * np.clip(alpha * data + beta, 0, 1)
         self.assertEqual(y, result)
+
+    def test_identity(self):
+        data = uniform((2, 3))
+        x = new_tensor(data)
+        m = torch.nn.Identity()
+        self.assertEqual(m(x), data)
+
+    def test_kl_div_loss(self):
+        for reduction in ('mean', 'sum', 'none'):
+            data1 = np.array([[0.2, 0.3, 0.5], [0.1, 0.7, 0.2]], 'float32')
+            for log_target in (False, True):
+                data2 = np.log(data1) if log_target else data1
+            a, b = new_tensor(data1), new_tensor(data2)
+            m = torch.nn.KLDivLoss(reduction=reduction, log_target=log_target)
+            y, _ = m(a, b), repr(m)
+            if log_target:
+                result = np.exp(data2) * (data2 - data1)
+            else:
+                result = data2 * (np.log(data2) - data1)
+            self.assertEqual(y, reduce(result, reduction=reduction))
 
     def test_leaky_relu(self):
         alpha = 0.2
@@ -463,12 +618,36 @@ class TestModules(OpTestCase):
             if m4 is not None:
                 self.assertEqual(m4(x), np.pad(data, pads, 'constant'))
 
+    def test_pool1d(self):
+        entries = [((2, 2, 2,), (2,), 2, 1, 'MAX'),
+                   ((2, 2, 2,), (2,), 2, 1, 'AVG')]
+        for x_shape, kernel_shape, strides, pads, mode in entries:
+            data = arange(x_shape) * .1
+            module_cls = torch.nn.AvgPool1d if mode == 'AVG' else torch.nn.MaxPool1d
+            x = new_tensor(data)
+            m = module_cls(kernel_shape, strides, pads)
+            y, _ = m(x), repr(m)
+            result = data / (np.prod(kernel_shape) if mode == 'AVG' else 1.)
+            self.assertEqual(y, result)
+
     def test_pool2d(self):
         entries = [((2, 2, 2, 2), (2, 2), 2, 1, 'MAX'),
                    ((2, 2, 2, 2), (2, 2), 2, 1, 'AVG')]
         for x_shape, kernel_shape, strides, pads, mode in entries:
             data = arange(x_shape) * .1
             module_cls = torch.nn.AvgPool2d if mode == 'AVG' else torch.nn.MaxPool2d
+            x = new_tensor(data)
+            m = module_cls(kernel_shape, strides, pads)
+            y, _ = m(x), repr(m)
+            result = data / (np.prod(kernel_shape) if mode == 'AVG' else 1.)
+            self.assertEqual(y, result)
+
+    def test_pool3d(self):
+        entries = [((2, 2, 2, 2, 2), (2, 2, 2), 2, 1, 'MAX'),
+                   ((2, 2, 2, 2, 2), (2, 2, 2), 2, 1, 'AVG')]
+        for x_shape, kernel_shape, strides, pads, mode in entries:
+            data = arange(x_shape) * .1
+            module_cls = torch.nn.AvgPool3d if mode == 'AVG' else torch.nn.MaxPool3d
             x = new_tensor(data)
             m = module_cls(kernel_shape, strides, pads)
             y, _ = m(x), repr(m)

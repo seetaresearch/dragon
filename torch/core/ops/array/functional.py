@@ -1248,7 +1248,7 @@ def _arg_reduce(input, op_type, dim=None, keepdim=False, out=None):
             input.device,
             op_type=op_type,
             axis=dim,
-            keep_dims=keepdim,
+            keepdims=keepdim,
         ).apply(input, out)
 
 
@@ -1262,6 +1262,6 @@ def _reduce(input, operation, dim=None, keepdim=False, out=None):
         .instantiate(
             input.device,
             axes=dim,
-            keep_dims=keepdim,
+            keepdims=keepdim,
             operation=operation,
         ).apply(input, out)

@@ -104,8 +104,7 @@ def assert_input_compatibility(input_spec, inputs, layer_name):
                     layer_name + ' is incompatible with the layer: '
                     'expected ndim=' + str(spec.ndim) + ', found ndim=' +
                     str(ndim) + '. Full shape received: ' +
-                    str(x_shape.as_list())
-                )
+                    str(x_shape.as_list()))
         # Check the max number of dimensions.
         if spec.max_ndim is not None:
             ndim = x_shape.ndims
@@ -114,8 +113,7 @@ def assert_input_compatibility(input_spec, inputs, layer_name):
                     'Input ' + str(input_index) + ' of layer ' +
                     layer_name + ' is incompatible with the layer: '
                     'expected max_ndim=' + str(spec.max_ndim) +
-                    ', found ndim=' + str(ndim)
-                )
+                    ', found ndim=' + str(ndim))
         # Check the min number of dimensions.
         if spec.min_ndim is not None:
             ndim = x_shape.ndims
@@ -126,8 +124,7 @@ def assert_input_compatibility(input_spec, inputs, layer_name):
                     ': expected min_ndim=' + str(spec.min_ndim) +
                     ', found ndim=' + str(ndim) +
                     '. Full shape received: ' +
-                    str(x_shape.as_list())
-                )
+                    str(x_shape.as_list()))
         # Check the data type.
         if spec.dtype is not None:
             if x.dtype != spec.dtype:
@@ -135,8 +132,7 @@ def assert_input_compatibility(input_spec, inputs, layer_name):
                     'Input ' + str(input_index) + ' of layer ' +
                     layer_name + ' is incompatible with the layer: '
                     'expected dtype=' + str(spec.dtype) +
-                    ', found dtype=' + str(x.dtype)
-                )
+                    ', found dtype=' + str(x.dtype))
         # Check axes.
         if spec.axes:
             shape = x_shape.as_list()
@@ -149,8 +145,7 @@ def assert_input_compatibility(input_spec, inputs, layer_name):
                             'Input ' + str(input_index) + ' of layer ' + layer_name + ' is'
                             ' incompatible with the layer: expected axis ' + str(axis) +
                             ' of input shape to have value ' + str(value) +
-                            ' but received input with shape ' + str(shape)
-                        )
+                            ' but received input with shape ' + str(shape))
         # Check the determined dimensions.
         if spec.shape is not None:
             shape = x_shape.as_list()
@@ -162,5 +157,4 @@ def assert_input_compatibility(input_spec, inputs, layer_name):
                                 'Input ' + str(input_index) +
                                 ' is incompatible with layer ' + layer_name +
                                 ': expected shape=' + str(spec.shape) +
-                                ', found shape=' + str(shape)
-                            )
+                                ', found shape=' + str(shape))

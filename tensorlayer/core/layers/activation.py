@@ -19,7 +19,7 @@ from dragon.vm.tensorlayer.core import activations
 
 
 class Relu(layer.Layer):
-    r"""The layer to apply the rectified linear unit.
+    r"""Layer to apply the rectified linear unit.
     `[Nair & Hinton, 2010] <http://www.csri.utoronto.ca/~hinton/absps/reluICML.pdf>`_.
 
     The **ReLU** function is defined as:
@@ -48,7 +48,7 @@ class Relu(layer.Layer):
         inplace : bool, optional, default=False
             Whether to do the operation in-place.
         name : str, optional
-            The optional layer name.
+            The layer name.
 
         """
         super(Relu, self).__init__(name)

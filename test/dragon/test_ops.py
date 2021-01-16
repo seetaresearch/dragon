@@ -1586,12 +1586,12 @@ class TestMathOps(OpTestCase):
         entries = [(0, True), (0, False), (1, True), (1, False)]
         for execution in ('EAGER_MODE', 'GRAPH_MODE'):
             with execution_context().mode(execution):
-                for axis, keep_dims in entries:
+                for axis, keepdims in entries:
                     data = arange((2, 3))
                     x = new_tensor(data)
-                    y = dragon.math.argmax(x, axis, keep_dims=keep_dims)
+                    y = dragon.math.argmax(x, axis, keepdims=keepdims)
                     result = np.argmax(data, axis)
-                    if keep_dims:
+                    if keepdims:
                         result = np.expand_dims(result, axis)
                     self.assertEqual(y, result)
 
@@ -1604,12 +1604,12 @@ class TestMathOps(OpTestCase):
         entries = [(0, True), (0, False), (1, True), (1, False)]
         for execution in ('EAGER_MODE', 'GRAPH_MODE'):
             with execution_context().mode(execution):
-                for axis, keep_dims in entries:
+                for axis, keepdims in entries:
                     data = arange((2, 3))
                     x = new_tensor(data)
-                    y = dragon.math.argmin(x, axis, keep_dims=keep_dims)
+                    y = dragon.math.argmin(x, axis, keepdims=keepdims)
                     result = np.argmin(data, axis)
-                    if keep_dims:
+                    if keepdims:
                         result = np.expand_dims(result, axis)
                     self.assertEqual(y, result)
 
@@ -2042,11 +2042,11 @@ class TestMathOps(OpTestCase):
                    ((0, 1), True), ((0, 1), False)]
         for execution in ('EAGER_MODE', 'GRAPH_MODE'):
             with execution_context().mode(execution):
-                for axis, keep_dims in entries:
+                for axis, keepdims in entries:
                     data = arange((2, 3))
                     x = new_tensor(data)
-                    y = dragon.math.max(x, axis, keep_dims=keep_dims)
-                    result = np.max(data, axis, keepdims=keep_dims)
+                    y = dragon.math.max(x, axis, keepdims=keepdims)
+                    result = np.max(data, axis, keepdims=keepdims)
                     self.assertEqual(y, result)
 
     @unittest.skipIf(not TEST_CUDA, 'CUDA unavailable')
@@ -2083,12 +2083,12 @@ class TestMathOps(OpTestCase):
                    ((0, 1), True), ((0, 1), False)]
         for execution in ('EAGER_MODE', 'GRAPH_MODE'):
             with execution_context().mode(execution):
-                for axis, keep_dims in entries:
+                for axis, keepdims in entries:
                     data = arange((2, 3))
                     x = new_tensor(data)
                     with dragon.GradientTape() as tape:
                         tape.watch(x)
-                        y = dragon.math.mean(x, axis, keep_dims=keep_dims)
+                        y = dragon.math.mean(x, axis, keepdims=keepdims)
                     data3 = arange(y.shape)
                     dy = new_tensor(data3)
                     dx = tape.gradient(y, [x], output_gradients=[dy])[0]
@@ -2097,7 +2097,7 @@ class TestMathOps(OpTestCase):
                         normalization *= data.shape[i]
                     self.assertEqual(
                         [y, dx],
-                        [np.mean(data, axis, keepdims=keep_dims),
+                        [np.mean(data, axis, keepdims=keepdims),
                          broadcast_like(data3, data, axis) / normalization])
 
     @unittest.skipIf(not TEST_CUDA, 'CUDA unavailable')
@@ -2111,11 +2111,11 @@ class TestMathOps(OpTestCase):
                    ((0, 1), True), ((0, 1), False)]
         for execution in ('EAGER_MODE', 'GRAPH_MODE'):
             with execution_context().mode(execution):
-                for axis, keep_dims in entries:
+                for axis, keepdims in entries:
                     data = arange((2, 3))
                     x = new_tensor(data)
-                    y = dragon.math.min(x, axis, keep_dims=keep_dims)
-                    result = np.min(data, axis, keepdims=keep_dims)
+                    y = dragon.math.min(x, axis, keepdims=keepdims)
+                    result = np.min(data, axis, keepdims=keepdims)
                     self.assertEqual(y, result)
 
     @unittest.skipIf(not TEST_CUDA, 'CUDA unavailable')
@@ -2152,14 +2152,14 @@ class TestMathOps(OpTestCase):
                    ((0, 1), True), ((0, 1), False)]
         for execution in ('EAGER_MODE', 'GRAPH_MODE'):
             with execution_context().mode(execution):
-                for axis, keep_dims in entries:
+                for axis, keepdims in entries:
                     data = arange((2, 3))
                     x = new_tensor(data)
-                    mean, var = dragon.math.moments(x, axis, keep_dims=keep_dims)
+                    mean, var = dragon.math.moments(x, axis, keepdims=keepdims)
                     self.assertEqual(
                         [mean, var],
-                        [np.array(np.mean(data, axis, keepdims=keep_dims)),
-                         np.array(np.var(data, axis, keepdims=keep_dims))])
+                        [np.array(np.mean(data, axis, keepdims=keepdims)),
+                         np.array(np.var(data, axis, keepdims=keepdims))])
 
     @unittest.skipIf(not TEST_CUDA, 'CUDA unavailable')
     def test_moments_cuda(self):
@@ -2387,18 +2387,18 @@ class TestMathOps(OpTestCase):
                    ((0, 1), True), ((0, 1), False)]
         for execution in ('EAGER_MODE', 'GRAPH_MODE'):
             with execution_context().mode(execution):
-                for axis, keep_dims in entries:
+                for axis, keepdims in entries:
                     data = arange((2, 3))
                     x = new_tensor(data)
                     with dragon.GradientTape() as tape:
                         tape.watch(x)
-                        y = dragon.math.sum(x, axis, keep_dims=keep_dims)
+                        y = dragon.math.sum(x, axis, keepdims=keepdims)
                     data3 = arange(y.shape)
                     dy = new_tensor(data3)
                     dx = tape.gradient(y, [x], output_gradients=[dy])[0]
                     self.assertEqual(
                         [y, dx],
-                        [np.sum(data, axis, keepdims=keep_dims),
+                        [np.sum(data, axis, keepdims=keepdims),
                          broadcast_like(data3, data, axis)])
 
     @unittest.skipIf(not TEST_CUDA, 'CUDA unavailable')
@@ -3099,7 +3099,69 @@ class TestVisionOps(OpTestCase):
         with dragon.device('cuda'):
             self.test_bias_add()
 
-    def test_conv2d(self, prec=None):
+    def test_conv1d(self, prec=1e-3):
+        entries = [((2, 2, 2), (3, 2, 1), (3,), 1, 1, 0, 1, 1, 'NCHW'),
+                   ((2, 2, 2), (3, 2, 3), (3,), 3, 1, 1, 1, 1, 'NCHW'),
+                   ((2, 2, 2), (3, 2, 1), (3,), 1, 1, 0, 1, 1, 'NHWC'),
+                   ((2, 2, 2), (3, 2, 3), (3,), 3, 1, 1, 1, 1, 'NHWC')]
+        results = [[[[0.02, 0.03], [0.16, 0.21], [0.3, 0.39]], [[0.06, 0.07], [0.36, 0.41], [0.66, 0.75]]],
+                   [[[0.25, 0.19], [0.71, 0.65], [1.17, 1.11]], [[0.73, 0.51], [2.15, 1.93], [3.57, 3.35]]],
+                   [[[0.01, 0.13, 0.25], [0.03, 0.23, 0.43]], [[0.05, 0.33, 0.61], [0.07, 0.43, 0.79]]],
+                   [[[0.26, 0.72, 1.18], [0.14, 0.6, 1.06]], [[0.82, 2.24, 3.66], [0.38, 1.8, 3.22]]]]
+        grads1 = [[[[0.2, 0.26], [0.26, 0.35]], [[0.56, 0.62], [0.8, 0.89]]],
+                  [[[1.44, 1.59], [1.89, 2.04]], [[3.78, 4.29], [5.31, 5.82]]],
+                  [[[0.1, 0.13], [0.28, 0.4]], [[0.46, 0.67], [0.64, 0.94]]],
+                  [[[1.2, 1.35], [1.5, 1.65]], [[3.72, 4.23], [4.74, 5.25]]]]
+        grads2 = [[[[0.6], [0.88]], [[0.8], [1.24]], [[1.], [1.6]]],
+                  [[[0.28, 0.6, 0.3], [0.44, 0.88, 0.42]],
+                   [[0.36, 0.8, 0.42], [0.6, 1.24, 0.62]],
+                   [[0.44, 1., 0.54], [0.76, 1.6, 0.82]]],
+                  [[[0.84], [1.02]], [[0.96], [1.18]], [[1.08], [1.34]]],
+                  [[[0.36, 0.48, 0.84], [1.02, 0.36, 0.42]],
+                   [[0.4, 0.54, 0.96], [1.18, 0.44, 0.52]],
+                   [[0.44, 0.6, 1.08], [1.34, 0.52, 0.62]]]]
+        grads3 = [[1.4, 2.2, 3.], [1.4, 2.2, 3.], [1.8, 2.2, 2.6], [1.8, 2.2, 2.6]]
+        for execution in ('EAGER_MODE', 'GRAPH_MODE'):
+            with execution_context().mode(execution):
+                for (x_shape, w_shape, b_shape, kernel_shape,
+                        strides, pads, dilations, group, data_format), \
+                        result, grad1, grad2, grad3, in zip(entries, results, grads1, grads2, grads3):
+                    data1, data2, data3 = arange(x_shape) * .1, arange(w_shape) * .1, arange(b_shape) * .1
+                    x, w, b = new_tensor(data1), new_tensor(data2), new_tensor(data3)
+                    with dragon.GradientTape() as tape:
+                        tape.watch([x, w, b])
+                        y = dragon.nn.conv1d(
+                            [x, w, b],
+                            kernel_shape=kernel_shape,
+                            strides=strides,
+                            pads=pads,
+                            dilations=dilations,
+                            group=group,
+                            data_format=data_format,
+                        )
+                    data4 = arange(y.shape) * .1
+                    dy = new_tensor(data4)
+                    dx, dw, db = tape.gradient(y, [x, w, b], output_gradients=[dy])
+                    self.assertEqual(
+                        [y, dx, dw, db],
+                        [np.array(result),
+                         np.array(grad1),
+                         np.array(grad2),
+                         np.array(grad3)], prec=prec)
+
+    @unittest.skipIf(not TEST_CUDA, 'CUDA unavailable')
+    def test_conv1d_cuda(self):
+        dragon.cuda.enable_cudnn(False)
+        with dragon.device('cuda'):
+            self.test_conv1d()
+
+    @unittest.skipIf(not TEST_CUDA, 'CUDA unavailable')
+    def test_conv1d_cudnn(self):
+        dragon.cuda.enable_cudnn(True)
+        with dragon.device('cuda'), self.cudnn_ws.as_default():
+            self.test_conv1d()
+
+    def test_conv2d(self, prec=1e-3):
         entries = [((2, 2, 2, 2), (3, 2, 1, 1), (3,), 1, 1, 0, 1, 1, 'NCHW'),
                    ((2, 2, 2, 2), (3, 2, 3, 3), (3,), 3, 1, 1, 1, 1, 'NCHW'),
                    ((2, 2, 2, 2), (3, 2, 1, 1), (3,), 1, 1, 0, 1, 1, 'NHWC'),
@@ -3160,7 +3222,7 @@ class TestVisionOps(OpTestCase):
                     dy = new_tensor(data4)
                     dx, dw, db = tape.gradient(y, [x, w, b], output_gradients=[dy])
                     self.assertEqual(
-                        [y, dx, dw],
+                        [y, dx, dw, db],
                         [np.array(result),
                          np.array(grad1),
                          np.array(grad2).reshape(w_shape),
@@ -3176,9 +3238,197 @@ class TestVisionOps(OpTestCase):
     def test_conv2d_cudnn(self):
         dragon.cuda.enable_cudnn(True)
         with dragon.device('cuda'), self.cudnn_ws.as_default():
-            self.test_conv2d(prec=1e-4)
+            self.test_conv2d()
 
-    def test_conv2d_transpose(self, prec=None):
+    def test_conv3d(self, prec=1e-3):
+        entries = [((2, 2, 2, 2, 2), (3, 2, 1, 1, 1), (3,), 1, 1, 0, 1, 1, 'NCHW'),
+                   ((2, 2, 2, 2, 2), (3, 2, 3, 3, 3), (3,), 3, 1, 1, 1, 1, 'NCHW'),
+                   ((2, 2, 2, 2, 2), (3, 2, 1, 1, 1), (3,), 1, 1, 0, 1, 1, 'NHWC'),
+                   ((2, 2, 2, 2, 2), (3, 2, 3, 3, 3), (3,), 3, 1, 1, 1, 1, 'NHWC')]
+        results = [[[[[[0.08, 0.09], [0.1, 0.11]], [[0.12, 0.13], [0.14, 0.15]]],
+                     [[[0.34, 0.39], [0.44, 0.49]], [[0.54, 0.59], [0.64, 0.69]]],
+                     [[[0.6, 0.69], [0.78, 0.87]], [[0.96, 1.05], [1.14, 1.23]]]],
+                    [[[[0.24, 0.25], [0.26, 0.27]], [[0.28, 0.29], [0.3, 0.31]]],
+                     [[[1.14, 1.19], [1.24, 1.29]], [[1.34, 1.39], [1.44, 1.49]]],
+                     [[[2.04, 2.13], [2.22, 2.31]], [[2.4, 2.49], [2.58, 2.67]]]]],  # 1
+                   [[[[[49.96, 48.76], [46.36, 45.16]], [[39.16, 37.96], [35.56, 34.36]]],
+                     [[[114.86, 113.66], [111.26, 110.06]], [[104.06, 102.86], [100.46, 99.26]]],
+                     [[[179.76, 178.56], [176.16, 174.96]], [[168.96, 167.76], [165.36, 164.16]]]],
+                    [[[[134.44, 130.68], [123.16, 119.40]], [[100.60, 96.84], [89.32, 85.56]]],
+                     [[[337.58, 333.82], [326.30, 322.54]], [[303.74, 299.98], [292.46, 288.70]]],
+                     [[[540.72, 536.96], [529.44, 525.68]], [[506.88, 503.12], [495.60, 491.84]]]]],  # 2
+                   [[[[[0.01, 0.13, 0.25], [0.03, 0.23, 0.43]], [[0.05, 0.33, 0.61], [0.07, 0.43, 0.79]]],
+                     [[[0.09, 0.53, 0.97], [0.11, 0.63, 1.15]], [[0.13, 0.73, 1.33], [0.15, 0.83, 1.51]]]],
+                    [[[[0.17, 0.93, 1.69], [0.19, 1.03, 1.87]], [[0.21, 1.13, 2.05], [0.23, 1.23, 2.23]]],
+                     [[[0.25, 1.33, 2.41], [0.27, 1.43, 2.59]], [[0.29, 1.53, 2.77], [0.31, 1.63, 2.95]]]]],  # 3
+                   [[[[[54.32, 119.22, 184.12], [51.92, 116.82, 181.72]],
+                      [[47.12, 112.02, 176.92], [44.72, 109.62, 174.52]]],
+                     [[[32.72, 97.62, 162.52], [30.32, 95.22, 160.12]],
+                      [[25.52, 90.42, 155.32], [23.12, 88.02, 152.92]]]],
+                    [[[[155.44, 358.58, 561.72], [147.92, 351.06, 554.2]],
+                      [[132.88, 336.02, 539.16], [125.36, 328.5, 531.64]]],
+                     [[[87.76, 290.9, 494.04], [80.24, 283.38, 486.52]],
+                      [[65.2, 268.34, 471.48], [57.68, 260.82, 463.96]]]]]]
+        grads1 = [[[[[[0.8, 0.86], [0.92, 0.98]], [[1.04, 1.1], [1.16, 1.22]]],
+                    [[[1.04, 1.13], [1.22, 1.31]], [[1.4, 1.49], [1.58, 1.67]]]],
+                   [[[[2.24, 2.3], [2.36, 2.42]], [[2.48, 2.54], [2.6, 2.66]]],
+                    [[[3.2, 3.29], [3.38, 3.47]], [[3.56, 3.65], [3.74, 3.83]]]]],  # 1
+                  [[[[[233.52, 236.28], [241.80, 244.56]], [[258.36, 261.12], [266.64, 269.4]]],
+                    [[[308.04, 310.8], [316.32, 319.08]], [[332.88, 335.64], [341.16, 343.92]]]],
+                   [[[[582., 590.52], [607.56, 616.08]], [[658.68, 667.2], [684.24, 692.76]]],
+                    [[[812.04, 820.56], [837.6, 846.12]], [[888.72, 897.24], [914.28, 922.8]]]]],  # 2
+                  [[[[[0.1, 0.13], [0.28, 0.4]], [[0.46, 0.67], [0.64, 0.94]]],
+                    [[[0.82, 1.21], [1., 1.48]], [[1.18, 1.75], [1.36, 2.02]]]],
+                   [[[[1.54, 2.29], [1.72, 2.56]], [[1.9, 2.83], [2.08, 3.1]]],
+                    [[[2.26, 3.37], [2.44, 3.64]], [[2.62, 3.91], [2.8, 4.18]]]]],  # 3
+                  [[[[[178.08, 180.84], [183.6, 186.36]], [[194.64, 197.4], [200.16, 202.92]]],
+                    [[[227.76, 230.52], [233.28, 236.04]], [[244.32, 247.08], [249.84, 252.6]]]],
+                   [[[[564., 572.52], [581.04, 589.56]], [[615.12, 623.64], [632.16, 640.68]]],
+                    [[[717.36, 725.88], [734.4, 742.92]], [[768.48, 777.], [785.52, 794.04]]]]]]
+        grads2 = [[[[[[44.72]]], [[[64.56]]]], [[[[59.44]]], [[[89.52]]]], [[[[74.16]]], [[[114.48]]]]],  # 1
+                  [[[[[4.96, 10.14, 5.16], [10.36, 21.08, 10.68], [5.32, 10.78, 5.44]],
+                     [[10.8, 21.88, 11.04], [22.16, 44.72, 22.48], [11.2, 22.52, 11.28]],
+                     [[5.52, 11.1, 5.56], [11.16, 22.36, 11.16], [5.56, 11.1, 5.52]]],
+                    [[[8., 16.06, 8.04], [16.12, 32.28, 16.12], [8.04, 16.06, 8.]],
+                     [[16.24, 32.44, 16.16], [32.4, 64.56, 32.08], [16., 31.8, 15.76]],
+                     [[7.92, 15.74, 7.8], [15.64, 31., 15.32], [7.64, 15.1, 7.44]]]],
+                   [[[[6.24, 12.86, 6.6], [13.24, 27.16, 13.88], [6.92, 14.14, 7.2]],
+                     [[14., 28.6, 14.56], [29.2, 59.44, 30.16], [15.04, 30.52, 15.44]],
+                     [[7.44, 15.1, 7.64], [15.32, 31., 15.64], [7.8, 15.74, 7.92]]],
+                    [[[10.56, 21.34, 10.76], [21.56, 43.48, 21.88], [10.92, 21.98, 11.04]],
+                     [[22., 44.28, 22.24], [44.56, 89.52, 44.88], [22.4, 44.92, 22.48]],
+                     [[11.12, 22.3, 11.16], [22.36, 44.76, 22.36], [11.16, 22.3, 11.12]]]],
+                   [[[[7.52, 15.58, 8.04], [16.12, 33.24, 17.08], [8.52, 17.5, 8.96]],
+                     [[17.2, 35.32, 18.08], [36.24, 74.16, 37.84], [18.88, 38.52, 19.6]],
+                     [[9.36, 19.1, 9.72], [19.48, 39.64, 20.12], [10.04, 20.38, 10.32]]],
+                    [[[13.12, 26.62, 13.48], [27., 54.68, 27.64], [13.8, 27.9, 14.08]],
+                     [[27.76, 56.12, 28.32], [56.72, 114.48, 57.68], [28.8, 58.04, 29.2]],
+                     [[14.32, 28.86, 14.52], [29.08, 58.52, 29.4], [14.68, 29.5, 14.8]]]]],  # 2
+                  [[[[[74.4]]], [[[78.]]]], [[[[76.8]]], [[[80.56]]]], [[[[79.2]]], [[[83.12]]]]],  # 3
+                  [[[[[7.2, 7.86, 15.24], [16.5, 7.92, 8.52], [16.08, 17.28, 33.36]],
+                     [[35.64, 17.04, 18.12], [8.4, 8.94, 17.16], [18.18, 8.64, 9.12]],
+                     [[17.76, 18.84, 36.24], [38.28, 18.24, 19.2], [36.96, 38.88, 74.4]]],
+                    [[[78., 36.96, 38.64], [18.24, 19.08, 36.24], [37.8, 17.76, 18.48]],
+                     [[8.64, 9.06, 17.16], [17.94, 8.4, 8.76], [17.04, 17.76, 33.36]],
+                     [[34.68, 16.08, 16.68], [7.92, 8.22, 15.24], [15.78, 7.2, 7.44]]]],
+                   [[[[7.36, 8.04, 15.6], [16.9, 8.12, 8.74], [16.48, 17.72, 34.24]],
+                     [[36.6, 17.52, 18.64], [8.64, 9.2, 17.68], [18.74, 8.92, 9.42]],
+                     [[18.24, 19.36, 37.28], [39.4, 18.8, 19.8], [38.08, 40.08, 76.8]]],
+                    [[[80.56, 38.24, 40.], [18.88, 19.76, 37.6], [39.24, 18.48, 19.24]],
+                     [[8.96, 9.4, 17.84], [18.66, 8.76, 9.14], [17.76, 18.52, 34.88]],
+                     [[36.28, 16.88, 17.52], [8.32, 8.64, 16.08], [16.66, 7.64, 7.9]]]],
+                   [[[[7.52, 8.22, 15.96], [17.3, 8.32, 8.96], [16.88, 18.16, 35.12]],
+                     [[37.56, 18., 19.16], [8.88, 9.46, 18.2], [19.3, 9.2, 9.72]],
+                     [[18.72, 19.88, 38.32], [40.52, 19.36, 20.4], [39.2, 41.28, 79.2]]],
+                    [[[83.12, 39.52, 41.36], [19.52, 20.44, 38.96], [40.68, 19.2, 20.]],
+                     [[9.28, 9.74, 18.52], [19.38, 9.12, 9.52], [18.48, 19.28, 36.4]],
+                     [[37.88, 17.68, 18.36], [8.72, 9.06, 16.92], [17.54, 8.08, 8.36]]]]]]
+        grads3 = [[24.8, 37.6, 50.4], [24.8, 37.6, 50.4], [36., 37.6, 39.2], [36., 37.6, 39.2]]
+        for execution in ('EAGER_MODE', 'GRAPH_MODE'):
+            with execution_context().mode(execution):
+                for (x_shape, w_shape, b_shape, kernel_shape,
+                        strides, pads, dilations, group, data_format), \
+                        result, grad1, grad2, grad3 in zip(entries, results, grads1, grads2, grads3):
+                    data1, data2, data3 = arange(x_shape) * .1, arange(w_shape) * .1, arange(b_shape) * .1
+                    x, w, b = new_tensor(data1), new_tensor(data2), new_tensor(data3)
+                    with dragon.GradientTape() as tape:
+                        tape.watch([x, w, b])
+                        y = dragon.nn.conv3d(
+                            [x, w, b],
+                            kernel_shape=kernel_shape,
+                            strides=strides,
+                            pads=pads,
+                            dilations=dilations,
+                            group=group,
+                            data_format=data_format,
+                        )
+                    data4 = arange(y.shape) * .1
+                    dy = new_tensor(data4)
+                    dx, dw, db = tape.gradient(y, [x, w, b], output_gradients=[dy])
+                    self.assertEqual(
+                        [y, dx, dw, db],
+                        [np.array(result),
+                         np.array(grad1),
+                         np.array(grad2),
+                         np.array(grad3)], prec=prec)
+
+    @unittest.skipIf(not TEST_CUDA, 'CUDA unavailable')
+    def test_conv3d_cuda(self):
+        dragon.cuda.enable_cudnn(False)
+        with dragon.device('cuda'):
+            self.test_conv3d()
+
+    @unittest.skipIf(not TEST_CUDA, 'CUDA unavailable')
+    def test_conv3d_cudnn(self):
+        dragon.cuda.enable_cudnn(True)
+        with dragon.device('cuda'), self.cudnn_ws.as_default():
+            self.test_conv3d()
+
+    def test_conv1d_transpose(self, prec=1e-3):
+        entries = [((2, 2, 2), (2, 3, 1), (3,), 1, 1, 0, 1, 1, 'NCHW'),
+                   ((2, 2, 2), (2, 3, 3), (3,), 3, 1, 1, 1, 1, 'NCHW'),
+                   ((2, 2, 2), (2, 3, 1), (3,), 1, 1, 0, 1, 1, 'NHWC'),
+                   ((2, 2, 2), (2, 3, 3), (3,), 3, 1, 1, 1, 1, 'NHWC')]
+        results = [[[[0.06, 0.09], [0.18, 0.23], [0.3, 0.37]],
+                    [[0.18, 0.21], [0.38, 0.43], [0.58, 0.65]]],  # 1
+                   [[[0.47, 0.53], [0.75, 0.81], [1.03, 1.09]],
+                    [[1.27, 1.49], [2.03, 2.25], [2.79, 3.01]]],  # 2
+                   [[[0.03, 0.14, 0.25], [0.09, 0.24, 0.39]],
+                    [[0.15, 0.34, 0.53], [0.21, 0.44, 0.67]]],  # 3
+                   [[[0.39, 0.55, 0.71], [0.57, 0.73, 0.89]],
+                    [[1.35, 1.67, 1.99], [2.01, 2.33, 2.65]]]]
+        grads1 = [[[[0.1, 0.13], [0.28, 0.4]], [[0.28, 0.31], [1., 1.12]]],  # 1
+                  [[[0.93, 0.78], [2.28, 2.13]], [[2.55, 2.04], [7.14, 6.63]]],  # 2
+                  [[[0.05, 0.14], [0.14, 0.5]], [[0.23, 0.86], [0.32, 1.22]]],  # 3
+                  [[[1., 2.35], [0.55, 1.9]], [[2.98, 7.57], [1.45, 6.04]]]]
+        grads2 = [[[[0.6], [0.8], [1.]], [[0.88], [1.24], [1.6]]],  # 1
+                  [[[0.3, 0.6, 0.28], [0.42, 0.8, 0.36], [0.54, 1., 0.44]],
+                   [[0.42, 0.88, 0.44], [0.62, 1.24, 0.6], [0.82, 1.6, 0.76]]],  # 2
+                  [[[0.84], [0.96], [1.08]], [[1.02], [1.18], [1.34]]],  # 3
+                  [[[0.36, 0.44, 0.52], [0.84, 0.96, 1.08], [0.36, 0.4, 0.44]],
+                   [[0.42, 0.52, 0.62], [1.02, 1.18, 1.34], [0.48, 0.54, 0.6]]]]
+        grads3 = [[1.4, 2.2, 3.], [1.4, 2.2, 3.], [1.8, 2.2, 2.6], [1.8, 2.2, 2.6]]
+        for execution in ('EAGER_MODE', 'GRAPH_MODE'):
+            with execution_context().mode(execution):
+                for (x_shape, w_shape, b_shape, kernel_shape,
+                        strides, pads, dilations, group, data_format),\
+                        result, grad1, grad2, grad3 in zip(entries, results, grads1, grads2, grads3):
+                    data1, data2, data3 = arange(x_shape) * .1, arange(w_shape) * .1, arange(b_shape) * .1
+                    x, w, b = new_tensor(data1), new_tensor(data2), new_tensor(data3)
+                    with dragon.GradientTape() as tape:
+                        tape.watch([x, w, b])
+                        y = dragon.nn.conv1d_transpose(
+                            [x, w, b],
+                            kernel_shape=kernel_shape,
+                            strides=strides,
+                            pads=pads,
+                            dilations=dilations,
+                            group=group,
+                            data_format=data_format,
+                        )
+                    data4 = arange(y.shape) * .1
+                    dy = new_tensor(data4)
+                    dx, dw, db = tape.gradient(y, [x, w, b], output_gradients=[dy])
+                    self.assertEqual(
+                        [y, dx, dw, db],
+                        [np.array(result),
+                         np.array(grad1),
+                         np.array(grad2).reshape(w_shape),
+                         np.array(grad3)], prec=prec)
+
+    @unittest.skipIf(not TEST_CUDA, 'CUDA unavailable')
+    def test_conv1d_transpose_cuda(self):
+        dragon.cuda.enable_cudnn(False)
+        with dragon.device('cuda'):
+            self.test_conv1d_transpose()
+
+    @unittest.skipIf(not TEST_CUDA, 'CUDA unavailable')
+    def test_conv1d_transpose_cudnn(self):
+        dragon.cuda.enable_cudnn(True)
+        with dragon.device('cuda'), self.cudnn_ws.as_default():
+            self.test_conv1d_transpose()
+
+    def test_conv2d_transpose(self, prec=1e-3):
         entries = [((2, 2, 2, 2), (2, 3, 1, 1), (3,), 1, 1, 0, 1, 1, 'NCHW'),
                    ((2, 2, 2, 2), (2, 3, 3, 3), (3,), 3, 1, 1, 1, 1, 'NCHW'),
                    ((2, 2, 2, 2), (2, 3, 1, 1), (3,), 1, 1, 0, 1, 1, 'NHWC'),
@@ -3256,7 +3506,132 @@ class TestVisionOps(OpTestCase):
     def test_conv2d_transpose_cudnn(self):
         dragon.cuda.enable_cudnn(True)
         with dragon.device('cuda'), self.cudnn_ws.as_default():
-            self.test_conv2d_transpose(prec=1e-4)
+            self.test_conv2d_transpose()
+
+    def test_conv3d_transpose(self, prec=1e-3):
+        entries = [((2, 2, 2, 2, 2), (2, 3, 1, 1, 1), (3,), 1, 1, 0, 1, 1, 'NCHW'),
+                   ((2, 2, 2, 2, 2), (2, 3, 3, 3, 3), (3,), 3, 1, 1, 1, 1, 'NCHW'),
+                   ((2, 2, 2, 2, 2), (2, 3, 1, 1, 1), (3,), 1, 1, 0, 1, 1, 'NHWC'),
+                   ((2, 2, 2, 2, 2), (2, 3, 3, 3, 3), (3,), 3, 1, 1, 1, 1, 'NHWC')]
+        results = [[[[[[0.24, 0.27], [0.3, 0.33]], [[0.36, 0.39], [0.42, 0.45]]],
+                     [[[0.42, 0.47], [0.52, 0.57]], [[0.62, 0.67], [0.72, 0.77]]],
+                     [[[0.6, 0.67], [0.74, 0.81]], [[0.88, 0.95], [1.02, 1.09]]]],
+                    [[[[0.72, 0.75], [0.78, 0.81]], [[0.84, 0.87], [0.9, 0.93]]],
+                     [[[1.22, 1.27], [1.32, 1.37]], [[1.42, 1.47], [1.52, 1.57]]],
+                     [[[1.72, 1.79], [1.86, 1.93]], [[2., 2.07], [2.14, 2.21]]]]],  # 1
+                   [[[[[80.6, 81.8], [84.2, 85.4]], [[91.4, 92.6], [95., 96.2]]],
+                     [[[113.1, 114.3], [116.7, 117.9]], [[123.9, 125.1], [127.5, 128.7]]],
+                     [[[145.6, 146.8], [149.2, 150.4]], [[156.4, 157.6], [160., 161.2]]]],
+                    [[[[200.92, 204.68], [212.2, 215.96]], [[234.76, 238.52], [246.04, 249.8]]],
+                     [[[302.54, 306.3], [313.82, 317.58]], [[336.38, 340.14], [347.66, 351.42]]],
+                     [[[404.16, 407.92], [415.44, 419.2]], [[438., 441.76], [449.28, 453.04]]]]],  # 2
+                   [[[[[0.03, 0.14, 0.25], [0.09, 0.24, 0.39]], [[0.15, 0.34, 0.53], [0.21, 0.44, 0.67]]],
+                     [[[0.27, 0.54, 0.81], [0.33, 0.64, 0.95]], [[0.39, 0.74, 1.09], [0.45, 0.84, 1.23]]]],
+                    [[[[0.51, 0.94, 1.37], [0.57, 1.04, 1.51]], [[0.63, 1.14, 1.65], [0.69, 1.24, 1.79]]],
+                     [[[0.75, 1.34, 1.93], [0.81, 1.44, 2.07]], [[0.87, 1.54, 2.21], [0.93, 1.64, 2.35]]]]],  # 3
+                   [[[[[64.92, 66.22, 67.52], [68.52, 69.82, 71.12]],
+                      [[75.72, 77.02, 78.32], [79.32, 80.62, 81.92]]],
+                     [[[97.32, 98.62, 99.92], [100.92, 102.22, 103.52]],
+                      [[108.12, 109.42, 110.72], [111.72, 113.02, 114.32]]]],
+                    [[[[218.52, 222.38, 226.24], [229.8, 233.66, 237.52]],
+                      [[252.36, 256.22, 260.08], [263.64, 267.5, 271.36]]],
+                     [[[320.04, 323.9, 327.76], [331.32, 335.18, 339.04]],
+                      [[353.88, 357.74, 361.6], [365.16, 369.02, 372.88]]]]]]
+        grads1 = [[[[[[0.4, 0.43], [0.46, 0.49]], [[0.52, 0.55], [0.58, 0.61]]],
+                    [[[1.12, 1.24], [1.36, 1.48]], [[1.6, 1.72], [1.84, 1.96]]]],
+                   [[[[1.12, 1.15], [1.18, 1.21]], [[1.24, 1.27], [1.3, 1.33]]],
+                    [[[4., 4.12], [4.24, 4.36]], [[4.48, 4.6], [4.72, 4.84]]]]],  # 1
+                  [[[[[165.48, 162.72], [157.2, 154.44]], [[140.64, 137.88], [132.36, 129.6]]],
+                    [[[389.04, 386.28], [380.76, 378.]], [[364.2, 361.44], [355.92, 353.16]]]],
+                   [[[[433.32, 424.8], [407.76, 399.24]], [[356.64, 348.12], [331.08, 322.56]]],
+                    [[[1123.44, 1114.92], [1097.88, 1089.36]], [[1046.76, 1038.24], [1021.2, 1012.68]]]]],  # 2
+                  [[[[[0.05, 0.14], [0.14, 0.5]], [[0.23, 0.86], [0.32, 1.22]]],
+                    [[[0.41, 1.58], [0.5, 1.94]], [[0.59, 2.3], [0.68, 2.66]]]],
+                   [[[[0.77, 3.02], [0.86, 3.38]], [[0.95, 3.74], [1.04, 4.1]]],
+                    [[[1.13, 4.46], [1.22, 4.82]], [[1.31, 5.18], [1.4, 5.54]]]]],  # 3
+                  [[[[[187.6, 411.16], [179.32, 402.88]], [[162.76, 386.32], [154.48, 378.04]]],
+                    [[[113.08, 336.64], [104.8, 328.36]], [[88.24, 311.8], [79.96, 303.52]]]],
+                   [[[[530.32, 1220.44], [504.76, 1194.88]], [[453.64, 1143.76], [428.08, 1118.2]]],
+                    [[[300.28, 990.4], [274.72, 964.84]], [[223.6, 913.72], [198.04, 888.16]]]]]]
+        grads2 = [[[[[[44.72]]], [[[59.44]]], [[[74.16]]]],
+                   [[[[64.56]]], [[[89.52]]], [[[114.48]]]]],  # 1
+                  [[[[[5.52, 11.1, 5.56], [11.16, 22.36, 11.16], [5.56, 11.1, 5.52]],
+                     [[11.28, 22.52, 11.2], [22.48, 44.72, 22.16], [11.04, 21.88, 10.8]],
+                     [[5.44, 10.78, 5.32], [10.68, 21.08, 10.36], [5.16, 10.14, 4.96]]],
+                    [[[7.92, 15.74, 7.8], [15.64, 31., 15.32], [7.64, 15.1, 7.44]],
+                     [[15.44, 30.52, 15.04], [30.16, 59.44, 29.2], [14.56, 28.6, 14.]],
+                     [[7.2, 14.14, 6.92], [13.88, 27.16, 13.24], [6.6, 12.86, 6.24]]],
+                    [[[10.32, 20.38, 10.04], [20.12, 39.64, 19.48], [9.72, 19.1, 9.36]],
+                     [[19.6, 38.52, 18.88], [37.84, 74.16, 36.24], [18.08, 35.32, 17.2]],
+                     [[8.96, 17.5, 8.52], [17.08, 33.24, 16.12], [8.04, 15.58, 7.52]]]],
+                   [[[[7.44, 15.1, 7.64], [15.32, 31., 15.64], [7.8, 15.74, 7.92]],
+                     [[15.76, 31.8, 16.], [32.08, 64.56, 32.4], [16.16, 32.44, 16.24]],
+                     [[8., 16.06, 8.04], [16.12, 32.28, 16.12], [8.04, 16.06, 8.]]],
+                    [[[11.12, 22.3, 11.16], [22.36, 44.76, 22.36], [11.16, 22.3, 11.12]],
+                     [[22.48, 44.92, 22.4], [44.88, 89.52, 44.56], [22.24, 44.28, 22.]],
+                     [[11.04, 21.98, 10.92], [21.88, 43.48, 21.56], [10.76, 21.34, 10.56]]],
+                    [[[14.8, 29.5, 14.68], [29.4, 58.52, 29.08], [14.52, 28.86, 14.32]],
+                     [[29.2, 58.04, 28.8], [57.68, 114.48, 56.72], [28.32, 56.12, 27.76]],
+                     [[14.08, 27.9, 13.8], [27.64, 54.68, 27.], [13.48, 26.62, 13.12]]]]],  # 2
+                  [[[[[74.4]]], [[[76.8]]], [[[79.2]]]], [[[[78.]]], [[[80.56]]], [[[83.12]]]]],  # 3
+                  [[[[[7.2, 7.64, 8.08], [15.24, 16.08, 16.92], [7.92, 8.32, 8.72]],
+                     [[16.08, 16.88, 17.68], [33.36, 34.88, 36.4], [17.04, 17.76, 18.48]],
+                     [[8.4, 8.76, 9.12], [17.16, 17.84, 18.52], [8.64, 8.96, 9.28]]],
+                    [[[17.76, 18.48, 19.2], [36.24, 37.6, 38.96], [18.24, 18.88, 19.52]],
+                     [[36.96, 38.24, 39.52], [74.4, 76.8, 79.2], [36.96, 38.08, 39.2]],
+                     [[18.24, 18.8, 19.36], [36.24, 37.28, 38.32], [17.76, 18.24, 18.72]]],
+                    [[[8.64, 8.92, 9.2], [17.16, 17.68, 18.2], [8.4, 8.64, 8.88]],
+                     [[17.04, 17.52, 18.], [33.36, 34.24, 35.12], [16.08, 16.48, 16.88]],
+                     [[7.92, 8.12, 8.32], [15.24, 15.6, 15.96], [7.2, 7.36, 7.52]]]],
+                   [[[[7.44, 7.9, 8.36], [15.78, 16.66, 17.54], [8.22, 8.64, 9.06]],
+                     [[16.68, 17.52, 18.36], [34.68, 36.28, 37.88], [17.76, 18.52, 19.28]],
+                     [[8.76, 9.14, 9.52], [17.94, 18.66, 19.38], [9.06, 9.4, 9.74]]],
+                    [[[18.48, 19.24, 20.], [37.8, 39.24, 40.68], [19.08, 19.76, 20.44]],
+                     [[38.64, 40., 41.36], [78., 80.56, 83.12], [38.88, 40.08, 41.28]],
+                     [[19.2, 19.8, 20.4], [38.28, 39.4, 40.52], [18.84, 19.36, 19.88]]],
+                    [[[9.12, 9.42, 9.72], [18.18, 18.74, 19.3], [8.94, 9.2, 9.46]],
+                     [[18.12, 18.64, 19.16], [35.64, 36.6, 37.56], [17.28, 17.72, 18.16]],
+                     [[8.52, 8.74, 8.96], [16.5, 16.9, 17.3], [7.86, 8.04, 8.22]]]]]]
+        grads3 = [[24.8, 37.6, 50.4], [24.8, 37.6, 50.4], [36., 37.6, 39.2], [36., 37.6, 39.2]]
+        for execution in ('EAGER_MODE', 'GRAPH_MODE'):
+            with execution_context().mode(execution):
+                for (x_shape, w_shape, b_shape, kernel_shape,
+                        strides, pads, dilations, group, data_format),\
+                        result, grad1, grad2, grad3 in zip(entries, results, grads1, grads2, grads3):
+                    data1, data2, data3 = arange(x_shape) * .1, arange(w_shape) * .1, arange(b_shape) * .1
+                    x, w, b = new_tensor(data1), new_tensor(data2), new_tensor(data3)
+                    with dragon.GradientTape() as tape:
+                        tape.watch([x, w, b])
+                        y = dragon.nn.conv3d_transpose(
+                            [x, w, b],
+                            kernel_shape=kernel_shape,
+                            strides=strides,
+                            pads=pads,
+                            dilations=dilations,
+                            group=group,
+                            data_format=data_format,
+                        )
+                    data4 = arange(y.shape) * .1
+                    dy = new_tensor(data4)
+                    dx, dw, db = tape.gradient(y, [x, w, b], output_gradients=[dy])
+                    self.assertEqual(
+                        [y, dx, dw, db],
+                        [np.array(result),
+                         np.array(grad1),
+                         np.array(grad2).reshape(w_shape),
+                         np.array(grad3)], prec=prec)
+
+    @unittest.skipIf(not TEST_CUDA, 'CUDA unavailable')
+    def test_conv3d_transpose_cuda(self):
+        dragon.cuda.enable_cudnn(False)
+        with dragon.device('cuda'):
+            self.test_conv3d_transpose()
+
+    @unittest.skipIf(not TEST_CUDA, 'CUDA unavailable')
+    def test_conv3d_transpose_cudnn(self):
+        dragon.cuda.enable_cudnn(True)
+        with dragon.device('cuda'), self.cudnn_ws.as_default():
+            self.test_conv3d_transpose()
 
     def test_depthwise_conv2d(self, test_grad=False):
         entries = [((2, 2, 2, 2), (2, 1, 1, 1), (2,), 1, 1, 0, 1, 'NCHW'),
@@ -3314,7 +3689,7 @@ class TestVisionOps(OpTestCase):
                              np.array(grad2).reshape(w_shape),
                              np.array(grad3)])
                     else:
-                        self.assertEqual(y, np.array(result))
+                        self.assertEqual(y, np.array(result), prec=1e-3)
 
     @unittest.skipIf(not TEST_CUDA, 'CUDA unavailable')
     def test_depthwise_conv2d_cuda(self):
@@ -3368,11 +3743,48 @@ class TestVisionOps(OpTestCase):
         with dragon.device('cuda'):
             self.test_depth_to_space()
 
+    def test_pool1d(self):
+        entries = [((2, 2, 2), (2,), 2, 1, 'max', 'NCHW'),
+                   ((2, 2, 2), (2,), 2, 1, 'avg', 'NCHW'),
+                   ((2, 2, 2), (2,), 2, 1, 'max', 'NHWC'),
+                   ((2, 2, 2), (2,), 2, 1, 'avg', 'NHWC')]
+        for execution in ('EAGER_MODE', 'GRAPH_MODE'):
+            with execution_context().mode(execution):
+                for x_shape, kernel_shape, strides, pads, mode, data_format in entries:
+                    data1 = arange(x_shape) * .1
+                    x = new_tensor(data1)
+                    with dragon.GradientTape() as tape:
+                        tape.watch(x)
+                        y = dragon.nn.pool1d(
+                            x,
+                            kernel_shape=kernel_shape,
+                            strides=strides,
+                            pads=pads,
+                            mode=mode,
+                            data_format=data_format)
+                    data2 = arange(y.shape) * .1
+                    dy = new_tensor(data2)
+                    dx = tape.gradient(y, [x], output_gradients=[dy])[0]
+                    result = data1 / (np.prod(kernel_shape) if mode == 'avg' else 1.)
+                    self.assertEqual([y, dx], [result, result])
+
+    @unittest.skipIf(not TEST_CUDA, 'CUDA unavailable')
+    def test_pool1d_cuda(self):
+        dragon.cuda.enable_cudnn(False)
+        with dragon.device('cuda'):
+            self.test_pool1d()
+
+    @unittest.skipIf(not TEST_CUDA, 'CUDA unavailable')
+    def test_pool1d_cudnn(self):
+        dragon.cuda.enable_cudnn(True)
+        with dragon.device('cuda'), self.cudnn_ws.as_default():
+            self.test_pool1d()
+
     def test_pool2d(self):
-        entries = [((2, 2, 2, 2), (2, 2), 2, 1, 'MAX', 'NCHW'),
-                   ((2, 2, 2, 2), (2, 2), 2, 1, 'AVG', 'NCHW'),
-                   ((2, 2, 2, 2), (2, 2), 2, 1, 'MAX', 'NHWC'),
-                   ((2, 2, 2, 2), (2, 2), 2, 1, 'AVG', 'NHWC')]
+        entries = [((2, 2, 2, 2), (2, 2), 2, 1, 'max', 'NCHW'),
+                   ((2, 2, 2, 2), (2, 2), 2, 1, 'avg', 'NCHW'),
+                   ((2, 2, 2, 2), (2, 2), 2, 1, 'max', 'NHWC'),
+                   ((2, 2, 2, 2), (2, 2), 2, 1, 'avg', 'NHWC')]
         for execution in ('EAGER_MODE', 'GRAPH_MODE'):
             with execution_context().mode(execution):
                 for x_shape, kernel_shape, strides, pads, mode, data_format in entries:
@@ -3386,12 +3798,11 @@ class TestVisionOps(OpTestCase):
                             strides=strides,
                             pads=pads,
                             mode=mode,
-                            data_format=data_format,
-                        )
+                            data_format=data_format)
                     data2 = arange(y.shape) * .1
                     dy = new_tensor(data2)
                     dx = tape.gradient(y, [x], output_gradients=[dy])[0]
-                    result = data1 / (np.prod(kernel_shape) if mode == 'AVG' else 1.)
+                    result = data1 / (np.prod(kernel_shape) if mode == 'avg' else 1.)
                     self.assertEqual([y, dx], [result, result])
 
     @unittest.skipIf(not TEST_CUDA, 'CUDA unavailable')
@@ -3405,6 +3816,43 @@ class TestVisionOps(OpTestCase):
         dragon.cuda.enable_cudnn(True)
         with dragon.device('cuda'), self.cudnn_ws.as_default():
             self.test_pool2d()
+
+    def test_pool3d(self):
+        entries = [((2, 2, 2, 2, 2), (2, 2, 2), 2, 1, 'max', 'NCHW'),
+                   ((2, 2, 2, 2, 2), (2, 2, 2), 2, 1, 'avg', 'NCHW'),
+                   ((2, 2, 2, 2, 2), (2, 2, 2), 2, 1, 'max', 'NHWC'),
+                   ((2, 2, 2, 2, 2), (2, 2, 2), 2, 1, 'avg', 'NHWC')]
+        for execution in ('EAGER_MODE', 'GRAPH_MODE'):
+            with execution_context().mode(execution):
+                for x_shape, kernel_shape, strides, pads, mode, data_format in entries:
+                    data1 = arange(x_shape) * .1
+                    x = new_tensor(data1)
+                    with dragon.GradientTape() as tape:
+                        tape.watch(x)
+                        y = dragon.nn.pool3d(
+                            x,
+                            kernel_shape=kernel_shape,
+                            strides=strides,
+                            pads=pads,
+                            mode=mode,
+                            data_format=data_format)
+                    data2 = arange(y.shape) * .1
+                    dy = new_tensor(data2)
+                    dx = tape.gradient(y, [x], output_gradients=[dy])[0]
+                    result = data1 / (np.prod(kernel_shape) if mode == 'avg' else 1.)
+                    self.assertEqual([y, dx], [result, result])
+
+    @unittest.skipIf(not TEST_CUDA, 'CUDA unavailable')
+    def test_pool3d_cuda(self):
+        dragon.cuda.enable_cudnn(False)
+        with dragon.device('cuda'):
+            self.test_pool3d()
+
+    @unittest.skipIf(not TEST_CUDA, 'CUDA unavailable')
+    def test_pool3d_cudnn(self):
+        dragon.cuda.enable_cudnn(True)
+        with dragon.device('cuda'), self.cudnn_ws.as_default():
+            self.test_pool3d()
 
     def test_resize(self):
         entries = [((2, 2, 1, 1), (2, 2), 'nearest', 'NCHW'),

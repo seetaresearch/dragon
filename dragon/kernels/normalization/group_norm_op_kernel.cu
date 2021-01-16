@@ -1,6 +1,6 @@
 #ifdef USE_CUDA
 
-#include "dragon/core/memory.h"
+#include "dragon/core/context_cuda.h"
 #include "dragon/utils/device/common_cub.h"
 #include "dragon/utils/math_functions.h"
 #include "dragon/utils/op_kernels.h"
@@ -201,7 +201,7 @@ __global__ void _GroupNormGrad(
     LOG(FATAL) << "Unknown DataFormat: " << data_format;                 \
   }
 
-#define DEFINE_KERNEL_LAUNCHER(T, ScalarT, AccT)                            \
+#define DEFINE_KERNEL_LAUNCHER(T, AccT)                                     \
   template <>                                                               \
   void GroupNorm<T, AccT, CUDAContext>(                                     \
       const int N,                                                          \
@@ -233,10 +233,10 @@ __global__ void _GroupNormGrad(
           N,                                                                \
           C,                                                                \
           S,                                                                \
-          reinterpret_cast<const ScalarT*>(x),                              \
+          reinterpret_cast<const math::ScalarType<T>::type*>(x),            \
           scale,                                                            \
           bias,                                                             \
-          reinterpret_cast<ScalarT*>(y));                                   \
+          reinterpret_cast<math::ScalarType<T>::type*>(y));                 \
     } else if (data_format == "NHWC") {                                     \
       _GroupNormAffineNHWC<<<                                               \
           CUDA_2D_BLOCKS(N* C),                                             \
@@ -246,90 +246,90 @@ __global__ void _GroupNormGrad(
           N,                                                                \
           C,                                                                \
           S,                                                                \
-          reinterpret_cast<const ScalarT*>(x),                              \
+          reinterpret_cast<const math::ScalarType<T>::type*>(x),            \
           scale,                                                            \
           bias,                                                             \
-          reinterpret_cast<ScalarT*>(y));                                   \
+          reinterpret_cast<math::ScalarType<T>::type*>(y));                 \
     }                                                                       \
   }
 
-#define DEFINE_GRAD_KERNEL_LAUNCHER(T, ScalarT, AccT) \
-  template <>                                         \
-  void GroupNormGrad<T, AccT, CUDAContext>(           \
-      const int N,                                    \
-      const int G,                                    \
-      const int D,                                    \
-      const int S,                                    \
-      const string& data_format,                      \
-      const T* x,                                     \
-      const AccT* mu,                                 \
-      const AccT* rsig,                               \
-      const AccT* gamma,                              \
-      const T* dy,                                    \
-      AccT* ds,                                       \
-      AccT* db,                                       \
-      AccT* dgamma,                                   \
-      AccT* dbeta,                                    \
-      T* dx,                                          \
-      CUDAContext* ctx) {                             \
-    auto nthreads = N * G * D * S;                    \
-    DISPATCH_GROUPNORM_KERNEL(                        \
-        _GroupNormWGrad,                              \
-        ScalarT,                                      \
-        AccT,                                         \
-        CUDA_2D_BLOCKS(G* D),                         \
-        CUDA_THREADS,                                 \
-        N,                                            \
-        G,                                            \
-        D,                                            \
-        S,                                            \
-        reinterpret_cast<const ScalarT*>(x),          \
-        mu,                                           \
-        rsig,                                         \
-        reinterpret_cast<const ScalarT*>(dy),         \
-        dgamma,                                       \
-        dbeta);                                       \
-    DISPATCH_GROUPNORM_KERNEL(                        \
-        _GroupNormInternalGrad,                       \
-        ScalarT,                                      \
-        AccT,                                         \
-        CUDA_2D_BLOCKS(N* G),                         \
-        CUDA_THREADS,                                 \
-        N,                                            \
-        G,                                            \
-        D,                                            \
-        S,                                            \
-        reinterpret_cast<const ScalarT*>(x),          \
-        gamma,                                        \
-        reinterpret_cast<const ScalarT*>(dy),         \
-        ds,                                           \
-        db);                                          \
-    DISPATCH_GROUPNORM_KERNEL(                        \
-        _GroupNormGrad,                               \
-        ScalarT,                                      \
-        AccT,                                         \
-        CUDA_BLOCKS(nthreads),                        \
-        CUDA_THREADS,                                 \
-        nthreads,                                     \
-        G,                                            \
-        D,                                            \
-        S,                                            \
-        reinterpret_cast<const ScalarT*>(x),          \
-        mu,                                           \
-        rsig,                                         \
-        gamma,                                        \
-        ds,                                           \
-        db,                                           \
-        reinterpret_cast<const ScalarT*>(dy),         \
-        reinterpret_cast<ScalarT*>(dx));              \
+#define DEFINE_GRAD_KERNEL_LAUNCHER(T, AccT)                    \
+  template <>                                                   \
+  void GroupNormGrad<T, AccT, CUDAContext>(                     \
+      const int N,                                              \
+      const int G,                                              \
+      const int D,                                              \
+      const int S,                                              \
+      const string& data_format,                                \
+      const T* x,                                               \
+      const AccT* mu,                                           \
+      const AccT* rsig,                                         \
+      const AccT* gamma,                                        \
+      const T* dy,                                              \
+      AccT* ds,                                                 \
+      AccT* db,                                                 \
+      AccT* dgamma,                                             \
+      AccT* dbeta,                                              \
+      T* dx,                                                    \
+      CUDAContext* ctx) {                                       \
+    auto nthreads = N * G * D * S;                              \
+    DISPATCH_GROUPNORM_KERNEL(                                  \
+        _GroupNormWGrad,                                        \
+        math::ScalarType<T>::type,                              \
+        AccT,                                                   \
+        CUDA_2D_BLOCKS(G* D),                                   \
+        CUDA_THREADS,                                           \
+        N,                                                      \
+        G,                                                      \
+        D,                                                      \
+        S,                                                      \
+        reinterpret_cast<const math::ScalarType<T>::type*>(x),  \
+        mu,                                                     \
+        rsig,                                                   \
+        reinterpret_cast<const math::ScalarType<T>::type*>(dy), \
+        dgamma,                                                 \
+        dbeta);                                                 \
+    DISPATCH_GROUPNORM_KERNEL(                                  \
+        _GroupNormInternalGrad,                                 \
+        math::ScalarType<T>::type,                              \
+        AccT,                                                   \
+        CUDA_2D_BLOCKS(N* G),                                   \
+        CUDA_THREADS,                                           \
+        N,                                                      \
+        G,                                                      \
+        D,                                                      \
+        S,                                                      \
+        reinterpret_cast<const math::ScalarType<T>::type*>(x),  \
+        gamma,                                                  \
+        reinterpret_cast<const math::ScalarType<T>::type*>(dy), \
+        ds,                                                     \
+        db);                                                    \
+    DISPATCH_GROUPNORM_KERNEL(                                  \
+        _GroupNormGrad,                                         \
+        math::ScalarType<T>::type,                              \
+        AccT,                                                   \
+        CUDA_BLOCKS(nthreads),                                  \
+        CUDA_THREADS,                                           \
+        nthreads,                                               \
+        G,                                                      \
+        D,                                                      \
+        S,                                                      \
+        reinterpret_cast<const math::ScalarType<T>::type*>(x),  \
+        mu,                                                     \
+        rsig,                                                   \
+        gamma,                                                  \
+        ds,                                                     \
+        db,                                                     \
+        reinterpret_cast<const math::ScalarType<T>::type*>(dy), \
+        reinterpret_cast<math::ScalarType<T>::type*>(dx));      \
   }
 
-DEFINE_KERNEL_LAUNCHER(float16, half, float);
-DEFINE_KERNEL_LAUNCHER(float, float, float);
-DEFINE_KERNEL_LAUNCHER(double, double, double);
-DEFINE_GRAD_KERNEL_LAUNCHER(float16, half, float);
-DEFINE_GRAD_KERNEL_LAUNCHER(float, float, float);
-DEFINE_GRAD_KERNEL_LAUNCHER(double, double, double);
+DEFINE_KERNEL_LAUNCHER(float16, float);
+DEFINE_KERNEL_LAUNCHER(float, float);
+DEFINE_KERNEL_LAUNCHER(double, double);
+DEFINE_GRAD_KERNEL_LAUNCHER(float16, float);
+DEFINE_GRAD_KERNEL_LAUNCHER(float, float);
+DEFINE_GRAD_KERNEL_LAUNCHER(double, double);
 #undef DEFINE_KERNEL_LAUNCHER
 #undef DEFINE_GRAD_KERNEL_LAUNCHER
 #undef DISPATCH_GROUPNORM_KERNEL

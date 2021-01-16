@@ -54,11 +54,11 @@ class Adam(Optimizer):
         params : Sequence[dragon.vm.torch.nn.Parameter]
             The parameters to optimize.
         lr : float, required
-            The initial value for :math:`\text{lr}`.
+            The initial value to :math:`\text{lr}`.
         betas : Tuple[float, float], optional, default=(0.9, 0.999)
-            The initial value for :math:`\beta_{1}` and :math:`\beta_{2}`.
+            The initial value to :math:`\beta_{1}` and :math:`\beta_{2}`.
         eps : float, optional, default=1e-8
-            The initial value for :math:`\epsilon`.
+            The initial value to :math:`\epsilon`.
         weight_decay : float, optional, default=0
             The L2 penalty factor to weight.
         amsgrad : bool, optional, default=False

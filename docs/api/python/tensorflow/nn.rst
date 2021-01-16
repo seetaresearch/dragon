@@ -9,18 +9,39 @@ vm.tensorflow.nn
   `avg_pool(...) <nn/avg_pool.html>`_
   : Apply the n-dimension average pooling.
 
+  `avg_pool1d(...) <nn/avg_pool1d.html>`_
+  : Apply the 1d average pooling.
+
   `avg_pool2d(...) <nn/avg_pool2d.html>`_
   : Apply the 2d average pooling.
+
+  `avg_pool3d(...) <nn/avg_pool3d.html>`_
+  : Apply the 3d average pooling.
 
   `batch_normalization(...) <nn/batch_normalization.html>`_
   : Apply the batch normalization.
   `[Ioffe & Szegedy, 2015] <https://arxiv.org/abs/1502.03167>`_.
+
+  `bias_add(...) <nn/bias_add.html>`_
+  : Add the bias across channels to input.
+
+  `conv1d(...) <nn/conv1d.html>`_
+  : Apply the 1d convolution.
+
+  `conv1d_transpose(...) <nn/conv1d_transpose.html>`_
+  : Apply the 1d deconvolution.
 
   `conv2d(...) <nn/conv2d.html>`_
   : Apply the 2d convolution.
 
   `conv2d_transpose(...) <nn/conv2d_transpose.html>`_
   : Apply the 2d deconvolution.
+
+  `conv3d(...) <nn/conv3d.html>`_
+  : Apply the 3d convolution.
+
+  `conv3d_transpose(...) <nn/conv3d_transpose.html>`_
+  : Apply the 3d deconvolution.
 
   `convolution(...) <nn/convolution.html>`_
   : Apply the n-dimension convolution.
@@ -56,8 +77,14 @@ vm.tensorflow.nn
   `max_pool(...) <nn/max_pool.html>`_
   : Apply the n-dimension max pooling.
 
-  `max_pool(...) <nn/max_pool.html>`_
+  `max_pool1d(...) <nn/max_pool1d.html>`_
+  : Apply the 1d max pooling.
+
+  `max_pool2d(...) <nn/max_pool2d.html>`_
   : Apply the 2d max pooling.
+
+  `max_pool3d(...) <nn/max_pool3d.html>`_
+  : Apply the 3d max pooling.
 
   `moments(...) <nn/moments.html>`_
   : Compute the mean and variance of input along the given axes.
@@ -94,10 +121,17 @@ vm.tensorflow.nn
   :hidden:
 
   nn/avg_pool
+  nn/avg_pool1d
   nn/avg_pool2d
+  nn/avg_pool3d
   nn/batch_normalization
+  nn/bias_add
+  nn/conv1d
+  nn/conv1d_transpose
   nn/conv2d
   nn/conv2d_transpose
+  nn/conv3d
+  nn/conv3d_transpose
   nn/convolution
   nn/conv_transpose
   nn/depthwise_conv2d
@@ -108,7 +142,9 @@ vm.tensorflow.nn
   nn/local_response_normalization
   nn/log_softmax
   nn/max_pool
+  nn/max_pool1d
   nn/max_pool2d
+  nn/max_pool3d
   nn/moments
   nn/relu
   nn/relu6

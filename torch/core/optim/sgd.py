@@ -79,9 +79,9 @@ class SGD(Optimizer):
         params : Sequence[dragon.vm.torch.nn.Parameter]
             The parameters to optimize.
         lr : float, required
-            The initial value for :math:`\text{lr}`.
+            The initial value to :math:`\text{lr}`.
         momentum : float, optional, default=0
-            The initial value for :math:`\text{momentum}`.
+            The initial value to :math:`\text{momentum}`.
         dampening : float, optional, default=0
             The dampening for :math:`\text{momentum}`.
         weight_decay : float, optional, default=0

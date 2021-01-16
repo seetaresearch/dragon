@@ -19,18 +19,13 @@
 
 namespace dragon {
 
-typedef enum {
-  NCHW = 0,
-  NHWC = 1,
-} StorageOrder;
-
 /*!
  * \brief Memory to manage both the host and device data.
  */
 class DRAGON_API UnifiedMemory {
  public:
   /*!
-   * \brief The device-aware state for data mutation.
+   * \brief The device-aware state for data consistency.
    */
   enum State {
     /*! \brief Initial state */
@@ -60,10 +55,10 @@ class DRAGON_API UnifiedMemory {
   /*! \brief Switch to the given cuda device */
   void SwitchToCUDADevice(int device);
 
-  /*! \brief Involve the state to CPUContext */
+  /*! \brief Involve the state to cpu */
   void ToCPU(size_t size = 0);
 
-  /*! \brief Involve the state to CUDAContext */
+  /*! \brief Involve the state to cuda */
   void ToCUDA(size_t size = 0);
 
   /*! \brief Return the memory state */
@@ -86,7 +81,7 @@ class DRAGON_API UnifiedMemory {
     return size_t(0);
   }
 
-  /*! \brief Return the number of memory chunks */
+  /*! \brief Return the number of batch chunks */
   size_t num_chunks() const {
     return num_chunks_;
   }
@@ -181,10 +176,10 @@ class DRAGON_API UnifiedMemory {
   /*! \brief The cnml data pointer */
   void* cnml_ptr_ = nullptr;
 
-  /*! \brief The binding cpu tensor for cnml */
+  /*! \brief The binding cnml cpu tensor */
   cnmlCpuTensor_t cnml_cpu_tensor_ = nullptr;
 
-  /*! \brief The binding mlu tensor for cnml */
+  /*! \brief The binding cnml mlu tensor */
   cnmlTensor_t cnml_mlu_tensor_ = nullptr;
 
   DISABLE_COPY_AND_ASSIGN(UnifiedMemory);

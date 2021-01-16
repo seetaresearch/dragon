@@ -1,4 +1,3 @@
-#include "dragon/core/memory.h"
 #include "dragon/utils/device/common_eigen.h"
 #include "dragon/utils/math_functions.h"
 #include "dragon/utils/op_kernels.h"

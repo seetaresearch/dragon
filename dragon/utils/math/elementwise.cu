@@ -110,9 +110,9 @@ DEFINE_UNARY_FUNCTOR(SqrtHalf2, sqrt);
  * Unary Function Kernels
  */
 
-template <typename T, class Operator>
+template <typename T, class Functor>
 __global__ void
-_SimpleUnaryFunc(const int nthreads, const Operator op, const T* x, T* y) {
+_SimpleUnaryFunc(const int nthreads, const Functor op, const T* x, T* y) {
   CUDA_1D_KERNEL_LOOP(i, nthreads) {
     y[i] = op(x[i]);
   }
@@ -322,9 +322,9 @@ _ReplaceNaN<half>(const int n, const half value, const half* x, half* y) {
   }
 }
 
-template <typename T, class Operator>
+template <typename T, class Functor>
 __global__ void
-_Bias(const int n, const T beta, const Operator op, const T* x, T* y) {
+_Bias(const int n, const T beta, const Functor op, const T* x, T* y) {
   CUDA_1D_KERNEL_LOOP(i, n) {
     y[i] = op(x[i], beta);
   }
@@ -334,13 +334,13 @@ _Bias(const int n, const T beta, const Operator op, const T* x, T* y) {
  * Binary Function Kernels
  */
 
-template <typename TIn, typename TOut, class Operator>
+template <typename InputT, typename OutputT, class Functor>
 __global__ void _SimpleBinaryFunc(
     const int n,
-    const Operator op,
-    const TIn* a,
-    const TIn* b,
-    TOut* y) {
+    const Functor op,
+    const InputT* a,
+    const InputT* b,
+    OutputT* y) {
   CUDA_1D_KERNEL_LOOP(i, n) {
     y[i] = op(a[i], b[i]);
   }
@@ -742,15 +742,19 @@ DEFINE_BIAS_FUNC(float);
 DEFINE_BIAS_FUNC(double);
 #undef DEFINE_BIAS_FUNC
 
-#define DEFINE_BINARY_FUNC(name, TIn, TOut, Op)                             \
-  template <>                                                               \
-  DRAGON_API void name<TIn, CUDAContext>(                                   \
-      const int n, const TIn* a, const TIn* b, TOut* y, CUDAContext* ctx) { \
-    _SimpleBinaryFunc<<<                                                    \
-        CUDA_BLOCKS(n),                                                     \
-        CUDA_THREADS,                                                       \
-        0,                                                                  \
-        ctx->cuda_stream()>>>(n, Op<TIn>(), a, b, y);                       \
+#define DEFINE_BINARY_FUNC(name, InputT, OutputT, Op)    \
+  template <>                                            \
+  DRAGON_API void name<InputT, CUDAContext>(             \
+      const int n,                                       \
+      const InputT* a,                                   \
+      const InputT* b,                                   \
+      OutputT* y,                                        \
+      CUDAContext* ctx) {                                \
+    _SimpleBinaryFunc<<<                                 \
+        CUDA_BLOCKS(n),                                  \
+        CUDA_THREADS,                                    \
+        0,                                               \
+        ctx->cuda_stream()>>>(n, Op<InputT>(), a, b, y); \
   }
 
 DEFINE_BINARY_FUNC(Add, int8_t, int8_t, math::PlusFunctor);

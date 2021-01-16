@@ -21,12 +21,19 @@ from dragon.vm.torch.core.nn.modules.module import Module
 class Upsample(Module):
     """Upsample input via interpolating neighborhoods.
 
-    Examples:
+    Set :attr:`size` or :attr:`scale_factor` to determine the output size:
 
     ```python
     x = torch.ones((1, 2, 3, 4))
-    y = torch.nn.Upsample(size=6)(x)  # Shape: (1, 2, 6, 6)
-    z = torch.nn.UpSample(scale_factor=2)(x)  # Shape: (1, 2, 6, 8)
+    y = torch.nn.Upsample(size=6)(x)  # Size: (1, 2, 6, 6)
+    z = torch.nn.UpSample(scale_factor=2)(x)  # Size: (1, 2, 6, 8)
+    ```
+
+    The interpolating method can be set by :attr:`mode`:
+
+    ```python
+    upsample_nn = torch.nn.Upsample(mode='nearest')
+    upsample_linear = torch.nn.UpSample(mode='linear')
     ```
 
     See Also
@@ -50,10 +57,10 @@ class Upsample(Module):
             The output size.
         scale_factor : Union[number, Sequence[number]], optional
             The scale factor along each input dimension.
-        mode : {'nearest', 'linear'}, optional
-            The interpolation mode.
+        mode : str, optional, default='nearest'
+            ``'nearest'`` or ``'linear'``.
         align_corners : bool, optional, default=False
-            Whether to align corners in linear interpolating.
+            Whether to align corners in ``'linear'`` interpolating.
 
         """
         super(Upsample, self).__init__()
@@ -86,12 +93,12 @@ class Upsample(Module):
 class UpsamplingBilinear2d(Upsample):
     """Upsample input via bilinear interpolating.
 
-    Examples:
+    Set :attr:`size` or :attr:`scale_factor` to determine the output size:
 
     ```python
     x = torch.ones((1, 2, 3, 4))
-    y = torch.nn.UpsamplingBilinear2d(size=6)(x)  # Shape: (1, 2, 6, 6)
-    z = torch.nn.UpsamplingBilinear2d(scale_factor=2)(x)  # Shape: (1, 2, 6, 8)
+    y = torch.nn.UpsamplingBilinear2d(size=6)(x)  # Size: (1, 2, 6, 6)
+    z = torch.nn.UpsamplingBilinear2d(scale_factor=2)(x)  # Size: (1, 2, 6, 8)
     ```
 
     See Also
@@ -118,12 +125,12 @@ class UpsamplingBilinear2d(Upsample):
 class UpsamplingNearest2d(Upsample):
     """Upsample input via nearest interpolating.
 
-    Examples:
+    Set :attr:`size` or :attr:`scale_factor` to determine the output size:
 
     ```python
     x = torch.ones((1, 2, 3, 4))
-    y = torch.nn.UpsamplingNearest2d(size=6)(x)  # Shape: (1, 2, 6, 6)
-    z = torch.nn.UpsamplingNearest2d(scale_factor=2)(x)  # Shape: (1, 2, 6, 8)
+    y = torch.nn.UpsamplingNearest2d(size=6)(x)  # Size: (1, 2, 6, 6)
+    z = torch.nn.UpsamplingNearest2d(scale_factor=2)(x)  # Size: (1, 2, 6, 8)
     ```
 
     See Also

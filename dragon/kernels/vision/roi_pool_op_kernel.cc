@@ -37,51 +37,51 @@ void _RoiPool(
       continue;
     }
 
-    const int roi_start_w = std::round(roi[1] * spatial_scale);
-    const int roi_start_h = std::round(roi[2] * spatial_scale);
-    const int roi_end_w = std::round(roi[3] * spatial_scale);
-    const int roi_end_h = std::round(roi[4] * spatial_scale);
+    const int roi_wstart = std::round(roi[1] * spatial_scale);
+    const int roi_hstart = std::round(roi[2] * spatial_scale);
+    const int roi_wend = std::round(roi[3] * spatial_scale);
+    const int roi_hend = std::round(roi[4] * spatial_scale);
 
-    const int roi_w = std::max(roi_end_w - roi_start_w + 1, 1);
-    const int roi_h = std::max(roi_end_h - roi_start_h + 1, 1);
+    const int roi_w = std::max(roi_wend - roi_wstart + 1, 1);
+    const int roi_h = std::max(roi_hend - roi_hstart + 1, 1);
     const float bin_h = (float)roi_h / (float)out_h;
     const float bin_w = (float)roi_w / (float)out_w;
 
     T val;
     bool empty;
-    int xi, maxi, yi;
+    int xi, yi, mask_val;
     int hstart, wstart, hend, wend;
     const T* offset_x = x + batch_ind * x_cols;
 
     for (int c = 0; c < C; ++c) {
       yi = 0;
-      for (int oh = 0; oh < out_h; ++oh) {
-        hstart = (int)(bin_h * oh);
-        hstart = std::min(std::max(hstart + roi_start_h, 0), H);
-        hend = (int)ceil(bin_h * (oh + 1));
-        hend = std::min(std::max(hend + roi_start_h, 0), H);
+      for (int h_out = 0; h_out < out_h; ++h_out) {
+        hstart = (int)(bin_h * h_out);
+        hstart = std::min(std::max(hstart + roi_hstart, 0), H);
+        hend = (int)ceil(bin_h * (h_out + 1));
+        hend = std::min(std::max(hend + roi_hstart, 0), H);
         empty = hend == hstart;
-        for (int ow = 0; ow < out_w; ++ow) {
-          wstart = (int)(bin_w * ow);
-          wstart = std::min(std::max(wstart + roi_start_w, 0), W);
-          wend = (int)ceil(bin_w * (ow + 1));
-          wend = std::min(std::max(wend + roi_start_w, 0), W);
+        for (int w_out = 0; w_out < out_w; ++w_out) {
+          wstart = (int)(bin_w * w_out);
+          wstart = std::min(std::max(wstart + roi_wstart, 0), W);
+          wend = (int)ceil(bin_w * (w_out + 1));
+          wend = std::min(std::max(wend + roi_wstart, 0), W);
           empty = empty || (wend == wstart);
-          maxi = empty ? -1 : 0;
+          mask_val = empty ? -1 : 0;
           val = empty ? T(0) : offset_x[0];
           for (int h = hstart; h < hend; ++h) {
             for (int w = wstart; w < wend; ++w) {
               xi = h * W + w;
               if (offset_x[xi] > offset_y[yi]) {
-                maxi = xi;
+                mask_val = xi;
                 val = offset_x[xi];
               }
             } // End w
           } // End h
           offset_y[yi] = val;
-          offset_mask[yi++] = maxi;
+          offset_mask[yi++] = mask_val;
         }
-      } // End oh && ow
+      } // End h_out && w_out
       offset_x += x_inner_dim;
       offset_y += y_inner_dim;
       offset_mask += y_inner_dim;
@@ -141,7 +141,7 @@ void RoiPool<float16, CPUContext>(
       const float spatial_scale,       \
       const T* dy,                     \
       const float* rois,               \
-      const int* mask,                 \
+      int* mask,                       \
       float* dx,                       \
       CPUContext* ctx) {               \
     NOT_IMPLEMENTED;                   \

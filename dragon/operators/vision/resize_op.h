@@ -53,17 +53,8 @@ class ResizeGradientOp final : public Operator<Context> {
 
   void RunOnDevice() override;
 
-  template <typename Ty, typename Tx>
-  void NearestImpl(const Ty* dy, Tx* dx);
-
-  template <typename Ty, typename Tx>
-  void LinearImpl(const Ty* dy, Tx* dx);
-
   template <typename T>
   void DoRunWithType();
-
-  template <typename T>
-  void DoRunWithTypeAndCast();
 
  protected:
   string mode_;

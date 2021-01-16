@@ -9,8 +9,14 @@ vm.torch.nn
   `class AffineChannel <nn/AffineChannel.html>`_
   : Apply affine transformation along the channels.
 
+  `class AvgPool1d <nn/AvgPool1d.html>`_
+  : Apply the 1d average pooling.
+
   `class AvgPool2d <nn/AvgPool2d.html>`_
   : Apply the 2d average pooling.
+
+  `class AvgPool3d <nn/AvgPool3d.html>`_
+  : Apply the 3d average pooling.
 
   `class BatchNorm1d <nn/BatchNorm1d.html>`_
   : Apply the batch normalization over 2d input.
@@ -36,11 +42,23 @@ vm.torch.nn
   `class ConstantPad2d <nn/ConstantPad2d.html>`_
   : Pad input according to the last 3-dimensions with a constant.
 
+  `class Conv1d <nn/Conv1d.html>`_
+  : Apply the 1d convolution.
+
   `class Conv2d <nn/Conv2d.html>`_
   : Apply the 2d convolution.
 
+  `class Conv3d <nn/Conv3d.html>`_
+  : Apply the 3d convolution.
+
+  `class ConvTranspose1d <nn/ConvTranspose1d.html>`_
+  : Apply the 1d deconvolution.
+
   `class ConvTranspose2d <nn/ConvTranspose2d.html>`_
   : Apply the 2d deconvolution.
+
+  `class ConvTranspose3d <nn/ConvTranspose3d.html>`_
+  : Apply the 3d deconvolution.
 
   `class CrossEntropyLoss <nn/CrossEntropyLoss.html>`_
   : Compute the softmax cross entropy with sparse labels.
@@ -91,6 +109,9 @@ vm.torch.nn
   : Apply the hard swish function.
   `[Howard et.al, 2019] <https://arxiv.org/abs/1905.02244>`_.
 
+  `class Identity <nn/Identity.html>`_
+  : Apply the identity transformation.
+
   `class KLDivLoss <nn/KLDivLoss.html>`_
   : Compute the Kullback-Leibler divergence.
 
@@ -118,8 +139,14 @@ vm.torch.nn
   : Apply a long short-term memory (LSTM) cell.
   `[Hochreiter & Schmidhuber, 1997] <https://doi.org/10.1162>`_.
 
+  `class MaxPool1d <nn/MaxPool1d.html>`_
+  : Apply the 1d max pooling.
+
   `class MaxPool2d <nn/MaxPool2d.html>`_
-  : Apply the 2d MaxPool2d pooling.
+  : Apply the 2d max pooling.
+
+  `class MaxPool3d <nn/MaxPool3d.html>`_
+  : Apply the 3d max pooling.
 
   `class Module <nn/Module.html>`_
   : The base class of modules.
@@ -212,7 +239,9 @@ vm.torch.nn
   :hidden:
 
   nn/AffineChannel
+  nn/AvgPool1d
   nn/AvgPool2d
+  nn/AvgPool3d
   nn/BatchNorm1d
   nn/BatchNorm2d
   nn/BatchNorm3d
@@ -220,8 +249,12 @@ vm.torch.nn
   nn/ConstantPad1d
   nn/ConstantPad2d
   nn/ConstantPad3d
+  nn/Conv1d
   nn/Conv2d
+  nn/Conv3d
+  nn/ConvTranspose1d
   nn/ConvTranspose2d
+  nn/ConvTranspose3d
   nn/CrossEntropyLoss
   nn/CTCLoss
   nn/DepthwiseConv2d
@@ -235,6 +268,7 @@ vm.torch.nn
   nn/GumbelSoftmax
   nn/Hardsigmoid
   nn/Hardswish
+  nn/Identity
   nn/KLDivLoss
   nn/L1Loss
   nn/LeakyReLU
@@ -243,7 +277,9 @@ vm.torch.nn
   nn/LogSoftmax
   nn/LSTM
   nn/LSTMCell
+  nn/MaxPool1d
   nn/MaxPool2d
+  nn/MaxPool3d
   nn/Module
   nn/MSELoss
   nn/NLLLoss

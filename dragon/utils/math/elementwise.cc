@@ -342,12 +342,16 @@ DEFINE_BIAS_FUNC(float);
 DEFINE_BIAS_FUNC(double);
 #undef DEFINE_BIAS_FUNC
 
-#define DEFINE_BINARY_FUNC(name, TIn, TOut, expr)                          \
+#define DEFINE_BINARY_FUNC(name, InputT, OutputT, expr)                    \
   template <>                                                              \
-  DRAGON_API void name<TIn, CPUContext>(                                   \
-      const int n, const TIn* a, const TIn* b, TOut* y, CPUContext* ctx) { \
-    EigenVectorArrayMap<TOut>(y, n) = ConstEigenVectorArrayMap<TIn>(a, n)  \
-        expr ConstEigenVectorArrayMap<TIn>(b, n);                          \
+  DRAGON_API void name<InputT, CPUContext>(                                \
+      const int n,                                                         \
+      const InputT* a,                                                     \
+      const InputT* b,                                                     \
+      OutputT* y,                                                          \
+      CPUContext* ctx) {                                                   \
+    EigenVectorArrayMap<OutputT>(y, n) = ConstEigenVectorArrayMap<InputT>( \
+        a, n) expr ConstEigenVectorArrayMap<InputT>(b, n);                 \
   }
 
 DEFINE_BINARY_FUNC(Add, int8_t, int8_t, +);
@@ -412,13 +416,17 @@ DEFINE_BINARY_FUNC(GreaterEqual, float, bool, >=);
 DEFINE_BINARY_FUNC(GreaterEqual, double, bool, >=);
 #undef DEFINE_BINARY_FUNC
 
-#define DEFINE_BINARY_FUNC(name, TIn, TOut, func)                          \
-  template <>                                                              \
-  DRAGON_API void name<TIn, CPUContext>(                                   \
-      const int n, const TIn* a, const TIn* b, TOut* y, CPUContext* ctx) { \
-    EigenVectorArrayMap<TOut>(y, n) =                                      \
-        ConstEigenVectorArrayMap<TIn>(a, n).func(                          \
-            ConstEigenVectorArrayMap<TIn>(b, n));                          \
+#define DEFINE_BINARY_FUNC(name, InputT, OutputT, func) \
+  template <>                                           \
+  DRAGON_API void name<InputT, CPUContext>(             \
+      const int n,                                      \
+      const InputT* a,                                  \
+      const InputT* b,                                  \
+      OutputT* y,                                       \
+      CPUContext* ctx) {                                \
+    EigenVectorArrayMap<OutputT>(y, n) =                \
+        ConstEigenVectorArrayMap<InputT>(a, n).func(    \
+            ConstEigenVectorArrayMap<InputT>(b, n));    \
   }
 
 DEFINE_BINARY_FUNC(Pow, float, float, pow);
@@ -454,13 +462,13 @@ DEFINE_BINARY_FUNC(Sub, bool, uint8_t); // Xor
 DEFINE_BINARY_FUNC(Mul, bool, uint8_t); // And
 #undef DEFINE_BINARY_FUNC
 
-#define DEFINE_BINARY_FUNC(name, TOut)       \
+#define DEFINE_BINARY_FUNC(name, OutputT)    \
   template <>                                \
   DRAGON_API void name<float16, CPUContext>( \
       const int n,                           \
       const float16* a,                      \
       const float16* b,                      \
-      TOut* y,                               \
+      OutputT* y,                            \
       CPUContext* ctx) {                     \
     CPU_FP16_NOT_SUPPORTED;                  \
   }

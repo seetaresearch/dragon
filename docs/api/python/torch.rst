@@ -164,7 +164,7 @@ vm.torch
   : Compute the minimum value of inputs.
 
   `mm(...) <torch/mm.html>`_
-  : Perform a matrix multiplication.
+  : Compute the matrix-matrix multiplication.
 
   `mul(...) <torch/mul.html>`_
   : Compute the element-wise multiplication.

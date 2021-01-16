@@ -1030,6 +1030,38 @@ class Tensor(object):
 
         """
 
+    def isinf(self):
+        r"""Return if the elements are infinite.
+
+        .. math:: \text{out} = \text{isinf}(\text{self})
+
+        Returns
+        -------
+        dragon.vm.torch.Tensor
+            The output tensor.
+
+        See Also
+        --------
+        `torch.isinf(...)`_
+
+        """
+
+    def isnan(self):
+        r"""Return if the elements are NaN.
+
+        .. math:: \text{out} = \text{isnan}(\text{self})
+
+        Returns
+        -------
+        dragon.vm.torch.Tensor
+            The output tensor.
+
+        See Also
+        --------
+        `torch.isnan(...)`_
+
+        """
+
     def is_floating_point(self):
         """Return whether the data type is floating.
 
@@ -1175,6 +1207,31 @@ class Tensor(object):
         dragon.vm.torch.Tensor
             The output tensor.
 
+        See Also
+        --------
+        `torch.max(...)`_
+
+        """
+
+    def maximum(self, other):
+        r"""Compute the maximum value of inputs.
+
+        .. math:: \text{out} = \max(\text{self}, \text{other})
+
+        Parameters
+        ----------
+        other : Union[dragon.vm.torch.Tensor, number]
+            The second input tensor.
+
+        Returns
+        -------
+        dragon.vm.torch.Tensor
+            The output tensor.
+
+        See Also
+        --------
+        `torch.maximum(...)`_
+
         """
 
     def masked_select(self, mask):
@@ -1223,6 +1280,52 @@ class Tensor(object):
         -------
         dragon.vm.torch.Tensor
             The output tensor.
+
+        See Also
+        --------
+        `torch.min(...)`_
+
+        """
+
+    def minimum(self, other):
+        r"""Compute the minimum value of inputs.
+
+        .. math:: \text{out} = \min(\text{self}, \text{other})
+
+        Parameters
+        ----------
+        other : Union[dragon.vm.torch.Tensor, number]
+            The second input tensor.
+
+        Returns
+        -------
+        dragon.vm.torch.Tensor
+            The output tensor.
+
+        See Also
+        --------
+        `torch.minimum(...)`_
+
+        """
+
+    def mm(self, mat2):
+        r"""Compute the matrix-matrix multiplication.
+
+        .. math:: \text{out} = \text{self} \times \text{mat2}
+
+        Parameters
+        ----------
+        mat2 : dragon.vm.torch.Tensor
+            The second matrix.
+
+        Returns
+        -------
+        dragon.vm.torch.Tensor
+            The output tensor.
+
+        See Also
+        --------
+        `torch.mm(...)`_
 
         """
 
@@ -1881,6 +1984,27 @@ class Tensor(object):
         See Also
         --------
         `torch.sort(...)`_
+
+        """
+
+    def split(self, split_size_or_sections, dim=0):
+        """Return the splited chunks along the given dimension.
+
+        Parameters
+        ----------
+        split_size_or_sections : Union[int, Sequence[int]
+            The number or size of chunks.
+        dim : int, optional, default=0
+            The dimension to split.
+
+        Returns
+        -------
+        Sequence[dragon.vm.torch.Tensor]
+            The output tensors.
+
+        See Also
+        --------
+        `torch.split(...)`_
 
         """
 

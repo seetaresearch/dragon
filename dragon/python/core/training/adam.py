@@ -46,13 +46,13 @@ class Adam(optimizer.Optimizer):
         Parameters
         ----------
         base_lr : float, optional, default=0.001
-            The initial value for :math:`\text{lr}`.
+            The initial value to :math:`\text{lr}`.
         beta1 : float, optional, default=0.9
-            The initial value for :math:`\beta_{1}`.
+            The initial value to :math:`\beta_{1}`.
         beta2 : float, optional, default=0.999
-            The initial value for :math:`\beta_{2}`.
+            The initial value to :math:`\beta_{2}`.
         eps : float, optional=1e-8
-            The initial value for :math:`\epsilon`
+            The initial value to :math:`\epsilon`
 
         """
         super(Adam, self).__init__(**kwargs)

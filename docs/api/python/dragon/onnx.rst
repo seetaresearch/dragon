@@ -91,7 +91,7 @@ Name                     Supported Reference
 `InstanceNormalization`_ |v|       :func:`dragon.nn.instance_norm`
 `IsInf`_                 |v|       :func:`dragon.math.is_inf`
 `IsNaN`_                 |v|       :func:`dragon.math.is_nan`
-`LRN`_                   |v|       :func:`dragon.nn.lrn`
+`LRN`_                   |v|       :func:`dragon.nn.local_response_norm`
 `LSTM`_                  |v|       :func:`dragon.nn.LSTM`
 `LeakyRelu`_             |v|       :func:`dragon.nn.leaky_relu`
 `Less`_                  |v|       :func:`dragon.math.less`
@@ -183,7 +183,7 @@ Name                     Supported Reference
 `TopK`_                  |v|       :func:`dragon.math.top_k`
 `Transpose`_             |v|       :func:`dragon.transpose`
 `Unique`_                |v|       :func:`dragon.unique`
-`Unsqueeze`_             |v|       :func:`dragon.unsqueeze`
+`Unsqueeze`_             |v|       :func:`dragon.expand_dims`
 `Upsample`_              |v|       :func:`dragon.vision.resize`
 `Where`_                 |v|       :func:`dragon.where`
 `Xor`_                   |v|       :func:`dragon.bitwise.bitwise_xor`

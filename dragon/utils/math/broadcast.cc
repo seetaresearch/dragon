@@ -10,13 +10,13 @@ namespace math {
 
 namespace {
 
-#define DECLARE_ROWWISE_COLWISE_BINARY_FUNC(name, TOut)                 \
-  template <typename T, bool BroadcastA>                                \
-  void _Rowwise##name(                                                  \
-      const int rows, const int cols, const T* a, const T* b, TOut* y); \
-  template <typename T, bool BroadcastA>                                \
-  void _Colwise##name(                                                  \
-      const int rows, const int cols, const T* a, const T* b, TOut* y);
+#define DECLARE_ROWWISE_COLWISE_BINARY_FUNC(name, OutputT)                 \
+  template <typename T, bool BroadcastA>                                   \
+  void _Rowwise##name(                                                     \
+      const int rows, const int cols, const T* a, const T* b, OutputT* y); \
+  template <typename T, bool BroadcastA>                                   \
+  void _Colwise##name(                                                     \
+      const int rows, const int cols, const T* a, const T* b, OutputT* y);
 
 DECLARE_ROWWISE_COLWISE_BINARY_FUNC(Add, T);
 DECLARE_ROWWISE_COLWISE_BINARY_FUNC(Sub, T);
@@ -201,36 +201,52 @@ DEFINE_BROADCAST_2ND_FUNC(Div, float, /);
 DEFINE_BROADCAST_2ND_FUNC(Div, double, /);
 #undef DEFINE_BROADCAST_2ND_FUNC
 
-#define DEFINE_ROWWISE_COLWISE_BIANRY_FUNC(name, TIn, TOut, expr)            \
+#define DEFINE_ROWWISE_COLWISE_BIANRY_FUNC(name, InputT, OutputT, expr)      \
   template <>                                                                \
-  void _Rowwise##name<TIn, true>(                                            \
-      const int rows, const int cols, const TIn* a, const TIn* b, TOut* y) { \
-    EigenArrayMap<TOut>(y, cols, rows) =                                     \
-        ConstEigenVectorArrayMap<TIn>(a, cols).rowwise().replicate(rows)     \
-            expr ConstEigenArrayMap<TIn>(b, cols, rows);                     \
+  void _Rowwise##name<InputT, true>(                                         \
+      const int rows,                                                        \
+      const int cols,                                                        \
+      const InputT* a,                                                       \
+      const InputT* b,                                                       \
+      OutputT* y) {                                                          \
+    EigenArrayMap<OutputT>(y, cols, rows) =                                  \
+        ConstEigenVectorArrayMap<InputT>(a, cols).rowwise().replicate(rows)  \
+            expr ConstEigenArrayMap<InputT>(b, cols, rows);                  \
   }                                                                          \
   template <>                                                                \
-  void _Colwise##name<TIn, true>(                                            \
-      const int rows, const int cols, const TIn* a, const TIn* b, TOut* y) { \
-    EigenArrayMap<TOut>(y, cols, rows) =                                     \
-        ConstEigenVectorArrayMap2<TIn>(a, rows).colwise().replicate(cols)    \
-            expr ConstEigenArrayMap<TIn>(b, cols, rows);                     \
+  void _Colwise##name<InputT, true>(                                         \
+      const int rows,                                                        \
+      const int cols,                                                        \
+      const InputT* a,                                                       \
+      const InputT* b,                                                       \
+      OutputT* y) {                                                          \
+    EigenArrayMap<OutputT>(y, cols, rows) =                                  \
+        ConstEigenVectorArrayMap2<InputT>(a, rows).colwise().replicate(cols) \
+            expr ConstEigenArrayMap<InputT>(b, cols, rows);                  \
   }                                                                          \
   template <>                                                                \
-  void _Rowwise##name<TIn, false>(                                           \
-      const int rows, const int cols, const TIn* a, const TIn* b, TOut* y) { \
-    EigenArrayMap<TOut>(y, cols, rows) =                                     \
-        ConstEigenArrayMap<TIn>(a, cols, rows)                               \
-            expr ConstEigenVectorArrayMap<TIn>(b, cols)                      \
+  void _Rowwise##name<InputT, false>(                                        \
+      const int rows,                                                        \
+      const int cols,                                                        \
+      const InputT* a,                                                       \
+      const InputT* b,                                                       \
+      OutputT* y) {                                                          \
+    EigenArrayMap<OutputT>(y, cols, rows) =                                  \
+        ConstEigenArrayMap<InputT>(a, cols, rows)                            \
+            expr ConstEigenVectorArrayMap<InputT>(b, cols)                   \
                 .rowwise()                                                   \
                 .replicate(rows);                                            \
   }                                                                          \
   template <>                                                                \
-  void _Colwise##name<TIn, false>(                                           \
-      const int rows, const int cols, const TIn* a, const TIn* b, TOut* y) { \
-    EigenArrayMap<TOut>(y, cols, rows) =                                     \
-        ConstEigenArrayMap<TIn>(a, cols, rows)                               \
-            expr ConstEigenVectorArrayMap2<TIn>(b, rows)                     \
+  void _Colwise##name<InputT, false>(                                        \
+      const int rows,                                                        \
+      const int cols,                                                        \
+      const InputT* a,                                                       \
+      const InputT* b,                                                       \
+      OutputT* y) {                                                          \
+    EigenArrayMap<OutputT>(y, cols, rows) =                                  \
+        ConstEigenArrayMap<InputT>(a, cols, rows)                            \
+            expr ConstEigenVectorArrayMap2<InputT>(b, rows)                  \
                 .colwise()                                                   \
                 .replicate(cols);                                            \
   }
@@ -321,7 +337,7 @@ DEFINE_ROWWISE_COLWISE_BIANRY_FUNC(Maximum, float, max);
 DEFINE_ROWWISE_COLWISE_BIANRY_FUNC(Maximum, double, max);
 #undef DEFINE_ROWWISE_COLWISE_BIANRY_FUNC
 
-#define DEFINE_BROADCAST_BINARY_FUNC(name, TOut, expr)                \
+#define DEFINE_BROADCAST_BINARY_FUNC(name, OutputT, expr)             \
   template <typename T>                                               \
   void _Broadcast##name(                                              \
       const int num_dims,                                             \
@@ -330,7 +346,7 @@ DEFINE_ROWWISE_COLWISE_BIANRY_FUNC(Maximum, double, max);
       const int64_t* y_dims,                                          \
       const T* a,                                                     \
       const T* b,                                                     \
-      TOut* y) {                                                      \
+      OutputT* y) {                                                   \
     const auto count = std::accumulate(                               \
         y_dims, y_dims + num_dims, 1, std::multiplies<int64_t>());    \
     vec64_t idx(num_dims, 0);                                         \
@@ -358,7 +374,7 @@ DEFINE_BROADCAST_BINARY_FUNC(Greater, bool, >);
 DEFINE_BROADCAST_BINARY_FUNC(GreaterEqual, bool, >=);
 #undef DEFINE_BROADCAST_BINARY_FUNC
 
-#define DEFINE_BROADCAST_BINARY_FUNC(name, TOut, func)                \
+#define DEFINE_BROADCAST_BINARY_FUNC(name, OutputT, func)             \
   template <typename T>                                               \
   void _Broadcast##name(                                              \
       const int num_dims,                                             \
@@ -367,7 +383,7 @@ DEFINE_BROADCAST_BINARY_FUNC(GreaterEqual, bool, >=);
       const int64_t* y_dims,                                          \
       const T* a,                                                     \
       const T* b,                                                     \
-      TOut* y) {                                                      \
+      OutputT* y) {                                                   \
     const auto count = std::accumulate(                               \
         y_dims, y_dims + num_dims, 1, std::multiplies<int64_t>());    \
     vec64_t idx(num_dims, 0);                                         \
@@ -452,16 +468,16 @@ DEFINE_SET_FUNC(float);
 DEFINE_SET_FUNC(double);
 #undef DEFINE_SET_FUNC
 
-#define DEFINE_BINARY_FUNC(name, TIn, TOut)                                \
+#define DEFINE_BINARY_FUNC(name, InputT, OutputT)                          \
   template <>                                                              \
-  DRAGON_API void name<TIn, CPUContext>(                                   \
+  DRAGON_API void name<InputT, CPUContext>(                                \
       const int a_ndim,                                                    \
       const int64_t* a_dims,                                               \
       const int b_ndim,                                                    \
       const int64_t* b_dims,                                               \
-      const TIn* a,                                                        \
-      const TIn* b,                                                        \
-      TOut* y,                                                             \
+      const InputT* a,                                                     \
+      const InputT* b,                                                     \
+      OutputT* y,                                                          \
       CPUContext* ctx) {                                                   \
     int rows, cols, broadcast_1st;                                         \
     vec64_t A_dims(a_dims, a_dims + a_ndim);                               \
@@ -478,18 +494,18 @@ DEFINE_SET_FUNC(double);
     if (math::utils::IsRowwiseBroadcast(                                   \
             A_dims, B_dims, &rows, &cols, &broadcast_1st)) {               \
       if (broadcast_1st > 0) {                                             \
-        _Rowwise##name<TIn, true>(rows, cols, a, b, y);                    \
+        _Rowwise##name<InputT, true>(rows, cols, a, b, y);                 \
       } else {                                                             \
-        _Rowwise##name<TIn, false>(rows, cols, a, b, y);                   \
+        _Rowwise##name<InputT, false>(rows, cols, a, b, y);                \
       }                                                                    \
       return;                                                              \
     }                                                                      \
     if (math::utils::IsColwiseBroadcast(                                   \
             A_dims, B_dims, &rows, &cols, &broadcast_1st)) {               \
       if (broadcast_1st > 0) {                                             \
-        _Colwise##name<TIn, true>(rows, cols, a, b, y);                    \
+        _Colwise##name<InputT, true>(rows, cols, a, b, y);                 \
       } else {                                                             \
-        _Colwise##name<TIn, false>(rows, cols, a, b, y);                   \
+        _Colwise##name<InputT, false>(rows, cols, a, b, y);                \
       }                                                                    \
       return;                                                              \
     }                                                                      \
@@ -609,7 +625,7 @@ DEFINE_BINARY_FUNC(Sub, bool, uint8_t); // Xor
 DEFINE_BINARY_FUNC(Mul, bool, uint8_t); // And
 #undef DEFINE_BINARY_FUNC
 
-#define DEFINE_BINARY_FUNC(name, TOut)       \
+#define DEFINE_BINARY_FUNC(name, OutputT)    \
   template <>                                \
   DRAGON_API void name<float16, CPUContext>( \
       const int a_ndim,                      \
@@ -618,7 +634,7 @@ DEFINE_BINARY_FUNC(Mul, bool, uint8_t); // And
       const int64_t* b_dims,                 \
       const float16* a,                      \
       const float16* b,                      \
-      TOut* y,                               \
+      OutputT* y,                            \
       CPUContext* ctx) {                     \
     CPU_FP16_NOT_SUPPORTED;                  \
   }

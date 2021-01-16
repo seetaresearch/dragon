@@ -117,7 +117,7 @@ class Layer(LayerMetaclass):
         Parameters
         ----------
         name : str, optional.
-            The optional layer name.
+            The layer name.
         act : str or function, optional
             The optional activation.
 
@@ -319,7 +319,7 @@ class LayerNode(object):
 
 
 class LayerList(Layer):
-    """Stack a group of layers into a sequential layer."""
+    """Layer to stack a group of layers."""
 
     def __init__(self, layers, name=None):
         """Create a ``LayerList``.
@@ -329,7 +329,7 @@ class LayerList(Layer):
         layers : Sequence[dragon.vm.tensorlayer.layers.Layer]
             The layers to stack.
         name : str, optional
-            The optional layer name.
+            The layer name.
 
         """
         super(LayerList, self).__init__(name=name)

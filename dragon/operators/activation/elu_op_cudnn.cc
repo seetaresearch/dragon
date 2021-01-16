@@ -2,8 +2,6 @@
 
 #include "dragon/operators/activation/elu_op.h"
 
-#if CUDNN_VERSION_MIN(6, 0, 0)
-
 namespace dragon {
 
 template <class Context>
@@ -56,7 +54,5 @@ DEPLOY_CUDNN_OPERATOR(Elu);
 DEPLOY_CUDNN_OPERATOR(EluGradient);
 
 } // namespace dragon
-
-#endif // CUDNN_VERSION_MIN(6, 0, 0)
 
 #endif // USE_CUDNN

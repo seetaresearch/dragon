@@ -17,24 +17,24 @@
 
 namespace dragon {
 
-#define DECLARE_REDUCE_OP(name)                                 \
-  template <class Context>                                      \
-  class name##Op final : public Operator<Context> {             \
-   public:                                                      \
-    name##Op(const OperatorDef& def, Workspace* ws)             \
-        : Operator<Context>(def, ws),                           \
-          axes_(OP_REPEATED_ARG(int64_t, "axes")),              \
-          keep_dims_(OP_SINGLE_ARG(int64_t, "keep_dims", 0)) {} \
-    USE_OPERATOR_FUNCTIONS;                                     \
-                                                                \
-    void RunOnDevice() override;                                \
-                                                                \
-    template <typename T>                                       \
-    void DoRunWithType();                                       \
-                                                                \
-   protected:                                                   \
-    int64_t keep_dims_;                                         \
-    vec64_t axes_;                                              \
+#define DECLARE_REDUCE_OP(name)                                \
+  template <class Context>                                     \
+  class name##Op final : public Operator<Context> {            \
+   public:                                                     \
+    name##Op(const OperatorDef& def, Workspace* ws)            \
+        : Operator<Context>(def, ws),                          \
+          axes_(OP_REPEATED_ARG(int64_t, "axes")),             \
+          keep_dims_(OP_SINGLE_ARG(int64_t, "keepdims", 0)) {} \
+    USE_OPERATOR_FUNCTIONS;                                    \
+                                                               \
+    void RunOnDevice() override;                               \
+                                                               \
+    template <typename T>                                      \
+    void DoRunWithType();                                      \
+                                                               \
+   protected:                                                  \
+    int64_t keep_dims_;                                        \
+    vec64_t axes_;                                             \
   };
 
 #define DECLARE_REDUCE_GRAD_OP(name)                        \

@@ -1,7 +1,6 @@
 # ---[ General sources
 add_subdirectory(activation)
 add_subdirectory(array)
-add_subdirectory(control_flow)
 add_subdirectory(generic)
 add_subdirectory(math)
 add_subdirectory(normalization)

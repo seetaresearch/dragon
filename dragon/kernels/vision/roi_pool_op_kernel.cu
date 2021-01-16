@@ -31,8 +31,8 @@ __global__ void _RoiPool(
     T* y) {
   auto Greater = math::GreaterFunctor<T>();
   CUDA_1D_KERNEL_LOOP(yi, nthreads) {
-    const int ow = yi % out_w;
-    const int oh = (yi / out_w) % out_h;
+    const int w_out = yi % out_w;
+    const int h_out = (yi / out_w) % out_h;
     const int c = (yi / out_w / out_h) % C;
     const int n = yi / out_w / out_h / C;
 
@@ -45,25 +45,25 @@ __global__ void _RoiPool(
       continue;
     }
 
-    const int roi_start_w = round(roi[1] * spatial_scale);
-    const int roi_start_h = round(roi[2] * spatial_scale);
-    const int roi_end_w = round(roi[3] * spatial_scale);
-    const int roi_end_h = round(roi[4] * spatial_scale);
+    const int roi_wstart = round(roi[1] * spatial_scale);
+    const int roi_hstart = round(roi[2] * spatial_scale);
+    const int roi_wend = round(roi[3] * spatial_scale);
+    const int roi_hend = round(roi[4] * spatial_scale);
 
-    const int roi_w = max(roi_end_w - roi_start_w + 1, 1);
-    const int roi_h = max(roi_end_h - roi_start_h + 1, 1);
+    const int roi_w = max(roi_wend - roi_wstart + 1, 1);
+    const int roi_h = max(roi_hend - roi_hstart + 1, 1);
     const float bin_h = (float)roi_h / (float)out_h;
     const float bin_w = (float)roi_w / (float)out_w;
 
-    int hstart = floor(bin_h * oh);
-    int wstart = floor(bin_w * ow);
-    int hend = ceil(bin_h * (oh + 1));
-    int wend = ceil(bin_w * (ow + 1));
+    int hstart = floor(bin_h * h_out);
+    int wstart = floor(bin_w * w_out);
+    int hend = ceil(bin_h * (h_out + 1));
+    int wend = ceil(bin_w * (w_out + 1));
 
-    hstart = min(max(hstart + roi_start_h, 0), H);
-    hend = min(max(hend + roi_start_h, 0), H);
-    wstart = min(max(wstart + roi_start_w, 0), W);
-    wend = min(max(wend + roi_start_w, 0), W);
+    hstart = min(max(hstart + roi_hstart, 0), H);
+    hend = min(max(hend + roi_hstart, 0), H);
+    wstart = min(max(wstart + roi_wstart, 0), W);
+    wend = min(max(wend + roi_wstart, 0), W);
     const bool empty = (hend <= hstart) || (wend <= wstart);
 
     int max_idx = empty ? -1 : 0;
@@ -106,7 +106,8 @@ __global__ void _RoiPoolGrad(
 
     AccT* offset_dx = dx + (batch_ind * C + c) * H * W;
     if (LDG(mask, yi) != -1) {
-      atomicAdd(offset_dx + LDG(mask, yi), convert::To<AccT>(dy[yi]));
+      math::utils::AtomicAdd(
+          offset_dx + LDG(mask, yi), convert::To<AccT>(dy[yi]));
     }
   }
 }
@@ -117,78 +118,43 @@ __global__ void _RoiPoolGrad(
 
 /* ------------------- Launcher Separator ------------------- */
 
-#define DEFINE_KERNEL_LAUNCHER(T, ScalarT)                                    \
-  template <>                                                                 \
-  void RoiPool<T, CUDAContext>(                                               \
-      const int C,                                                            \
-      const int H,                                                            \
-      const int W,                                                            \
-      const int out_h,                                                        \
-      const int out_w,                                                        \
-      const int num_rois,                                                     \
-      const float spatial_scale,                                              \
-      const T* x,                                                             \
-      const float* rois,                                                      \
-      int* mask,                                                              \
-      T* y,                                                                   \
-      CUDAContext* ctx) {                                                     \
-    auto nthreads = num_rois * C * out_h * out_w;                             \
-    _RoiPool<<<CUDA_BLOCKS(nthreads), CUDA_THREADS, 0, ctx->cuda_stream()>>>( \
-        nthreads,                                                             \
-        C,                                                                    \
-        H,                                                                    \
-        W,                                                                    \
-        out_h,                                                                \
-        out_w,                                                                \
-        spatial_scale,                                                        \
-        reinterpret_cast<const ScalarT*>(x),                                  \
-        rois,                                                                 \
-        mask,                                                                 \
-        reinterpret_cast<ScalarT*>(y));                                       \
+#define DEFINE_KERNEL_LAUNCHER(name, InputT, OutputT)                        \
+  template <>                                                                \
+  void name<InputT, CUDAContext>(                                            \
+      const int C,                                                           \
+      const int H,                                                           \
+      const int W,                                                           \
+      const int out_h,                                                       \
+      const int out_w,                                                       \
+      const int num_rois,                                                    \
+      const float spatial_scale,                                             \
+      const InputT* x,                                                       \
+      const float* rois,                                                     \
+      int* mask,                                                             \
+      OutputT* y,                                                            \
+      CUDAContext* ctx) {                                                    \
+    auto nthreads = num_rois * C * out_h * out_w;                            \
+    _##name<<<CUDA_BLOCKS(nthreads), CUDA_THREADS, 0, ctx->cuda_stream()>>>( \
+        nthreads,                                                            \
+        C,                                                                   \
+        H,                                                                   \
+        W,                                                                   \
+        out_h,                                                               \
+        out_w,                                                               \
+        spatial_scale,                                                       \
+        reinterpret_cast<const math::ScalarType<InputT>::type*>(x),          \
+        rois,                                                                \
+        mask,                                                                \
+        reinterpret_cast<math::ScalarType<OutputT>::type*>(y));              \
   }
 
-#define DEFINE_GRAD_KERNEL_LAUNCHER(T, ScalarT)   \
-  template <>                                     \
-  void RoiPoolGrad<T, CUDAContext>(               \
-      const int C,                                \
-      const int H,                                \
-      const int W,                                \
-      const int out_h,                            \
-      const int out_w,                            \
-      const int num_rois,                         \
-      const float spatial_scale,                  \
-      const T* dy,                                \
-      const float* rois,                          \
-      const int* mask,                            \
-      float* dx,                                  \
-      CUDAContext* ctx) {                         \
-    auto nthreads = num_rois * C * out_h * out_w; \
-    _RoiPoolGrad<<<                               \
-        CUDA_BLOCKS(nthreads),                    \
-        CUDA_THREADS,                             \
-        0,                                        \
-        ctx->cuda_stream()>>>(                    \
-        nthreads,                                 \
-        C,                                        \
-        H,                                        \
-        W,                                        \
-        out_h,                                    \
-        out_w,                                    \
-        spatial_scale,                            \
-        reinterpret_cast<const ScalarT*>(dy),     \
-        rois,                                     \
-        mask,                                     \
-        dx);                                      \
-  }
-
-DEFINE_KERNEL_LAUNCHER(float16, half);
-DEFINE_KERNEL_LAUNCHER(float, float);
-DEFINE_KERNEL_LAUNCHER(double, double);
-DEFINE_GRAD_KERNEL_LAUNCHER(float16, half);
-DEFINE_GRAD_KERNEL_LAUNCHER(float, float);
-DEFINE_GRAD_KERNEL_LAUNCHER(double, double);
+DEFINE_KERNEL_LAUNCHER(RoiPool, float16, float16);
+DEFINE_KERNEL_LAUNCHER(RoiPool, float, float);
+DEFINE_KERNEL_LAUNCHER(RoiPool, double, double);
+DEFINE_KERNEL_LAUNCHER(RoiPoolGrad, float16, float); // RoiPoolGrad
+DEFINE_KERNEL_LAUNCHER(RoiPoolGrad, float, float); // RoiPoolGrad
+DEFINE_KERNEL_LAUNCHER(RoiPoolGrad, double, float); // RoiPoolGrad
 #undef DEFINE_KERNEL_LAUNCHER
-#undef DEFINE_GRAD_KERNEL_LAUNCHER
 
 } // namespace kernel
 

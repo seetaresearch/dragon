@@ -6,8 +6,14 @@ vm.torch.nn.functional
   Functions
   ---------
 
+  `avg_pool1d(...) <functional/avg_pool1d.html>`_
+  : Apply the 1d average pooling to input.
+
   `avg_pool2d(...) <functional/avg_pool2d.html>`_
   : Apply the 2d average pooling to input.
+
+  `avg_pool3d(...) <functional/avg_pool3d.html>`_
+  : Apply the 3d average pooling to input.
 
   `batch_norm(...) <functional/batch_norm.html>`_
   : Apply the batch normalization to input.
@@ -16,11 +22,23 @@ vm.torch.nn.functional
   `binary_cross_entropy_with_logits(...) <functional/binary_cross_entropy_with_logits.html>`_
   : Compute the sigmoid cross entropy with contiguous target.
 
+  `conv1d(...) <functional/conv1d.html>`_
+  : Apply 1d convolution to the input.
+
   `conv2d(...) <functional/conv2d.html>`_
   : Apply 2d convolution to the input.
 
+  `conv3d(...) <functional/conv3d.html>`_
+  : Apply 3d convolution to the input.
+
+  `conv_transpose1d(...) <functional/conv_transpose1d.html>`_
+  : Apply 1d deconvolution to the input.
+
   `conv_transpose2d(...) <functional/conv_transpose2d.html>`_
   : Apply 2d deconvolution to the input.
+
+  `conv_transpose3d(...) <functional/conv_transpose3d.html>`_
+  : Apply 3d deconvolution to the input.
 
   `cross_entropy(...) <functional/cross_entropy.html>`_
   : Compute the softmax cross entropy with sparse labels.
@@ -82,8 +100,14 @@ vm.torch.nn.functional
   `interpolate(...) <functional/interpolate.html>`_
   : Resize input via interpolating neighborhoods.
 
+  `max_pool1d(...) <functional/max_pool1d.html>`_
+  : Apply the 1d max pooling to input.
+
   `max_pool2d(...) <functional/max_pool2d.html>`_
   : Apply the 2d max pooling to input.
+
+  `max_pool3d(...) <functional/max_pool3d.html>`_
+  : Apply the 3d max pooling to input.
 
   `mse_loss(...) <functional/mse_loss.html>`_
   : Compute the element-wise squared error.
@@ -143,11 +167,17 @@ vm.torch.nn.functional
 .. toctree::
   :hidden:
 
+  functional/avg_pool1d
   functional/avg_pool2d
+  functional/avg_pool3d
   functional/batch_norm
   functional/binary_cross_entropy_with_logits
+  functional/conv1d
   functional/conv2d
+  functional/conv3d
+  functional/conv_transpose1d
   functional/conv_transpose2d
+  functional/conv_transpose3d
   functional/cross_entropy
   functional/ctc_loss
   functional/depthwise_conv2d
@@ -165,7 +195,9 @@ vm.torch.nn.functional
   functional/local_response_norm
   functional/log_softmax
   functional/interpolate
+  functional/max_pool1d
   functional/max_pool2d
+  functional/max_pool3d
   functional/mse_loss
   functional/nll_loss
   functional/normalize
