@@ -8,6 +8,7 @@
 #     <https://opensource.org/licenses/BSD-2-Clause>
 #
 # ------------------------------------------------------------
+"""Process to read the distributed data."""
 
 from __future__ import absolute_import
 from __future__ import division

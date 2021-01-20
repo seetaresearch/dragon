@@ -8,7 +8,7 @@
 #     <https://opensource.org/licenses/BSD-2-Clause>
 #
 # ------------------------------------------------------------
-"""Distributed utilities equipped with Python."""
+"""Distributed backend."""
 
 from __future__ import absolute_import
 from __future__ import division
@@ -16,7 +16,7 @@ from __future__ import print_function
 
 import atexit
 
-from dragon import backend as _b
+from dragon.core.framework import backend as _b
 from dragon.core.util import nest
 from dragon.core.util import six
 from dragon.core.util import tls

@@ -32,6 +32,7 @@ from dragon._api import nn
 from dragon._api import onnx
 from dragon._api import optimizers
 from dragon._api import random
+from dragon._api import sysconfig
 from dragon._api import vision
 from dragon import vm
 
@@ -42,12 +43,12 @@ from dragon.core.eager.backprop import GradientTape
 from dragon.core.framework.workspace import Workspace
 
 # Functions
-from dragon.backend import load_library
 from dragon.core.autograph.def_function import function
 from dragon.core.autograph.function_lib import create_function
 from dragon.core.autograph.grad_impl import gradients
 from dragon.core.eager.context import eager_mode
 from dragon.core.eager.context import graph_mode
+from dragon.core.framework.backend import load_library
 from dragon.core.framework.config import get_num_threads
 from dragon.core.framework.config import set_num_threads
 from dragon.core.framework.context import device

@@ -113,13 +113,13 @@ def dirac_(tensor, groups=1):
     sizes = tensor.size()
     if sizes[0] % groups != 0:
         raise ValueError('Dimension 0 should be divisible by groups.')
-    group_dim = sizes[0] // groups
-    min_dim = min(group_dim, sizes[1])
+    out_channels_per_grp = sizes[0] // groups
+    min_dim = min(out_channels_per_grp, sizes[1])
     with grad_mode.no_grad():
         tensor.zero_()
         for g in range(groups):
             for d in range(min_dim):
-                item = [g * group_dim + d, d]
+                item = [g * out_channels_per_grp + d, d]
                 for i in range(2, dimensions):
                     item.append(sizes[i] // 2)
                 tensor[tuple(item)] = 1

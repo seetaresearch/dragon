@@ -25,6 +25,7 @@ from dragon.core.eager.context import context as execution_context
 from dragon.core.util import nest
 from dragon.core.testing.unittest.common_utils import run_tests
 from dragon.core.testing.unittest.common_utils import TEST_CUDA
+from dragon.core.testing.unittest.common_utils import TEST_CUDNN_CONV3D_NHWC
 
 # Fix the duplicate linked omp runtime
 os.environ["KMP_DUPLICATE_LIB_OK"] = "TRUE"
@@ -3240,11 +3241,12 @@ class TestVisionOps(OpTestCase):
         with dragon.device('cuda'), self.cudnn_ws.as_default():
             self.test_conv2d()
 
-    def test_conv3d(self, prec=1e-3):
+    def test_conv3d(self, prec=1e-3, test_nhwc=True):
         entries = [((2, 2, 2, 2, 2), (3, 2, 1, 1, 1), (3,), 1, 1, 0, 1, 1, 'NCHW'),
-                   ((2, 2, 2, 2, 2), (3, 2, 3, 3, 3), (3,), 3, 1, 1, 1, 1, 'NCHW'),
-                   ((2, 2, 2, 2, 2), (3, 2, 1, 1, 1), (3,), 1, 1, 0, 1, 1, 'NHWC'),
-                   ((2, 2, 2, 2, 2), (3, 2, 3, 3, 3), (3,), 3, 1, 1, 1, 1, 'NHWC')]
+                   ((2, 2, 2, 2, 2), (3, 2, 3, 3, 3), (3,), 3, 1, 1, 1, 1, 'NCHW')]
+        if test_nhwc:
+            entries += [((2, 2, 2, 2, 2), (3, 2, 1, 1, 1), (3,), 1, 1, 0, 1, 1, 'NHWC'),
+                        ((2, 2, 2, 2, 2), (3, 2, 3, 3, 3), (3,), 3, 1, 1, 1, 1, 'NHWC')]
         results = [[[[[[0.08, 0.09], [0.1, 0.11]], [[0.12, 0.13], [0.14, 0.15]]],
                      [[[0.34, 0.39], [0.44, 0.49]], [[0.54, 0.59], [0.64, 0.69]]],
                      [[[0.6, 0.69], [0.78, 0.87]], [[0.96, 1.05], [1.14, 1.23]]]],
@@ -3362,7 +3364,7 @@ class TestVisionOps(OpTestCase):
     def test_conv3d_cudnn(self):
         dragon.cuda.enable_cudnn(True)
         with dragon.device('cuda'), self.cudnn_ws.as_default():
-            self.test_conv3d()
+            self.test_conv3d(test_nhwc=TEST_CUDNN_CONV3D_NHWC)
 
     def test_conv1d_transpose(self, prec=1e-3):
         entries = [((2, 2, 2), (2, 3, 1), (3,), 1, 1, 0, 1, 1, 'NCHW'),
@@ -3508,11 +3510,12 @@ class TestVisionOps(OpTestCase):
         with dragon.device('cuda'), self.cudnn_ws.as_default():
             self.test_conv2d_transpose()
 
-    def test_conv3d_transpose(self, prec=1e-3):
+    def test_conv3d_transpose(self, prec=1e-3, test_nhwc=True):
         entries = [((2, 2, 2, 2, 2), (2, 3, 1, 1, 1), (3,), 1, 1, 0, 1, 1, 'NCHW'),
-                   ((2, 2, 2, 2, 2), (2, 3, 3, 3, 3), (3,), 3, 1, 1, 1, 1, 'NCHW'),
-                   ((2, 2, 2, 2, 2), (2, 3, 1, 1, 1), (3,), 1, 1, 0, 1, 1, 'NHWC'),
-                   ((2, 2, 2, 2, 2), (2, 3, 3, 3, 3), (3,), 3, 1, 1, 1, 1, 'NHWC')]
+                   ((2, 2, 2, 2, 2), (2, 3, 3, 3, 3), (3,), 3, 1, 1, 1, 1, 'NCHW')]
+        if test_nhwc:
+            entries += [((2, 2, 2, 2, 2), (2, 3, 1, 1, 1), (3,), 1, 1, 0, 1, 1, 'NHWC'),
+                        ((2, 2, 2, 2, 2), (2, 3, 3, 3, 3), (3,), 3, 1, 1, 1, 1, 'NHWC')]
         results = [[[[[[0.24, 0.27], [0.3, 0.33]], [[0.36, 0.39], [0.42, 0.45]]],
                      [[[0.42, 0.47], [0.52, 0.57]], [[0.62, 0.67], [0.72, 0.77]]],
                      [[[0.6, 0.67], [0.74, 0.81]], [[0.88, 0.95], [1.02, 1.09]]]],
@@ -3631,7 +3634,7 @@ class TestVisionOps(OpTestCase):
     def test_conv3d_transpose_cudnn(self):
         dragon.cuda.enable_cudnn(True)
         with dragon.device('cuda'), self.cudnn_ws.as_default():
-            self.test_conv3d_transpose()
+            self.test_conv3d_transpose(test_nhwc=TEST_CUDNN_CONV3D_NHWC)
 
     def test_depthwise_conv2d(self, test_grad=False):
         entries = [((2, 2, 2, 2), (2, 1, 1, 1), (2,), 1, 1, 0, 1, 'NCHW'),

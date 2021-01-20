@@ -22,10 +22,12 @@ import dragon
 
 # The global argument parser
 parser = argparse.ArgumentParser(add_help=False)
+build_info = dragon.sysconfig.get_build_info()
 
 # The optional testing flags
 TEST_CUDA = dragon.cuda.is_available()
 TEST_MPI = dragon.distributed.is_mpi_available()
+TEST_CUDNN_CONV3D_NHWC = build_info.get('cudnn_version', '0.0.0') > '8.0.0'
 
 
 def run_tests(argv=None):

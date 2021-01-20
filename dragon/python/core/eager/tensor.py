@@ -8,7 +8,7 @@
 #     <https://opensource.org/licenses/BSD-2-Clause>
 #
 # ------------------------------------------------------------
-"""The eager executing tensor."""
+"""Eager executing tensor."""
 
 from __future__ import absolute_import
 from __future__ import division

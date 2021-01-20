@@ -35,19 +35,9 @@ namespace dragon {
   } while (0)
 
 constexpr size_t CUDNN_CONV_WORKSPACE_LIMIT_BYTES = 64 * 1024 * 1024;
-
-#if CUDNN_VERSION_MIN(7, 0, 0)
-constexpr size_t CUDNN_CONV_NUM_FWD_ALGOS =
-    2 * CUDNN_CONVOLUTION_FWD_ALGO_COUNT;
-constexpr size_t CUDNN_CONV_NUM_BWD_FILTER_ALGOS =
-    2 * CUDNN_CONVOLUTION_BWD_FILTER_ALGO_COUNT;
-constexpr size_t CUDNN_CONV_NUM_BWD_DATA_ALGOS =
-    2 * CUDNN_CONVOLUTION_BWD_DATA_ALGO_COUNT;
-#else
 constexpr size_t CUDNN_CONV_NUM_FWD_ALGOS = 7;
 constexpr size_t CUDNN_CONV_NUM_BWD_FILTER_ALGOS = 4;
 constexpr size_t CUDNN_CONV_NUM_BWD_DATA_ALGOS = 5;
-#endif
 
 class Tensor;
 

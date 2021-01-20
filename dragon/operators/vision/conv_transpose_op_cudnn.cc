@@ -31,7 +31,9 @@ void CuDNNConvTransposeOp<Context>::ResetDesc() {
     }
     this->template SetConvDesc<T>();
     // Get or search the appropriate algorithm
-    if (CUDAContext::objects().cudnn_benchmark_) {
+    if (CUDAContext::objects().cudnn_deterministic_) {
+      fwd_algo_ = CUDNN_CONVOLUTION_BWD_DATA_ALGO_1;
+    } else if (CUDAContext::objects().cudnn_benchmark_) {
       exhaustive_search_ = true;
     } else {
 #if CUDNN_VERSION_MIN(7, 0, 0)
@@ -122,14 +124,23 @@ void CuDNNConvTransposeOp<Context>::DoRunWithType() {
 
   // Determine the workspace size for selected algorithm
   if (cudnn_ws_nbytes_ == SIZE_MAX) {
-    CUDNN_CHECK(cudnnGetConvolutionBackwardDataWorkspaceSize(
-        ctx()->cudnn_handle(),
-        filter_desc_,
-        input_desc_,
-        conv_desc_,
-        output_desc_,
-        fwd_algo_,
-        &cudnn_ws_nbytes_));
+    auto algo_status = CUDNN_STATUS_SUCCESS;
+    for (int step = 0; step < 2; ++step) {
+      algo_status = cudnnGetConvolutionBackwardDataWorkspaceSize(
+          ctx()->cudnn_handle(),
+          filter_desc_,
+          input_desc_,
+          conv_desc_,
+          output_desc_,
+          fwd_algo_,
+          &cudnn_ws_nbytes_);
+      if (algo_status != CUDNN_STATUS_SUCCESS && step == 0 &&
+          CUDAContext::objects().cudnn_deterministic_) {
+        fwd_algo_ = CUDNN_CONVOLUTION_BWD_DATA_ALGO_0;
+      } else {
+        CUDNN_CHECK(algo_status);
+      }
+    }
   }
 
   // Alloc the memory for workspace data
@@ -205,7 +216,10 @@ void CuDNNConvTransposeGradientOp<Context>::ResetDesc() {
     }
     this->template SetConvDesc<T>();
     // Get the appropriate algorithm
-    if (CUDAContext::objects().cudnn_benchmark_) {
+    if (CUDAContext::objects().cudnn_deterministic_) {
+      bwd_data_algo_ = CUDNN_CONVOLUTION_FWD_ALGO_IMPLICIT_PRECOMP_GEMM;
+      bwd_filter_algo_ = CUDNN_CONVOLUTION_BWD_FILTER_ALGO_1;
+    } else if (CUDAContext::objects().cudnn_benchmark_) {
       exhaustive_search_data_ = true;
       exhaustive_search_filter_ = true;
     } else {
@@ -359,23 +373,40 @@ void CuDNNConvTransposeGradientOp<Context>::DoRunWithType() {
 
   // Determine the workspace size for selected algorithm
   if (cudnn_ws_nbytes_ == SIZE_MAX) {
+    auto algo_status = CUDNN_STATUS_SUCCESS;
     size_t bwd_filter_size = 0, bwd_data_size = 0;
-    CUDNN_CHECK(cudnnGetConvolutionBackwardFilterWorkspaceSize(
-        ctx()->cudnn_handle(),
-        input_desc_,
-        output_desc_,
-        conv_desc_,
-        filter_desc_,
-        bwd_filter_algo_,
-        &bwd_filter_size));
-    CUDNN_CHECK(cudnnGetConvolutionForwardWorkspaceSize(
-        ctx()->cudnn_handle(),
-        input_desc_,
-        filter_desc_,
-        conv_desc_,
-        output_desc_,
-        bwd_data_algo_,
-        &bwd_data_size));
+    for (int step = 0; step < 2; ++step) {
+      algo_status = cudnnGetConvolutionBackwardFilterWorkspaceSize(
+          ctx()->cudnn_handle(),
+          input_desc_,
+          output_desc_,
+          conv_desc_,
+          filter_desc_,
+          bwd_filter_algo_,
+          &bwd_filter_size);
+      if (algo_status != CUDNN_STATUS_SUCCESS && step == 0 &&
+          CUDAContext::objects().cudnn_deterministic_) {
+        bwd_filter_algo_ = CUDNN_CONVOLUTION_BWD_FILTER_ALGO_0;
+      } else {
+        CUDNN_CHECK(algo_status);
+      }
+    }
+    for (int step = 0; step < 2; ++step) {
+      algo_status = cudnnGetConvolutionForwardWorkspaceSize(
+          ctx()->cudnn_handle(),
+          input_desc_,
+          filter_desc_,
+          conv_desc_,
+          output_desc_,
+          bwd_data_algo_,
+          &bwd_data_size);
+      if (algo_status != CUDNN_STATUS_SUCCESS && step == 0 &&
+          CUDAContext::objects().cudnn_deterministic_) {
+        bwd_data_algo_ = CUDNN_CONVOLUTION_FWD_ALGO_IMPLICIT_GEMM;
+      } else {
+        CUDNN_CHECK(algo_status);
+      }
+    }
     cudnn_ws_nbytes_ = std::max(bwd_filter_size, bwd_data_size);
   }
 

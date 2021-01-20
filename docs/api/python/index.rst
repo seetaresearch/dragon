@@ -41,6 +41,7 @@ Dragon
   * `dragon.onnx <dragon/onnx.html>`_
   * `dragon.optimizers <dragon/optimizers.html>`_
   * `dragon.random <dragon/random.html>`_
+  * `dragon.sysconfig <dragon/sysconfig.html>`_
   * `dragon.vision <dragon/vision.html>`_
 
 Caffe
@@ -210,6 +211,9 @@ Modules
   `Module random <dragon/random.html>`_
   : Native API for ``dragon.random`` namespace.
 
+  `Module sysconfig <dragon/sysconfig.html>`_
+  : Native API for ``dragon.sysconfig`` namespace.
+
   `Module vision <dragon/vision.html>`_
   : Native API for ``dragon.vision`` namespace.
 
@@ -315,6 +319,7 @@ Modules
   dragon/onnx
   dragon/optimizers
   dragon/random
+  dragon/sysconfig
   dragon/vision
   caffe
   caffe/layers

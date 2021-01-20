@@ -8,7 +8,7 @@
 #     <https://opensource.org/licenses/BSD-2-Clause>
 #
 # ------------------------------------------------------------
-"""Generic interfaces of current default workspace."""
+"""Functions and helpers for workspace."""
 
 from __future__ import absolute_import
 from __future__ import division
@@ -18,7 +18,7 @@ import collections
 import contextlib
 import numpy
 
-from dragon import backend
+from dragon.core.framework import backend
 from dragon.core.framework import config
 from dragon.core.framework import mapping
 from dragon.core.framework import proto_util

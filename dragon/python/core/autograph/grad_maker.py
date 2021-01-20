@@ -16,8 +16,8 @@ from __future__ import print_function
 
 from collections import defaultdict
 
-from dragon import backend
 from dragon.core.autograph.op_def import OpDef
+from dragon.core.framework import backend
 from dragon.core.framework import proto_util
 from dragon.core.proto import dragon_pb2
 

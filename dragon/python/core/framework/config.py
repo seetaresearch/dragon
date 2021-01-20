@@ -8,7 +8,7 @@
 #     <https://opensource.org/licenses/BSD-2-Clause>
 #
 # ------------------------------------------------------------
-"""Define the global configurations."""
+"""Framework configurations."""
 
 from __future__ import absolute_import
 from __future__ import division
@@ -16,31 +16,29 @@ from __future__ import print_function
 
 import threading
 
-from dragon import backend
+from dragon.core.framework import backend
 
 
 class Config(object):
-    """Store the common configurations for frontend."""
+    """Framework configuration class."""
 
     def __init__(self):
-        # The type of device.
+        # Device type.
         # Enumeration in ('cpu', 'cuda', 'cnml').
         self.device_type = 'cpu'
-        # The device index.
+        # Device index.
         self.device_index = 0
-        # The global random seed.
+        # Device random seed.
         self.random_seed = 3
-
-        # The graph type for various scheduling.
+        # Graph type for various scheduling.
         self.graph_type = ''
-        # The graph optimization level.
+        # Graph optimization level.
         self.graph_optimization = 3
-        # The graph verbosity level.
+        # Graph verbosity level.
         self.graph_verbosity = 0
-        # The execution mode for graph.
+        # Graph execution mode.
         self.graph_execution = 'EAGER_MODE'
-
-        # The directory to store logging files.
+        # Directory to store logging files.
         self.log_dir = None
 
 

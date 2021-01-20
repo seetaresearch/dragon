@@ -94,14 +94,17 @@ void RegisterModule(py::module& m) {
   });
 
   /*! \brief Activate the CuDNN engine */
-  m.def("cudaEnableDNN", [](bool enabled, bool benchmark, bool allow_tf32) {
+  m.def(
+      "cudaEnableDNN",
+      [](bool enabled, bool deterministic, bool benchmark, bool allow_tf32) {
 #ifdef USE_CUDA
-    auto& cuda_objects = CUDAContext::objects();
-    cuda_objects.cudnn_enabled_ = enabled;
-    cuda_objects.cudnn_benchmark_ = benchmark;
-    cuda_objects.cudnn_allow_tf32_ = allow_tf32;
+        auto& cuda_objects = CUDAContext::objects();
+        cuda_objects.cudnn_enabled_ = enabled;
+        cuda_objects.cudnn_deterministic_ = deterministic;
+        cuda_objects.cudnn_benchmark_ = benchmark;
+        cuda_objects.cudnn_allow_tf32_ = allow_tf32;
 #endif
-  });
+      });
 
   /*! \brief Return the index of current device */
   m.def("cudaGetDevice", []() { return CUDAContext::current_device(); });

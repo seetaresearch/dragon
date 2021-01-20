@@ -20,7 +20,7 @@ import os
 import sys as _sys
 import threading
 
-from dragon import backend
+from dragon.core.framework import backend
 from dragon.core.framework import config
 
 _logger = None

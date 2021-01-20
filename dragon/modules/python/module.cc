@@ -1,10 +1,10 @@
 #include "dragon/modules/python/autograd.h"
-#include "dragon/modules/python/config.h"
 #include "dragon/modules/python/cuda.h"
 #include "dragon/modules/python/dlpack.h"
 #include "dragon/modules/python/mpi.h"
 #include "dragon/modules/python/operator.h"
 #include "dragon/modules/python/proto.h"
+#include "dragon/modules/python/sysconfig.h"
 #include "dragon/modules/python/tensor.h"
 
 namespace dragon {
@@ -288,11 +288,11 @@ PYBIND11_MODULE(libdragon_python, m) {
   []() { import_array1(); }();
 
   REGISTER_MODULE(autograd);
-  REGISTER_MODULE(config);
   REGISTER_MODULE(cuda);
   REGISTER_MODULE(mpi);
   REGISTER_MODULE(ops);
   REGISTER_MODULE(proto);
+  REGISTER_MODULE(sysconfig);
   REGISTER_MODULE(tensor);
 #undef REGISTER_MODULE
 }

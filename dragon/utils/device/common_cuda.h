@@ -39,11 +39,11 @@ constexpr int CUDA_MAX_DEVICES = 16;
 /*! \brief The maximum number of tensor dimsensions */
 constexpr int CUDA_TENSOR_MAX_DIMS = 8;
 
-#define CUDA_VERSION_MIN(major, minor, patch) \
-  (CUDA_VERSION >= (major * 1000 + minor * 100 + patch))
+#define CUDA_VERSION_MIN(major, minor) \
+  (CUDA_VERSION >= (major * 1000 + minor * 10))
 
-#define CUDA_VERSION_MAX(major, minor, patch) \
-  (CUDA_VERSION < (major * 1000 + minor * 100 + patch))
+#define CUDA_VERSION_MAX(major, minor) \
+  (CUDA_VERSION < (major * 1000 + minor * 10))
 
 #define CUDA_CHECK(condition)                                          \
   do {                                                                 \
@@ -87,7 +87,7 @@ inline int CUDA_2D_BLOCKS(const int N) {
   return std::max(std::min(N, CUDA_MAX_BLOCKS), 1);
 }
 
-#if CUDA_VERSION_MAX(9, 0, 0)
+#if CUDA_VERSION_MAX(9, 0)
 #define __hdiv hdiv
 #endif
 

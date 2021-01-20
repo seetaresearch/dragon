@@ -14,7 +14,7 @@ from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
 
-from dragon import backend
+from dragon.core.framework import backend
 from dragon.core.framework import config
 from dragon.core.framework import workspace
 
@@ -62,20 +62,27 @@ def current_device():
     return backend.cudaGetDevice()
 
 
-def enable_cudnn(enabled=True, benchmark=False, allow_tf32=False):
+def enable_cudnn(
+    enabled=True,
+    deterministic=False,
+    benchmark=False,
+    allow_tf32=False,
+):
     """Enable backend to use the cuDNN library.
 
     Parameters
     ----------
     enabled : bool, optional, default=True
         Use cuDNN library or not.
+    deterministic : bool, optional, default=False
+        Select deterministic algorithms instead of fastest.
     benchmark : bool, optional, default=False
-        Select algorithms according to the benchmark or not.
+        Select fastest algorithms via benchmark or heuristics.
     allow_tf32 : bool, optional, default=False
-        Allow TF32 Tensor core operation or not.
+        Allow TF32 tensor core operation or not.
 
     """
-    return backend.cudaEnableDNN(enabled, benchmark, allow_tf32)
+    return backend.cudaEnableDNN(enabled, deterministic, benchmark, allow_tf32)
 
 
 def get_device_capability(device_index=None):

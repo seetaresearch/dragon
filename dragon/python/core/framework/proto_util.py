@@ -20,7 +20,7 @@ import sys
 from google.protobuf.message import Message
 import numpy
 
-from dragon import backend
+from dragon.core.framework import backend
 from dragon.core.framework import config
 from dragon.core.framework import context
 from dragon.core.proto import dragon_pb2

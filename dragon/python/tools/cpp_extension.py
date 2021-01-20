@@ -328,7 +328,7 @@ def _get_cuda_arch_flags(cflags=None):
                         '5.0', '5.2', '5.3',
                         '6.0', '6.1', '6.2',
                         '7.0', '7.2', '7.5',
-                        '8.0']
+                        '8.0', '8.6']
     valid_arch_strings = supported_arches + [s + "+PTX" for s in supported_arches]
     capability = _cuda.get_device_capability()
     arch_list = ['{}.{}'.format(capability[0], capability[1])]

@@ -151,7 +151,10 @@ class CUDAObjects {
   /*! \brief The flag that allows cuDNN or not */
   bool cudnn_enabled_ = true;
 
-  /*! \brief The flag that allows cuDNN benchmark or not */
+  /*! \brief The flag that enforces deterministic cuDNN algorithms or not */
+  bool cudnn_deterministic_ = false;
+
+  /*! \brief The flag that benchmarks fastest cuDNN algorithms or not */
   bool cudnn_benchmark_ = false;
 
   /*! \brief The flag that allows cuDNN TF32 math type or not */
