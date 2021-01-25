@@ -19,11 +19,10 @@ void CuDNNRecurrentOpBase<Context>::ResetDesc() {
 
   // Setup Dropout
   if (dropout_ratio_ < 1.f) {
-#if CUDNN_VERSION_MIN(7, 0, 0)
     if (!states_initialized_) {
       states_initialized_ = 1;
-      CUDNN_CHECK(
-          cudnnDropoutGetStatesSize(ctx()->cudnn_handle(), &states_size_));
+      auto cudnn_handle = ctx()->cudnn_handle();
+      CUDNN_CHECK(cudnnDropoutGetStatesSize(cudnn_handle, &states_size_));
       std::lock_guard<std::mutex> lk(CUDAContext::mutex());
       auto* states_tensor = workspace()->CreateTensor(
           "/share/cudnn/dropout:" + str::to(rng_seed_) + "/states");
@@ -31,7 +30,7 @@ void CuDNNRecurrentOpBase<Context>::ResetDesc() {
         auto* states = states_tensor->template mutable_data<uint8_t, Context>();
         CUDNN_CHECK(cudnnRestoreDropoutDescriptor(
             dropout_desc_,
-            ctx()->cudnn_handle(),
+            cudnn_handle,
             dropout_ratio_,
             states,
             states_size_,
@@ -41,16 +40,13 @@ void CuDNNRecurrentOpBase<Context>::ResetDesc() {
                            ->template mutable_data<uint8_t, Context>();
         CUDNN_CHECK(cudnnSetDropoutDescriptor(
             dropout_desc_,
-            ctx()->cudnn_handle(),
+            cudnn_handle,
             dropout_ratio_,
             states,
             states_size_,
             rng_seed_));
       }
     }
-#else
-    LOG(FATAL) << "Dropout has been supported since CuDNN 7.0";
-#endif
   }
 
   // Setup RNN
@@ -61,7 +57,6 @@ void CuDNNRecurrentOpBase<Context>::ResetDesc() {
   } else if (input_type == TypeMeta::Id<double>()) {
     compute_type_ = CUDNN_DATA_DOUBLE;
   }
-#if CUDNN_VERSION_MIN(7, 0, 0)
   CUDNN_CHECK(cudnnSetRNNDescriptor_v6(
       ctx()->cudnn_handle(),
       rnn_desc_,
@@ -73,35 +68,22 @@ void CuDNNRecurrentOpBase<Context>::ResetDesc() {
       rnn_mode_,
       CUDNN_RNN_ALGO_STANDARD,
       compute_type_));
-#else
-  CUDNN_CHECK(cudnnSetRNNDescriptor(
-      rnn_desc_,
-      hidden_size_,
-      num_layers_,
-      dropout_desc_,
-      rnn_input_mode_,
-      rnn_direction_,
-      rnn_mode_,
-      compute_type_));
-#endif
 
   // Setup TensorCore
-#if CUDNN_VERSION_MIN(7, 0, 0)
-  if (enable_tensor_core_ > 0) {
+  if (TENSOR_CORE_AVAILABLE()) {
     cudnnMathType_t math_type;
     if (input_type == TypeMeta::Id<float16>()) {
       math_type = CUDNN_TENSOR_OP_MATH;
     } else {
       math_type = CUDNN_DEFAULT_MATH;
-#if CUDNN_VERSION_MIN(8, 0, 0)
       if (!CUDAContext::objects().cudnn_allow_tf32_) {
+#if CUDNN_VERSION_MIN(8, 0, 0)
         math_type = CUDNN_FMA_MATH;
-      }
 #endif
+      }
     }
     CUDNN_CHECK(cudnnSetRNNMatrixMathType(rnn_desc_, math_type));
   }
-#endif
 
   // Setup X and Y
   output_dims_ = {seq_length_, batch_size, y_dim};

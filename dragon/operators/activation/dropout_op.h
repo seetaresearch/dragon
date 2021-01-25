@@ -58,8 +58,6 @@ DEFINE_OP_SINGLE_ARG_WITH_DESC(float, DropoutGradientOp, ratio);
 
 #ifdef USE_CUDNN
 
-#if CUDNN_VERSION_MIN(7, 0, 0)
-
 template <class Context>
 class CuDNNDropoutOp final : public DropoutOp<Context> {
  public:
@@ -117,8 +115,6 @@ class CuDNNDropoutGradientOp final : public DropoutGradientOp<Context> {
   cudnnDropoutDescriptor_t dropout_desc_;
   unsigned long long rng_seed_;
 };
-
-#endif // CUDNN_VERSION_MIN(7, 0, 0)
 
 #endif // USE_CUDNN
 

@@ -109,12 +109,6 @@ class DRAGON_API Tensor {
     return Reshape(other.dims_);
   }
 
-  /*! \brief Switch memory to the specific device */
-  void SwitchToDevice(int device_id) {
-    UnifiedMemory* mem = memory();
-    if (mem) mem->SwitchToDevice(device_id);
-  }
-
   /*! \brief Copy memory from a tensor with context */
   template <class Context>
   Tensor* CopyFrom(const Tensor& other, Context* ctx) {

@@ -93,8 +93,7 @@ template <typename T>
 void CuDNNSetTensorDesc(
     cudnnTensorDescriptor_t* desc,
     const vec64_t& dims,
-    const std::string& data_format,
-    const int64_t group = 1);
+    const std::string& data_format);
 
 /*! \brief Set a bias desc with expanding dimensions */
 template <typename T>

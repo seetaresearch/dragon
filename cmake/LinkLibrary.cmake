@@ -35,6 +35,12 @@ else()
 endif()
 
 foreach(_plain_name ${ARGN})
+  # Filter the linker option
+  string(FIND "${_plain_name}" "-Wl" _is_linker_option)
+  if (${_is_linker_option} GREATER -1)
+    list(APPEND _libraries ${_plain_name})
+    continue()
+  endif()
   # Firstly, search in the third party
   set(LIB_VAR "${_target}/lib/${_plain_name}")
   find_library(

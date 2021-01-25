@@ -100,9 +100,10 @@ class CuDNNConvOp final : public CuDNNConvOpBase<Context> {
   template <typename T>
   void ResetDesc();
 
-  size_t cudnn_ws_nbytes_;
+  size_t cudnn_ws_size_;
   vec64_t input_dims_, filter_dims_;
   bool exhaustive_search_ = false;
+  bool algo_deterministic_ = false;
   cudnnConvolutionFwdAlgo_t fwd_algo_;
   cudnnTensorDescriptor_t input_desc_, output_desc_;
   cudnnTensorDescriptor_t bias_desc_, output_desc_for_bias_;
@@ -148,8 +149,10 @@ class CuDNNConvGradientOp final : public CuDNNConvOpBase<Context> {
   template <typename T>
   void ResetDesc();
 
-  size_t cudnn_ws_nbytes_;
+  size_t cudnn_ws_size_;
   vec64_t input_dims_, filter_dims_;
+  bool data_algo_deterministic_ = false;
+  bool filter_algo_deterministic_ = false;
   bool exhaustive_search_data_ = false;
   bool exhaustive_search_filter_ = false;
   cudnnConvolutionBwdFilterAlgo_t bwd_filter_algo_;

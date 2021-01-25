@@ -3,8 +3,6 @@
 #include "dragon/core/workspace.h"
 #include "dragon/operators/loss/ctc_loss_op.h"
 
-#if CUDNN_VERSION_MIN(7, 0, 0)
-
 #define CUDNN_LABEL_LENGTH_LIMIT 256
 
 namespace dragon {
@@ -94,7 +92,5 @@ void CuDNNCTCLossOp<Context>::RunOnDevice() {
 DEPLOY_CUDNN_OPERATOR(CTCLoss);
 
 } // namespace dragon
-
-#endif // CUDNN_VERSION_MIN(7, 0, 0)
 
 #endif // USE_CUDNN

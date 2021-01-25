@@ -44,8 +44,6 @@ class CTCLossGradientOp final : public Operator<Context> {
 
 #ifdef USE_CUDNN
 
-#if CUDNN_VERSION_MIN(7, 0, 0)
-
 template <class Context>
 class CuDNNCTCLossOp final : public Operator<Context> {
  public:
@@ -80,8 +78,6 @@ class CuDNNCTCLossOp final : public Operator<Context> {
   cudnnTensorDescriptor_t prob_desc_, grad_desc_;
   vec32_t packed_labels_, label_lengths_, input_lengths_;
 };
-
-#endif // CUDNN_VERSION_MIN(7, 0, 0)
 
 #endif // USE_CUDNN
 

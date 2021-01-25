@@ -19,10 +19,6 @@ State
 Public Functions
 ----------------
 
-SwitchToDevice
-##############
-.. doxygenfunction:: dragon::UnifiedMemory::SwitchToDevice
-
 SwitchToCUDADevice
 ##################
 .. doxygenfunction:: dragon::UnifiedMemory::SwitchToCUDADevice

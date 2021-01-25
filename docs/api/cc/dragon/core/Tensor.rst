@@ -55,10 +55,6 @@ Share
 #####
 .. doxygenfunction:: dragon::Tensor::Share
 
-SwitchToDevice
-##############
-.. doxygenfunction:: dragon::Tensor::SwitchToDevice
-
 axis
 ####
 .. doxygenfunction:: dragon::Tensor::axis

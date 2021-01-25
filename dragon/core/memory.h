@@ -49,9 +49,6 @@ class DRAGON_API UnifiedMemory {
   /*! \brief Destructor */
   ~UnifiedMemory();
 
-  /*! \brief Switch to the given device */
-  void SwitchToDevice(int device);
-
   /*! \brief Switch to the given cuda device */
   void SwitchToCUDADevice(int device);
 

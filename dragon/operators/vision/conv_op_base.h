@@ -136,11 +136,6 @@ class CuDNNConvOpBase : public ConvOpBase<Context> {
   CuDNNConvOpBase(const OperatorDef& def, Workspace* ws)
       : ConvOpBase<Context>(def, ws) {
     GetBaseArguments();
-#if CUDNN_VERSION_MIN(7, 0, 0)
-    group_v2_ = 1;
-#else
-    group_v2_ = group_;
-#endif
     if (data_format() == "NCHW") {
       tensor_format_ = CUDNN_TENSOR_NCHW;
     } else if (data_format() == "NHWC") {
@@ -184,7 +179,6 @@ class CuDNNConvOpBase : public ConvOpBase<Context> {
           CUDNN_CROSS_CORRELATION,
           compute_type_));
     }
-#if CUDNN_VERSION_MIN(7, 0, 0)
     CUDNN_CHECK(cudnnSetConvolutionGroupCount(conv_desc_, group_));
     if (TENSOR_CORE_AVAILABLE()) {
       cudnnMathType_t math_type;
@@ -192,15 +186,14 @@ class CuDNNConvOpBase : public ConvOpBase<Context> {
         math_type = CUDNN_TENSOR_OP_MATH;
       } else {
         math_type = CUDNN_DEFAULT_MATH;
-#if CUDNN_VERSION_MIN(8, 0, 0)
         if (!CUDAContext::objects().cudnn_allow_tf32_) {
+#if CUDNN_VERSION_MIN(8, 0, 0)
           math_type = CUDNN_FMA_MATH;
-        }
 #endif
+        }
       }
       CUDNN_CHECK(cudnnSetConvolutionMathType(conv_desc_, math_type));
     }
-#endif
   }
 
   template <typename T>
@@ -210,13 +203,12 @@ class CuDNNConvOpBase : public ConvOpBase<Context> {
           filter_desc_,
           CuDNNType<T>::type,
           tensor_format_,
-          conv_out_channels_ / group_v2_,
+          conv_out_channels_,
           conv_in_channels_ / group_,
           kshape_[0],
           num_axes_ == 1 ? 1 : kshape_[1]));
     } else {
-      vec64_t dims = {conv_out_channels_ / group_v2_,
-                      conv_in_channels_ / group_};
+      vec64_t dims = {conv_out_channels_, conv_in_channels_ / group_};
       dims.insert(dims.end(), kshape_.begin(), kshape_.end());
       CUDNN_CHECK(cudnnSetFilterNdDescriptor(
           filter_desc_,
@@ -227,21 +219,19 @@ class CuDNNConvOpBase : public ConvOpBase<Context> {
     }
   }
 
-  int64_t group_v2_;
   cudnnConvolutionDescriptor_t conv_desc_;
   cudnnFilterDescriptor_t filter_desc_;
   cudnnDataType_t compute_type_;
   cudnnTensorFormat_t tensor_format_;
 };
 
-#define USE_CUDNN_CONV_FUNCTIONS                  \
-  using CuDNNConvOpBase<Context>::SetConvDesc;    \
-  using CuDNNConvOpBase<Context>::SetFilterDesc;  \
-  using CuDNNConvOpBase<Context>::conv_desc_;     \
-  using CuDNNConvOpBase<Context>::filter_desc_;   \
-  using CuDNNConvOpBase<Context>::compute_type_;  \
-  using CuDNNConvOpBase<Context>::tensor_format_; \
-  using CuDNNConvOpBase<Context>::group_v2_;
+#define USE_CUDNN_CONV_FUNCTIONS                 \
+  using CuDNNConvOpBase<Context>::SetConvDesc;   \
+  using CuDNNConvOpBase<Context>::SetFilterDesc; \
+  using CuDNNConvOpBase<Context>::conv_desc_;    \
+  using CuDNNConvOpBase<Context>::filter_desc_;  \
+  using CuDNNConvOpBase<Context>::compute_type_; \
+  using CuDNNConvOpBase<Context>::tensor_format_
 
 #endif // USE_CUDNN
 

@@ -55,6 +55,7 @@ const void* UnifiedMemory::cpu_data(size_t size) {
 }
 
 const void* UnifiedMemory::cuda_data(size_t size) {
+  SwitchToCUDADevice(CUDAContext::current_device());
   ToCUDA(size);
   return (const void*)cuda_ptr_;
 }
@@ -70,6 +71,7 @@ void* UnifiedMemory::mutable_cpu_data(size_t size) {
 }
 
 void* UnifiedMemory::mutable_cuda_data(size_t size) {
+  SwitchToCUDADevice(CUDAContext::current_device());
   ToCUDA(size);
   state_ = STATE_AT_CUDA;
   return cuda_ptr_;
@@ -116,10 +118,6 @@ UnifiedMemory::~UnifiedMemory() {
   }
 }
 
-void UnifiedMemory::SwitchToDevice(int device_id) {
-  if (cuda_ptr_) SwitchToCUDADevice(device_id);
-}
-
 void UnifiedMemory::SwitchToCUDADevice(int device_id) {
 #ifdef USE_CUDA
   if (cuda_ptr_) {
@@ -129,7 +127,9 @@ void UnifiedMemory::SwitchToCUDADevice(int device_id) {
       new_ptr_ = CUDAContext::New(size_);
       CUDAContext::Memcpy<CUDAContext, CUDAContext>(
           size_, new_ptr_, cuda_ptr_, device_id_);
-      if (own_cuda_ptr_) CUDAContext::Delete(cuda_ptr_);
+      if (own_cuda_ptr_) {
+        CUDAContext::Delete(cuda_ptr_);
+      }
       cuda_ptr_ = new_ptr_;
       device_id_ = device_id;
     }

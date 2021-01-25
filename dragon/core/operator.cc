@@ -136,20 +136,6 @@ void Operator<Context>::Release() {
   }
 }
 
-template <class Context>
-void Operator<Context>::SwitchToDevice() {
-  for (auto* tensor : inputs_) {
-    if (tensor->has_name()) {
-      tensor->SwitchToDevice(ctx()->device());
-    }
-  }
-  for (auto* tensor : outputs_) {
-    if (tensor->has_name()) {
-      tensor->SwitchToDevice(ctx()->device());
-    }
-  }
-}
-
 OperatorBase*
 TryCreateOperator(const string& key, const OperatorDef& def, Workspace* ws) {
   switch (def.device_option().device_type()) {

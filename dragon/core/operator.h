@@ -207,9 +207,6 @@ class DRAGON_API Operator : public OperatorBase {
   /*! \brief Release the ownership of inputs */
   virtual void Release();
 
-  /*! \brief Coordinate the context of inputs and outputs */
-  virtual void SwitchToDevice();
-
   /*! \brief The detailed execution on device */
   virtual void RunOnDevice() = 0;
 
@@ -217,7 +214,6 @@ class DRAGON_API Operator : public OperatorBase {
   void Run(int stream = 0) final {
     Prepare();
     ctx()->SwitchToDevice(stream);
-    SwitchToDevice();
     RunOnDevice();
     if (do_sync_) {
       ctx()->FinishDeviceComputation();

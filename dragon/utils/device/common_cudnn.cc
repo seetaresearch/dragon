@@ -83,10 +83,9 @@ template <typename T>
 void CuDNNSetTensorDesc(
     cudnnTensorDescriptor_t* desc,
     const vec64_t& dims,
-    const string& data_format,
-    const int64_t group) {
+    const string& data_format) {
   const int N = dims[0];
-  const int C = (data_format == "NCHW" ? dims[1] : dims.back()) / group;
+  const int C = data_format == "NCHW" ? dims[1] : dims.back();
   int D, H, W;
   if (dims.size() == 3) {
     D = W = 1;
@@ -147,14 +146,14 @@ void CuDNNSetBiasDesc(
   CuDNNSetTensorDesc<T>(desc, dummy_dims, data_format);
 }
 
-#define INSTANTIATE_API(T)                                                     \
-  template void CuDNNSetTensorDesc<T>(                                         \
-      cudnnTensorDescriptor_t*, const vec64_t&);                               \
-  template void CuDNNSetTensorDesc<T>(                                         \
-      cudnnTensorDescriptor_t*, const vec64_t&, const vec64_t&);               \
-  template void CuDNNSetTensorDesc<T>(                                         \
-      cudnnTensorDescriptor_t*, const vec64_t&, const string&, const int64_t); \
-  template void CuDNNSetBiasDesc<T>(                                           \
+#define INSTANTIATE_API(T)                                       \
+  template void CuDNNSetTensorDesc<T>(                           \
+      cudnnTensorDescriptor_t*, const vec64_t&);                 \
+  template void CuDNNSetTensorDesc<T>(                           \
+      cudnnTensorDescriptor_t*, const vec64_t&, const vec64_t&); \
+  template void CuDNNSetTensorDesc<T>(                           \
+      cudnnTensorDescriptor_t*, const vec64_t&, const string&);  \
+  template void CuDNNSetBiasDesc<T>(                             \
       cudnnTensorDescriptor_t*, const int, const int64_t, const string&);
 
 INSTANTIATE_API(float16);

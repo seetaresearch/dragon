@@ -3,8 +3,6 @@
 #include "dragon/core/workspace.h"
 #include "dragon/operators/activation/dropout_op.h"
 
-#if CUDNN_VERSION_MIN(7, 0, 0)
-
 namespace dragon {
 
 template <class Context>
@@ -123,7 +121,5 @@ DEPLOY_CUDNN_OPERATOR(Dropout);
 DEPLOY_CUDNN_OPERATOR(DropoutGradient);
 
 } // namespace dragon
-
-#endif // CUDNN_VERSION_MIN(7, 0, 0)
 
 #endif // USE_CUDNN

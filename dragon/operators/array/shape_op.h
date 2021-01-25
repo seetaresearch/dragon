@@ -23,8 +23,6 @@ class ShapeOp final : public Operator<Context> {
   SIMPLE_CTOR_DTOR(ShapeOp);
   USE_OPERATOR_FUNCTIONS;
 
-  void SwitchToDevice() override {}
-
   void RunOnDevice() override;
 };
 
