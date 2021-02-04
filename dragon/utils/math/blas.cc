@@ -203,8 +203,7 @@ DRAGON_API void Gemv<float16, CPUContext>(
     const float16* x,
     const float beta,
     float16* y,
-    CPUContext* ctx,
-    const std::string math_type) {
+    CPUContext* ctx) {
   CPU_FP16_NOT_SUPPORTED;
 }
 
@@ -219,8 +218,7 @@ DRAGON_API void Gemv<float16, CPUContext>(
       const T* x,                                                              \
       const float beta,                                                        \
       T* y,                                                                    \
-      CPUContext* ctx,                                                         \
-      const string math_type) {                                                \
+      CPUContext* ctx) {                                                       \
     T _alpha_ = alpha, _beta_ = beta;                                          \
     EigenVectorMap<T> y_vec(y, TransA == CblasNoTrans ? M : N);                \
     if (beta == 0.f)                                                           \
@@ -260,8 +258,7 @@ DRAGON_API void Gemm<float16, CPUContext>(
     const float16* B,
     const float beta,
     float16* C,
-    CPUContext* ctx,
-    const string math_type) {
+    CPUContext* ctx) {
   CPU_FP16_NOT_SUPPORTED;
 }
 
@@ -278,8 +275,7 @@ DRAGON_API void Gemm<float16, CPUContext>(
       const T* B,                                                  \
       const float beta,                                            \
       T* C,                                                        \
-      CPUContext* ctx,                                             \
-      const string math_type) {                                    \
+      CPUContext* ctx) {                                           \
     T _alpha_ = alpha, _beta_ = beta;                              \
     auto C_mat = EigenMatrixMap<T>(C, N, M);                       \
     if (beta == 0.f)                                               \
@@ -327,6 +323,105 @@ DRAGON_API void Gemm<float16, CPUContext>(
 DEFINE_GEMM_FUNC(float);
 DEFINE_GEMM_FUNC(double);
 #undef DEFINE_GEMM_FUNC
+
+template <>
+DRAGON_API void GemmBatched<float16, CPUContext>(
+    const CBLAS_TRANSPOSE TransA,
+    const CBLAS_TRANSPOSE TransB,
+    const int batch_size,
+    const int M,
+    const int N,
+    const int K,
+    const float alpha,
+    const float16** A,
+    const float16** B,
+    const float beta,
+    float16** C,
+    CPUContext* ctx) {
+  CPU_FP16_NOT_SUPPORTED;
+}
+
+#define DEFINE_BATCHED_GEMM_FUNC(T)                                      \
+  template <>                                                            \
+  DRAGON_API void GemmBatched<T, CPUContext>(                            \
+      const CBLAS_TRANSPOSE TransA,                                      \
+      const CBLAS_TRANSPOSE TransB,                                      \
+      const int batch_size,                                              \
+      const int M,                                                       \
+      const int N,                                                       \
+      const int K,                                                       \
+      const float alpha,                                                 \
+      const T** A,                                                       \
+      const T** B,                                                       \
+      const float beta,                                                  \
+      T** C,                                                             \
+      CPUContext* ctx) {                                                 \
+    for (int i = 0; i < batch_size; ++i) {                               \
+      Gemm(TransA, TransB, M, N, K, alpha, A[i], B[i], beta, C[i], ctx); \
+    }                                                                    \
+  }
+
+DEFINE_BATCHED_GEMM_FUNC(float);
+DEFINE_BATCHED_GEMM_FUNC(double);
+#undef DEFINE_BATCHED_GEMM_FUNC
+
+template <>
+DRAGON_API void GemmStridedBatched<float16, CPUContext>(
+    const CBLAS_TRANSPOSE TransA,
+    const CBLAS_TRANSPOSE TransB,
+    const int batch_size,
+    const int M,
+    const int N,
+    const int K,
+    const int A_stride,
+    const int B_stride,
+    const int C_stride,
+    const float alpha,
+    const float16* A,
+    const float16* B,
+    const float beta,
+    float16* C,
+    CPUContext* ctx) {
+  CPU_FP16_NOT_SUPPORTED;
+}
+
+#define DEFINE_STRIDED_BATCHED_GEMM_FUNC(T)          \
+  template <>                                        \
+  DRAGON_API void GemmStridedBatched<T, CPUContext>( \
+      const CBLAS_TRANSPOSE TransA,                  \
+      const CBLAS_TRANSPOSE TransB,                  \
+      const int batch_size,                          \
+      const int M,                                   \
+      const int N,                                   \
+      const int K,                                   \
+      const int A_stride,                            \
+      const int B_stride,                            \
+      const int C_stride,                            \
+      const float alpha,                             \
+      const T* A,                                    \
+      const T* B,                                    \
+      const float beta,                              \
+      T* C,                                          \
+      CPUContext* ctx) {                             \
+    for (int i = 0; i < batch_size; ++i) {           \
+      Gemm(                                          \
+          TransA,                                    \
+          TransB,                                    \
+          M,                                         \
+          N,                                         \
+          K,                                         \
+          alpha,                                     \
+          A + i * A_stride,                          \
+          B + i * B_stride,                          \
+          beta,                                      \
+          C + i * C_stride,                          \
+          ctx);                                      \
+    }                                                \
+  }
+
+DEFINE_STRIDED_BATCHED_GEMM_FUNC(float);
+DEFINE_STRIDED_BATCHED_GEMM_FUNC(double);
+#undef DEFINE_STRIDED_BATCHED_GEMM_FUNC
 
 } // namespace math
 

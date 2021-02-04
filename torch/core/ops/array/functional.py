@@ -46,7 +46,7 @@ def argmax(input, dim=None, keepdim=False, out=None):
     keepdim : bool, optional, default=False
         Keep the reduced dimension or not.
     out : dragon.vm.torch.Tensor, optional
-        The optional output tensor.
+        The output tensor.
 
     Returns
     -------
@@ -81,7 +81,7 @@ def argmin(input, dim=None, keepdim=False, out=None):
     keepdim : bool, optional, default=False
         Keep the reduced dimension or not.
     out : dragon.vm.torch.Tensor, optional
-        The optional output tensor.
+        The output tensor.
 
     Returns
     -------
@@ -174,7 +174,7 @@ def cat(seq, dim=0, out=None):
     dim : int, optional
         The dim to concatenate.
     out : dragon.vm.torch.Tensor, optional
-        The optional output tensor.
+        The output tensor.
 
     Returns
     -------
@@ -197,11 +197,11 @@ def channel_affine(input, weight, bias=None, dim=0, out=None):
     weight : dragon.vm.torch.Tensor
         The weight tensor.
     bias : dragon.vm.torch.Tensor, optional
-        The optional bias.
+        The bias tensor.
     dim : int, optional, default=0
         The start dimension to transform.
     out : dragon.vm.torch.Tensor, optional
-        The optional output tensor.
+        The output tensor.
 
     Returns
     -------
@@ -369,7 +369,7 @@ def cumsum(input, dim, out=None):
     dim : int
         The cumulative dimension.
     out : dragon.vm.torch.Tensor, optional
-        The optional output tensor.
+        The output tensor.
 
     Returns
     -------
@@ -429,7 +429,7 @@ def flatten(input, start_dim=0, end_dim=-1, out=None):
     end_dim : int, optional, default=-1
         The end dimension to flatten.
     out : dragon.vm.torch.Tensor, optional
-        The optional output tensor.
+        The output tensor.
 
     Returns
     -------
@@ -465,7 +465,7 @@ def index_select(input, dim, index, out=None):
     index : dragon.vm.torch.Tensor
         The index tensor.
     out : dragon.vm.torch.Tensor, optional
-        The optional output tensor.
+        The output tensor.
 
     Returns
     -------
@@ -523,7 +523,7 @@ def masked_select(input, mask, out=None):
     mask : dragon.vm.torch.Tensor
         The mask for selecting.
     out : dragon.vm.torch.Tensor, optional
-        The optional output tensor.
+        The output tensor.
 
     Returns
     -------
@@ -566,7 +566,7 @@ def max(input, dim=None, keepdim=False, out=None):
     keepdim : bool, optional, default=False
         Keep the reduced dimensions or not.
     out : dragon.vm.torch.Tensor, optional
-        The optional output tensor.
+        The output tensor.
 
     Returns
     -------
@@ -606,7 +606,7 @@ def mean(input, dim=None, keepdim=False, out=None):
     keepdim : bool, optional, default=False
         Keep the reduced dimensions or not.
     out : dragon.vm.torch.Tensor, optional
-        The optional output tensor.
+        The output tensor.
 
     Returns
     -------
@@ -646,7 +646,7 @@ def min(input, dim=None, keepdim=False, out=None):
     keepdim : bool, optional, default=False
         Keep the reduced dimensions or not.
     out : dragon.vm.torch.Tensor, optional
-        The optional output tensor.
+        The output tensor.
 
     Returns
     -------
@@ -721,7 +721,7 @@ def nonzero(input, out=None):
     input : dragon.vm.torch.Tensor
         The input tensor.
     out : dragon.vm.torch.Tensor, optional
-        The optional output tensor.
+        The output tensor.
 
     Returns
     -------
@@ -732,7 +732,7 @@ def nonzero(input, out=None):
     return _functions.NonZero.instantiate(input.device).apply(input, out)
 
 
-def one_hot(input, depth):
+def one_hot(input, depth, on_value=1, off_value=0):
     r"""Return the one-hot representation for input.
 
     .. math::
@@ -748,6 +748,10 @@ def one_hot(input, depth):
         The input tensor.
     depth : int
         The depth of channels.
+    on_value : int, optional, default=1
+        The value for equal branch.
+    off_value : int, optional, default=0
+        The value for not-equal branch.
 
     Returns
     -------
@@ -755,7 +759,12 @@ def one_hot(input, depth):
         The output tensor.
 
     """
-    return _functions.OneHot.instantiate(input.device, depth=depth).apply(input)
+    return _functions.OneHot.instantiate(
+        input.device,
+        depth=depth,
+        on_value=on_value,
+        off_value=off_value,
+    ).apply(input)
 
 
 def permute(input, dims):
@@ -812,7 +821,7 @@ def reshape(input, shape, out=None):
     shape : Sequence[int]
         The new shape.
     out : dragon.vm.torch.Tensor, optional
-        The optional output tensor.
+        The output tensor.
 
     Returns
     -------
@@ -986,7 +995,7 @@ def stack(seq, dim=0, out=None):
     dim : int, optional, default=0
         The dim to stack.
     out : dragon.vm.torch.Tensor, optional
-        The optional output tensor.
+        The output tensor.
 
     Returns
     -------
@@ -1030,7 +1039,7 @@ def sum(input, dim=None, keepdim=False, out=None):
     keepdim : bool, optional, default=False
         Keep the reduced dimensions or not.
     out : dragon.vm.torch.Tensor, optional
-        The optional output tensor.
+        The output tensor.
 
     Returns
     -------

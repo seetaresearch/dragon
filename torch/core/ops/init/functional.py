@@ -59,7 +59,7 @@ def arange(
     step : number, optional, default=1
         The spacing between two elements.
     out : dragon.vm.torch.Tensor, optional
-        The optional output tensor.
+        The output tensor.
     dtype : str, optional, default='int64'
         The optional data type.
     device : dragon.vm.torch.device, optional
@@ -113,7 +113,7 @@ def eye(
     m : int, optional
         The number output cols.
     out : dragon.vm.torch.Tensor, optional
-        The optional output tensor.
+        The output tensor.
     dtype : str, optional, default='float32'
         The optional data type.
     device : dragon.vm.torch.device, optional
@@ -175,7 +175,7 @@ def full(
     fill_value : number
         The scalar to fill.
     out : dragon.vm.torch.Tensor, optional
-        The optional output tensor.
+        The output tensor.
     dtype : str, optional, default='int64'
         The optional data type.
     device : dragon.vm.torch.device, optional
@@ -216,7 +216,7 @@ def full_like(
     fill_value : number
         The scalar to fill.
     out : dragon.vm.torch.Tensor, optional
-        The optional output tensor.
+        The output tensor.
     dtype : str, optional, default='int64'
         The optional data type.
     device : dragon.vm.torch.device, optional
@@ -268,7 +268,7 @@ def linspace(
     steps : int, optional, default=100
         The number of values to generate.
     out : dragon.vm.torch.Tensor, optional
-        The optional output tensor.
+        The output tensor.
     dtype : str, optional, default='int64'
         The optional data type.
     dim : int, optional, default=0
@@ -326,7 +326,7 @@ def ones(*size, **kwargs):
     size : int...
         The size(s) indicating the out shape.
     out : dragon.vm.torch.Tensor, optional
-        The optional output tensor.
+        The output tensor.
     dtype : str, optional, default='float32'
         The optional data type.
     device : dragon.vm.torch.device, optional
@@ -378,7 +378,7 @@ def rand(*size, **kwargs):
     size : int...
         The size(s) indicating the out shape.
     out : dragon.vm.torch.Tensor, optional
-        The optional output tensor.
+        The output tensor.
     dtype : str, optional, default='float32'
         The optional data type.
     device : dragon.vm.torch.device, optional
@@ -404,7 +404,7 @@ def randn(*size, **kwargs):
     size : int...
         The size(s) indicating the out shape.
     out : dragon.vm.torch.Tensor, optional
-        The optional output tensor.
+        The output tensor.
     dtype : str, optional, default='float32'
         The optional data type.
     device : dragon.vm.torch.device, optional
@@ -436,7 +436,7 @@ def randperm(n, out=None, dtype='int64', device=None, requires_grad=False):
     n: number
         The end of interval.
     out : dragon.vm.torch.Tensor, optional
-        The optional output tensor.
+        The output tensor.
     dtype : str, optional, default='int64'
         The optional data type.
     device : dragon.vm.torch.device, optional
@@ -479,7 +479,7 @@ def zeros(*size, **kwargs):
     size : int...
         The size(s) indicating the out shape.
     out : dragon.vm.torch.Tensor, optional
-        The optional output tensor.
+        The output tensor.
     dtype : str, optional, default='float32'
         The optional data type.
     device : dragon.vm.torch.device, optional

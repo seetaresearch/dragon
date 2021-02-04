@@ -20,37 +20,25 @@ namespace dragon {
 template <class Context>
 class MatMulOp final : public Operator<Context> {
  public:
-  MatMulOp(const OperatorDef& def, Workspace* ws)
-      : Operator<Context>(def, ws),
-        transA_(OP_SINGLE_ARG(int64_t, "transA", 0)),
-        transB_(OP_SINGLE_ARG(int64_t, "transB", 0)) {}
+  SIMPLE_CTOR_DTOR(MatMulOp);
   USE_OPERATOR_FUNCTIONS;
 
   void RunOnDevice() override;
 
   template <typename T>
   void DoRunWithType();
-
- protected:
-  int64_t transA_, transB_;
 };
 
 template <class Context>
 class MatMulGradientOp final : public Operator<Context> {
  public:
-  MatMulGradientOp(const OperatorDef& def, Workspace* ws)
-      : Operator<Context>(def, ws),
-        transA_(OP_SINGLE_ARG(int64_t, "transA", 0)),
-        transB_(OP_SINGLE_ARG(int64_t, "transB", 0)) {}
+  SIMPLE_CTOR_DTOR(MatMulGradientOp);
   USE_OPERATOR_FUNCTIONS;
 
   void RunOnDevice() override;
 
   template <typename T>
   void DoRunWithType();
-
- protected:
-  int64_t transA_, transB_;
 };
 
 } // namespace dragon

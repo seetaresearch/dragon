@@ -174,7 +174,8 @@ void ComputeBinaryBroadcastDims(
     const vec64_t& A_dims,
     const vec64_t& B_dims,
     vec64_t& A_broadcast_dims,
-    vec64_t& B_broadcast_dims) {
+    vec64_t& B_broadcast_dims,
+    int64_t* C_broadcast_dims) {
   auto num_dims = std::max(A_dims.size(), B_dims.size());
   A_broadcast_dims.resize(num_dims);
   B_broadcast_dims.resize(num_dims);
@@ -194,6 +195,16 @@ void ComputeBinaryBroadcastDims(
       B_dims.begin(),
       B_dims.end(),
       B_broadcast_dims.begin() + num_dims - B_dims.size());
+  if (C_broadcast_dims != nullptr) {
+    for (int i = 0; i < num_dims; ++i) {
+      if (A_broadcast_dims[i] == 0 || B_broadcast_dims[i] == 0) {
+        C_broadcast_dims[i] = 0;
+      } else {
+        C_broadcast_dims[i] =
+            std::max(A_broadcast_dims[i], B_broadcast_dims[i]);
+      }
+    }
+  }
 }
 
 void ComputeBinaryBroadcastStrides(

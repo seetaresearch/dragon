@@ -304,7 +304,8 @@ DRAGON_API void ComputeBinaryBroadcastDims(
     const vec64_t& A_dims,
     const vec64_t& B_dims,
     vec64_t& A_broadcast_dims,
-    vec64_t& B_broadcast_dims);
+    vec64_t& B_broadcast_dims,
+    int64_t* C_broadcast_dims = nullptr);
 
 DRAGON_API void ComputeBinaryBroadcastStrides(
     const vec64_t& A_dims,
@@ -326,22 +327,22 @@ DRAGON_API void TransposeAxesForReduce(
     const int* reduce_axes,
     int* transpose_axes);
 
-template <typename dim_t, typename stride_t>
+template <typename DimT, typename StrideT>
 inline void
-ComputeStrides(const int num_dims, const dim_t* dims, stride_t* strides) {
+ComputeStrides(const int num_dims, const DimT* dims, StrideT* strides) {
   int64_t cur_stride = 1;
   for (int i = num_dims - 1; i >= 0; --i) {
-    strides[i] = stride_t(cur_stride);
+    strides[i] = StrideT(cur_stride);
     cur_stride *= int64_t(dims[i]);
   }
 }
 
-template <typename dim_t, typename axis_t, typename stride_t>
+template <typename DimT, typename AxisT, typename StrideT>
 inline void ComputeTransposeStrides(
     const int num_dims,
-    const dim_t* dims,
-    const axis_t* axes,
-    stride_t* strides) {
+    const DimT* dims,
+    const AxisT* axes,
+    StrideT* strides) {
   vec64_t buf(num_dims);
   int64_t cur_stride = 1;
   for (int i = num_dims - 1; i >= 0; --i) {
@@ -349,13 +350,25 @@ inline void ComputeTransposeStrides(
     cur_stride *= int64_t(dims[i]);
   }
   for (int i = 0; i < num_dims; ++i) {
-    strides[i] = stride_t(buf[axes[i]]);
+    strides[i] = StrideT(buf[axes[i]]);
   }
 }
 
-template <typename dim_t, typename index_t>
+template <typename DimT, typename IndexT>
+inline IndexT
+GetIndexFromDims(const int num_dims, const DimT* dims, IndexT* index) {
+  IndexT ret = 0;
+  for (int i = 0; i < num_dims; ++i) {
+    if (dims[i] > 1) {
+      ret = ret * dims[i] + index[i];
+    }
+  }
+  return ret;
+}
+
+template <typename DimT, typename IndexT>
 inline void
-IncreaseIndexInDims(const int num_dims, const dim_t* dims, index_t* index) {
+IncreaseIndexInDims(const int num_dims, const DimT* dims, IndexT* index) {
   for (int i = num_dims - 1; i >= 0; --i) {
     ++index[i];
     if (index[i] >= dims[i]) {

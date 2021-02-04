@@ -95,6 +95,16 @@ class TestTensorOps(OpTestCase):
             a += b
             self.assertEqual(a, data1 + data2)
 
+    def test_addmm(self):
+        entries = [((2, 3), (3, 4), (2, 4))]
+        for a_shape, b_shape, c_shape in entries:
+            data1, data2 = arange(a_shape), arange(b_shape)
+            data3 = arange(c_shape)
+            a, b = new_tensor(data1), new_tensor(data2)
+            c = new_tensor(data3)
+            y = c.addmm(a, b)
+            self.assertEqual(y, np.matmul(data1, data2) + data3)
+
     def test_argmax(self):
         entries = [(0, True), (0, False), (1, True), (1, False), (None, False)]
         for axis, keepdims in entries:
@@ -115,6 +125,18 @@ class TestTensorOps(OpTestCase):
                 result = np.expand_dims(result, axis)
             self.assertEqual(x.argmin(axis, keepdims), result)
 
+    def test_baddbmm(self):
+        entries = [((2, 2, 3), (2, 3, 4), (2, 2, 4))]
+        for a_shape, b_shape, c_shape in entries:
+            data1, data2 = arange(a_shape), arange(b_shape)
+            data3 = arange(c_shape)
+            a, b = new_tensor(data1), new_tensor(data2)
+            c = new_tensor(data3)
+            y = c.baddbmm(a, b)
+            self.assertEqual(y, np.matmul(data1, data2) + data3)
+            c.baddbmm_(a, b)
+            self.assertEqual(c, np.matmul(data1, data2) + data3)
+
     def test_bitwise_not(self):
         for shape in self.unary_test_shapes:
             data = np.random.binomial(1, 0.5, shape).astype('bool')
@@ -131,6 +153,18 @@ class TestTensorOps(OpTestCase):
             self.assertEqual(a.bitwise_xor(b), np.bitwise_xor(data1, data2))
             a.bitwise_xor_(b)
             self.assertEqual(a, np.bitwise_xor(data1, data2))
+
+    def test_bmm(self):
+        test_shapes = [((1, 2, 3), (2, 3, 4)),
+                       ((2, 2, 3), (1, 3, 4)),
+                       ((2, 2, 3), (2, 3, 4)),
+                       ((2, 1, 2, 3), (2, 3, 4)),
+                       ((1, 2, 3), (2, 2, 3, 4)),
+                       ((2, 1, 2, 3), (1, 2, 3, 4))]
+        for a_shape, b_shape in test_shapes:
+            data1, data2 = arange(a_shape), arange(b_shape, 1)
+            a, b = new_tensor(data1, False), new_tensor(data2, False)
+            self.assertEqual(a.bmm(b), np.matmul(data1, data2))
 
     def test_ceil(self):
         data = np.array([1.4, 1.7, 2.0])
@@ -334,6 +368,24 @@ class TestTensorOps(OpTestCase):
         data[data > 2] = 0
         self.assertEqual(x, data)
 
+    def test_matmul(self):
+        test_shapes = [((2,), (2,)),
+                       ((2,), (2, 3)),
+                       ((2, 3), (3,)),
+                       ((2, 3), (3, 4)),
+                       ((2,), (4, 2, 3)),
+                       ((4, 2, 3), (3,)),
+                       ((1, 2, 3), (2, 3, 4)),
+                       ((2, 2, 3), (1, 3, 4)),
+                       ((2, 2, 3), (2, 3, 4)),
+                       ((2, 1, 2, 3), (2, 3, 4)),
+                       ((1, 2, 3), (2, 2, 3, 4)),
+                       ((2, 1, 2, 3), (1, 2, 3, 4))]
+        for a_shape, b_shape in test_shapes:
+            data1, data2 = arange(a_shape), arange(b_shape, 1)
+            a, b = new_tensor(data1, False), new_tensor(data2, False)
+            self.assertEqual(a.matmul(b), np.matmul(data1, data2))
+
     def test_max(self):
         entries = [(0, True), (0, False),
                    (1, True), (1, False),
@@ -382,20 +434,12 @@ class TestTensorOps(OpTestCase):
             self.assertEqual(y, np.minimum(data1, data2))
 
     def test_mm(self):
-        entries = [
-            ((2, 3), (3, 4), False, False),
-            ((2, 3), (4, 3), False, True),
-            ((3, 2), (3, 4), True, False),
-            ((3, 2), (4, 3), True, True)]
-        for a_shape, b_shape, trans_a, trans_b in entries:
+        entries = [((2, 3), (3, 4))]
+        for a_shape, b_shape in entries:
             data1, data2 = arange(a_shape), arange(b_shape)
             a, b = new_tensor(data1), new_tensor(data2)
-            if trans_a or trans_b:
-                y = torch.mm(a, b, trans_a, trans_b)
-            else:
-                y = a.mm(b)
-            self.assertEqual(y, np.matmul(data1.T if trans_a else data1,
-                                          data2.T if trans_b else data2))
+            y = a.mm(b)
+            self.assertEqual(y, np.matmul(data1, data2))
 
     def test_mul(self):
         for a_shape, b_shape in self.binary_test_shapes:

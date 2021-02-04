@@ -281,17 +281,15 @@ class TestOpSpec(unittest.TestCase):
             self.assertEqual(dragon.flatten(
                 self.sym4, axis=1, num_axes=-1).shape, (1, None))
 
-    def test_fully_connected(self):
+    def test_gemm(self):
         w = dragon.Tensor((3, 2))
         with dragon.graph_mode():
-            self.assertEqual(dragon.nn.fully_connected(
-                [self.sym1, w]).shape, (None, 3))
-            self.assertEqual(dragon.nn.fully_connected(
-                [self.sym1, w], transpose_w=False).shape, (None, 2))
-            self.assertEqual(dragon.nn.fully_connected(
-                [self.sym1, w], axis=-1).shape, None)
-            self.assertEqual(dragon.nn.fully_connected(
-                [self.sym1, self.sym1]).shape, (None, None))
+            self.assertEqual(dragon.math.gemm(
+                [self.sym1, w]).shape, None)
+            self.assertEqual(dragon.math.gemm(
+                [self.sym1, w], axis=1).shape, (None, 2))
+            self.assertEqual(dragon.math.gemm(
+                [self.sym1, self.sym1]).shape, None)
 
     def test_index_select(self):
         with dragon.graph_mode():
@@ -325,7 +323,9 @@ class TestOpSpec(unittest.TestCase):
             self.assertEqual(dragon.math.matmul(
                 [self.sym1, self.sym3]).shape, None)
             self.assertEqual(dragon.math.matmul(
-                [self.sym2, self.sym3]).shape, None)
+                [self.sym2, self.sym3]).shape, (None,))
+            self.assertEqual(dragon.math.matmul(
+                [self.sym3, self.sym2]).shape, (1,))
             self.assertEqual(dragon.math.matmul(
                 [self.sym3, self.sym3]).shape, (1, None))
             self.assertEqual(dragon.math.matmul(

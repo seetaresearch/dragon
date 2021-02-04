@@ -29,8 +29,6 @@ def batch_norm_exporter(op_def, context):
         elif arg.name == 'momentum_desc':
             momentum = helper.fetch_argument(op_def, arg, context.ws)
             helper.add_attribute(node, 'momentum', float(momentum))
-    # Weight, bias, running mean and running variance
-    const_tensors = [helper.from_tensor(e, context.ws) for e in op_def.input[1:]]
     return node, const_tensors
 
 
@@ -48,8 +46,6 @@ def group_norm_exporter(op_def, context):
             else:
                 helper.add_attribute(node, 'op_type', 'GroupNorm')
                 helper.add_attribute(node, 'group', arg.i)
-    # Weight and bias
-    const_tensors = [helper.from_tensor(e, context.ws) for e in op_def.input[1:]]
     return node, const_tensors
 
 

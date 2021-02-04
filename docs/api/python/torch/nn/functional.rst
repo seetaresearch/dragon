@@ -6,6 +6,24 @@ vm.torch.nn.functional
   Functions
   ---------
 
+  `adaptive_avg_pool1d(...) <functional/adaptive_avg_pool1d.html>`_
+  : Apply the 1d adaptive average pooling to input.
+
+  `adaptive_avg_pool2d(...) <functional/adaptive_avg_pool2d.html>`_
+  : Apply the 2d adaptive average pooling to input.
+
+  `adaptive_avg_pool3d(...) <functional/adaptive_avg_pool3d.html>`_
+  : Apply the 3d adaptive average pooling to input.
+
+  `adaptive_max_pool1d(...) <functional/adaptive_max_pool1d.html>`_
+  : Apply the 1d adaptive max pooling to input.
+
+  `adaptive_max_pool2d(...) <functional/adaptive_max_pool2d.html>`_
+  : Apply the 2d adaptive max pooling to input.
+
+  `adaptive_max_pool3d(...) <functional/adaptive_max_pool3d.html>`_
+  : Apply the 3d adaptive max pooling to input.
+
   `avg_pool1d(...) <functional/avg_pool1d.html>`_
   : Apply the 1d average pooling to input.
 
@@ -167,6 +185,12 @@ vm.torch.nn.functional
 .. toctree::
   :hidden:
 
+  functional/adaptive_avg_pool1d
+  functional/adaptive_avg_pool2d
+  functional/adaptive_avg_pool3d
+  functional/adaptive_max_pool1d
+  functional/adaptive_max_pool2d
+  functional/adaptive_max_pool3d
   functional/avg_pool1d
   functional/avg_pool2d
   functional/avg_pool3d

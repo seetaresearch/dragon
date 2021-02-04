@@ -85,25 +85,25 @@ class Dense(layer.Layer):
             raise AssertionError('The input dimension must be rank 2.'
                                  'Please reshape or flatten it.')
         if self.in_channels:
-            shape = [self.n_units, self.in_channels]
+            shape = [self.in_channels, self.n_units]
         else:
             self.in_channels = inputs_shape[1]
-            shape = [self.n_units, inputs_shape[1]]
+            shape = [inputs_shape[1], self.n_units]
         self.W = self.add_weight(
-            name="weights",
+            name='weights',
             shape=shape,
             init=self.W_init,
         )
         if self.b_init:
             self.b = self.add_weight(
-                name="biases",
+                name='biases',
                 shape=[self.n_units],
                 init=self.b_init,
             )
 
     def forward(self, inputs):
-        outputs = math_ops.fully_connected(
-            [inputs, self.W] + ([self.b] if self.b_init else []), axis=1)
+        outputs = math_ops.gemm(
+            [inputs, self.W] + ([self.b] if self.b_init else []))
         if self.act:
             outputs = self.act(outputs)
         return outputs

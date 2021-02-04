@@ -6,6 +6,24 @@ vm.torch.nn
   Classes
   -------
 
+  `class AdaptiveAvgPool1d <nn/AdaptiveAvgPool1d.html>`_
+  : Apply the 1d adaptive average pooling.
+
+  `class AdaptiveAvgPool2d <nn/AdaptiveAvgPool2d.html>`_
+  : Apply the 2d adaptive average pooling.
+
+  `class AdaptiveAvgPool3d <nn/AdaptiveAvgPool3d.html>`_
+  : Apply the 3d adaptive average pooling.
+
+  `class AdaptiveMaxPool1d <nn/AdaptiveMaxPool1d.html>`_
+  : Apply the 1d adaptive max pooling.
+
+  `class AdaptiveMaxPool2d <nn/AdaptiveMaxPool2d.html>`_
+  : Apply the 2d adaptive max pooling.
+
+  `class AdaptiveMaxPool3d <nn/AdaptiveMaxPool3d.html>`_
+  : Apply the 3d adaptive max pooling.
+
   `class AffineChannel <nn/AffineChannel.html>`_
   : Apply affine transformation along the channels.
 
@@ -238,6 +256,12 @@ vm.torch.nn
 .. toctree::
   :hidden:
 
+  nn/AdaptiveAvgPool1d
+  nn/AdaptiveAvgPool2d
+  nn/AdaptiveAvgPool3d
+  nn/AdaptiveMaxPool1d
+  nn/AdaptiveMaxPool2d
+  nn/AdaptiveMaxPool3d
   nn/AffineChannel
   nn/AvgPool1d
   nn/AvgPool2d

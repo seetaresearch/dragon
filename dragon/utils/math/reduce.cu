@@ -174,7 +174,7 @@ DEFINE_REDUCE_DISPATCHER(Sum);
 // We found that FP16 accumulator drops too many small values in
 // empirical experiments.
 template <>
-void ReduceSum<float16, CUDAContext>(
+DRAGON_API void ReduceSum<float16, CUDAContext>(
     const int num_dims,
     const int* dims,
     const int num_axes,
@@ -199,7 +199,7 @@ void ReduceSum<float16, CUDAContext>(
 
 #define DEFINE_KERNEL_LAUNCHER(name, T, AccT, Reducer, kInit)              \
   template <>                                                              \
-  void Reduce##name<T, CUDAContext>(                                       \
+  DRAGON_API void Reduce##name<T, CUDAContext>(                            \
       const int num_dims,                                                  \
       const int* dims,                                                     \
       const int num_axes,                                                  \

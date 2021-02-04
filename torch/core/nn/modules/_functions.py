@@ -86,7 +86,6 @@ class Pool(function.Function):
         self.pads = kwargs.get('pads', 0)
         self.ceil_mode = kwargs.get('ceil_mode', False)
         self.mode = kwargs.get('mode', 'MAX')
-        self.global_pool = kwargs.get('global_pool', False)
 
     def attributes(self):
         return {
@@ -98,7 +97,6 @@ class Pool(function.Function):
                 'ceil_mode': self.ceil_mode,
                 'mode': self.mode,
                 'data_format': 'NCHW',
-                'global_pool': self.global_pool,
             }
         }
 
@@ -314,24 +312,6 @@ class L2Loss(Loss):
                 'reduction': self.reduction,
             },
         }
-
-
-class Linear(function.Function):
-    """Linear function."""
-
-    def attributes(self):
-        return {
-            'op_type': 'FullyConnected',
-            'arguments': {
-                'axis': -1,
-                'transW': True,
-            },
-        }
-
-    def forward(self, input, weight, bias=None, out=None):
-        inputs = [input, weight] + ([bias] if bias else [])
-        outputs = [out] if out else [self.alloc()]
-        return self.dispatch(inputs, outputs)
 
 
 class LocalResponseNorm(function.Function):

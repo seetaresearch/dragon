@@ -1868,22 +1868,22 @@ class TestMathOps(OpTestCase):
         with dragon.device('cuda'):
             self.test_floor()
 
-    def test_fully_connected(self):
+    def test_gemm(self):
         entries = [((2, 3), (3, 4), (4,), False),
                    ((2, 3), (4, 3), (4,), True)]
         for execution in ('EAGER_MODE', 'GRAPH_MODE'):
             with execution_context().mode(execution):
-                for x_shape, w_shape, b_shape, trans_w in entries:
+                for x_shape, w_shape, b_shape, trans_b in entries:
                     data1, data2, data3 = arange(x_shape), arange(w_shape), arange(b_shape)
                     x, w, b = new_tensor(data1), new_tensor(data2), new_tensor(data3)
                     with dragon.GradientTape() as tape:
                         tape.watch([x, w, b])
-                        y = dragon.nn.fully_connected([x, w, b], transpose_w=trans_w)
+                        y = dragon.math.gemm([x, w, b], transpose_b=trans_b)
                     data4 = arange(y.shape)
                     dy = new_tensor(data4)
                     dx, dw, db = tape.gradient(y, [x, w, b], output_gradients=[dy])
-                    result = np.matmul(data1, data2.T if trans_w else data2) + data3
-                    if trans_w:
+                    result = np.matmul(data1, data2.T if trans_b else data2) + data3
+                    if trans_b:
                         grad1 = np.matmul(data4, data2)
                         grad2 = np.matmul(data4.T, data1)
                     else:
@@ -1894,9 +1894,9 @@ class TestMathOps(OpTestCase):
                         [result, grad1, grad2, reduce_like(data4, data3)])
 
     @unittest.skipIf(not TEST_CUDA, 'CUDA unavailable')
-    def test_fully_connected_cuda(self):
+    def test_gemm_cuda(self):
         with dragon.device('cuda'):
-            self.test_fully_connected()
+            self.test_gemm()
 
     def test_greater(self):
         for execution in ('EAGER_MODE', 'GRAPH_MODE'):
@@ -1997,40 +1997,62 @@ class TestMathOps(OpTestCase):
             self.test_log()
 
     def test_matmul(self):
-        entries = [
-            ((2, 3), (3, 4), False, False),
-            ((2, 3), (4, 3), False, True),
-            ((3, 2), (3, 4), True, False),
-            ((3, 2), (4, 3), True, True)]
-        for execution in ('EAGER_MODE', 'GRAPH_MODE'):
+        entries = [((2, 3), (3, 4)),
+                   ((1, 2, 3), (2, 3, 4)),
+                   ((2, 2, 3), (1, 3, 4)),
+                   ((2, 2, 3), (2, 3, 4)),
+                   ((2, 1, 2, 3), (2, 3, 4)),
+                   ((1, 2, 3), (2, 2, 3, 4)),
+                   ((2, 1, 2, 3), (1, 2, 3, 4))]
+        for execution in ('EAGER_MODE', 'GRAPH_MODE',):
             with execution_context().mode(execution):
-                for a_shape, b_shape, trans_a, trans_b in entries:
+                for a_shape, b_shape in entries:
                     data1, data2 = arange(a_shape), arange(b_shape)
                     a, b = new_tensor(data1), new_tensor(data2)
                     with dragon.GradientTape() as tape:
                         tape.watch([a, b])
-                        y = dragon.math.matmul([a, b], trans_a, trans_b)
+                        y = dragon.math.matmul([a, b])
                     data3 = arange(y.shape)
                     dy = new_tensor(data3)
                     da, db = tape.gradient(y, [a, b], output_gradients=[dy])
-                    if trans_a:
-                        if trans_b:
-                            grad1 = np.matmul(data2.T, data3.T)
-                            grad2 = np.matmul(data3.T, data1.T)
-                        else:
-                            grad1 = np.matmul(data2, data3.T)
-                            grad2 = np.matmul(data1, data3)
-                    else:
-                        if trans_b:
-                            grad1 = np.matmul(data3, data2)
-                            grad2 = np.matmul(data3.T, data1)
-                        else:
-                            grad1 = np.matmul(data3, data2.T)
-                            grad2 = np.matmul(data1.T, data3)
+                    grad1 = np.matmul(data3, transpose_last(data2, 2))
+                    grad2 = np.matmul(transpose_last(data1, 2), data3)
                     self.assertEqual(
                         [y, da, db],
-                        [np.matmul(data1.T if trans_a else data1,
-                                   data2.T if trans_b else data2), grad1, grad2])
+                        [np.matmul(data1, data2),
+                         reduce_like(grad1, data1),
+                         reduce_like(grad2, data2)])
+        entries = [((2,), (2,), (2, 1), (2, 1), (1, 1)),
+                   ((2,), (2, 3), (2, 1), (2, 3), (1, 3)),
+                   ((2, 3), (3,), (2, 3), (1, 3), (2, 1)),
+                   ((2,), (4, 2, 3), (1, 2, 1), (4, 2, 3), (4, 1, 3)),
+                   ((4, 2, 3), (3,), (4, 2, 3), (1, 1, 3), (4, 2, 1))]
+        for execution in ('EAGER_MODE', 'GRAPH_MODE'):
+            with execution_context().mode(execution):
+                for a_shape, b_shape, da_shape, db_shape, dy_shape in entries:
+                    data1, data2 = arange(a_shape), arange(b_shape)
+                    data4 = data1 if len(a_shape) > len(b_shape) else data2
+                    a, b = new_tensor(data1), new_tensor(data2)
+                    with dragon.GradientTape() as tape:
+                        tape.watch([a, b])
+                        y = dragon.math.matmul([a, b])
+                    data3 = arange(y.shape)
+                    dy = new_tensor(data3)
+                    da, db = tape.gradient(y, [a, b], output_gradients=[dy])
+                    grad1 = data3.reshape(dy_shape) * data2.reshape(db_shape)
+                    grad2 = data1.reshape(da_shape) * data3.reshape(dy_shape)
+                    grad1_axes, grad2_axes = [], []
+                    for i in range(len(dy_shape)):
+                        if da_shape[i] != db_shape[i]:
+                            if da_shape[i] == 1:
+                                grad1_axes.append(i)
+                            if db_shape[i] == 1:
+                                grad2_axes.append(i)
+                    self.assertEqual(
+                        [y, da, db],
+                        [np.matmul(data1, data2),
+                         reduce(grad1, tuple(grad1_axes)).reshape(data1.shape),
+                         reduce(grad2, tuple(grad2_axes)).reshape(data2.shape)])
 
     @unittest.skipIf(not TEST_CUDA, 'CUDA unavailable')
     def test_matmul_cuda(self):
@@ -4143,6 +4165,16 @@ def reduce_like(data, other, reduction='sum'):
             else:
                 raise ValueError('Unknown reduction:', reduction)
     return data
+
+
+def transpose_last(data, num_axes=None, axes=None):
+    """Transpose the last axes of data."""
+    if axes is None and num_axes is not None:
+        axes = list(range(num_axes))[::-1]
+    perm = list(range(len(data.shape)))
+    start_axis = len(perm) - len(axes)
+    perm[start_axis:] = [v + start_axis for v in axes]
+    return np.transpose(data, perm)
 
 
 def uniform(shape, dtype='float32'):

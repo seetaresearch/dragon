@@ -48,7 +48,7 @@ class Identity(Module):
 class Linear(Module):
     r"""Apply the linear transformation.
 
-    .. math:: y = Wx + b
+    .. math:: \text{out} = \text{input} \times \text{weight}^{T} + \text{bias}
 
     Examples:
 

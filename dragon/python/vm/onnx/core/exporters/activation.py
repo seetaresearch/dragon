@@ -44,13 +44,6 @@ def hardsigmoid_exporter(op_def, context):
     return node, const_tensors
 
 
-@export_util.register('PRelu')
-def prelu_exporter(op_def, context):
-    node, const_tensors = export_util.translate(**locals())
-    const_tensors = [helper.from_tensor(op_def.input[1], context.ws)]
-    return node, const_tensors
-
-
 @export_util.register('Relu')
 def relu_exporter(op_def, context):
     node, const_tensors = export_util.translate(**locals())

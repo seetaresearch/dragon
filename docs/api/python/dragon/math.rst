@@ -48,6 +48,9 @@ dragon.math
   `floor(...) <math/floor.html>`_
   : Compute the largest integer not greater than input.
 
+  `gemm(...) <math/gemm.html>`_
+  : Compute the general matrix multiplication.
+
   `greater(...) <math/greater.html>`_
   : Compute the element-wise greater comparison.
 
@@ -158,6 +161,7 @@ dragon.math
   math/equal
   math/exp
   math/floor
+  math/gemm
   math/greater
   math/greater_equal
   math/is_inf

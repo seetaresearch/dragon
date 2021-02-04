@@ -34,7 +34,7 @@ def abs(input, out=None):
     input : dragon.vm.torch.Tensor
         The input tensor.
     out : dragon.vm.torch.Tensor, optional
-        The optional output tensor.
+        The output tensor.
 
     Returns
     -------
@@ -59,7 +59,7 @@ def axpby(input, alpha=1., beta=1., out=None):
     beta : float, optional, default=1.
         The value to :math:`\beta`.
     out : dragon.vm.torch.Tensor, optional
-        The optional output tensor.
+        The output tensor.
 
     Returns
     -------
@@ -87,7 +87,7 @@ def add(input, other, out=None):
     other : Union[dragon.vm.torch.Tensor, number]
         The tensor to add.
     out : dragon.vm.torch.Tensor, optional
-        The optional output tensor.
+        The output tensor.
 
     Returns
     -------
@@ -96,6 +96,74 @@ def add(input, other, out=None):
 
     """
     return _binary_func(input, other, 'Add', out)
+
+
+def addmm(input, mat1, mat2, beta=1, alpha=1, out=None):
+    r"""Add input to the result of matrix-matrix multiplication.
+
+    .. math:: \text{out} = \alpha (\text{mat1} \times \text{mat2}) + \beta \text{input}
+
+    Parameters
+    ----------
+    input : dragon.vm.torch.Tensor
+        The input tensor.
+    mat1 : dragon.vm.torch.Tensor
+        The first matrix.
+    mat2 : dragon.vm.torch.Tensor
+        The second matrix.
+    beta : float, optional, default=1
+        The value to :math:`\beta`.
+    alpha : float, optional, default=1
+        The value to :math:`\alpha`.
+    out : dragon.vm.torch.Tensor, optional
+        The output tensor.
+
+    Returns
+    -------
+    dragon.vm.torch.Tensor
+        The output tensor.
+
+    """
+    return _functions.Gemm \
+        .instantiate(
+            input.device,
+            alpha=float(alpha),
+            beta=float(beta),
+        ).apply(mat1, mat2, input, out=out)
+
+
+def baddbmm(input, batch1, batch2, beta=1, alpha=1, out=None):
+    r"""Add input to the result of batched matrix-matrix multiplication.
+
+    .. math::
+        \text{out}_{i} = \alpha (\text{mat1}_{i} \times \text{mat2}_{i}) +
+                         \beta \text{input}_{i}
+
+    Parameters
+    ----------
+    input : dragon.vm.torch.Tensor
+        The input tensor.
+    batch1 : dragon.vm.torch.Tensor
+        The first batch of matrices.
+    batch2 : dragon.vm.torch.Tensor
+        The second batch of matrices.
+    beta : float, optional, default=1
+        The value to :math:`\beta`.
+    alpha : float, optional, default=1
+        The value to :math:`\alpha`.
+    out : dragon.vm.torch.Tensor, optional
+        The output tensor.
+
+    Returns
+    -------
+    dragon.vm.torch.Tensor
+        The output tensor.
+
+    """
+    input1 = bmm(batch1, batch2)
+    input2 = input * beta if beta != 1 else input
+    input1 = input1 * alpha if alpha != 1 else input1
+    return add(input1, input2, out)
 
 
 def bitwise_not(input, out=None):
@@ -120,7 +188,7 @@ def bitwise_not(input, out=None):
     input : dragon.vm.torch.Tensor
         The input tensor.
     out : dragon.vm.torch.Tensor, optional
-        The optional output tensor.
+        The output tensor.
 
     Returns
     -------
@@ -152,7 +220,7 @@ def bitwise_xor(input, other, out=None):
     other : dragon.vm.torch.Tensor
         The second input tensor.
     out : dragon.vm.torch.Tensor, optional
-        The optional output tensor.
+        The output tensor.
 
     Returns
     -------
@@ -161,6 +229,31 @@ def bitwise_xor(input, other, out=None):
 
     """
     return _binary_func(input, other, 'Sub', out)
+
+
+def bmm(input, mat2, out=None):
+    r"""Compute the batched matrix-matrix multiplication.
+
+    .. math:: \text{out}_{i} = \text{input}_{i} \times \text{mat2}_{i}
+
+    Parameters
+    ----------
+    input : dragon.vm.torch.Tensor
+        The first batch of matrices.
+    mat2 : dragon.vm.torch.Tensor
+        The second batch of matrices.
+    out : dragon.vm.torch.Tensor, optional
+        The output tensor.
+
+    Returns
+    -------
+    dragon.vm.torch.Tensor
+        The output tensor.
+
+    """
+    return _functions.BinaryFunc \
+        .instantiate(input.device, op_type='MatMul') \
+        .apply(input, mat2, out=out)
 
 
 def ceil(input, out=None):
@@ -180,7 +273,7 @@ def ceil(input, out=None):
     input : dragon.vm.torch.Tensor
         The input tensor.
     out : dragon.vm.torch.Tensor, optional
-        The optional output tensor.
+        The output tensor.
 
     Returns
     -------
@@ -205,7 +298,7 @@ def clamp(input, min=None, max=None, out=None):
     max : number, optional
         The max value.
     out : dragon.vm.torch.Tensor, optional
-        The optional output tensor.
+        The output tensor.
 
     Returns
     -------
@@ -238,7 +331,7 @@ def cos(input, out=None):
     input : dragon.vm.torch.Tensor
         The input tensor.
     out : dragon.vm.torch.Tensor, optional
-        The optional output tensor.
+        The output tensor.
 
     Returns
     -------
@@ -261,7 +354,7 @@ def div(input, other, out=None):
     other : Union[dragon.vm.torch.Tensor, number]
         The tensor to divide.
     out : dragon.vm.torch.Tensor, optional
-        The optional output tensor.
+        The output tensor.
 
     Returns
     -------
@@ -284,7 +377,7 @@ def eq(input, other, out=None):
     other : Union[dragon.vm.torch.Tensor, number]
         The tensor to compare.
     out : dragon.vm.torch.Tensor, optional
-        The optional output tensor.
+        The output tensor.
 
     Returns
     -------
@@ -305,7 +398,7 @@ def exp(input, out=None):
     input : dragon.vm.torch.Tensor
         The input tensor.
     out : dragon.vm.torch.Tensor, optional
-        The optional output tensor.
+        The output tensor.
 
     Returns
     -------
@@ -333,7 +426,7 @@ def floor(input, out=None):
     input : dragon.vm.torch.Tensor
         The input tensor.
     out : dragon.vm.torch.Tensor, optional
-        The optional output tensor.
+        The output tensor.
 
     Returns
     -------
@@ -356,7 +449,7 @@ def ge(input, other, out=None):
     other : Union[dragon.vm.torch.Tensor, number]
         The tensor to compare.
     out : dragon.vm.torch.Tensor, optional
-        The optional output tensor.
+        The output tensor.
 
     Returns
     -------
@@ -379,7 +472,7 @@ def gt(input, other, out=None):
     other : Union[dragon.vm.torch.Tensor, number]
         The tensor to compare.
     out : dragon.vm.torch.Tensor, optional
-        The optional output tensor.
+        The output tensor.
 
     Returns
     -------
@@ -454,7 +547,7 @@ def le(input, other, out=None):
     other : Union[dragon.vm.torch.Tensor, number]
         The tensor to compare.
     out : dragon.vm.torch.Tensor, optional
-        The optional output tensor.
+        The output tensor.
 
     Returns
     -------
@@ -475,7 +568,7 @@ def log(input, out=None):
     input : dragon.vm.torch.Tensor
         The input tensor.
     out : dragon.vm.torch.Tensor, optional
-        The optional output tensor.
+        The output tensor.
 
     Returns
     -------
@@ -523,7 +616,7 @@ def lt(input, other, out=None):
     other : Union[dragon.vm.torch.Tensor, number]
         The tensor to compare.
     out : dragon.vm.torch.Tensor, optional
-        The optional output tensor.
+        The output tensor.
 
     Returns
     -------
@@ -532,6 +625,60 @@ def lt(input, other, out=None):
 
     """
     return _binary_func(input, other, 'Less', out)
+
+
+def matmul(input, other, out=None):
+    r"""Compute the matrix multiplication.
+
+    .. math:: \text{out} = \text{input} \times \text{other}
+
+    The behavior depends on the shape of input tensors:
+
+    * If both tensors are 1d, computes the vector product.
+    * If tensors are 1d and >=2d, computes the vector-matrix multiplication.
+    * If tensors are >=2d and 1d, computes the matrix-vector multiplication.
+    * If both tensors are >= 2d, computes the matrix-matrix multiplication.
+    * If one tensor is >= 3d, applies batching and broadcasting to the computation.
+
+    Examples:
+
+    ```python
+    # Vector x Vector
+    a = torch.ones(2)
+    b = torch.ones(2)
+    print(torch.matmul(a, b))
+    # Vector x Matrix
+    a = torch.ones(2)
+    b = torch.ones(2, 3)
+    print(torch.matmul(a, b))
+    # Matrix x Vector
+    a = torch.ones(3, 2)
+    b = torch.ones(2)
+    print(torch.matmul(a, b))
+    # Matrix x Matrix
+    a = torch.ones(2, 3)
+    b = torch.ones(3, 2)
+    print(torch.matmul(a, b))
+    ```
+
+    Parameters
+    ----------
+    input : dragon.vm.torch.Tensor
+        The input tensor.
+    other : dragon.vm.torch.Tensor
+        The tensor to multiply.
+    out : dragon.vm.torch.Tensor, optional
+        The output tensor.
+
+    Returns
+    -------
+    dragon.Tensor
+        The output tensor.
+
+    """
+    return _functions.BinaryFunc \
+        .instantiate(input.device, op_type='MatMul') \
+        .apply(input, other, out=out)
 
 
 def maximum(input, other, out=None):
@@ -546,7 +693,7 @@ def maximum(input, other, out=None):
     other : Union[dragon.vm.torch.Tensor, number]
         The second input tensor.
     out : dragon.vm.torch.Tensor, optional
-        The optional output tensor.
+        The output tensor.
 
     Returns
     -------
@@ -575,7 +722,7 @@ def minimum(input, other, out=None):
     other : Union[dragon.vm.torch.Tensor, number]
         The second input tensor.
     out : dragon.vm.torch.Tensor, optional
-        The optional output tensor.
+        The output tensor.
 
     Returns
     -------
@@ -586,13 +733,11 @@ def minimum(input, other, out=None):
     input, other = utils \
         .remove_binary_scalar(input, other)
     return _functions.BinaryFunc \
-        .instantiate(
-            input.device,
-            op_type='Minimum',
-        ).apply(input, other, out)
+        .instantiate(input.device, op_type='Minimum') \
+        .apply(input, other, out)
 
 
-def mm(input, mat2, transpose_a=False, transpose_b=False, out=None):
+def mm(input, mat2, out=None):
     r"""Compute the matrix-matrix multiplication.
 
     .. math:: \text{out} = \text{input} \times \text{mat2}
@@ -603,12 +748,8 @@ def mm(input, mat2, transpose_a=False, transpose_b=False, out=None):
         The first matrix.
     mat2 : dragon.vm.torch.Tensor
         The second matrix.
-    transpose_a : bool, optional, default=False
-        Transpose the first matrix before computation or not.
-    transpose_b : bool, optional, default=False
-        Transpose the second matrix before computation or not.
     out : dragon.vm.torch.Tensor, optional
-        The optional output.
+        The output tensor.
 
     Returns
     -------
@@ -616,12 +757,9 @@ def mm(input, mat2, transpose_a=False, transpose_b=False, out=None):
         The output tensor.
 
     """
-    return _functions.MatMul \
-        .instantiate(
-            utils.unify_devices([input, mat2]),
-            transpose_a=transpose_a,
-            transpose_b=transpose_b,
-        ).apply(input, mat2, out)
+    return _functions.Gemm \
+        .instantiate(input.device) \
+        .apply(input, mat2, out=out)
 
 
 def mul(input, other, out=None):
@@ -636,7 +774,7 @@ def mul(input, other, out=None):
     other : Union[dragon.vm.torch.Tensor, number]
         The tensor to multiply.
     out : dragon.vm.torch.Tensor, optional
-        The optional output tensor.
+        The output tensor.
 
     Returns
     -------
@@ -659,7 +797,7 @@ def ne(input, other, out=None):
     other : Union[dragon.vm.torch.Tensor, number]
         The tensor to compare.
     out : dragon.vm.torch.Tensor, optional
-        The optional output tensor.
+        The output tensor.
 
     Returns
     -------
@@ -680,7 +818,7 @@ def neg(input, out=None):
     input : dragon.vm.torch.Tensor
         The input tensor.
     out : dragon.vm.torch.Tensor, optional
-        The optional output tensor.
+        The output tensor.
 
     Returns
     -------
@@ -712,7 +850,7 @@ def pow(input, exponent, out=None):
     exponent : Union[dragon.vm.torch.Tensor, number]
         The exponent tensor.
     out : dragon.vm.torch.Tensor, optional
-        The optional output tensor.
+        The output tensor.
 
     Returns
     -------
@@ -740,7 +878,7 @@ def reciprocal(input, out=None):
     input : dragon.vm.torch.Tensor
         The input tensor.
     out : dragon.vm.torch.Tensor, optional
-        The optional output tensor.
+        The output tensor.
 
     Returns
     -------
@@ -768,7 +906,7 @@ def round(input, out=None):
     input : dragon.vm.torch.Tensor
         The input tensor.
     out : dragon.vm.torch.Tensor, optional
-        The optional output tensor.
+        The output tensor.
 
     Returns
     -------
@@ -796,7 +934,7 @@ def rsqrt(input, out=None):
     input : dragon.vm.torch.Tensor
         The input tensor.
     out : dragon.vm.torch.Tensor, optional
-        The optional output tensor.
+        The output tensor.
 
     Returns
     -------
@@ -830,7 +968,7 @@ def sign(input, out=None):
     input : dragon.vm.torch.Tensor
         The input tensor.
     out : dragon.vm.torch.Tensor, optional
-        The optional output tensor.
+        The output tensor.
 
     Returns
     -------
@@ -858,7 +996,7 @@ def sin(input, out=None):
     input : dragon.vm.torch.Tensor
         The input tensor.
     out : dragon.vm.torch.Tensor, optional
-        The optional output tensor.
+        The output tensor.
 
     Returns
     -------
@@ -886,7 +1024,7 @@ def sqrt(input, out=None):
     input : dragon.vm.torch.Tensor
         The input tensor.
     out : dragon.vm.torch.Tensor, optional
-        The optional output tensor.
+        The output tensor.
 
     Returns
     -------
@@ -909,7 +1047,7 @@ def sub(input, other, out=None):
     other : Union[dragon.vm.torch.Tensor, number]
         The tensor to subtract.
     out : dragon.vm.torch.Tensor, optional
-        The optional output tensor.
+        The output tensor.
 
     Returns
     -------

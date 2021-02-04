@@ -217,18 +217,18 @@ DEFINE_REDUCE_FUNC(Sum);
 
 /* ------------------- Launcher Separator ------------------- */
 
-#define DEFINE_KERNEL_LAUNCHER(name)      \
-  template <>                             \
-  void Reduce##name<float16, CPUContext>( \
-      const int num_dims,                 \
-      const int* dims,                    \
-      const int num_axes,                 \
-      const int* axes,                    \
-      const float scale,                  \
-      const float16* x,                   \
-      float16* y,                         \
-      CPUContext* ctx) {                  \
-    CPU_FP16_NOT_SUPPORTED;               \
+#define DEFINE_KERNEL_LAUNCHER(name)                 \
+  template <>                                        \
+  DRAGON_API void Reduce##name<float16, CPUContext>( \
+      const int num_dims,                            \
+      const int* dims,                               \
+      const int num_axes,                            \
+      const int* axes,                               \
+      const float scale,                             \
+      const float16* x,                              \
+      float16* y,                                    \
+      CPUContext* ctx) {                             \
+    CPU_FP16_NOT_SUPPORTED;                          \
   }
 
 DEFINE_KERNEL_LAUNCHER(Max);
@@ -258,7 +258,7 @@ DRAGON_API float16 Sum<float16, CPUContext>(
 
 #define DEFINE_KERNEL_LAUNCHER(name, T)                         \
   template <>                                                   \
-  void Reduce##name<T, CPUContext>(                             \
+  DRAGON_API void Reduce##name<T, CPUContext>(                  \
       const int num_dims,                                       \
       const int* dims,                                          \
       const int num_axes,                                       \
@@ -298,7 +298,7 @@ DEFINE_KERNEL_LAUNCHER(Sum, double);
     *y = val * T(scale);                                                   \
   }                                                                        \
   template <>                                                              \
-  T Sum<T, CPUContext>(                                                    \
+  DRAGON_API T Sum<T, CPUContext>(                                         \
       const int n, const float scale, const T* x, CPUContext* ctx) {       \
     T val = ConstEigenVectorArrayMap<T>(x, n).sum();                       \
     return val * T(scale);                                                 \

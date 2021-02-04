@@ -25,7 +25,7 @@ from dragon.vm.onnx.core.exporters import utils as export_util
     'ConvTranspose',
     'DepthwiseConv',
 ])
-def convolution(op_def, context):
+def conv_exporter(op_def, context):
     node, const_tensors = export_util.translate(**locals())
     node.op_type = 'ConvTranspose' if 'Transpose' in op_def.type else 'Conv'
     if 'Depthwise' in op_def.type:
@@ -58,8 +58,6 @@ def convolution(op_def, context):
             helper.add_attribute(node, 'output_shape', arg.ints)
         elif arg.name == 'output_padding':
             helper.add_attribute(node, 'output_padding', arg.ints)
-    # Weights and biases
-    const_tensors = [helper.from_tensor(e, context.ws) for e in op_def.input[1:]]
     return node, const_tensors
 
 

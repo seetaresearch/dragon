@@ -79,7 +79,7 @@ Name                     Supported Reference
 `Gather`_                |v|       :func:`dragon.index_select`
 `GatherElements`_
 `GatherND`_
-`Gemm`_                  |v|       :func:`dragon.nn.fully_connected`
+`Gemm`_                  |v|       :func:`dragon.math.gemm`
 `GlobalAveragePool`_     |v|       :func:`dragon.nn.pool2d`
 `GlobalLpPool`_
 `GlobalMaxPool`_         |v|       :func:`dragon.nn.pool2d`

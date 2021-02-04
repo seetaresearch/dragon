@@ -80,20 +80,26 @@ class Clip(Operator):
         return self.dispatch(inputs, [self.alloc()])
 
 
-class FullyConnected(Operator):
+class Gemm(Operator):
     """FullyConnected operator."""
 
     def __init__(self, key, dev, **kwargs):
-        super(FullyConnected, self).__init__(key, dev, **kwargs)
-        self.axis = kwargs.get('axis', 1)
-        self.transpose_w = kwargs.get('transpose_w', True)
+        super(Gemm, self).__init__(key, dev, **kwargs)
+        self.axis = kwargs.get('axis', -1)
+        self.alpha = kwargs.get('alpha', 1.0)
+        self.beta = kwargs.get('beta', 1.0)
+        self.transpose_a = kwargs.get('transpose_a', False)
+        self.transpose_b = kwargs.get('transpose_b', False)
 
     def attributes(self):
         return {
-            'op_type': 'FullyConnected',
+            'op_type': 'Gemm',
             'arguments': {
                 'axis': self.axis,
-                'transW': self.transpose_w,
+                'alpha': self.alpha,
+                'beta': self.beta,
+                'transA': self.transpose_a,
+                'transB': self.transpose_b,
             }
         }
 
@@ -104,18 +110,10 @@ class FullyConnected(Operator):
 class MatMul(Operator):
     """MatMul operator."""
 
-    def __init__(self, key, dev, **kwargs):
-        super(MatMul, self).__init__(key, dev, **kwargs)
-        self.transpose_a = kwargs.get('transpose_a', False)
-        self.transpose_b = kwargs.get('transpose_b', False)
-
     def attributes(self):
         return {
             'op_type': 'MatMul',
-            'arguments': {
-                'transA': self.transpose_a,
-                'transB': self.transpose_b,
-            }
+            'arguments': {},
         }
 
     def forward(self, inputs):

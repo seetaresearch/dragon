@@ -85,6 +85,35 @@ def add_(self, other):
     return math_funcs.add(self, other, self)
 
 
+def addmm(self, mat1, mat2, beta=1, alpha=1):
+    r"""Add the result of matrix-matrix multiplication.
+
+    .. math:: \text{out} = \alpha (\text{mat1} \times \text{mat2}) + \beta \text{self}
+
+    Parameters
+    ----------
+    mat1 : dragon.vm.torch.Tensor
+        The first matrix.
+    mat2 : dragon.vm.torch.Tensor
+        The second matrix.
+    beta : float, optional, default=1
+        The value to :math:`\beta`.
+    alpha : float, optional, default=1
+        The value to :math:`\alpha`.
+
+    Returns
+    -------
+    dragon.vm.torch.Tensor
+        The output tensor.
+
+    See Also
+    --------
+    `torch.addmm(...)`_
+
+    """
+    return math_funcs.addmm(self, mat1, mat2, beta=beta, alpha=alpha)
+
+
 def argmax(self, dim=None, keepdim=False):
     """Return the index of maximum elements.
 
@@ -152,6 +181,71 @@ def argsort(self, dim=-1, descending=False):
 
     """
     return array_funcs.argsort(self, dim, descending)
+
+
+def baddbmm(self, batch1, batch2, beta=1, alpha=1):
+    r"""Add the result of batched matrix-matrix multiplication.
+
+    .. math::
+        \text{out}_{i} = \alpha (\text{batch1}_{i} \times \text{batch2}_{i}) +
+                         \beta \text{self}_{i}
+
+    Parameters
+    ----------
+    batch1 : dragon.vm.torch.Tensor
+        The first batch of matrices.
+    batch2 : dragon.vm.torch.Tensor
+        The second batch of matrices.
+    beta : float, optional, default=1
+        The value to :math:`\beta`.
+    alpha : float, optional, default=1
+        The value to :math:`\alpha`.
+
+    Returns
+    -------
+    dragon.vm.torch.Tensor
+        The output tensor.
+
+    See Also
+    --------
+    `torch.baddbmm(...)`_
+
+    """
+    return math_funcs.baddbmm(self, batch1, batch2, beta=beta, alpha=alpha)
+
+
+def baddbmm_(self, batch1, batch2, beta=1, alpha=1):
+    r"""Add the result of batched matrix-matrix multiplication.
+
+    .. math::
+        \text{self}_{i} = \alpha (\text{batch1}_{i} \times \text{batch2}_{i}) +
+                         \beta \text{self}_{i}
+
+    Parameters
+    ----------
+    batch1 : dragon.vm.torch.Tensor
+        The first batch of matrices.
+    batch2 : dragon.vm.torch.Tensor
+        The second batch of matrices.
+    beta : float, optional, default=1
+        The value to :math:`\beta`.
+    alpha : float, optional, default=1
+        The value to :math:`\alpha`.
+
+    Returns
+    -------
+    dragon.vm.torch.Tensor
+        The output tensor.
+
+    See Also
+    --------
+    `torch.baddbmm(...)`_
+
+    """
+    return math_funcs.baddbmm(
+        self, batch1, batch2,
+        beta=beta, alpha=alpha, out=self,
+    )
 
 
 def backward(self, gradient=None, retain_graph=False):
@@ -252,6 +346,29 @@ def bitwise_xor_(self, other):
 
     """
     return math_funcs.bitwise_xor(self, other, self)
+
+
+def bmm(self, batch2):
+    r"""Compute the batched matrix multiplication.
+
+    .. math:: \text{out}_{i} = \text{self}_{i} \times \text{batch2}_{i}
+
+    Parameters
+    ----------
+    batch2 : dragon.vm.torch.Tensor
+        The second batch of matrices.
+
+    Returns
+    -------
+    dragon.Tensor
+        The output tensor.
+
+    See Also
+    --------
+    `torch.bmm(...)`_
+
+    """
+    return math_funcs.bmm(self, batch2)
 
 
 def bool(self):
@@ -719,50 +836,6 @@ def floor_(self):
     return math_funcs.floor(self, self)
 
 
-def new_full(
-    self,
-    size,
-    fill_value,
-    dtype=None,
-    device=None,
-    requires_grad=False,
-):
-    """Return a tensor filled with a scalar.
-
-    Refer this tensor if ``dtype`` and ``device`` not provided.
-
-    Parameters
-    ----------
-    size : Sequence[int]
-        The size of output tensor.
-    fill_value : number
-        The scalar to fill.
-    dtype : str, optional
-        The optional data type.
-    device : dragon.vm.torch.device, optional
-        The optional device of returned tensor.
-    requires_grad : bool, optional, default=False
-        **True** to record gradient for returned tensor.
-
-    Returns
-    -------
-    dragon.vm.torch.Tensor
-        The output tensor.
-
-    See Also
-    --------
-    `torch.full(...)`_
-
-    """
-    return init_funcs.full(
-        size,
-        fill_value,
-        dtype=self.dtype if dtype is None else dtype,
-        device=self.device if device is None else device,
-        requires_grad=requires_grad,
-    )
-
-
 def ge(self, other):
     r"""Compute the element-wise greater-equal comparison.
 
@@ -1104,6 +1177,29 @@ def masked_select(self, mask):
     return array_funcs.masked_select(self, mask)
 
 
+def matmul(self, tensor2):
+    r"""Compute the matrix multiplication.
+
+    .. math:: \text{out} = \text{self} \times \text{tensor2}
+
+    Parameters
+    ----------
+    tensor2 : dragon.vm.torch.Tensor
+        The tensor to multiply.
+
+    Returns
+    -------
+    dragon.Tensor
+        The output tensor.
+
+    See Also
+    --------
+    `torch.matmul(...)`_
+
+    """
+    return math_funcs.matmul(self, tensor2)
+
+
 def max(self, dim=None, keepdim=False):
     """Compute the max value of elements along the given dimension.
 
@@ -1381,6 +1477,50 @@ def neg_(self):
 
     """
     return math_funcs.neg(self, self)
+
+
+def new_full(
+    self,
+    size,
+    fill_value,
+    dtype=None,
+    device=None,
+    requires_grad=False,
+):
+    """Return a tensor filled with a scalar.
+
+    Refer this tensor if ``dtype`` and ``device`` not provided.
+
+    Parameters
+    ----------
+    size : Sequence[int]
+        The size of output tensor.
+    fill_value : number
+        The scalar to fill.
+    dtype : str, optional
+        The optional data type.
+    device : dragon.vm.torch.device, optional
+        The optional device of returned tensor.
+    requires_grad : bool, optional, default=False
+        **True** to record gradient for returned tensor.
+
+    Returns
+    -------
+    dragon.vm.torch.Tensor
+        The output tensor.
+
+    See Also
+    --------
+    `torch.full(...)`_
+
+    """
+    return init_funcs.full(
+        size,
+        fill_value,
+        dtype=self.dtype if dtype is None else dtype,
+        device=self.device if device is None else device,
+        requires_grad=requires_grad,
+    )
 
 
 def nonzero(self):
@@ -1735,7 +1875,7 @@ def sort(self, dim=-1, descending=False):
 
 
 def split(self, split_size_or_sections, dim=0):
-    """Return the splited chunks along the given dimension.
+    """Return the split chunks along the given dimension.
 
     Parameters
     ----------
@@ -2132,14 +2272,18 @@ def _process_index(item):
 Tensor.abs = abs
 Tensor.add = add
 Tensor.add_ = add_
+Tensor.addmm = addmm
 Tensor.argmax = argmax
 Tensor.argmin = argmin
 Tensor.argsort = argsort
 Tensor.backward = backward
+Tensor.baddbmm = baddbmm
+Tensor.baddbmm_ = baddbmm_
 Tensor.bitwise_not = bitwise_not
 Tensor.bitwise_not_ = bitwise_not_
 Tensor.bitwise_xor = bitwise_xor
 Tensor.bitwise_xor_ = bitwise_xor_
+Tensor.bmm = bmm
 Tensor.bool = bool
 Tensor.bool_ = bool_
 Tensor.byte = byte
@@ -2184,6 +2328,7 @@ Tensor.logsumexp = logsumexp
 Tensor.lt = lt
 Tensor.masked_fill_ = masked_fill_
 Tensor.masked_select = masked_select
+Tensor.matmul = matmul
 Tensor.max = max
 Tensor.maximum = maximum
 Tensor.mean = mean

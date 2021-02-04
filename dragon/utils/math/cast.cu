@@ -23,7 +23,7 @@ __global__ void _Cast(const int nthreads, const InputT* x, OutputT* y) {
 
 #define DEFINE_CAST_KERNEL_LAUNCHER(InputT, OutputT)                \
   template <>                                                       \
-  void Cast<InputT, OutputT, CUDAContext>(                          \
+  DRAGON_API void Cast<InputT, OutputT, CUDAContext>(               \
       const int n, const InputT* x, OutputT* y, CUDAContext* ctx) { \
     _Cast<<<CUDA_BLOCKS(n), CUDA_THREADS, 0, ctx->cuda_stream()>>>( \
         n,                                                          \
@@ -33,14 +33,14 @@ __global__ void _Cast(const int nthreads, const InputT* x, OutputT* y) {
 
 #define DEFINE_UNSUPPORTED_KERNEL_LAUNCHER(InputT, OutputT)             \
   template <>                                                           \
-  void Cast<InputT, OutputT, CUDAContext>(                              \
+  DRAGON_API void Cast<InputT, OutputT, CUDAContext>(                   \
       const int n, const InputT* x, OutputT* y, CUDAContext* ctx) {     \
     LOG(FATAL) << "Unsupported conversion: "                            \
                << types::to_string(TypeMeta::Make<InputT>()) << " -> "  \
                << types::to_string(TypeMeta::Make<OutputT>());          \
   }                                                                     \
   template <>                                                           \
-  void Cast<OutputT, InputT, CUDAContext>(                              \
+  DRAGON_API void Cast<OutputT, InputT, CUDAContext>(                   \
       const int n, const OutputT* x, InputT* y, CUDAContext* ctx) {     \
     LOG(FATAL) << "Unsupported conversion: "                            \
                << types::to_string(TypeMeta::Make<OutputT>()) << " -> " \

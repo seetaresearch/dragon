@@ -315,12 +315,16 @@ class OneHot(function.Function):
     def __init__(self, key, dev, **kwargs):
         super(OneHot, self).__init__(key, dev, **kwargs)
         self.depth = kwargs.get('depth', 1)
+        self.on_value = kwargs.get('on_value', 1)
+        self.off_value = kwargs.get('off_value', 0)
 
     def attributes(self):
         return {
             'op_type': 'OneHot',
             'arguments': {
                 'depth': self.depth,
+                'on_value': self.on_value,
+                'off_value': self.off_value,
             },
         }
 

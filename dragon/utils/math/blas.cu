@@ -2,6 +2,7 @@
 
 #include "dragon/core/context_cuda.h"
 #include "dragon/utils/conversions.h"
+#include "dragon/utils/device/common_thrust.h"
 #include "dragon/utils/math/blas.h"
 
 namespace dragon {
@@ -456,8 +457,7 @@ DRAGON_API void Gemv<float16, CUDAContext>(
     const float16* x,
     const float beta,
     float16* y,
-    CUDAContext* ctx,
-    const string math_type) {
+    CUDAContext* ctx) {
   auto cuTransA = TransA == CblasNoTrans ? CUBLAS_OP_T : CUBLAS_OP_N;
   int m = cuTransA == CUBLAS_OP_N ? N : M;
   int k = cuTransA == CUBLAS_OP_N ? M : N;
@@ -465,52 +465,28 @@ DRAGON_API void Gemv<float16, CUDAContext>(
   int LDC = m;
   CUBLAS_CHECK(
       cublasSetPointerMode(ctx->cublas_handle(), CUBLAS_POINTER_MODE_HOST));
-  if (math_type == "float32") {
-#if CUDA_VERSION >= 9000
-    if (TENSOR_CORE_AVAILABLE()) {
-      // GEMV + MATH32 + TENSOR-CORE
-      CUBLAS_CHECK(cublasGemmEx(
-          ctx->cublas_handle(),
-          cuTransA,
-          CUBLAS_OP_N,
-          m,
-          1,
-          k,
-          &alpha,
-          A,
-          CUDA_R_16F,
-          LDA,
-          x,
-          CUDA_R_16F,
-          k,
-          &beta,
-          y,
-          CUDA_R_16F,
-          LDC,
-          CUDA_R_32F,
-          CUBLAS_GEMM_DEFAULT_TENSOR_OP));
-    } else {
-      // GEMV + MATH32 + DEFAULT
-      CUBLAS_CHECK(cublasSgemmEx(
-          ctx->cublas_handle(),
-          cuTransA,
-          CUBLAS_OP_N,
-          m,
-          1,
-          k,
-          &alpha,
-          A,
-          CUDA_R_16F,
-          LDA,
-          x,
-          CUDA_R_16F,
-          k,
-          &beta,
-          y,
-          CUDA_R_16F,
-          LDC));
-    }
-#else
+  if (TENSOR_CORE_AVAILABLE()) {
+    CUBLAS_CHECK(cublasGemmEx(
+        ctx->cublas_handle(),
+        cuTransA,
+        CUBLAS_OP_N,
+        m,
+        1,
+        k,
+        &alpha,
+        A,
+        CUDA_R_16F,
+        LDA,
+        x,
+        CUDA_R_16F,
+        k,
+        &beta,
+        y,
+        CUDA_R_16F,
+        LDC,
+        CUDA_R_32F,
+        CUBLAS_GEMM_DEFAULT_TENSOR_OP));
+  } else {
     CUBLAS_CHECK(cublasSgemmEx(
         ctx->cublas_handle(),
         cuTransA,
@@ -529,123 +505,44 @@ DRAGON_API void Gemv<float16, CUDAContext>(
         y,
         CUDA_R_16F,
         LDC));
-#endif
-  } else if (math_type == "float16") {
-    const half alpha_val = convert::To<half>(alpha);
-    const half beta_val = convert::To<half>(beta);
-#if CUDA_VERSION >= 9000
-    if (TENSOR_CORE_AVAILABLE()) {
-      // GEMV + MATH16 + TENSOR-CORE
-      CUBLAS_CHECK(cublasGemmEx(
-          ctx->cublas_handle(),
-          cuTransA,
-          CUBLAS_OP_N,
-          m,
-          1,
-          k,
-          &alpha_val,
-          A,
-          CUDA_R_16F,
-          LDA,
-          x,
-          CUDA_R_16F,
-          k,
-          &beta_val,
-          y,
-          CUDA_R_16F,
-          LDC,
-          CUDA_R_16F,
-          CUBLAS_GEMM_DEFAULT_TENSOR_OP));
-    } else {
-      // GEMV + MATH16 + DEFAULT
-      CUBLAS_CHECK(cublasHgemm(
-          ctx->cublas_handle(),
-          cuTransA,
-          CUBLAS_OP_N,
-          m,
-          1,
-          k,
-          &alpha_val,
-          reinterpret_cast<const half*>(A),
-          LDA,
-          reinterpret_cast<const half*>(x),
-          k,
-          &beta_val,
-          reinterpret_cast<half*>(y),
-          LDC));
-    }
-#else
-    CUBLAS_CHECK(cublasHgemm(
-        ctx->cublas_handle(),
-        cuTransA,
-        CUBLAS_OP_N,
-        m,
-        1,
-        k,
-        &alpha_val,
-        reinterpret_cast<const half*>(A),
-        LDA,
-        reinterpret_cast<const half*>(x),
-        k,
-        &beta_val,
-        reinterpret_cast<half*>(y),
-        LDC));
-#endif
-  } else {
-    LOG(FATAL) << "Unknown math type: " << math_type;
   }
 }
 
-template <>
-DRAGON_API void Gemv<float, CUDAContext>(
-    const CBLAS_TRANSPOSE TransA,
-    const int M,
-    const int N,
-    const float alpha,
-    const float* A,
-    const float* x,
-    const float beta,
-    float* y,
-    CUDAContext* ctx,
-    const string math_type) {
-  auto cuTransA = TransA == CblasNoTrans ? CUBLAS_OP_T : CUBLAS_OP_N;
-  CUBLAS_CHECK(
-      cublasSetPointerMode(ctx->cublas_handle(), CUBLAS_POINTER_MODE_HOST));
-  CUBLAS_CHECK(cublasSgemv(
-      ctx->cublas_handle(), cuTransA, N, M, &alpha, A, N, x, 1, &beta, y, 1));
-}
+#define DEFINE_GEMV_FUNC(T, cublas_func)                                       \
+  template <>                                                                  \
+  DRAGON_API void Gemv<T, CUDAContext>(                                        \
+      const CBLAS_TRANSPOSE TransA,                                            \
+      const int M,                                                             \
+      const int N,                                                             \
+      const float alpha,                                                       \
+      const T* A,                                                              \
+      const T* x,                                                              \
+      const float beta,                                                        \
+      T* y,                                                                    \
+      CUDAContext* ctx) {                                                      \
+    auto cuTransA = TransA == CblasNoTrans ? CUBLAS_OP_T : CUBLAS_OP_N;        \
+    const auto alpha_val = static_cast<T>(alpha);                              \
+    const auto beta_val = static_cast<T>(beta);                                \
+    CUBLAS_CHECK(                                                              \
+        cublasSetPointerMode(ctx->cublas_handle(), CUBLAS_POINTER_MODE_HOST)); \
+    CUBLAS_CHECK(cublas_func(                                                  \
+        ctx->cublas_handle(),                                                  \
+        cuTransA,                                                              \
+        N,                                                                     \
+        M,                                                                     \
+        &alpha_val,                                                            \
+        A,                                                                     \
+        N,                                                                     \
+        x,                                                                     \
+        1,                                                                     \
+        &beta_val,                                                             \
+        y,                                                                     \
+        1));                                                                   \
+  }
 
-template <>
-DRAGON_API void Gemv<double, CUDAContext>(
-    const CBLAS_TRANSPOSE TransA,
-    const int M,
-    const int N,
-    const float alpha,
-    const double* A,
-    const double* x,
-    const float beta,
-    double* y,
-    CUDAContext* ctx,
-    const string math_type) {
-  auto cuTransA = TransA == CblasNoTrans ? CUBLAS_OP_T : CUBLAS_OP_N;
-  const auto alpha_val = static_cast<double>(alpha);
-  const auto beta_val = static_cast<double>(beta);
-  CUBLAS_CHECK(
-      cublasSetPointerMode(ctx->cublas_handle(), CUBLAS_POINTER_MODE_HOST));
-  CUBLAS_CHECK(cublasDgemv(
-      ctx->cublas_handle(),
-      cuTransA,
-      N,
-      M,
-      &alpha_val,
-      A,
-      N,
-      x,
-      1,
-      &beta_val,
-      y,
-      1));
-}
+DEFINE_GEMV_FUNC(float, cublasSgemv);
+DEFINE_GEMV_FUNC(double, cublasDgemv);
+#undef DEFINE_GEMV_FUNC
 
 template <>
 DRAGON_API void Gemm<float16, CUDAContext>(
@@ -659,60 +556,35 @@ DRAGON_API void Gemm<float16, CUDAContext>(
     const float16* B,
     const float beta,
     float16* C,
-    CUDAContext* ctx,
-    const std::string math_type) {
+    CUDAContext* ctx) {
   int lda = (TransA == CblasNoTrans) ? K : M;
   int ldb = (TransB == CblasNoTrans) ? N : K;
   auto cuTransA = TransA == CblasNoTrans ? CUBLAS_OP_N : CUBLAS_OP_T;
   auto cuTransB = TransB == CblasNoTrans ? CUBLAS_OP_N : CUBLAS_OP_T;
   CUBLAS_CHECK(
       cublasSetPointerMode(ctx->cublas_handle(), CUBLAS_POINTER_MODE_HOST));
-  if (math_type == "float32") {
-#if CUDA_VERSION >= 9000
-    if (TENSOR_CORE_AVAILABLE()) {
-      // GEMM + MATH32 + TENSOR-CORE
-      CUBLAS_CHECK(cublasGemmEx(
-          ctx->cublas_handle(),
-          cuTransB,
-          cuTransA,
-          N,
-          M,
-          K,
-          &alpha,
-          B,
-          CUDA_R_16F,
-          ldb,
-          A,
-          CUDA_R_16F,
-          lda,
-          &beta,
-          C,
-          CUDA_R_16F,
-          N,
-          CUDA_R_32F,
-          CUBLAS_GEMM_DEFAULT_TENSOR_OP));
-    } else {
-      // GEMM + MATH32 + DEFAULT
-      CUBLAS_CHECK(cublasSgemmEx(
-          ctx->cublas_handle(),
-          cuTransB,
-          cuTransA,
-          N,
-          M,
-          K,
-          &alpha,
-          B,
-          CUDA_R_16F,
-          ldb,
-          A,
-          CUDA_R_16F,
-          lda,
-          &beta,
-          C,
-          CUDA_R_16F,
-          N));
-    }
-#else
+  if (TENSOR_CORE_AVAILABLE()) {
+    CUBLAS_CHECK(cublasGemmEx(
+        ctx->cublas_handle(),
+        cuTransB,
+        cuTransA,
+        N,
+        M,
+        K,
+        &alpha,
+        B,
+        CUDA_R_16F,
+        ldb,
+        A,
+        CUDA_R_16F,
+        lda,
+        &beta,
+        C,
+        CUDA_R_16F,
+        N,
+        CUDA_R_32F,
+        CUBLAS_GEMM_DEFAULT_TENSOR_OP));
+  } else {
     CUBLAS_CHECK(cublasSgemmEx(
         ctx->cublas_handle(),
         cuTransB,
@@ -731,94 +603,173 @@ DRAGON_API void Gemm<float16, CUDAContext>(
         C,
         CUDA_R_16F,
         N));
-#endif
-  } else if (math_type == "float16") {
-    const half alpha_val = convert::To<half>(alpha);
-    const half beta_val = convert::To<half>(beta);
-#if CUDA_VERSION >= 9000
-    if (TENSOR_CORE_AVAILABLE()) {
-      // GEMM + MATH16 + TENSOR-CORE
-      CUBLAS_CHECK(cublasGemmEx(
-          ctx->cublas_handle(),
-          cuTransB,
-          cuTransA,
-          N,
-          M,
-          K,
-          &alpha_val,
-          B,
-          CUDA_R_16F,
-          ldb,
-          A,
-          CUDA_R_16F,
-          lda,
-          &beta_val,
-          C,
-          CUDA_R_16F,
-          N,
-          CUDA_R_16F,
-          CUBLAS_GEMM_DEFAULT_TENSOR_OP));
-    } else {
-      // GEMM + MATH16 + DEFAULT
-      CUBLAS_CHECK(cublasHgemm(
-          ctx->cublas_handle(),
-          cuTransB,
-          cuTransA,
-          N,
-          M,
-          K,
-          &alpha_val,
-          reinterpret_cast<const half*>(B),
-          ldb,
-          reinterpret_cast<const half*>(A),
-          lda,
-          &beta_val,
-          reinterpret_cast<half*>(C),
-          N));
-    }
-#else
-    CUBLAS_CHECK(cublasHgemm(
-        ctx->cublas_handle(),
-        cuTransB,
-        cuTransA,
-        N,
-        M,
-        K,
-        &alpha_val,
-        reinterpret_cast<const half*>(B),
-        ldb,
-        reinterpret_cast<const half*>(A),
-        lda,
-        &beta_val,
-        reinterpret_cast<half*>(C),
-        N));
-#endif
-  } else {
-    LOG(FATAL) << "Unknown math type: " << math_type;
   }
 }
 
+#define DEFINE_GEMM_FUNC(T, cublas_func)                                       \
+  template <>                                                                  \
+  DRAGON_API void Gemm<T, CUDAContext>(                                        \
+      const CBLAS_TRANSPOSE TransA,                                            \
+      const CBLAS_TRANSPOSE TransB,                                            \
+      const int M,                                                             \
+      const int N,                                                             \
+      const int K,                                                             \
+      const float alpha,                                                       \
+      const T* A,                                                              \
+      const T* B,                                                              \
+      const float beta,                                                        \
+      T* C,                                                                    \
+      CUDAContext* ctx) {                                                      \
+    int lda = TransA == CblasNoTrans ? K : M;                                  \
+    int ldb = TransB == CblasNoTrans ? N : K;                                  \
+    auto cuTransA = TransA == CblasNoTrans ? CUBLAS_OP_N : CUBLAS_OP_T;        \
+    auto cuTransB = TransB == CblasNoTrans ? CUBLAS_OP_N : CUBLAS_OP_T;        \
+    const auto alpha_val = static_cast<T>(alpha);                              \
+    const auto beta_val = static_cast<T>(beta);                                \
+    CUBLAS_CHECK(                                                              \
+        cublasSetPointerMode(ctx->cublas_handle(), CUBLAS_POINTER_MODE_HOST)); \
+    CUBLAS_CHECK(cublas_func(                                                  \
+        ctx->cublas_handle(),                                                  \
+        cuTransB,                                                              \
+        cuTransA,                                                              \
+        N,                                                                     \
+        M,                                                                     \
+        K,                                                                     \
+        &alpha_val,                                                            \
+        B,                                                                     \
+        ldb,                                                                   \
+        A,                                                                     \
+        lda,                                                                   \
+        &beta_val,                                                             \
+        C,                                                                     \
+        N));                                                                   \
+  }
+
+DEFINE_GEMM_FUNC(float, cublasSgemm);
+DEFINE_GEMM_FUNC(double, cublasDgemm);
+#undef DEFINE_GEMM_FUNC
+
 template <>
-DRAGON_API void Gemm<float, CUDAContext>(
+DRAGON_API void GemmBatched<float16, CUDAContext>(
     const CBLAS_TRANSPOSE TransA,
     const CBLAS_TRANSPOSE TransB,
+    const int batch_size,
     const int M,
     const int N,
     const int K,
     const float alpha,
-    const float* A,
-    const float* B,
+    const float16** A,
+    const float16** B,
     const float beta,
-    float* C,
-    CUDAContext* ctx,
-    const string math_type) {
+    float16** C,
+    CUDAContext* ctx) {
   int lda = TransA == CblasNoTrans ? K : M;
   int ldb = TransB == CblasNoTrans ? N : K;
+  int ldc = N;
+  auto cuTransA = TransA == CblasNoTrans ? CUBLAS_OP_N : CUBLAS_OP_T;
+  auto cuTransB = TransB == CblasNoTrans ? CUBLAS_OP_N : CUBLAS_OP_T;
+  thrust::device_vector<const void*> A_arr(A, A + batch_size);
+  thrust::device_vector<const void*> B_arr(B, B + batch_size);
+  thrust::device_vector<void*> C_arr(C, C + batch_size);
+  CUBLAS_CHECK(
+      cublasSetPointerMode(ctx->cublas_handle(), CUBLAS_POINTER_MODE_HOST));
+  CUBLAS_CHECK(cublasGemmBatchedEx(
+      ctx->cublas_handle(),
+      cuTransB,
+      cuTransA,
+      N,
+      M,
+      K,
+      &alpha,
+      B_arr.data().get(),
+      CUDA_R_16F,
+      ldb,
+      A_arr.data().get(),
+      CUDA_R_16F,
+      lda,
+      &beta,
+      C_arr.data().get(),
+      CUDA_R_16F,
+      ldc,
+      batch_size,
+      CUDA_R_32F,
+      CUBLAS_GEMM_DEFAULT_TENSOR_OP));
+}
+
+#define DEFINE_BATCHED_GEMM_FUNC(T, cublas_func)                               \
+  template <>                                                                  \
+  DRAGON_API void GemmBatched<T, CUDAContext>(                                 \
+      const CBLAS_TRANSPOSE TransA,                                            \
+      const CBLAS_TRANSPOSE TransB,                                            \
+      const int batch_size,                                                    \
+      const int M,                                                             \
+      const int N,                                                             \
+      const int K,                                                             \
+      const float alpha,                                                       \
+      const T** A,                                                             \
+      const T** B,                                                             \
+      const float beta,                                                        \
+      T** C,                                                                   \
+      CUDAContext* ctx) {                                                      \
+    int lda = TransA == CblasNoTrans ? K : M;                                  \
+    int ldb = TransB == CblasNoTrans ? N : K;                                  \
+    int ldc = N;                                                               \
+    auto cuTransA = TransA == CblasNoTrans ? CUBLAS_OP_N : CUBLAS_OP_T;        \
+    auto cuTransB = TransB == CblasNoTrans ? CUBLAS_OP_N : CUBLAS_OP_T;        \
+    const auto alpha_val = static_cast<T>(alpha);                              \
+    const auto beta_val = static_cast<T>(beta);                                \
+    thrust::device_vector<const T*> A_arr(A, A + batch_size);                  \
+    thrust::device_vector<const T*> B_arr(B, B + batch_size);                  \
+    thrust::device_vector<T*> C_arr(C, C + batch_size);                        \
+    CUBLAS_CHECK(                                                              \
+        cublasSetPointerMode(ctx->cublas_handle(), CUBLAS_POINTER_MODE_HOST)); \
+    CUBLAS_CHECK(cublas_func(                                                  \
+        ctx->cublas_handle(),                                                  \
+        cuTransB,                                                              \
+        cuTransA,                                                              \
+        N,                                                                     \
+        M,                                                                     \
+        K,                                                                     \
+        &alpha_val,                                                            \
+        B_arr.data().get(),                                                    \
+        ldb,                                                                   \
+        A_arr.data().get(),                                                    \
+        lda,                                                                   \
+        &beta_val,                                                             \
+        C_arr.data().get(),                                                    \
+        ldc,                                                                   \
+        batch_size));                                                          \
+  }
+
+DEFINE_BATCHED_GEMM_FUNC(float, cublasSgemmBatched);
+DEFINE_BATCHED_GEMM_FUNC(double, cublasDgemmBatched);
+#undef DEFINE_BATCHED_GEMM_FUNC
+
+template <>
+DRAGON_API void GemmStridedBatched<float16, CUDAContext>(
+    const CBLAS_TRANSPOSE TransA,
+    const CBLAS_TRANSPOSE TransB,
+    const int batch_size,
+    const int M,
+    const int N,
+    const int K,
+    const int A_stride,
+    const int B_stride,
+    const int C_stride,
+    const float alpha,
+    const float16* A,
+    const float16* B,
+    const float beta,
+    float16* C,
+    CUDAContext* ctx) {
+  int lda = TransA == CblasNoTrans ? K : M;
+  int ldb = TransB == CblasNoTrans ? N : K;
+  int ldc = N;
   auto cuTransA = TransA == CblasNoTrans ? CUBLAS_OP_N : CUBLAS_OP_T;
   auto cuTransB = TransB == CblasNoTrans ? CUBLAS_OP_N : CUBLAS_OP_T;
   CUBLAS_CHECK(
       cublasSetPointerMode(ctx->cublas_handle(), CUBLAS_POINTER_MODE_HOST));
-  CUBLAS_CHECK(cublasSgemm(
+  CUBLAS_CHECK(cublasGemmStridedBatchedEx(
       ctx->cublas_handle(),
       cuTransB,
       cuTransA,
@@ -827,52 +778,74 @@ DRAGON_API void Gemm<float, CUDAContext>(
       K,
       &alpha,
       B,
+      CUDA_R_16F,
       ldb,
+      B_stride,
       A,
+      CUDA_R_16F,
       lda,
+      A_stride,
       &beta,
       C,
-      N));
+      CUDA_R_16F,
+      ldc,
+      C_stride,
+      batch_size,
+      CUDA_R_32F,
+      CUBLAS_GEMM_DEFAULT_TENSOR_OP));
 }
 
-template <>
-DRAGON_API void Gemm<double, CUDAContext>(
-    const CBLAS_TRANSPOSE TransA,
-    const CBLAS_TRANSPOSE TransB,
-    const int M,
-    const int N,
-    const int K,
-    const float alpha,
-    const double* A,
-    const double* B,
-    const float beta,
-    double* C,
-    CUDAContext* ctx,
-    const string math_type) {
-  int lda = (TransA == CblasNoTrans) ? K : M;
-  int ldb = (TransB == CblasNoTrans) ? N : K;
-  auto cuTransA = TransA == CblasNoTrans ? CUBLAS_OP_N : CUBLAS_OP_T;
-  auto cuTransB = TransB == CblasNoTrans ? CUBLAS_OP_N : CUBLAS_OP_T;
-  const auto alpha_val = static_cast<double>(alpha);
-  const auto beta_val = static_cast<double>(beta);
-  CUBLAS_CHECK(
-      cublasSetPointerMode(ctx->cublas_handle(), CUBLAS_POINTER_MODE_HOST));
-  CUBLAS_CHECK(cublasDgemm(
-      ctx->cublas_handle(),
-      cuTransB,
-      cuTransA,
-      N,
-      M,
-      K,
-      &alpha_val,
-      B,
-      ldb,
-      A,
-      lda,
-      &beta_val,
-      C,
-      N));
-}
+#define DEFINE_STRIDED_BATCHED_GEMM_FUNC(T, cublas_func)                       \
+  template <>                                                                  \
+  DRAGON_API void GemmStridedBatched<T, CUDAContext>(                          \
+      const CBLAS_TRANSPOSE TransA,                                            \
+      const CBLAS_TRANSPOSE TransB,                                            \
+      const int batch_size,                                                    \
+      const int M,                                                             \
+      const int N,                                                             \
+      const int K,                                                             \
+      const int A_stride,                                                      \
+      const int B_stride,                                                      \
+      const int C_stride,                                                      \
+      const float alpha,                                                       \
+      const T* A,                                                              \
+      const T* B,                                                              \
+      const float beta,                                                        \
+      T* C,                                                                    \
+      CUDAContext* ctx) {                                                      \
+    int lda = TransA == CblasNoTrans ? K : M;                                  \
+    int ldb = TransB == CblasNoTrans ? N : K;                                  \
+    int ldc = N;                                                               \
+    auto cuTransA = TransA == CblasNoTrans ? CUBLAS_OP_N : CUBLAS_OP_T;        \
+    auto cuTransB = TransB == CblasNoTrans ? CUBLAS_OP_N : CUBLAS_OP_T;        \
+    const auto alpha_val = static_cast<T>(alpha);                              \
+    const auto beta_val = static_cast<T>(beta);                                \
+    CUBLAS_CHECK(                                                              \
+        cublasSetPointerMode(ctx->cublas_handle(), CUBLAS_POINTER_MODE_HOST)); \
+    CUBLAS_CHECK(cublas_func(                                                  \
+        ctx->cublas_handle(),                                                  \
+        cuTransB,                                                              \
+        cuTransA,                                                              \
+        N,                                                                     \
+        M,                                                                     \
+        K,                                                                     \
+        &alpha_val,                                                            \
+        B,                                                                     \
+        ldb,                                                                   \
+        B_stride,                                                              \
+        A,                                                                     \
+        lda,                                                                   \
+        A_stride,                                                              \
+        &beta_val,                                                             \
+        C,                                                                     \
+        ldc,                                                                   \
+        C_stride,                                                              \
+        batch_size));                                                          \
+  }
+
+DEFINE_STRIDED_BATCHED_GEMM_FUNC(float, cublasSgemmStridedBatched);
+DEFINE_STRIDED_BATCHED_GEMM_FUNC(double, cublasDgemmStridedBatched);
+#undef DEFINE_STRIDED_BATCHED_GEMM_FUNC
 
 } // namespace math
 

@@ -33,7 +33,6 @@ from dragon.core.ops.activation_ops import relu6
 from dragon.core.ops.activation_ops import selu
 from dragon.core.ops.activation_ops import softmax
 from dragon.core.ops.activation_ops import swish
-from dragon.core.ops.math_ops import fully_connected
 from dragon.core.ops.normalization_ops import batch_norm
 from dragon.core.ops.normalization_ops import group_norm
 from dragon.core.ops.normalization_ops import instance_norm

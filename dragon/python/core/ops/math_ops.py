@@ -498,23 +498,30 @@ def floor(inputs, **kwargs):
 
 
 @OpSchema.num_inputs(2, 3)
-def fully_connected(inputs, axis=1, transpose_w=True, **kwargs):
-    r"""Compute the dense matrix multiplication along the given axes.
+def gemm(
+    inputs,
+    alpha=1.0,
+    beta=1.0,
+    transpose_a=False,
+    transpose_b=False,
+    **kwargs
+):
+    r"""Compute the general matrix multiplication.
 
-    .. math:: y = Wx + b
-
-    The column of input matrix is determined by:
-
-    .. math:: \text{Col} = \text{DimSince}(\text{Input}, \text{Axis})
+    .. math:: \text{out} = \alpha AB + \beta C
 
     Parameters
     ----------
     inputs : Sequence[dragon.Tensor]
-        The tensor :math:`x`, :math:`W` and :math:`b`.
-    axis : int, optional, default=1
-        The start axis to compute, can be negative.
-    transpose_w : bool, optional, default=True
-        **True** to transpose :math:`W` before computation.
+        The matrix :math:`A`, :math:`B` and optional :math:`C`.
+    alpha : float, optional, default=1.0
+        The value to :math:`\alpha`.
+    beta : float, optional, default=1.0
+        The value to :math:`\beta`.
+    transpose_a : bool, optional, default=False
+        **True** to transpose :math:`A` before computation.
+    transpose_b : bool, optional, default=False
+        **True** to transpose :math:`B` before computation.
 
     Returns
     -------
@@ -523,15 +530,22 @@ def fully_connected(inputs, axis=1, transpose_w=True, **kwargs):
 
     """
     args = ArgHelper.parse(locals())
-    op_lib = math_ops_lib.FullyConnected
+    args['axis'] = kwargs.get('axis', -1)
+    args['alpha'], args['beta'] = float(alpha), float(beta)
+    op_lib = math_ops_lib.Gemm
     if context.executing_eagerly():
         return op_lib \
-            .instantiate(axis=axis, transpose_w=transpose_w) \
-            .apply(inputs)
+            .instantiate(
+                axis=args['axis'],
+                alpha=args['alpha'],
+                beta=args['beta'],
+                transpose_a=transpose_a,
+                transpose_b=transpose_b,
+            ).apply(inputs)
     else:
-        args.pop('transpose_w')
-        args['transW'] = transpose_w
-        return op_lib.blend('FullyConnected', **args)
+        args['transA'] = args.pop('transpose_a')
+        args['transB'] = args.pop('transpose_b')
+        return op_lib.blend(**args)
 
 
 @OpSchema.num_inputs(2)
@@ -812,42 +826,44 @@ def less_equal(inputs, **kwargs):
 
 
 @OpSchema.num_inputs(2)
-def matmul(inputs, transpose_a=False, transpose_b=False, **kwargs):
+def matmul(inputs, **kwargs):
     r"""Compute the matrix multiplication.
 
-    .. math:: y = a \times b
+    .. math:: \text{out} = \text{input1} \times \text{input2}
 
-    The rank of ``a`` and ``b`` should be equal and >= 2:
+    The behavior depends on the shape of input tensors:
+
+    * If both tensors are 1d, computes the vector product.
+    * If tensors are 1d and >=2d, computes the vector-matrix multiplication.
+    * If tensors are >=2d and 1d, computes the matrix-vector multiplication.
+    * If both tensors are >= 2d, computes the matrix-matrix multiplication.
+    * If one tensor is >= 3d, applies batching and broadcasting to the computation.
+
+    Examples:
 
     ```python
-    # Ok, a typical matrix multiplication
-    a = dragon.ones((2, 3), 'float32')
-    b = dragon.ones((3, 3), 'float32')
+    # Vector x Vector
+    a = dragon.ones((2,), 'float32')
+    b = dragon.ones((2,), 'float32')
     print(dragon.math.matmul([a, b]))
-
-    # Compute a batch matrix multiplication if rank > 2
-    aa = dragon.ones((4, 2, 3), 'float32')
-    bb = dragon.ones((4, 3, 3), 'float32')
-    print(dragon.math.matmul([aa, bb]))
-    ```
-
-    If inputs are transposed, remember to transpose them back:
-
-    ```python
+    # Vector x Matrix
+    a = dragon.ones((2,), 'float32')
+    b = dragon.ones((2, 3), 'float32')
+    print(dragon.math.matmul([a, b]))
+    # Matrix x Vector
     a = dragon.ones((3, 2), 'float32')
-    b = dragon.ones((3, 3), 'float32')
-    print(dragon.math.matmul([a, b]))  # ``a`` takes the wrong dimensions
-    print(dragon.math.matmul([a, b], transpose_a=True))  # Ok
+    b = dragon.ones((2,), 'float32')
+    print(dragon.math.matmul([a, b]))
+    # Matrix x Matrix
+    a = dragon.ones((2, 3), 'float32')
+    b = dragon.ones((3, 2), 'float32')
+    print(dragon.math.matmul([a, b]))
     ```
 
     Parameters
     ----------
     inputs : Sequence[dragon.Tensor]
-        The matrix :math:`a` and :math:`b`.
-    transpose_a : bool, optional, default=False
-        **True** to transpose :math:`a` before computation.
-    transpose_b : bool, optional, default=False
-        **True** to transpose :math:`b` before computation.
+        The input tensors.
 
     Returns
     -------
@@ -858,15 +874,9 @@ def matmul(inputs, transpose_a=False, transpose_b=False, **kwargs):
     args = ArgHelper.parse(locals())
     op_lib = math_ops_lib.MatMul
     if context.executing_eagerly():
-        return op_lib \
-            .instantiate(
-                transpose_a=transpose_a,
-                transpose_b=transpose_b,
-            ).apply(inputs)
+        return op_lib.instantiate().apply(inputs)
     else:
-        args.pop('transpose_a')
-        args.pop('transpose_b')
-        return op_lib.blend(transA=transpose_a, transB=transpose_b, **args)
+        return op_lib.blend(**args)
 
 
 @OpSchema.num_inputs(2)

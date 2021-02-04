@@ -74,9 +74,6 @@ dragon.nn
   : Apply the exponential linear unit.
   `[Clevert et.al, 2015] <https://arxiv.org/abs/1511.07289>`_.
 
-  `fully_connected(...) <nn/fully_connected.html>`_
-  : Compute the dense matrix multiplication along the given axes.
-
   `group_norm(...) <nn/group_norm.html>`_
   : Apply the group normalization.
   `[Wu & He, 2018] <https://arxiv.org/abs/1803.08494>`_.
@@ -167,7 +164,6 @@ dragon.nn
   nn/drop_block2d
   nn/drop_path
   nn/elu
-  nn/fully_connected
   nn/group_norm
   nn/hardsigmoid
   nn/hardswish

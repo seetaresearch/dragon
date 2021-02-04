@@ -270,6 +270,33 @@ class Tensor(object):
 
         """
 
+    def addmm(self, mat1, mat2, beta=1, alpha=1):
+        r"""Add the result of matrix-matrix multiplication.
+
+        .. math:: \text{out} = \alpha (\text{mat1} \times \text{mat2}) + \beta \text{self}
+
+        Parameters
+        ----------
+        mat1 : dragon.vm.torch.Tensor
+            The first matrix.
+        mat2 : dragon.vm.torch.Tensor
+            The second matrix.
+        beta : float, optional, default=1
+            The value to :math:`\beta`.
+        alpha : float, optional, default=1
+            The value to :math:`\alpha`.
+
+        Returns
+        -------
+        dragon.vm.torch.Tensor
+            The output tensor.
+
+        See Also
+        --------
+        `torch.addmm(...)`_
+
+        """
+
     def argmax(self, dim=None, keepdim=False):
         """Return the index of maximum elements.
 
@@ -345,6 +372,64 @@ class Tensor(object):
 
         """
 
+    def baddbmm(self, batch1, batch2, beta=1, alpha=1):
+        r"""Add the result of batched matrix-matrix multiplication.
+
+        .. math::
+            \text{out}_{i} = \alpha (\text{batch1}_{i} \times \text{batch2}_{i}) +
+                             \beta \text{self}_{i}
+
+        Parameters
+        ----------
+        batch1 : dragon.vm.torch.Tensor
+            The first batch of matrices.
+        batch2 : dragon.vm.torch.Tensor
+            The second batch of matrices.
+        beta : float, optional, default=1
+            The value to :math:`\beta`.
+        alpha : float, optional, default=1
+            The value to :math:`\alpha`.
+
+        Returns
+        -------
+        dragon.vm.torch.Tensor
+            The output tensor.
+
+        See Also
+        --------
+        `torch.baddbmm(...)`_
+
+        """
+
+    def baddbmm_(self, batch1, batch2, beta=1, alpha=1):
+        r"""Add the result of batched matrix-matrix multiplication.
+
+        .. math::
+            \text{self}_{i} = \alpha (\text{batch1}_{i} \times \text{batch2}_{i}) +
+                             \beta \text{self}_{i}
+
+        Parameters
+        ----------
+        batch1 : dragon.vm.torch.Tensor
+            The first batch of matrices.
+        batch2 : dragon.vm.torch.Tensor
+            The second batch of matrices.
+        beta : float, optional, default=1
+            The value to :math:`\beta`.
+        alpha : float, optional, default=1
+            The value to :math:`\alpha`.
+
+        Returns
+        -------
+        dragon.vm.torch.Tensor
+            The output tensor.
+
+        See Also
+        --------
+        `torch.baddbmm(...)`_
+
+        """
+
     def bitwise_not(self):
         r"""Compute the element-wise NOT bitwise operation.
 
@@ -416,6 +501,27 @@ class Tensor(object):
         See Also
         --------
         `torch.bitwise_xor(...)`_
+
+        """
+
+    def bmm(self, batch2):
+        r"""Compute the batched matrix multiplication.
+
+        .. math:: \text{out}_{i} = \text{self}_{i} \times \text{batch2}_{i}
+
+        Parameters
+        ----------
+        batch2 : dragon.vm.torch.Tensor
+            The second batch of matrices.
+
+        Returns
+        -------
+        dragon.Tensor
+            The output tensor.
+
+        See Also
+        --------
+        `torch.bmm(...)`_
 
         """
 
@@ -1189,6 +1295,27 @@ class Tensor(object):
         -------
         dragon.vm.torch.Tensor
             The self.
+
+        """
+
+    def matmul(self, tensor2):
+        r"""Compute the matrix multiplication.
+
+        .. math:: \text{out} = \text{self} \times \text{tensor2}
+
+        Parameters
+        ----------
+        tensor2 : dragon.vm.torch.Tensor
+            The tensor to multiply.
+
+        Returns
+        -------
+        dragon.Tensor
+            The output tensor.
+
+        See Also
+        --------
+        `torch.matmul(...)`_
 
         """
 

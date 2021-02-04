@@ -85,8 +85,7 @@ DRAGON_API void Gemv(
     const T* x,
     const float beta,
     T* y,
-    Context* ctx,
-    const string math_type = "float32");
+    Context* ctx);
 
 template <typename T, class Context>
 DRAGON_API void Gemm(
@@ -100,8 +99,40 @@ DRAGON_API void Gemm(
     const T* B,
     const float beta,
     T* C,
-    Context* ctx,
-    const string math_type = "float32");
+    Context* ctx);
+
+template <typename T, class Context>
+DRAGON_API void GemmBatched(
+    const CBLAS_TRANSPOSE TransA,
+    const CBLAS_TRANSPOSE TransB,
+    const int batch_size,
+    const int M,
+    const int N,
+    const int K,
+    const float alpha,
+    const T** A,
+    const T** B,
+    const float beta,
+    T** C,
+    Context* ctx);
+
+template <typename T, class Context>
+DRAGON_API void GemmStridedBatched(
+    const CBLAS_TRANSPOSE TransA,
+    const CBLAS_TRANSPOSE TransB,
+    const int batch_size,
+    const int M,
+    const int N,
+    const int K,
+    const int A_stride,
+    const int B_stride,
+    const int C_stride,
+    const float alpha,
+    const T* A,
+    const T* B,
+    const float beta,
+    T* C,
+    Context* ctx);
 
 } // namespace math
 

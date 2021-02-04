@@ -180,19 +180,7 @@ ONNXImporterReturns ONNXBackend::GemmImporter(
     ONNXNode* onnx_node,
     const ConversionContext& ctx) {
   auto& attributes = onnx_node->attributes;
-  auto alpha = attributes.get<float>("alpha", 1.f);
-  auto beta = attributes.get<float>("beta", 1.f);
-  auto trans_a = attributes.get<int64_t>("transA", 0L);
-  // Remove the unsupported attributes
-  if (alpha != 1.f || beta != 1.f) {
-    LOG(FATAL) << "alpha/beta can not be set currently.";
-  }
-  if (trans_a) {
-    LOG(FATAL) << "Tranposed A is not supported currently.";
-  }
-  attributes.remove("alpha");
-  attributes.remove("beta");
-  attributes.remove("transA");
+  attributes.AddRewrittenAttribute("axis")->set_i(-1);
   return GenericImporter(onnx_node, ctx);
 }
 

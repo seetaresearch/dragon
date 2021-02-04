@@ -116,11 +116,9 @@ class Dense(Layer):
         self.built = True
 
     def call(self, inputs):
-        outputs = math_ops.fully_connected(
-            [inputs, self.kernel] + [self.bias]
-            if self.use_bias else [],
-            axis=-1,
-            transW=False,
+        outputs = math_ops.gemm(
+            [inputs, self.kernel] +
+            ([self.bias] if self.use_bias else []),
         )
         if self.activation is not None:
             return self.activation(outputs)

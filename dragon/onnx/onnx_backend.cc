@@ -185,7 +185,6 @@ const Map<string, Map<string, string>>& ONNXBackend::get_node_renamed_attrs()
     const {
   const static Map<string, Map<string, string>> kPerNodeRenamedAttrs = {
       {"DepthToSpace", {{"blocksize", "block_size"}}},
-      {"Gemm", {{"transB", "transW"}}},
       {"RoiAlign",
        {
            {"output_height", "pooled_h"},

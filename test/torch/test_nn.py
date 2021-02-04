@@ -619,39 +619,54 @@ class TestModules(OpTestCase):
                 self.assertEqual(m4(x), np.pad(data, pads, 'constant'))
 
     def test_pool1d(self):
-        entries = [((2, 2, 2,), (2,), 2, 1, 'MAX'),
-                   ((2, 2, 2,), (2,), 2, 1, 'AVG')]
+        entries = [((2, 2, 2,), (2,), 2, 1, 'MaxPool1d'),
+                   ((2, 2, 2,), (2,), 2, 1, 'AvgPool1d'),
+                   ((2, 2, 2,), (1,), 1, 0, 'AdaptiveMaxPool1d'),
+                   ((2, 2, 2,), (1,), 1, 0, 'AdaptiveAvgPool1d')]
         for x_shape, kernel_shape, strides, pads, mode in entries:
             data = arange(x_shape) * .1
-            module_cls = torch.nn.AvgPool1d if mode == 'AVG' else torch.nn.MaxPool1d
+            module_cls = getattr(torch.nn, mode)
             x = new_tensor(data)
-            m = module_cls(kernel_shape, strides, pads)
+            if 'Adaptive' in mode:
+                m = module_cls(x_shape[-1])
+            else:
+                m = module_cls(kernel_shape, strides, pads)
             y, _ = m(x), repr(m)
-            result = data / (np.prod(kernel_shape) if mode == 'AVG' else 1.)
+            result = data / (np.prod(kernel_shape) if 'Avg' in mode else 1.)
             self.assertEqual(y, result)
 
     def test_pool2d(self):
-        entries = [((2, 2, 2, 2), (2, 2), 2, 1, 'MAX'),
-                   ((2, 2, 2, 2), (2, 2), 2, 1, 'AVG')]
+        entries = [((2, 2, 2, 2), (2, 2), 2, 1, 'MaxPool2d'),
+                   ((2, 2, 2, 2), (2, 2), 2, 1, 'AvgPool2d'),
+                   ((2, 2, 2, 2), (1, 1), 1, 0, 'AdaptiveMaxPool2d'),
+                   ((2, 2, 2, 2), (1, 1), 1, 0, 'AdaptiveAvgPool2d')]
         for x_shape, kernel_shape, strides, pads, mode in entries:
             data = arange(x_shape) * .1
-            module_cls = torch.nn.AvgPool2d if mode == 'AVG' else torch.nn.MaxPool2d
+            module_cls = getattr(torch.nn, mode)
             x = new_tensor(data)
-            m = module_cls(kernel_shape, strides, pads)
+            if 'Adaptive' in mode:
+                m = module_cls(x_shape[-1])
+            else:
+                m = module_cls(kernel_shape, strides, pads)
             y, _ = m(x), repr(m)
-            result = data / (np.prod(kernel_shape) if mode == 'AVG' else 1.)
+            result = data / (np.prod(kernel_shape) if 'Avg' in mode else 1.)
             self.assertEqual(y, result)
 
     def test_pool3d(self):
-        entries = [((2, 2, 2, 2, 2), (2, 2, 2), 2, 1, 'MAX'),
-                   ((2, 2, 2, 2, 2), (2, 2, 2), 2, 1, 'AVG')]
+        entries = [((2, 2, 2, 2, 2), (2, 2, 2), 2, 1, 'MaxPool3d'),
+                   ((2, 2, 2, 2, 2), (2, 2, 2), 2, 1, 'AvgPool3d'),
+                   ((2, 2, 2, 2, 2), (1, 1, 1), 1, 0, 'AdaptiveMaxPool3d'),
+                   ((2, 2, 2, 2, 2), (1, 1, 1), 1, 0, 'AdaptiveAvgPool3d')]
         for x_shape, kernel_shape, strides, pads, mode in entries:
             data = arange(x_shape) * .1
-            module_cls = torch.nn.AvgPool3d if mode == 'AVG' else torch.nn.MaxPool3d
+            module_cls = getattr(torch.nn, mode)
             x = new_tensor(data)
-            m = module_cls(kernel_shape, strides, pads)
+            if 'Adaptive' in mode:
+                m = module_cls(x_shape[-1])
+            else:
+                m = module_cls(kernel_shape, strides, pads)
             y, _ = m(x), repr(m)
-            result = data / (np.prod(kernel_shape) if mode == 'AVG' else 1.)
+            result = data / (np.prod(kernel_shape) if 'Avg' in mode else 1.)
             self.assertEqual(y, result)
 
     def test_prelu(self):

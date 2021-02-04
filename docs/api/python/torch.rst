@@ -36,6 +36,9 @@ vm.torch
   `add(...) <torch/add.html>`_
   : Compute the element-wise addition.
 
+  `addmm(...) <torch/addmm.html>`_
+  : Add input to the result of matrix-matrix multiplication.
+
   `arange(...) <torch/arange.html>`_
   : Return a tensor of evenly spaced values within a interval.
 
@@ -51,11 +54,17 @@ vm.torch
   `axpby(...) <torch/axpby.html>`_
   : Compute the element-wise addition from input to output.
 
+  `baddbmm(...) <torch/baddbmm.html>`_
+  : Add input to the result of batched matrix-matrix multiplication.
+
   `bitwise_not(...) <torch/bitwise_not.html>`_
   : Compute the element-wise NOT bitwise operation.
 
   `bitwise_xor(...) <torch/bitwise_xor.html>`_
   : Compute the element-wise XOR bitwise operation.
+
+  `bmm(...) <torch/bmm.html>`_
+  : Compute the batched matrix-matrix multiplication.
 
   `cat(...) <torch/cat.html>`_
   : Concatenate the inputs along the given dimension.
@@ -147,6 +156,9 @@ vm.torch
 
   `masked_select(...) <torch/logsumexp.html>`_
   : Select the input elements where mask is 1.
+
+  `matmul(...) <torch/matmul.html>`_
+  : Compute the matrix multiplication.
 
   `max(...) <torch/max.html>`_
   : Compute the max value of elements along the given dimension.
@@ -281,13 +293,16 @@ vm.torch
   torch/Tensor_
   torch/abs
   torch/add
+  torch/addmm
   torch/arange
   torch/argmax
   torch/argmin
   torch/argsort
   torch/axpby
+  torch/baddbmm
   torch/bitwise_not
   torch/bitwise_xor
+  torch/bmm
   torch/cat
   torch/ceil
   torch/channel_affine
@@ -321,6 +336,7 @@ vm.torch
   torch/logsumexp
   torch/lt
   torch/masked_select
+  torch/matmul
   torch/max
   torch/maximum
   torch/mean

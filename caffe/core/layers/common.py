@@ -313,8 +313,8 @@ class InnerProduct(Layer):
         param = layer_param.inner_product_param
         self.arguments = {
             'axis': param.axis,
-            'out_channels': param.num_output,
-            'transpose_w': not param.transpose,
+            'n': param.num_output,
+            'transpose_b': not param.transpose,
         }
         self.add_blob(filler=self.get_filler(param, 'weight_filler'))
         if param.bias_term:
@@ -322,7 +322,7 @@ class InnerProduct(Layer):
 
     def __call__(self, bottom):
         inputs = [bottom] + [blob['data'] for blob in self._blobs]
-        return math_ops.fully_connected(inputs, **self.arguments)
+        return math_ops.gemm(inputs, **self.arguments)
 
 
 class Input(Layer):
@@ -409,7 +409,7 @@ class Normalize(Layer):
     def __call__(self, bottom):
         norm_out = [normalization_ops.lp_normalize(bottom, **self.l2norm_arguments)]
         norm_out += [blob['data'] for blob in self._blobs]
-        return math_ops.affine(norm_out, **self.affine_arguments)
+        return array_ops.channel_affine(norm_out, **self.affine_arguments)
 
 
 class Permute(Layer):
@@ -583,7 +583,7 @@ class Scale(Layer):
 
     def __call__(self, bottom):
         inputs = [bottom] + [blob['data'] for blob in self._blobs]
-        return math_ops.affine(inputs, **self.arguments)
+        return array_ops.channel_affine(inputs, **self.arguments)
 
 
 class Slice(Layer):

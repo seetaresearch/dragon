@@ -703,38 +703,38 @@ def log(x, name=None):
     return math_ops.log(x, name=name)
 
 
-def matmul(
-    a,
-    b,
-    transpose_a=False,
-    transpose_b=False,
-    name=None,
-):
+def matmul(a, b, name=None):
     r"""Compute the matrix multiplication.
 
-    .. math:: y = a \times b
+    .. math:: \text{out} = a \times b
 
-    The rank of ``a`` and ``b`` should be equal and >= 2:
+    The behavior depends on the shape of input tensors:
+
+    * If both tensors are 1d, computes the vector product.
+    * If tensors are 1d and >=2d, computes the vector-matrix multiplication.
+    * If tensors are >=2d and 1d, computes the matrix-vector multiplication.
+    * If both tensors are >= 2d, computes the matrix-matrix multiplication.
+    * If one tensor is >= 3d, applies batching and broadcasting to the computation.
+
+    Examples:
 
     ```python
-    # Ok, a typical matrix multiplication
-    a = tf.ones((2, 3), 'float32')
-    b = tf.ones((3, 3), 'float32')
+    # Vector x Vector
+    a = tf.ones((2,), 'float32')
+    b = tf.ones((2,), 'float32')
     print(tf.linalg.matmul(a, b))
-
-    # Compute a batch matrix multiplication if rank > 2
-    aa = tf.ones((4, 2, 3), 'float32')
-    bb = tf.ones((4, 3, 3), 'float32')
-    print(tf.linalg.matmul(aa, bb))
-    ```
-
-    If inputs are transposed, remember to transpose them back:
-
-    ```python
+    # Vector x Matrix
+    a = tf.ones((2,), 'float32')
+    b = tf.ones((2, 3), 'float32')
+    print(tf.linalg.matmul(a, b))
+    # Matrix x Vector
     a = tf.ones((3, 2), 'float32')
-    b = tf.ones((3, 3), 'float32')
-    print(tf.linalg.matmul(a, b))  # ``a`` takes the wrong dimensions
-    print(tf.linalg.matmul(a, b, transpose_a=True))  # Ok
+    b = tf.ones((2,), 'float32')
+    print(tf.linalg.matmul(a, b))
+    # Matrix x Matrix
+    a = tf.ones((2, 3), 'float32')
+    b = tf.ones((3, 2), 'float32')
+    print(tf.linalg.matmul(a, b))
     ```
 
     Parameters
@@ -743,10 +743,6 @@ def matmul(
         The matrix :math:`a`.
     b : dragon.Tensor
         The matrix :math:`b`.
-    transpose_a : bool, optional, default=False
-        **True** to transpose :math:`a` before computing.
-    transpose_b : bool, optional, default=False
-        **True** to transpose :math:`b` before computing.
     name : str, optional
         The operation name.
 
@@ -756,12 +752,7 @@ def matmul(
         The output tensor.
 
     """
-    return math_ops.matmul(
-        [a, b],
-        transpose_a=transpose_a,
-        transpose_b=transpose_b,
-        name=name,
-    )
+    return math_ops.matmul([a, b], name=name)
 
 
 def multiply(x, y, name=None):

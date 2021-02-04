@@ -94,9 +94,12 @@ from dragon.vm.torch.core.ops.init.functional import zeros
 from dragon.vm.torch.core.ops.init.functional import zeros_like
 from dragon.vm.torch.core.ops.math.functional import abs
 from dragon.vm.torch.core.ops.math.functional import add
+from dragon.vm.torch.core.ops.math.functional import addmm
 from dragon.vm.torch.core.ops.math.functional import axpby
+from dragon.vm.torch.core.ops.math.functional import baddbmm
 from dragon.vm.torch.core.ops.math.functional import bitwise_not
 from dragon.vm.torch.core.ops.math.functional import bitwise_xor
+from dragon.vm.torch.core.ops.math.functional import bmm
 from dragon.vm.torch.core.ops.math.functional import ceil
 from dragon.vm.torch.core.ops.math.functional import clamp
 from dragon.vm.torch.core.ops.math.functional import cos
@@ -112,6 +115,7 @@ from dragon.vm.torch.core.ops.math.functional import le
 from dragon.vm.torch.core.ops.math.functional import log
 from dragon.vm.torch.core.ops.math.functional import logsumexp
 from dragon.vm.torch.core.ops.math.functional import lt
+from dragon.vm.torch.core.ops.math.functional import matmul
 from dragon.vm.torch.core.ops.math.functional import maximum
 from dragon.vm.torch.core.ops.math.functional import minimum
 from dragon.vm.torch.core.ops.math.functional import mm

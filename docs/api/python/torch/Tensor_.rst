@@ -53,6 +53,10 @@ add\_
 #####
 .. automethod:: dragon.vm.torch.Tensor.add_
 
+addmm
+#####
+.. automethod:: dragon.vm.torch.Tensor.addmm
+
 argmax
 ######
 .. automethod:: dragon.vm.torch.Tensor.argmax
@@ -69,6 +73,14 @@ backward
 ########
 .. automethod:: dragon.vm.torch.Tensor.backward
 
+baddbmm
+#######
+.. automethod:: dragon.vm.torch.Tensor.baddbmm
+
+baddbmm\_
+#########
+.. automethod:: dragon.vm.torch.Tensor.baddbmm_
+
 bitwise_not
 ###########
 .. automethod:: dragon.vm.torch.Tensor.bitwise_not
@@ -84,6 +96,10 @@ bitwise_xor
 bitwise_xor\_
 #############
 .. automethod:: dragon.vm.torch.Tensor.bitwise_xor_
+
+bmm
+###
+.. automethod:: dragon.vm.torch.Tensor.bmm
 
 bool
 ####
@@ -285,6 +301,14 @@ masked_fill\_
 #############
 .. automethod:: dragon.vm.torch.Tensor.masked_fill_
 
+masked_select
+#############
+.. automethod:: dragon.vm.torch.Tensor.masked_select
+
+matmul
+######
+.. automethod:: dragon.vm.torch.Tensor.matmul
+
 max
 ###
 .. automethod:: dragon.vm.torch.Tensor.max
@@ -292,10 +316,6 @@ max
 maximum
 #######
 .. automethod:: dragon.vm.torch.Tensor.maximum
-
-masked_select
-#############
-.. automethod:: dragon.vm.torch.Tensor.masked_select
 
 mean
 ####
@@ -535,11 +555,14 @@ zero\_
 
 .. _torch.abs(...): abs.html
 .. _torch.add(...): add.html
+.. _torch.addmm(...): addmm.html
 .. _torch.argmax(...): argmax.html
 .. _torch.argmin(...): argmin.html
 .. _torch.argsort(...): argsort.html
+.. _torch.baddbmm(...): baddbmm.html
 .. _torch.bitwise_not(...): bitwise_not.html
 .. _torch.bitwise_xor(...): bitwise_xor.html
+.. _torch.bmm(...): bmm.html
 .. _torch.ceil(...): ceil.html
 .. _torch.clamp(...): clamp.html
 .. _torch.cos(...): cos.html
@@ -557,6 +580,7 @@ zero\_
 .. _torch.isnan(...): isnan.html
 .. _torch.le(...): le.html
 .. _torch.lt(...): lt.html
+.. _torch.matmul(...): matmul.html
 .. _torch.max(...): max.html
 .. _torch.maximum(...): maximum.html
 .. _torch.min(...): min.html

@@ -81,24 +81,14 @@ def clip_exporter_v11(op_def, context):
     return node, const_tensors
 
 
-@export_util.register('FullyConnected-7')
-def fully_connected_exporter_v7(op_def, context):
-    node, const_tensors = export_util.translate(**locals())
-    node.op_type = 'Gemm'
-    helper.add_attribute(node, 'alpha', 1.)
-    helper.add_attribute(node, 'beta', 1.)
-    for arg in op_def.arg:
-        if arg.name == 'transW':
-            helper.add_attribute(node, 'transB', arg.i)
-    # Weights and biases
-    const_tensors = [helper.from_tensor(name, context.ws)
-                     for name in op_def.input[1:]]
-    return node, const_tensors
+@export_util.register('Gemm-7')
+def gemm_exporter_v7(op_def, context):
+    return export_util.translate(**locals())
 
 
-@export_util.register('FullyConnected')
-def fully_connected_exporter(op_def, context):
-    node, const_tensors = fully_connected_exporter_v7(op_def, context)
+@export_util.register('Gemm')
+def gemm_exporter(op_def, context):
+    node, const_tensors = gemm_exporter_v7(op_def, context)
     helper.add_attribute(node, 'broadcast', 1)  # Removed since opset 7
     return node, const_tensors
 

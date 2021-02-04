@@ -77,6 +77,33 @@ class Clip(function.Function):
         return self.dispatch([input], [self.alloc(out)])
 
 
+class Gemm(function.Function):
+    """Gemm function."""
+
+    def __init__(self, key, dev, **kwargs):
+        super(Gemm, self).__init__(key, dev, **kwargs)
+        self.alpha = kwargs.get('alpha', 1.0)
+        self.beta = kwargs.get('beta', 1.0)
+        self.transA = kwargs.get('transA', False)
+        self.transB = kwargs.get('transB', False)
+
+    def attributes(self):
+        return {
+            'op_type': 'Gemm',
+            'arguments': {
+                'axis': -1,
+                'alpha': self.alpha,
+                'beta': self.beta,
+                'transA': self.transA,
+                'transB': self.transB,
+            },
+        }
+
+    def forward(self, mat1, mat2, mat3=None, out=None):
+        inputs = [mat1, mat2] + ([mat3] if mat3 else [])
+        return self.dispatch(inputs, [self.alloc(out)])
+
+
 class UnaryFunc(function.Function):
     """Unary function."""
 
@@ -89,24 +116,3 @@ class UnaryFunc(function.Function):
 
     def forward(self, input, out=None):
         return self.dispatch([input], [self.alloc(out)])
-
-
-class MatMul(function.Function):
-    """MatMul function."""
-
-    def __init__(self, key, dev, **kwargs):
-        super(MatMul, self).__init__(key, dev, **kwargs)
-        self.transpose_a = kwargs.get('transpose_a', False)
-        self.transpose_b = kwargs.get('transpose_b', False)
-
-    def attributes(self):
-        return {
-            'op_type': 'MatMul',
-            'arguments': {
-                'transA': self.transpose_a,
-                'transB': self.transpose_b,
-            },
-        }
-
-    def forward(self, mat1, mat2, out=None):
-        return self.dispatch([mat1, mat2], [self.alloc(out)])

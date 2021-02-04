@@ -76,7 +76,7 @@ class Function(object):
         Parameters
         ----------
         out : dragon.vm.torch.Tensor, optional
-            The optional output tensor.
+            The output tensor.
 
         Returns
         -------

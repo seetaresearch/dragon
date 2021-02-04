@@ -35,6 +35,7 @@ from dragon.core.ops.math_ops import dot
 from dragon.core.ops.math_ops import equal
 from dragon.core.ops.math_ops import exp
 from dragon.core.ops.math_ops import floor
+from dragon.core.ops.math_ops import gemm
 from dragon.core.ops.math_ops import greater
 from dragon.core.ops.math_ops import greater_equal
 from dragon.core.ops.math_ops import is_inf

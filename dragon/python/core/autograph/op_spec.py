@@ -414,30 +414,34 @@ def flatten_spec(args, inputs, outputs):
     return outputs
 
 
-@register('FullyConnected')
-def fully_connected_spec(args, inputs, outputs):
+@register('Gemm')
+def gemm_spec(args, inputs, outputs):
     outputs[0].dtype = inputs[0].dtype
-    axis, out_channels = args['axis'], args.get('out_channels', None)
+    axis, n = args['axis'], args.get('n', None)
     while axis < 0:
         try:
             axis += len(inputs[0].shape)
         except TypeError:
-            return outputs
-    out_shape = [None] * (axis + 1)
-    if out_channels is None:
+            break
+    out_shape = [None] * axis if axis >= 0 else None
+    if n is None:
         try:
-            if args['transW']:
-                out_channels = inputs[1].shape[0]
+            if args['transB']:
+                n = inputs[1].shape[0]
             else:
-                out_channels = inputs[1].shape[1]
+                n = inputs[1].shape[1]
         except (TypeError, IndexError):
-            out_channels = None
+            n = None
     try:
-        out_shape[axis] = out_channels
-        out_shape[:axis] = inputs[0].shape[:axis]
+        if out_shape is None or inputs[0].shape is not None:
+            out_shape = list(inputs[0].shape[:axis])
+        if args['transA']:
+            out_shape.insert(0, n)
+        else:
+            out_shape.append(n)
+        outputs[0].shape = out_shape
     except (TypeError, IndexError):
         pass
-    outputs[0].shape = out_shape
     return outputs
 
 
@@ -510,12 +514,25 @@ def masked_select_spec(args, inputs, outputs):
 @register('MatMul')
 def matmul_spec(args, inputs, outputs):
     outputs[0].dtype = inputs[0].dtype
-    ta, tb = args['transA'], args['transB']
     try:
+        a_shape = list(inputs[0].shape[:])
         b_shape = list(inputs[1].shape[:])
-        a_shape = out_shape = list(inputs[0].shape[:])
-        out_shape[-2] = a_shape[-1] if ta else a_shape[-2]
-        out_shape[-1] = b_shape[-2] if tb else b_shape[-1]
+        if len(a_shape) >= 2 and len(b_shape) >= 2:
+            out_shape = [1] * max(len(a_shape), len(b_shape))
+            a_shape = [1] * (len(out_shape) - len(a_shape)) + a_shape
+            b_shape = [1] * (len(out_shape) - len(b_shape)) + b_shape
+            for i in range(len(out_shape)):
+                try:
+                    out_shape[i] = max(a_shape[i], b_shape[i])
+                except TypeError:
+                    out_shape[i] = None
+            out_shape[-2] = a_shape[-2]
+            out_shape[-1] = b_shape[-1]
+        elif len(a_shape) == 1 and len(b_shape) == 1:
+            out_shape = []
+        else:
+            out_shape = a_shape if len(b_shape) == 1 else b_shape
+            out_shape.pop(-1 if len(b_shape) == 1 else -2)
     except (TypeError, IndexError):
         out_shape = None
     outputs[0].shape = out_shape

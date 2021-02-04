@@ -136,6 +136,7 @@ def conv(
                 data_format=data_format,
                 bias=len(inputs) > 2,
                 dtype=inputs[1].dtype,
+                input_shape=inputs[0].shape,
             ).apply(inputs)
     else:
         return op_lib.blend(**args)
@@ -465,6 +466,7 @@ def conv_transpose(
                 data_format=data_format,
                 bias=len(inputs) > 2,
                 dtype=inputs[1].dtype,
+                input_shape=inputs[0].shape,
             ).apply(inputs)
     else:
         return op_lib.blend(**args)

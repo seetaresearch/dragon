@@ -24,21 +24,21 @@ void _Cast(const int n, const InputT* x, OutputT* y) {
 
 #define DEFINE_CAST_KERNEL_LAUNCHER(InputT, OutputT)               \
   template <>                                                      \
-  void Cast<InputT, OutputT, CPUContext>(                          \
+  DRAGON_API void Cast<InputT, OutputT, CPUContext>(               \
       const int n, const InputT* x, OutputT* y, CPUContext* ctx) { \
     _Cast(n, x, y);                                                \
   }
 
 #define DEFINE_UNSUPPORTED_KERNEL_LAUNCHER(InputT, OutputT)             \
   template <>                                                           \
-  void Cast<InputT, OutputT, CPUContext>(                               \
+  DRAGON_API void Cast<InputT, OutputT, CPUContext>(                    \
       const int n, const InputT* x, OutputT* y, CPUContext* ctx) {      \
     LOG(FATAL) << "Unsupported conversion: "                            \
                << types::to_string(TypeMeta::Make<InputT>()) << " -> "  \
                << types::to_string(TypeMeta::Make<OutputT>());          \
   }                                                                     \
   template <>                                                           \
-  void Cast<OutputT, InputT, CPUContext>(                               \
+  DRAGON_API void Cast<OutputT, InputT, CPUContext>(                    \
       const int n, const OutputT* x, InputT* y, CPUContext* ctx) {      \
     LOG(FATAL) << "Unsupported conversion: "                            \
                << types::to_string(TypeMeta::Make<OutputT>()) << " -> " \

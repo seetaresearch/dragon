@@ -22,6 +22,18 @@ import itertools
 from dragon.core.util import six
 
 
+def _get_adaptive_pool_kwargs(input_sizes, output_sizes):
+    stride, kernel_size = [], []
+    for input_size, output_size in zip(input_sizes, output_sizes):
+        if output_size == 1:
+            stride.append(1)
+            kernel_size.append(input_size)
+        else:
+            stride.append(input_size // output_size)
+            kernel_size.append(input_size - (output_size - 1) * stride[-1])
+    return {'kernel_size': kernel_size, 'stride': stride}
+
+
 def _ntuple(n):
     def parse(x):
         if isinstance(x, six.collections_abc.Sequence):
