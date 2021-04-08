@@ -35,7 +35,8 @@ class Regularizer(object):
             The output tensor.
 
         """
-        x._regularizer = self
+        if hasattr(self, 'l2'):
+            x._weight_decay = self.l2
         return x
 
 

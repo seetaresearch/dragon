@@ -409,11 +409,10 @@ message LayerParameter {
   optional ThresholdParameter threshold_param = 128;
   optional TileParameter tile_param = 138;
   optional WindowDataParameter window_data_param = 129;
-  // Following parameters are extended on BVLC-Caffe.
-  optional ROIPoolingParameter roi_pooling_param = 151;
-  optional SmoothL1LossParameter smooth_l1_loss_param = 152;
-  optional PermuteParameter permute_param = 153;
-  optional NormalizeParameter normalize_param = 154;
+  // Following parameters are extended on BVLC/caffe.
+  optional SmoothL1LossParameter smooth_l1_loss_param = 151;
+  optional PermuteParameter permute_param = 152;
+  optional NormalizeParameter normalize_param = 153;
 }
 
 // Message that stores parameters used to apply transformation
@@ -929,17 +928,6 @@ message PoolingParameter {
   // If global_pooling then it will pool over the size of the bottom by doing
   // kernel_h = bottom->height and kernel_w = bottom->width
   optional bool global_pooling = 12 [default = false];
-}
-
-// Message that stores parameters used by ROIPoolingLayer
-message ROIPoolingParameter {
-  // Pad, kernel size, and stride are all given as a single value for equal
-  // dimensions in height and width or as Y, X pairs.
-  optional uint32 pooled_h = 1 [default = 0];  // The pooled output height
-  optional uint32 pooled_w = 2 [default = 0];  // The pooled output width
-  // Multiplicative spatial scale factor to translate ROI coords from their
-  // input scale to the scale used when pooling
-  optional float spatial_scale = 3 [default = 1];
 }
 
 message PowerParameter {

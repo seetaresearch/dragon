@@ -7,7 +7,7 @@ template <class Context>
 template <typename T>
 void SigmoidOp<Context>::DoRunWithType() {
   auto &X = Input(0), *Y = Output(0, {0});
-  kernel::Sigmoid(
+  kernels::Sigmoid(
       X.count(),
       X.template data<T, Context>(),
       Y->ReshapeLike(X)->template mutable_data<T, Context>(),
@@ -16,14 +16,14 @@ void SigmoidOp<Context>::DoRunWithType() {
 
 template <class Context>
 void SigmoidOp<Context>::RunOnDevice() {
-  DispatchHelper<FloatingTensorTypes>::Call(this, Input(0));
+  DispatchHelper<dtypes::Floating>::Call(this, Input(0));
 }
 
 template <class Context>
 template <typename T>
 void SigmoidGradientOp<Context>::DoRunWithType() {
   auto &Y = Input(0), &dY = Input(1), *dX = Output(0);
-  kernel::SigmoidGrad(
+  kernels::SigmoidGrad(
       Y.count(),
       dY.template data<T, Context>(),
       Y.template data<T, Context>(),
@@ -33,7 +33,7 @@ void SigmoidGradientOp<Context>::DoRunWithType() {
 
 template <class Context>
 void SigmoidGradientOp<Context>::RunOnDevice() {
-  DispatchHelper<FloatingTensorTypes>::Call(this, Input(0));
+  DispatchHelper<dtypes::Floating>::Call(this, Input(0));
 }
 
 DEPLOY_CPU_OPERATOR(Sigmoid);

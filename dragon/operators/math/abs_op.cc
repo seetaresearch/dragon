@@ -26,7 +26,7 @@ void AbsGradientOp<Context>::DoRunWithType() {
 
 template <class Context>
 void AbsGradientOp<Context>::RunOnDevice() {
-  DispatchHelper<FloatingTensorTypes>::Call(this, Input(0));
+  DispatchHelper<dtypes::Floating>::Call(this, Input(0));
 }
 
 DEPLOY_CPU_OPERATOR(AbsGradient);

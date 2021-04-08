@@ -1,6 +1,6 @@
 #include "dragon/operators/normalization/batch_norm_op.h"
 #include "dragon/core/workspace.h"
-#include "dragon/utils/filler.h"
+#include "dragon/utils/math_functions.h"
 #include "dragon/utils/op_kernels.h"
 
 namespace dragon {
@@ -9,10 +9,10 @@ template <class Context>
 template <typename T>
 void BatchNormOp<Context>::TrainingImpl() {
   using ParamT = typename math::AccmulatorType<T>::type;
-  TENSOR_FILL_WITH_TYPE(Input(1), vec64_t({C_}), ParamT);
-  TENSOR_FILL_WITH_TYPE(Input(2), vec64_t({C_}), ParamT);
-  TENSOR_FILL_WITH_TYPE(Input(3), vec64_t({C_}), ParamT);
-  TENSOR_FILL_WITH_TYPE(Input(4), vec64_t({C_}), ParamT);
+  INITIALIZE_TENSOR_VIA_SPEC(Input(1), vec64_t({C_}), ParamT);
+  INITIALIZE_TENSOR_VIA_SPEC(Input(2), vec64_t({C_}), ParamT);
+  INITIALIZE_TENSOR_VIA_SPEC(Input(3), vec64_t({C_}), ParamT);
+  INITIALIZE_TENSOR_VIA_SPEC(Input(4), vec64_t({C_}), ParamT);
 
   auto* X_mu = Buffer("X_mu")->Reshape({C_});
   auto* X_rsig = Buffer("X_rsig")->Reshape({C_});
@@ -30,7 +30,7 @@ void BatchNormOp<Context>::TrainingImpl() {
   if (sync_stats_ > 0) {
 #ifdef USE_MPI
     // Compute E(X) and E(X^2)
-    kernel::BatchNormExpectation(
+    kernels::BatchNormExpectation(
         N_,
         C_,
         S_,
@@ -72,18 +72,18 @@ void BatchNormOp<Context>::TrainingImpl() {
 #endif // USE_MPI
   } else {
     if (data_format() == "NCHW") {
-      vec32_t dims = {(int)N_, (int)C_, (int)S_};
+      vec32_t dims = {int(N_), int(C_), int(S_)};
       vec32_t axes = {0, 2};
-      kernel::Moments(3, dims.data(), 2, axes.data(), x, mu, rsig, ctx());
+      kernels::Moments(3, dims.data(), 2, axes.data(), x, mu, rsig, ctx());
     } else if (data_format() == "NHWC") {
-      vec32_t dims = {(int)(N_ * S_), (int)C_};
+      vec32_t dims = {int(N_ * S_), int(C_)};
       vec32_t axes = {0};
-      kernel::Moments(2, dims.data(), 1, axes.data(), x, mu, rsig, ctx());
+      kernels::Moments(2, dims.data(), 1, axes.data(), x, mu, rsig, ctx());
     }
   }
 
   // Compute running statistics
-  if (is_recomputing_ == 0) {
+  if (recomputing_ == 0) {
     auto decay_factor = momentum();
     math::Axpby(C_, 1.f - decay_factor, mu, decay_factor, rm, ctx());
     math::Axpby(C_, 1.f - decay_factor, rsig, decay_factor, rv, ctx());
@@ -93,7 +93,7 @@ void BatchNormOp<Context>::TrainingImpl() {
   math::InvStd(C_, epsilon_, rsig, rsig, ctx());
 
   // Fuse parameters to compute affine transformation
-  kernel::BatchNorm(
+  kernels::BatchNorm(
       N_,
       C_,
       S_,
@@ -113,10 +113,10 @@ template <class Context>
 template <typename T>
 void BatchNormOp<Context>::InferenceImpl() {
   using ParamT = typename math::AccmulatorType<T>::type;
-  TENSOR_FILL_WITH_TYPE(Input(1), vec64_t({C_}), ParamT);
-  TENSOR_FILL_WITH_TYPE(Input(2), vec64_t({C_}), ParamT);
-  TENSOR_FILL_WITH_TYPE(Input(3), vec64_t({C_}), ParamT);
-  TENSOR_FILL_WITH_TYPE(Input(4), vec64_t({C_}), ParamT);
+  INITIALIZE_TENSOR_VIA_SPEC(Input(1), vec64_t({C_}), ParamT);
+  INITIALIZE_TENSOR_VIA_SPEC(Input(2), vec64_t({C_}), ParamT);
+  INITIALIZE_TENSOR_VIA_SPEC(Input(3), vec64_t({C_}), ParamT);
+  INITIALIZE_TENSOR_VIA_SPEC(Input(4), vec64_t({C_}), ParamT);
 
   auto* X_rsig = Buffer("X_rsig")->Reshape({C_});
   auto* X_scale = Buffer("X_scale")->Reshape({C_});
@@ -128,7 +128,7 @@ void BatchNormOp<Context>::InferenceImpl() {
   math::InvStd(C_, epsilon_, rv, rsig, ctx());
 
   // Fuse parameters to compute affine transformation
-  kernel::BatchNorm(
+  kernels::BatchNorm(
       N_,
       C_,
       S_,
@@ -147,12 +147,12 @@ void BatchNormOp<Context>::InferenceImpl() {
 template <class Context>
 void BatchNormOp<Context>::RunOnDevice() {
   GetBaseArguments();
-  auto* flag = workspace()->GetTensor("/share/flag/recomputing");
-  is_recomputing_ = flag->template data<bool, CPUContext>()[0] ? 1 : 0;
+  auto* flag = workspace()->GetTensor("flagged/recomp");
+  recomputing_ = flag->template data<bool, CPUContext>()[0] ? 1 : 0;
 
   // Dispatch the training or inference implementation
   Output(0)->ReshapeLike(Input(0));
-  DispatchHelper<FloatingTensorTypes>::Call(this, Input(0));
+  DispatchHelper<dtypes::Floating>::Call(this, Input(0));
 }
 
 template <class Context>
@@ -171,7 +171,7 @@ void BatchNormGradientOp<Context>::TrainingImpl() {
   auto* dbeta = dB->Reshape({C_})->template mutable_data<ParamT, Context>();
 
   // Gradient w.r.t. gamma and beta
-  kernel::BatchNormWGrad(
+  kernels::BatchNormWGrad(
       N_, C_, S_, data_format(), x, mu, rsig, dy, dgamma, dbeta, ctx());
 
   if (sync_stats_ > 0) {
@@ -206,7 +206,7 @@ void BatchNormGradientOp<Context>::TrainingImpl() {
   }
 
   // Gradient w.r.t. input
-  kernel::BatchNormTrainingGrad(
+  kernels::BatchNormTrainingGrad(
       N_,
       C_,
       S_,
@@ -248,7 +248,7 @@ void BatchNormGradientOp<Context>::InferenceImpl() {
   math::InvStd(C_, epsilon_, rv, rsig, ctx());
 
   // Gradient w.r.t. gamma, beta and input
-  kernel::BatchNormInferenceGrad(
+  kernels::BatchNormInferenceGrad(
       N_,
       C_,
       S_,
@@ -270,7 +270,7 @@ void BatchNormGradientOp<Context>::RunOnDevice() {
 
   // Dispatch the training or inference implementation
   Output(0)->ReshapeLike(Input(0));
-  DispatchHelper<FloatingTensorTypes>::Call(this, Input(0));
+  DispatchHelper<dtypes::Floating>::Call(this, Input(0));
 }
 
 DEPLOY_CPU_OPERATOR(BatchNorm);
@@ -300,9 +300,9 @@ namespace {
 class GradientMaker final : public GradientMakerBase {
  public:
   GRADIENT_MAKER_CTOR(GradientMaker);
-  vector<OperatorDef> MakeDef() override {
-    return SingleDef(
-        def.type() + "Gradient",
+  void CreateGradientDefs() override {
+    AddGradientDef(
+        def().type() + "Gradient",
         "",
         vector<string>({I(0), I(1), I(3), I(4), GO(0)}),
         vector<string>({GI(0), GI(1), GI(2)}));

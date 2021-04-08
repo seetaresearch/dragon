@@ -1,5 +1,5 @@
-#include "dragon/operators/loss/ctc_loss_op.h"
 #include "dragon/core/workspace.h"
+#include "dragon/operators/loss/ctc_loss_ops.h"
 #include "dragon/utils/math_functions.h"
 
 namespace dragon {
@@ -23,7 +23,7 @@ void CTCLossGradientOp<Context>::DoRunWithType() {
 
 template <class Context>
 void CTCLossGradientOp<Context>::RunOnDevice() {
-  DispatchHelper<TensorTypes<float>>::Call(this, Input(0));
+  DispatchHelper<dtypes::TypesBase<float>>::Call(this, Input(0));
 }
 
 DEPLOY_CPU_OPERATOR(CTCLoss);
@@ -53,9 +53,9 @@ namespace {
 class GradientMaker final : public GradientMakerBase {
  public:
   GRADIENT_MAKER_CTOR(GradientMaker);
-  vector<OperatorDef> MakeDef() override {
-    return SingleDef(
-        def.type() + "Gradient",
+  void CreateGradientDefs() override {
+    AddGradientDef(
+        def().type() + "Gradient",
         "",
         vector<string>({GO(0)}),
         vector<string>({GI(0)}));

@@ -3,7 +3,7 @@
 
 namespace dragon {
 
-namespace kernel {
+namespace kernels {
 
 namespace {
 
@@ -236,6 +236,6 @@ DEFINE_GRAD_KERNEL_LAUNCHER(float);
 #undef DEFINE_GRAD_KERNEL_LAUNCHER
 #undef DISPATCH_DATA_KERNEL
 
-} // namespace kernel
+} // namespace kernels
 
 } // namespace dragon

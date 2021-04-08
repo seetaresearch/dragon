@@ -22,7 +22,7 @@ void NonZeroOp<Context>::DoRunWithType() {
   // Select the index of values matching the criteria
   // The first ``num_selected`` indices are valid
   int num_selected;
-  kernel::Flagged(
+  kernels::Flagged(
       X.count(),
       X_mask->template mutable_data<uint8_t, Context>(),
       X_index->template mutable_data<int, Context>(),
@@ -31,7 +31,7 @@ void NonZeroOp<Context>::DoRunWithType() {
 
   // Convert the flat indices into n-dimension coordinates
   Y->Reshape({num_selected, X.ndim()});
-  kernel::UnravelIndex(
+  kernels::UnravelIndex(
       num_selected,
       X.ndim(),
       X.dims().data(),
@@ -42,7 +42,7 @@ void NonZeroOp<Context>::DoRunWithType() {
 
 template <class Context>
 void NonZeroOp<Context>::RunOnDevice() {
-  DispatchHelper<FullTensorTypes>::Call(this, Input(0));
+  DispatchHelper<dtypes::Generic>::Call(this, Input(0));
 }
 
 DEPLOY_CPU_OPERATOR(NonZero);

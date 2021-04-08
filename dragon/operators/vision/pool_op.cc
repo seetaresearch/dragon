@@ -13,7 +13,7 @@ void PoolOp<Context>::DoRunWithType() {
   if (mode_ == "MAX") {
     auto* Y_mask = Buffer("Y_mask")->Reshape(out_shape_);
     if (num_axes_ == 1 || num_axes_ == 2) {
-      kernel::MaxPool2d(
+      kernels::MaxPool2d(
           in_dims_[0],
           in_dims_[1],
           in_dims_[2],
@@ -32,7 +32,7 @@ void PoolOp<Context>::DoRunWithType() {
           Y->Reshape(out_shape_)->template mutable_data<T, Context>(),
           ctx());
     } else if (num_axes_ == 3) {
-      kernel::MaxPool3d(
+      kernels::MaxPool3d(
           in_dims_[0],
           in_dims_[1],
           in_dims_[2],
@@ -60,7 +60,7 @@ void PoolOp<Context>::DoRunWithType() {
     }
   } else if (mode_ == "AVG") {
     if (num_axes_ == 1 || num_axes_ == 2) {
-      kernel::AvgPool2d(
+      kernels::AvgPool2d(
           in_dims_[0],
           in_dims_[1],
           in_dims_[2],
@@ -78,7 +78,7 @@ void PoolOp<Context>::DoRunWithType() {
           Y->Reshape(out_shape_)->template mutable_data<T, Context>(),
           ctx());
     } else if (num_axes_ == 3) {
-      kernel::AvgPool3d(
+      kernels::AvgPool3d(
           in_dims_[0],
           in_dims_[1],
           in_dims_[2],
@@ -108,7 +108,7 @@ void PoolOp<Context>::DoRunWithType() {
 
 template <class Context>
 void PoolOp<Context>::RunOnDevice() {
-  DispatchHelper<TensorTypes<float, double>>::Call(this, Input(0));
+  DispatchHelper<dtypes::TypesBase<float, double>>::Call(this, Input(0));
 }
 
 template <class Context>
@@ -119,7 +119,7 @@ void PoolGradientOp<Context>::DoRunWithType() {
 
   if (mode_ == "MAX") {
     if (num_axes_ == 1 || num_axes_ == 2) {
-      kernel::MaxPool2dGrad(
+      kernels::MaxPool2dGrad(
           in_dims_[0],
           in_dims_[1],
           in_dims_[2],
@@ -138,7 +138,7 @@ void PoolGradientOp<Context>::DoRunWithType() {
           dX->ReshapeLike(X)->template mutable_data<T, Context>(),
           ctx());
     } else if (num_axes_ == 3) {
-      kernel::MaxPool3dGrad(
+      kernels::MaxPool3dGrad(
           in_dims_[0],
           in_dims_[1],
           in_dims_[2],
@@ -166,7 +166,7 @@ void PoolGradientOp<Context>::DoRunWithType() {
     }
   } else if (mode_ == "AVG") {
     if (num_axes_ == 1 || num_axes_ == 2) {
-      kernel::AvgPool2dGrad(
+      kernels::AvgPool2dGrad(
           in_dims_[0],
           in_dims_[1],
           in_dims_[2],
@@ -184,7 +184,7 @@ void PoolGradientOp<Context>::DoRunWithType() {
           dX->ReshapeLike(X)->template mutable_data<T, Context>(),
           ctx());
     } else if (num_axes_ == 3) {
-      kernel::AvgPool3dGrad(
+      kernels::AvgPool3dGrad(
           in_dims_[0],
           in_dims_[1],
           in_dims_[2],
@@ -214,7 +214,7 @@ void PoolGradientOp<Context>::DoRunWithType() {
 
 template <class Context>
 void PoolGradientOp<Context>::RunOnDevice() {
-  DispatchHelper<TensorTypes<float, double>>::Call(this, Input(0));
+  DispatchHelper<dtypes::TypesBase<float, double>>::Call(this, Input(0));
 }
 
 DEPLOY_CPU_OPERATOR(Pool);
@@ -244,9 +244,9 @@ namespace {
 class GradientMaker final : public GradientMakerBase {
  public:
   GRADIENT_MAKER_CTOR(GradientMaker);
-  vector<OperatorDef> MakeDef() override {
-    return SingleDef(
-        def.type() + "Gradient",
+  void CreateGradientDefs() override {
+    AddGradientDef(
+        def().type() + "Gradient",
         "",
         vector<string>({I(0), O(0), GO(0)}),
         vector<string>({GI(0)}));

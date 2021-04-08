@@ -6,35 +6,18 @@ namespace dragon {
 template <class Context>
 void FlattenOp<Context>::RunOnDevice() {
   auto &X = Input(0), *Y = Output(0, {0});
+  GET_OP_AXIS_ARG(axis, X.ndim(), 0);
+  GET_OP_AXIS_ARG(end_axis, X.ndim(), -1);
+  SET_INPUT_SPEC(0);
 
-  vec64_t out_shape;
-  if (keep_axes_ != INT_MAX) {
-    if (X.ndim() < keep_axes_) {
-      out_shape = vec64_t(keep_axes_, 1);
-      for (int i = 0; i < X.ndim(); i++)
-        out_shape[i] = X.dim(i);
-    } else {
-      int i = 0;
-      for (; i < keep_axes_ - 1; i++)
-        out_shape.push_back(X.dim(i));
-      out_shape.push_back(X.count(i));
-    }
-  } else {
-    CANONICALIZE_AXIS_WITH_TENSOR(X);
-    for (int i = 0; i < axis; i++)
-      out_shape.push_back(X.dim(i));
-    if (num_axes_ < 1) {
-      out_shape.push_back(X.count(axis));
-    } else {
-      auto to = axis + num_axes_;
-      out_shape.push_back(X.count(axis, to));
-      for (int i = to; i < X.ndim(); i++)
-        out_shape.push_back(X.dim(i));
-    }
-  }
-
-  // Store for the gradient calculation
-  STORE_INPUT_SPEC(0);
+  auto out_shape = X.dims();
+  auto flatten_dim = std::accumulate(
+      out_shape.begin() + axis,
+      out_shape.begin() + end_axis + 1,
+      1,
+      std::multiplies<int64_t>());
+  out_shape.erase(out_shape.begin() + axis, out_shape.begin() + end_axis + 1);
+  out_shape.insert(out_shape.begin() + axis, flatten_dim);
 
   // Maybe copy the contents
   Y->Reshape(out_shape)->CopyFrom(X, ctx());

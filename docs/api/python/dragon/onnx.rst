@@ -37,14 +37,14 @@ Name                     Supported Reference
 `Acos`_
 `Acosh`_
 `Add`_                   |v|       :func:`dragon.math.add`
-`And`_                   |v|       :func:`dragon.bitwise.bitwise_and`
+`And`_                   |v|       :func:`dragon.math.logical_and`
 `ArgMax`_                |v|       :func:`dragon.math.argmax`
 `ArgMin`_                |v|       :func:`dragon.math.argmin`
 `Asin`_
 `Asinh`_
 `Atan`_
 `Atanh`_
-`AveragePool`_           |v|       :func:`dragon.nn.pool2d`
+`AveragePool`_           |v|       :func:`dragon.nn.pool`
 `BatchNormalization`_    |v|       :func:`dragon.nn.batch_norm`
 `BitShift`_
 `Cast`_                  |v|       :func:`dragon.cast`
@@ -55,9 +55,9 @@ Name                     Supported Reference
 `ConcatFromSequence`_
 `Constant`_
 `ConstantOfShape`_
-`Conv`_                  |v|       :func:`dragon.nn.conv2d`
+`Conv`_                  |v|       :func:`dragon.nn.conv`
 `ConvInteger`_
-`ConvTranspose`_         |v|       :func:`dragon.nn.conv2d_transpose`
+`ConvTranspose`_         |v|       :func:`dragon.nn.conv_transpose`
 `Cos`_                   |v|       :func:`dragon.math.cos`
 `Cosh`_
 `CumSum`_                |v|       :func:`dragon.math.cumsum`
@@ -76,13 +76,13 @@ Name                     Supported Reference
 `Flatten`_               |v|       :func:`dragon.flatten`
 `Floor`_                 |v|       :func:`dragon.math.floor`
 `GRU`_                   |v|       :func:`dragon.nn.GRU`
-`Gather`_                |v|       :func:`dragon.index_select`
+`Gather`_                |v|       :func:`dragon.gather`
 `GatherElements`_
 `GatherND`_
 `Gemm`_                  |v|       :func:`dragon.math.gemm`
-`GlobalAveragePool`_     |v|       :func:`dragon.nn.pool2d`
+`GlobalAveragePool`_     |v|       :func:`dragon.nn.pool`
 `GlobalLpPool`_
-`GlobalMaxPool`_         |v|       :func:`dragon.nn.pool2d`
+`GlobalMaxPool`_         |v|       :func:`dragon.nn.pool`
 `Greater`_               |v|       :func:`dragon.math.greater`
 `HardSigmoid`_           |v|       :func:`dragon.nn.hardsigmoid`
 `Hardmax`_
@@ -103,7 +103,7 @@ Name                     Supported Reference
 `MatMul`_                |v|       :func:`dragon.math.matmul`
 `MatMulInteger`_
 `Max`_                   |v|       :func:`dragon.math.maximum`
-`MaxPool`_               |v|       :func:`dragon.nn.pool2d`
+`MaxPool`_               |v|       :func:`dragon.nn.pool`
 `MaxRoiPool`_            |v|       :func:`dragon.vision.roi_pool`
 `MaxUnpool`_
 `Mean`_                  |v|       :func:`dragon.math.add`
@@ -114,9 +114,9 @@ Name                     Supported Reference
 `Neg`_                   |v|       :func:`dragon.math.negative`
 `NonMaxSuppression`_
 `NonZero`_               |v|       :func:`dragon.nonzero`
-`Not`_                   |v|       :func:`dragon.bitwise.invert`
+`Not`_                   |v|       :func:`dragon.math.logical_not`
 `OneHot`_                |v|       :func:`dragon.one_hot`
-`Or`_                    |v|       :func:`dragon.bitwise.bitwise_or`
+`Or`_                    |v|       :func:`dragon.math.logical_or`
 `PRelu`_                 |v|       :func:`dragon.nn.prelu`
 `Pad`_                   |v|       :func:`dragon.pad`
 `Pow`_                   |v|       :func:`dragon.math.pow`
@@ -186,7 +186,7 @@ Name                     Supported Reference
 `Unsqueeze`_             |v|       :func:`dragon.expand_dims`
 `Upsample`_              |v|       :func:`dragon.vision.resize`
 `Where`_                 |v|       :func:`dragon.where`
-`Xor`_                   |v|       :func:`dragon.bitwise.bitwise_xor`
+`Xor`_                   |v|       :func:`dragon.math.logical_xor`
 ======================== ========= ========================================
 
 .. toctree::

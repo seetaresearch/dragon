@@ -14,18 +14,17 @@ from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
 
-from dragon.core.eager import context
-from dragon.core.ops import activation_ops_lib
+from dragon.core.autograph import context
+from dragon.core.autograph.op_impl import OpLib
+from dragon.core.autograph.op_impl import OpSchema
 from dragon.core.ops import math_ops
 from dragon.core.ops import array_ops
-from dragon.core.ops.utils import ArgHelper
-from dragon.core.ops.utils import OpSchema
 
 
 @OpSchema.num_inputs(1)
-@ArgHelper.desc('ratio', as_target=False)
-def dropout(inputs, ratio=0.5, **kwargs):
-    r"""Set the elements of the input to zero randomly.
+@OpSchema.convert_arg('ratio', as_target=False)
+def dropout(inputs, ratio=0.5, inplace=False, **kwargs):
+    r"""Set the elements of input to zero randomly.
     `[Srivastava et.al, 2014] <http://jmlr.org/papers/v15/srivastava14a.html>`_.
 
     The **Dropout** function is defined as:
@@ -36,7 +35,7 @@ def dropout(inputs, ratio=0.5, **kwargs):
 
     ```python
     x = dragon.ones((2, 3), 'float32')
-    print(dragon.nn.dropout(x, 0.5, inplace=False))
+    print(dragon.nn.dropout(x, ratio=0.5))
     ```
 
     Parameters
@@ -44,7 +43,9 @@ def dropout(inputs, ratio=0.5, **kwargs):
     inputs : dragon.Tensor
         The input tensor.
     ratio : Union[float, dragon.Tensor], optional, default=0.5
-        The dropping ratio.
+        The probability to zero an element.
+    inplace : bool, optional, default=False
+        Call in-place or return a new tensor.
 
     Returns
     -------
@@ -52,21 +53,26 @@ def dropout(inputs, ratio=0.5, **kwargs):
         The output tensor.
 
     """
-    args = ArgHelper.parse(locals())
-    inplace = args.pop('inplace') if 'inplace' in args else False
-    op_lib = activation_ops_lib.Dropout
+    args = OpSchema.parse_args(locals())
     if context.executing_eagerly():
-        return op_lib \
-            .instantiate() \
-            .apply([inputs], args['ratio'], inplace=inplace)
-    else:
-        return op_lib.blend(**args)
+        return OpLib.execute(
+            'Dropout', inputs, outputs=inputs if inplace else [None],
+            ratio=args['ratio'])
+    args.pop('inplace')
+    return OpLib.add('Dropout', **args)
 
 
 @OpSchema.num_inputs(1)
-@ArgHelper.desc('ratio', as_target=False)
-def drop_block2d(inputs, ratio=0.1, block_size=7, data_format='NCHW', **kwargs):
-    r"""Set the spatial blocks over input to zero randomly.
+@OpSchema.convert_arg('ratio', as_target=False)
+def drop_block(
+    inputs,
+    ratio=0.1,
+    block_size=1,
+    data_format='NCHW',
+    inplace=False,
+    **kwargs
+):
+    r"""Set the blocks over input to zero randomly.
     `[Ghiasi et.al, 2018] <https://arxiv.org/abs/1810.12890>`_.
 
     The **DropBlock** function is defined as:
@@ -74,20 +80,29 @@ def drop_block2d(inputs, ratio=0.1, block_size=7, data_format='NCHW', **kwargs):
     .. math::
         \text{DropBlock}(x_{ijk}) =
             x_{ijk} * (r_{ik} \sim \mathcal{B}(1, 1 - \gamma)) \\ \quad \\
-                \text{where}\quad \gamma =
-                    \frac{\text{ratio}}{\text{block\_size}^{n}}
-                    \frac{\text{feat\_size}^{n}}{(\text{feat\_size} - \text{block\_size} + 1)^n}
+        \text{where}\quad \gamma =
+            \frac{\text{ratio}}{\text{block\_size}^{n}}
+            \frac{\text{feat\_size}^{n}}{(\text{feat\_size} - \text{block\_size} + 1)^n}
+
+    Examples:
+
+    ```python
+    x = dragon.ones((1, 3, 5, 5), 'float32')
+    print(dragon.nn.drop_block(x, ratio=0.5, block_size=3))
+    ```
 
     Parameters
     ----------
     inputs : dragon.Tensor
         The input tensor.
     ratio : Union[float, dragon.Tensor], optional, default=0.1
-        The dropping ratio.
+        The probability to zero a block.
     block_size : int, optional, default=7
         The spatial block size.
     data_format : str, optional, default='NCHW'
         ``'NCHW'`` or ``'NHWC'``.
+    inplace : bool, optional, default=False
+        Call in-place or return a new tensor.
 
     Returns
     -------
@@ -95,22 +110,19 @@ def drop_block2d(inputs, ratio=0.1, block_size=7, data_format='NCHW', **kwargs):
         The output tensor.
 
     """
-    args = ArgHelper.parse(locals())
-    inplace = args.pop('inplace') if 'inplace' in args else False
-    op_lib = activation_ops_lib.DropBlock2d
+    args = OpSchema.parse_args(locals())
     if context.executing_eagerly():
-        return op_lib \
-            .instantiate(
-                block_size=block_size,
-                data_format=data_format,
-            ).apply([inputs], args['ratio'], inplace=inplace)
-    else:
-        return op_lib.blend(**args)
+        return OpLib.execute(
+            'DropBlock', inputs, outputs=inputs if inplace else [None],
+            block_size=block_size, data_format=data_format,
+            ratio=args['ratio'])
+    args.pop('inplace')
+    return OpLib.add('DropBlock', **args)
 
 
 @OpSchema.num_inputs(1)
-@ArgHelper.desc('ratio', as_target=False)
-def drop_path(inputs, ratio=0.2, **kwargs):
+@OpSchema.convert_arg('ratio', as_target=False)
+def drop_path(inputs, ratio=0.2, inplace=False, **kwargs):
     r"""Set the examples over the input to zero randomly.
     `[Larsson et.al, 2016] <https://arxiv.org/abs/1605.07648>`_.
 
@@ -118,12 +130,21 @@ def drop_path(inputs, ratio=0.2, **kwargs):
 
     .. math:: \text{DropPath}(x_{ij}) = x_{ij} * (r_{i} \sim \mathcal{B}(1, 1 - \text{ratio}))
 
+    Examples:
+
+    ```python
+    x = dragon.ones((5, 2), 'float32')
+    print(dragon.nn.drop_path(x, ratio=0.5))
+    ```
+
     Parameters
     ----------
     inputs : dragon.Tensor
         The input tensor.
     ratio : Union[float, dragon.Tensor], optional, default=0.2
-        The dropping ratio.
+        The probability to zero an example.
+    inplace : bool, optional, default=False
+        Call in-place or return a new tensor.
 
     Returns
     -------
@@ -131,19 +152,17 @@ def drop_path(inputs, ratio=0.2, **kwargs):
         The output tensor.
 
     """
-    args = ArgHelper.parse(locals())
-    inplace = args.pop('inplace') if 'inplace' in args else False
-    op_lib = activation_ops_lib.DropPath
+    args = OpSchema.parse_args(locals())
     if context.executing_eagerly():
-        return op_lib \
-            .instantiate() \
-            .apply([inputs], args['ratio'], inplace=inplace)
-    else:
-        return op_lib.blend(**args)
+        return OpLib.execute(
+            'DropPath', inputs, outputs=inputs if inplace else [None],
+            ratio=args['ratio'])
+    args.pop('inplace')
+    return OpLib.add('DropPath', **args)
 
 
 @OpSchema.num_inputs(1)
-def elu(inputs, alpha=1.0, **kwargs):
+def elu(inputs, alpha=1.0, inplace=False, **kwargs):
     r"""Apply the exponential linear unit.
     `[Clevert et.al, 2015] <https://arxiv.org/abs/1511.07289>`_.
 
@@ -169,6 +188,8 @@ def elu(inputs, alpha=1.0, **kwargs):
         The input tensor.
     alpha : float, optional, default=1.0
         The value to :math:`\alpha`.
+    inplace : bool, optional, default=False
+        Call in-place or return a new tensor.
 
     Returns
     -------
@@ -176,20 +197,15 @@ def elu(inputs, alpha=1.0, **kwargs):
         The output tensor.
 
     """
-    args = ArgHelper.parse(locals())
-    args['alpha'] = float(alpha)
-    inplace = args.pop('inplace') if 'inplace' in args else False
-    op_lib = activation_ops_lib.Elu
+    alpha = float(alpha)
     if context.executing_eagerly():
-        return op_lib \
-            .instantiate(alpha=args['alpha']) \
-            .apply([inputs], inplace=inplace)
-    else:
-        return op_lib.blend(**args)
+        return OpLib.execute(
+            'Elu', inputs, outputs=inputs if inplace else [None], alpha=alpha)
+    return OpLib.add('Elu', inputs, alpha=alpha, **kwargs)
 
 
 @OpSchema.num_inputs(1)
-def hardsigmoid(inputs, alpha=0.2, beta=0.5, **kwargs):
+def hardsigmoid(inputs, alpha=0.2, beta=0.5, inplace=False, **kwargs):
     r"""Apply the hard sigmoid function.
 
     The **HardSigmoid** function is defined as:
@@ -211,6 +227,8 @@ def hardsigmoid(inputs, alpha=0.2, beta=0.5, **kwargs):
         The value to :math:`\alpha`.
     beta : float, optional, default=0.5
         The value to :math:`\beta`.
+    inplace : bool, optional, default=False
+        Call in-place or return a new tensor.
 
     Returns
     -------
@@ -218,19 +236,12 @@ def hardsigmoid(inputs, alpha=0.2, beta=0.5, **kwargs):
         The output tensor.
 
     """
-    args = ArgHelper.parse(locals())
-    args['alpha'] = float(alpha)
-    args['beta'] = float(beta)
-    inplace = args.pop('inplace') if 'inplace' in args else False
-    op_lib = activation_ops_lib.HardSigmoid
+    alpha, beta = float(alpha), float(beta)
     if context.executing_eagerly():
-        return op_lib \
-            .instantiate(
-                alpha=args['alpha'],
-                beta=args['beta'],
-            ).apply([inputs], inplace=inplace)
-    else:
-        return op_lib.blend(**args)
+        return OpLib.execute(
+            'HardSigmoid', inputs, outputs=inputs if inplace else [None],
+            alpha=alpha, beta=beta)
+    return OpLib.add('HardSigmoid', inputs, alpha=alpha, beta=beta, **kwargs)
 
 
 @OpSchema.num_inputs(1)
@@ -264,22 +275,14 @@ def hardswish(inputs, alpha=0.2, beta=0.5, **kwargs):
         The output tensor.
 
     """
-    args = ArgHelper.parse(locals())
-    args['alpha'] = float(alpha)
-    args['beta'] = float(beta)
-    op_lib = activation_ops_lib.HardSwish
+    alpha, beta = float(alpha), float(beta)
     if context.executing_eagerly():
-        return op_lib \
-            .instantiate(
-                alpha=args['alpha'],
-                beta=args['beta'],
-            ).apply([inputs])
-    else:
-        return op_lib.blend(**args)
+        return OpLib.execute('HardSwish', inputs, alpha=alpha, beta=beta)
+    return OpLib.add('HardSwish', inputs, alpha=alpha, beta=beta, **kwargs)
 
 
 @OpSchema.num_inputs(1)
-def leaky_relu(inputs, alpha=0.2, **kwargs):
+def leaky_relu(inputs, alpha=0.2, inplace=False, **kwargs):
     r"""Apply the leaky rectified linear unit.
 
     The **LeakyReLU** function is defined as:
@@ -304,6 +307,8 @@ def leaky_relu(inputs, alpha=0.2, **kwargs):
         The input tensor.
     alpha : number, optional, default=0.2
         The value to :math:`\alpha`.
+    inplace : bool, optional, default=False
+        Call in-place or return a new tensor.
 
     Returns
     -------
@@ -311,16 +316,11 @@ def leaky_relu(inputs, alpha=0.2, **kwargs):
         The output tensor.
 
     """
-    args = ArgHelper.parse(locals())
-    args['alpha'] = float(alpha)
-    inplace = args.pop('inplace') if 'inplace' in args else False
-    op_lib = activation_ops_lib.Relu
+    alpha = float(alpha)
     if context.executing_eagerly():
-        return op_lib \
-            .instantiate(alpha=args['alpha']) \
-            .apply([inputs], inplace=inplace)
-    else:
-        return op_lib.blend(**args)
+        return OpLib.execute(
+            'Relu', inputs, outputs=inputs if inplace else [None], alpha=alpha)
+    return OpLib.add('Relu', inputs, alpha=alpha, **kwargs)
 
 
 @OpSchema.num_inputs(1)
@@ -353,15 +353,14 @@ def log_softmax(inputs, axis=-1, **kwargs):
 
     """
     return math_ops.sub(
-        [inputs, math_ops.log(array_ops.sum(
-            math_ops.exp(inputs, **kwargs),
-            axis=[axis], keepdims=True, **kwargs), **kwargs)],
-        **kwargs
-    )
+        [inputs, math_ops.log(
+            array_ops.sum(math_ops.exp(inputs, **kwargs),
+                          axis=[axis], keepdims=True, **kwargs),
+            **kwargs)], **kwargs)
 
 
 @OpSchema.num_inputs(2)
-def prelu(inputs, channel_shared=False, data_format='NCHW', **kwargs):
+def prelu(inputs, data_format='NCHW', **kwargs):
     r"""Apply the parametric rectified linear unit.
     `[He et.al, 2015] <https://arxiv.org/abs/1502.01852>`_.
 
@@ -386,8 +385,6 @@ def prelu(inputs, channel_shared=False, data_format='NCHW', **kwargs):
     ----------
     inputs : Sequence[dragon.Tensor]
         The input and weight.
-    channel_shared : bool, optional, default=False.
-        Whether to share the weight across channels.
     data_format : str, optional, default='NCHW'
         ``'NCHW'`` or ``'NHWC'``.
 
@@ -397,18 +394,13 @@ def prelu(inputs, channel_shared=False, data_format='NCHW', **kwargs):
         The output tensor.
 
     """
-    args = ArgHelper.parse(locals())
-    op_lib = activation_ops_lib.PRelu
     if context.executing_eagerly():
-        return op_lib \
-            .instantiate(data_format=data_format) \
-            .apply(inputs)
-    else:
-        return op_lib.blend(**args)
+        return OpLib.execute('PRelu', inputs, data_format=data_format)
+    return OpLib.add('PRelu', inputs, data_format=data_format, **kwargs)
 
 
 @OpSchema.num_inputs(1)
-def relu(inputs, **kwargs):
+def relu(inputs, inplace=False, **kwargs):
     r"""Apply the rectified linear unit.
     `[Nair & Hinton, 2010] <http://www.csri.utoronto.ca/~hinton/absps/reluICML.pdf>`_.
 
@@ -425,13 +417,15 @@ def relu(inputs, **kwargs):
 
     ```python
     x = dragon.constant([-1., 0., 1.])
-    print(dragon.nn.relu(x, inplace=False))
+    print(dragon.nn.relu(x))
     ```
 
     Parameters
     ----------
     inputs : dragon.Tensor
         The input tensor.
+    inplace : bool, optional, default=False
+        Call in-place or return a new tensor.
 
     Returns
     -------
@@ -439,19 +433,14 @@ def relu(inputs, **kwargs):
         The output tensor.
 
     """
-    args = ArgHelper.parse(locals())
-    inplace = args.pop('inplace') if 'inplace' in args else False
-    op_lib = activation_ops_lib.Relu
     if context.executing_eagerly():
-        return op_lib \
-            .instantiate(alpha=0.,) \
-            .apply([inputs], inplace=inplace)
-    else:
-        return op_lib.blend(**args)
+        return OpLib.execute(
+            'Relu', inputs, outputs=inputs if inplace else [None], alpha=0.0)
+    return OpLib.add('Relu', inputs, alpha=0.0, **kwargs)
 
 
 @OpSchema.num_inputs(1)
-def relu6(inputs, **kwargs):
+def relu6(inputs, inplace=False, **kwargs):
     r"""Apply the clipped-6 rectified linear unit.
     `[Krizhevsky, 2010] <http://www.cs.utoronto.ca/~kriz/conv-cifar10-aug2010.pdf>`_.
 
@@ -467,14 +456,16 @@ def relu6(inputs, **kwargs):
     Examples:
 
     ```python
-    x = dragon.constant([-1, 0, 1], 'float32')
-    print(dragon.nn.relu6(x, inplace=False))
+    x = dragon.constant([-1, 0, 7], 'float32')
+    print(dragon.nn.relu6(x))
     ```
 
     Parameters
     ----------
     inputs : dragon.Tensor
         The input tensor.
+    inplace : bool, optional, default=False
+        Call in-place or return a new tensor.
 
     Returns
     -------
@@ -482,17 +473,15 @@ def relu6(inputs, **kwargs):
         The output tensor.
 
     """
-    args = ArgHelper.parse(locals())
-    inplace = args.pop('inplace') if 'inplace' in args else False
-    op_lib = activation_ops_lib.Relu6
     if context.executing_eagerly():
-        return op_lib.instantiate().apply([inputs], inplace=inplace)
-    else:
-        return op_lib.blend('Relu', max_value=6., **args)
+        return OpLib.execute(
+            'Relu', inputs, outputs=inputs if inplace else [None],
+            alpha=0.0, max_value=6.0)
+    return OpLib.add('Relu', inputs, alpha=0.0, max_value=6.0, **kwargs)
 
 
 @OpSchema.num_inputs(1)
-def selu(inputs, alpha=1.67326, gamma=1.0507, **kwargs):
+def selu(inputs, alpha=1.67326, gamma=1.0507, inplace=False, **kwargs):
     r"""Apply the scaled exponential linear unit.
     `[Klambauer et.al, 2017] <https://arxiv.org/abs/1706.02515>`_.
 
@@ -509,7 +498,7 @@ def selu(inputs, alpha=1.67326, gamma=1.0507, **kwargs):
 
     ```python
     x = dragon.constant([-1., 0., 1.])
-    print(dragon.nn.selu(x, inplace=False))
+    print(dragon.nn.selu(x))
     ```
 
     Parameters
@@ -520,6 +509,8 @@ def selu(inputs, alpha=1.67326, gamma=1.0507, **kwargs):
         The value to :math:`\alpha`.
     gamma : float, optional, default=1.0507
         The value to :math:`\gamma`.
+    inplace : bool, optional, default=False
+        Call in-place or return a new tensor.
 
     Returns
     -------
@@ -527,22 +518,16 @@ def selu(inputs, alpha=1.67326, gamma=1.0507, **kwargs):
         The output tensor.
 
     """
-    args = ArgHelper.parse(locals())
-    args['alpha'], args['gamma'] = float(alpha), float(gamma)
-    inplace = args.pop('inplace') if 'inplace' in args else False
-    op_lib = activation_ops_lib.Selu
+    alpha, gamma = float(alpha), float(gamma)
     if context.executing_eagerly():
-        return op_lib \
-            .instantiate(
-                alpha=args['alpha'],
-                gamma=args['gamma'],
-            ).apply([inputs], inplace=inplace)
-    else:
-        return op_lib.blend('Selu', **args)
+        return OpLib.execute(
+            'Selu', inputs, outputs=inputs if inplace else [None],
+            alpha=alpha, gamma=gamma)
+    return OpLib.add('Selu', inputs, alpha=alpha, gamma=gamma, **kwargs)
 
 
 @OpSchema.num_inputs(1)
-def sigmoid(inputs, **kwargs):
+def sigmoid(inputs, inplace=False, **kwargs):
     r"""Compute the sigmoid result of input.
 
     The **Sigmoid** function is defined as:
@@ -553,13 +538,15 @@ def sigmoid(inputs, **kwargs):
 
     ```python
     x = dragon.constant([0.2, 0.4, 0.6, 0.8, 1.0])
-    print(dragon.math.sigmoid(x, inplace=False))
+    print(dragon.math.sigmoid(x))
     ```
 
     Parameters
     ----------
     inputs : dragon.Tensor
         The input tensor.
+    inplace : bool, optional, default=False
+        Call in-place or return a new tensor.
 
     Returns
     -------
@@ -567,19 +554,14 @@ def sigmoid(inputs, **kwargs):
         The output tensor
 
     """
-    args = ArgHelper.parse(locals())
-    inplace = args.pop('inplace') if 'inplace' in args else False
-    op_lib = activation_ops_lib.Activation
     if context.executing_eagerly():
-        return op_lib \
-            .instantiate(op_type='Sigmoid') \
-            .apply([inputs], inplace=inplace)
-    else:
-        return op_lib.blend('Sigmoid', **args)
+        return OpLib.execute(
+            'Sigmoid', inputs, outputs=inputs if inplace else [None])
+    return OpLib.add('Sigmoid', inputs, **kwargs)
 
 
 @OpSchema.num_inputs(1)
-def softmax(inputs, axis=-1, **kwargs):
+def softmax(inputs, axis=-1, inplace=False, **kwargs):
     r"""Compute the softmax result.
 
     The **Softmax** function is defined as:
@@ -600,6 +582,8 @@ def softmax(inputs, axis=-1, **kwargs):
         The input tensor.
     axis : int, optional, default=-1
         The axis to reduce.
+    inplace : bool, optional, default=False
+        Call in-place or return a new tensor.
 
     Returns
     -------
@@ -607,19 +591,14 @@ def softmax(inputs, axis=-1, **kwargs):
         The output tensor.
 
     """
-    args = ArgHelper.parse(locals())
-    inplace = args.pop('inplace') if 'inplace' in args else False
-    op_lib = activation_ops_lib.Softmax
     if context.executing_eagerly():
-        return op_lib \
-            .instantiate(axis=axis) \
-            .apply([inputs], inplace=inplace)
-    else:
-        return op_lib.blend(**args)
+        return OpLib.execute(
+            'Softmax', inputs, outputs=inputs if inplace else [None], axis=axis)
+    return OpLib.add('Softmax', inputs, axis=axis, **kwargs)
 
 
 @OpSchema.num_inputs(1)
-def tanh(inputs, **kwargs):
+def tanh(inputs, inplace=False, **kwargs):
     r"""Compute the tanh of input.
 
     The **Tanh** function is defined as:
@@ -637,6 +616,8 @@ def tanh(inputs, **kwargs):
     ----------
     inputs : dragon.Tensor
         The input tensor.
+    inplace : bool, optional, default=False
+        Call in-place or return a new tensor.
 
     Returns
     -------
@@ -644,15 +625,10 @@ def tanh(inputs, **kwargs):
         The output tensor.
 
     """
-    args = ArgHelper.parse(locals())
-    inplace = args.pop('inplace') if 'inplace' in args else False
-    op_lib = activation_ops_lib.Activation
     if context.executing_eagerly():
-        return op_lib \
-            .instantiate(op_type='Tanh') \
-            .apply([inputs], inplace=inplace)
-    else:
-        return op_lib.blend('Tanh', **args)
+        return OpLib.execute(
+            'Tanh', inputs, outputs=inputs if inplace else [None])
+    return OpLib.add('Tanh', inputs, **kwargs)
 
 
 @OpSchema.num_inputs(1)
@@ -682,11 +658,6 @@ def swish(inputs, **kwargs):
         The output tensor.
 
     """
-    args = ArgHelper.parse(locals())
-    op_lib = activation_ops_lib.Activation
     if context.executing_eagerly():
-        return op_lib \
-            .instantiate(op_type='Swish') \
-            .apply([inputs])
-    else:
-        return op_lib.blend('Swish', **args)
+        return OpLib.execute('Swish', inputs)
+    return OpLib.add('Swish', inputs, **kwargs)

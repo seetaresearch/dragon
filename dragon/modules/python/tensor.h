@@ -13,16 +13,15 @@
 #ifndef DRAGON_MODULES_PYTHON_TENSOR_H_
 #define DRAGON_MODULES_PYTHON_TENSOR_H_
 
-#include "dragon/modules/python/common.h"
+#include "dragon/modules/python/dlpack.h"
+#include "dragon/modules/python/numpy.h"
 
 namespace dragon {
 
 namespace python {
 
-namespace tensor {
-
-void RegisterModule(py::module& m) {
-  /*! \brief Export the Tensor class */
+void RegisterModule_tensor(py::module& m) {
+  /*! \brief Tensor class */
   py::class_<Tensor>(m, "Tensor")
       /*! \brief Return the tensor name */
       .def_property_readonly("name", &Tensor::name)
@@ -42,7 +41,9 @@ void RegisterModule(py::module& m) {
       /*! \brief Return the data type */
       .def_property_readonly(
           "dtype",
-          [](Tensor* self) { return ::dragon::types::to_string(self->meta()); })
+          [](Tensor* self) {
+            return ::dragon::dtypes::to_string(self->meta());
+          })
 
       /*! \brief Return the device information */
       .def_property_readonly(
@@ -53,7 +54,7 @@ void RegisterModule(py::module& m) {
               return std::tuple<string, int>(
                   info["device_type"], atoi(info["device_id"].c_str()));
             } else {
-              return std::tuple<string, int>("Unknown", 0);
+              return std::tuple<string, int>("unknown", 0);
             }
           })
 
@@ -66,8 +67,6 @@ void RegisterModule(py::module& m) {
               pointer = (intptr_t)self->raw_data<CPUContext>();
             } else if (device_type == "cuda") {
               pointer = (intptr_t)self->raw_data<CUDAContext>();
-            } else if (device_type == "cnml") {
-              pointer = (intptr_t)self->raw_data<CNMLContext>();
             } else {
               LOG(FATAL) << "Unknown device type: " << device_type;
             }
@@ -83,13 +82,14 @@ void RegisterModule(py::module& m) {
               pointer = (intptr_t)self->raw_mutable_data<CPUContext>();
             } else if (device_type == "cuda") {
               pointer = (intptr_t)self->raw_mutable_data<CUDAContext>();
-            } else if (device_type == "cnml") {
-              pointer = (intptr_t)self->raw_mutable_data<CNMLContext>();
             } else {
               LOG(FATAL) << "Unknown device type: " << device_type;
             }
             return pointer;
           })
+
+      /*! \brief Reset to an empty tensor */
+      .def("Reset", [](Tensor* self) { self->Reset(); })
 
       /*! \brief Reshape to the given dimensions */
       .def(
@@ -150,7 +150,7 @@ void RegisterModule(py::module& m) {
       .def(
           "FromShape",
           [](Tensor* self, const vector<int64_t>& dims, const string& dtype) {
-            const auto& meta = ::dragon::types::to_meta(dtype);
+            const auto& meta = ::dragon::dtypes::to_meta(dtype);
             CHECK(meta.id() != 0)
                 << "\nUnsupported tensor type: " + dtype + ".";
             self->set_meta(meta)->Reshape(dims);
@@ -167,7 +167,7 @@ void RegisterModule(py::module& m) {
              const string& dtype,
              const string& dev,
              const intptr_t pointer) {
-            const auto& meta = ::dragon::types::to_meta(dtype);
+            const auto& meta = ::dragon::dtypes::to_meta(dtype);
             DeviceOption opt;
             opt.ParseFromString(dev);
             auto* data = (void*)pointer;
@@ -197,29 +197,12 @@ void RegisterModule(py::module& m) {
       /*! \brief Construct from a numpy array */
       .def(
           "FromNumpy",
-          [](Tensor* self, py::object object) {
-            auto* array = PyArray_GETCONTIGUOUS(
-                reinterpret_cast<PyArrayObject*>(object.ptr()));
-            const auto& meta = types::from_npy(PyArray_TYPE(array));
-            if (meta.id() == 0) {
-              LOG(FATAL) << "Unsupported numpy array type.";
-            }
-            auto ndim = PyArray_NDIM(array);
-            auto* npy_dims = PyArray_DIMS(array);
-            auto* data = static_cast<void*>(PyArray_DATA(array));
-            vector<int64_t> dims;
-            for (int i = 0; i < ndim; i++)
-              dims.push_back(npy_dims[i]);
-            self->set_meta(meta)->Reshape(dims);
-            auto* memory = self->memory();
-            if (memory == nullptr) memory = new UnifiedMemory();
-            memory->set_cpu_data(data, self->nbytes());
-            self->set_memory(memory);
-            if (self->ExternalDeleter) self->ExternalDeleter();
-            self->ExternalDeleter = [array]() -> void { Py_XDECREF(array); };
-            return self;
+          [](Tensor* self, py::object object, bool copy) {
+            return NumpyWrapper(self).From(object, copy);
           },
-          py::return_value_policy::reference)
+          py::return_value_policy::reference,
+          py::arg("array"),
+          py::arg("copy") = false)
 
       /*! \brief Construct from a dlpack tensor */
       .def(
@@ -253,39 +236,20 @@ void RegisterModule(py::module& m) {
 #endif
           })
 
-      /*! \brief Return a numpy array sharing the data */
+      /*! \brief Convert tensor into a numpy array */
       .def(
           "ToNumpy",
-          [](Tensor* self, bool readonly) {
-            CHECK_GT(self->count(), 0)
-                << "\nShare the data of an empty tensor.";
-            auto npy_type = types::to_npy(self->meta());
-            if (npy_type == -1) {
-              LOG(FATAL) << "Tensor(" + self->name() + ") with type "
-                         << ::dragon::types::to_string(self->meta())
-                         << " is not supported by numpy array.";
-            }
-            vector<npy_intp> dims;
-            for (auto dim : self->dims())
-              dims.push_back(dim);
-            auto* data = readonly
-                ? const_cast<void*>(self->raw_data<CPUContext>())
-                : self->raw_mutable_data<CPUContext>();
-            auto* array = PyArray_SimpleNewFromData(
-                self->ndim(), dims.data(), npy_type, data);
-            return py::reinterpret_steal<py::object>(array);
-          })
+          [](Tensor* self, bool copy) { return NumpyWrapper(self).To(copy); },
+          py::arg("copy") = false)
 
-      /*! \brief Return a dlpack tensor sharing the data */
-      .def("ToDLPack", [](Tensor* self, const string& dev, bool readonly) {
-        CHECK_GT(self->count(), 0) << "\nShare the data of an empty tensor.";
-        DeviceOption opt;
-        opt.ParseFromString(dev);
-        return DLPackWrapper(self).To(opt);
+      /*! \brief Convert tensor into a dlpack tensor */
+      .def("ToDLPack", [](Tensor* self, const string& device_str) {
+        CHECK_GT(self->count(), 0) << "\nConvert an empty tensor.";
+        DeviceOption device;
+        device.ParseFromString(device_str);
+        return DLPackWrapper(self).To(device);
       });
 }
-
-} // namespace tensor
 
 } // namespace python
 

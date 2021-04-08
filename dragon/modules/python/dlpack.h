@@ -13,7 +13,7 @@
 #ifndef DRAGON_MODULES_PYTHON_DLPACK_H_
 #define DRAGON_MODULES_PYTHON_DLPACK_H_
 
-#include "dragon/modules/python/types.h"
+#include "dragon/modules/python/common.h"
 
 namespace dragon {
 
@@ -26,9 +26,9 @@ class DLPackWrapper {
   py::object To(const DeviceOption& opt, bool readonly = false) {
     void* data = nullptr;
     auto* memory = tensor_->memory(true);
-    auto* dtype_ptr = types::to_dlpack(tensor_->meta());
+    auto* dtype_ptr = dtypes::to_dlpack(tensor_->meta());
     if (dtype_ptr == nullptr) {
-      LOG(FATAL) << "Type <" << ::dragon::types::to_string(tensor_->meta())
+      LOG(FATAL) << "Type <" << ::dragon::dtypes::to_string(tensor_->meta())
                  << "> is not supported by DLPack.";
     }
     DLContext ctx;
@@ -79,7 +79,7 @@ class DLPackWrapper {
         (DLManagedTensor*)PyCapsule_GetPointer(obj.ptr(), "dltensor");
     CHECK(managed_tensor) << "\nInvalid DLPack capsule";
     auto* tensor = &managed_tensor->dl_tensor;
-    const auto& meta = types::from_dlpack(tensor->dtype);
+    const auto& meta = dtypes::from_dlpack(tensor->dtype);
     if (meta.id() == 0) {
       LOG(FATAL) << "Unsupported DLDataType: "
                  << "code = " << tensor->dtype.code

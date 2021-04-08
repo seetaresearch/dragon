@@ -10,6 +10,10 @@ __init__
 Properties
 ----------
 
+device
+######
+.. autoattribute:: dragon.Tensor.device
+
 dtype
 #####
 .. autoattribute:: dragon.Tensor.dtype
@@ -26,6 +30,10 @@ ndim
 ####
 .. autoattribute:: dragon.Tensor.ndim
 
+requires_grad
+#############
+.. autoattribute:: dragon.Tensor.requires_grad
+
 shape
 #####
 .. autoattribute:: dragon.Tensor.shape
@@ -41,21 +49,13 @@ astype
 ######
 .. automethod:: dragon.Tensor.astype
 
-constant
-########
-.. automethod:: dragon.Tensor.constant
-
 copy
 ####
 .. automethod:: dragon.Tensor.copy
 
-from_value
-##########
-.. automethod:: dragon.Tensor.from_value
-
-get_value
-##########
-.. automethod:: dragon.Tensor.get_value
+fill
+####
+.. automethod:: dragon.Tensor.fill
 
 glorot_normal
 #############
@@ -69,13 +69,13 @@ normal
 ######
 .. automethod:: dragon.Tensor.normal
 
+numpy
+#####
+.. automethod:: dragon.Tensor.numpy
+
 reshape
 #######
 .. automethod:: dragon.Tensor.reshape
-
-set_value
-#########
-.. automethod:: dragon.Tensor.set_value
 
 truncated_normal
 ################
@@ -91,6 +91,10 @@ Overrides
 __add__
 #######
 .. automethod:: dragon.Tensor.__add__
+
+__and__
+#######
+.. automethod:: dragon.Tensor.__and__
 
 __float__
 #########
@@ -108,9 +112,41 @@ __gt__
 ######
 .. automethod:: dragon.Tensor.__gt__
 
+__iadd__
+########
+.. automethod:: dragon.Tensor.__iadd__
+
+__iand__
+########
+.. automethod:: dragon.Tensor.__iand__
+
+__imul__
+########
+.. automethod:: dragon.Tensor.__imul__
+
 __int__
 #######
 .. automethod:: dragon.Tensor.__int__
+
+__invert__
+###########
+.. automethod:: dragon.Tensor.__invert__
+
+__ior__
+#######
+.. automethod:: dragon.Tensor.__ior__
+
+__isub__
+########
+.. automethod:: dragon.Tensor.__isub__
+
+__itruediv__
+############
+.. automethod:: dragon.Tensor.__itruediv__
+
+__ixor__
+########
+.. automethod:: dragon.Tensor.__ixor__
 
 __le__
 ######
@@ -128,17 +164,33 @@ __neg__
 #######
 .. automethod:: dragon.Tensor.__neg__
 
+__or__
+#######
+.. automethod:: dragon.Tensor.__or__
+
 __radd__
 ########
 .. automethod:: dragon.Tensor.__radd__
+
+__rand__
+########
+.. automethod:: dragon.Tensor.__rand__
 
 __rmul__
 ########
 .. automethod:: dragon.Tensor.__rmul__
 
+__ror__
+#######
+.. automethod:: dragon.Tensor.__ror__
+
 __rsub__
 ########
 .. automethod:: dragon.Tensor.__rsub__
+
+__rxor__
+########
+.. automethod:: dragon.Tensor.__rxor__
 
 __setitem__
 ###########
@@ -156,12 +208,18 @@ __truediv__
 ############
 .. automethod:: dragon.Tensor.__truediv__
 
+__xor__
+#######
+.. automethod:: dragon.Tensor.__xor__
+
 .. _dragon.assign(...): assign.html
+.. _dragon.bitwise.bitwise_and(...): bitwise/bitwise_and.html
+.. _dragon.bitwise.bitwise_or(...): bitwise/bitwise_or.html
+.. _dragon.bitwise.bitwise_xor(...): bitwise/bitwise_xor.html
+.. _dragon.bitwise.invert(...): bitwise/invert.html
 .. _dragon.cast(...): cast.html
 .. _dragon.fill(...): fill.html
 .. _dragon.identity(...): identity.html
-.. _dragon.masked_assign(...): masked_assign.html
-.. _dragon.masked_select(...): masked_select.html
 .. _dragon.math.add(...): math/add.html
 .. _dragon.math.div(...): math/div.html
 .. _dragon.math.greater(...): math/greater.html
@@ -177,7 +235,6 @@ __truediv__
 .. _dragon.random.truncated_normal(...): random/truncated_normal.html
 .. _dragon.random.uniform(...): random/uniform.html
 .. _dragon.reshape(...): reshape.html
-.. _dragon.slice(...): slice.html
 
 .. raw:: html
 

@@ -18,6 +18,8 @@
 
 namespace dragon {
 
+class Workspace;
+
 /*!
  * \brief The base graph class.
  */
@@ -28,6 +30,9 @@ class DRAGON_API GraphBase {
 
   /*! \brief Destructor */
   virtual ~GraphBase() {}
+
+  /*! \brief Create a new graph */
+  static GraphBase* New(const GraphDef& def, Workspace* ws);
 
   /*! \brief Create graph in the workspace */
   virtual bool Create(const GraphDef& def) = 0;
@@ -102,8 +107,8 @@ class Graph : public GraphBase {
 
   /*! \brief Destructor */
   virtual ~Graph() {
-    for (auto* cached_op : cached_ops_) {
-      delete cached_op;
+    for (auto* op : ops_) {
+      delete op;
     }
   }
 
@@ -117,15 +122,12 @@ class Graph : public GraphBase {
       const string& exclude = "") override;
 
  protected:
-  /*! \brief The cached operators */
-  vector<OperatorBase*> cached_ops_;
+  /*! \brief The created operators */
+  vector<OperatorBase*> ops_;
 
-  /*! \brief The candidate output aliases */
+  /*! \brief The output aliases */
   Map<string, Set<string>> output_aliases_;
 };
-
-/*! \brief Create a graph from the raw def */
-GraphBase* NewGraph(const GraphDef&, Workspace*);
 
 /* Macros */
 

@@ -6,10 +6,10 @@ namespace dragon {
 
 template <class Context>
 void NesterovUpdateOp<Context>::ComputeUpdate(Tensor* dX) {
-  kernel::NesterovUpdate(
+  kernels::NesterovUpdate(
       dX->count(),
-      Parameter("base_lr") * this->lr_mult_,
-      Parameter("momentum"),
+      lr_,
+      momentum_,
       dX->template mutable_data<float, Context>(),
       Slot("m")->ReshapeLike(*dX)->template mutable_data<float, Context>(),
       ctx());
@@ -20,11 +20,7 @@ DEPLOY_CPU_OPERATOR(NesterovUpdate);
 DEPLOY_CUDA_OPERATOR(NesterovUpdate);
 #endif
 
-OPERATOR_SCHEMA(NesterovUpdate)
-    /* dX */
-    .NumInputs(1)
-    /* X */
-    .NumOutputs(1);
+OPERATOR_SCHEMA(NesterovUpdate).NumInputs(1, INT_MAX).NumOutputs(1, INT_MAX);
 
 NO_GRADIENT(NesterovUpdate);
 

@@ -319,8 +319,6 @@ class DRAGON_API Tensor {
       return memory(true)->cpu_data(nbytes());
     } else if (context_type == TypeMeta::Id<CUDAContext>()) {
       return memory(true)->cuda_data(nbytes());
-    } else if (context_type == TypeMeta::Id<CNMLContext>()) {
-      return memory(true)->cnml_data();
     } else {
       LOG(FATAL) << "Unsupported context type.";
       return nullptr;
@@ -339,8 +337,6 @@ class DRAGON_API Tensor {
         *data_ptr = memory_ptr->mutable_cpu_data(nbytes());
       } else if (context_type == TypeMeta::Id<CUDAContext>()) {
         *data_ptr = memory_ptr->mutable_cuda_data(nbytes());
-      } else if (context_type == TypeMeta::Id<CNMLContext>()) {
-        *data_ptr = memory_ptr->mutable_cnml_data();
       } else {
         LOG(FATAL) << "Unsupported context type.";
       }
@@ -403,8 +399,8 @@ class DRAGON_API Tensor {
   template <typename T, class Context>
   const T* data() const {
     CHECK(meta_.Match<T>()) << "\nThe type of Tensor(" << name() << ") is "
-                            << types::to_string(meta_) << ", while requesting "
-                            << types::to_string(TypeMeta::Make<T>()) << ".";
+                            << dtypes::to_string(meta_) << ", while requesting "
+                            << dtypes::to_string(TypeMeta::Make<T>()) << ".";
     return static_cast<const T*>(raw_data<Context>());
   }
 

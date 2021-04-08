@@ -23,18 +23,18 @@ from dragon.vm.caffe.core.layer import Layer
 
 
 class _DataPlugin(object):
-    """Embedded plugin for **Data** layer."""
+    """Embedded plugin for data layer."""
 
     def setup(self, inputs, outputs):
         kwargs = eval(self.kwargs_str)
-        self.iterator = vision.DataIterator(
-            dataset=KPLRecordDataset, **kwargs)
+        default_ws = workspace.get_workspace()
+        self.outputs = [default_ws.get_tensor(output) for output in outputs]
+        self.iterator = vision.DataIterator(dataset=KPLRecordDataset, **kwargs)
 
     def forward(self, inputs, outputs):
         blobs = self.iterator.next()
-        current_ws = workspace.get_workspace()
         for i, blob in enumerate(blobs):
-            current_ws.feed_tensor(outputs[i], blob)
+            self.outputs[i].FromNumpy(blob)
 
 
 class Data(Layer):
@@ -118,8 +118,8 @@ class Data(Layer):
             'num_outputs': 2,
         }
         data, label = framework_ops.python_plugin([], **args)
-        data.shape = (self.data_args['batch_size'],
-                      None, None, len(self.norm_args['mean']))
-        label.shape = (self.data_args['batch_size'], None)
+        data._shape = (self.data_args['batch_size'],
+                       None, None, len(self.norm_args['mean']))
+        label._shape = (self.data_args['batch_size'], None)
         data = array_ops.channel_normalize(data, **self.norm_args)
         return data, label

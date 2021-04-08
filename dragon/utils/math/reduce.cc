@@ -9,10 +9,10 @@ namespace math {
 
 namespace {
 
-#define DEFINE_GLOBAL_REDUCE_FUNC(name, expr)                                  \
+#define DEFINE_GLOBAL_REDUCE_FUNC(name, Expr)                                  \
   template <typename T>                                                        \
-  void _GlobalReduce##name(const int n, const float scale, const T* x, T* y) { \
-    *y = ConstEigenVectorMap<T>(x, n).expr();                                  \
+  void _GlobalReduce##name(const int N, const float scale, const T* x, T* y) { \
+    *y = ConstEigenVectorMap<T>(x, N).Expr();                                  \
     if (scale != 1.f) y[0] *= T(scale);                                        \
   }
 
@@ -21,12 +21,12 @@ DEFINE_GLOBAL_REDUCE_FUNC(Min, minCoeff);
 DEFINE_GLOBAL_REDUCE_FUNC(Sum, sum);
 #undef DEFINE_GLOBAL_REDUCE_FUNC
 
-#define DEFINE_ROWWISE_REDUCE_FUNC(name, expr)                               \
+#define DEFINE_ROWWISE_REDUCE_FUNC(name, Expr)                               \
   template <typename T>                                                      \
   void _RowwiseReduce##name(                                                 \
       const int rows, const int cols, const float scale, const T* x, T* y) { \
     EigenVectorMap<T>(y, cols) =                                             \
-        ConstEigenMatrixMap<T>(x, cols, rows).rowwise().expr();              \
+        ConstEigenMatrixMap<T>(x, cols, rows).rowwise().Expr();              \
     if (scale != 1.f) EigenVectorMap<T>(y, cols) *= T(scale);                \
   }
 
@@ -35,12 +35,12 @@ DEFINE_ROWWISE_REDUCE_FUNC(Min, minCoeff);
 DEFINE_ROWWISE_REDUCE_FUNC(Sum, sum);
 #undef DEFINE_ROWWISE_REDUCE_FUNC
 
-#define DEFINE_COLWISE_REDUCE_FUNC(name, expr)                               \
+#define DEFINE_COLWISE_REDUCE_FUNC(name, Expr)                               \
   template <typename T>                                                      \
   void _ColwiseReduce##name(                                                 \
       const int rows, const int cols, const float scale, const T* x, T* y) { \
     EigenVectorMap<T>(y, rows) =                                             \
-        ConstEigenMatrixMap<T>(x, cols, rows).colwise().expr();              \
+        ConstEigenMatrixMap<T>(x, cols, rows).colwise().Expr();              \
     if (scale != 1.f) EigenVectorMap<T>(y, rows) *= T(scale);                \
   }
 
@@ -148,7 +148,7 @@ void _GenericReduceSum(
   }
 }
 
-#define DEFINE_REDUCE_FUNC(name)                                             \
+#define DEFINE_REDUCE_DISPATCHER(name)                                       \
   template <typename T>                                                      \
   void _Reduce##name(                                                        \
       const int num_dims,                                                    \
@@ -208,16 +208,14 @@ void _GenericReduceSum(
         y);                                                                  \
   }
 
-DEFINE_REDUCE_FUNC(Max);
-DEFINE_REDUCE_FUNC(Min);
-DEFINE_REDUCE_FUNC(Sum);
-#undef DEFINE_REDUCE_FUNC
+DEFINE_REDUCE_DISPATCHER(Max);
+DEFINE_REDUCE_DISPATCHER(Min);
+DEFINE_REDUCE_DISPATCHER(Sum);
+#undef DEFINE_REDUCE_DISPATCHER
 
 } // namespace
 
-/* ------------------- Launcher Separator ------------------- */
-
-#define DEFINE_KERNEL_LAUNCHER(name)                 \
+#define DEFINE_REDUCE_FUNC(name)                     \
   template <>                                        \
   DRAGON_API void Reduce##name<float16, CPUContext>( \
       const int num_dims,                            \
@@ -231,14 +229,14 @@ DEFINE_REDUCE_FUNC(Sum);
     CPU_FP16_NOT_SUPPORTED;                          \
   }
 
-DEFINE_KERNEL_LAUNCHER(Max);
-DEFINE_KERNEL_LAUNCHER(Min);
-DEFINE_KERNEL_LAUNCHER(Sum);
-#undef DEFINE_KERNEL_LAUNCHER
+DEFINE_REDUCE_FUNC(Max);
+DEFINE_REDUCE_FUNC(Min);
+DEFINE_REDUCE_FUNC(Sum);
+#undef DEFINE_REDUCE_FUNC
 
 template <>
 DRAGON_API void Sum<float16, CPUContext>(
-    const int n,
+    const int N,
     const float alpha,
     const float16* x,
     float16* y,
@@ -248,7 +246,7 @@ DRAGON_API void Sum<float16, CPUContext>(
 
 template <>
 DRAGON_API float16 Sum<float16, CPUContext>(
-    const int n,
+    const int N,
     const float alpha,
     const float16* x,
     CPUContext* ctx) {
@@ -256,7 +254,7 @@ DRAGON_API float16 Sum<float16, CPUContext>(
   return float16();
 }
 
-#define DEFINE_KERNEL_LAUNCHER(name, T)                         \
+#define DEFINE_REDUCE_FUNC(name, T)                             \
   template <>                                                   \
   DRAGON_API void Reduce##name<T, CPUContext>(                  \
       const int num_dims,                                       \
@@ -270,42 +268,42 @@ DRAGON_API float16 Sum<float16, CPUContext>(
     _Reduce##name(num_dims, dims, num_axes, axes, scale, x, y); \
   }
 
-DEFINE_KERNEL_LAUNCHER(Max, int8_t);
-DEFINE_KERNEL_LAUNCHER(Max, uint8_t);
-DEFINE_KERNEL_LAUNCHER(Max, int);
-DEFINE_KERNEL_LAUNCHER(Max, int64_t);
-DEFINE_KERNEL_LAUNCHER(Max, float);
-DEFINE_KERNEL_LAUNCHER(Max, double);
-DEFINE_KERNEL_LAUNCHER(Min, int8_t);
-DEFINE_KERNEL_LAUNCHER(Min, uint8_t);
-DEFINE_KERNEL_LAUNCHER(Min, int);
-DEFINE_KERNEL_LAUNCHER(Min, int64_t);
-DEFINE_KERNEL_LAUNCHER(Min, float);
-DEFINE_KERNEL_LAUNCHER(Min, double);
-DEFINE_KERNEL_LAUNCHER(Sum, int8_t);
-DEFINE_KERNEL_LAUNCHER(Sum, uint8_t);
-DEFINE_KERNEL_LAUNCHER(Sum, int);
-DEFINE_KERNEL_LAUNCHER(Sum, int64_t);
-DEFINE_KERNEL_LAUNCHER(Sum, float);
-DEFINE_KERNEL_LAUNCHER(Sum, double);
-#undef DEFINE_KERNEL_LAUNCHER
+DEFINE_REDUCE_FUNC(Max, uint8_t);
+DEFINE_REDUCE_FUNC(Max, int8_t);
+DEFINE_REDUCE_FUNC(Max, int);
+DEFINE_REDUCE_FUNC(Max, int64_t);
+DEFINE_REDUCE_FUNC(Max, float);
+DEFINE_REDUCE_FUNC(Max, double);
+DEFINE_REDUCE_FUNC(Min, uint8_t);
+DEFINE_REDUCE_FUNC(Min, int8_t);
+DEFINE_REDUCE_FUNC(Min, int);
+DEFINE_REDUCE_FUNC(Min, int64_t);
+DEFINE_REDUCE_FUNC(Min, float);
+DEFINE_REDUCE_FUNC(Min, double);
+DEFINE_REDUCE_FUNC(Sum, uint8_t);
+DEFINE_REDUCE_FUNC(Sum, int8_t);
+DEFINE_REDUCE_FUNC(Sum, int);
+DEFINE_REDUCE_FUNC(Sum, int64_t);
+DEFINE_REDUCE_FUNC(Sum, float);
+DEFINE_REDUCE_FUNC(Sum, double);
+#undef DEFINE_REDUCE_FUNC
 
 #define DEFINE_SUM_FUNC(T)                                                 \
   template <>                                                              \
   DRAGON_API void Sum<T, CPUContext>(                                      \
-      const int n, const float scale, const T* x, T* y, CPUContext* ctx) { \
-    T val = ConstEigenVectorArrayMap<T>(x, n).sum();                       \
+      const int N, const float scale, const T* x, T* y, CPUContext* ctx) { \
+    T val = ConstEigenVectorArrayMap<T>(x, N).sum();                       \
     *y = val * T(scale);                                                   \
   }                                                                        \
   template <>                                                              \
   DRAGON_API T Sum<T, CPUContext>(                                         \
-      const int n, const float scale, const T* x, CPUContext* ctx) {       \
-    T val = ConstEigenVectorArrayMap<T>(x, n).sum();                       \
+      const int N, const float scale, const T* x, CPUContext* ctx) {       \
+    T val = ConstEigenVectorArrayMap<T>(x, N).sum();                       \
     return val * T(scale);                                                 \
   }
 
-DEFINE_SUM_FUNC(int8_t);
 DEFINE_SUM_FUNC(uint8_t);
+DEFINE_SUM_FUNC(int8_t);
 DEFINE_SUM_FUNC(int);
 DEFINE_SUM_FUNC(int64_t);
 DEFINE_SUM_FUNC(float);

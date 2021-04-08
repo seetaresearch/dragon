@@ -29,7 +29,7 @@ def flatten_reshape(variable, name='flatten'):
     variable : dragon.Tensor
         The variable or tensor to be flatten.
     name : str, optional
-        The optional operator name.
+        The operator name.
 
     Returns
     -------

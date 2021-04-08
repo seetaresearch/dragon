@@ -138,11 +138,12 @@ class TestModule(unittest.TestCase):
         m = torch.nn.ModuleList([torch.nn.Module()])
         m.append(torch.nn.Module())
         m.extend([torch.nn.Module()])
-        self.assertEqual(len(m[1:]), 2)
+        m.insert(1, torch.nn.Module())
+        self.assertEqual(len(m[1:]), 3)
         m[-1] = torch.nn.Module()
-        self.assertEqual(id(m[2]), id(m[-1]))
+        self.assertEqual(id(m[3]), id(m[-1]))
         del m[0]
-        del m[0:2]
+        del m[0:3]
         self.assertEqual(len(m), 0)
         for _ in m:
             pass
@@ -445,6 +446,13 @@ class TestModules(OpTestCase):
         result = np.maximum(data, 0.) + alpha * (np.exp(np.minimum(data, 0.)) - 1.)
         self.assertEqual(y, result)
 
+    def test_embedding(self):
+        data = np.array([0, 1], 'int64')
+        x = new_tensor(data)
+        m = torch.nn.Embedding(2, 3, padding_idx=0)
+        y, _ = m(x), repr(m)
+        self.assertEqual(y, m.weight.numpy())
+
     def test_flatten(self):
         entries = [(1, -1), (1, 1), (1, 2)]
         for start_dim, end_dim in entries:
@@ -485,8 +493,6 @@ class TestModules(OpTestCase):
 
     def test_gru_module(self):
         m = torch.nn.GRU(2, 3)
-        m.reset_parameter(initializer='uniform')
-        m.reset_parameters()
         _ = repr(m)
 
     def test_hardsigmoid(self):
@@ -526,6 +532,25 @@ class TestModules(OpTestCase):
             else:
                 result = data2 * (np.log(data2) - data1)
             self.assertEqual(y, reduce(result, reduction=reduction))
+
+    def test_layer_norm(self):
+        eps = 1e-5
+        entries = [((1, 4), (1, 4), (1,))]
+        for x_shape, w_shape, axes in entries:
+            data1 = arange(x_shape) * .1
+            data2, data3 = arange(w_shape, 1) * .1, arange(w_shape) * .1
+            x = new_tensor(data1)
+            w, b = new_tensor(data2.flatten()), new_tensor(data3.flatten())
+            _ = torch.nn.LayerNorm(x_shape[-1], eps=eps, elementwise_affine=False)
+            m = torch.nn.LayerNorm(x_shape[-1], eps=eps).half().float()
+            m.weight.copy_(w)
+            m.bias.copy_(b)
+            y, _ = m(x), repr(m)
+            mean = np.mean(data1, axes, keepdims=True)
+            sig = np.sqrt(np.var(data1, axes, keepdims=True) + eps)
+            result = ((data1 - mean) / sig).reshape(x_shape)
+            result = result * data2 + data3
+            self.assertEqual(y, result)
 
     def test_leaky_relu(self):
         alpha = 0.2
@@ -807,8 +832,10 @@ class TestNNInit(OpTestCase):
     """Test the nn.init module."""
 
     def test_constant(self):
-        x = torch.nn.init.constant_(torch.Tensor(2, dtype=torch.float32), 1)
-        self.assertEqual(x, np.ones((2,), dtype='float32'))
+        x = torch.Tensor(2, dtype=torch.float32)
+        self.assertEqual(torch.nn.init.constant_(x, 1), np.ones((2,), dtype='float32'))
+        self.assertEqual(torch.nn.init.ones_(x), np.ones((2,), dtype='float32'))
+        self.assertEqual(torch.nn.init.zeros_(x), np.zeros((2,), dtype='float32'))
 
     def test_dirac(self):
         for ndim in range(2, 6):

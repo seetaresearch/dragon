@@ -4,7 +4,7 @@
 
 namespace dragon {
 
-namespace kernel {
+namespace kernels {
 
 namespace {
 
@@ -162,8 +162,8 @@ void _Moments(
     _Moments(num_dims, dims, num_axes, axes, x, mean, var, ctx); \
   }
 
-DEFINE_KERNEL_LAUNCHER(int8_t, float);
 DEFINE_KERNEL_LAUNCHER(uint8_t, float);
+DEFINE_KERNEL_LAUNCHER(int8_t, float);
 DEFINE_KERNEL_LAUNCHER(int, float);
 DEFINE_KERNEL_LAUNCHER(int64_t, double);
 DEFINE_KERNEL_LAUNCHER(float16, float);
@@ -171,6 +171,6 @@ DEFINE_KERNEL_LAUNCHER(float, float);
 DEFINE_KERNEL_LAUNCHER(double, double);
 #undef DEFINE__KERNEL_LAUNCHER
 
-} // namespace kernel
+} // namespace kernels
 
 } // namespace dragon

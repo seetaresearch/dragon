@@ -17,7 +17,6 @@ import numpy
 
 from dragon.core.framework import config
 from dragon.core.framework import context
-from dragon.core.framework import proto_util
 from dragon.core.framework import workspace
 from dragon.core.util import nest
 from dragon.core.util import six
@@ -69,11 +68,11 @@ class Tensor(object):
 
     def __init__(self, *args, **kwargs):
         self._tape = None
-        self._is_leaf = False
-        self._gc = kwargs.get('gc', None)
-        self._impl = kwargs.get('impl', None)
         self._device = kwargs.get('device', cpp.device())
+        self._impl = kwargs.get('impl', None)
+        self._deleter = kwargs.get('deleter', None)
         self._requires_grad = kwargs.get('requires_grad', False)
+        self._retains_grad = False
         if len(args) == 1:
             if isinstance(args[0], (list, tuple)):
                 dtype = kwargs.get('dtype', 'float32')
@@ -129,7 +128,7 @@ class Tensor(object):
 
     @property
     def grad(self):
-        """Return the grad of this tensor if computed.
+        """Return the grad of this tensor.
 
         Returns
         -------
@@ -138,15 +137,15 @@ class Tensor(object):
 
         """
         if self._requires_grad:
-            current_ws = workspace.get_workspace()
-            impl = current_ws.GetTensor(self.id + '_grad')
-            if impl is not None:
+            default_ws = workspace.get_workspace()
+            impl = default_ws.get_tensor(self.id + '_grad')
+            if impl is not None and impl.size > 0:
                 return Tensor(device=self.device, impl=impl)
         return None
 
     @property
     def grad_fn(self):
-        return None
+        return self._tape
 
     @property
     def id(self):
@@ -167,19 +166,19 @@ class Tensor(object):
         Returns
         -------
         bool
-            **True** if this is a leaf tensor otherwise **False**.
+            ``True`` if this is a leaf tensor otherwise ``False``.
 
         """
-        return self._is_leaf or not self._requires_grad
+        return not self._tape or not self._requires_grad
 
     @property
     def requires_grad(self):
-        """Return whether the grad is required.
+        """Return whether the gradient will be recorded.
 
         Returns
         -------
         bool
-            **True** if requiring grad otherwise **False**.
+            ``True`` to record gradient otherwise ``False``.
 
         """
         return self._requires_grad
@@ -207,7 +206,7 @@ class Tensor(object):
         Returns
         -------
         bool
-            **True** if volatile otherwise **False**.
+            ``True`` if volatile otherwise ``False``.
 
         """
         return False
@@ -262,7 +261,7 @@ class Tensor(object):
         Returns
         -------
         dragon.vm.torch.Tensor
-            The self.
+            The output tensor.
 
         See Also
         --------
@@ -297,12 +296,12 @@ class Tensor(object):
 
         """
 
-    def argmax(self, dim=None, keepdim=False):
+    def argmax(self, dim, keepdim=False):
         """Return the index of maximum elements.
 
         Parameters
         ----------
-        dim : int, optional
+        dim : int
             The dimension to reduce.
         keepdim : bool, optional, default=False
             Keep the reduced dimension or not.
@@ -318,12 +317,12 @@ class Tensor(object):
 
         """
 
-    def argmin(self, dim=None, keepdim=False):
+    def argmin(self, dim, keepdim=False):
         """Return the index of minimum elements.
 
         Parameters
         ----------
-        dim : int, optional
+        dim : int
             The dimension to reduce.
         keepdim : bool, optional, default=False
             Keep the reduced dimension or not.
@@ -368,7 +367,7 @@ class Tensor(object):
         gradient : dragon.vm.torch.Tensor, optional
             The optional gradient of this tensor.
         retain_graph : bool, optional, default=False
-            **False** to free the graph used to compute grad.
+            ``False`` to free the graph used to compute grad.
 
         """
 
@@ -430,6 +429,48 @@ class Tensor(object):
 
         """
 
+    def bitwise_and(self, other):
+        r"""Compute the element-wise AND bitwise operation.
+
+        .. math:: \text{out} = \text{self} \mathbin{\&} \text{other}
+
+        Parameters
+        ----------
+        other : Union[dragon.vm.torch.Tensor, number]
+            The value to compute with.
+
+        Returns
+        -------
+        dragon.vm.torch.Tensor
+            The output tensor.
+
+        See Also
+        --------
+        `torch.bitwise_and(...)`_
+
+        """
+
+    def bitwise_and_(self, other):
+        r"""Compute the element-wise AND bitwise operation.
+
+        .. math:: \text{self} = \text{self} \mathbin{\&} \text{other}
+
+        Parameters
+        ----------
+        other : Union[dragon.vm.torch.Tensor, number]
+            The value to compute with.
+
+        Returns
+        -------
+        dragon.vm.torch.Tensor
+            The output tensor.
+
+        See Also
+        --------
+        `torch.bitwise_and(...)`_
+
+        """
+
     def bitwise_not(self):
         r"""Compute the element-wise NOT bitwise operation.
 
@@ -462,8 +503,50 @@ class Tensor(object):
 
         """
 
+    def bitwise_or(self, other):
+        r"""Compute the element-wise OR bitwise operation.
+
+        .. math:: \text{out} = \text{self} \mathbin{|} \text{other}
+
+        Parameters
+        ----------
+        other : Union[dragon.vm.torch.Tensor, number]
+            The value to compute with.
+
+        Returns
+        -------
+        dragon.vm.torch.Tensor
+            The output tensor.
+
+        See Also
+        --------
+        `torch.bitwise_or(...)`_
+
+        """
+
+    def bitwise_or_(self, other):
+        r"""Compute the element-wise OR bitwise operation.
+
+        .. math:: \text{self} = \text{self} \mathbin{|} \text{other}
+
+        Parameters
+        ----------
+        other : Union[dragon.vm.torch.Tensor, number]
+            The value to compute with.
+
+        Returns
+        -------
+        dragon.vm.torch.Tensor
+            The output tensor.
+
+        See Also
+        --------
+        `torch.bitwise_or(...)`_
+
+        """
+
     def bitwise_xor(self, other):
-        r"""Compute the element-wise XOR bitwise operation.
+        r"""Compute the element-wise XOR logical operation.
 
         .. math:: \text{out} = \text{self} \oplus \text{other}
 
@@ -479,7 +562,7 @@ class Tensor(object):
 
         See Also
         --------
-        `torch.bitwise_xor(...)`_
+        `torch.logical_xor(...)`_
 
         """
 
@@ -496,7 +579,7 @@ class Tensor(object):
         Returns
         -------
         dragon.vm.torch.Tensor
-            The self.
+            The output tensor.
 
         See Also
         --------
@@ -516,7 +599,7 @@ class Tensor(object):
 
         Returns
         -------
-        dragon.Tensor
+        dragon.vm.torch.Tensor
             The output tensor.
 
         See Also
@@ -541,7 +624,7 @@ class Tensor(object):
         Returns
         -------
         dragon.vm.torch.Tensor
-            The self.
+            The output tensor.
 
         """
 
@@ -561,7 +644,7 @@ class Tensor(object):
         Returns
         -------
         dragon.vm.torch.Tensor
-            The self.
+            The output tensor.
 
         """
 
@@ -589,7 +672,7 @@ class Tensor(object):
         Returns
         -------
         dragon.vm.torch.Tensor
-            The self.
+            The output tensor.
 
         See Also
         --------
@@ -613,7 +696,7 @@ class Tensor(object):
         Returns
         -------
         dragon.vm.torch.Tensor
-            The self.
+            The output tensor.
 
         """
 
@@ -625,7 +708,7 @@ class Tensor(object):
         chunks : int
             The number of chunks to split.
         dim : int, optional, default=0
-            The dim to split.
+            The dimension to split.
 
         Returns
         -------
@@ -668,7 +751,7 @@ class Tensor(object):
         Returns
         -------
         dragon.vm.torch.Tensor
-            The self.
+            The output tensor.
 
         See Also
         --------
@@ -687,18 +770,11 @@ class Tensor(object):
         Returns
         -------
         dragon.vm.torch.Tensor
-            The self.
+            The output tensor.
 
         """
         self._impl.CopyFrom(
-            src._impl,
-            proto_util.get_device_option(
-                self._device.type,
-                self._device.index).SerializeToString(),
-            proto_util.get_device_option(
-                src._device.type,
-                src._device.index).SerializeToString(),
-        )
+            src._impl, self._device.to_proto(), src._device.to_proto())
         return self
 
     def cos(self):
@@ -723,11 +799,11 @@ class Tensor(object):
         Returns
         -------
         dragon.vm.torch.Tensor
-            The self.
+            The output tensor.
 
         """
-        self._device.type = 'cpu'
         self._impl.ToCPU()
+        self._device = cpp.device('cpu')
         return self
 
     def cuda(self, device=None):
@@ -741,7 +817,7 @@ class Tensor(object):
         Returns
         -------
         dragon.vm.torch.Tensor
-            The self.
+            The output tensor.
 
         """
         if device is None:
@@ -752,7 +828,7 @@ class Tensor(object):
                 raise ValueError('Excepted cuda device, got: ' + device.type)
             device = device.index
         self._impl.ToCUDA(device)
-        self._device.type, self._device.index = 'cuda', device
+        self._device = cpp.device('cuda', device)
         return self
 
     def cumsum(self, dim):
@@ -830,7 +906,7 @@ class Tensor(object):
         Returns
         -------
         dragon.vm.torch.Tensor
-            The self.
+            The output tensor.
 
         See Also
         --------
@@ -854,7 +930,7 @@ class Tensor(object):
         Returns
         -------
         dragon.vm.torch.Tensor
-            The self.
+            The output tensor.
 
         """
 
@@ -939,7 +1015,7 @@ class Tensor(object):
         Returns
         -------
         dragon.vm.torch.Tensor
-            The self.
+            The output tensor.
 
         """
 
@@ -977,7 +1053,7 @@ class Tensor(object):
         Returns
         -------
         dragon.vm.torch.Tensor
-            The self.
+            The output tensor.
 
         See Also
         --------
@@ -1001,7 +1077,7 @@ class Tensor(object):
         Returns
         -------
         dragon.vm.torch.Tensor
-            The self.
+            The output tensor.
 
         """
 
@@ -1029,7 +1105,7 @@ class Tensor(object):
         Returns
         -------
         dragon.vm.torch.Tensor
-            The self.
+            The output tensor.
 
         See Also
         --------
@@ -1095,7 +1171,7 @@ class Tensor(object):
         Returns
         -------
         dragon.vm.torch.Tensor
-            The self.
+            The output tensor.
 
         """
 
@@ -1132,7 +1208,7 @@ class Tensor(object):
         Returns
         -------
         dragon.vm.torch.Tensor
-            The self.
+            The output tensor.
 
         """
 
@@ -1176,7 +1252,7 @@ class Tensor(object):
         Returns
         -------
         bool
-            **True** if the data type is floating otherwise **False**.
+            ``True`` if the data type is floating otherwise ``False``.
 
         """
         return 'float' in self.dtype
@@ -1212,6 +1288,89 @@ class Tensor(object):
         dragon.vm.torch.Tensor
             The output tensor.
 
+        See Also
+        --------
+        `torch.log(...)`_
+
+        """
+
+    def logical_and(self, other):
+        r"""Compute the element-wise AND logical operation.
+
+        .. math:: \text{out} = \text{self} \mathbin{\&} \text{other}
+
+        Parameters
+        ----------
+        other : Union[dragon.vm.torch.Tensor, number]
+            The value to compute with.
+
+        Returns
+        -------
+        dragon.vm.torch.Tensor
+            The output tensor.
+
+        See Also
+        --------
+        `torch.logical_and(...)`_
+
+        """
+
+    def logical_not(self):
+        r"""Compute the element-wise NOT logical operation.
+
+        .. math:: \text{out} = \,\,\sim \text{self}
+
+        Returns
+        -------
+        dragon.vm.torch.Tensor
+            The output tensor.
+
+        See Also
+        --------
+        `torch.logical_not(...)`_
+
+        """
+
+    def logical_or(self, other):
+        r"""Compute the element-wise OR logical operation.
+
+        .. math:: \text{out} = \text{self} \mathbin{|} \text{other}
+
+        Parameters
+        ----------
+        other : Union[dragon.vm.torch.Tensor, number]
+            The value to compute with.
+
+        Returns
+        -------
+        dragon.vm.torch.Tensor
+            The output tensor.
+
+        See Also
+        --------
+        `torch.logical_or(...)`_
+
+        """
+
+    def logical_xor(self, other):
+        r"""Compute the element-wise XOR logical operation.
+
+        .. math:: \text{out} = \text{self} \oplus \text{other}
+
+        Parameters
+        ----------
+        other : Union[dragon.vm.torch.Tensor, number]
+            The value to compute with.
+
+        Returns
+        -------
+        dragon.vm.torch.Tensor
+            The output tensor.
+
+        See Also
+        --------
+        `torch.logical_xor(...)`_
+
         """
 
     def logsumexp(self, dim, keepdim=False):
@@ -1231,6 +1390,10 @@ class Tensor(object):
         dragon.vm.torch.Tensor
             The output tensor.
 
+        See Also
+        --------
+        `torch.logsumexp(...)`_
+
         """
 
     def long(self):
@@ -1249,7 +1412,7 @@ class Tensor(object):
         Returns
         -------
         dragon.vm.torch.Tensor
-            The self.
+            The output tensor.
 
         """
 
@@ -1274,8 +1437,32 @@ class Tensor(object):
 
         """
 
+    def masked_fill(self, mask, value):
+        r"""Return a tensor filled with the value where mask is true.
+
+        .. math::
+            \text{out}_{i} =
+                \begin{cases}
+                    \text{value}_{i}, & \text{ if } \text{mask}_{i} = 1 \\
+                    \text{self}_{i}, & \text{ otherwise }
+                \end{cases}
+
+        Parameters
+        ----------
+        mask : dragon.vm.torch.Tensor
+            The boolean mask.
+        value : number
+            The value to fill.
+
+        Returns
+        -------
+        dragon.vm.torch.Tensor
+            The output tensor.
+
+        """
+
     def masked_fill_(self, mask, value):
-        r"""Fill self with the value where mask is 1.
+        r"""Fill self with the value where mask is true.
 
         .. math::
             \text{self}_{i} =
@@ -1294,7 +1481,7 @@ class Tensor(object):
         Returns
         -------
         dragon.vm.torch.Tensor
-            The self.
+            The output tensor.
 
         """
 
@@ -1310,7 +1497,7 @@ class Tensor(object):
 
         Returns
         -------
-        dragon.Tensor
+        dragon.vm.torch.Tensor
             The output tensor.
 
         See Also
@@ -1490,7 +1677,7 @@ class Tensor(object):
         Returns
         -------
         dragon.vm.torch.Tensor
-            The self.
+            The output tensor.
 
         See Also
         --------
@@ -1498,15 +1685,13 @@ class Tensor(object):
 
         """
 
-    def multinomial(self, num_samples, epsilon=0):
+    def multinomial(self, num_samples):
         """Return a tensor with index sampled from multinomial distribution.
 
         Parameters
         ----------
         num_samples : int
             The number of samples in each row.
-        epsilon : float, optional, default=0
-            The epsilon value to apply e-greedy strategy.
 
         Returns
         -------
@@ -1590,7 +1775,7 @@ class Tensor(object):
         Returns
         -------
         dragon.vm.torch.Tensor
-            The self.
+            The output tensor.
 
         See Also
         --------
@@ -1618,7 +1803,7 @@ class Tensor(object):
         device : dragon.vm.torch.device, optional
             The optional device of returned tensor.
         requires_grad : bool, optional, default=False
-            **True** to record gradient for returned tensor.
+            ``True`` to record gradient for returned tensor.
 
         Returns
         -------
@@ -1660,7 +1845,7 @@ class Tensor(object):
         device : dragon.vm.torch.device, optional
             The optional device of returned tensor.
         requires_grad : bool, optional, default=False
-            **True** to record gradient for returned tensor.
+            ``True`` to record gradient for returned tensor.
 
         Returns
         -------
@@ -1693,7 +1878,7 @@ class Tensor(object):
         device : dragon.vm.torch.device, optional
             The optional device of returned tensor.
         requires_grad : bool, optional, default=False
-            **True** to record gradient for returned tensor.
+            ``True`` to record gradient for returned tensor.
 
         Returns
         -------
@@ -1733,7 +1918,7 @@ class Tensor(object):
         device : dragon.vm.torch.device, optional
             The optional device of returned tensor.
         requires_grad : bool, optional, default=False
-            **True** to record gradient for returned tensor.
+            ``True`` to record gradient for returned tensor.
 
         Returns
         -------
@@ -1784,7 +1969,7 @@ class Tensor(object):
         Returns
         -------
         dragon.vm.torch.Tensor
-            The self.
+            The output tensor.
 
         """
 
@@ -1799,13 +1984,8 @@ class Tensor(object):
         """
         return self._impl.size
 
-    def numpy(self, readonly=True):
+    def numpy(self):
         """Create a numpy array sharing the data.
-
-        Parameters
-        ----------
-        readonly : bool, optional, default=True
-            **False** to sync the content with device.
 
         Returns
         -------
@@ -1813,7 +1993,7 @@ class Tensor(object):
             The numpy array.
 
         """
-        return self._impl.ToNumpy(readonly)
+        return self._impl.ToNumpy()
 
     def one_(self):
         r"""Fill self with ones.
@@ -1823,7 +2003,7 @@ class Tensor(object):
         Returns
         -------
         dragon.vm.torch.Tensor
-            The self.
+            The output tensor.
 
         """
         return self.fill_(1)
@@ -1886,7 +2066,7 @@ class Tensor(object):
         Returns
         -------
         dragon.vm.torch.Tensor
-            The self.
+            The output tensor.
 
         See Also
         --------
@@ -1939,7 +2119,7 @@ class Tensor(object):
         Returns
         -------
         dragon.vm.torch.Tensor
-            The self.
+            The output tensor.
 
         See Also
         --------
@@ -1949,8 +2129,9 @@ class Tensor(object):
 
     def retain_grad(self):
         """Retain grad for the non-leaf tensor."""
-        if self._tape:
-            self._tape.add_source(self.id)
+        if not self._requires_grad:
+            raise RuntimeError('Retain grad for a tensor that does not require.')
+        self._retains_grad = True
 
     def round(self):
         r"""Return a tensor taken the round of elements.
@@ -1976,7 +2157,7 @@ class Tensor(object):
         Returns
         -------
         dragon.vm.torch.Tensor
-            The self.
+            The output tensor.
 
         See Also
         --------
@@ -2008,7 +2189,7 @@ class Tensor(object):
         Returns
         -------
         dragon.vm.torch.Tensor
-            The self.
+            The output tensor.
 
         See Also
         --------
@@ -2052,7 +2233,7 @@ class Tensor(object):
         Returns
         -------
         dragon.vm.torch.Tensor
-            The self.
+            The output tensor.
 
         See Also
         --------
@@ -2115,7 +2296,7 @@ class Tensor(object):
         """
 
     def split(self, split_size_or_sections, dim=0):
-        """Return the splited chunks along the given dimension.
+        """Return the split chunks along the given dimension.
 
         Parameters
         ----------
@@ -2159,7 +2340,7 @@ class Tensor(object):
         Returns
         -------
         dragon.vm.torch.Tensor
-            The self.
+            The output tensor.
 
         See Also
         --------
@@ -2197,7 +2378,7 @@ class Tensor(object):
         Returns
         -------
         dragon.vm.torch.Tensor
-            The self.
+            The output tensor.
 
         See Also
         --------
@@ -2260,7 +2441,7 @@ class Tensor(object):
         Returns
         -------
         dragon.vm.torch.Tensor
-            The self.
+            The output tensor.
 
         See Also
         --------
@@ -2362,6 +2543,110 @@ class Tensor(object):
 
         """
 
+    def tril(self, k=0):
+        r"""Return the lower triangular part.
+
+        .. math::
+            \text{out}_{ij} =
+                \begin{cases}
+                    0, & \text{ if } j > i + k \\
+                    \text{self}_{ij}, & \text{ otherwise }
+                \end{cases}
+
+        Parameters
+        ----------
+        k : int, optional, default=0
+            Diagonal above which to zero elements.
+
+        Returns
+        -------
+        dragon.vm.torch.Tensor
+            The output tensor.
+
+        See Also
+        --------
+        `torch.tril(...)`_
+
+        """
+
+    def tril_(self, k=0):
+        r"""Set to the lower triangular part.
+
+        .. math::
+            \text{self}_{ij} =
+                \begin{cases}
+                    0, & \text{ if } j > i + k \\
+                    \text{self}_{ij}, & \text{ otherwise }
+                \end{cases}
+
+        Parameters
+        ----------
+        k : int, optional, default=0
+            Diagonal above which to zero elements.
+
+        Returns
+        -------
+        dragon.vm.torch.Tensor
+            The output tensor.
+
+        See Also
+        --------
+        `torch.tril(...)`_
+
+        """
+
+    def triu(self, k=0):
+        r"""Return the upper triangular part.
+
+        .. math::
+            \text{out}_{ij} =
+                \begin{cases}
+                    0, & \text{ if } j < i + k \\
+                    \text{self}_{ij}, & \text{ otherwise }
+                \end{cases}
+
+        Parameters
+        ----------
+        k : int, optional, default=0
+            Diagonal below which to zero elements.
+
+        Returns
+        -------
+        dragon.vm.torch.Tensor
+            The output tensor.
+
+        See Also
+        --------
+        `torch.triu(...)`_
+
+        """
+
+    def triu_(self, k=0):
+        r"""Set to the upper triangular part.
+
+        .. math::
+            \text{self}_{ij} =
+                \begin{cases}
+                    0, & \text{ if } j < i + k \\
+                    \text{self}_{ij}, & \text{ otherwise }
+                \end{cases}
+
+        Parameters
+        ----------
+        k : int, optional, default=0
+            Diagonal below which to zero elements.
+
+        Returns
+        -------
+        dragon.vm.torch.Tensor
+            The output tensor.
+
+        See Also
+        --------
+        `torch.triu(...)`_
+
+        """
+
     def type(self, dtype=None):
         """Return the data type or copied tensor with specified type.
 
@@ -2392,7 +2677,7 @@ class Tensor(object):
         Returns
         -------
         dragon.vm.torch.Tensor
-            The self.
+            The output tensor.
 
         """
 
@@ -2451,7 +2736,7 @@ class Tensor(object):
         Returns
         -------
         dragon.vm.torch.Tensor
-            The self.
+            The output tensor.
 
         See Also
         --------
@@ -2490,7 +2775,7 @@ class Tensor(object):
         Returns
         -------
         dragon.vm.torch.Tensor
-            The self.
+            The output tensor.
 
         See Also
         --------
@@ -2552,24 +2837,26 @@ class Tensor(object):
         Returns
         -------
         dragon.vm.torch.Tensor
-            The self.
+            The output tensor.
 
         """
         return self.fill_(0)
 
     def _from_array(self, array):
         """Create implementation from the array."""
-        ws = workspace.get_workspace()
-        self._gc, self._is_leaf = ws.collectors.TENSOR, True
-        self._impl = ws.create_tensor(self._gc.alloc(
-            context.get_eager_scope())).FromNumpy(array)
+        default_ws = workspace.get_workspace()
+        var_scope = context.get_variable_scope()
+        self._impl = default_ws.create_tensor(scope=var_scope)
+        self._impl.FromNumpy(array, False)
+        self._deleter = default_ws._handle_pool
 
     def _from_shape(self, shape, dtype):
         """Create implementation from the shape."""
-        ws = workspace.get_workspace()
-        self._gc, self._is_leaf = ws.collectors.TENSOR, True
-        self._impl = ws.create_tensor(self._gc.alloc(
-            context.get_eager_scope())).FromShape(shape, dtype)
+        default_ws = workspace.get_workspace()
+        var_scope = context.get_variable_scope()
+        self._impl = default_ws.create_tensor(scope=var_scope)
+        self._impl.FromShape(shape, dtype)
+        self._deleter = default_ws._handle_pool
 
     def __add__(self, other):
         """Compute the element-wise addition.
@@ -2587,11 +2874,25 @@ class Tensor(object):
         """
         return self.add(other)
 
+    def __and__(self, other):
+        """Compute the element-wise AND bitwise operation.
+
+        Parameters
+        ----------
+        other : Union[dragon.vm.torch.Tensor, number]
+            The value to compute with.
+
+        Returns
+        -------
+        dragon.vm.torch.Tensor
+            The output tensor.
+
+        """
+        return self.bitwise_and(other)
+
     def __del__(self):
-        if self.is_leaf and self._gc:
-            # Always reuse the leaf tensors.
-            # PyGC will detect them automatically.
-            self._gc.collect(self.id)
+        if self._deleter:
+            self._deleter.release(self._impl.name)
 
     def __float__(self):
         """Return a float python scalar.
@@ -2660,10 +2961,26 @@ class Tensor(object):
         Returns
         -------
         dragon.vm.torch.Tensor
-            The self.
+            The output tensor.
 
         """
         return self.add_(other)
+
+    def __iand__(self, other):
+        """Compute the element-wise AND bitwise operation.
+
+        Parameters
+        ----------
+        other : Union[dragon.vm.torch.Tensor, number]
+            The value to compute with.
+
+        Returns
+        -------
+        dragon.vm.torch.Tensor
+            The output tensor.
+
+        """
+        return self.bitwise_and_(other)
 
     def __imul__(self, other):
         """Compute the element-wise multiplication.
@@ -2676,7 +2993,7 @@ class Tensor(object):
         Returns
         -------
         dragon.vm.torch.Tensor
-            The self.
+            The output tensor.
 
         """
         return self.mul_(other)
@@ -2692,6 +3009,33 @@ class Tensor(object):
         """
         return int(self.__float__())
 
+    def __invert__(self):
+        """Compute the element-wise NOT bitwise operation.
+
+        Returns
+        -------
+        dragon.vm.torch.Tensor
+            The output tensor.
+
+        """
+        return self.bitwise_not()
+
+    def __ior__(self, other):
+        """Compute the element-wise OR bitwise operation.
+
+        Parameters
+        ----------
+        other : Union[dragon.vm.torch.Tensor, number]
+            The value to compute with.
+
+        Returns
+        -------
+        dragon.vm.torch.Tensor
+            The output tensor.
+
+        """
+        return self.bitwise_or_(other)
+
     def __isub__(self, other):
         """Compute the element-wise subtraction.
 
@@ -2703,7 +3047,7 @@ class Tensor(object):
         Returns
         -------
         dragon.vm.torch.Tensor
-            The self.
+            The output tensor.
 
         """
         return self.sub_(other)
@@ -2719,10 +3063,26 @@ class Tensor(object):
         Returns
         -------
         dragon.vm.torch.Tensor
-            The self.
+            The output tensor.
 
         """
         return self.div_(other)
+
+    def __ixor__(self, other):
+        """Compute the element-wise XOR bitwise operation.
+
+        Parameters
+        ----------
+        other : Union[dragon.vm.torch.Tensor, number]
+            The value to compute with.
+
+        Returns
+        -------
+        dragon.vm.torch.Tensor
+            The output tensor.
+
+        """
+        return self.bitwise_xor_(other)
 
     def __le__(self, other):
         """Compute the element-wise less-equal comparison.
@@ -2783,6 +3143,22 @@ class Tensor(object):
         """
         return self.neg()
 
+    def __or__(self, other):
+        """Compute the element-wise OR bitwise operation.
+
+        Parameters
+        ----------
+        other : Union[dragon.vm.torch.Tensor, number]
+            The value to compute with.
+
+        Returns
+        -------
+        dragon.vm.torch.Tensor
+            The output tensor.
+
+        """
+        return self.bitwise_or(other)
+
     def __radd__(self, other):
         """Compute the element-wise addition.
 
@@ -2808,7 +3184,7 @@ class Tensor(object):
             suffix_str = ')'
         debug_str = string.array_to_string(
             array, prefix='tensor(', suffix=suffix_str)
-        del array  # DECREF
+        del array
         return string.add_indent(debug_str, 7)
 
     def __rmul__(self, other):
@@ -2890,6 +3266,22 @@ class Tensor(object):
 
         """
         return self.sub(other)
+
+    def __xor__(self, other):
+        """Compute the element-wise XOR bitwise operation.
+
+        Parameters
+        ----------
+        other : Union[dragon.vm.torch.Tensor, number]
+            The value to compute with.
+
+        Returns
+        -------
+        dragon.vm.torch.Tensor
+            The output tensor.
+
+        """
+        return self.bitwise_xor(other)
 
 
 class BoolTensor(object):
@@ -2994,7 +3386,7 @@ def tensor(data, dtype=None, device=None, requires_grad=False):
     device : dragon.vm.torch.device, optional
         The optional device of returned tensor.
     requires_grad : bool, optional, default=False
-        **True** to record gradient for returned tensor.
+        ``True`` to record gradient for returned tensor.
 
     Returns
     -------

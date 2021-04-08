@@ -3,7 +3,7 @@
 
 namespace dragon {
 
-namespace kernel {
+namespace kernels {
 
 namespace {
 
@@ -84,6 +84,6 @@ void LSTMCellGrad<float, CPUContext>(
   }
 } // LSTMCellGrad
 
-} // namespace kernel
+} // namespace kernels
 
 } // namespace dragon

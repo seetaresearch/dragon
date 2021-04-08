@@ -20,6 +20,7 @@ import numpy
 
 from dragon.core.framework import config
 from dragon.core.util import string
+from dragon.vm.torch.core.autograd import grad_mode
 from dragon.vm.torch.core.nn.parameter import Parameter
 from dragon.vm.torch.core.tensor import Tensor
 from dragon.vm.torch.core.utils import hooks
@@ -141,7 +142,7 @@ class Module(object):
     def cuda(self, device=None):
         """Switch the buffers and parameters to cuda device.
 
-        If ``device`` is not provided, use the value
+        If :attr:`device` is not provided, use the value
         set by ``dragon.config.set_cuda_device()``.
 
         Parameters
@@ -160,7 +161,7 @@ class Module(object):
         return self._apply(lambda t: t.cuda(device))
 
     def double(self):
-        """Switch the buffers and parameters to **float64**.
+        """Switch the buffers and parameters to ``float64``.
 
         Returns
         -------
@@ -191,7 +192,7 @@ class Module(object):
         return ''
 
     def float(self):
-        """Switch the buffers and parameters to **float32**.
+        """Switch the buffers and parameters to ``float32``.
 
         Returns
         -------
@@ -218,7 +219,7 @@ class Module(object):
         """
 
     def half(self):
-        """Switch the buffers and parameters to **float16**.
+        """Switch the buffers and parameters to ``float16``.
 
         Returns
         -------
@@ -241,7 +242,7 @@ class Module(object):
         mm.load_state_dict(m.state_dict())
         ```
 
-        Set ``strict`` to **False** to load a mismatched dict:
+        Set ``strict`` to ``False`` to load a mismatched dict:
 
         ```python
         # States matching the name successfully will be loaded
@@ -254,7 +255,7 @@ class Module(object):
         state_dict : dict
             The state dict.
         strict : bool, optional, default=True
-            **True** to verify the names strictly.
+            ``True`` to verify the names strictly.
 
         """
         missing_keys = []
@@ -321,7 +322,7 @@ class Module(object):
             yield name, buffer
 
     def named_children(self):
-        """Return an iterator over immediate modules, yield as *(name, module)*.
+        """Return an iterator over immediate modules, yield as ``(name, module)``.
 
         Returns
         -------
@@ -334,7 +335,7 @@ class Module(object):
                 yield name, module
 
     def named_modules(self, memo=None, prefix=''):
-        """Return an iterator over all modules, yield as *(name, module)*.
+        """Return an iterator over all modules, yield as ``(name, module)``.
 
         Parameters
         ----------
@@ -500,7 +501,7 @@ class Module(object):
         prefix : str, optional, default=''
             The prefix added to the name of states.
         to_numpy : bool, optional, default=False
-            **True** to store the numpy array instead.
+            ``True`` to store the numpy array instead.
 
         Returns
         -------
@@ -554,7 +555,8 @@ class Module(object):
             module._apply(fn)
         for param in self._parameters.values():
             if param is not None:
-                fn(param)
+                with grad_mode.no_grad():
+                    fn(param)
         for key, buf in self._buffers.items():
             if buf is not None:
                 self._buffers[key] = fn(buf)
@@ -591,7 +593,7 @@ class Module(object):
                 if isinstance(input_param, Tensor):
                     param.copy_(input_param)
                 elif isinstance(input_param, numpy.ndarray):
-                    param._impl.FromNumpy(input_param.copy())
+                    param._impl.FromNumpy(input_param.copy(), True)
                 else:
                     error_msgs.append(
                         'Excepted the input param is either '

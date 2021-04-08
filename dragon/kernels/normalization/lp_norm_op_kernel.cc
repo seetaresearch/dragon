@@ -3,7 +3,7 @@
 
 namespace dragon {
 
-namespace kernel {
+namespace kernels {
 
 namespace {
 
@@ -204,6 +204,6 @@ DEFINE_GRAD_KERNEL_LAUNCHER(L2NormalizeGrad, double);
 #undef DEFINE_KERNEL_LAUNCHER
 #undef DEFINE_GRAD_KERNEL_LAUNCHER
 
-} // namespace kernel
+} // namespace kernels
 
 } // namespace dragon

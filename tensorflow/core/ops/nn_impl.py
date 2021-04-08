@@ -36,13 +36,14 @@ def batch_normalization(
 
     The normalization is defined as:
 
-    .. math::
-        y = \frac{x - \mathrm{E}[x]}{\sqrt{\mathrm{Var}[x] + \epsilon}} * \gamma + \beta
+    .. math:: y = \frac{x - \mathrm{E}[x]}
+                       {\sqrt{\mathrm{Var}[x] + \epsilon}}
+                  * \gamma + \beta
 
     The moving average of stats are calculated as:
 
-    .. math:: x_{\text{running}} = \text{momentum} * x_{\text{running}} +
-                                   (1 - \text{momentum}) * x_{\text{batch}}
+    .. math:: x_{\text{moving}} = \text{momentum} * x_{\text{moving}} +
+                                  + (1 - \text{momentum}) * x_{\text{batch}}
 
     Parameters
     ----------
@@ -92,7 +93,7 @@ def l2_normalize(x, axis=None, epsilon=1e-12, name=None):
 
     The **L2-Normalization** is defined as:
 
-    .. math:: \text{out} = \frac{x}{\left\|x\right\|_{2} + \epsilon}
+    .. math:: y = \frac{x}{\left\|x\right\|_{2} + \epsilon}
 
     The argument ``axis`` could be negative or **None**:
 
@@ -138,15 +139,15 @@ def l2_normalize(x, axis=None, epsilon=1e-12, name=None):
 
 
 def moments(x, axes=None, keepdims=False, name=None):
-    r"""Compute the mean and variance of input along the given axes.
+    r"""Compute the mean and variance of input along the given axis.
 
     .. math::
         \begin{cases}
-            \text{mean} = \frac{1}{n}\sum(\text{input}) \\
-            \text{variance} = \frac{1}{n}\sum(\text{input} - \text{mean})^{2}
+            \mathrm{E}[x] = \frac{1}{n}\sum(x) \\
+            \mathrm{Var}[x] = \frac{1}{n}\sum(x - \mathrm{E}[x])^{2}
         \end{cases}
 
-    The argument ``axis`` could be negative or **None**:
+    :attr:`axes` could be negative or ``None``:
 
     ```python
     x = tf.constant([[1, 2, 3], [4, 5, 6]])
@@ -155,12 +156,11 @@ def moments(x, axes=None, keepdims=False, name=None):
     print(tf.nn.moments(x, 1))
     print(tf.nn.moments(x, -1))  # Equivalent
 
-    # If ``axes`` is None, the vector-style reduction
-    # will be applied to return a scalar result
-    print(tf.nn.moments(x))  # Mean is 3.5, Var is 2.916667
+    # If axes is None, reduce as a vector and return scalars
+    print(tf.nn.moments(x))  # mean is 3.5, var is 2.916667
 
-    # Also, ``axes`` could be a sequence of integers
-    print(tf.nn.moments(x, [0, 1]))  # Mean is 3.5, Var is 2.916667
+    # Also, axes could be a sequence of integers
+    print(tf.nn.moments(x, [0, 1]))  # mean is 3.5, var is 2.916667
     ```
 
     Parameters

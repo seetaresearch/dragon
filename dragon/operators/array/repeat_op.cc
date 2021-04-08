@@ -8,7 +8,8 @@ template <class Context>
 template <typename T>
 void RepeatOp<Context>::DoRunWithType() {
   auto &X = Input(0), *Y = Output(0);
-  CANONICALIZE_AXIS_WITH_TENSOR(X);
+  GET_OP_AXIS_ARG(axis, X.ndim(), INT_MAX);
+  SET_INPUT_SPEC(0);
 
   // Determine the repeat scheme
   // 1) Repeat to a flatten vector if axis is not specified
@@ -27,11 +28,8 @@ void RepeatOp<Context>::DoRunWithType() {
     Y->Reshape(Y_dims);
   }
 
-  // Store for the gradient calculation
-  STORE_INPUT_SPEC(0);
-
   // Dispatch the repeat kenrel
-  kernel::Repeat(
+  kernels::Repeat(
       outer_dim,
       inner_dim,
       axis_dim,
@@ -43,14 +41,14 @@ void RepeatOp<Context>::DoRunWithType() {
 
 template <class Context>
 void RepeatOp<Context>::RunOnDevice() {
-  DispatchHelper<FullTensorTypes>::Call(this, Input(0));
+  DispatchHelper<dtypes::Generic>::Call(this, Input(0));
 }
 
 template <class Context>
 template <typename T>
 void RepeatGradientOp<Context>::DoRunWithType() {
-  auto &X = RESTORE_INPUT_SPEC(0), &dY = Input(0), *dX = Output(0);
-  CANONICALIZE_AXIS_WITH_TENSOR(X);
+  auto &X = INPUT_SPEC(0), &dY = Input(0), *dX = Output(0);
+  GET_OP_AXIS_ARG(axis, X.ndim(), INT_MAX);
 
   // Determine the repeat scheme
   int64_t outer_dim, axis_dim, inner_dim;
@@ -64,7 +62,7 @@ void RepeatGradientOp<Context>::DoRunWithType() {
   }
 
   // Reduce the gradient along the axis
-  kernel::RepeatGrad(
+  kernels::RepeatGrad(
       outer_dim,
       inner_dim,
       axis_dim,
@@ -76,7 +74,7 @@ void RepeatGradientOp<Context>::DoRunWithType() {
 
 template <class Context>
 void RepeatGradientOp<Context>::RunOnDevice() {
-  DispatchHelper<FloatingTensorTypes>::Call(this, Input(0));
+  DispatchHelper<dtypes::Floating>::Call(this, Input(0));
 }
 
 DEPLOY_CPU_OPERATOR(Repeat);

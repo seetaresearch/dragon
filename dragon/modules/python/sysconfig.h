@@ -20,9 +20,7 @@ namespace dragon {
 
 namespace python {
 
-namespace sysconfig {
-
-void RegisterModule(py::module& m) {
+void RegisterModule_sysconfig(py::module& m) {
   /*! \brief Set the logging severity */
   m.def("SetLoggingLevel", [](const string& severity) {
     SetLogDestination(severity);
@@ -75,8 +73,6 @@ void RegisterModule(py::module& m) {
     return build_info;
   });
 }
-
-} // namespace sysconfig
 
 } // namespace python
 

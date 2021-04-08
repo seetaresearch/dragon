@@ -22,7 +22,7 @@ void CuDNNTanhOp<Context>::DoRunWithType() {
 
 template <class Context>
 void CuDNNTanhOp<Context>::RunOnDevice() {
-  DispatchHelper<FloatingTensorTypes>::Call(this, Input(0));
+  DispatchHelper<dtypes::Floating>::Call(this, Input(0));
 }
 
 template <class Context>
@@ -47,7 +47,7 @@ void CuDNNTanhGradientOp<Context>::DoRunWithType() {
 
 template <class Context>
 void CuDNNTanhGradientOp<Context>::RunOnDevice() {
-  DispatchHelper<FloatingTensorTypes>::Call(this, Input(0));
+  DispatchHelper<dtypes::Floating>::Call(this, Input(0));
 }
 
 DEPLOY_CUDNN_OPERATOR(Tanh);

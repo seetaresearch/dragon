@@ -180,7 +180,7 @@ class DType(str):
         Returns
         -------
         bool
-            **True** if compatible otherwise **False**.
+            ``True`` if compatible otherwise ``False``.
 
         """
         return self._type_enum in _TF_TO_NP
@@ -192,7 +192,7 @@ class DType(str):
         Returns
         -------
         bool
-            **True** if this is a boolean type otherwise **False**.
+            ``True`` if this is a boolean type otherwise ``False``.
 
         """
         return self.base_dtype == bool
@@ -204,7 +204,7 @@ class DType(str):
         Returns
         -------
         bool
-            **True** if this is a complex type otherwise **False**.
+            ``True`` if this is a complex type otherwise ``False``.
 
         """
         return self.base_dtype in (complex64, complex128)
@@ -216,7 +216,7 @@ class DType(str):
         Returns
         -------
         bool
-            **True** if this is a floating type otherwise **False**.
+            ``True`` if this is a floating type otherwise ``False``.
 
         """
         return (self.is_numpy_compatible and
@@ -229,7 +229,7 @@ class DType(str):
         Returns
         -------
         bool
-            **True** if this is a integer type otherwise **False**.
+            ``True`` if this is a integer type otherwise ``False``.
 
         """
         return (self.is_numpy_compatible and
@@ -243,7 +243,7 @@ class DType(str):
         Returns
         -------
         bool
-            **True** if this is a quantized type otherwise **False**.
+            ``True`` if this is a quantized type otherwise ``False``.
 
         """
         return self.base_dtype in [qint8, quint8, qint16, quint16, qint32, bfloat16]
@@ -255,7 +255,7 @@ class DType(str):
         Returns
         -------
         bool
-            **True** if this is an unsigned type otherwise **False**.
+            ``True`` if this is an unsigned type otherwise ``False``.
 
         """
         try:
@@ -270,7 +270,7 @@ class DType(str):
         Parameters
         ----------
         clip_negative : bool, optional, default=True
-            **True** to return positive limits only.
+            ``True`` to return positive limits only.
 
         Returns
         -------
@@ -366,7 +366,7 @@ class DType(str):
         Returns
         -------
         bool
-            **True** if compatible otherwise **False**.
+            ``True`` if compatible otherwise ``False``.
 
         """
         other = as_dtype(other)

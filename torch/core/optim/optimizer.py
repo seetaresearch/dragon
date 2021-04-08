@@ -18,12 +18,12 @@ from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
 
-from collections import defaultdict
+import numpy
 
 from dragon.core import distributed
 from dragon.core.framework import workspace
-from dragon.vm.torch.core.ops.distributed import functional as distributed_funcs
-from dragon.vm.torch.core.ops.training import functional as training_funcs
+from dragon.vm.torch.core.autograd.function_impl import FunctionLib
+from dragon.vm.torch.core.ops import distributed_ops
 from dragon.vm.torch.core.tensor import Tensor
 
 # A simple parameter flag.
@@ -44,9 +44,6 @@ class Optimizer(object):
 
     """
 
-    # Store for the global unique handle
-    _DEFAULT_UNIQUE_HANDLE_INDEX = 0
-
     def __init__(self, params, defaults):
         """Create a ``Optimizer``.
 
@@ -61,70 +58,26 @@ class Optimizer(object):
         self.defaults = defaults
         if isinstance(params, Tensor):
             raise TypeError('<params> should be a sequence of tensors.')
-        self.state = defaultdict(dict)
         self.param_groups = []
         param_groups = list(params)
         if len(param_groups) == 0:
-            raise ValueError('Got an empty parameter list')
+            raise ValueError('<params> is an empty sequence.')
         if not isinstance(param_groups[0], dict):
             param_groups = [{'params': param_groups}]
         for param_group in param_groups:
             self.add_param_group(param_group)
         self._op_type = self.__class__.__name__ + 'Update'
-        self._process_group = distributed.get_group()
-        self._shared_args = {}
-
-    def accumulate(self, momentum):
-        """Accumulate the gradient of params.
-
-        Call this method after each ``backward`` pass:
-
-        ```python
-        x = torch.ones(1, requires_grad=True)
-        optimizer = torch.optim.SGD([x], lr=0.1)
-        for epoch in range(2):
-            for step in range(3):
-                y = x + 1
-                y.backward()
-                # Note to zero the accumulation at the first step
-                optimizer.accumulate(momentum=1 if step > 0 else 1)
-            optimizer.step()
-        print(x)  # 0.4
-        ```
-
-        Parameters
-        ----------
-        momentum : float, required
-            The momentum to the accumulated value.
-
-        """
-        current_ws = workspace.get_workspace()
-        for group in self.param_groups:
-            group['_internal/grad_accum'] = True
-            for param in group['params']:
-                grad = self._steal_grad(current_ws, param)
-                if grad is not None:
-                    training_funcs.accumulate_grad(grad)
+        self._hyper = {}
+        self._sums_grad = False
 
     def add_param_group(self, param_group):
         """Add a new param group into the optimizer.
 
-        The ``param_group`` should be a dict containing
-        the defaults optionally:
+        attr:`param_group` is a dict containing the defaults:
 
         ```python
-        # A group redefined ``lr`` and ``weight_decay``
-        param_group1 = {
-            'params': [],
-            'lr': 0.01,
-            'weight_decay': 0.0001,
-        }
-        # A group inherits the defaults while using ``multiplier``
-        param_group2 = {
-            'params': [],
-            'lr_mult': 1,
-            'decay_mult': 1,
-        }
+        # A group defined ``lr`` and ``weight_decay``
+        param_group = {'params': [], 'lr': 0.01, 'weight_decay': 0.0001}
         ```
 
         Parameters
@@ -157,24 +110,19 @@ class Optimizer(object):
                 param_group.setdefault(name, default)
 
         if 'name' not in param_group:
-            Optimizer._DEFAULT_UNIQUE_HANDLE_INDEX += 1
-            param_group['name'] = 'Optimizer_{}'.format(
-                Optimizer._DEFAULT_UNIQUE_HANDLE_INDEX)
-
-        if '_internal/grad_accum' not in param_group:
-            param_group['_internal/grad_accum'] = False
+            default_ws = workspace.get_workspace()
+            param_group['name'] = default_ws._handle_pool.create('Optimizer')
 
         param_set = set()
         for group in self.param_groups:
             param_set.update(set(group['params']))
-
         if not param_set.isdisjoint(set(param_group['params'])):
             raise ValueError('Some parameters appear in more than one parameter group.')
 
         self.param_groups.append(param_group)
 
     def step(self):
-        """Perform one step update.
+        """Update all parameter groups using gradients.
 
         Call this method after a ``backward`` pass:
 
@@ -186,19 +134,50 @@ class Optimizer(object):
         ```
 
         """
+        for group in self.param_groups:
+            self._update_group(group)
+        self._sums_grad = False
+
+    def sum_grad(self):
+        """Sum the gradients of all parameters.
+
+        Call this method after each ``backward`` pass:
+
+        ```python
+        x = torch.ones(1, requires_grad=True)
+        optimizer = torch.optim.SGD([x], lr=0.1)
+        for epoch in range(2):
+            for step in range(3):
+                y = x + 1
+                y.backward()
+                optimizer.sum_grad()
+            optimizer.step()
+        print(x)  # 0.4
+        ```
+
+        """
         current_ws = workspace.get_workspace()
         for group in self.param_groups:
-            self._run_updates(current_ws, group)
-            group['_internal/grad_accum'] = False
+            grads, sum_grads = [], []
+            for param in group['params']:
+                grad = self._get_grad(current_ws, param)
+                if grad is not None:
+                    grads.append(grad)
+                    sum_grads.append(grad.id + '_sum')
+            FunctionLib.apply(
+                'Axpby', grads[0].device,
+                grads, outputs=sum_grads,
+                alpha=1., beta=1. if self._sums_grad else 0.)
+        self._sums_grad = True
 
-    def zero_grad(self, reset=False):
-        """Set the gradient of params to zero.
+    def zero_grad(self, set_to_none=False):
+        """Set the gradients of all parameters to zero.
 
         This method is not necessary usually, as we will overwrite
         the gradients in the next computation.
 
         However, if some gradients are not computed every time,
-        remember to reset them before ``step(...)``:
+        remember to set them to none before ``step(...)``:
 
         ```python
         m1 = torch.nn.Linear(3, 3)
@@ -208,74 +187,70 @@ class Optimizer(object):
             x = m1(x)
             if i in (2, 4, 6):
                 x += m2(x)
-        optimizer.zero_grad(reset=True)
+        optimizer.zero_grad(set_to_none=True)
         x.backward()
         optimizer.step()
         ```
 
         Parameters
         ----------
-        reset : bool, optional, default=False
-            **True** to reset the memory instead of zeroing.
+        set_to_none : bool, optional, default=False
+            Whether to remove the gradients instead of zeroing.
 
         """
-        current_ws = workspace.get_workspace()
+        execute_ws = workspace.get_workspace()
         for group in self.param_groups:
             for param in group['params']:
-                grad = self._steal_grad(current_ws, param)
+                grad = self._get_grad(execute_ws, param)
                 if grad is not None:
-                    current_ws.reset_tensor(grad) if reset else grad.zero_()
+                    if set_to_none:
+                        grad._impl.Reset()
+                    else:
+                        grad.zero_()
 
-    def _run_updates(self, ws, group):
-        """Run updates for the parameter group."""
+    def _update_group(self, group):
+        """Update parameters for the group."""
+        execute_ws = workspace.get_workspace()
+
         # Collect params and grads.
-        params, grads = [], []
-        grad_accum = group['_internal/grad_accum']
+        params_with_grad, grads = [], []
         for p in group['params']:
-            g = self._steal_grad(ws, p, grad_accum)
+            g = self._get_grad(execute_ws, p, self._sums_grad)
             if g is not None:
-                params.append(p)
+                params_with_grad.append(p)
                 grads.append(g)
 
-        # Reset the shared defaults.
-        self._reset_defaults(ws, group)
+        # Skip if grads are all missing.
+        if len(params_with_grad) == 0:
+            return
 
-        # Accumulate grads from the current process group.
-        if self._process_group is not None:
-            distributed_funcs.all_reduce(
-                tensor=grads,
-                op='MEAN',
-                group=self._process_group,
-            )
+        # Update hyper from group values.
+        for name in self._hyper.keys():
+            group_name = group['name']
+            impl_name, group_coll = self._hyper[name]
+            if group_name not in group_coll:
+                impl_name = group_name + '/' + impl_name
+                group_coll[group_name] = execute_ws.create_tensor(impl_name)
+            hyper_impl = group_coll[group_name]
+            hyper_impl.FromNumpy(numpy.array(group[name], 'float32'), False)
 
-        # Apply the specific update.
-        for p, g in zip(params, grads):
-            training_funcs.update_param(
-                p, g,
-                op_type=self._op_type,
-                op_handle=group['name'],
-                lr_mult=group.get('lr_mult', 1),
-                decay_mult=group.get('decay_mult', 1),
-            )
+        # Reduce grads in the process group.
+        process_group = distributed.get_group()
+        if process_group is not None:
+            distributed_ops.all_reduce(grads, 'MEAN', process_group)
 
-    def _reset_defaults(self, ws, group):
-        """Reset the defaults to backend."""
-        template = '/share/hyper/%s/{}' % group['name']
-        for name, value in group.items():
-            if name in self._shared_args:
-                ws.feed_tensor(
-                    tensor=template.format(self._shared_args[name]),
-                    value=value,
-                    dtype='float32',
-                    enforce_cpu=True,
-                )
+        # Apply updates.
+        FunctionLib.apply(
+            self._op_type, params_with_grad[0].device, grads,
+            outputs=params_with_grad, handle=group['name'], weight_decay=None)
 
     @staticmethod
-    def _steal_grad(ws, param, grad_accum=False):
-        """Steal the grad from backend."""
-        impl = ws.GetTensor(param.id + ('_grad[accum]' if grad_accum else '_grad'))
-        if impl is not None:
-            return Tensor(device=param.device, impl=impl)
+    def _get_grad(execute_ws, param, summed=False):
+        """Return the grad of a parameter."""
+        grad_impl = execute_ws.get_tensor(
+            param.id + ('_grad_sum' if summed else '_grad'))
+        if grad_impl:
+            return Tensor(device=param.device, impl=grad_impl)
         return None
 
     def __repr__(self):

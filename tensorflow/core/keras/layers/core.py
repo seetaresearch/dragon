@@ -54,7 +54,7 @@ class Dense(Layer):
         activation : Union[callable, str], optional
             The optional activation function.
         use_bias : bool, optional, default=True
-            **True** to apply a ``bias``.
+            ``True`` to apply a ``bias``.
         kernel_initializer : Union[callable, str], optional
             The initializer for kernel tensor.
         bias_initializer : Union[callable, str], optional
@@ -171,9 +171,8 @@ class Flatten(Layer):
     Examples:
 
     ```python
-    # Reshape an input taking any dimensions
+    # Reshape an input taking 2 dimensions or more
     m = tf.keras.layers.Flatten()
-    x1d = m(tf.ones([24]))  # (24, 1)
     x2d = m(tf.ones([24, 1]))  # (24, 1)
     x4d = m(tf.ones([1, 2, 3, 4]))  # (1, 24)
 
@@ -204,7 +203,7 @@ class Flatten(Layer):
         if self.data_format == 'channels_first':
             perm = [0] + [i for i in range(2, len(inputs.shape))] + [1]
             inputs = array_ops.transpose(inputs, perm=perm)
-        return array_ops.flatten(inputs, keep_axes=2)
+        return array_ops.flatten(inputs, axis=1)
 
 
 class Permute(Layer):

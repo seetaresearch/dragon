@@ -316,7 +316,7 @@ class RandomBBoxCrop(object):
         thresholds : Sequence[float], optional
             The minimum IoU(s) to satisfy.
         allow_no_crop : bool, optional, default=True
-            **True** to include the no-cropping as an option.
+            ``True`` to include the no-cropping as an option.
         num_attempts : int, optional, default=10
             The max number of sampling trails.
         bbox_layout : str, optional, default='xyXY'

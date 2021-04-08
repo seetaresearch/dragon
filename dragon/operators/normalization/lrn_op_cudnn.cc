@@ -24,7 +24,7 @@ void CuDNNLRNOp<Context>::DoRunWithType() {
 
 template <class Context>
 void CuDNNLRNOp<Context>::RunOnDevice() {
-  DispatchHelper<FloatingTensorTypes>::Call(this, Input(0));
+  DispatchHelper<dtypes::Floating>::Call(this, Input(0));
 }
 
 template <class Context>
@@ -51,7 +51,7 @@ void CuDNNLRNGradientOp<Context>::DoRunWithType() {
 
 template <class Context>
 void CuDNNLRNGradientOp<Context>::RunOnDevice() {
-  DispatchHelper<FloatingTensorTypes>::Call(this, Input(0));
+  DispatchHelper<dtypes::Floating>::Call(this, Input(0));
 }
 
 DEPLOY_CUDNN_OPERATOR(LRN);

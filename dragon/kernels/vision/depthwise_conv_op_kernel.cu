@@ -7,15 +7,11 @@
 
 namespace dragon {
 
-namespace kernel {
+namespace kernels {
 
 namespace {
 
-#if __CUDA_ARCH__ >= 350
 #define LDG(x, i) __ldg(x + i)
-#else
-#define LDG(x, i) x[i]
-#endif
 
 template <typename T, typename AccT, int kPatchH, int kPatchW>
 __global__ void _DepthwiseConv2dNCHW(
@@ -339,46 +335,46 @@ __global__ void _DepthwiseConv2dWGradNHWC(
 
 /* ------------------- Launcher Separator ------------------- */
 
-#define DISPATCH_DATA_KERNEL(name, T, AccT, nblocks, nthreads, ...)    \
+#define DISPATCH_DATA_KERNEL(name, T, AccT, kBlocks, kThreads, ...)    \
   if (data_format == "NCHW") {                                         \
     if (kernel_h == 3 && kernel_w == 3) {                              \
       name##NCHW<T, AccT, 3, 3>                                        \
-          <<<nblocks, nthreads, 0, ctx->cuda_stream()>>>(__VA_ARGS__); \
+          <<<kBlocks, kThreads, 0, ctx->cuda_stream()>>>(__VA_ARGS__); \
     } else if (kernel_h == 5 && kernel_w == 5) {                       \
       name##NCHW<T, AccT, 5, 5>                                        \
-          <<<nblocks, nthreads, 0, ctx->cuda_stream()>>>(__VA_ARGS__); \
+          <<<kBlocks, kThreads, 0, ctx->cuda_stream()>>>(__VA_ARGS__); \
     } else if (kernel_h == 7 && kernel_w == 7) {                       \
       name##NCHW<T, AccT, 7, 7>                                        \
-          <<<nblocks, nthreads, 0, ctx->cuda_stream()>>>(__VA_ARGS__); \
+          <<<kBlocks, kThreads, 0, ctx->cuda_stream()>>>(__VA_ARGS__); \
     } else {                                                           \
       name##NCHW<T, AccT, -1, -1>                                      \
-          <<<nblocks, nthreads, 0, ctx->cuda_stream()>>>(__VA_ARGS__); \
+          <<<kBlocks, kThreads, 0, ctx->cuda_stream()>>>(__VA_ARGS__); \
     }                                                                  \
   } else if (data_format == "NHWC") {                                  \
     if (kernel_h == 3 && kernel_w == 3) {                              \
       name##NHWC<T, AccT, 3, 3>                                        \
-          <<<nblocks, nthreads, 0, ctx->cuda_stream()>>>(__VA_ARGS__); \
+          <<<kBlocks, kThreads, 0, ctx->cuda_stream()>>>(__VA_ARGS__); \
     } else if (kernel_h == 5 && kernel_w == 5) {                       \
       name##NHWC<T, AccT, 5, 5>                                        \
-          <<<nblocks, nthreads, 0, ctx->cuda_stream()>>>(__VA_ARGS__); \
+          <<<kBlocks, kThreads, 0, ctx->cuda_stream()>>>(__VA_ARGS__); \
     } else if (kernel_h == 7 && kernel_w == 7) {                       \
       name##NHWC<T, AccT, 7, 7>                                        \
-          <<<nblocks, nthreads, 0, ctx->cuda_stream()>>>(__VA_ARGS__); \
+          <<<kBlocks, kThreads, 0, ctx->cuda_stream()>>>(__VA_ARGS__); \
     } else {                                                           \
       name##NHWC<T, AccT, -1, -1>                                      \
-          <<<nblocks, nthreads, 0, ctx->cuda_stream()>>>(__VA_ARGS__); \
+          <<<kBlocks, kThreads, 0, ctx->cuda_stream()>>>(__VA_ARGS__); \
     }                                                                  \
   } else {                                                             \
     LOG(FATAL) << "Unknown DataFormat: " << data_format;               \
   }
 
-#define DISPATCH_FILTER_KERNEL(name, T, AccT, nblocks, nthreads, ...) \
+#define DISPATCH_FILTER_KERNEL(name, T, AccT, kBlocks, kThreads, ...) \
   if (data_format == "NCHW") {                                        \
     name##NCHW<T, AccT>                                               \
-        <<<nblocks, nthreads, 0, ctx->cuda_stream()>>>(__VA_ARGS__);  \
+        <<<kBlocks, kThreads, 0, ctx->cuda_stream()>>>(__VA_ARGS__);  \
   } else if (data_format == "NHWC") {                                 \
     name##NHWC<T, AccT>                                               \
-        <<<nblocks, nthreads, 0, ctx->cuda_stream()>>>(__VA_ARGS__);  \
+        <<<kBlocks, kThreads, 0, ctx->cuda_stream()>>>(__VA_ARGS__);  \
   } else {                                                            \
     LOG(FATAL) << "Unknown DataFormat: " << data_format;              \
   }
@@ -499,13 +495,13 @@ __global__ void _DepthwiseConv2dWGradNHWC(
       const T* x,                                                   \
       T* dfilter,                                                   \
       CUDAContext* ctx) {                                           \
-    const auto nblocks = C * kernel_h * kernel_w;                   \
+    const auto kBlocks = C * kernel_h * kernel_w;                   \
     const auto nthreads = 256;                                      \
     DISPATCH_FILTER_KERNEL(                                         \
         _DepthwiseConv2dWGrad,                                      \
         math::ScalarType<T>::type,                                  \
         AccT,                                                       \
-        nblocks,                                                    \
+        kBlocks,                                                    \
         nthreads,                                                   \
         N,                                                          \
         C,                                                          \
@@ -535,7 +531,7 @@ DEFINE_GRAD_KERNEL_LAUNCHER(float, float);
 #undef DISPATCH_DATA_KERNEL
 #undef DISPATCH_FILTER_KERNEL
 
-} // namespace kernel
+} // namespace kernels
 
 } // namespace dragon
 

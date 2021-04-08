@@ -2,7 +2,6 @@
 
 #include "dragon/core/workspace.h"
 #include "dragon/operators/vision/conv_transpose_op.h"
-#include "dragon/utils/filler.h"
 
 namespace dragon {
 
@@ -71,9 +70,9 @@ template <class Context>
 template <typename T>
 void CuDNNConvTransposeOp<Context>::DoRunWithType() {
   auto &X = Input(0), &W = Input(1);
-  TENSOR_FILL(W, w_shape_);
+  INITIALIZE_TENSOR_VIA_SPEC(W, w_shape_, T);
   if (HasBias()) {
-    TENSOR_FILL(Input(2), b_shape_);
+    INITIALIZE_TENSOR_VIA_SPEC(Input(2), b_shape_, T);
   }
   ResetDesc<T>();
 
@@ -169,7 +168,7 @@ void CuDNNConvTransposeOp<Context>::DoRunWithType() {
 template <class Context>
 void CuDNNConvTransposeOp<Context>::RunOnDevice() {
   ConvOpBase<Context>::Reshape();
-  DispatchHelper<FloatingTensorTypes>::Call(this, Input(0));
+  DispatchHelper<dtypes::Floating>::Call(this, Input(0));
 }
 
 template <class Context>
@@ -437,7 +436,7 @@ void CuDNNConvTransposeGradientOp<Context>::DoRunWithType() {
 template <class Context>
 void CuDNNConvTransposeGradientOp<Context>::RunOnDevice() {
   ConvOpBase<Context>::Reshape(true);
-  DispatchHelper<FloatingTensorTypes>::Call(this, Input(-1));
+  DispatchHelper<dtypes::Floating>::Call(this, Input(-1));
 }
 
 DEPLOY_CUDNN_OPERATOR(ConvTranspose);

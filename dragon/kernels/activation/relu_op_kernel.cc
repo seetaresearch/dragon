@@ -4,20 +4,19 @@
 
 namespace dragon {
 
-namespace kernel {
+namespace kernels {
 
 namespace {
 
 template <typename T>
-void _Relu(const int count, const T alpha, const T* x, T* y) {
-  ConstEigenVectorArrayMap<T> X(x, count);
-  EigenVectorArrayMap<T>(y, count) =
-      X.cwiseMax(T(0)) + X.cwiseMin(T(0)) * alpha;
+void _Relu(const int N, const T alpha, const T* x, T* y) {
+  ConstEigenVectorArrayMap<T> X(x, N);
+  EigenVectorArrayMap<T>(y, N) = X.cwiseMax(T(0)) + X.cwiseMin(T(0)) * alpha;
 }
 
 template <>
 void _Relu<float16>(
-    const int count,
+    const int N,
     const float16 alpha,
     const float16* x,
     float16* y) {
@@ -25,14 +24,14 @@ void _Relu<float16>(
 }
 
 template <typename T>
-void _ReluN(const int count, const T max_value, const T* x, T* y) {
-  EigenVectorMap<T>(y, count) =
-      ConstEigenVectorMap<T>(x, count).cwiseMax(T(0)).cwiseMin(max_value);
+void _ReluN(const int N, const T max_value, const T* x, T* y) {
+  EigenVectorMap<T>(y, N) =
+      ConstEigenVectorMap<T>(x, N).cwiseMax(T(0)).cwiseMin(max_value);
 }
 
 template <>
 void _ReluN<float16>(
-    const int count,
+    const int N,
     const float16 max_value,
     const float16* x,
     float16* y) {
@@ -40,15 +39,15 @@ void _ReluN<float16>(
 }
 
 template <typename T>
-void _ReluGrad(const int count, const T alpha, const T* dy, const T* y, T* dx) {
-  EigenVectorArrayMap<T>(dx, count) = ConstEigenVectorArrayMap<T>(dy, count) *
-      ConstEigenVectorArrayMap<T>(y, count).unaryExpr(
+void _ReluGrad(const int N, const T alpha, const T* dy, const T* y, T* dx) {
+  EigenVectorArrayMap<T>(dx, N) = ConstEigenVectorArrayMap<T>(dy, N) *
+      ConstEigenVectorArrayMap<T>(y, N).unaryExpr(
           [&](T a) { return a > T(0) ? T(1) : alpha; });
 }
 
 template <>
 void _ReluGrad<float16>(
-    const int count,
+    const int N,
     const float16 alpha,
     const float16* dy,
     const float16* y,
@@ -58,20 +57,20 @@ void _ReluGrad<float16>(
 
 template <typename T>
 void _ReluNGrad(
-    const int count,
+    const int N,
     const T max_value,
     const T* dy,
     const T* y,
     T* dx) {
-  ConstEigenVectorArrayMap<T> Y(y, count);
-  EigenVectorArrayMap<T>(dx, count) =
+  ConstEigenVectorArrayMap<T> Y(y, N);
+  EigenVectorArrayMap<T>(dx, N) =
       (Y > T(0) && Y < max_value)
-          .select(ConstEigenVectorArrayMap<T>(dy, count), T(0));
+          .select(ConstEigenVectorArrayMap<T>(dy, N), T(0));
 }
 
 template <>
 void _ReluNGrad<float16>(
-    const int count,
+    const int N,
     const float16 max_value,
     const float16* dy,
     const float16* y,
@@ -86,39 +85,35 @@ void _ReluNGrad<float16>(
 #define DEFINE_KERNEL_LAUNCHER(T)                                              \
   template <>                                                                  \
   void Relu<T, CPUContext>(                                                    \
-      const int count, const float alpha, const T* x, T* y, CPUContext* ctx) { \
-    _Relu(count, convert::To<T>(alpha), x, y);                                 \
+      const int N, const float alpha, const T* x, T* y, CPUContext* ctx) {     \
+    _Relu(N, convert::To<T>(alpha), x, y);                                     \
   }                                                                            \
   template <>                                                                  \
   void ReluN<T, CPUContext>(                                                   \
-      const int count,                                                         \
-      const float max_value,                                                   \
-      const T* x,                                                              \
-      T* y,                                                                    \
-      CPUContext* ctx) {                                                       \
-    _ReluN(count, convert::To<T>(max_value), x, y);                            \
+      const int N, const float max_value, const T* x, T* y, CPUContext* ctx) { \
+    _ReluN(N, convert::To<T>(max_value), x, y);                                \
   }
 
-#define DEFINE_GRAD_KERNEL_LAUNCHER(T)                       \
-  template <>                                                \
-  void ReluGrad<T, CPUContext>(                              \
-      const int count,                                       \
-      const float alpha,                                     \
-      const T* dy,                                           \
-      const T* y,                                            \
-      T* dx,                                                 \
-      CPUContext* ctx) {                                     \
-    _ReluGrad(count, convert::To<T>(alpha), dy, y, dx);      \
-  }                                                          \
-  template <>                                                \
-  void ReluNGrad<T, CPUContext>(                             \
-      const int count,                                       \
-      const float max_value,                                 \
-      const T* dy,                                           \
-      const T* y,                                            \
-      T* dx,                                                 \
-      CPUContext* ctx) {                                     \
-    _ReluNGrad(count, convert::To<T>(max_value), dy, y, dx); \
+#define DEFINE_GRAD_KERNEL_LAUNCHER(T)                   \
+  template <>                                            \
+  void ReluGrad<T, CPUContext>(                          \
+      const int N,                                       \
+      const float alpha,                                 \
+      const T* dy,                                       \
+      const T* y,                                        \
+      T* dx,                                             \
+      CPUContext* ctx) {                                 \
+    _ReluGrad(N, convert::To<T>(alpha), dy, y, dx);      \
+  }                                                      \
+  template <>                                            \
+  void ReluNGrad<T, CPUContext>(                         \
+      const int N,                                       \
+      const float max_value,                             \
+      const T* dy,                                       \
+      const T* y,                                        \
+      T* dx,                                             \
+      CPUContext* ctx) {                                 \
+    _ReluNGrad(N, convert::To<T>(max_value), dy, y, dx); \
   }
 
 DEFINE_KERNEL_LAUNCHER(float16);
@@ -130,6 +125,6 @@ DEFINE_GRAD_KERNEL_LAUNCHER(double);
 #undef DEFINE_KERNEL_LAUNCHER
 #undef DEFINE_GRAD_KERNEL_LAUNCHER
 
-} // namespace kernel
+} // namespace kernels
 
 } // namespace dragon

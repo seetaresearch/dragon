@@ -73,8 +73,8 @@ def fetch_argument(op_def, arg, ws):
     desc = arg if isinstance(arg, bytes) else arg.s
     if sys.version_info >= (3, 0):
         desc = desc.decode('utf-8')
-    desc = desc.replace('${HANDLE}', op_def.name)
-    value = ws.FetchTensor(desc)
+    desc = desc.replace('$HANDLE', op_def.name)
+    value = ws.get_tensor(desc).ToNumpy()
     if value.size == 1:
         return value.flatten()[0]
     return value
@@ -85,9 +85,9 @@ def fetch_arguments(op_def, arg, ws):
     return [fetch_argument(op_def, desc, ws) for desc in arg.strings]
 
 
-def fetch_tensor(tensor, ws):
+def fetch_tensor(name, ws):
     """Return the value of a tensor."""
-    return ws.GetTensor(tensor).ToNumpy(True)
+    return ws.get_tensor(name).ToNumpy()
 
 
 def from_tensor(tensor, ws):

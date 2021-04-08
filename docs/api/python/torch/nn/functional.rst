@@ -41,22 +41,22 @@ vm.torch.nn.functional
   : Compute the sigmoid cross entropy with contiguous target.
 
   `conv1d(...) <functional/conv1d.html>`_
-  : Apply 1d convolution to the input.
+  : Apply the 1d convolution to input.
 
   `conv2d(...) <functional/conv2d.html>`_
-  : Apply 2d convolution to the input.
+  : Apply the 2d convolution to input.
 
   `conv3d(...) <functional/conv3d.html>`_
-  : Apply 3d convolution to the input.
+  : Apply the 3d convolution to input.
 
   `conv_transpose1d(...) <functional/conv_transpose1d.html>`_
-  : Apply 1d deconvolution to the input.
+  : Apply the 1d deconvolution to input.
 
   `conv_transpose2d(...) <functional/conv_transpose2d.html>`_
-  : Apply 2d deconvolution to the input.
+  : Apply the 2d deconvolution to input.
 
   `conv_transpose3d(...) <functional/conv_transpose3d.html>`_
-  : Apply 3d deconvolution to the input.
+  : Apply the 3d deconvolution to input.
 
   `cross_entropy(...) <functional/cross_entropy.html>`_
   : Compute the softmax cross entropy with sparse labels.
@@ -66,11 +66,11 @@ vm.torch.nn.functional
   `[Graves & Gomez, 2006] <http://www.cs.utoronto.ca/~graves/icml_2006.pdf>`_.
 
   `depthwise_conv2d(...) <functional/depthwise_conv2d.html>`_
-  : Apply 2d depthwise convolution to the input.
+  : Apply the 2d depthwise convolution to input.
   `[Chollet, 2016] <https://arxiv.org/abs/1610.02357>`_.
 
   `drop_block2d(...) <functional/drop_block2d.html>`_
-  : Set the spatial blocks over input to zero randomly.
+  : Set the blocks over input to zero randomly.
   `[Ghiasi et.al, 2018] <https://arxiv.org/abs/1810.12890>`_.
 
   `drop_path(...) <functional/drop_path.html>`_
@@ -78,7 +78,7 @@ vm.torch.nn.functional
   `[Larsson et.al, 2016] <https://arxiv.org/abs/1605.07648>`_.
 
   `dropout(...) <functional/dropout.html>`_
-  : Set the elements of the input to zero randomly.
+  : Set the elements of input to zero randomly.
   `[Srivastava et.al, 2014] <http://jmlr.org/papers/v15/srivastava14a.html>`_.
 
   `elu(...) <functional/elu.html>`_
@@ -101,6 +101,10 @@ vm.torch.nn.functional
 
   `l1_loss(...) <functional/l1_loss.html>`_
   : Compute the element-wise absolute value difference.
+
+  `layer_norm(...) <functional/layer_norm.html>`_
+  : Apply the layer normalization to input.
+  `[Ba et.al, 2016] <https://arxiv.org/abs/1607.06450>`_
 
   `leaky_relu(...) <functional/leaky_relu.html>`_
   : Apply the leaky rectified linear unit to input.
@@ -129,6 +133,10 @@ vm.torch.nn.functional
 
   `mse_loss(...) <functional/mse_loss.html>`_
   : Compute the element-wise squared error.
+
+  `multi_head_attention_forward(...) <functional/multi_head_attention_forward.html>`_
+  : Apply the multihead attention to input.
+  `[Vaswani et.al, 2017] <https://arxiv.org/abs/1706.03762>`_.
 
   `nll_loss(...) <functional/nll_loss.html>`_
   : Compute the negative likelihood loss with sparse labels.
@@ -216,6 +224,7 @@ vm.torch.nn.functional
   functional/l1_loss
   functional/leaky_relu
   functional/linear
+  functional/layer_norm
   functional/local_response_norm
   functional/log_softmax
   functional/interpolate
@@ -223,6 +232,7 @@ vm.torch.nn.functional
   functional/max_pool2d
   functional/max_pool3d
   functional/mse_loss
+  functional/multi_head_attention_forward
   functional/nll_loss
   functional/normalize
   functional/pad

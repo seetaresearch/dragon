@@ -6,6 +6,7 @@ namespace dragon {
 template <class Context>
 void ReshapeOp<Context>::RunOnDevice() {
   auto &X = Input(0), *Y = Output(0, {0});
+  SET_INPUT_SPEC(0);
 
   int num_dims;
   dims(0, &num_dims);
@@ -45,9 +46,6 @@ void ReshapeOp<Context>::RunOnDevice() {
         << "\nCan not change the total size: " << X.DimString() << " -> "
         << Tensor::DimString(out_shape);
   }
-
-  // Store for the gradient calculation
-  STORE_INPUT_SPEC(0);
 
   // Maybe copy the contents
   Y->Reshape(out_shape)->CopyFrom(X, ctx());

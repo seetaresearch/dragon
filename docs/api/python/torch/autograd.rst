@@ -6,9 +6,6 @@ vm.torch.autograd
   Classes
   -------
 
-  `class Function <autograd/Function.html>`_
-  : Dispatch the tensor operation.
-
   Functions
   ---------
 
@@ -18,7 +15,6 @@ vm.torch.autograd
 .. toctree::
   :hidden:
 
-  autograd/Function
   autograd/backward
 
 .. raw:: html

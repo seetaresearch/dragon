@@ -21,7 +21,7 @@ template <class Context>
 class RepeatOp final : public Operator<Context> {
  public:
   RepeatOp(const OperatorDef& def, Workspace* ws) : Operator<Context>(def, ws) {
-    INIT_OP_SINGLE_ARG_WITH_DESC(int64_t, repeats, 1);
+    INITIALIZE_OP_SINGLE_ARG(int64_t, repeats, 1);
   }
   USE_OPERATOR_FUNCTIONS;
 
@@ -31,7 +31,7 @@ class RepeatOp final : public Operator<Context> {
   void DoRunWithType();
 
  protected:
-  DECLARE_OP_SINGLE_ARG_WITH_DESC(int64_t, repeats);
+  DECLARE_OP_SINGLE_ARG(int64_t, repeats);
 };
 
 template <class Context>
@@ -39,7 +39,7 @@ class RepeatGradientOp final : public Operator<Context> {
  public:
   RepeatGradientOp(const OperatorDef& def, Workspace* ws)
       : Operator<Context>(def, ws) {
-    INIT_OP_SINGLE_ARG_WITH_DESC(int64_t, repeats, 1);
+    INITIALIZE_OP_SINGLE_ARG(int64_t, repeats, 1);
   }
   USE_OPERATOR_FUNCTIONS;
 
@@ -49,11 +49,11 @@ class RepeatGradientOp final : public Operator<Context> {
   void DoRunWithType();
 
  protected:
-  DECLARE_OP_SINGLE_ARG_WITH_DESC(int64_t, repeats);
+  DECLARE_OP_SINGLE_ARG(int64_t, repeats);
 };
 
-DEFINE_OP_SINGLE_ARG_WITH_DESC(int64_t, RepeatOp, repeats);
-DEFINE_OP_SINGLE_ARG_WITH_DESC(int64_t, RepeatGradientOp, repeats);
+DEFINE_OP_SINGLE_ARG(int64_t, RepeatOp, repeats);
+DEFINE_OP_SINGLE_ARG(int64_t, RepeatGradientOp, repeats);
 
 } // namespace dragon
 

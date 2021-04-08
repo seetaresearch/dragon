@@ -23,7 +23,7 @@ template <class Context>
 template <typename T>
 void ConvOpBase<Context>::Im2Col(const T* im, T* col) {
   if (num_axes_ == 1 || num_axes_ == 2) {
-    kernel::Im2Col2d(
+    kernels::Im2Col2d(
         conv_in_channels_,
         in_shape_[0],
         num_axes_ == 1 ? 1 : in_shape_[1],
@@ -42,7 +42,7 @@ void ConvOpBase<Context>::Im2Col(const T* im, T* col) {
         col,
         ctx());
   } else {
-    kernel::Im2ColNd(
+    kernels::Im2ColNd(
         num_axes_,
         conv_in_channels_,
         vec32_t{in_shape_.begin(), in_shape_.end()}.data(),
@@ -62,7 +62,7 @@ template <class Context>
 template <typename T>
 void ConvOpBase<Context>::Col2Im(const T* col, T* im) {
   if (num_axes_ == 1 || num_axes_ == 2) {
-    kernel::Col2Im2d(
+    kernels::Col2Im2d(
         conv_in_channels_,
         in_shape_[0],
         num_axes_ == 1 ? 1 : in_shape_[1],
@@ -81,7 +81,7 @@ void ConvOpBase<Context>::Col2Im(const T* col, T* im) {
         im,
         ctx());
   } else {
-    kernel::Col2ImNd(
+    kernels::Col2ImNd(
         num_axes_,
         conv_in_channels_,
         vec32_t{in_shape_.begin(), in_shape_.end()}.data(),
@@ -140,10 +140,10 @@ template <class Context>
 template <typename T>
 void ConvOpBase<Context>::AddBias(const T* bias, T* y) {
   if (data_format() == "NCHW") {
-    kernel::BiasAdd(
+    kernels::BiasAdd(
         Input(0).dim(0), out_dim_, out_channels_, y, bias, y, ctx());
   } else if (data_format() == "NHWC") {
-    kernel::BiasAdd(
+    kernels::BiasAdd(
         Input(0).dim(0) * out_dim_, 1, out_channels_, y, bias, y, ctx());
   }
 }

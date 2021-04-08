@@ -14,26 +14,22 @@ from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
 
+import collections
+import itertools
+
+import numpy
+
 from dragon.core import distributed
-from dragon.core.eager import context
+from dragon.core.autograph import context
+from dragon.core.autograph.op_impl import OpLib
+from dragon.core.autograph.graph_impl import GraphLib
 from dragon.core.framework import workspace
-from dragon.core.ops import distributed_ops_lib
-from dragon.core.ops import training_ops_lib
 
 
 class Optimizer(object):
     """The base class of optimizers."""
 
-    # Store for the global unique handle
-    _DEFAULT_UNIQUE_HANDLE_INDEX = 0
-
-    def __init__(
-        self,
-        scale=1,
-        clip_norm=0,
-        weight_decay=0,
-        name=None,
-    ):
+    def __init__(self, scale=1, clip_norm=0, weight_decay=0):
         """Create a ``Optimizer``.
 
         Parameters
@@ -44,110 +40,76 @@ class Optimizer(object):
             The maximum L2 norm to clip gradient.
         weight_decay : float, optional, default=0
             The L2 penalty factor to weight.
-        name : str, optional
-            The optional name for shared slots.
 
         """
-        self._defaults = {
-            'scale': float(scale),
-            'clip_norm': float(clip_norm),
-            'weight_decay': float(weight_decay),
-        }
-        self._param_group = []
-        if name:
-            self._op_handle = name
-        else:
-            Optimizer. _DEFAULT_UNIQUE_HANDLE_INDEX += 1
-            self._op_handle = 'Optimizer_{}'.format(
-                Optimizer. _DEFAULT_UNIQUE_HANDLE_INDEX)
+        self._name = workspace.get_workspace()._handle_pool.create('Optimizer')
         self._op_type = self.__class__.__name__ + 'Update'
         self._process_group = distributed.get_group()
-        self._extra_kwargs = {}
+        self._hyper = {}
+        self._set_hyper('scale', scale)
+        self._set_hyper('clip_norm', clip_norm)
+        self._set_hyper('weight_decay', weight_decay)
 
-    def apply_gradients(
-        self,
-        values_and_grads,
-        lr_mult=None,
-        decay_mult=None,
-    ):
-        """Apply the gradients on values.
+    def apply_gradients(self, grads_and_vars):
+        """Apply the gradients on variables.
 
         Parameters
         ----------
-        values_and_grads : Sequence[Sequence[dragon.Tensor]]
-            The values and grads.
-        lr_mult : number, optional
-            The multiplier to learning rate.
-        decay_mult : number, optional
-            The multiplier to weight decay.
+        grads_and_vars : Sequence[Sequence[dragon.Tensor]]
+            The sequence of update pair.
 
         """
-        if context.executing_eagerly():
-            # Filter value whose grad is missing.
-            values, grads = [], []
-            for v, g in values_and_grads:
-                if g is not None:
-                    values.append(v)
-                    grads.append(g)
-            # Accumulate grads from the current process group.
-            if self._process_group is not None:
-                distributed_ops_lib.Collective \
-                    .instantiate(
-                        operation='MEAN',
-                        communication='ALLREDUCE',
-                        group=self._process_group,
-                    ).apply(grads)
-            # Apply the updates.
-            for v, g in zip(values, grads):
-                self._run_update(v, g, lr_mult, decay_mult)
-        else:
-            # Store for the lazy compilation.
-            for v, g in values_and_grads:
-                self._add_update(v, g, lr_mult, decay_mult)
-        return self
+        # Create execution context for graph mode.
+        if not context.executing_eagerly():
+            return GraphLib.from_updates(grads_and_vars, self)
 
-    def _init_set_defaults(self, extra=None):
-        """Initialize the defaults into current workspace."""
-        if extra is not None:
-            self._defaults = dict(self._defaults, **extra)
-        for k, v in self._defaults.items():
-            workspace.get_workspace().feed_tensor(
-                '/share/hyper/%s/%s' % (self._op_handle, k), v,
-                dtype='float32', enforce_cpu=True,
-            )
+        # Separate variables by explicit weight decay.
+        group_vars = collections.defaultdict(list)
+        group_grads = collections.defaultdict(list)
+        for grad, var in grads_and_vars:
+            if grad is not None:
+                weight_decay = getattr(var, '_weight_decay', None)
+                if weight_decay is not None:
+                    weight_decay = float(weight_decay)
+                group_vars[weight_decay].append(var)
+                group_grads[weight_decay].append(grad)
 
-    def _add_update(self, param, grad, lr_mult=None, decay_mult=None):
-        """Add a symbolic operator for updating."""
-        pair = (v.id if hasattr(v, 'id') else v for v in (param, grad))
-        self._param_group.append(
-            (pair, {
-                'lr_mult': float(lr_mult) if lr_mult is not None else 1.,
-                'decay_mult': float(decay_mult) if decay_mult is not None else 1.,
-            })
-        )
+        # Reduce grads in the process group.
+        process_group = distributed.get_group()
+        if process_group is not None:
+            grads = list(itertools.chain(*group_grads.values()))
+            OpLib.execute('Collective', grads, outputs=grads,
+                          communication='ALLREDUCE', operation='MEAN',
+                          **process_group.arguments)
 
-    def _run_update(self, param, grad, lr_mult=None, decay_mult=None):
-        """Run an eager operation for updating."""
-        return training_ops_lib.ParamUpdate \
-            .instantiate(
-                op_type=self._op_type,
-                op_handle=self._op_handle,
-                lr_mult=float(lr_mult) if lr_mult is not None else 1.,
-                decay_mult=float(decay_mult) if decay_mult is not None else 1.,
-            ).apply(grad, param)
+        # Apply updates.
+        for weight_decay, vars in group_vars.items():
+            grads = group_grads[weight_decay]
+            # Skip if grads are all missing.
+            if len(grads) == 0:
+                continue
+            OpLib.execute(self._op_type, grads, outputs=vars,
+                          handle=self._name, weight_decay=weight_decay)
+
+    def _set_hyper(self, name, value):
+        """Set value to a hyper parameter."""
+        if name not in self._hyper:
+            default_ws = workspace.get_workspace()
+            impl = default_ws.create_tensor(self._name + '/' + name)
+            self._hyper[name] = impl
+        value = numpy.array(float(value), 'float32')
+        self._hyper[name].FromNumpy(value, False)
 
     def __getattr__(self, item):
-        defaults = self.__dict__.get('_defaults')
-        if item in defaults:
-            return workspace.get_workspace().fetch_tensor(
-                '/share/hyper/%s/%s' % (self._op_handle, item))
+        hyper = self.__dict__.get('_hyper')
+        if item in hyper:
+            return float(self._hyper[item].ToNumpy(False))
         return self.__dict__[item]
 
     def __setattr__(self, key, value):
-        defaults = self.__dict__.get('_defaults')
-        if defaults is not None and key in defaults:
-            workspace.get_workspace().feed_tensor(
-                '/share/hyper/%s/%s' % (self._op_handle, key), value,
-                dtype='float32', enforce_cpu=True)
+        hyper = self.__dict__.get('_hyper')
+        if hyper and key in hyper:
+            value = numpy.array(float(value), 'float32')
+            hyper[key].FromNumpy(value, False)
         else:
             object.__setattr__(self, key, value)

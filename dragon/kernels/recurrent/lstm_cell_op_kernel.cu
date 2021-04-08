@@ -5,138 +5,116 @@
 
 namespace dragon {
 
-namespace kernel {
+namespace kernels {
 
 namespace {
 
 template <typename T>
-__global__ void _LSTMCellAct(
-    const int nthreads,
-    const int c_offset,
-    const int x_offset,
-    T* actx) {
-  CUDA_1D_KERNEL_LOOP(i, nthreads) {
-    const int offset = i % x_offset;
-    actx[i] = offset < c_offset ? T(1) / (T(1) + exp(-actx[i])) : tanh(actx[i]);
+__global__ void _LSTMAct(const int NxCx4, const int C, T* x) {
+  const int Cx3 = C * 3, Cx4 = C * 4;
+  CUDA_1D_KERNEL_LOOP(i, NxCx4) {
+    x[i] = i % Cx4 < Cx3 ? T(1) / (T(1) + exp(-x[i])) : tanh(x[i]);
   }
 }
 
 template <typename T>
-__global__ void _LSTMCellGate(
-    const int nthreads,
-    const int hidden_size,
-    const int o_offset,
-    const int c_offset,
-    const int x_offset,
-    const T* cx,
-    const T* actx,
-    T* c,
-    T* h) {
-  CUDA_1D_KERNEL_LOOP(idx, nthreads) {
-    const int n = idx / hidden_size;
-    const int offset = idx % hidden_size;
-    const T* actx_ = actx + n * x_offset;
-    const T i = actx_[offset];
-    const T f = actx_[offset + hidden_size];
-    const T o = actx_[offset + o_offset];
-    T c_ = actx_[offset + c_offset];
-    c_ = c[idx] = f * cx[idx] + i * c_;
-    h[idx] = o * tanh(c_);
+__global__ void
+_LSTMGate(const int NxC, const int C, const T* c_prev, const T* x, T* c, T* h) {
+  const int Cx2 = C * 2, Cx3 = C * 3, Cx4 = C * 4;
+  CUDA_1D_KERNEL_LOOP(index, NxC) {
+    const int i = index / C;
+    const int j = index % C;
+    const T* offset_x = x + i * Cx4;
+    const T i_val = offset_x[j];
+    const T f_val = offset_x[j + C];
+    const T o_val = offset_x[j + Cx2];
+    T val = offset_x[j + Cx3];
+    val = c[index] = f_val * c_prev[index] + i_val * val;
+    h[index] = o_val * tanh(val);
   }
 }
 
 template <typename T>
-__global__ void _LSTMCellGateGrad(
-    const int nthreads,
-    const int hidden_size,
-    const int o_offset,
-    const int c_offset,
-    const int x_offset,
-    const T* cx,
-    const T* actx,
+__global__ void _LSTMGateGrad(
+    const int NxC,
+    const int C,
+    const T* c_prev,
+    const T* x,
     const T* c,
     const T* dc,
     const T* dh,
-    T* dcx,
+    T* dc_prev,
     T* dx) {
-  CUDA_1D_KERNEL_LOOP(idx, nthreads) {
-    const int n = idx / hidden_size;
-    const int offset = idx % hidden_size;
-    const T* actx_ = actx + n * x_offset;
-    T* dx_ = dx + n * x_offset;
-    const T i = actx_[offset];
-    const T f = actx_[offset + hidden_size];
-    const T o = actx_[offset + o_offset];
-    const T g = actx_[offset + c_offset];
-    const T tanh_c = tanh(c[idx]);
-    const T dcx_sum_term = dh[idx] * o * (T(1) - tanh_c * tanh_c) + dc[idx];
-    dcx[idx] = dcx_sum_term * f;
-    dx_[offset] = dcx_sum_term * g;
-    dx_[offset + hidden_size] = dcx_sum_term * cx[idx];
-    dx_[offset + o_offset] = dh[idx] * tanh_c;
-    dx_[offset + c_offset] = dcx_sum_term * i;
+  const int Cx2 = C * 2, Cx3 = C * 3, Cx4 = C * 4;
+  CUDA_1D_KERNEL_LOOP(index, NxC) {
+    const int i = index / C;
+    const int j = index % C;
+    const T* offset_x = x + i * Cx4;
+    T* offset_dx = dx + i * i * Cx4;
+    const T i_val = offset_x[j];
+    const T f_val = offset_x[j + C];
+    const T o_val = offset_x[j + Cx2];
+    const T g_val = offset_x[j + Cx3];
+    const T tanh_c_val = tanh(c[index]);
+    const T grad_val =
+        dh[index] * o_val * (T(1) - tanh_c_val * tanh_c_val) + dc[index];
+    dc_prev[index] = grad_val * f_val;
+    offset_dx[j] = grad_val * g_val;
+    offset_dx[j + C] = grad_val * c_prev[index];
+    offset_dx[j + Cx2] = dh[index] * tanh_c_val;
+    offset_dx[j + Cx3] = grad_val * i_val;
   }
 }
 
 template <typename T>
-__global__ void _LSTMCellActGrad(
-    const int nthreads,
-    const int c_offset,
-    const int x_offset,
-    const T* actx,
-    T* dx) {
-  CUDA_1D_KERNEL_LOOP(i, nthreads) {
-    const T val = actx[i];
-    const int offset = i % x_offset;
-    if (offset < c_offset) {
-      dx[i] = dx[i] * val * (T(1) - val);
-    } else {
-      dx[i] = dx[i] * (T(1) - val * val);
-    }
+__global__ void _LSTMActGrad(const int NxCx4, const int C, const T* x, T* dx) {
+  const int Cx3 = C * 3, Cx4 = C * 4;
+  CUDA_1D_KERNEL_LOOP(i, NxCx4) {
+    const T val = x[i];
+    dx[i] *= (i % Cx4 < Cx3 ? val * (T(1) - val) : T(1) - val * val);
   }
 }
 
 } // namespace
 
+/* ------------------- Launcher Separator ------------------- */
+
 template <>
 void LSTMCell<float, CUDAContext>(
     const int N,
     const int C,
-    const float* cx,
-    float* actx,
+    const float* c_prev,
+    float* x,
     float* c,
     float* h,
     CUDAContext* ctx) {
-  auto o_offset = 2 * C, c_offset = 3 * C, x_offset = 4 * C, NC = N * C;
-  _LSTMCellAct<<<CUDA_BLOCKS(NC * 4), CUDA_THREADS, 0, ctx->cuda_stream()>>>(
-      NC * 4, c_offset, x_offset, actx);
-  _LSTMCellGate<<<CUDA_BLOCKS(NC), CUDA_THREADS, 0, ctx->cuda_stream()>>>(
-      NC, C, o_offset, c_offset, x_offset, cx, actx, c, h);
+  const auto NxC = N * C;
+  _LSTMAct<<<CUDA_BLOCKS(NxC * 4), CUDA_THREADS, 0, ctx->cuda_stream()>>>(
+      NxC * 4, C, x);
+  _LSTMGate<<<CUDA_BLOCKS(NxC), CUDA_THREADS, 0, ctx->cuda_stream()>>>(
+      NxC, C, c_prev, x, c, h);
 }
 
 template <>
 void LSTMCellGrad<float, CUDAContext>(
     const int N,
     const int C,
-    const float* cx,
-    const float* actx,
+    const float* c_prev,
+    const float* x,
     const float* c,
     const float* dc,
     const float* dh,
-    float* dcx,
+    float* dc_prev,
     float* dx,
     CUDAContext* ctx) {
-  auto o_offset = 2 * C, c_offset = 3 * C, x_offset = 4 * C, NC = N * C;
-  _LSTMCellGateGrad<<<CUDA_BLOCKS(NC), CUDA_THREADS, 0, ctx->cuda_stream()>>>(
-      NC, C, o_offset, c_offset, x_offset, cx, actx, c, dc, dh, dcx, dx);
-  _LSTMCellActGrad<<<
-      CUDA_BLOCKS(NC * 4),
-      CUDA_THREADS,
-      0,
-      ctx->cuda_stream()>>>(NC * 4, c_offset, x_offset, actx, dx);
+  const auto NxC = N * C;
+  _LSTMGateGrad<<<CUDA_BLOCKS(NxC), CUDA_THREADS, 0, ctx->cuda_stream()>>>(
+      NxC, C, c_prev, x, c, dc, dh, dc_prev, dx);
+  _LSTMActGrad<<<CUDA_BLOCKS(NxC * 4), CUDA_THREADS, 0, ctx->cuda_stream()>>>(
+      NxC * 4, C, x, dx);
 } // LSTMCellGrad
 
-} // namespace kernel
+} // namespace kernels
 
 } // namespace dragon
 

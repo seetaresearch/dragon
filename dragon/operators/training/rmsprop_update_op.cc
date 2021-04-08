@@ -6,12 +6,12 @@ namespace dragon {
 
 template <class Context>
 void RMSpropUpdateOp<Context>::ComputeUpdate(Tensor* dX) {
-  kernel::RMSPropUpdate(
+  kernels::RMSPropUpdate(
       dX->count(),
-      Parameter("base_lr") * this->lr_mult_,
-      Parameter("momentum"),
-      Parameter("decay"),
-      Parameter("eps"),
+      lr_,
+      momentum_,
+      decay_,
+      eps_,
       dX->template mutable_data<float, Context>(),
       Slot("m")->ReshapeLike(*dX)->template mutable_data<float, Context>(),
       Slot("v")->ReshapeLike(*dX)->template mutable_data<float, Context>(),
@@ -23,11 +23,7 @@ DEPLOY_CPU_OPERATOR(RMSpropUpdate);
 DEPLOY_CUDA_OPERATOR(RMSpropUpdate);
 #endif
 
-OPERATOR_SCHEMA(RMSpropUpdate)
-    /* dX */
-    .NumInputs(1)
-    /* X */
-    .NumOutputs(1);
+OPERATOR_SCHEMA(RMSpropUpdate).NumInputs(1, INT_MAX).NumOutputs(1, INT_MAX);
 
 NO_GRADIENT(RMSpropUpdate);
 

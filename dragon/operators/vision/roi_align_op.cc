@@ -12,9 +12,9 @@ void RoiAlignOp<Context>::DoRunWithType() {
   Y->Reshape({RoI.dim(0), X.dim(1), out_h_, out_w_});
 
   // Store for the gradient calculation
-  STORE_INPUT_SPEC(0);
+  SET_INPUT_SPEC(0);
 
-  kernel::RoiAlign(
+  kernels::RoiAlign(
       X.dim(1),
       X.dim(2),
       X.dim(3),
@@ -31,29 +31,29 @@ void RoiAlignOp<Context>::DoRunWithType() {
 
 template <class Context>
 void RoiAlignOp<Context>::RunOnDevice() {
-  DispatchHelper<FloatingTensorTypes>::Call(this, Input(0));
+  DispatchHelper<dtypes::Floating>::Call(this, Input(0));
 }
 
 template <class Context>
 template <typename T>
 void RoiAlignGradientOp<Context>::DoRunWithType() {
   auto &RoI = Input(0), &dY = Input(1);
-  auto* dX = Output(0)->ReshapeLike(RESTORE_INPUT_SPEC(0));
+  auto* dX = Output(0)->ReshapeLike(INPUT_SPEC(0));
 
   auto* dx = dX->template mutable_data<T, Context>();
   auto* dx_acc = (TypeMeta::Id<T>() == TypeMeta::Id<float>())
       ? (float*)nullptr
       : ctx()->workspace()->template data<float, Context>({dX->count()})[0];
 
-  // Zero the accumulated float32 buffer
+  // Empty gradient
   math::Set(
       dX->count(),
       0.f,
       dx_acc != nullptr ? dx_acc : reinterpret_cast<float*>(dx),
       ctx());
 
-  // Accumulate gradient to dX
-  kernel::RoiAlignGrad(
+  // Accumulate to dX
+  kernels::RoiAlignGrad(
       dX->dim(1),
       dX->dim(2),
       dX->dim(3),
@@ -67,7 +67,7 @@ void RoiAlignGradientOp<Context>::DoRunWithType() {
       dx_acc != nullptr ? dx_acc : reinterpret_cast<float*>(dx),
       ctx());
 
-  // Convert buffer data to dX if necessary
+  // Convert to dX if necessary
   if (dx_acc != nullptr) {
     math::Cast(dX->count(), dx_acc, dx, ctx());
   }
@@ -75,7 +75,7 @@ void RoiAlignGradientOp<Context>::DoRunWithType() {
 
 template <class Context>
 void RoiAlignGradientOp<Context>::RunOnDevice() {
-  DispatchHelper<FloatingTensorTypes>::Call(this, Input(1));
+  DispatchHelper<dtypes::Floating>::Call(this, Input(1));
 }
 
 DEPLOY_CPU_OPERATOR(RoiAlign);
@@ -105,9 +105,9 @@ namespace {
 class GradientMaker final : public GradientMakerBase {
  public:
   GRADIENT_MAKER_CTOR(GradientMaker);
-  vector<OperatorDef> MakeDef() override {
-    return SingleDef(
-        def.type() + "Gradient",
+  void CreateGradientDefs() override {
+    AddGradientDef(
+        def().type() + "Gradient",
         "",
         vector<string>({I(1), GO(0)}),
         vector<string>({GI(0)}));

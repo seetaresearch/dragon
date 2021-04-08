@@ -33,24 +33,19 @@ def from_dlpack(dlpack):
         The tensor with the dlpack data.
 
     """
-    current_ws = workspace.get_workspace()
-    tensor = Tensor(device=None)
-    tensor._gc = current_ws.collectors.TENSOR
-    tensor._impl = current_ws.create_tensor(
-        tensor._gc.alloc('${DLPACK}')).FromDLPack(dlpack)
-    tensor._device = cpp.device(*tensor._impl.device)
-    return tensor
+    default_ws = workspace.get_workspace()
+    impl = default_ws.create_tensor(scope='DLPack').FromDLPack(dlpack)
+    return Tensor(device=cpp.device(*impl.device),
+                  impl=impl, deleter=default_ws._handle_pool)
 
 
-def to_dlpack(tensor, readonly=True):
+def to_dlpack(tensor):
     """Return a dlpack tensor sharing the data.
 
     Parameters
     ----------
     tensor : dragon.vm.torch.Tensor
         The tensor to provide data.
-    readonly : bool, optional, default=True
-        **False** to sync the content with device.
 
     Returns
     -------
@@ -58,4 +53,4 @@ def to_dlpack(tensor, readonly=True):
         The dlpack tensor object.
 
     """
-    return tensor._impl.ToDLPack(tensor._device.to_proto(), readonly)
+    return tensor._impl.ToDLPack(tensor._device.to_proto())

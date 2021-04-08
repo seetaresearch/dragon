@@ -25,6 +25,7 @@ from dragon.vm.torch.core.nn.modules.activation import Hardsigmoid
 from dragon.vm.torch.core.nn.modules.activation import Hardswish
 from dragon.vm.torch.core.nn.modules.activation import LeakyReLU
 from dragon.vm.torch.core.nn.modules.activation import LogSoftmax
+from dragon.vm.torch.core.nn.modules.activation import MultiheadAttention
 from dragon.vm.torch.core.nn.modules.activation import PReLU
 from dragon.vm.torch.core.nn.modules.activation import ReLU
 from dragon.vm.torch.core.nn.modules.activation import ReLU6
@@ -65,6 +66,7 @@ from dragon.vm.torch.core.nn.modules.loss import SmoothL1Loss
 from dragon.vm.torch.core.nn.modules.module import Module
 from dragon.vm.torch.core.nn.modules.normalization import AffineChannel
 from dragon.vm.torch.core.nn.modules.normalization import GroupNorm
+from dragon.vm.torch.core.nn.modules.normalization import LayerNorm
 from dragon.vm.torch.core.nn.modules.normalization import LocalResponseNorm
 from dragon.vm.torch.core.nn.modules.padding import ConstantPad1d
 from dragon.vm.torch.core.nn.modules.padding import ConstantPad2d
@@ -94,6 +96,11 @@ from dragon.vm.torch.core.nn.modules.rnn import LSTMCell
 from dragon.vm.torch.core.nn.modules.rnn import RNN
 from dragon.vm.torch.core.nn.modules.rnn import RNNBase
 from dragon.vm.torch.core.nn.modules.rnn import RNNCellBase
+from dragon.vm.torch.core.nn.modules.sparse import Embedding
+from dragon.vm.torch.core.nn.modules.transformer import TransformerDecoder
+from dragon.vm.torch.core.nn.modules.transformer import TransformerDecoderLayer
+from dragon.vm.torch.core.nn.modules.transformer import TransformerEncoder
+from dragon.vm.torch.core.nn.modules.transformer import TransformerEncoderLayer
 from dragon.vm.torch.core.nn.modules.upsampling import Upsample
 from dragon.vm.torch.core.nn.modules.upsampling import UpsamplingBilinear2d
 from dragon.vm.torch.core.nn.modules.upsampling import UpsamplingNearest2d

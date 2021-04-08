@@ -5,25 +5,17 @@
 
 namespace dragon {
 
-namespace kernel {
+namespace kernels {
 
 namespace {
 
 template <typename T>
 __global__ void
-_NesterovUpdate(const int nthreads, const T lr, const T momentum, T* g, T* m);
-
-template <>
-__global__ void _NesterovUpdate<float>(
-    const int nthreads,
-    const float lr,
-    const float momentum,
-    float* g,
-    float* m) {
-  CUDA_1D_KERNEL_LOOP(i, nthreads) {
-    float mi = m[i];
-    float mi_new = m[i] = momentum * mi + lr * g[i];
-    g[i] = fmaf(momentum, mi_new - mi, mi_new);
+_NesterovUpdate(const int N, const T lr, const T momentum, T* g, T* m) {
+  CUDA_1D_KERNEL_LOOP(i, N) {
+    T mi = m[i];
+    T mi_new = m[i] = momentum * mi + lr * g[i];
+    g[i] = fma(momentum, mi_new - mi, mi_new);
   }
 }
 
@@ -33,17 +25,17 @@ __global__ void _NesterovUpdate<float>(
 
 template <>
 void NesterovUpdate<float, CUDAContext>(
-    const int count,
+    const int N,
     const float lr,
     const float momentum,
     float* g,
     float* m,
     CUDAContext* ctx) {
-  _NesterovUpdate<<<CUDA_BLOCKS(count), CUDA_THREADS, 0, ctx->cuda_stream()>>>(
-      count, lr, momentum, g, m);
+  _NesterovUpdate<<<CUDA_BLOCKS(N), CUDA_THREADS, 0, ctx->cuda_stream()>>>(
+      N, lr, momentum, g, m);
 }
 
-} // namespace kernel
+} // namespace kernels
 
 } // namespace dragon
 

@@ -18,18 +18,6 @@ clear
 #####
 .. automethod:: dragon.Workspace.clear
 
-feed_tensor
-###########
-.. automethod:: dragon.Workspace.feed_tensor
-
-fetch_tensor
-############
-.. automethod:: dragon.Workspace.fetch_tensor
-
-has_tensor
-##########
-.. automethod:: dragon.Workspace.has_tensor
-
 memory_allocated
 ################
 .. automethod:: dragon.Workspace.memory_allocated
@@ -37,10 +25,6 @@ memory_allocated
 merge_from
 ##########
 .. automethod:: dragon.Workspace.merge_from
-
-reset_tensor
-############
-.. automethod:: dragon.Workspace.reset_tensor
 
 .. raw:: html
 

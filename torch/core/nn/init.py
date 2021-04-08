@@ -22,7 +22,7 @@ import math
 
 from dragon.core.util import math_util
 from dragon.vm.torch.core.autograd import grad_mode
-from dragon.vm.torch.core.ops.init import functional as init_funcs
+from dragon.vm.torch.core.ops import init_ops
 
 
 def calculate_gain(nonlinearity, param=None):
@@ -84,7 +84,7 @@ def constant_(tensor, val):
     Returns
     -------
     dragon.vm.torch.Tensor
-        The input tensor.
+        The output tensor.
 
     """
     with grad_mode.no_grad():
@@ -104,7 +104,7 @@ def dirac_(tensor, groups=1):
     Returns
     -------
     dragon.vm.torch.Tensor
-        The input tensor.
+        The output tensor.
 
     """
     dimensions = tensor.ndimension()
@@ -139,13 +139,13 @@ def eye_(tensor):
     Returns
     -------
     dragon.vm.torch.Tensor
-        The input tensor.
+        The output tensor.
 
     """
     if tensor.ndimension() != 2:
         raise ValueError('Only tensors with 2 dimensions are supported.')
     with grad_mode.no_grad():
-        init_funcs.eye(*tensor.shape, out=tensor, requires_grad=tensor.requires_grad)
+        init_ops.eye(*tensor.shape, out=tensor, requires_grad=tensor.requires_grad)
     return tensor
 
 
@@ -171,7 +171,7 @@ def kaiming_normal_(tensor, a=0, mode='fan_in', nonlinearity='leaky_relu'):
     Returns
     -------
     dragon.vm.torch.Tensor
-        The input tensor.
+        The output tensor.
 
     """
     fan = _calculate_correct_fan(tensor, mode)
@@ -203,7 +203,7 @@ def kaiming_uniform_(tensor, a=0, mode='fan_in', nonlinearity='leaky_relu'):
     Returns
     -------
     dragon.vm.torch.Tensor
-        The input tensor.
+        The output tensor.
 
     """
     fan = _calculate_correct_fan(tensor, mode)
@@ -231,11 +231,31 @@ def normal_(tensor, mean=0, std=1):
     Returns
     -------
     dragon.vm.torch.Tensor
-        The input tensor.
+        The output tensor.
 
     """
     with grad_mode.no_grad():
         return tensor.normal_(mean, std)
+
+
+def ones_(tensor):
+    r"""Fill tensor with ones.
+
+    .. math:: \text{tensor} \leftarrow 1
+
+    Parameters
+    ----------
+    tensor : dragon.vm.torch.Tensor
+        The input tensor.
+
+    Returns
+    -------
+    dragon.vm.torch.Tensor
+        The output tensor.
+
+    """
+    with grad_mode.no_grad():
+        return tensor.fill_(1)
 
 
 def uniform_(tensor, a=0, b=1):
@@ -255,7 +275,7 @@ def uniform_(tensor, a=0, b=1):
     Returns
     -------
     dragon.vm.torch.Tensor
-        The input tensor.
+        The output tensor.
 
     """
     with grad_mode.no_grad():
@@ -315,6 +335,26 @@ def xavier_uniform_(tensor, gain=1):
     a = math.sqrt(3.0) * std
     with grad_mode.no_grad():
         return tensor.uniform_(-a, a)
+
+
+def zeros_(tensor):
+    r"""Fill tensor with zeros.
+
+    .. math:: \text{tensor} \leftarrow 0
+
+    Parameters
+    ----------
+    tensor : dragon.vm.torch.Tensor
+        The input tensor.
+
+    Returns
+    -------
+    dragon.vm.torch.Tensor
+        The output tensor.
+
+    """
+    with grad_mode.no_grad():
+        return tensor.fill_(0)
 
 
 def _calculate_fan_in_and_fan_out(tensor):

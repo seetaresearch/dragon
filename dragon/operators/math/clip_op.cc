@@ -30,7 +30,7 @@ template <typename T>
 void ClipOp<Context>::DoRunWithType() {
   auto &X = Input(0), *Y = Output(0);
   auto bounds = ComputeBoundsWithType<T>();
-  kernel::Clip(
+  kernels::Clip(
       X.count(),
       bounds.first,
       bounds.second,
@@ -41,7 +41,7 @@ void ClipOp<Context>::DoRunWithType() {
 
 template <class Context>
 void ClipOp<Context>::RunOnDevice() {
-  DispatchHelper<NumericalTensorTypes>::Call(this, Input(0));
+  DispatchHelper<dtypes::Numerical>::Call(this, Input(0));
 }
 
 template <class Context>
@@ -49,7 +49,7 @@ template <typename T>
 void ClipGradientOp<Context>::DoRunWithType() {
   auto &X = Input(0), &dY = Input(1), *dX = Output(0);
   auto bounds = this->template ComputeBoundsWithType<T>();
-  kernel::ClipGrad(
+  kernels::ClipGrad(
       X.count(),
       bounds.first,
       bounds.second,
@@ -61,7 +61,7 @@ void ClipGradientOp<Context>::DoRunWithType() {
 
 template <class Context>
 void ClipGradientOp<Context>::RunOnDevice() {
-  DispatchHelper<FloatingTensorTypes>::Call(this, Input(0));
+  DispatchHelper<dtypes::Floating>::Call(this, Input(0));
 }
 
 DEPLOY_CPU_OPERATOR(Clip);

@@ -17,5 +17,6 @@ from dragon.core.ops.math_ops import bitwise_and
 from dragon.core.ops.math_ops import bitwise_or
 from dragon.core.ops.math_ops import bitwise_xor
 from dragon.core.ops.math_ops import invert
+from dragon.core.ops.math_ops import invert as bitwise_not
 
 __all__ = [_s for _s in dir() if not _s.startswith('_')]

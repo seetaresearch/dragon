@@ -1,7 +1,6 @@
 #include "dragon/operators/vision/conv_transpose_op.h"
 #include "dragon/core/workspace.h"
 #include "dragon/operators/vision/conv_op_impl.h"
-#include "dragon/utils/filler.h"
 
 namespace dragon {
 
@@ -10,8 +9,8 @@ template <typename T>
 void ConvTransposeOp<Context>::DoRunWithType() {
   auto &X = Input(0), &W = Input(1), *Y = Output(0);
   ConvOpBase<Context>::Reshape();
+  INITIALIZE_TENSOR_VIA_SPEC(W, w_shape_, T);
 
-  TENSOR_FILL(W, w_shape_);
   auto* x = X.template data<T, Context>();
   auto* w = W.template data<T, Context>();
   auto* y = Y->template mutable_data<T, Context>();
@@ -21,7 +20,7 @@ void ConvTransposeOp<Context>::DoRunWithType() {
   }
 
   if (HasBias()) {
-    TENSOR_FILL(Input(2), b_shape_);
+    INITIALIZE_TENSOR_VIA_SPEC(Input(2), b_shape_, T);
     AddBias(Input(2).template data<T, Context>(), y);
   }
 }
@@ -32,7 +31,7 @@ void ConvTransposeOp<Context>::RunOnDevice() {
     // You really need the CuDNN to help you -:)
     LOG(FATAL) << "GroupConv(NHWC) is not supported.";
   }
-  DispatchHelper<TensorTypes<float, double>>::Call(this, Input(0));
+  DispatchHelper<dtypes::TypesBase<float, double>>::Call(this, Input(0));
 }
 
 template <class Context>
@@ -73,7 +72,7 @@ void ConvTransposeGradientOp<Context>::RunOnDevice() {
     // You really need the CuDNN to help you -:)
     LOG(FATAL) << "GroupConv(NHWC) is not supported.";
   }
-  DispatchHelper<TensorTypes<float, double>>::Call(this, Input(0));
+  DispatchHelper<dtypes::TypesBase<float, double>>::Call(this, Input(0));
 }
 
 DEPLOY_CPU_OPERATOR(ConvTranspose);
@@ -103,9 +102,9 @@ namespace {
 class GradientMaker final : public GradientMakerBase {
  public:
   GRADIENT_MAKER_CTOR(GradientMaker);
-  vector<OperatorDef> MakeDef() override {
-    return SingleDef(
-        def.type() + "Gradient",
+  void CreateGradientDefs() override {
+    AddGradientDef(
+        def().type() + "Gradient",
         "",
         vector<string>({I(0), I(1), GO(0)}),
         vector<string>({GI(0), GI(1), GI(2)}));

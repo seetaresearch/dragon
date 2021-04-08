@@ -68,18 +68,50 @@ class device(object):
             The device index.
 
         """
-        self.type, self.index = type, index
+        self._type = type
+        self._index = index
         self._proto = None
         self._serialized_proto = None
 
+    @property
+    def index(self):
+        """Return the device index.
+
+        Returns
+        -------
+        int
+            The device index.
+
+        """
+        return self._index
+
+    @property
+    def type(self):
+        """Return the device type.
+
+        Returns
+        -------
+        str
+            The device type.
+
+        """
+        return self._type
+
     def copy(self):
-        """Return a clone device."""
-        return device(self.type, self.index)
+        """Return a cloned device.
+
+        Returns
+        -------
+        dragon.vm.torch.device
+            The new device.
+
+        """
+        return device(self._type, self._index)
 
     def to_proto(self, serialized=True):
         """Return the device proto."""
         if self._proto is None:
-            self._proto = proto_util.get_device_option(self.type, self.index)
+            self._proto = proto_util.get_device_option(self._type, self._index)
         if serialized:
             if self._serialized_proto is None:
                 self._serialized_proto = self._proto.SerializeToString()
@@ -87,13 +119,13 @@ class device(object):
         return self._proto
 
     def __eq__(self, other):
-        return self.type == other.type and self.index == other.index
+        return self._type == other.type and self._index == other.index
 
     def __str__(self):
-        return '{}:{}'.format(self.type, self.index)
+        return '{}:{}'.format(self._type, self._index)
 
     def __repr__(self):
-        return "device(type='{}', index={})".format(self.type, self.index)
+        return "device(type='{}', index={})".format(self._type, self._index)
 
 
 class dtype(str):

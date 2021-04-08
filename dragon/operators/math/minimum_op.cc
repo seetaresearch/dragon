@@ -135,7 +135,7 @@ void MinimumGradientOp<Context>::DoRunWithType() {
 
 template <class Context>
 void MinimumGradientOp<Context>::RunOnDevice() {
-  DispatchHelper<FloatingTensorTypes>::Call(this, Input(2));
+  DispatchHelper<dtypes::Floating>::Call(this, Input(2));
 }
 
 DEPLOY_CPU_OPERATOR(MinimumGradient);

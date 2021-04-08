@@ -4,11 +4,9 @@ namespace dragon {
 
 namespace math {
 
-/* ------------------- Launcher Separator ------------------- */
-
 template <>
 DRAGON_API void RandomUniform<float16, CPUContext>(
-    const int n,
+    const int N,
     const float low,
     const float high,
     float16* x,
@@ -18,7 +16,7 @@ DRAGON_API void RandomUniform<float16, CPUContext>(
 
 template <>
 DRAGON_API void RandomNormal<float16, CPUContext>(
-    const int n,
+    const int N,
     const float mu,
     const float sigma,
     float16* x,
@@ -28,7 +26,7 @@ DRAGON_API void RandomNormal<float16, CPUContext>(
 
 template <>
 DRAGON_API void TruncatedNormal<float16, CPUContext>(
-    const int n,
+    const int N,
     const float mu,
     const float sigma,
     const float low,
@@ -40,9 +38,9 @@ DRAGON_API void TruncatedNormal<float16, CPUContext>(
 
 #define DEFINE_RANDOM_FUNC(T)                                                 \
   template <>                                                                 \
-  DRAGON_API void Random<T, CPUContext>(const int n, T* y, CPUContext* ctx) { \
+  DRAGON_API void Random<T, CPUContext>(const int N, T* y, CPUContext* ctx) { \
     auto* rng = ctx->rand_generator();                                        \
-    for (int i = 0; i < n; ++i) {                                             \
+    for (int i = 0; i < N; ++i) {                                             \
       y[i] = static_cast<T>((*rng)());                                        \
     }                                                                         \
   }
@@ -53,10 +51,10 @@ DEFINE_RANDOM_FUNC(uint32_t);
 #define DEFINE_RANDOM_UNIFORM_FUNC(T, key)                                     \
   template <>                                                                  \
   DRAGON_API void RandomUniform<T, CPUContext>(                                \
-      const int n, const float low, const float high, T* y, CPUContext* ctx) { \
+      const int N, const float low, const float high, T* y, CPUContext* ctx) { \
     std::uniform_##key##_distribution<T> distribution(low, high);              \
     auto* rng = ctx->rand_generator();                                         \
-    for (int i = 0; i < n; ++i) {                                              \
+    for (int i = 0; i < N; ++i) {                                              \
       y[i] = distribution(*rng);                                               \
     }                                                                          \
   }
@@ -68,10 +66,10 @@ DEFINE_RANDOM_UNIFORM_FUNC(double, real);
 #define DEFINE_RANDOM_NORMAL_FUNC(T)                                           \
   template <>                                                                  \
   DRAGON_API void RandomNormal<T, CPUContext>(                                 \
-      const int n, const float mu, const float sigma, T* y, CPUContext* ctx) { \
+      const int N, const float mu, const float sigma, T* y, CPUContext* ctx) { \
     std::normal_distribution<T> distribution(mu, sigma);                       \
     auto* rng = ctx->rand_generator();                                         \
-    for (int i = 0; i < n; ++i)                                                \
+    for (int i = 0; i < N; ++i)                                                \
       y[i] = distribution(*rng);                                               \
   }
 
@@ -82,10 +80,10 @@ DEFINE_RANDOM_NORMAL_FUNC(double);
 #define DEFINE_RANDOM_BERNOULI_FUNC(T)                     \
   template <>                                              \
   DRAGON_API void RandomBernoulli<T, CPUContext>(          \
-      const int n, const float p, T* y, CPUContext* ctx) { \
+      const int N, const float p, T* y, CPUContext* ctx) { \
     std::bernoulli_distribution distribution(p);           \
     auto* rng = ctx->rand_generator();                     \
-    for (int i = 0; i < n; ++i)                            \
+    for (int i = 0; i < N; ++i)                            \
       y[i] = distribution(*rng);                           \
   }
 
@@ -97,7 +95,7 @@ DEFINE_RANDOM_BERNOULI_FUNC(float);
 #define DEFINE_TRUNCATED_NORMAL_FUNC(T)                  \
   template <>                                            \
   DRAGON_API void TruncatedNormal<T, CPUContext>(        \
-      const int n,                                       \
+      const int N,                                       \
       const float mu,                                    \
       const float sigma,                                 \
       const float low,                                   \
@@ -113,7 +111,7 @@ DEFINE_RANDOM_BERNOULI_FUNC(float);
       if (gen_value < low) continue;                     \
       if (gen_value > high) continue;                    \
       y[cur_pos++] = gen_value;                          \
-      if (cur_pos >= n) break;                           \
+      if (cur_pos >= N) break;                           \
     }                                                    \
   }
 

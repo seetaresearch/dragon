@@ -2,357 +2,108 @@
 
 #include "dragon/core/context_cuda.h"
 #include "dragon/utils/device/common_cub.h"
+#include "dragon/utils/math_functions.h"
 #include "dragon/utils/op_kernels.h"
 
 namespace dragon {
 
-namespace kernel {
+namespace kernels {
 
 namespace {
 
-template <typename T>
-__global__ void _PRelu(const int nthreads, const T* x, const T* w, T* y) {
-  CUDA_1D_KERNEL_LOOP(i, nthreads) {
-#if __CUDA_ARCH__ >= 350
-    y[i] = __ldg(x + i) > T(0) ? __ldg(x + i) : __ldg(x + i) * __ldg(w);
-#else
-    y[i] = x[i] > T(0) ? x[i] : x[i] * w[0];
-#endif
+template <typename T, typename AccT>
+__global__ void _PRelu(const int N, const T* x, const T* w, T* y) {
+  CUDA_1D_KERNEL_LOOP(i, N) {
+    const AccT val = convert::To<AccT>(__ldg(x + i));
+    y[i] = val > AccT(0) ? __ldg(x + i)
+                         : convert::To<T>(val * convert::To<AccT>(__ldg(w)));
   }
 }
 
-template <>
-__global__ void
-_PRelu<half>(const int nthreads, const half* x, const half* w, half* y) {
-  CUDA_1D_KERNEL_LOOP(i, nthreads) {
-#if __CUDA_ARCH__ >= 350
-    y[i] = __half2float(__ldg(x + i)) > 0.f
-        ? __ldg(x + i)
-        : __float2half(__half2float(__ldg(x + i)) * __half2float(__ldg(w)));
-#else
-    y[i] = __half2float(x[i]) > 0.f
-        ? x[i]
-        : __float2half(__half2float(x[i]) * __half2float(w[0]));
-#endif
-  }
-}
-
-template <typename T>
-__global__ void _PReluNCHW(
-    const int nthreads,
-    const int C,
+template <typename T, typename AccT, StorageOrder kOrder>
+__global__ void _PRelu(
+    const int NxCxS,
     const int S,
+    const int C,
     const T* x,
     const T* w,
     T* y) {
-  CUDA_1D_KERNEL_LOOP(i, nthreads) {
-#if __CUDA_ARCH__ >= 350
-    y[i] = __ldg(x + i) > T(0) ? __ldg(x + i)
-                               : __ldg(x + i) * __ldg(w + ((i / S) % C));
-#else
-    y[i] = x[i] > T(0) ? x[i] : x[i] * w[(i / S) % C];
-#endif
-  }
-}
-
-template <>
-__global__ void _PReluNCHW<half>(
-    const int nthreads,
-    const int C,
-    const int S,
-    const half* x,
-    const half* w,
-    half* y) {
-  CUDA_1D_KERNEL_LOOP(i, nthreads) {
-#if __CUDA_ARCH__ >= 350
-    y[i] = __half2float(__ldg(x + i)) > 0.f
+  CUDA_1D_KERNEL_LOOP(i, NxCxS) {
+    const int j = (kOrder == StorageOrder::NCHW ? (i / S) % C : i % C);
+    const AccT val = convert::To<AccT>(__ldg(x + i));
+    y[i] = val > AccT(0)
         ? __ldg(x + i)
-        : __float2half(
-              __half2float(__ldg(x + i)) *
-              __half2float(__ldg(w + ((i / S) % C))));
-#else
-    y[i] = __half2float(x[i]) > 0.f
-        ? x[i]
-        : __float2half(__half2float(x[i]) * __half2float(w[(i / S) % C]));
-#endif
+        : convert::To<T>(val * convert::To<AccT>(__ldg(w + j)));
   }
 }
 
-template <typename T>
+template <typename T, typename AccT>
 __global__ void
-_PReluNHWC(const int nthreads, const int C, const T* x, const T* w, T* y) {
-  CUDA_1D_KERNEL_LOOP(i, nthreads) {
-#if __CUDA_ARCH__ >= 350
-    y[i] =
-        __ldg(x + i) > T(0) ? __ldg(x + i) : __ldg(x + i) * __ldg(w + (i % C));
-#else
-    y[i] = x[i] > T(0) ? x[i] : x[i] * w[i % C];
-#endif
+_PReluGrad(const int N, const T* dy, const T* x, const T* w, T* dx) {
+  CUDA_1D_KERNEL_LOOP(i, N) {
+    dx[i] = convert::To<T>(
+        convert::To<AccT>(dy[i]) *
+        (convert::To<AccT>(x[i]) > AccT(0) ? AccT(1)
+                                           : convert::To<AccT>(__ldg(w))));
   }
 }
 
-template <>
-__global__ void _PReluNHWC<half>(
-    const int nthreads,
-    const int C,
-    const half* x,
-    const half* w,
-    half* y) {
-  CUDA_1D_KERNEL_LOOP(i, nthreads) {
-#if __CUDA_ARCH__ >= 350
-    y[i] = __half2float(__ldg(x + i)) > 0.f
-        ? __ldg(x + i)
-        : __float2half(
-              __half2float(__ldg(x + i)) * __half2float(__ldg(w + (i % C))));
-#else
-    y[i] = __half2float(x[i]) > 0.f
-        ? x[i]
-        : __float2half(__half2float(x[i]) * __half2float(w[i % C]));
-#endif
-  }
-}
-
-template <typename T>
-__global__ void
-_PReluGrad(const int nthreads, const T* dy, const T* x, const T* w, T* dx) {
-  CUDA_1D_KERNEL_LOOP(i, nthreads) {
-#if __CUDA_ARCH__ >= 350
-    dx[i] = dy[i] * (__ldg(x + i) > T(0) ? T(1) : __ldg(w));
-#else
-    dx[i] = dy[i] * (x[i] > T(0) ? T(1) : w[0]);
-#endif
-  }
-}
-
-template <>
-__global__ void _PReluGrad<half>(
-    const int nthreads,
-    const half* dy,
-    const half* x,
-    const half* w,
-    half* dx) {
-  CUDA_1D_KERNEL_LOOP(i, nthreads) {
-#if __CUDA_ARCH__ >= 350
-    dx[i] = __float2half(
-        __half2float(dy[i]) *
-        (__half2float(x[i]) > 0.f ? 1.f : __half2float(__ldg(w))));
-#else
-    dx[i] = __float2half(
-        __half2float(dy[i]) *
-        (__half2float(x[i]) > 0.f ? 1.f : __half2float(w[0])));
-#endif
-  }
-}
-
-template <typename T>
-__global__ void _PReluGradNCHW(
-    const int nthreads,
-    const int C,
+template <typename T, typename AccT, StorageOrder kOrder>
+__global__ void _PReluGrad(
+    const int NxCxS,
     const int S,
-    const T* dy,
-    const T* x,
-    const T* w,
-    T* dx) {
-  CUDA_1D_KERNEL_LOOP(i, nthreads) {
-#if __CUDA_ARCH__ >= 350
-    dx[i] = dy[i] * (__ldg(x + i) > T(0) ? T(1) : __ldg(w + ((i / S) % C)));
-#else
-    dx[i] = dy[i] * (x[i] > T(0) ? T(1) : w[(i / S) % C]);
-#endif
-  }
-}
-
-template <>
-__global__ void _PReluGradNCHW<half>(
-    const int nthreads,
-    const int C,
-    const int S,
-    const half* dy,
-    const half* x,
-    const half* w,
-    half* dx) {
-  CUDA_1D_KERNEL_LOOP(i, nthreads) {
-#if __CUDA_ARCH__ >= 350
-    dx[i] = __float2half(
-        __half2float(dy[i]) *
-        (__half2float(x[i]) > 0.f ? 1.f
-                                  : __half2float(__ldg(w + ((i / S) % C)))));
-#else
-    dx[i] = __float2half(
-        __half2float(dy[i]) *
-        (__half2float(x[i]) > 0.f ? 1.f : __half2float(w[(i / S) % C])));
-#endif
-  }
-}
-
-template <typename T>
-__global__ void _PReluGradNHWC(
-    const int nthreads,
     const int C,
     const T* dy,
     const T* x,
     const T* w,
     T* dx) {
-  CUDA_1D_KERNEL_LOOP(i, nthreads) {
-#if __CUDA_ARCH__ >= 350
-    dx[i] = dy[i] * (__ldg(x + i) > T(0) ? T(1) : __ldg(w + (i % C)));
-#else
-    dx[i] = dy[i] * (x[i] > T(0) ? T(1) : w[i % C]);
-#endif
+  CUDA_1D_KERNEL_LOOP(i, NxCxS) {
+    const int j = (kOrder == StorageOrder::NCHW ? (i / S) % C : i % C);
+    dx[i] = convert::To<T>(
+        convert::To<AccT>(dy[i]) *
+        (convert::To<AccT>(x[i]) > AccT(0) ? AccT(1)
+                                           : convert::To<AccT>(__ldg(w + j))));
   }
 }
 
-template <>
-__global__ void _PReluGradNHWC<half>(
-    const int nthreads,
-    const int C,
-    const half* dy,
-    const half* x,
-    const half* w,
-    half* dx) {
-  CUDA_1D_KERNEL_LOOP(i, nthreads) {
-#if __CUDA_ARCH__ >= 350
-    dx[i] = __float2half(
-        __half2float(dy[i]) *
-        (__half2float(x[i]) > 0.f ? 1.f : __half2float(__ldg(w + (i % C)))));
-#else
-    dx[i] = __float2half(
-        __half2float(dy[i]) *
-        (__half2float(x[i]) > 0.f ? 1.f : __half2float(w[i % C])));
-#endif
-  }
-}
-
-template <typename T>
+template <typename T, typename AccT>
 __global__ void _PReluWGrad(const int N, const T* dy, const T* x, T* dw) {
-  __shared__ typename BlockReduce<T>::TempStorage storage;
-  T val = T(0);
+  __shared__ typename BlockReduce<AccT>::TempStorage storage;
+  AccT val = AccT(0);
   CUDA_2D_KERNEL_LOOP2(i, N) {
-#if __CUDA_ARCH__ >= 350
-    val += __ldg(x + i) < T(0) ? dy[i] * __ldg(x + i) : T(0);
-#else
-    val += x[i] < T(0) ? dy[i] * x[i] : T(0);
-#endif
+    val += convert::To<AccT>(__ldg(x + i)) < AccT(0)
+        ? convert::To<AccT>(dy[i]) * convert::To<AccT>(__ldg(x + i))
+        : AccT(0);
   }
-  val = BlockReduce<T>(storage).Sum(val);
-  if (threadIdx.x == 0) *dw = val;
+  val = BlockReduce<AccT>(storage).Sum(val);
+  if (threadIdx.x == 0) {
+    dw[0] = convert::To<T>(val);
+  }
 }
 
-template <>
-__global__ void
-_PReluWGrad<half>(const int N, const half* dy, const half* x, half* dw) {
-  __shared__ typename BlockReduce<float>::TempStorage storage;
-  float val = 0.f;
-  CUDA_2D_KERNEL_LOOP2(i, N) {
-#if __CUDA_ARCH__ >= 350
-    val += __half2float(__ldg(x + i)) < 0.f
-        ? __half2float(dy[i]) * __half2float(__ldg(x + i))
-        : 0.f;
-#else
-    val += __half2float(x[i]) < 0.f ? __half2float(dy[i]) * __half2float(x[i])
-                                    : 0.f;
-#endif
-  }
-  val = BlockReduce<float>(storage).Sum(val);
-  if (threadIdx.x == 0) *dw = __float2half(val);
-}
-
-template <typename T>
-__global__ void _PReluWGradNCHW(
-    const int NS,
-    const int C,
+template <typename T, typename AccT, StorageOrder kOrder>
+__global__ void _PReluWGrad(
+    const int NxS,
     const int S,
+    const int C,
     const T* dy,
     const T* x,
     T* dw) {
-  __shared__ typename BlockReduce<T>::TempStorage storage;
+  __shared__ typename BlockReduce<AccT>::TempStorage storage;
   CUDA_2D_KERNEL_LOOP1(i, C) {
-    T val = T(0);
-    CUDA_2D_KERNEL_LOOP2(j, NS) {
-      const int yi = ((j / S) * C + i) * S + j % S;
-#if __CUDA_ARCH__ >= 350
-      val += __ldg(x + yi) < T(0) ? dy[yi] * __ldg(x + yi) : T(0);
-#else
-      val += x[yi] < T(0) ? dy[yi] * x[yi] : T(0);
-#endif
+    AccT val = AccT(0);
+    CUDA_2D_KERNEL_LOOP2(j, NxS) {
+      const int index =
+          (kOrder == StorageOrder::NCHW ? (j / S * C + i) * S + j % S
+                                        : j * C + i);
+      val += convert::To<AccT>(__ldg(x + index)) < AccT(0)
+          ? convert::To<AccT>(dy[index]) * convert::To<AccT>(__ldg(x + index))
+          : AccT(0);
     }
-    val = BlockReduce<T>(storage).Sum(val);
-    if (threadIdx.x == 0) dw[i] = val;
-  }
-}
-
-template <>
-__global__ void _PReluWGradNCHW<half>(
-    const int NS,
-    const int C,
-    const int S,
-    const half* dy,
-    const half* x,
-    half* dw) {
-  __shared__ typename BlockReduce<float>::TempStorage storage;
-  CUDA_2D_KERNEL_LOOP1(i, C) {
-    float val = 0.f;
-    CUDA_2D_KERNEL_LOOP2(j, NS) {
-      const int yi = ((j / S) * C + i) * S + j % S;
-#if __CUDA_ARCH__ >= 350
-      val += __half2float(__ldg(x + yi)) < 0.f
-          ? __half2float(dy[yi]) * __half2float(__ldg(x + yi))
-          : 0.f;
-#else
-      val += __half2float(x[yi]) < 0.f
-          ? __half2float(dy[yi]) * __half2float(x[yi])
-          : 0.f;
-#endif
+    val = BlockReduce<AccT>(storage).Sum(val);
+    if (threadIdx.x == 0) {
+      dw[i] = convert::To<T>(val);
     }
-    val = BlockReduce<float>(storage).Sum(val);
-    if (threadIdx.x == 0) dw[i] = __float2half(val);
-  }
-}
-
-template <typename T>
-__global__ void
-_PReluWGradNHWC(const int NS, const int C, const T* dy, const T* x, T* dw) {
-  __shared__ typename BlockReduce<T>::TempStorage storage;
-  CUDA_2D_KERNEL_LOOP1(i, C) {
-    T val = T(0);
-    CUDA_2D_KERNEL_LOOP2(j, NS) {
-      const int yi = j * C + i;
-#if __CUDA_ARCH__ >= 350
-      val += __ldg(x + yi) < 0 ? dy[yi] * __ldg(x + yi) : T(0);
-#else
-      val += x[yi] < 0 ? dy[yi] * x[yi] : T(0);
-#endif
-    }
-    val = BlockReduce<T>(storage).Sum(val);
-    if (threadIdx.x == 0) dw[i] = val;
-  }
-}
-
-template <>
-__global__ void _PReluWGradNHWC<half>(
-    const int NS,
-    const int C,
-    const half* dy,
-    const half* x,
-    half* dw) {
-  const half kZero = __float2half(0.f);
-  __shared__ typename BlockReduce<float>::TempStorage storage;
-  CUDA_2D_KERNEL_LOOP1(i, C) {
-    float val = 0.f;
-    CUDA_2D_KERNEL_LOOP2(j, NS) {
-      const int yi = j * C + i;
-#if __CUDA_ARCH__ >= 350
-      val += __half2float(__ldg(x + yi)) < 0.f
-          ? __half2float(dy[yi]) * __half2float(__ldg(x + yi))
-          : 0.f;
-#else
-      val += __half2float(x[yi]) < 0.f
-          ? __half2float(dy[yi]) * __half2float(x[yi])
-          : 0.f;
-#endif
-    }
-    val = BlockReduce<float>(storage).Sum(val);
-    if (threadIdx.x == 0) dw[i] = __float2half(val);
   }
 }
 
@@ -360,253 +111,135 @@ __global__ void _PReluWGradNHWC<half>(
 
 /* ------------------- Launcher Separator ------------------- */
 
-template <>
-void PRelu<float16, CUDAContext>(
-    const int N,
-    const int C,
-    const int S,
-    const string& data_format,
-    const float16* x,
-    const float16* w,
-    float16* y,
-    CUDAContext* ctx) {
-  if (C > 1) {
-    if (data_format == "NCHW") {
-      _PReluNCHW<<<
-          CUDA_BLOCKS(N * C * S),
-          CUDA_THREADS,
-          0,
-          ctx->cuda_stream()>>>(
-          N * C * S,
-          C,
-          S,
-          reinterpret_cast<const half*>(x),
-          reinterpret_cast<const half*>(w),
-          reinterpret_cast<half*>(y));
-    } else if (data_format == "NHWC") {
-      _PReluNHWC<<<
-          CUDA_BLOCKS(N * C * S),
-          CUDA_THREADS,
-          0,
-          ctx->cuda_stream()>>>(
-          N * C * S,
-          C,
-          reinterpret_cast<const half*>(x),
-          reinterpret_cast<const half*>(w),
-          reinterpret_cast<half*>(y));
-    } else {
-      LOG(FATAL) << "Unknown data format: " << data_format;
-    }
-  } else {
-    _PRelu<<<CUDA_BLOCKS(N), CUDA_THREADS, 0, ctx->cuda_stream()>>>(
-        N,
-        reinterpret_cast<const half*>(x),
-        reinterpret_cast<const half*>(w),
-        reinterpret_cast<half*>(y));
-  }
-}
-
-template <>
-void PReluGrad<float16, CUDAContext>(
-    const int N,
-    const int C,
-    const int S,
-    const string& data_format,
-    const float16* dy,
-    const float16* x,
-    const float16* w,
-    float16* dx,
-    CUDAContext* ctx) {
-  if (C > 1) {
-    if (data_format == "NCHW") {
-      _PReluGradNCHW<<<
-          CUDA_BLOCKS(N * C * S),
-          CUDA_THREADS,
-          0,
-          ctx->cuda_stream()>>>(
-          N * C * S,
-          C,
-          S,
-          reinterpret_cast<const half*>(dy),
-          reinterpret_cast<const half*>(x),
-          reinterpret_cast<const half*>(w),
-          reinterpret_cast<half*>(dx));
-    } else if (data_format == "NHWC") {
-      _PReluGradNHWC<<<
-          CUDA_BLOCKS(N * C * S),
-          CUDA_THREADS,
-          0,
-          ctx->cuda_stream()>>>(
-          N * C * S,
-          C,
-          reinterpret_cast<const half*>(dy),
-          reinterpret_cast<const half*>(x),
-          reinterpret_cast<const half*>(w),
-          reinterpret_cast<half*>(dx));
-    } else {
-      LOG(FATAL) << "Unknown data format: " << data_format;
-    }
-  } else {
-    _PReluGrad<<<CUDA_BLOCKS(N), CUDA_THREADS, 0, ctx->cuda_stream()>>>(
-        N,
-        reinterpret_cast<const half*>(dy),
-        reinterpret_cast<const half*>(x),
-        reinterpret_cast<const half*>(w),
-        reinterpret_cast<half*>(dx));
-  }
-} // PReluGrad
-
-template <>
-void PReluWGrad<float16, CUDAContext>(
-    const int N,
-    const int C,
-    const int S,
-    const string& data_format,
-    const float16* dy,
-    const float16* x,
-    float16* dw,
-    CUDAContext* ctx) {
-  if (C > 1) {
-    if (data_format == "NCHW") {
-      _PReluWGradNCHW<<<
-          CUDA_2D_BLOCKS(C),
-          CUDA_THREADS,
-          0,
-          ctx->cuda_stream()>>>(
-          N * S,
-          C,
-          S,
-          reinterpret_cast<const half*>(dy),
-          reinterpret_cast<const half*>(x),
-          reinterpret_cast<half*>(dw));
-    } else if (data_format == "NHWC") {
-      _PReluWGradNHWC<<<
-          CUDA_2D_BLOCKS(C),
-          CUDA_THREADS,
-          0,
-          ctx->cuda_stream()>>>(
-          N * S,
-          C,
-          reinterpret_cast<const half*>(dy),
-          reinterpret_cast<const half*>(x),
-          reinterpret_cast<half*>(dw));
-    } else {
-      LOG(FATAL) << "Unknown data format: " << data_format;
-    }
-  } else {
-    _PReluWGrad<<<1, CUDA_THREADS, 0, ctx->cuda_stream()>>>(
-        N,
-        reinterpret_cast<const half*>(dy),
-        reinterpret_cast<const half*>(x),
-        reinterpret_cast<half*>(dw));
-  }
-} // PReluWGrad
-
-#define DEFINE_KERNEL_LAUNCHER(T)                                      \
-  template <>                                                          \
-  void PRelu<T, CUDAContext>(                                          \
-      const int N,                                                     \
-      const int C,                                                     \
-      const int S,                                                     \
-      const string& data_format,                                       \
-      const T* x,                                                      \
-      const T* w,                                                      \
-      T* y,                                                            \
-      CUDAContext* ctx) {                                              \
-    if (C > 1) {                                                       \
-      if (data_format == "NCHW") {                                     \
-        _PReluNCHW<<<                                                  \
-            CUDA_BLOCKS(N* C* S),                                      \
-            CUDA_THREADS,                                              \
-            0,                                                         \
-            ctx->cuda_stream()>>>(N * C * S, C, S, x, w, y);           \
-      } else if (data_format == "NHWC") {                              \
-        _PReluNHWC<<<                                                  \
-            CUDA_BLOCKS(N* C* S),                                      \
-            CUDA_THREADS,                                              \
-            0,                                                         \
-            ctx->cuda_stream()>>>(N * C * S, C, x, w, y);              \
-      } else {                                                         \
-        LOG(FATAL) << "Unknown data format: " << data_format;          \
-      }                                                                \
-    } else {                                                           \
-      _PRelu<<<CUDA_BLOCKS(N), CUDA_THREADS, 0, ctx->cuda_stream()>>>( \
-          N, x, w, y);                                                 \
-    }                                                                  \
+#define DISPATCH_CWISE_PRELU_KERNEL(name, T, AccT, kBlocks, kThreads, ...) \
+  if (data_format == "NCHW") {                                             \
+    name<T, AccT, StorageOrder::NCHW>                                      \
+        <<<kBlocks, kThreads, 0, ctx->cuda_stream()>>>(__VA_ARGS__);       \
+  } else if (data_format == "NHWC") {                                      \
+    name<T, AccT, StorageOrder::NHWC>                                      \
+        <<<kBlocks, kThreads, 0, ctx->cuda_stream()>>>(__VA_ARGS__);       \
+  } else {                                                                 \
+    LOG(FATAL) << "Unknown DataFormat: " << data_format;                   \
   }
 
-#define DEFINE_GRAD_KERNEL_LAUNCHER(T)                                       \
-  template <>                                                                \
-  void PReluGrad<T, CUDAContext>(                                            \
-      const int N,                                                           \
-      const int C,                                                           \
-      const int S,                                                           \
-      const string& data_format,                                             \
-      const T* dy,                                                           \
-      const T* x,                                                            \
-      const T* w,                                                            \
-      T* dx,                                                                 \
-      CUDAContext* ctx) {                                                    \
-    if (C > 1) {                                                             \
-      if (data_format == "NCHW") {                                           \
-        _PReluGradNCHW<<<                                                    \
-            CUDA_BLOCKS(N* C* S),                                            \
-            CUDA_THREADS,                                                    \
-            0,                                                               \
-            ctx->cuda_stream()>>>(N * C * S, C, S, dy, x, w, dx);            \
-      } else if (data_format == "NHWC") {                                    \
-        _PReluGradNHWC<<<                                                    \
-            CUDA_BLOCKS(N* C* S),                                            \
-            CUDA_THREADS,                                                    \
-            0,                                                               \
-            ctx->cuda_stream()>>>(N * C * S, C, dy, x, w, dx);               \
-      } else {                                                               \
-        LOG(FATAL) << "Unknown data format: " << data_format;                \
-      }                                                                      \
-    } else {                                                                 \
-      _PReluGrad<<<CUDA_BLOCKS(N), CUDA_THREADS, 0, ctx->cuda_stream()>>>(   \
-          N, dy, x, w, dx);                                                  \
-    }                                                                        \
-  }                                                                          \
-  template <>                                                                \
-  void PReluWGrad<T, CUDAContext>(                                           \
-      const int N,                                                           \
-      const int C,                                                           \
-      const int S,                                                           \
-      const string& data_format,                                             \
-      const T* dy,                                                           \
-      const T* x,                                                            \
-      T* dw,                                                                 \
-      CUDAContext* ctx) {                                                    \
-    if (C > 1) {                                                             \
-      if (data_format == "NCHW") {                                           \
-        _PReluWGradNCHW<<<                                                   \
-            CUDA_2D_BLOCKS(C),                                               \
-            CUDA_THREADS,                                                    \
-            0,                                                               \
-            ctx->cuda_stream()>>>(N * S, C, S, dy, x, dw);                   \
-      } else if (data_format == "NHWC") {                                    \
-        _PReluWGradNHWC<<<                                                   \
-            CUDA_2D_BLOCKS(C),                                               \
-            CUDA_THREADS,                                                    \
-            0,                                                               \
-            ctx->cuda_stream()>>>(N * S, C, dy, x, dw);                      \
-      } else {                                                               \
-        LOG(FATAL) << "Unknown data format: " << data_format;                \
-      }                                                                      \
-    } else {                                                                 \
-      _PReluWGrad<<<1, CUDA_THREADS, 0, ctx->cuda_stream()>>>(N, dy, x, dw); \
-    }                                                                        \
+#define DEFINE_KERNEL_LAUNCHER(T)                                        \
+  template <>                                                            \
+  void PRelu<T, CUDAContext>(                                            \
+      const int N,                                                       \
+      const int S,                                                       \
+      const int C,                                                       \
+      const string& data_format,                                         \
+      const T* x,                                                        \
+      const T* w,                                                        \
+      T* y,                                                              \
+      CUDAContext* ctx) {                                                \
+    const auto NxCxS = N * C * S;                                        \
+    if (C > 1) {                                                         \
+      DISPATCH_CWISE_PRELU_KERNEL(                                       \
+          _PRelu,                                                        \
+          math::ScalarType<T>::type,                                     \
+          math::AccmulatorType<T>::type,                                 \
+          CUDA_BLOCKS(NxCxS),                                            \
+          CUDA_THREADS,                                                  \
+          NxCxS,                                                         \
+          S,                                                             \
+          C,                                                             \
+          reinterpret_cast<const math::ScalarType<T>::type*>(x),         \
+          reinterpret_cast<const math::ScalarType<T>::type*>(w),         \
+          reinterpret_cast<math::ScalarType<T>::type*>(y));              \
+    } else {                                                             \
+      _PRelu<math::ScalarType<T>::type, math::AccmulatorType<T>::type>   \
+          <<<CUDA_BLOCKS(NxCxS), CUDA_THREADS, 0, ctx->cuda_stream()>>>( \
+              NxCxS,                                                     \
+              reinterpret_cast<const math::ScalarType<T>::type*>(x),     \
+              reinterpret_cast<const math::ScalarType<T>::type*>(w),     \
+              reinterpret_cast<math::ScalarType<T>::type*>(y));          \
+    }                                                                    \
   }
 
+#define DEFINE_GRAD_KERNEL_LAUNCHER(T)                                      \
+  template <>                                                               \
+  void PReluGrad<T, CUDAContext>(                                           \
+      const int N,                                                          \
+      const int S,                                                          \
+      const int C,                                                          \
+      const string& data_format,                                            \
+      const T* dy,                                                          \
+      const T* x,                                                           \
+      const T* w,                                                           \
+      T* dx,                                                                \
+      CUDAContext* ctx) {                                                   \
+    const auto NxCxS = N * C * S;                                           \
+    if (C > 1) {                                                            \
+      DISPATCH_CWISE_PRELU_KERNEL(                                          \
+          _PReluGrad,                                                       \
+          math::ScalarType<T>::type,                                        \
+          math::AccmulatorType<T>::type,                                    \
+          CUDA_BLOCKS(NxCxS),                                               \
+          CUDA_THREADS,                                                     \
+          NxCxS,                                                            \
+          S,                                                                \
+          C,                                                                \
+          reinterpret_cast<const math::ScalarType<T>::type*>(dy),           \
+          reinterpret_cast<const math::ScalarType<T>::type*>(x),            \
+          reinterpret_cast<const math::ScalarType<T>::type*>(w),            \
+          reinterpret_cast<math::ScalarType<T>::type*>(dx));                \
+    } else {                                                                \
+      _PReluGrad<math::ScalarType<T>::type, math::AccmulatorType<T>::type>  \
+          <<<CUDA_BLOCKS(NxCxS), CUDA_THREADS, 0, ctx->cuda_stream()>>>(    \
+              NxCxS,                                                        \
+              reinterpret_cast<const math::ScalarType<T>::type*>(dy),       \
+              reinterpret_cast<const math::ScalarType<T>::type*>(x),        \
+              reinterpret_cast<const math::ScalarType<T>::type*>(w),        \
+              reinterpret_cast<math::ScalarType<T>::type*>(dx));            \
+    }                                                                       \
+  }                                                                         \
+  template <>                                                               \
+  void PReluWGrad<T, CUDAContext>(                                          \
+      const int N,                                                          \
+      const int S,                                                          \
+      const int C,                                                          \
+      const string& data_format,                                            \
+      const T* dy,                                                          \
+      const T* x,                                                           \
+      T* dw,                                                                \
+      CUDAContext* ctx) {                                                   \
+    const auto NxS = N * S;                                                 \
+    const auto NxCxS = NxS * C;                                             \
+    if (C > 1) {                                                            \
+      DISPATCH_CWISE_PRELU_KERNEL(                                          \
+          _PReluWGrad,                                                      \
+          math::ScalarType<T>::type,                                        \
+          math::AccmulatorType<T>::type,                                    \
+          CUDA_2D_BLOCKS(C),                                                \
+          CUDA_THREADS,                                                     \
+          NxS,                                                              \
+          S,                                                                \
+          C,                                                                \
+          reinterpret_cast<const math::ScalarType<T>::type*>(dy),           \
+          reinterpret_cast<const math::ScalarType<T>::type*>(x),            \
+          reinterpret_cast<math::ScalarType<T>::type*>(dw));                \
+    } else {                                                                \
+      _PReluWGrad<math::ScalarType<T>::type, math::AccmulatorType<T>::type> \
+          <<<1, CUDA_THREADS, 0, ctx->cuda_stream()>>>(                     \
+              NxCxS,                                                        \
+              reinterpret_cast<const math::ScalarType<T>::type*>(dy),       \
+              reinterpret_cast<const math::ScalarType<T>::type*>(x),        \
+              reinterpret_cast<math::ScalarType<T>::type*>(dw));            \
+    }                                                                       \
+  }
+
+DEFINE_KERNEL_LAUNCHER(float16);
 DEFINE_KERNEL_LAUNCHER(float);
 DEFINE_KERNEL_LAUNCHER(double);
+DEFINE_GRAD_KERNEL_LAUNCHER(float16);
 DEFINE_GRAD_KERNEL_LAUNCHER(float);
 DEFINE_GRAD_KERNEL_LAUNCHER(double);
 #undef DEFINE_KERNEL_LAUNCHER
 #undef DEFINE_GRAD_KERNEL_LAUNCHER
+#undef DISPATCH_CWISE_PRELU_KERNEL
 
-} // namespace kernel
+} // namespace kernels
 
 } // namespace dragon
 

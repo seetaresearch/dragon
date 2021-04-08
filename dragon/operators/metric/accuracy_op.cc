@@ -6,7 +6,7 @@ template <class Context>
 template <typename LogitT, typename TargetT>
 void AccuracyOp<Context>::DoRunWithType() {
   auto &X = Input(0), *Y = Output(0);
-  CANONICALIZE_AXIS_WITH_TENSOR(X);
+  GET_OP_AXIS_ARG(axis, X.ndim(), -1);
 
   auto outer_dim = X.count(0, axis);
   auto axis_dim = X.dim(axis);
@@ -56,7 +56,7 @@ void AccuracyOp<Context>::RunOnDevice() {
       DoRunWithType<float, int64_t>();
     } else {
       LOG(FATAL) << MessageForUnsupported(
-          types::to_string(Input(1).meta()), {"float32", "int64"});
+          dtypes::to_string(Input(1).meta()), {"float32", "int64"});
     }
   } else if (Input(0).template IsType<double>()) {
     if (Input(1).template IsType<double>()) {
@@ -65,11 +65,11 @@ void AccuracyOp<Context>::RunOnDevice() {
       DoRunWithType<double, int64_t>();
     } else {
       LOG(FATAL) << MessageForUnsupported(
-          types::to_string(Input(1).meta()), {"float64", "int64"});
+          dtypes::to_string(Input(1).meta()), {"float64", "int64"});
     }
   } else {
     LOG(FATAL) << MessageForUnsupported(
-        types::to_string(Input(0).meta()), {"float32", "float64"});
+        dtypes::to_string(Input(0).meta()), {"float32", "float64"});
   }
 }
 

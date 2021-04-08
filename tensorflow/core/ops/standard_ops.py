@@ -17,7 +17,6 @@ from __future__ import print_function
 # flake8: noqa
 from dragon.vm.tensorflow.core.ops.array_ops import *
 from dragon.vm.tensorflow.core.ops.clip_ops import *
-from dragon.vm.tensorflow.core.ops.gradients_impl import gradients
 from dragon.vm.tensorflow.core.ops.init_ops import *
 from dragon.vm.tensorflow.core.ops.math_ops import *
 from dragon.vm.tensorflow.core.ops.random_ops import *

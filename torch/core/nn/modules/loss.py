@@ -129,11 +129,11 @@ class NLLLoss(_WeightedLoss):
         weight : dragon.vm.torch.Tensor, optional
             The weight for each class.
         size_average : bool, optional
-            **True** to set the ``reduction`` to *'mean'*.
+            ``True`` to set the ``reduction`` to *'mean'*.
         ignore_index : int, optional
-            The label index to ignore.
+            The ignored value of target.
         reduce : bool, optional
-            **True** to set the ``reduction`` to *'sum'* or *'mean'*.
+            ``True`` to set the ``reduction`` to *'sum'* or *'mean'*.
         reduction : {'none', 'mean', 'sum', 'valid'}, optional
             The reduce method.
 
@@ -181,9 +181,9 @@ class BCEWithLogitsLoss(_WeightedLoss):
         weight : dragon.vm.torch.Tensor, optional
             The weight for each class.
         size_average : bool, optional
-            **True** to set the ``reduction`` to *'mean'*.
+            ``True`` to set the ``reduction`` to *'mean'*.
         reduce : bool, optional
-            **True** to set the ``reduction`` to *'sum'* or *'mean'*.
+            ``True`` to set the ``reduction`` to *'sum'* or *'mean'*.
         reduction : {'none', 'mean', 'sum', 'valid'}, optional
             The reduce method.
 
@@ -235,11 +235,11 @@ class CrossEntropyLoss(_WeightedLoss):
         weight : dragon.vm.torch.Tensor, optional
             The weight for each class.
         size_average : bool, optional
-            **True** to set the ``reduction`` to *'mean'*.
+            ``True`` to set the ``reduction`` to *'mean'*.
         ignore_index : int, optional
-            The label index to ignore.
+            The ignored value of target.
         reduce : bool, optional
-            **True** to set the ``reduction`` to *'sum'* or *'mean'*.
+            ``True`` to set the ``reduction`` to *'sum'* or *'mean'*.
         reduction : {'none', 'mean', 'sum', 'valid'}, optional
             The reduce method.
 
@@ -288,9 +288,9 @@ class KLDivLoss(_Loss):
         Parameters
         ----------
         size_average : bool, optional
-            **True** to set the ``reduction`` to *'mean'*.
+            ``True`` to set the ``reduction`` to *'mean'*.
         reduce : bool, optional
-            **True** to set the ``reduction`` to *'sum'* or *'mean'*.
+            ``True`` to set the ``reduction`` to *'sum'* or *'mean'*.
         reduction : {'none', 'batchmean', 'mean', 'sum'}, optional
             The reduce method.
         log_target : bool, optional, default=False
@@ -334,9 +334,9 @@ class L1Loss(_Loss):
         Parameters
         ----------
         size_average : bool, optional
-            **True** to set the ``reduction`` to *'mean'*.
+            ``True`` to set the ``reduction`` to *'mean'*.
         reduce : bool, optional
-            **True** to set the ``reduction`` to *'sum'* or *'mean'*.
+            ``True`` to set the ``reduction`` to *'sum'* or *'mean'*.
         reduction : {'none', 'mean', 'sum'}, optional
             The reduce method.
 
@@ -373,9 +373,9 @@ class MSELoss(_Loss):
         Parameters
         ----------
         size_average : bool, optional
-            **True** to set the ``reduction`` to *'mean'*.
+            ``True`` to set the ``reduction`` to *'mean'*.
         reduce : bool, optional
-            **True** to set the ``reduction`` to *'sum'* or *'mean'*.
+            ``True`` to set the ``reduction`` to *'sum'* or *'mean'*.
         reduction : {'none', 'mean', 'sum'}, optional
             The reduce method.
 
@@ -426,9 +426,9 @@ class SmoothL1Loss(_Loss):
         beta : float, optional, default=1.
             The transition point from L1 to L2 loss
         size_average : bool, optional
-            **True** to set the ``reduction`` to *'mean'*.
+            ``True`` to set the ``reduction`` to *'mean'*.
         reduce : bool, optional
-            **True** to set the ``reduction`` to *'sum'* or *'mean'*.
+            ``True`` to set the ``reduction`` to *'sum'* or *'mean'*.
         reduction : {'none', 'mean', 'sum'}, optional
             The reduce method.
 
@@ -473,7 +473,7 @@ class SigmoidFocalLoss(_WeightedLoss):
         gamma=2.,
         weight=None,
         size_average=None,
-        negative_index=None,
+        start_index=0,
         reduce=None,
         reduction='valid',
     ):
@@ -488,11 +488,11 @@ class SigmoidFocalLoss(_WeightedLoss):
         weight : dragon.vm.torch.Tensor, optional
             The weight for each class.
         size_average : bool, optional
-            **True** to set the ``reduction`` to *'mean'*.
-        negative_index : int, optional
-            The negative label index.
+            ``True`` to set the ``reduction`` to *'mean'*.
+        start_index : int, optional, default=0
+            The start value of target.
         reduce : bool, optional
-            **True** to set the ``reduction`` to *'sum'* or *'mean'*.
+            ``True`` to set the ``reduction`` to *'sum'* or *'mean'*.
         reduction : {'none', 'mean', 'sum', 'valid'}, optional
             The reduce method.
 
@@ -500,7 +500,7 @@ class SigmoidFocalLoss(_WeightedLoss):
         super(SigmoidFocalLoss, self).__init__(
             weight, size_average, reduce, reduction)
         self.alpha, self.gamma = alpha, gamma
-        self.negative_index = negative_index
+        self.start_index = start_index
 
     def forward(self, input, target):
         return F.sigmoid_focal_loss(
@@ -508,5 +508,5 @@ class SigmoidFocalLoss(_WeightedLoss):
             alpha=self.alpha,
             gamma=self.gamma,
             reduction=self.reduction,
-            negative_index=self.negative_index,
+            start_index=self.start_index,
         )

@@ -33,7 +33,7 @@ void PadOp<Context>::DoRunWithType() {
   }
 
   if (mode_ == "CONSTANT") {
-    kernel::ConstPad(
+    kernels::ConstPad(
         X.ndim(),
         X.dims().data(),
         X.strides().data(),
@@ -54,7 +54,7 @@ void PadOp<Context>::DoRunWithType() {
           << "\nwhile the excepted end of padding "
           << "for reflect mode should be in (0, " << X.dim(i) - 1 << "].";
     }
-    kernel::ReflectPad(
+    kernels::ReflectPad(
         X.ndim(),
         X.dims().data(),
         X.strides().data(),
@@ -64,7 +64,7 @@ void PadOp<Context>::DoRunWithType() {
         Y->Reshape(Y_dims)->template mutable_data<T, Context>(),
         ctx());
   } else if (mode_ == "EDGE") {
-    kernel::EdgePad(
+    kernels::EdgePad(
         X.ndim(),
         X.dims().data(),
         X.strides().data(),
@@ -80,7 +80,7 @@ void PadOp<Context>::DoRunWithType() {
 
 template <class Context>
 void PadOp<Context>::RunOnDevice() {
-  DispatchHelper<FullTensorTypes>::Call(this, Input(0));
+  DispatchHelper<dtypes::Generic>::Call(this, Input(0));
 }
 
 template <class Context>
@@ -102,7 +102,7 @@ void PadGradientOp<Context>::DoRunWithType() {
   }
 
   if (mode_ == "CONSTANT") {
-    kernel::Slice(
+    kernels::Slice(
         num_dims,
         dY.strides().data(),
         X_dims.data(),
@@ -121,7 +121,7 @@ void PadGradientOp<Context>::DoRunWithType() {
 
 template <class Context>
 void PadGradientOp<Context>::RunOnDevice() {
-  DispatchHelper<FloatingTensorTypes>::Call(this, Input(0));
+  DispatchHelper<dtypes::Floating>::Call(this, Input(0));
 }
 
 DEPLOY_CPU_OPERATOR(Pad);

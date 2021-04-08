@@ -28,6 +28,8 @@ from dragon.vm.torch.core.nn.modules.module import Module
 
 
 class Container(Module):
+    """The base container."""
+
     def __init__(self, **kwargs):
         super(Container, self).__init__()
         warnings.warn("nn.Container is deprecated. All of it's functionality "
@@ -37,9 +39,17 @@ class Container(Module):
 
 
 class Sequential(Module):
-    """The sequential container."""
+    """The sequential module container."""
 
     def __init__(self, *args):
+        """Create a ``Sequential`` container.
+
+        Parameters
+        ----------
+        args : dragon.vm.torch.nn.Module...
+            The initial modules.
+
+        """
         super(Sequential, self).__init__()
         if len(args) == 1 and isinstance(args[0], collections.OrderedDict):
             for key, module in args[0].items():
@@ -49,6 +59,14 @@ class Sequential(Module):
                 self.add_module(str(i), module)
 
     def forward(self, input):
+        """Call modules sequentially.
+
+        Parameters
+        ----------
+        input : Any
+            The container input.
+
+        """
         for module in self._modules.values():
             input = module(input)
         return input
@@ -87,16 +105,42 @@ class Sequential(Module):
 
 
 class ModuleList(Module):
+    """The list module container."""
+
     def __init__(self, modules=None):
+        """Create a ``ModuleList`` container.
+
+        Parameters
+        ----------
+        modules : Sequence[dragon.vm.torch.nn.Module], optional
+            The initial modules.
+
+        """
         super(ModuleList, self).__init__()
         if modules is not None:
             self.__iadd__(modules)
 
     def append(self, module):
+        """Add a module in this container.
+
+        Parameters
+        ----------
+        module : dragon.vm.torch.nn.Module
+            The module to add.
+
+        """
         self.add_module(str(len(self)), module)
         return self
 
     def extend(self, modules):
+        """Add a sequence of modules in this container.
+
+        Parameters
+        ----------
+        modules : Sequence[dragon.vm.torch.nn.Module], optional
+            The modules to add.
+
+        """
         if not isinstance(modules, six.collections_abc.Iterable):
             raise TypeError("ModuleList.extend should be called with an "
                             "Sequence, but got " + type(modules).__name__)
@@ -104,6 +148,21 @@ class ModuleList(Module):
         for i, module in enumerate(modules):
             self.add_module(str(offset + i), module)
         return self
+
+    def insert(self, index, module):
+        """Add a module at a given index in this container.
+
+        Parameters
+        ----------
+        index : int
+            The insert index.
+        module : dragon.vm.torch.nn.Module
+            The module to add.
+
+        """
+        for i in range(len(self._modules), index, -1):
+            self._modules[str(i)] = self._modules[str(i - 1)]
+        self._modules[str(index)] = module
 
     def _get_abs_string_index(self, index):
         """Return the absolute index for the list of functions"""

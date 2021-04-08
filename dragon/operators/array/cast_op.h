@@ -18,18 +18,25 @@
 namespace dragon {
 
 template <class Context>
-class CastOp final : public Operator<Context> {
+class CastOp : public Operator<Context> {
  public:
   SIMPLE_CTOR_DTOR(CastOp);
   USE_OPERATOR_FUNCTIONS;
 
   void RunOnDevice() override;
+
+  template <typename T>
+  void DoRunWithType();
+
+  template <typename InputT, typename OutputT>
+  bool MaybeConvert();
 };
 
 template <class Context>
-class CastGradientOp final : public Operator<Context> {
+class CastGradientOp final : public CastOp<Context> {
  public:
-  SIMPLE_CTOR_DTOR(CastGradientOp);
+  CastGradientOp(const OperatorDef& def, Workspace* ws)
+      : CastOp<Context>(def, ws) {}
   USE_OPERATOR_FUNCTIONS;
 
   void RunOnDevice() override;

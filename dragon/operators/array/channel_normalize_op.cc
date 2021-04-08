@@ -8,7 +8,7 @@ template <class Context>
 template <typename InputT, typename OutputT>
 void ChannelNormalizeOp<Context>::DoRunWithTypeAndCast() {
   auto &X = Input(0), *Y = Output(0);
-  CANONICALIZE_AXIS_WITH_TENSOR(X);
+  GET_OP_AXIS_ARG(axis, X.ndim(), -1);
 
   int num_axes, num_dims = X.ndim();
   vec64_t X_strides(num_dims), Y_dims(num_dims);
@@ -30,7 +30,7 @@ void ChannelNormalizeOp<Context>::DoRunWithTypeAndCast() {
       << "\nProviding " << X_mean_.count() << " values to normalize Dimension("
       << Y_dims[axis] << ").";
 
-  kernel::ChannelNormalize(
+  kernels::ChannelNormalize(
       axis,
       num_dims,
       X_strides.data(),
@@ -59,7 +59,7 @@ void ChannelNormalizeOp<Context>::DoRunWithType() {
 
 template <class Context>
 void ChannelNormalizeOp<Context>::RunOnDevice() {
-  DispatchHelper<NumericalTensorTypes>::Call(this, Input(0));
+  DispatchHelper<dtypes::Numerical>::Call(this, Input(0));
 }
 
 DEPLOY_CPU_OPERATOR(ChannelNormalize);

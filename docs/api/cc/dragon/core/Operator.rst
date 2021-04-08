@@ -15,6 +15,10 @@ Buffer
 ######
 .. doxygenfunction:: dragon::Operator::Buffer
 
+DeriveFrom
+##########
+.. doxygenfunction:: dragon::Operator::DeriveFrom
+
 Fuse
 ####
 .. doxygenfunction:: dragon::Operator::Fuse
@@ -54,10 +58,6 @@ OutputSize
 Run
 ###
 .. doxygenfunction:: dragon::Operator::Run
-
-UpdateFrom
-##########
-.. doxygenfunction:: dragon::Operator::UpdateFrom
 
 data_format
 ###########

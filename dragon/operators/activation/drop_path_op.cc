@@ -12,22 +12,17 @@ void DropPathOp<Context>::DoRunWithType() {
   if (phase() == "TEST") {
     Y->ReshapeLike(X)->CopyFrom(X, ctx());
   } else if (phase() == "TRAIN") {
-    auto* mask = Buffer("mask")
-                     ->Reshape({X.dim(0)})
-                     ->template mutable_data<float, Context>();
-    auto* scale = Buffer("scale")
-                      ->Reshape({})
-                      ->template mutable_data<float, CPUContext>();
-    // Generate mask for each example
-    math::RandomUniform(X.dim(0), 0.f, 1.f, mask, ctx());
-    // Apply mask to the feature
-    kernel::DropPath(
+    auto* X_mask = Buffer("X_mask")->Reshape({X.dim(0)});
+    auto drop_ratio = ratio();
+    kernels::DropPath(
         X.dim(0),
         X.stride(0),
-        1.f / (1.f - ratio()),
+        drop_ratio,
+        1.f / (1.f - drop_ratio),
         X.template data<T, Context>(),
-        mask,
         Y->ReshapeLike(X)->template mutable_data<T, Context>(),
+        X_mask->template mutable_data<uint8_t, Context>(),
+        ctx()->workspace()->template data<uint32_t, Context>({X.dim(0)})[0],
         ctx());
   } else {
     LOG(FATAL) << "Unknown Phase: " << phase();
@@ -36,7 +31,7 @@ void DropPathOp<Context>::DoRunWithType() {
 
 template <class Context>
 void DropPathOp<Context>::RunOnDevice() {
-  DispatchHelper<FloatingTensorTypes>::Call(this, Input(0));
+  DispatchHelper<dtypes::Floating>::Call(this, Input(0));
 }
 
 template <class Context>
@@ -46,12 +41,12 @@ void DropPathGradientOp<Context>::DoRunWithType() {
   if (phase() == "TEST") {
     NOT_IMPLEMENTED;
   } else if (phase() == "TRAIN") {
-    kernel::DropPath(
+    kernels::DropPathGrad(
         dY.dim(0),
         dY.stride(0),
         1.f / (1.f - ratio()),
+        Buffer("X_mask")->template data<uint8_t, Context>(),
         dY.template data<T, Context>(),
-        Buffer("mask")->template data<float, Context>(),
         dX->ReshapeLike(dY)->template mutable_data<T, Context>(),
         ctx());
   } else {
@@ -61,7 +56,7 @@ void DropPathGradientOp<Context>::DoRunWithType() {
 
 template <class Context>
 void DropPathGradientOp<Context>::RunOnDevice() {
-  DispatchHelper<FloatingTensorTypes>::Call(this, Input(0));
+  DispatchHelper<dtypes::Floating>::Call(this, Input(0));
 }
 
 DEPLOY_CPU_OPERATOR(DropPath);

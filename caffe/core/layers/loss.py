@@ -51,16 +51,17 @@ class EuclideanLoss(Layer):
                 reduction = 'mean'
         else:
             reduction = norm_dict[param.normalization]
-        self.arguments = {'reduction': reduction}
+        self.call_args = {'reduction': reduction}
+        self.loss_weight = (layer_param.loss_weight or [1])[0]
 
     def __call__(self, bottom):
-        loss = loss_ops.l2_loss(bottom, **self.arguments)
+        loss = loss_ops.l2_loss(bottom, **self.call_args)
         loss_weight = 1. if self.loss_weight is None else self.loss_weight
         return loss * (loss_weight * 0.5)
 
 
 class SigmoidCrossEntropyLoss(Layer):
-    r"""Compute the sigmoid cross entropy with contiguous targets.
+    """Compute the loss of sigmoid cross entropy.
 
     Examples:
 
@@ -88,11 +89,12 @@ class SigmoidCrossEntropyLoss(Layer):
                 reduction = 'batch_mean'
         else:
             reduction = norm_dict[param.normalization]
-        self.arguments = {'reduction': reduction}
+        self.call_args = {'reduction': reduction}
+        self.loss_weight = (layer_param.loss_weight or [1])[0]
 
     def __call__(self, bottom):
-        loss = loss_ops.sigmoid_cross_entropy(bottom, **self.arguments)
-        if self.loss_weight is not None:
+        loss = loss_ops.sigmoid_cross_entropy_loss(bottom, **self.call_args)
+        if self.loss_weight != 1:
             loss *= self.loss_weight
         return loss
 
@@ -131,24 +133,18 @@ class SmoothL1Loss(Layer):
         else:
             reduction = norm_dict[param.normalization]
         sigma2 = smooth_l1_param.sigma * smooth_l1_param.sigma
-        self.arguments = {
-            'beta': float(1. / sigma2),
-            'reduction': reduction,
-        }
+        self.call_args = {'beta': float(1. / sigma2), 'reduction': reduction}
+        self.loss_weight = (layer_param.loss_weight or [1])[0]
 
     def __call__(self, bottom):
-        loss = loss_ops.smooth_l1_loss(bottom, **self.arguments)
-        if self.loss_weight is not None:
+        loss = loss_ops.smooth_l1_loss(bottom, **self.call_args)
+        if self.loss_weight != 1:
             loss *= self.loss_weight
         return loss
 
 
 class SoftmaxWithLoss(Layer):
-    r"""Compute the softmax cross entropy with sparse labels.
-
-    The **CrossEntropy** function is defined as:
-
-    .. math:: \text{CrossEntropy}(p_{t}) = -\log(p_{t})
+    """Compute the loss of softmax cross entropy.
 
     Examples:
 
@@ -181,15 +177,16 @@ class SoftmaxWithLoss(Layer):
                 reduction = 'batch_mean'
         else:
             reduction = norm_dict[param.normalization]
-        self.arguments = {
+        self.call_args = {
             'axis': softmax_param.axis,
             'reduction': reduction,
             'ignore_index': param.ignore_label
             if param.HasField('ignore_label') else None,
         }
+        self.loss_weight = (layer_param.loss_weight or [1])[0]
 
     def __call__(self, bottom):
-        loss = loss_ops.sparse_softmax_cross_entropy(bottom, **self.arguments)
-        if self.loss_weight is not None:
+        loss = loss_ops.softmax_cross_entropy_loss(bottom, **self.call_args)
+        if self.loss_weight != 1:
             loss *= self.loss_weight
         return loss

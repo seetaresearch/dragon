@@ -9,6 +9,7 @@ template <class Context>
 template <typename T>
 void SliceOp<Context>::DoRunWithType() {
   auto &X = Input(0), *Y = Output(0);
+  SET_INPUT_SPEC(0);
 
   int num_starts, num_sizes, num_dims = X.ndim();
   CHECK_GT(num_dims, 0) << "\nInvalid slice of a scalar.";
@@ -43,7 +44,6 @@ void SliceOp<Context>::DoRunWithType() {
   }
 
   // Store for the gradient calculation
-  STORE_INPUT_SPEC(0);
   Buffer("X_starts")->template CopyFrom<int64_t>(X_starts);
   Buffer("Y_dims")->template CopyFrom<int64_t>(Y_dims);
 
@@ -54,7 +54,7 @@ void SliceOp<Context>::DoRunWithType() {
     return;
   }
 
-  kernel::Slice(
+  kernels::Slice(
       num_dims,
       X.strides().data(),
       Y_dims.data(),
@@ -66,7 +66,7 @@ void SliceOp<Context>::DoRunWithType() {
 
 template <class Context>
 void SliceOp<Context>::RunOnDevice() {
-  DispatchHelper<FullTensorTypes>::Call(this, Input(0));
+  DispatchHelper<dtypes::Generic>::Call(this, Input(0));
 }
 
 template <class Context>
@@ -75,7 +75,7 @@ void SliceGradientOp<Context>::DoRunWithType() {
   auto &dY = Input(0), *dX = Output(0);
 
   // Maybe just copy the contents
-  dX->ReshapeLike(RESTORE_INPUT_SPEC(0));
+  dX->ReshapeLike(INPUT_SPEC(0));
   if (dX->count() == dY.count()) {
     dX->CopyFrom(dY, ctx());
     return;
@@ -90,7 +90,7 @@ void SliceGradientOp<Context>::DoRunWithType() {
   math::Set(dX->count(), convert::To<T>(0.f), dx, ctx());
 
   // Copy the dY to the right positions
-  kernel::SliceGrad(
+  kernels::SliceGrad(
       dX->ndim(),
       dX->strides().data(),
       Y_dims.data(),
@@ -102,7 +102,7 @@ void SliceGradientOp<Context>::DoRunWithType() {
 
 template <class Context>
 void SliceGradientOp<Context>::RunOnDevice() {
-  DispatchHelper<FullTensorTypes>::Call(this, Input(0));
+  DispatchHelper<dtypes::Floating>::Call(this, Input(0));
 }
 
 DEPLOY_CPU_OPERATOR(Slice);

@@ -33,8 +33,8 @@ class ConvOpBase : public Operator<Context> {
       LOG(FATAL) << "Unknown DataFormat: " << data_format();
     }
     num_axes_ = -1; // Unknown
-    INIT_OP_REPEATED_ARG_WITH_DESC(int64_t, output_shape);
-    INIT_OP_REPEATED_ARG_WITH_DESC(int64_t, output_padding);
+    INITIALIZE_OP_REPEATED_ARG(int64_t, output_shape);
+    INITIALIZE_OP_REPEATED_ARG(int64_t, output_padding);
   }
   USE_OPERATOR_FUNCTIONS;
 
@@ -76,8 +76,8 @@ class ConvOpBase : public Operator<Context> {
   int64_t conv_in_channels_, conv_out_channels_;
   int64_t X_stride_, W_stride_, Y_stride_;
 
-  DECLARE_OP_REPEATED_ARG_WITH_DESC(int64_t, output_shape);
-  DECLARE_OP_REPEATED_ARG_WITH_DESC(int64_t, output_padding);
+  DECLARE_OP_REPEATED_ARG(int64_t, output_shape);
+  DECLARE_OP_REPEATED_ARG(int64_t, output_padding);
 
  private:
   void ComputeOutShape();
@@ -95,8 +95,8 @@ class ConvOpBase : public Operator<Context> {
   int64_t Y_stride1_;
 };
 
-DEFINE_OP_REPEATED_ARG_WITH_DESC(int64_t, ConvOpBase, output_shape);
-DEFINE_OP_REPEATED_ARG_WITH_DESC(int64_t, ConvOpBase, output_padding);
+DEFINE_OP_REPEATED_ARG(int64_t, ConvOpBase, output_shape);
+DEFINE_OP_REPEATED_ARG(int64_t, ConvOpBase, output_padding);
 
 #define USE_CONV_FUNCTIONS                       \
   using ConvOpBase<Context>::GetBaseArguments;   \

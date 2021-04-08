@@ -3,14 +3,37 @@
 
 namespace dragon {
 
-namespace kernel {
+namespace kernels {
 
 namespace {
 
 template <typename T>
-void _SetEye(const int n, const int m, const int k, T* y) {
-  for (int i = 0; i < n; ++i) {
-    y[i * m + k + i] = convert::To<T>(1.f);
+void _SetEye(
+    const int batch_size,
+    const int M,
+    const int N,
+    const int k,
+    T* y) {
+  const auto MxN = M * N;
+  if (k > 0) {
+    const int imax = std::min(M, N - k);
+    if (imax <= 0) return;
+    for (int batch_ind = 0; batch_ind < batch_size; ++batch_ind) {
+      for (int i = 0; i < imax; ++i) {
+        y[i * N + k + i] = convert::To<T>(1.f);
+      }
+      y += MxN;
+    }
+  } else if (k <= 0) {
+    const int imax = std::min(M + k, N);
+    if (imax <= 0) return;
+    for (int batch_ind = 0; batch_ind < batch_size; ++batch_ind) {
+      T* offset_y = y - k * N;
+      for (int i = 0; i < imax; ++i) {
+        offset_y[i * N + i] = convert::To<T>(1.f);
+      }
+      y += MxN;
+    }
   }
 }
 
@@ -18,21 +41,22 @@ void _SetEye(const int n, const int m, const int k, T* y) {
 
 /* ------------------- Launcher Separator ------------------- */
 
-#define DEFINE_KERNEL_LAUNCHER(T)                                     \
-  template <>                                                         \
-  void Eye<T, CPUContext>(                                            \
-      const int n, const int m, const int k, T* y, CPUContext* ctx) { \
-    math::Set(n* m, convert::To<T>(0.f), y, ctx);                     \
-    if (k > 0) {                                                      \
-      if (m - k > 0) _SetEye(m - k, m, k, y);                         \
-    } else {                                                          \
-      if (n + k > 0) _SetEye(n + k, m, 0, y - k * m);                 \
-    }                                                                 \
+#define DEFINE_KERNEL_LAUNCHER(T)                             \
+  template <>                                                 \
+  void SetEye<T, CPUContext>(                                 \
+      const int batch_size,                                   \
+      const int M,                                            \
+      const int N,                                            \
+      const int k,                                            \
+      T* y,                                                   \
+      CPUContext* ctx) {                                      \
+    math::Set(batch_size* M* N, convert::To<T>(0.f), y, ctx); \
+    _SetEye(batch_size, M, N, k, y);                          \
   }
 
 DEFINE_KERNEL_LAUNCHER(bool);
-DEFINE_KERNEL_LAUNCHER(int8_t);
 DEFINE_KERNEL_LAUNCHER(uint8_t);
+DEFINE_KERNEL_LAUNCHER(int8_t);
 DEFINE_KERNEL_LAUNCHER(int);
 DEFINE_KERNEL_LAUNCHER(int64_t);
 DEFINE_KERNEL_LAUNCHER(float16);
@@ -40,6 +64,6 @@ DEFINE_KERNEL_LAUNCHER(float);
 DEFINE_KERNEL_LAUNCHER(double);
 #undef DEFINE_KERNEL_LAUNCHER
 
-} // namespace kernel
+} // namespace kernels
 
 } // namespace dragon

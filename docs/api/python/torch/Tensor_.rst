@@ -81,6 +81,14 @@ baddbmm\_
 #########
 .. automethod:: dragon.vm.torch.Tensor.baddbmm_
 
+bitwise_and
+###########
+.. automethod:: dragon.vm.torch.Tensor.bitwise_and
+
+bitwise_and\_
+#############
+.. automethod:: dragon.vm.torch.Tensor.bitwise_and_
+
 bitwise_not
 ###########
 .. automethod:: dragon.vm.torch.Tensor.bitwise_not
@@ -88,6 +96,14 @@ bitwise_not
 bitwise_not\_
 #############
 .. automethod:: dragon.vm.torch.Tensor.bitwise_not_
+
+bitwise_or
+###########
+.. automethod:: dragon.vm.torch.Tensor.bitwise_or
+
+bitwise_or\_
+############
+.. automethod:: dragon.vm.torch.Tensor.bitwise_or_
 
 bitwise_xor
 ###########
@@ -280,6 +296,22 @@ le
 log
 ###
 .. automethod:: dragon.vm.torch.Tensor.log
+
+logical_and
+###########
+.. automethod:: dragon.vm.torch.Tensor.logical_and
+
+logical_not
+###########
+.. automethod:: dragon.vm.torch.Tensor.logical_not
+
+logical_or
+##########
+.. automethod:: dragon.vm.torch.Tensor.logical_or
+
+logical_xor
+###########
+.. automethod:: dragon.vm.torch.Tensor.logical_xor
 
 logsumexp
 #########
@@ -513,6 +545,22 @@ transpose
 #########
 .. automethod:: dragon.vm.torch.Tensor.transpose
 
+tril
+####
+.. automethod:: dragon.vm.torch.Tensor.tril
+
+tril\_
+######
+.. automethod:: dragon.vm.torch.Tensor.tril_
+
+triu
+####
+.. automethod:: dragon.vm.torch.Tensor.triu
+
+triu\_
+######
+.. automethod:: dragon.vm.torch.Tensor.triu_
+
 type
 ####
 .. automethod:: dragon.vm.torch.Tensor.type
@@ -560,7 +608,9 @@ zero\_
 .. _torch.argmin(...): argmin.html
 .. _torch.argsort(...): argsort.html
 .. _torch.baddbmm(...): baddbmm.html
+.. _torch.bitwise_and(...): bitwise_and.html
 .. _torch.bitwise_not(...): bitwise_not.html
+.. _torch.bitwise_or(...): bitwise_or.html
 .. _torch.bitwise_xor(...): bitwise_xor.html
 .. _torch.bmm(...): bmm.html
 .. _torch.ceil(...): ceil.html
@@ -579,6 +629,12 @@ zero\_
 .. _torch.isinf(...): isinf.html
 .. _torch.isnan(...): isnan.html
 .. _torch.le(...): le.html
+.. _torch.log(...): log.html
+.. _torch.logical_and(...): logical_and.html
+.. _torch.logical_not(...): logical_not.html
+.. _torch.logical_or(...): logical_or.html
+.. _torch.logical_xor(...): logical_xor.html
+.. _torch.logsumexp(...): logsumexp.html
 .. _torch.lt(...): lt.html
 .. _torch.matmul(...): matmul.html
 .. _torch.max(...): max.html
@@ -606,6 +662,8 @@ zero\_
 .. _torch.sum(...): sum.html
 .. _torch.topk(...): topk.html
 .. _torch.transpose(...): transpose.html
+.. _torch.tril(...): tril.html
+.. _torch.triu(...): triu.html
 .. _torch.unique(...): unique.html
 .. _torch.unsqueeze(...): unsqueeze.html
 .. _torch.where(...): where.html

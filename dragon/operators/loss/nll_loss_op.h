@@ -26,9 +26,11 @@ class NLLLossOp final : public Operator<Context> {
         reduction_(OP_SINGLE_ARG(string, "reduction", "VALID")) {}
   USE_OPERATOR_FUNCTIONS;
 
-  void RunOnDevice() override;
+  void RunOnDevice() override {
+    DispatchHelper<dtypes::TypesBase<float, double>>::Call(this, Input(0));
+  }
 
-  template <typename LogitT, typename TargetT>
+  template <typename T>
   void DoRunWithType();
 
  protected:
@@ -45,9 +47,11 @@ class NLLLossGradientOp final : public Operator<Context> {
         reduction_(OP_SINGLE_ARG(string, "reduction", "VALID")) {}
   USE_OPERATOR_FUNCTIONS;
 
-  void RunOnDevice() override;
+  void RunOnDevice() override {
+    DispatchHelper<dtypes::TypesBase<float, double>>::Call(this, Input(0));
+  }
 
-  template <typename LogitT, typename TargetT>
+  template <typename T>
   void DoRunWithType();
 
  protected:

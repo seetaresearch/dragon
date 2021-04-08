@@ -23,7 +23,6 @@ except ImportError:
     h5py = None
 import numpy
 
-from dragon.core.framework import workspace
 from dragon.core.util import nest
 from dragon.core.util import six
 
@@ -86,7 +85,7 @@ def load_and_assign_npz_dict(name, module, skip=False):
     module : dragon.vm.tensorlayer.Module
         The module to take weights.
     skip : bool, optional, default=False
-        **True** to skip the modules which is not found.
+        ``True`` to skip the modules which is not found.
 
     """
     if not os.path.exists(name):
@@ -106,7 +105,7 @@ def load_and_assign_pkl_dict(name, module, skip=False):
     module : dragon.vm.tensorlayer.Module
         The module to take weights.
     skip : bool, optional, default=False
-        **True** to skip the modules which is not found.
+        ``True`` to skip the modules which is not found.
 
     """
     if not os.path.exists(name):
@@ -133,7 +132,7 @@ def load_hdf5_to_weights(filepath, module, skip=False):
     module : dragon.vm.tensorlayer.Module
         The module to take weights.
     skip : bool, optional, default=False
-        **True** to skip the modules which is not found.
+        ``True`` to skip the modules which is not found.
 
     """
     f = h5py.File(filepath, 'r')
@@ -267,11 +266,8 @@ def _assign_weights_from_dict(weight_dict, value_dict, skip=False):
 
 def _get_value(input):
     """Return the value stolen from input."""
-    if hasattr(input, 'id'):
-        impl = workspace.get_workspace().GetTensor(input.id)
-        if impl is not None:
-            return impl.ToNumpy(True)
-        return impl
+    if hasattr(input, 'numpy'):
+        return input.numpy()
     return input
 
 
@@ -321,8 +317,7 @@ def _save_weights_to_hdf5_group(f, modules):
 
 def _set_value(input, value):
     """Set the copied value to input."""
-    if hasattr(input, 'id'):
-        workspace.get_workspace().feed_tensor(
-            input.id, value, enforce_cpu=True)
+    if hasattr(input, '_impl'):
+        input._impl.FromNumpy(value, True)
     else:
         raise ValueError('Input is not a legal tensor.')

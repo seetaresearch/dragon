@@ -27,6 +27,9 @@ vm.torch.nn.init
   `normal_(...) <init/normal_.html>`_
   : Fill tensor from a normal distribution.
 
+  `ones_(...) <init/ones_.html>`_
+  : Fill tensor with ones.
+
   `uniform_(...) <init/uniform_.html>`_
   : Fill tensor from an uniform distribution.
 
@@ -35,6 +38,9 @@ vm.torch.nn.init
 
   `xavier_uniform_(...) <init/xavier_uniform_.html>`_
   : Fill tensor from a xavier uniform distribution.
+
+  `zeros_(...) <init/zeros_.html>`_
+  : Fill tensor with zeros.
 
 .. toctree::
   :hidden:
@@ -46,9 +52,11 @@ vm.torch.nn.init
   init/kaiming_normal_
   init/kaiming_uniform_
   init/normal_
+  init/ones_
   init/uniform_
   init/xavier_normal_
   init/xavier_uniform_
+  init/zeros_
 
 .. raw:: html
 

@@ -22,7 +22,7 @@ class DropPathOp final : public Operator<Context> {
  public:
   DropPathOp(const OperatorDef& def, Workspace* ws)
       : Operator<Context>(def, ws) {
-    INIT_OP_SINGLE_ARG_WITH_DESC(float, ratio, 0.2f);
+    INITIALIZE_OP_SINGLE_ARG(float, ratio, 0.2f);
   }
   USE_OPERATOR_FUNCTIONS;
 
@@ -32,7 +32,7 @@ class DropPathOp final : public Operator<Context> {
   void DoRunWithType();
 
  protected:
-  DECLARE_OP_SINGLE_ARG_WITH_DESC(float, ratio);
+  DECLARE_OP_SINGLE_ARG(float, ratio);
 };
 
 template <class Context>
@@ -40,7 +40,7 @@ class DropPathGradientOp final : public Operator<Context> {
  public:
   DropPathGradientOp(const OperatorDef& def, Workspace* ws)
       : Operator<Context>(def, ws) {
-    INIT_OP_SINGLE_ARG_WITH_DESC(float, ratio, 0.5f);
+    INITIALIZE_OP_SINGLE_ARG(float, ratio, 0.5f);
   }
   USE_OPERATOR_FUNCTIONS;
 
@@ -50,11 +50,11 @@ class DropPathGradientOp final : public Operator<Context> {
   void DoRunWithType();
 
  protected:
-  DECLARE_OP_SINGLE_ARG_WITH_DESC(float, ratio);
+  DECLARE_OP_SINGLE_ARG(float, ratio);
 };
 
-DEFINE_OP_SINGLE_ARG_WITH_DESC(float, DropPathOp, ratio);
-DEFINE_OP_SINGLE_ARG_WITH_DESC(float, DropPathGradientOp, ratio);
+DEFINE_OP_SINGLE_ARG(float, DropPathOp, ratio);
+DEFINE_OP_SINGLE_ARG(float, DropPathGradientOp, ratio);
 
 } // namespace dragon
 

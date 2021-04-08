@@ -102,12 +102,12 @@ class TestOptimizer(unittest.TestCase):
         self.assertLessEqual(float(weight1) - 0.8, 1e-5)
         optimizer.zero_grad()
         self.assertLessEqual(float(weight1.grad) - 0., 1e-5)
-        optimizer.zero_grad(reset=True)
-        self.assertEqual(weight1.grad.numel(), 0)
+        optimizer.zero_grad(set_to_none=True)
+        self.assertEqual(weight1.grad, None)
         for i in range(2):
             y = weight1 + 1
             y.backward(y)
-            optimizer.accumulate(0 if i == 0 else 1)
+            optimizer.sum_grad()
         optimizer.step()
         self.assertLessEqual(float(weight1) - 0.6, 1e-5)
 

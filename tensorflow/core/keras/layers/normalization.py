@@ -59,9 +59,9 @@ class BatchNormalization(Layer):
         epsilon : float, optional, default=1e-3
             The epsilon value.
         center : bool, optional, default=True
-            **False** to freeze the ``beta`` anyway.
+            ``False`` to freeze the ``beta`` anyway.
         scale : bool, optional, default=True
-            **False** to freeze the ``gamma`` anyway.
+            ``False`` to freeze the ``gamma`` anyway.
         beta_initializer : Union[callable, str], optional
             The initializer for beta tensor.
         gamma_initializer : Union[callable, str], optional

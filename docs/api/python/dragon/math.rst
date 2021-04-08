@@ -18,9 +18,6 @@ dragon.math
   `argmin(...) <math/argmin.html>`_
   : Compute the index of minimum elements along the given axis.
 
-  `axpby(...) <math/axpby.html>`_
-  : Compute the element-wise addition from input to output.
-
   `ceil(...) <math/ceil.html>`_
   : Compute the smallest integer not less than input.
 
@@ -35,9 +32,6 @@ dragon.math
 
   `div(...) <math/div.html>`_
   : Compute the element-wise division.
-
-  `dot(...) <math/dot.html>`_
-  : Compute the vector dot.
 
   `equal(...) <math/equal.html>`_
   : Compute the element-wise equal comparison.
@@ -72,6 +66,18 @@ dragon.math
   `log(...) <math/log.html>`_
   : Compute the logarithm of input.
 
+  `logical_and(...) <math/logical_and.html>`_
+  : Compute the element-wise AND logical operation.
+
+  `logical_not(...) <math/logical_not.html>`_
+  : Compute the element-wise NOT logical operation.
+
+  `logical_or(...) <math/logical_or.html>`_
+  : Compute the element-wise OR logical operation.
+
+  `logical_xor(...) <math/logical_xor.html>`_
+  : Compute the element-wise XOR logical operation.
+
   `lp_normalize(...) <math/lp_normalize.html>`_
   : Apply the lp normalization.
 
@@ -92,9 +98,6 @@ dragon.math
 
   `minimum(...) <math/minimum.html>`_
   : Compute the minimum value of given two inputs.
-
-  `moments(...) <math/moments.html>`_
-  : Compute the mean and variance of input along the given axes.
 
   `mul(...) <math/mul.html>`_
   : Compute the element-wise multiplication.
@@ -151,13 +154,11 @@ dragon.math
   math/add
   math/argmax
   math/argmin
-  math/axpby
   math/ceil
   math/clip
   math/cos
   math/cumsum
   math/div
-  math/dot
   math/equal
   math/exp
   math/floor
@@ -169,6 +170,10 @@ dragon.math
   math/less
   math/less_equal
   math/log
+  math/logical_and
+  math/logical_not
+  math/logical_or
+  math/logical_xor
   math/lp_normalize
   math/matmul
   math/max
@@ -176,7 +181,6 @@ dragon.math
   math/mean
   math/min
   math/minimum
-  math/moments
   math/mul
   math/negative
   math/not_equal

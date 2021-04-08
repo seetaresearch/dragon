@@ -14,7 +14,6 @@
 #define DRAGON_CORE_MEMORY_H_
 
 #include "dragon/core/context.h"
-#include "dragon/core/context_cnml.h"
 #include "dragon/core/context_cuda.h"
 
 namespace dragon {
@@ -34,10 +33,8 @@ class DRAGON_API UnifiedMemory {
     STATE_AT_CPU = 1,
     /*! \brief Data is mutable to cuda */
     STATE_AT_CUDA = 2,
-    /*! \brief Data is mutable to cnml */
-    STATE_AT_CNML = 3,
     /*! \brief Data is synced between host and device */
-    SYNCED = 4,
+    SYNCED = 3,
   };
 
   /*! \brief Default constructor */
@@ -102,29 +99,11 @@ class DRAGON_API UnifiedMemory {
   /*! \brief Return the const cuda data */
   const void* cuda_data(size_t size = 0);
 
-  /*! \brief Return the const cnml data */
-  const void* cnml_data();
-
   /*! \brief Return the mutable cpu data */
   void* mutable_cpu_data(size_t size = 0);
 
   /*! \brief Return the mutable cuda data */
   void* mutable_cuda_data(size_t size = 0);
-
-  /*! \brief Return the mutable cnml data */
-  void* mutable_cnml_data();
-
-  /*! \brief Return the binding cnml cpu tensor */
-  cnmlCpuTensor_t& cnml_cpu_tensor();
-
-  /*! \brief Return the binding cnml mlu tensor */
-  cnmlTensor_t& cnml_mlu_tensor();
-
-  /*! \brief Allocate the mlu device data */
-  void* malloc_cnml_data();
-
-  /*! \brief Copy the mlu device data to host */
-  void fetch_cnml_data(void** data);
 
   /*! \brief Set the number of data chunks */
   void set_num_chunks(size_t num_chunks) {
@@ -169,15 +148,6 @@ class DRAGON_API UnifiedMemory {
 
   /*! \brief The ownership of cuda data pointer */
   bool own_cuda_ptr_ = true;
-
-  /*! \brief The cnml data pointer */
-  void* cnml_ptr_ = nullptr;
-
-  /*! \brief The binding cnml cpu tensor */
-  cnmlCpuTensor_t cnml_cpu_tensor_ = nullptr;
-
-  /*! \brief The binding cnml mlu tensor */
-  cnmlTensor_t cnml_mlu_tensor_ = nullptr;
 
   DISABLE_COPY_AND_ASSIGN(UnifiedMemory);
 };

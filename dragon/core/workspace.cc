@@ -6,7 +6,7 @@ namespace dragon {
 
 Workspace::Workspace(const string& name) : name_(name) {
   CreateTensor(""); // Empty placeholder
-  CreateTensor("/share/flag/recomputing")
+  CreateTensor("flagged/recomp")
       ->Reshape({})
       ->mutable_data<bool, CPUContext>()[0] = false;
 }
@@ -41,7 +41,7 @@ void Workspace::Clear() {
     it.second->Reset();
   }
   // Reinitialize the tensor flags
-  GetTensor("/share/flag/recomputing")
+  GetTensor("flagged/recomp")
       ->Reshape({})
       ->mutable_data<bool, CPUContext>()[0] = false;
 }
@@ -61,16 +61,12 @@ Tensor* Workspace::TryGetTensor(const string& name, bool external) const {
   return nullptr;
 }
 
-Tensor* Workspace::CreateTensor(const string& name, FillerInfo* filler) {
+Tensor* Workspace::CreateTensor(const string& name) {
   auto* tensor = TryGetTensor(name);
   // Create only if name not existed
   if (tensor == nullptr) {
     tensor = new Tensor(name);
     tensor_map_[name] = unique_ptr<Tensor>(tensor);
-  }
-  // Maybe bind it with a filler
-  if (filler != nullptr) {
-    filler_map_[tensor->name()] = std::move(FillerInfo(*filler));
   }
   return tensor;
 }
@@ -81,33 +77,26 @@ Tensor* Workspace::GetTensor(const string& name, bool external) const {
   return tensor;
 }
 
-void Workspace::ResetTensor(const string& name) {
-  auto* tensor = TryGetTensor(name, false);
-  CHECK(tensor) << "\nTensor(" << name << ") is not in current workspace.";
-  tensor->Reset();
-}
-
-FillerInfo* Workspace::GetFillerInfo(const string& name) {
-  const auto& it = filler_map_.find(name);
-  if (it != filler_map_.end()) return &it->second;
-  return nullptr;
-}
-
 void Workspace::RunOperator(const OperatorDef& def) {
-  if (def.has_cache_key()) {
-    OperatorBase* cached_op = nullptr;
-    const auto& it = operator_map_.find(def.cache_key());
-    if (it == operator_map_.end()) {
-      cached_op = NewOperator(def, this);
-      operator_map_[def.cache_key()] = unique_ptr<OperatorBase>(cached_op);
-    } else {
-      cached_op = it->second.get();
-    }
-    cached_op->UpdateFrom(def)->Run();
+  string cache_key;
+  OperatorBase* execute_op = nullptr;
+  if (!def.arg().empty()) {
+    const auto& arg = *(def.arg().end() - 1);
+    if (arg.name() == "cache_key") cache_key = arg.s();
+  }
+  if (cache_key.empty()) {
+    execute_op = OperatorBase::New(def, this);
+    execute_op->Run();
+    delete execute_op;
   } else {
-    OperatorBase* temporal_op = NewOperator(def, this);
-    temporal_op->Run();
-    delete temporal_op;
+    const auto& iter = operator_map_.find(cache_key);
+    if (iter == operator_map_.end()) {
+      execute_op = OperatorBase::New(def, this);
+      operator_map_[cache_key] = unique_ptr<OperatorBase>(execute_op);
+    } else {
+      execute_op = iter->second.get();
+    }
+    execute_op->DeriveFrom(def)->Run();
   }
 }
 
@@ -115,10 +104,10 @@ GraphBase* Workspace::CreateGraph(const GraphDef& def) {
   CHECK(def.has_name()) << "\nExcepted non-empty graph name.";
   GraphDef def_v2(def); // Copy to set an unique name
   def_v2.set_name(UniqueName(def.name(), "", "Graph", false));
-  LOG(DEBUG) << "Create Graph: " << def_v2.name() << "(" << def.name() << ")";
-  auto* cached_graph = NewGraph(def_v2, this);
-  graph_map_[def_v2.name()] = unique_ptr<GraphBase>(cached_graph);
-  return cached_graph;
+  LOG(DEBUG) << "Create: " << def_v2.name();
+  auto* graph = GraphBase::New(def_v2, this);
+  graph_map_[def_v2.name()] = unique_ptr<GraphBase>(graph);
+  return graph;
 }
 
 void Workspace::RunGraph(
@@ -127,12 +116,8 @@ void Workspace::RunGraph(
     const string& exclude,
     const int stream) {
   CHECK(graph_map_.count(name))
-      << "\nGraph(" << name << ") is not in current workspace.";
+      << "\nGraph " << name << " is not in current workspace.";
   graph_map_[name]->Run(stream, include, exclude);
-}
-
-void Workspace::RegisterAlias(const string& target, const string& alias) {
-  alias_map_[alias] = target;
 }
 
 string Workspace::UniqueName(
@@ -151,11 +136,11 @@ string Workspace::UniqueName(
 vector<string> Workspace::tensors(bool external) const {
   vector<string> names;
   for (const auto& it : tensor_map_) {
-    names.push_back(it.first);
+    names.emplace_back(it.first);
   }
   if (external) {
     for (const auto& it : external_tensor_map_) {
-      names.push_back(it.first);
+      names.emplace_back(it.first);
     }
   }
   return names;
@@ -164,7 +149,7 @@ vector<string> Workspace::tensors(bool external) const {
 vector<string> Workspace::graphs() const {
   vector<string> names;
   for (const auto& it : graph_map_) {
-    names.push_back(it.first);
+    names.emplace_back(it.first);
   }
   return names;
 }

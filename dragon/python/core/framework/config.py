@@ -36,8 +36,6 @@ class Config(object):
         self.graph_optimization = 3
         # Graph verbosity level.
         self.graph_verbosity = 0
-        # Graph execution mode.
-        self.graph_execution = 'EAGER_MODE'
         # Directory to store logging files.
         self.log_dir = None
 

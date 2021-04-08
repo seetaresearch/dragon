@@ -7,7 +7,7 @@ template <class Context>
 template <typename T>
 void SwishOp<Context>::DoRunWithType() {
   auto &X = Input(0), *Y = Output(0);
-  kernel::Swish(
+  kernels::Swish(
       X.count(),
       X.template data<T, Context>(),
       Y->ReshapeLike(X)->template mutable_data<T, Context>(),
@@ -16,7 +16,7 @@ void SwishOp<Context>::DoRunWithType() {
 
 template <class Context>
 void SwishOp<Context>::RunOnDevice() {
-  DispatchHelper<FloatingTensorTypes>::Call(this, Input(0));
+  DispatchHelper<dtypes::Floating>::Call(this, Input(0));
 }
 
 template <class Context>
@@ -24,7 +24,7 @@ template <typename T>
 void SwishGradientOp<Context>::DoRunWithType() {
   auto &X = Input(0), &Y = Input(1);
   auto &dY = Input(2), *dX = Output(0);
-  kernel::SwishGrad(
+  kernels::SwishGrad(
       X.count(),
       dY.template data<T, Context>(),
       X.template data<T, Context>(),
@@ -35,7 +35,7 @@ void SwishGradientOp<Context>::DoRunWithType() {
 
 template <class Context>
 void SwishGradientOp<Context>::RunOnDevice() {
-  DispatchHelper<FloatingTensorTypes>::Call(this, Input(0));
+  DispatchHelper<dtypes::Floating>::Call(this, Input(0));
 }
 
 DEPLOY_CPU_OPERATOR(Swish);
@@ -65,9 +65,9 @@ namespace {
 class GradientMaker final : public GradientMakerBase {
  public:
   GRADIENT_MAKER_CTOR(GradientMaker);
-  vector<OperatorDef> MakeDef() override {
-    return SingleDef(
-        def.type() + "Gradient",
+  void CreateGradientDefs() override {
+    AddGradientDef(
+        def().type() + "Gradient",
         "",
         vector<string>({I(0), O(0), GO(0)}),
         vector<string>({GI(0)}));

@@ -1,7 +1,7 @@
 #ifdef USE_CUDNN
 
 #include "dragon/core/workspace.h"
-#include "dragon/operators/loss/ctc_loss_op.h"
+#include "dragon/operators/loss/ctc_loss_ops.h"
 
 #define CUDNN_LABEL_LENGTH_LIMIT 256
 
@@ -85,7 +85,7 @@ void CuDNNCTCLossOp<Context>::RunOnDevice() {
     DoRunWithType<float>();
   } else {
     LOG(FATAL) << MessageForUnsupported(
-        types::to_string(Input(0).meta()), {"float32"});
+        dtypes::to_string(Input(0).meta()), {"float32"});
   }
 }
 

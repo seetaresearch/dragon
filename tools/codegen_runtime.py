@@ -90,6 +90,9 @@ def path_remove_gradient(project_source_dir):
 
 
 if __name__ == '__main__':
+    path_remove_gradient('/Users/neo/workspace/dragon/dragon')
+    while True:
+        pass
     if len(sys.argv) != 3:
         raise ValueError('Usage: codegen.py '
                          '<PROJECT_SOURCE_DIR> <PATH_NAME>')

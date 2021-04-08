@@ -6,15 +6,9 @@
 
 namespace dragon {
 
-namespace kernel {
+namespace kernels {
 
 namespace {
-
-#if __CUDA_ARCH__ >= 350
-#define LDG(x, i) __ldg(x + i)
-#else
-#define LDG(x, i) x[i]
-#endif
 
 template <typename T>
 __global__ void _RoiPool(
@@ -72,8 +66,8 @@ __global__ void _RoiPool(
     for (int h = hstart; h < hend; ++h) {
       for (int w = wstart; w < wend; ++w) {
         const int xi = h * W + w;
-        if (Greater(LDG(offset_x, xi), val)) {
-          val = LDG(offset_x, xi);
+        if (Greater(__ldg(offset_x + xi), val)) {
+          val = __ldg(offset_x + xi);
           max_idx = xi;
         }
       }
@@ -105,14 +99,12 @@ __global__ void _RoiPoolGrad(
     if (batch_ind < 0) continue;
 
     AccT* offset_dx = dx + (batch_ind * C + c) * H * W;
-    if (LDG(mask, yi) != -1) {
+    if (__ldg(mask + yi) != -1) {
       math::utils::AtomicAdd(
-          offset_dx + LDG(mask, yi), convert::To<AccT>(dy[yi]));
+          offset_dx + __ldg(mask + yi), convert::To<AccT>(dy[yi]));
     }
   }
 }
-
-#undef LDG
 
 } // namespace
 
@@ -156,7 +148,7 @@ DEFINE_KERNEL_LAUNCHER(RoiPoolGrad, float, float); // RoiPoolGrad
 DEFINE_KERNEL_LAUNCHER(RoiPoolGrad, double, float); // RoiPoolGrad
 #undef DEFINE_KERNEL_LAUNCHER
 
-} // namespace kernel
+} // namespace kernels
 
 } // namespace dragon
 

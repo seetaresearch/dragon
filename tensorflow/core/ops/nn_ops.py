@@ -913,7 +913,7 @@ def depthwise_conv2d(
 
 
 def dropout(x, rate, name=None, **kwargs):
-    r"""Set the elements of the input to zero randomly.
+    r"""Set the elements of input to zero randomly.
     `[Srivastava et.al, 2014] <http://jmlr.org/papers/v15/srivastava14a.html>`_.
 
     The **Dropout** function is defined as:
@@ -932,7 +932,7 @@ def dropout(x, rate, name=None, **kwargs):
     x : dragon.Tensor
         The tensor :math:`x`.
     rate : Union[float, dragon.Tensor]
-        The dropping ratio.
+        The probability to zero an element.
     name : str, optional
         The operation name.
 
@@ -1447,11 +1447,8 @@ def selu(features, name=None, **kwargs):
 
 
 def sigmoid_cross_entropy_with_logits(logits, targets, name=None):
-    return loss_ops.sigmoid_cross_entropy(
-        [logits, targets],
-        normalization='UNIT',
-        name=name,
-    )
+    return loss_ops.sigmoid_cross_entropy_loss(
+        [logits, targets], normalization='UNIT', name=name)
 
 
 def softmax(logits, axis=-1, name=None, **kwargs):
@@ -1513,7 +1510,7 @@ def softmax_cross_entropy_with_logits(labels, logits, name=None):
         The output tensor.
 
     """
-    return loss_ops.softmax_cross_entropy(
+    return loss_ops.softmax_cross_entropy_loss(
         [logits, labels],
         axis=-1,
         reduction='none',
@@ -1547,7 +1544,7 @@ def sparse_softmax_cross_entropy_with_logits(labels, logits, name=None):
         The output tensor.
 
     """
-    return loss_ops.sparse_softmax_cross_entropy(
+    return loss_ops.softmax_cross_entropy_loss(
         [logits, labels],
         axis=-1,
         reduction='none',

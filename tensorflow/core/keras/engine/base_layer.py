@@ -142,7 +142,7 @@ class Layer(module.Module):
         Returns
         -------
         bool
-            **True** if trainable otherwise **False**.
+            ``True`` if trainable otherwise ``False``.
 
         """
         return self._trainable
@@ -229,9 +229,9 @@ class Layer(module.Module):
         regularizer : Union[callable, str], optional
             The optional regularizer.
         trainable : bool, optional, default=True
-            **True** to add to the ``trainable`` collection.
+            ``True`` to add to the ``trainable`` collection.
         use_resource : bool, optional, default=True
-            **True** to set as a ``ResourceVariable``.
+            ``True`` to set as a ``ResourceVariable``.
 
         """
         if shape is None:
@@ -308,7 +308,7 @@ class Layer(module.Module):
         filepath : str, required
             The path of weights file to load.
         verbose : bool, optional, default=False
-            **True** to display the weights info.
+            ``True`` to display the weights info.
 
         """
         if _is_hdf5_filepath(filepath):
@@ -373,7 +373,7 @@ class Layer(module.Module):
             'trainable_weights',
             'non_trainable_weights',
             'updates',
-            'losses',
+            'cost',
             'metrics',
         }
         if hasattr(self, '_layers'):
@@ -419,7 +419,7 @@ class Layer(module.Module):
                 self._layers.append(value)
         # Add the variables.
         for val in nest.flatten(value):
-            if not isinstance(val, tf_variables.VariableMetaclass):
+            if not isinstance(val, tf_variables.Variable):
                 continue
             if val.trainable:
                 if any(val is w for w in self._trainable_weights):

@@ -19,7 +19,7 @@ from dragon.vm.torch.core.nn.modules.module import Module
 
 
 class DropBlock2d(Module):
-    r"""Set the spatial blocks to zero randomly.
+    r"""Set the blocks to zero randomly.
     `[Ghiasi et.al, 2018] <https://arxiv.org/abs/1810.12890>`_.
 
     The **DropBlock** function is defined as:
@@ -27,9 +27,9 @@ class DropBlock2d(Module):
     .. math::
         \text{DropBlock}(x_{ijk}) =
             x_{ijk} * (r_{ik} \sim \mathcal{B}(1, 1 - \gamma)) \\ \quad \\
-                \text{where}\quad \gamma =
-                    \frac{p}{\text{block\_size}^{n}}
-                    \frac{\text{feat\_size}^{n}}{(\text{feat\_size} - \text{block\_size} + 1)^n}
+        \text{where}\quad \gamma =
+            \frac{p}{\text{block\_size}^{n}}
+            \frac{\text{feat\_size}^{n}}{(\text{feat\_size} - \text{block\_size} + 1)^n}
 
     Examples:
 

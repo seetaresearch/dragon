@@ -19,27 +19,24 @@ namespace dragon {
 
 namespace python {
 
-namespace proto {
-
-void RegisterModule(py::module& m) {
-  /*! \brief Extended C-Style OperatorDef */
+void RegisterModule_proto(py::module& m) {
   py::class_<OperatorDef>(m, "OperatorDef")
       /*! \brief Default constructor */
       .def(py::init())
 
-      /*! \brief Copy content from the another def */
+      /*! \brief Copy from a def */
       .def(
           "CopyFrom",
           [](OperatorDef* self, OperatorDef* other) { self->CopyFrom(*other); })
 
-      /*! \brief Decode content from a serialized string */
+      /*! \brief Decode from a serialized string */
       .def(
           "ParseFrom",
           [](OperatorDef* self, const string& serialized) {
             self->ParseFromString(serialized);
           })
 
-      /*! \brief Encode content to a serialized string */
+      /*! \brief Encode to a serialized string */
       .def(
           "SerializeAs",
           [](OperatorDef* self) {
@@ -59,36 +56,36 @@ void RegisterModule(py::module& m) {
           },
           py::return_value_policy::take_ownership)
 
-      /*! \brief Return a string to represent content */
+      /*! \brief Return a string of data */
       .def("__repr__", [](OperatorDef* self) { return self->DebugString(); })
 
-      /*! \brief Append an input name */
+      /*! \brief Add an input */
       .def(
           "add_input",
           [](OperatorDef* self, const string& input) {
             self->add_input(input);
           })
 
-      /*! \brief Append an output name */
+      /*! \brief Add an output */
       .def(
           "add_output",
           [](OperatorDef* self, const string& output) {
             self->add_output(output);
           })
 
-      /*! \brief Return or Set the name */
+      /*! \brief Property "name" */
       .def_property(
           "name",
           [](OperatorDef* self) { return self->name(); },
           [](OperatorDef* self, const string& name) { self->set_name(name); })
 
-      /*! \brief Return or set the type */
+      /*! \brief Property "type" */
       .def_property(
           "type",
           [](OperatorDef* self) { return self->type(); },
           [](OperatorDef* self, const string& type) { self->set_type(type); })
 
-      /*! \brief Return or set the input */
+      /*! \brief Property "input" */
       .def_property(
           "input",
           [](OperatorDef* self) -> vector<string> {
@@ -98,7 +95,7 @@ void RegisterModule(py::module& m) {
             *(self->mutable_input()) = {input.begin(), input.end()};
           })
 
-      /*! \brief Return or set the output */
+      /*! \brief Property "output" */
       .def_property(
           "output",
           [](OperatorDef* self) -> vector<string> {
@@ -108,8 +105,6 @@ void RegisterModule(py::module& m) {
             *(self->mutable_output()) = {output.begin(), output.end()};
           });
 }
-
-} // namespace proto
 
 } // namespace python
 

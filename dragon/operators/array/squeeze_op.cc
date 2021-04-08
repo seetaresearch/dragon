@@ -16,14 +16,18 @@ void SqueezeOp<Context>::RunOnDevice() {
         auto canonical_axis = j < 0 ? j + X.ndim() : j;
         CHECK(canonical_axis >= 0) << "\nExcepted the axis in [-" << X.ndim()
                                    << ", INT_MAX), got " << j << ".";
-        if (i == canonical_axis) removed = true;
+        if (i == canonical_axis) {
+          removed = true;
+        }
       }
     }
-    if (!removed) out_shape.push_back(X.dim(i));
+    if (!removed) {
+      out_shape.push_back(X.dim(i));
+    }
   }
 
   // Store for the gradient calculation
-  STORE_INPUT_SPEC(0);
+  SET_INPUT_SPEC(0);
 
   // Maybe copy the contents
   Y->Reshape(out_shape)->CopyFrom(X, ctx());

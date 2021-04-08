@@ -3,7 +3,7 @@
 
 namespace dragon {
 
-namespace kernel {
+namespace kernels {
 
 namespace {
 
@@ -15,11 +15,11 @@ void _Slice(
     const int64_t* starts,
     const T* x,
     T* y) {
-  const auto count =
+  const auto N =
       std::accumulate(y_dims, y_dims + num_dims, 1, std::multiplies<int64_t>());
   vec64_t index(num_dims, 0);
   int xi;
-  for (int yi = 0; yi < count; ++yi) {
+  for (int yi = 0; yi < N; ++yi) {
     xi = 0;
     for (int d = num_dims - 1; d >= 0; --d) {
       xi += (index[d] + starts[d]) * x_strides[d];
@@ -37,11 +37,11 @@ void _SliceGrad(
     const int64_t* starts,
     const T* dy,
     T* dx) {
-  const auto count =
+  const auto N =
       std::accumulate(y_dims, y_dims + num_dims, 1, std::multiplies<int64_t>());
   vec64_t index(num_dims, 0);
   int xi;
-  for (int yi = 0; yi < count; ++yi) {
+  for (int yi = 0; yi < N; ++yi) {
     xi = 0;
     for (int d = num_dims - 1; d >= 0; --d) {
       xi += (index[d] + starts[d]) * x_strides[d];
@@ -69,23 +69,18 @@ void _SliceGrad(
   }
 
 DEFINE_KERNEL_LAUNCHER(Slice, bool);
-DEFINE_KERNEL_LAUNCHER(Slice, int8_t);
 DEFINE_KERNEL_LAUNCHER(Slice, uint8_t);
+DEFINE_KERNEL_LAUNCHER(Slice, int8_t);
 DEFINE_KERNEL_LAUNCHER(Slice, int);
 DEFINE_KERNEL_LAUNCHER(Slice, int64_t);
 DEFINE_KERNEL_LAUNCHER(Slice, float16);
 DEFINE_KERNEL_LAUNCHER(Slice, float);
 DEFINE_KERNEL_LAUNCHER(Slice, double);
-DEFINE_KERNEL_LAUNCHER(SliceGrad, bool);
-DEFINE_KERNEL_LAUNCHER(SliceGrad, int8_t);
-DEFINE_KERNEL_LAUNCHER(SliceGrad, uint8_t);
-DEFINE_KERNEL_LAUNCHER(SliceGrad, int);
-DEFINE_KERNEL_LAUNCHER(SliceGrad, int64_t);
 DEFINE_KERNEL_LAUNCHER(SliceGrad, float16);
 DEFINE_KERNEL_LAUNCHER(SliceGrad, float);
 DEFINE_KERNEL_LAUNCHER(SliceGrad, double);
 #undef DEFINE_KERNEL_LAUNCHER
 
-} // namespace kernel
+} // namespace kernels
 
 } // namespace dragon

@@ -3,7 +3,7 @@
 
 namespace dragon {
 
-namespace kernel {
+namespace kernels {
 
 namespace {
 
@@ -17,11 +17,11 @@ void _ConstPad(
     const T value,
     const T* x,
     T* y) {
-  const auto count =
+  const auto N =
       std::accumulate(y_dims, y_dims + num_dims, 1, std::multiplies<int64_t>());
   vec64_t index(num_dims, 0);
   int64_t xi, d, r;
-  for (int yi = 0; yi < count; ++yi) {
+  for (int yi = 0; yi < N; ++yi) {
     xi = 0;
     for (d = num_dims - 1; d >= 0; --d) {
       r = index[d] - pads[d];
@@ -42,11 +42,11 @@ void _ReflectPad(
     const int64_t* pads,
     const T* x,
     T* y) {
-  const auto count =
+  const auto N =
       std::accumulate(y_dims, y_dims + num_dims, 1, std::multiplies<int64_t>());
   vec64_t index(num_dims, 0);
   int64_t xi, d, r;
-  for (int yi = 0; yi < count; ++yi) {
+  for (int yi = 0; yi < N; ++yi) {
     xi = 0;
     for (d = num_dims - 1; d >= 0; --d) {
       r = index[d] - pads[d];
@@ -68,11 +68,11 @@ void _EdgePad(
     const int64_t* pads,
     const T* x,
     T* y) {
-  const auto count =
+  const auto N =
       std::accumulate(y_dims, y_dims + num_dims, 1, std::multiplies<int64_t>());
   vec64_t index(num_dims, 0);
   int64_t xi, d, r;
-  for (int yi = 0; yi < count; ++yi) {
+  for (int yi = 0; yi < N; ++yi) {
     xi = 0;
     for (d = num_dims - 1; d >= 0; --d) {
       r = std::min(x_dims[d] - 1, std::max(index[d] - pads[d], int64_t(0)));
@@ -125,24 +125,24 @@ void _EdgePad(
   }
 
 DEFINE_CONST_KERNEL_LAUNCHER(bool);
-DEFINE_CONST_KERNEL_LAUNCHER(int8_t);
 DEFINE_CONST_KERNEL_LAUNCHER(uint8_t);
+DEFINE_CONST_KERNEL_LAUNCHER(int8_t);
 DEFINE_CONST_KERNEL_LAUNCHER(int);
 DEFINE_CONST_KERNEL_LAUNCHER(int64_t);
 DEFINE_CONST_KERNEL_LAUNCHER(float16);
 DEFINE_CONST_KERNEL_LAUNCHER(float);
 DEFINE_CONST_KERNEL_LAUNCHER(double);
 DEFINE_KERNEL_LAUNCHER(ReflectPad, bool);
-DEFINE_KERNEL_LAUNCHER(ReflectPad, int8_t);
 DEFINE_KERNEL_LAUNCHER(ReflectPad, uint8_t);
+DEFINE_KERNEL_LAUNCHER(ReflectPad, int8_t);
 DEFINE_KERNEL_LAUNCHER(ReflectPad, int);
 DEFINE_KERNEL_LAUNCHER(ReflectPad, int64_t);
 DEFINE_KERNEL_LAUNCHER(ReflectPad, float16);
 DEFINE_KERNEL_LAUNCHER(ReflectPad, float);
 DEFINE_KERNEL_LAUNCHER(ReflectPad, double);
 DEFINE_KERNEL_LAUNCHER(EdgePad, bool);
-DEFINE_KERNEL_LAUNCHER(EdgePad, int8_t);
 DEFINE_KERNEL_LAUNCHER(EdgePad, uint8_t);
+DEFINE_KERNEL_LAUNCHER(EdgePad, int8_t);
 DEFINE_KERNEL_LAUNCHER(EdgePad, int);
 DEFINE_KERNEL_LAUNCHER(EdgePad, int64_t);
 DEFINE_KERNEL_LAUNCHER(EdgePad, float16);
@@ -151,6 +151,6 @@ DEFINE_KERNEL_LAUNCHER(EdgePad, double);
 #undef DEFINE_CONST_KERNEL_LAUNCHER
 #undef DEFINE_KERNEL_LAUNCHER
 
-} // namespace kernel
+} // namespace kernels
 
 } // namespace dragon

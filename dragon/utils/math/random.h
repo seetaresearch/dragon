@@ -20,11 +20,11 @@ namespace dragon {
 namespace math {
 
 template <typename T, class Context>
-DRAGON_API void Random(const int n, T* y, Context* ctx);
+DRAGON_API void Random(const int N, T* y, Context* ctx);
 
 template <typename T, class Context>
 DRAGON_API void RandomUniform(
-    const int n,
+    const int N,
     const float low,
     const float high,
     T* y,
@@ -32,18 +32,18 @@ DRAGON_API void RandomUniform(
 
 template <typename T, class Context>
 DRAGON_API void RandomNormal(
-    const int n,
+    const int N,
     const float mu,
     const float sigma,
     T* y,
     Context* ctx);
 
 template <typename T, class Context>
-DRAGON_API void RandomBernoulli(const int n, const float p, T* y, Context* ctx);
+DRAGON_API void RandomBernoulli(const int N, const float p, T* y, Context* ctx);
 
 template <typename T, class Context>
 DRAGON_API void TruncatedNormal(
-    const int n,
+    const int N,
     const float mu,
     const float sigma,
     const float low,

@@ -60,7 +60,7 @@ void CuDNNDropoutOp<Context>::DoRunWithType() {
 
 template <class Context>
 void CuDNNDropoutOp<Context>::RunOnDevice() {
-  DispatchHelper<FloatingTensorTypes>::Call(this, Input(0));
+  DispatchHelper<dtypes::Floating>::Call(this, Input(0));
 }
 
 template <class Context>
@@ -114,7 +114,7 @@ void CuDNNDropoutGradientOp<Context>::DoRunWithType() {
 
 template <class Context>
 void CuDNNDropoutGradientOp<Context>::RunOnDevice() {
-  DispatchHelper<FloatingTensorTypes>::Call(this, Input(0));
+  DispatchHelper<dtypes::Floating>::Call(this, Input(0));
 }
 
 DEPLOY_CUDNN_OPERATOR(Dropout);

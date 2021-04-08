@@ -6,71 +6,48 @@
 
 namespace dragon {
 
-namespace kernel {
+namespace kernels {
 
 namespace {
 
 template <typename T, int D>
 __global__ void _Tile(
-    const int nthreads,
+    const int N,
     const int num_dims,
-    const SimpleArray<int, D> x_dims,
-    const SimpleArray<int, D> x_strides,
-    const SimpleArray<int, D> y_dims,
+    const SimpleArray<int, D> X_dims,
+    const SimpleArray<int, D> X_strides,
+    const SimpleArray<int, D> Y_dims,
     const T* x,
     T* y) {
-  CUDA_1D_KERNEL_LOOP(yi, nthreads) {
+  CUDA_1D_KERNEL_LOOP(yi, N) {
     int xi = 0, tmp = yi;
     for (int d = num_dims - 1; d >= 0; --d) {
       int r;
-      FIXED_DIVISOR_DIV_MOD(y_dims.data[d], tmp, &tmp, &r);
-      xi += (r % x_dims.data[d]) * x_strides.data[d];
+      FIXED_DIVISOR_DIV_MOD(Y_dims.data[d], tmp, &tmp, &r);
+      xi += (r % X_dims.data[d]) * X_strides.data[d];
     }
     y[yi] = x[xi];
   }
 }
 
-template <typename T>
+template <typename T, typename AccT>
 __global__ void _TileGrad(
-    const int nthreads,
-    const int x_cols,
-    const int y_cols,
-    const int multiple,
+    const int NxC1xS,
+    const int C1xS,
+    const int C2xS,
     const T* dy,
     T* dx) {
-  CUDA_1D_KERNEL_LOOP(xi, nthreads) {
-    const int i = xi / x_cols;
-    const int j = xi % x_cols;
-    const T* offset_dy = dy + i * y_cols + j;
-    T val = (*offset_dy);
-    offset_dy += x_cols;
-    for (int k = 1; k < multiple; ++k) {
-      val += (*offset_dy);
-      offset_dy += x_cols;
+  const int repeats = C2xS / C1xS;
+  CUDA_1D_KERNEL_LOOP(xi, NxC1xS) {
+    const int i = xi / C1xS;
+    const int j = xi % C1xS;
+    const T* offset_dy = dy + i * C2xS + j;
+    AccT val = AccT(0);
+    for (int k = 0; k < repeats; ++k) {
+      val += convert::To<AccT>(*offset_dy);
+      offset_dy += C1xS;
     }
-    dx[xi] = val;
-  }
-}
-
-template <>
-__global__ void _TileGrad<half>(
-    const int nthreads,
-    const int x_cols,
-    const int y_cols,
-    const int multiple,
-    const half* dy,
-    half* dx) {
-  CUDA_1D_KERNEL_LOOP(xi, nthreads) {
-    const int i = xi / x_cols;
-    const int j = xi % x_cols;
-    const half* offset_dy = dy + i * y_cols + j;
-    float val = __half2float(*offset_dy);
-    offset_dy += x_cols;
-    for (int k = 1; k < multiple; ++k) {
-      val += __half2float(*offset_dy);
-      offset_dy += x_cols;
-    }
-    dx[xi] = __float2half(val);
+    dx[xi] = convert::To<T>(val);
   }
 }
 
@@ -78,75 +55,63 @@ __global__ void _TileGrad<half>(
 
 /* ------------------- Launcher Separator ------------------- */
 
-template <>
-void TileGrad<float16, CUDAContext>(
-    const int rows,
-    const int cols,
-    const int multiple,
-    const float16* dy,
-    float16* dx,
-    CUDAContext* ctx) {
-  const int nthreads = rows * cols;
-  _TileGrad<<<CUDA_BLOCKS(nthreads), CUDA_THREADS, 0, ctx->cuda_stream()>>>(
-      nthreads,
-      cols,
-      cols * multiple,
-      multiple,
-      reinterpret_cast<const half*>(dy),
-      reinterpret_cast<half*>(dx));
-} // TileGrad
-
-#define DEFINE_KERNEL_LAUNCHER(T)                                          \
-  template <>                                                              \
-  void Tile<T, CUDAContext>(                                               \
-      const int num_dims,                                                  \
-      const int64_t* x_dims,                                               \
-      const int64_t* x_strides,                                            \
-      const int64_t* y_dims,                                               \
-      const T* x,                                                          \
-      T* y,                                                                \
-      CUDAContext* ctx) {                                                  \
-    CUDA_TENSOR_DIMS_CHECK(num_dims);                                      \
-    SimpleArray<int, CUDA_TENSOR_MAX_DIMS> X_dims, X_strides, Y_dims;      \
-    const auto nthreads = std::accumulate(                                 \
-        y_dims, y_dims + num_dims, 1, std::multiplies<int64_t>());         \
-    for (int i = 0; i < num_dims; ++i) {                                   \
-      X_dims.data[i] = x_dims[i];                                          \
-      X_strides.data[i] = x_strides[i];                                    \
-      Y_dims.data[i] = y_dims[i];                                          \
-    }                                                                      \
-    _Tile<<<CUDA_BLOCKS(nthreads), CUDA_THREADS, 0, ctx->cuda_stream()>>>( \
-        nthreads, num_dims, X_dims, X_strides, Y_dims, x, y);              \
+#define DEFINE_KERNEL_LAUNCHER(T)                                     \
+  template <>                                                         \
+  void Tile<T, CUDAContext>(                                          \
+      const int num_dims,                                             \
+      const int64_t* x_dims,                                          \
+      const int64_t* x_strides,                                       \
+      const int64_t* y_dims,                                          \
+      const T* x,                                                     \
+      T* y,                                                           \
+      CUDAContext* ctx) {                                             \
+    CUDA_TENSOR_DIMS_CHECK(num_dims);                                 \
+    SimpleArray<int, CUDA_TENSOR_MAX_DIMS> X_dims, X_strides, Y_dims; \
+    const auto N = std::accumulate(                                   \
+        y_dims, y_dims + num_dims, 1, std::multiplies<int64_t>());    \
+    for (int i = 0; i < num_dims; ++i) {                              \
+      X_dims.data[i] = x_dims[i];                                     \
+      X_strides.data[i] = x_strides[i];                               \
+      Y_dims.data[i] = y_dims[i];                                     \
+    }                                                                 \
+    _Tile<<<CUDA_BLOCKS(N), CUDA_THREADS, 0, ctx->cuda_stream()>>>(   \
+        N, num_dims, X_dims, X_strides, Y_dims, x, y);                \
   }
 
-#define DEFINE_GRAD_KERNEL_LAUNCHER(T)                                         \
-  template <>                                                                  \
-  void TileGrad<T, CUDAContext>(                                               \
-      const int rows,                                                          \
-      const int cols,                                                          \
-      const int multiple,                                                      \
-      const T* dy,                                                             \
-      T* dx,                                                                   \
-      CUDAContext* ctx) {                                                      \
-    const int nthreads = rows * cols;                                          \
-    _TileGrad<<<CUDA_BLOCKS(nthreads), CUDA_THREADS, 0, ctx->cuda_stream()>>>( \
-        nthreads, cols, cols * multiple, multiple, dy, dx);                    \
+#define DEFINE_GRAD_KERNEL_LAUNCHER(T)                                  \
+  template <>                                                           \
+  void TileGrad<T, CUDAContext>(                                        \
+      const int N,                                                      \
+      const int CxS,                                                    \
+      const int repeats,                                                \
+      const T* dy,                                                      \
+      T* dx,                                                            \
+      CUDAContext* ctx) {                                               \
+    const auto NxCxS = N * CxS;                                         \
+    _TileGrad<math::ScalarType<T>::type, math::AccmulatorType<T>::type> \
+        <<<CUDA_BLOCKS(NxCxS), CUDA_THREADS, 0, ctx->cuda_stream()>>>(  \
+            NxCxS,                                                      \
+            CxS,                                                        \
+            CxS * repeats,                                              \
+            reinterpret_cast<const math::ScalarType<T>::type*>(dy),     \
+            reinterpret_cast<math::ScalarType<T>::type*>(dx));          \
   }
 
 DEFINE_KERNEL_LAUNCHER(bool);
-DEFINE_KERNEL_LAUNCHER(int8_t);
 DEFINE_KERNEL_LAUNCHER(uint8_t);
+DEFINE_KERNEL_LAUNCHER(int8_t);
 DEFINE_KERNEL_LAUNCHER(int);
 DEFINE_KERNEL_LAUNCHER(int64_t);
 DEFINE_KERNEL_LAUNCHER(float16);
 DEFINE_KERNEL_LAUNCHER(float);
 DEFINE_KERNEL_LAUNCHER(double);
+DEFINE_GRAD_KERNEL_LAUNCHER(float16);
 DEFINE_GRAD_KERNEL_LAUNCHER(float);
 DEFINE_GRAD_KERNEL_LAUNCHER(double);
 #undef DEFINE_KERNEL_LAUNCHER
 #undef DEFINE_GRAD_KERNEL_LAUNCHER
 
-} // namespace kernel
+} // namespace kernels
 
 } // namespace dragon
 

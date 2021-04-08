@@ -92,7 +92,7 @@ class BinaryCrossentropy(LossFunctionWrapper):
     Examples:
 
     ```python
-    criterion = tf.keras.losses.BinaryCrossentropy()
+    criterion = tf.keras.cost.BinaryCrossentropy()
     y_true = tf.constant([0., 0., 1., 1.])
     y_pred = tf.constant([0.1, 0.2, 0.3, 0.4])
     print(criterion(y_true, y_pred))  # 0.65247655
@@ -132,7 +132,7 @@ class CategoricalCrossentropy(LossFunctionWrapper):
     Examples:
 
     ```python
-    criterion = tf.keras.losses.CategoricalCrossentropy()
+    criterion = tf.keras.cost.CategoricalCrossentropy()
     y_true = tf.constant([[0., 1.], [1., 0.]])
     y_pred = tf.constant([[0.5, 0.5], [0.3, 0.7]])
     print(criterion(y_true, y_pred))  # 0.8030813
@@ -159,11 +159,7 @@ class CategoricalCrossentropy(LossFunctionWrapper):
 
         """
         super(CategoricalCrossentropy, self).__init__(
-            categorical_crossentropy,
-            axis=axis,
-            reduction=reduction,
-            name=name,
-        )
+            categorical_crossentropy, axis=axis, reduction=reduction, name=name)
 
 
 class MeanAbsoluteError(LossFunctionWrapper):
@@ -176,7 +172,7 @@ class MeanAbsoluteError(LossFunctionWrapper):
     Examples:
 
     ```python
-    criterion = tf.keras.losses.MeanAbsoluteError()
+    criterion = tf.keras.cost.MeanAbsoluteError()
     y_true = tf.constant([1., 2., 3.])
     y_pred = tf.constant([0., 0., 0.])
     print(criterion(y_true, y_pred))  # 2.0
@@ -200,10 +196,7 @@ class MeanAbsoluteError(LossFunctionWrapper):
 
         """
         super(MeanAbsoluteError, self).__init__(
-            mean_absolute_error,
-            reduction=reduction,
-            name=name,
-        )
+            mean_absolute_error, reduction=reduction, name=name)
 
 
 class MeanSquaredError(LossFunctionWrapper):
@@ -216,7 +209,7 @@ class MeanSquaredError(LossFunctionWrapper):
     Examples:
 
     ```python
-    criterion = tf.keras.losses.MeanSquaredError()
+    criterion = tf.keras.cost.MeanSquaredError()
     y_true = tf.constant([1., 2., 3.])
     y_pred = tf.constant([0., 0., 0.])
     print(criterion(y_true, y_pred))  # 4.666666
@@ -240,10 +233,7 @@ class MeanSquaredError(LossFunctionWrapper):
 
         """
         super(MeanSquaredError, self).__init__(
-            mean_squared_error,
-            reduction=reduction,
-            name=name,
-        )
+            mean_squared_error, reduction=reduction, name=name)
 
 
 class SparseCategoricalCrossentropy(LossFunctionWrapper):
@@ -256,7 +246,7 @@ class SparseCategoricalCrossentropy(LossFunctionWrapper):
     Examples:
 
     ```python
-    criterion = tf.keras.losses.SparseCategoricalCrossentropy()
+    criterion = tf.keras.cost.SparseCategoricalCrossentropy()
     y_true = tf.constant([1, 0], 'int64')
     y_pred = tf.constant([[0.5, 0.5], [0.3, 0.7]])
     print(criterion(y_true, y_pred))  # 0.8030813
@@ -278,7 +268,7 @@ class SparseCategoricalCrossentropy(LossFunctionWrapper):
         axis : int, optional, default=-1
             The reduce axis.
         ignore_index : int, optional
-            The label index to ignore.
+            The ignored value of target.
         reduction : {'none', 'sum', 'mean', 'valid'}, optional
             The reduction method.
         name : str, optional
@@ -294,11 +284,7 @@ class SparseCategoricalCrossentropy(LossFunctionWrapper):
         )
 
 
-def binary_crossentropy(
-    y_true,
-    y_pred,
-    reduction=losses_utils.Reduction.VALID,
-):
+def binary_crossentropy(y_true, y_pred, reduction=losses_utils.Reduction.VALID):
     r"""Compute the binary cross entropy with contiguous targets.
 
     The **CrossEntropy** function is defined as:
@@ -310,7 +296,7 @@ def binary_crossentropy(
     ```python
     y_true = tf.constant([0., 0., 1., 1.])
     y_pred = tf.constant([0.1, 0.2, 0.3, 0.4])
-    print(tf.keras.losses.binary_crossentropy(y_true, y_pred))  # 0.65247655
+    print(tf.keras.cost.binary_crossentropy(y_true, y_pred))  # 0.65247655
     ```
 
     Parameters
@@ -328,10 +314,8 @@ def binary_crossentropy(
         The output tensor.
 
     """
-    return loss_ops.sigmoid_cross_entropy(
-        [y_pred, y_true],
-        reduction=reduction.upper(),
-    )
+    return loss_ops.sigmoid_cross_entropy_loss(
+        [y_pred, y_true], reduction=reduction.upper())
 
 
 def categorical_crossentropy(
@@ -340,18 +324,14 @@ def categorical_crossentropy(
     axis=-1,
     reduction=losses_utils.Reduction.MEAN,
 ):
-    r"""Compute the categorical cross entropy with contiguous targets.
-
-    The **CrossEntropy** function is defined as:
-
-    .. math:: \text{CrossEntropy}(p_{t}) = -\log(p_{t})
+    """Compute the categorical cross entropy with contiguous targets.
 
     Examples:
 
     ```python
     y_true = tf.constant([[0., 1.], [1., 0.]])
     y_pred = tf.constant([[0.5, 0.5], [0.3, 0.7]])
-    print(tf.keras.losses.categorical_crossentropy(y_true, y_pred))  # 0.8030813
+    print(tf.keras.cost.categorical_crossentropy(y_true, y_pred))  # 0.8030813
     ```
 
     Parameters
@@ -371,30 +351,19 @@ def categorical_crossentropy(
         The loss.
 
     """
-    return loss_ops.softmax_cross_entropy(
-        [y_pred, y_true],
-        axis=axis,
-        reduction=reduction.upper(),
-    )
+    return loss_ops.softmax_cross_entropy_loss(
+        [y_pred, y_true], axis=axis, reduction=reduction.upper())
 
 
-def mean_absolute_error(
-    y_true,
-    y_pred,
-    reduction=losses_utils.Reduction.MEAN,
-):
-    r"""Compute the reduced element-wise absolute value difference.
-
-    The **AbsoluteError** function is defined as:
-
-    .. math:: \text{AbsoluteError}(y_{true}, y_{pred}) = |y_{pred} - y_{true}|
+def mean_absolute_error(y_true, y_pred, reduction=losses_utils.Reduction.MEAN):
+    """Compute the reduced element-wise absolute value difference.
 
     Examples:
 
     ```python
     y_true = tf.constant([1., 2., 3.])
     y_pred = tf.constant([0., 0., 0.])
-    print(tf.keras.losses.mean_absolute_error(y_true, y_pred))  # 2.0
+    print(tf.keras.cost.mean_absolute_error(y_true, y_pred))  # 2.0
     ```
 
     Parameters
@@ -407,29 +376,18 @@ def mean_absolute_error(
         The reduction method.
 
     """
-    return loss_ops.l1_loss(
-        [y_pred, y_true],
-        reduction=reduction.upper(),
-    )
+    return loss_ops.l1_loss([y_pred, y_true], reduction=reduction.upper())
 
 
-def mean_squared_error(
-    y_true,
-    y_pred,
-    reduction=losses_utils.Reduction.MEAN,
-):
+def mean_squared_error(y_true, y_pred, reduction=losses_utils.Reduction.MEAN):
     r"""Compute the reduced element-wise squared error.
-
-    The **SquaredError** function is defined as:
-
-    .. math:: \text{SquaredError}(y_{true}, y_{pred}) = (y_{pred} - y_{true})^{2}
 
     Examples:
 
     ```python
     y_true = tf.constant([1., 2., 3.])
     y_pred = tf.constant([0., 0., 0.])
-    print(tf.keras.losses.mean_squared_error(y_true, y_pred))  # 4.666666
+    print(tf.keras.cost.mean_squared_error(y_true, y_pred))  # 4.666666
     ```
 
     Parameters
@@ -447,10 +405,7 @@ def mean_squared_error(
         The loss.
 
     """
-    return loss_ops.l2_loss(
-        [y_pred, y_true],
-        reduction=reduction.upper(),
-    )
+    return loss_ops.l2_loss([y_pred, y_true], reduction=reduction.upper())
 
 
 def sparse_categorical_crossentropy(
@@ -471,7 +426,7 @@ def sparse_categorical_crossentropy(
     ```python
     y_true = tf.constant([1, 0], 'int64')
     y_pred = tf.constant([[0.5, 0.5], [0.3, 0.7]])
-    print(tf.keras.losses.sparse_categorical_crossentropy(y_true, y_pred))  # 0.8030813
+    print(tf.keras.cost.sparse_categorical_crossentropy(y_true, y_pred))  # 0.8030813
     ```
 
     Parameters
@@ -483,7 +438,7 @@ def sparse_categorical_crossentropy(
     axis : int, optional, default=-1
         The reduce axis.
     ignore_index : int, optional
-        The label index to ignore.
+        The ignored value of target.
     reduction : {'none', 'sum', 'mean', 'valid'}, optional
         The reduction method.
 
@@ -493,7 +448,7 @@ def sparse_categorical_crossentropy(
         The loss.
 
     """
-    return loss_ops.sparse_softmax_cross_entropy(
+    return loss_ops.softmax_cross_entropy_loss(
         [y_pred, y_true],
         axis=axis,
         reduction=reduction,

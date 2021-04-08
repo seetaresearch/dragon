@@ -57,7 +57,7 @@ vm.tensorflow.nn
   : Rearrange depth data into spatial blocks.
 
   `dropout(...) <nn/dropout.html>`_
-  : Set the elements of the input to zero randomly.
+  : Set the elements of input to zero randomly.
   `[Srivastava et.al, 2014] <http://jmlr.org/papers/v15/srivastava14a.html>`_.
 
   `elu(...) <nn/elu.html>`_

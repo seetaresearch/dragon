@@ -25,7 +25,7 @@ class ReshapeGradientOpBase : public Operator<Context> {
 
   void RunOnDevice() override {
     // Simply copy the dY to dX
-    Output(0)->ReshapeLike(RESTORE_INPUT_SPEC(0));
+    Output(0)->ReshapeLike(INPUT_SPEC(0));
     Output(0)->CopyFrom(Input(-1), ctx());
   }
 };
@@ -44,35 +44,29 @@ class ReshapeOp final : public Operator<Context> {
  public:
   ReshapeOp(const OperatorDef& def, Workspace* ws)
       : Operator<Context>(def, ws) {
-    INIT_OP_REPEATED_ARG_WITH_DESC(int64_t, dims);
+    INITIALIZE_OP_REPEATED_ARG(int64_t, dims);
   }
   USE_OPERATOR_FUNCTIONS;
 
   void RunOnDevice() override;
 
  protected:
-  DECLARE_OP_REPEATED_ARG_WITH_DESC(int64_t, dims);
+  DECLARE_OP_REPEATED_ARG(int64_t, dims);
 };
 
 template <class Context>
 class FlattenOp final : public Operator<Context> {
  public:
-  FlattenOp(const OperatorDef& def, Workspace* ws)
-      : Operator<Context>(def, ws),
-        num_axes_(OP_SINGLE_ARG(int64_t, "num_axes", -1)),
-        keep_axes_(OP_SINGLE_ARG(int64_t, "keep_axes", INT_MAX)) {}
+  SIMPLE_CTOR_DTOR(FlattenOp);
   USE_OPERATOR_FUNCTIONS;
 
   void RunOnDevice() override;
-
- protected:
-  int64_t num_axes_, keep_axes_;
 };
 
 template <class Context>
-class ExpandDimsOp final : public Operator<Context> {
+class SqueezeOp final : public Operator<Context> {
  public:
-  ExpandDimsOp(const OperatorDef& def, Workspace* ws)
+  SqueezeOp(const OperatorDef& def, Workspace* ws)
       : Operator<Context>(def, ws), axes_(OP_REPEATED_ARG(int64_t, "axes")) {}
   USE_OPERATOR_FUNCTIONS;
 
@@ -83,9 +77,9 @@ class ExpandDimsOp final : public Operator<Context> {
 };
 
 template <class Context>
-class SqueezeOp final : public Operator<Context> {
+class UnsqueezeOp final : public Operator<Context> {
  public:
-  SqueezeOp(const OperatorDef& def, Workspace* ws)
+  UnsqueezeOp(const OperatorDef& def, Workspace* ws)
       : Operator<Context>(def, ws), axes_(OP_REPEATED_ARG(int64_t, "axes")) {}
   USE_OPERATOR_FUNCTIONS;
 
@@ -106,11 +100,11 @@ class SqueezeOp final : public Operator<Context> {
 DEFINE_GRADIENT_OP(Identity);
 DEFINE_GRADIENT_OP(Reshape);
 DEFINE_GRADIENT_OP(Flatten);
-DEFINE_GRADIENT_OP(ExpandDims);
 DEFINE_GRADIENT_OP(Squeeze);
+DEFINE_GRADIENT_OP(Unsqueeze);
 #undef DEFINE_GRADIENT_OP
 
-DEFINE_OP_REPEATED_ARG_WITH_DESC(int64_t, ReshapeOp, dims);
+DEFINE_OP_REPEATED_ARG(int64_t, ReshapeOp, dims);
 
 } // namespace dragon
 

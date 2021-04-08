@@ -17,7 +17,6 @@ from __future__ import print_function
 import itertools
 import os
 
-from dragon.core.framework import context
 from dragon.core.framework import workspace
 from dragon.core.util import logging
 from dragon.vm.tensorlayer.core import initializers
@@ -89,7 +88,7 @@ class Module(object):
         Returns
         -------
         bool
-            **True** for training otherwise evaluation.
+            ``True`` for training otherwise evaluation.
 
         """
         return self._training
@@ -144,7 +143,7 @@ class Module(object):
         init : Union[callable, str], optional
             The initializer for weight.
         trainable : bool, optional, default=True
-            **True** to compute the gradients if necessary.
+            ``True`` to compute the gradients if necessary.
 
         Returns
         -------
@@ -152,13 +151,11 @@ class Module(object):
             The weight tensor.
 
         """
-        name = name if name else 'weights'
+        var_name = name if name else 'weights'
+        var_name = self.name + '/' + var_name
         shape = shape if shape is not None else []
-        weight = initializers.get(init)(
-            shape=shape,
-            trainable=trainable,
-            name=context.get_name_scope() + name,
-        )
+        weight = initializers.get(init)(shape=shape, name=var_name)
+        weight.requires_grad = trainable
         if trainable is True:
             self._trainable_weights.append(weight)
         else:
@@ -179,9 +176,9 @@ class Module(object):
         format : {'hdf5', 'npz', 'pkl', 'npz_dict'}, optional
             The optional saving format.
         skip : bool, optional, default=False
-            **True** to skip the modules which is not found.
+            ``True`` to skip the modules which is not found.
         verbose: bool, optional, default=False
-            **True** to print the matched weights.
+            ``True`` to print the matched weights.
 
         """
         if not os.path.exists(filepath):
@@ -269,32 +266,25 @@ class Module(object):
         return filtered
 
     def _gather_children_attribute(self, attribute):
-        assert attribute in {
-            'all_weights',
-            'trainable_weights',
-            'nontrainable_weights',
-        }
-        return list(
-            itertools.chain.from_iterable(
-                getattr(m, attribute) for m in self.modules
-            )
-        )
+        assert attribute in {'all_weights',
+                             'trainable_weights',
+                             'nontrainable_weights'}
+        return list(itertools.chain.from_iterable(
+            getattr(m, attribute) for m in self.modules))
 
     def _set_name(self, name=None, zero_based=True):
         """Set the module name."""
         if name is None:
             self._name = workspace.get_workspace().unique_name(
                 name=self.__class__.__name__.lower(),
-                namespace='Object',
-                zero_based=zero_based,
-            )
+                namespace='TensorLayerModule',
+                zero_based=zero_based)
         else:
             self._name = name
 
     def __call__(self, *args, **kwargs):
         """The preprocessor for ``self.forward(...)``."""
-        with context.name_scope(self.name):
-            return self.forward(*args, **kwargs)
+        return self.forward(*args, **kwargs)
 
     def __setattr__(self, name, value):
         if isinstance(value, Module):

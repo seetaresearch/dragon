@@ -21,8 +21,8 @@ template <class Context>
 class SliceOp final : public Operator<Context> {
  public:
   SliceOp(const OperatorDef& def, Workspace* ws) : Operator<Context>(def, ws) {
-    INIT_OP_REPEATED_ARG_WITH_DESC(int64_t, starts);
-    INIT_OP_REPEATED_ARG_WITH_DESC(int64_t, sizes);
+    INITIALIZE_OP_REPEATED_ARG(int64_t, starts);
+    INITIALIZE_OP_REPEATED_ARG(int64_t, sizes);
   }
   USE_OPERATOR_FUNCTIONS;
 
@@ -32,8 +32,8 @@ class SliceOp final : public Operator<Context> {
   void DoRunWithType();
 
  protected:
-  DECLARE_OP_REPEATED_ARG_WITH_DESC(int64_t, starts);
-  DECLARE_OP_REPEATED_ARG_WITH_DESC(int64_t, sizes);
+  DECLARE_OP_REPEATED_ARG(int64_t, starts);
+  DECLARE_OP_REPEATED_ARG(int64_t, sizes);
 };
 
 template <class Context>
@@ -48,8 +48,8 @@ class SliceGradientOp final : public Operator<Context> {
   void DoRunWithType();
 };
 
-DEFINE_OP_REPEATED_ARG_WITH_DESC(int64_t, SliceOp, starts);
-DEFINE_OP_REPEATED_ARG_WITH_DESC(int64_t, SliceOp, sizes);
+DEFINE_OP_REPEATED_ARG(int64_t, SliceOp, starts);
+DEFINE_OP_REPEATED_ARG(int64_t, SliceOp, sizes);
 
 } // namespace dragon
 

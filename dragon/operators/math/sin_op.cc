@@ -8,7 +8,7 @@ template <class Context>
 template <typename T>
 void SinGradientOp<Context>::DoRunWithType() {
   auto &X = Input(0), &dY = Input(1), *dX = Output(0);
-  kernel::SinGrad(
+  kernels::SinGrad(
       X.count(),
       dY.template data<T, Context>(),
       X.template data<T, Context>(),
@@ -18,7 +18,7 @@ void SinGradientOp<Context>::DoRunWithType() {
 
 template <class Context>
 void SinGradientOp<Context>::RunOnDevice() {
-  DispatchHelper<FloatingTensorTypes>::Call(this, Input(0));
+  DispatchHelper<dtypes::Floating>::Call(this, Input(0));
 }
 
 DEPLOY_CPU_OPERATOR(SinGradient);

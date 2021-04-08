@@ -6,15 +6,9 @@
 
 namespace dragon {
 
-namespace kernel {
+namespace kernels {
 
 namespace {
-
-#if __CUDA_ARCH__ >= 350
-#define LDG(x, i) convert::To<float>(__ldg(x + i))
-#else
-#define LDG(x, i) convert::To<float>(x[i])
-#endif
 
 template <typename T>
 __device__ float
@@ -41,10 +35,10 @@ _RoiAlignIntp(const int H, const int W, float h, float w, const T* x) {
     w = (float)li;
   }
 
-  const float tl = LDG(x, (ti * W + li));
-  const float tr = LDG(x, (ti * W + ri));
-  const float bl = LDG(x, (bi * W + li));
-  const float br = LDG(x, (bi * W + ri));
+  const float tl = convert::To<float>(__ldg(x + ti * W + li));
+  const float tr = convert::To<float>(__ldg(x + ti * W + ri));
+  const float bl = convert::To<float>(__ldg(x + bi * W + li));
+  const float br = convert::To<float>(__ldg(x + bi * W + ri));
 
   const float v = h - ti;
   const float u = w - li;
@@ -217,8 +211,6 @@ __global__ void _RoiAlignGrad(
   }
 }
 
-#undef LDG
-
 } // namespace
 
 /* ------------------- Launcher Separator ------------------- */
@@ -262,7 +254,7 @@ DEFINE_KERNEL_LAUNCHER(RoiAlignGrad, float, float); // RoiAlignGrad
 DEFINE_KERNEL_LAUNCHER(RoiAlignGrad, double, float); // RoiAlignGrad
 #undef DEFINE_KERNEL_LAUNCHER
 
-} // namespace kernel
+} // namespace kernels
 
 } // namespace dragon
 

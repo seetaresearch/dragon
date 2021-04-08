@@ -42,11 +42,7 @@ class Concat(layer.Layer):
         return s.format(classname=self.__class__.__name__, **self.__dict__)
 
     def forward(self, inputs, **kwargs):
-        return array_ops.concat(
-            inputs,
-            axis=self.concat_dim,
-            name=self.name,
-        )
+        return array_ops.concat(inputs, axis=self.concat_dim, name=self.name)
 
 
 class Elementwise(layer.Layer):

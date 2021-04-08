@@ -17,6 +17,7 @@ from __future__ import print_function
 from dragon.core.ops import activation_ops
 from dragon.core.ops import math_ops
 from dragon.vm.caffe.core.layer import Layer
+from dragon.vm.caffe.core.proto import caffe_pb2
 
 
 class Dropout(Layer):
@@ -47,10 +48,10 @@ class Dropout(Layer):
         param = layer_param.dropout_param
         if not param.scale_train:
             raise ValueError('Unscaled dropout is not supported.')
-        self.arguments = {'ratio': param.dropout_ratio}
+        self.call_args = {'ratio': param.dropout_ratio}
 
     def __call__(self, bottom):
-        return activation_ops.dropout(bottom, **self.arguments)
+        return activation_ops.dropout(bottom, **self.call_args)
 
 
 class ELU(Layer):
@@ -83,10 +84,10 @@ class ELU(Layer):
 
     def __init__(self, layer_param):
         super(ELU, self).__init__(layer_param)
-        self.arguments = {'alpha': float(layer_param.elu_param.alpha)}
+        self.call_args = {'alpha': float(layer_param.elu_param.alpha)}
 
     def __call__(self, bottom):
-        return activation_ops.elu(bottom, **self.arguments)
+        return activation_ops.elu(bottom, **self.call_args)
 
 
 class Power(Layer):
@@ -123,7 +124,7 @@ class Power(Layer):
             bottom = bottom * self.scale
         if self.shift != 0:
             bottom = bottom + self.shift
-        return math_ops.pow([bottom, self.power], **self.arguments)
+        return math_ops.pow([bottom, self.power])
 
 
 class PReLU(Layer):
@@ -163,15 +164,24 @@ class PReLU(Layer):
     def __init__(self, layer_param):
         super(PReLU, self).__init__(layer_param)
         param = layer_param.prelu_param
-        self.arguments = {
-            'channel_shared': param.channel_shared,
-            'data_format': 'NCHW',
-        }
-        self.add_blob(filler=self.get_filler(param, 'filler'), value=0.25)
+        self.filler = caffe_pb2.FillerParameter(type='constant', value=0.25)
+        self.filler = param.filler if param.HasField('filler') else self.filler
+        self.channel_shared = param.channel_shared
+
+    def build(self, bottom):
+        if self.channel_shared:
+            weight_shape = [1]
+        elif len(bottom.shape) > 1:
+            weight_shape = [bottom.shape[1]]
+        else:
+            weight_shape = [bottom.shape[0]]
+        self.add_blob(weight_shape, self.filler)
 
     def __call__(self, bottom):
+        if len(self.blobs) == 0:
+            self.build(bottom)
         inputs = [bottom] + [blob['data'] for blob in self._blobs]
-        return activation_ops.prelu(inputs, **self.arguments)
+        return activation_ops.prelu(inputs)
 
 
 class ReLU(Layer):
@@ -205,11 +215,12 @@ class ReLU(Layer):
     def __init__(self, layer_param):
         super(ReLU, self).__init__(layer_param)
         param = layer_param.relu_param
-        if param.HasField('negative_slope'):
-            self.arguments = {'alpha': param.negative_slope}
+        self.negative_slope = param.negative_slope
 
     def __call__(self, bottom):
-        return activation_ops.relu(bottom, **self.arguments)
+        if self.negative_slope > 0:
+            return activation_ops.leaky_relu(bottom, self.negative_slope)
+        return activation_ops.relu(bottom)
 
 
 class Sigmoid(Layer):
@@ -235,7 +246,7 @@ class Sigmoid(Layer):
         super(Sigmoid, self).__init__(layer_param)
 
     def __call__(self, bottom):
-        return activation_ops.sigmoid(bottom, **self.arguments)
+        return activation_ops.sigmoid(bottom)
 
 
 class TanH(Layer):
@@ -261,4 +272,4 @@ class TanH(Layer):
         super(TanH, self).__init__(layer_param)
 
     def __call__(self, bottom):
-        return activation_ops.tanh(bottom, **self.arguments)
+        return activation_ops.tanh(bottom)

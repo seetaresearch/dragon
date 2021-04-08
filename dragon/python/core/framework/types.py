@@ -15,23 +15,10 @@ from __future__ import division
 from __future__ import print_function
 
 
-# The tensor subclasses:
-#  * Tensor (i.e., SymbolicTensor)
-#  * EagerTensor
-class TensorMetaclass(object):
-    pass
-
-
-def is_eager_tensor(blob):
-    """Whether the given blob is an eager tensor."""
-    return is_tensor(blob) and hasattr(blob, '__del__')
-
-
-def is_symbolic_tensor(blob):
-    """Whether the given blob is a symbolic tensor."""
-    return is_tensor(blob) and not hasattr(blob, '__del__')
+class TensorBase(object):
+    """Tensor base class."""
 
 
 def is_tensor(blob):
-    """Whether the given blob is a generic tensor."""
-    return isinstance(blob, TensorMetaclass)
+    """Whether the given blob is a tensor object."""
+    return isinstance(blob, TensorBase)

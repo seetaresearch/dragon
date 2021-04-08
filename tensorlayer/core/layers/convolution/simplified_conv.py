@@ -119,17 +119,10 @@ class Conv2d(layer.Layer):
             filter_shape.insert(1, self.in_channels)
         else:
             filter_shape.append(self.in_channels)
-        self.W = self.add_weight(
-            name='filters',
-            shape=filter_shape,
-            init=self.W_init,
-        )
+        self.W = self.add_weight('filters', filter_shape, init=self.W_init)
         if self.b_init:
             self.b = self.add_weight(
-                name='biases',
-                shape=(self.n_filter,),
-                init=self.b_init,
-            )
+                'biases', (self.n_filter,), init=self.b_init)
 
     def forward(self, inputs, **kwargs):
         data_format = conv_utils.convert_data_format(self.data_format)
@@ -141,8 +134,7 @@ class Conv2d(layer.Layer):
             pads=pads,
             padding=padding,
             dilations=self.dilation_rate,
-            data_format=data_format,
-        )
+            data_format=data_format)
         if self.act:
             outputs = self.act(outputs)
         return outputs

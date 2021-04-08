@@ -8,7 +8,7 @@ template <class Context>
 template <typename T>
 void CosGradientOp<Context>::DoRunWithType() {
   auto &X = Input(0), &dY = Input(1), *dX = Output(0);
-  kernel::CosGrad(
+  kernels::CosGrad(
       X.count(),
       dY.template data<T, Context>(),
       X.template data<T, Context>(),
@@ -18,7 +18,7 @@ void CosGradientOp<Context>::DoRunWithType() {
 
 template <class Context>
 void CosGradientOp<Context>::RunOnDevice() {
-  DispatchHelper<FloatingTensorTypes>::Call(this, Input(0));
+  DispatchHelper<dtypes::Floating>::Call(this, Input(0));
 }
 
 DEPLOY_CPU_OPERATOR(CosGradient);

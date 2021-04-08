@@ -24,7 +24,7 @@
 namespace dragon {
 
 template <class IterableInputs, class IterableOutputs, class IterableArgs>
-inline OperatorDef MakeOperatorDef(
+inline OperatorDef CreateOperatorDef(
     const string& type,
     const string& name,
     const IterableInputs& inputs,
@@ -34,34 +34,38 @@ inline OperatorDef MakeOperatorDef(
   OperatorDef def;
   def.set_type(type);
   def.set_name(name);
-  for (const string& in : inputs)
+  for (const string& in : inputs) {
     def.add_input(in);
-  for (const string& out : outputs)
+  }
+  for (const string& out : outputs) {
     def.add_output(out);
-  for (const Argument& arg : args)
+  }
+  for (const Argument& arg : args) {
     def.add_arg()->CopyFrom(arg);
-  if (device_option.has_device_type())
+  }
+  if (device_option.has_device_type()) {
     def.mutable_device_option()->CopyFrom(device_option);
+  }
   return def;
 }
 
 template <class IterableInputs, class IterableOutputs, class IterableArgs>
-inline OperatorDef MakeOperatorDef(
+inline OperatorDef CreateOperatorDef(
     const string& type,
     const string& name,
     const IterableInputs& inputs,
     const IterableOutputs& outputs,
     const IterableArgs& args) {
-  return MakeOperatorDef(type, name, inputs, outputs, args, DeviceOption());
+  return CreateOperatorDef(type, name, inputs, outputs, args, DeviceOption());
 }
 
 template <class IterableInputs, class IterableOutputs>
-inline OperatorDef MakeOperatorDef(
+inline OperatorDef CreateOperatorDef(
     const string& type,
     const string& name,
     const IterableInputs& inputs,
     const IterableOutputs& outputs) {
-  return MakeOperatorDef(
+  return CreateOperatorDef(
       type, name, inputs, outputs, vector<Argument>(), DeviceOption());
 }
 

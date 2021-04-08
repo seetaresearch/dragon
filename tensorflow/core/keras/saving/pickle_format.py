@@ -27,7 +27,7 @@ PICKLE_DEFAULT_PROTOCOL = 2
 
 
 def load_weights_from_pickle(f, layer, verbose=False):
-    ws = workspace.get_workspace()
+    default_ws = workspace.get_workspace()
     weight_dict = six.moves.pickle.load(f)
     for weight in layer.weights:
         name = weight.name
@@ -43,9 +43,9 @@ def load_weights_from_pickle(f, layer, verbose=False):
                         [str(d) for d in weight_shape]),
                         ', '.join([str(d) for d in value_shape]))
                 )
-            weight_impl = ws.GetTensor(weight.id)
+            weight_impl = default_ws.get_tensor(weight.id)
             if weight_impl is not None:
-                weight_impl.FromNumpy(value.copy())
+                weight_impl.FromNumpy(value.copy(), True)
                 if verbose:
                     logging.info(
                         'Weight({}) loaded, Size: ({})'
@@ -57,11 +57,11 @@ def load_weights_from_pickle(f, layer, verbose=False):
 
 
 def save_weights_to_pickle(f, layer):
-    ws = workspace.get_workspace()
+    default_ws = workspace.get_workspace()
     weight_dict = collections.OrderedDict()
     for weight in layer.weights:
-        weight_impl = ws.GetTensor(weight.id)
+        weight_impl = default_ws.get_tensor(weight.id)
         if weight_impl is not None:
-            weight_dict[weight.name] = weight_impl.ToNumpy(True)
+            weight_dict[weight.name] = weight_impl.ToNumpy()
     pickle = six.moves.pickle
     pickle.dump(weight_dict, f, PICKLE_DEFAULT_PROTOCOL)

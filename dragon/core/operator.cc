@@ -25,18 +25,19 @@ OperatorBase::OperatorBase(const OperatorDef& def, Workspace* ws)
   }
 
   // Set the inputs and outputs
-  string name;
-  size_t ver_pos;
-  for (const auto& e : def.input()) {
-    name = e;
-    if ((ver_pos = e.find("/ver:")) != string::npos)
-      name = e.substr(0, ver_pos);
+  size_t version_pos;
+  for (const auto& input : def.input()) {
+    string name = input;
+    if ((version_pos = input.find("/ver:")) != string::npos) {
+      name = input.substr(0, version_pos);
+    }
     inputs_.push_back(ws->GetTensor(name));
   }
-  for (const auto& e : def.output()) {
-    name = e;
-    if ((ver_pos = e.find("/ver:")) != string::npos)
-      name = e.substr(0, ver_pos);
+  for (const auto& output : def.output()) {
+    string name = output;
+    if ((version_pos = output.find("/ver:")) != string::npos) {
+      name = output.substr(0, version_pos);
+    }
     outputs_.push_back(ws->CreateTensor(name));
   }
 }
@@ -71,26 +72,36 @@ Tensor* OperatorBase::Output(int i, const vec32_t& inputs) {
 }
 
 Tensor* OperatorBase::Buffer(const string& name) {
-  return workspace()->CreateTensor("/share/buffer/" + handle_ + "/" + name);
+  return workspace()->CreateTensor(handle_ + "/" + name);
 }
 
-string OperatorBase::MessageForUnsupported(
-    const string& value,
-    const vector<string>& support_values,
-    const string& entry) const {
-  std::stringstream ss;
-  ss << "Unsupported " << entry << ": " << value << "\n";
-  ss << "<" << type() << "Op>"
-     << " supports the following " << entry << "(s): {\n";
-  for (const auto& support_value : support_values) {
-    ss << "  * " << support_value << ",\n";
+OperatorBase* OperatorBase::New(const OperatorDef& def, Workspace* ws) {
+  const auto& op_type = def.type();
+  auto* schema = OpSchemaRegistry::Schema(op_type);
+  if (schema != nullptr) CHECK(schema->Verify(def));
+  switch (def.device_option().device_type()) {
+    case PROTO_CPU:
+      return CPUOperatorRegistry()->Create(op_type, def, ws);
+    case PROTO_CUDA:
+#ifdef USE_CUDNN
+      if (CUDNNOperatorRegistry()->Has(op_type) &&
+          CUDAContext::objects().cudnn_enabled_) {
+        return CUDNNOperatorRegistry()->Create(op_type, def, ws);
+      }
+#endif
+      return CUDAOperatorRegistry()->Create(op_type, def, ws);
+    default:
+      LOG(FATAL) << "Unknown device: " << def.device_option().device_type();
+      return nullptr;
   }
-  ss << "}";
-  return ss.str();
 }
 
-OperatorBase* OperatorBase::UpdateFrom(const OperatorDef& def) {
+OperatorBase* OperatorBase::DeriveFrom(const OperatorDef& def) {
   handle_ = def.name();
+  if (def.arg().size() > 1) {
+    const auto& arg = *(def.arg().end() - 2);
+    if (arg.name() == "handle") handle_ = arg.s();
+  }
   inputs_.resize(def.input_size());
   outputs_.resize(def.output_size());
   for (int i = 0; i < inputs_.size(); i++) {
@@ -113,7 +124,7 @@ void Operator<Context>::Prepare() {
       LOG(DEBUG) << "Excepted version of Tensor(" + Input(i).name() + ") "
                  << "is " << version << ", got " << Input(i).version()
                  << ". Recompute.";
-      Tensor* flag = workspace()->GetTensor("/share/flag/recomputing");
+      Tensor* flag = workspace()->GetTensor("flagged/recomp");
       flag->mutable_data<bool, CPUContext>()[0] = true;
       vector<OperatorBase*>& chain = subgraph()[name];
       for (auto* op : chain) {
@@ -136,71 +147,6 @@ void Operator<Context>::Release() {
   }
 }
 
-OperatorBase*
-TryCreateOperator(const string& key, const OperatorDef& def, Workspace* ws) {
-  switch (def.device_option().device_type()) {
-    case PROTO_CPU:
-      return CPUOperatorRegistry()->Create(key, def, ws);
-    case PROTO_CUDA:
-#ifdef USE_CUDNN
-      if (CUDNNOperatorRegistry()->Has(key) &&
-          CUDAContext::objects().cudnn_enabled_) {
-        return CUDNNOperatorRegistry()->Create(key, def, ws);
-      }
-#endif
-      return CUDAOperatorRegistry()->Create(key, def, ws);
-    case PROTO_CNML:
-      return CNMLOperatorRegistry()->Create(key, def, ws);
-    default:
-      LOG(FATAL) << "Unknown Device: " << def.device_option().device_type();
-      return nullptr;
-  }
-}
-
-OperatorBase* NewOperator(const OperatorDef& def, Workspace* ws) {
-  auto* schema = OpSchemaRegistry::Schema(def.type());
-  if (schema != nullptr) CHECK(schema->Verify(def));
-  OperatorDef mutable_def(def);
-  // Heuristically make each random seed slightly different
-  static unsigned int seed_offset = 0;
-  mutable_def.mutable_device_option()->set_random_seed(
-      seed_offset + def.device_option().random_seed());
-  seed_offset = (seed_offset + 1) % UINT32_MAX;
-  return TryCreateOperator(def.type(), mutable_def, ws);
-}
-
-GradientPack MakeGradientForOp(
-    const OperatorDef& def,
-    const vector<string>& grad_outputs) {
-  CHECK(GradientRegistry()->Has(def.type()))
-      << "\nNo GradientMaker registered for " << def.type() << "Op.";
-  OperatorDef reference_def(def);
-  unique_ptr<GradientMakerBase> maker(
-      GradientRegistry()->Create(def.type(), def, grad_outputs));
-  GradientPack pack = maker->Make();
-  // Copy cache key
-  if (reference_def.has_cache_key()) {
-    for (int i = 0; i < pack.grad_defs.size(); ++i) {
-      pack.grad_defs[i].set_cache_key(
-          reference_def.cache_key() + "/grad" +
-          (i > 0 ? (":" + str::to(i)) : ""));
-    }
-  }
-  // Copy device option and arguments
-  if (maker->CopyDeviceOption() && def.has_device_option()) {
-    for (auto& grad_def : pack.grad_defs) {
-      grad_def.mutable_device_option()->CopyFrom(def.device_option());
-    }
-  }
-  // Copy arguments
-  if (maker->CopyArguments() && def.arg_size()) {
-    for (auto& grad_def : pack.grad_defs) {
-      grad_def.mutable_arg()->MergeFrom(reference_def.arg());
-    }
-  }
-  return pack;
-}
-
 /* Operator Registry */
 
 DEFINE_REGISTRY(
@@ -220,24 +166,6 @@ DEFINE_REGISTRY(
     OperatorBase,
     const OperatorDef&,
     Workspace*);
-
-DEFINE_REGISTRY(
-    CNMLOperatorRegistry,
-    OperatorBase,
-    const OperatorDef&,
-    Workspace*);
-
-DEFINE_REGISTRY(
-    GradientRegistry,
-    GradientMakerBase,
-    const OperatorDef&,
-    const vector<string>&);
-
-DEFINE_REGISTRY(
-    NoGradientRegistry,
-    GradientMakerBase,
-    const OperatorDef&,
-    const vector<string>&);
 
 /* Macros */
 
@@ -269,7 +197,7 @@ INSTANTIATE_GET_SINGLE_ARGUMENT(string, s, "");
     if (args_.count(name) == 0) return default_value;               \
     vector<T> values;                                               \
     for (const auto& v : args_[name]->fieldname()) {                \
-      values.push_back(static_cast<T>(v));                          \
+      values.emplace_back(static_cast<T>(v));                       \
     }                                                               \
     return values;                                                  \
   }                                                                 \
@@ -289,6 +217,5 @@ INSTANTIATE_GET_REPEATED_ARGUMENT(string, strings);
 
 template class Operator<CPUContext>;
 template class Operator<CUDAContext>;
-template class Operator<CNMLContext>;
 
 } // namespace dragon

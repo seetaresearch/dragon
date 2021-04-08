@@ -53,9 +53,18 @@ def group_norm_exporter(op_def, context):
 def lp_normalize_exporter(op_def, context):
     node, const_tensors = export_util.translate(**locals())
     node.op_type = 'LpNormalization'
+    axis, end_axis = None, None
     for arg in op_def.arg:
         if arg.name == 'axis':
+            axis = arg.i
             helper.add_attribute(node, 'axis', arg.i)
-        if arg.name == 'p':
+        elif arg.name == 'end_axis':
+            end_axis = arg.i
+            if end_axis < 0:
+                input_shape = context.blob_shapes[op_def.input[0]]
+                end_axis += len(input_shape)
+        elif arg.name == 'p':
             helper.add_attribute(node, 'p', arg.i)
+    if end_axis is not None and axis != end_axis:
+        raise ValueError('Reshape to avoid multiple axes.')
     return node, const_tensors

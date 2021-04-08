@@ -40,26 +40,24 @@ class BatchNormOpBase : public GenericOpBase<Context> {
 
   void GetBaseArguments() {
     auto& X = Input(0);
-    // Set the training mode
-    if (use_stats_ == -1) {
-      is_training_ = phase() == "TRAIN" ? 1 : 0;
-    } else {
-      is_training_ = use_stats_ > 0 ? 0 : 1;
-    }
-    // Set the data format
-    this->data_format_ = "NCHW";
-    auto axis = OP_SINGLE_ARG(int64_t, "axis", -1);
-    if (axis == -1) axis += X.ndim();
-    if (axis + 1 == X.ndim()) this->data_format_ = "NHWC";
-    N_ = X.dim(0), C_ = X.dim(axis);
+    GET_OP_AXIS_ARG(axis, X.ndim(), -1);
+    // Set dimensions
+    N_ = X.dim(0);
+    C_ = X.dim(axis);
     S_ = X.count() / N_ / C_;
+    // Set data format
+    this->data_format_ = "NCHW";
+    if (axis + 1 == X.ndim()) this->data_format_ = "NHWC";
+    // Set training mode
+    training_ = use_stats_ < 0 ? (phase() == "TRAIN" ? 1 : 0)
+                               : (use_stats_ > 0 ? 0 : 1);
   }
 
  protected:
   double epsilon_;
   int64_t N_, C_, S_;
   int64_t use_stats_, sync_stats_;
-  int64_t is_training_, is_recomputing_;
+  int64_t training_, recomputing_;
 };
 
 #undef GenericOpBase
@@ -72,15 +70,15 @@ class BatchNormOpBase : public GenericOpBase<Context> {
   using BatchNormOpBase<Context>::N_;               \
   using BatchNormOpBase<Context>::C_;               \
   using BatchNormOpBase<Context>::S_;               \
-  using BatchNormOpBase<Context>::is_training_;     \
-  using BatchNormOpBase<Context>::is_recomputing_
+  using BatchNormOpBase<Context>::training_;        \
+  using BatchNormOpBase<Context>::recomputing_
 
 template <class Context>
 class BatchNormOp : public BatchNormOpBase<Context> {
  public:
   BatchNormOp(const OperatorDef& def, Workspace* ws)
       : BatchNormOpBase<Context>(def, ws) {
-    INIT_OP_SINGLE_ARG_WITH_DESC(float, momentum, 0.9f);
+    INITIALIZE_OP_SINGLE_ARG(float, momentum, 0.9f);
   }
   USE_OPERATOR_FUNCTIONS;
   USE_BATCHNORM_FUNCTIONS;
@@ -98,14 +96,14 @@ class BatchNormOp : public BatchNormOpBase<Context> {
 
   template <typename T>
   void DoRunWithType() {
-    if (is_training_) {
+    if (training_) {
       TrainingImpl<T>();
     } else {
       InferenceImpl<T>();
     }
   };
 
-  DECLARE_OP_SINGLE_ARG_WITH_DESC(float, momentum);
+  DECLARE_OP_SINGLE_ARG(float, momentum);
 };
 
 template <class Context>
@@ -129,7 +127,7 @@ class BatchNormGradientOp : public BatchNormOpBase<Context> {
 
   template <typename T>
   void DoRunWithType() {
-    if (is_training_) {
+    if (training_) {
       TrainingImpl<T>();
     } else {
       InferenceImpl<T>();
@@ -149,7 +147,7 @@ class CuDNNBatchNormOp final : public BatchNormOpBase<Context> {
     if (epsilon_ <= CUDNN_BN_MIN_EPSILON) {
       epsilon_ = CUDNN_BN_MIN_EPSILON;
     }
-    INIT_OP_SINGLE_ARG_WITH_DESC(float, momentum, 0.9f);
+    INITIALIZE_OP_SINGLE_ARG(float, momentum, 0.9f);
   }
   USE_OPERATOR_FUNCTIONS;
   USE_BATCHNORM_FUNCTIONS;
@@ -167,7 +165,7 @@ class CuDNNBatchNormOp final : public BatchNormOpBase<Context> {
  protected:
   cudnnTensorDescriptor_t input_desc_, bn_desc_;
   cudnnBatchNormMode_t bn_mode_;
-  DECLARE_OP_SINGLE_ARG_WITH_DESC(float, momentum);
+  DECLARE_OP_SINGLE_ARG(float, momentum);
 };
 
 template <class Context>
@@ -196,7 +194,7 @@ class CuDNNBatchNormGradientOp final : public BatchNormGradientOp<Context> {
 
   template <typename T>
   void DoRunWithType() {
-    if (is_training_) {
+    if (training_) {
       TrainingImpl<T>();
     } else {
       this->template InferenceImpl<T>();
@@ -208,11 +206,11 @@ class CuDNNBatchNormGradientOp final : public BatchNormGradientOp<Context> {
   cudnnBatchNormMode_t bn_mode_;
 };
 
-DEFINE_OP_SINGLE_ARG_WITH_DESC(float, CuDNNBatchNormOp, momentum);
+DEFINE_OP_SINGLE_ARG(float, CuDNNBatchNormOp, momentum);
 
 #endif // USE_CUDNN
 
-DEFINE_OP_SINGLE_ARG_WITH_DESC(float, BatchNormOp, momentum);
+DEFINE_OP_SINGLE_ARG(float, BatchNormOp, momentum);
 
 } // namespace dragon
 

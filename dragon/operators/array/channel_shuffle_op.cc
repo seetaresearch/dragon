@@ -7,13 +7,13 @@ template <class Context>
 template <typename T>
 void ChannelShuffleOp<Context>::DoRunWithType() {
   auto &X = Input(0), *Y = Output(0);
-  CANONICALIZE_AXIS_WITH_TENSOR(X);
+  GET_OP_AXIS_ARG(axis, X.ndim(), -1);
 
   CHECK_EQ(X.dim(axis) % group_, 0)
       << "\nThe " << X.dim(axis) << " channels "
       << "can not be split into " << group_ << " groups.";
 
-  kernel::ChannelShuffle(
+  kernels::ChannelShuffle(
       X.count(0, axis),
       X.count(axis + 1),
       X.dim(axis),
@@ -25,16 +25,16 @@ void ChannelShuffleOp<Context>::DoRunWithType() {
 
 template <class Context>
 void ChannelShuffleOp<Context>::RunOnDevice() {
-  DispatchHelper<FullTensorTypes>::Call(this, Input(0));
+  DispatchHelper<dtypes::Generic>::Call(this, Input(0));
 }
 
 template <class Context>
 template <typename T>
 void ChannelShuffleGradientOp<Context>::DoRunWithType() {
   auto &dY = Input(0), *dX = Output(0);
-  CANONICALIZE_AXIS_WITH_TENSOR(dY);
+  GET_OP_AXIS_ARG(axis, dY.ndim(), -1);
 
-  kernel::ChannelShuffle(
+  kernels::ChannelShuffle(
       dY.count(0, axis),
       dY.count(axis + 1),
       dY.dim(axis),
@@ -46,7 +46,7 @@ void ChannelShuffleGradientOp<Context>::DoRunWithType() {
 
 template <class Context>
 void ChannelShuffleGradientOp<Context>::RunOnDevice() {
-  DispatchHelper<FloatingTensorTypes>::Call(this, Input(0));
+  DispatchHelper<dtypes::Floating>::Call(this, Input(0));
 }
 
 DEPLOY_CPU_OPERATOR(ChannelShuffle);

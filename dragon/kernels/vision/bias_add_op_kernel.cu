@@ -6,36 +6,30 @@
 
 namespace dragon {
 
-namespace kernel {
+namespace kernels {
 
 namespace {
 
-#if __CUDA_ARCH__ >= 350
-#define LDG(x, i) __ldg(x + i)
-#else
-#define LDG(x, i) x[i]
-#endif
-
-template <typename T>
+template <typename T, typename AccT>
 __global__ void
-_BiasAdd(const int nthreads, const int axis_dim, const T* x, const T* b, T* y) {
-  auto Plus = math::PlusFunctor<T>();
-  CUDA_1D_KERNEL_LOOP(i, nthreads) {
-    y[i] = Plus(x[i], LDG(b, i % axis_dim));
+_BiasAdd(const int NxC, const int C, const T* x, const T* bias, T* y) {
+  CUDA_1D_KERNEL_LOOP(i, NxC) {
+    y[i] = convert::To<T>(
+        convert::To<AccT>(x[i]) + convert::To<AccT>(__ldg(bias + i % C)));
   }
 }
 
-template <typename T>
+template <typename T, typename AccT>
 __global__ void _BiasAdd(
-    const int nthreads,
-    const int inner_dim,
-    const int axis_dim,
+    const int NxCxS,
+    const int S,
+    const int C,
     const T* x,
-    const T* b,
+    const T* bias,
     T* y) {
-  auto Plus = math::PlusFunctor<T>();
-  CUDA_1D_KERNEL_LOOP(i, nthreads) {
-    y[i] = Plus(x[i], LDG(b, (i / inner_dim) % axis_dim));
+  CUDA_1D_KERNEL_LOOP(i, NxCxS) {
+    y[i] = convert::To<T>(
+        convert::To<AccT>(x[i]) + convert::To<AccT>(__ldg(bias + (i / S) % C)));
   }
 }
 
@@ -43,45 +37,39 @@ __global__ void _BiasAdd(
 
 /* ------------------- Launcher Separator ------------------- */
 
-#define DEFINE_KERNEL_LAUNCHER(T)                                \
-  template <>                                                    \
-  void BiasAdd<T, CUDAContext>(                                  \
-      const int outer_dim,                                       \
-      const int inner_dim,                                       \
-      const int axis_dim,                                        \
-      const T* x,                                                \
-      const T* b,                                                \
-      T* y,                                                      \
-      CUDAContext* ctx) {                                        \
-    const auto nthreads = outer_dim * axis_dim * inner_dim;      \
-    if (inner_dim == 1) {                                        \
-      _BiasAdd<<<                                                \
-          CUDA_BLOCKS(nthreads),                                 \
-          CUDA_THREADS,                                          \
-          0,                                                     \
-          ctx->cuda_stream()>>>(                                 \
-          nthreads,                                              \
-          axis_dim,                                              \
-          reinterpret_cast<const math::ScalarType<T>::type*>(x), \
-          reinterpret_cast<const math::ScalarType<T>::type*>(b), \
-          reinterpret_cast<math::ScalarType<T>::type*>(y));      \
-    } else {                                                     \
-      _BiasAdd<<<                                                \
-          CUDA_BLOCKS(nthreads),                                 \
-          CUDA_THREADS,                                          \
-          0,                                                     \
-          ctx->cuda_stream()>>>(                                 \
-          nthreads,                                              \
-          inner_dim,                                             \
-          axis_dim,                                              \
-          reinterpret_cast<const math::ScalarType<T>::type*>(x), \
-          reinterpret_cast<const math::ScalarType<T>::type*>(b), \
-          reinterpret_cast<math::ScalarType<T>::type*>(y));      \
-    }                                                            \
+#define DEFINE_KERNEL_LAUNCHER(T)                                        \
+  template <>                                                            \
+  void BiasAdd<T, CUDAContext>(                                          \
+      const int N,                                                       \
+      const int S,                                                       \
+      const int C,                                                       \
+      const T* x,                                                        \
+      const T* bias,                                                     \
+      T* y,                                                              \
+      CUDAContext* ctx) {                                                \
+    const auto NxCxS = N * C * S;                                        \
+    if (S == 1) {                                                        \
+      _BiasAdd<math::ScalarType<T>::type, math::AccmulatorType<T>::type> \
+          <<<CUDA_BLOCKS(NxCxS), CUDA_THREADS, 0, ctx->cuda_stream()>>>( \
+              NxCxS,                                                     \
+              C,                                                         \
+              reinterpret_cast<const math::ScalarType<T>::type*>(x),     \
+              reinterpret_cast<const math::ScalarType<T>::type*>(bias),  \
+              reinterpret_cast<math::ScalarType<T>::type*>(y));          \
+    } else {                                                             \
+      _BiasAdd<math::ScalarType<T>::type, math::AccmulatorType<T>::type> \
+          <<<CUDA_BLOCKS(NxCxS), CUDA_THREADS, 0, ctx->cuda_stream()>>>( \
+              NxCxS,                                                     \
+              S,                                                         \
+              C,                                                         \
+              reinterpret_cast<const math::ScalarType<T>::type*>(x),     \
+              reinterpret_cast<const math::ScalarType<T>::type*>(bias),  \
+              reinterpret_cast<math::ScalarType<T>::type*>(y));          \
+    }                                                                    \
   }
 
-DEFINE_KERNEL_LAUNCHER(int8_t);
 DEFINE_KERNEL_LAUNCHER(uint8_t);
+DEFINE_KERNEL_LAUNCHER(int8_t);
 DEFINE_KERNEL_LAUNCHER(int);
 DEFINE_KERNEL_LAUNCHER(int64_t);
 DEFINE_KERNEL_LAUNCHER(float16);
@@ -89,7 +77,7 @@ DEFINE_KERNEL_LAUNCHER(float);
 DEFINE_KERNEL_LAUNCHER(double);
 #undef DEFINE_KERNEL_LAUNCHER
 
-} // namespace kernel
+} // namespace kernels
 
 } // namespace dragon
 

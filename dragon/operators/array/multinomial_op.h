@@ -22,9 +22,7 @@ class MultinomialOp final : public Operator<Context> {
  public:
   MultinomialOp(const OperatorDef& def, Workspace* ws)
       : Operator<Context>(def, ws),
-        epsilon_(OP_SINGLE_ARG(double, "epsilon", 0.)),
-        normalize_(OP_SINGLE_ARG(int64_t, "normalize", 0)),
-        num_samples_(OP_SINGLE_ARG(int64_t, "num_samples", 1)) {}
+        sample_size_(OP_SINGLE_ARG(int64_t, "sample_size", 1)) {}
   USE_OPERATOR_FUNCTIONS;
 
   void RunOnDevice() override;
@@ -33,8 +31,7 @@ class MultinomialOp final : public Operator<Context> {
   void DoRunWithType();
 
  protected:
-  double epsilon_;
-  int64_t normalize_, num_samples_;
+  int64_t sample_size_;
 };
 
 } // namespace dragon

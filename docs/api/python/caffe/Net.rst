@@ -29,10 +29,6 @@ params
 Methods
 -------
 
-backward
-########
-.. automethod:: dragon.vm.caffe.Net.backward
-
 copy_from
 #########
 .. automethod:: dragon.vm.caffe.Net.copy_from
@@ -40,10 +36,6 @@ copy_from
 forward
 #########
 .. automethod:: dragon.vm.caffe.Net.forward
-
-forward_backward
-################
-.. automethod:: dragon.vm.caffe.Net.forward_backward
 
 save
 ####

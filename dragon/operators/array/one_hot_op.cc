@@ -12,15 +12,15 @@ void OneHotOp<Context>::DoRunWithType() {
   vec64_t Y_dims(X.dims());
   Y_dims.push_back(depth_);
 
-  // Brush the off-value over all
+  // Set off values
   math::Set(
       X.count() * depth_,
-      convert::To<T>((float)off_value_),
+      convert::To<T>(off_value_),
       Y->Reshape(Y_dims)->template mutable_data<T, Context>(),
       ctx());
 
-  // Brush the on-value over index
-  kernel::OneHot(
+  // Set on values
+  kernels::SetOneHot(
       X.count(),
       depth_,
       on_value_,
@@ -31,7 +31,7 @@ void OneHotOp<Context>::DoRunWithType() {
 
 template <class Context>
 void OneHotOp<Context>::RunOnDevice() {
-  DispatchHelper<TensorTypes<int, int64_t, float>>::Call(this, Input(0));
+  DispatchHelper<dtypes::Numerical>::Call(this, Input(0));
 }
 
 DEPLOY_CPU_OPERATOR(OneHot);

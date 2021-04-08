@@ -1,6 +1,4 @@
 #include "dragon/operators/activation/softmax_op.h"
-#include "dragon/core/workspace.h"
-#include "dragon/utils/math_functions.h"
 #include "dragon/utils/op_kernels.h"
 
 namespace dragon {
@@ -9,8 +7,8 @@ template <class Context>
 template <typename T>
 void SoftmaxOp<Context>::DoRunWithType() {
   auto &X = Input(0), *Y = Output(0, {0});
-  CANONICALIZE_AXIS_WITH_TENSOR(X);
-  kernel::Softmax(
+  GET_OP_AXIS_ARG(axis, X.ndim(), -1);
+  kernels::Softmax(
       X.count(0, axis),
       X.count(axis + 1),
       X.dim(axis),
@@ -21,15 +19,15 @@ void SoftmaxOp<Context>::DoRunWithType() {
 
 template <class Context>
 void SoftmaxOp<Context>::RunOnDevice() {
-  DispatchHelper<FloatingTensorTypes>::Call(this, Input(0));
+  DispatchHelper<dtypes::Floating>::Call(this, Input(0));
 }
 
 template <class Context>
 template <typename T>
 void SoftmaxGradientOp<Context>::DoRunWithType() {
   auto &Y = Input(0), &dY = Input(1), *dX = Output(0);
-  CANONICALIZE_AXIS_WITH_TENSOR(Y);
-  kernel::SoftmaxGrad(
+  GET_OP_AXIS_ARG(axis, Y.ndim(), -1);
+  kernels::SoftmaxGrad(
       Y.count(0, axis),
       Y.count(axis + 1),
       Y.dim(axis),
@@ -41,7 +39,7 @@ void SoftmaxGradientOp<Context>::DoRunWithType() {
 
 template <class Context>
 void SoftmaxGradientOp<Context>::RunOnDevice() {
-  DispatchHelper<FloatingTensorTypes>::Call(this, Input(0));
+  DispatchHelper<dtypes::Floating>::Call(this, Input(0));
 }
 
 DEPLOY_CPU_OPERATOR(Softmax);

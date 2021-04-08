@@ -14,7 +14,6 @@
 #define DRAGON_OPERATORS_ARRAY_INITIALIZE_OPS_H_
 
 #include "dragon/core/operator.h"
-#include "dragon/utils/filler.h"
 
 namespace dragon {
 
@@ -23,15 +22,14 @@ class InitializeOp : public Operator<Context> {
  public:
   InitializeOp(const OperatorDef& def, Workspace* ws)
       : Operator<Context>(def, ws) {
-    INIT_OP_REPEATED_ARG_WITH_DESC(int64_t, dims);
+    INITIALIZE_OP_REPEATED_ARG(int64_t, dims);
   }
   USE_OPERATOR_FUNCTIONS;
 
   void RunOnDevice() override;
 
  protected:
-  FillerInfo filler_info_;
-  DECLARE_OP_REPEATED_ARG_WITH_DESC(int64_t, dims);
+  DECLARE_OP_REPEATED_ARG(int64_t, dims);
 };
 
 template <class Context>
@@ -55,7 +53,7 @@ template <class Context>
 class RangeOp final : public Operator<Context> {
  public:
   RangeOp(const OperatorDef& def, Workspace* ws) : Operator<Context>(def, ws) {
-    INIT_OP_REPEATED_ARG_WITH_DESC(double, slice);
+    INITIALIZE_OP_REPEATED_ARG(double, slice);
   }
   USE_OPERATOR_FUNCTIONS;
 
@@ -65,7 +63,7 @@ class RangeOp final : public Operator<Context> {
   void DoRunWithType();
 
  protected:
-  DECLARE_OP_REPEATED_ARG_WITH_DESC(double, slice);
+  DECLARE_OP_REPEATED_ARG(double, slice);
 };
 
 template <class Context>
@@ -73,8 +71,8 @@ class LinSpaceOp final : public InitializeOp<Context> {
  public:
   LinSpaceOp(const OperatorDef& def, Workspace* ws)
       : InitializeOp<Context>(def, ws) {
-    INIT_OP_REPEATED_ARG_WITH_DESC(double, start);
-    INIT_OP_REPEATED_ARG_WITH_DESC(double, stop);
+    INITIALIZE_OP_REPEATED_ARG(double, start);
+    INITIALIZE_OP_REPEATED_ARG(double, stop);
   }
   USE_OPERATOR_FUNCTIONS;
 
@@ -84,8 +82,8 @@ class LinSpaceOp final : public InitializeOp<Context> {
   void DoRunWithType();
 
  protected:
-  DECLARE_OP_REPEATED_ARG_WITH_DESC(double, start);
-  DECLARE_OP_REPEATED_ARG_WITH_DESC(double, stop);
+  DECLARE_OP_REPEATED_ARG(double, start);
+  DECLARE_OP_REPEATED_ARG(double, stop);
 };
 
 template <class Context>
@@ -93,7 +91,7 @@ class PermutationOp final : public Operator<Context> {
  public:
   PermutationOp(const OperatorDef& def, Workspace* ws)
       : Operator<Context>(def, ws) {
-    INIT_OP_SINGLE_ARG_WITH_DESC(int64_t, limit, 0);
+    INITIALIZE_OP_SINGLE_ARG(int64_t, limit, 0);
   }
   USE_OPERATOR_FUNCTIONS;
 
@@ -103,7 +101,7 @@ class PermutationOp final : public Operator<Context> {
   void DoRunWithType();
 
  protected:
-  DECLARE_OP_SINGLE_ARG_WITH_DESC(int64_t, limit);
+  DECLARE_OP_SINGLE_ARG(int64_t, limit);
 };
 
 template <class Context>
@@ -178,52 +176,47 @@ template <class Context>
 class RandomNormalOp final : public InitializeOp<Context> {
  public:
   RandomNormalOp(const OperatorDef& def, Workspace* ws)
-      : InitializeOp<Context>(def, ws) {
-    auto mu = OP_SINGLE_ARG(float, "mean", 0.f);
-    auto sigma = OP_SINGLE_ARG(float, "std", 1.f);
-    this->filler_info_.set_mean(mu);
-    this->filler_info_.set_std(sigma);
-    this->filler_info_.set_type("normal");
-  }
+      : InitializeOp<Context>(def, ws),
+        mean_(OP_SINGLE_ARG(float, "mean", 0.f)),
+        std_(OP_SINGLE_ARG(float, "std", 1.f)) {}
   USE_OPERATOR_FUNCTIONS;
 
   void RunOnDevice() override;
 
   template <typename T>
   void DoRunWithType();
+
+ protected:
+  float mean_, std_;
 };
 
 template <class Context>
 class RandomUniformOp final : public InitializeOp<Context> {
  public:
   RandomUniformOp(const OperatorDef& def, Workspace* ws)
-      : InitializeOp<Context>(def, ws) {
-    auto low = OP_SINGLE_ARG(float, "low", -1.f);
-    auto high = OP_SINGLE_ARG(float, "high", 1.f);
-    this->filler_info_.set_low(low);
-    this->filler_info_.set_high(high);
-    this->filler_info_.set_type("uniform");
-  }
+      : InitializeOp<Context>(def, ws),
+        low_(OP_SINGLE_ARG(float, "low", 0.f)),
+        high_(OP_SINGLE_ARG(float, "high", 1.f)) {}
   USE_OPERATOR_FUNCTIONS;
 
   void RunOnDevice() override;
 
   template <typename T>
   void DoRunWithType();
+
+ protected:
+  float low_, high_;
 };
 
 template <class Context>
 class TruncatedNormalOp final : public InitializeOp<Context> {
  public:
   TruncatedNormalOp(const OperatorDef& def, Workspace* ws)
-      : InitializeOp<Context>(def, ws) {
-    auto mu = OP_SINGLE_ARG(float, "mean", 0.f);
-    auto sigma = OP_SINGLE_ARG(float, "std", 1.f);
-    this->filler_info_.set_mean(mu);
-    this->filler_info_.set_std(sigma);
-    this->filler_info_.set_low(mu - 2 * sigma);
-    this->filler_info_.set_high(mu + 2 * sigma);
-    this->filler_info_.set_type("truncated_normal");
+      : InitializeOp<Context>(def, ws),
+        mean_(OP_SINGLE_ARG(float, "mean", 0.f)),
+        std_(OP_SINGLE_ARG(float, "std", 1.f)) {
+    low_ = mean_ - 2 * std_;
+    high_ = mean_ + 2 * std_;
   }
   USE_OPERATOR_FUNCTIONS;
 
@@ -231,63 +224,54 @@ class TruncatedNormalOp final : public InitializeOp<Context> {
 
   template <typename T>
   void DoRunWithType();
+
+ protected:
+  float mean_, std_, low_, high_;
 };
 
 template <class Context>
 class GlorotNormalOp final : public InitializeOp<Context> {
  public:
   GlorotNormalOp(const OperatorDef& def, Workspace* ws)
-      : InitializeOp<Context>(def, ws) {
-    auto scale = OP_SINGLE_ARG(float, "scale", 2.f);
-    auto mode = OP_SINGLE_ARG(string, "mode", "fan_in");
-    this->filler_info_.set_type("glorot_normal");
-    if (mode == "fan_avg") {
-      this->filler_info_.set_variance_norm(FillerInfo_VarianceNorm_FAN_AVG);
-    } else if (mode == "fan_out") {
-      this->filler_info_.set_variance_norm(FillerInfo_VarianceNorm_FAN_OUT);
-    } else {
-      this->filler_info_.set_variance_norm(FillerInfo_VarianceNorm_FAN_IN);
-    }
-    this->filler_info_.set_scale(scale);
-  }
+      : InitializeOp<Context>(def, ws),
+        scale_(OP_SINGLE_ARG(float, "scale", 2.f)),
+        mode_(OP_SINGLE_ARG(string, "mode", "fan_in")) {}
   USE_OPERATOR_FUNCTIONS;
 
   void RunOnDevice() override;
 
   template <typename T>
   void DoRunWithType();
+
+ protected:
+  float scale_;
+  string mode_;
 };
 
 template <class Context>
 class GlorotUniformOp final : public InitializeOp<Context> {
  public:
   GlorotUniformOp(const OperatorDef& def, Workspace* ws)
-      : InitializeOp<Context>(def, ws) {
-    auto scale = OP_SINGLE_ARG(float, "scale", 3.f);
-    auto mode = OP_SINGLE_ARG(string, "mode", "fan_in");
-    this->filler_info_.set_type("glorot_uniform");
-    if (mode == "fan_avg") {
-      this->filler_info_.set_variance_norm(FillerInfo_VarianceNorm_FAN_AVG);
-    } else if (mode == "fan_out") {
-      this->filler_info_.set_variance_norm(FillerInfo_VarianceNorm_FAN_OUT);
-    } else {
-      this->filler_info_.set_variance_norm(FillerInfo_VarianceNorm_FAN_IN);
-    }
-    this->filler_info_.set_scale(scale);
-  }
+      : InitializeOp<Context>(def, ws),
+        scale_(OP_SINGLE_ARG(float, "scale", 3.f)),
+        mode_(OP_SINGLE_ARG(string, "mode", "fan_in")) {}
   USE_OPERATOR_FUNCTIONS;
 
   void RunOnDevice() override;
 
   template <typename T>
   void DoRunWithType();
+
+ protected:
+  float scale_;
+  string mode_;
 };
 
-DEFINE_OP_SINGLE_ARG_WITH_DESC(int64_t, PermutationOp, limit);
-DEFINE_OP_REPEATED_ARG_WITH_DESC(int64_t, InitializeOp, dims);
-DEFINE_OP_REPEATED_ARG_WITH_DESC(double, RangeOp, slice);
-DEFINE_OP_REPEATED_ARG_WITH_DESC(double, LinSpaceOp, start);
-DEFINE_OP_REPEATED_ARG_WITH_DESC(double, LinSpaceOp, stop);
+DEFINE_OP_SINGLE_ARG(int64_t, PermutationOp, limit);
+DEFINE_OP_REPEATED_ARG(int64_t, InitializeOp, dims);
+DEFINE_OP_REPEATED_ARG(double, RangeOp, slice);
+DEFINE_OP_REPEATED_ARG(double, LinSpaceOp, start);
+DEFINE_OP_REPEATED_ARG(double, LinSpaceOp, stop);
 
 } // namespace dragon
 

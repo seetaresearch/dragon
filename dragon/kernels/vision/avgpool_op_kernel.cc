@@ -3,7 +3,7 @@
 
 namespace dragon {
 
-namespace kernel {
+namespace kernels {
 
 namespace {
 
@@ -23,14 +23,14 @@ void _AvgPool2dNCHW(
     const int pad_w,
     const T* x,
     T* y) {
-  const int HxW = H * W;
-  const int CxHxW = C * HxW;
-  const int count = N * C * out_h * out_w;
+  const auto HxW = H * W;
+  const auto CxHxW = C * HxW;
+  const auto NxCxHoxWo = N * C * out_h * out_w;
   std::array<int, 4> index = {0, 0, 0, 0};
   std::array<int, 4> dims = {N, C, out_h, out_w};
   T val, area;
   int hstart, hend, wstart, wend;
-  for (int i = 0; i < count; ++i) {
+  for (int i = 0; i < NxCxHoxWo; ++i) {
     hstart = index[2] * stride_h - pad_h;
     wstart = index[3] * stride_w - pad_w;
     hend = std::min(hstart + kernel_h, H + pad_h);
@@ -68,13 +68,13 @@ void _AvgPool2dNHWC(
     const int pad_w,
     const T* x,
     T* y) {
-  const int HxWxC = H * W * C;
-  const auto count = N * C * out_h * out_w;
+  const auto HxWxC = H * W * C;
+  const auto NxHoxWoxC = N * C * out_h * out_w;
   std::array<int, 4> index = {0, 0, 0, 0};
   std::array<int, 4> dims = {N, out_h, out_w, C};
   T val, area;
   int hstart, hend, wstart, wend;
-  for (int i = 0; i < count; ++i) {
+  for (int i = 0; i < NxHoxWoxC; ++i) {
     hstart = index[1] * stride_h - pad_h;
     wstart = index[2] * stride_w - pad_w;
     hend = std::min(hstart + kernel_h, H + pad_h);
@@ -110,15 +110,15 @@ void _AvgPool2dGradNCHW(
     const int pad_w,
     const T* dy,
     T* dx) {
-  const int HxW = H * W;
-  const int CxHxW = C * HxW;
-  const int count = N * C * out_h * out_w;
+  const auto HxW = H * W;
+  const auto CxHxW = C * HxW;
+  const auto NxCxHoxWo = N * C * out_h * out_w;
   std::array<int, 4> index = {0, 0, 0, 0};
   std::array<int, 4> dims = {N, C, out_h, out_w};
   T area;
   int hstart, hend, wstart, wend, xi;
   memset(dx, 0, sizeof(T) * N * CxHxW);
-  for (int i = 0; i < count; ++i) {
+  for (int i = 0; i < NxCxHoxWo; ++i) {
     hstart = index[2] * stride_h - pad_h;
     wstart = index[3] * stride_w - pad_w;
     hend = std::min(hstart + kernel_h, H + pad_h);
@@ -154,14 +154,14 @@ void _AvgPool2dGradNHWC(
     const int pad_w,
     const T* dy,
     T* dx) {
-  const int HxWxC = H * W * C;
-  const auto count = N * C * out_h * out_w;
+  const auto HxWxC = H * W * C;
+  const auto NxHoxWoxC = N * C * out_h * out_w;
   std::array<int, 4> index = {0, 0, 0, 0};
   std::array<int, 4> dims = {N, out_h, out_w, C};
   T area;
   int hstart, hend, wstart, wend, xi;
   memset(dx, 0, sizeof(T) * N * HxWxC);
-  for (int i = 0; i < count; ++i) {
+  for (int i = 0; i < NxHoxWoxC; ++i) {
     hstart = index[1] * stride_h - pad_h;
     wstart = index[2] * stride_w - pad_w;
     hend = std::min(hstart + kernel_h, H + pad_h);
@@ -200,14 +200,14 @@ void _AvgPool3dNCHW(
     const int pad_w,
     const T* x,
     T* y) {
-  const int DxHxW = D * H * W;
-  const int CxDxHxW = C * DxHxW;
-  const int count = N * C * out_d * out_h * out_w;
+  const auto DxHxW = D * H * W;
+  const auto CxDxHxW = C * DxHxW;
+  const auto NxCxDoxHoxWo = N * C * out_d * out_h * out_w;
   std::array<int, 5> index = {0, 0, 0, 0, 0};
   std::array<int, 5> dims = {N, C, out_d, out_h, out_w};
   T val, area;
   int dstart, dend, hstart, hend, wstart, wend;
-  for (int i = 0; i < count; ++i) {
+  for (int i = 0; i < NxCxDoxHoxWo; ++i) {
     dstart = index[2] * stride_d - pad_d;
     hstart = index[3] * stride_h - pad_h;
     wstart = index[4] * stride_w - pad_w;
@@ -256,13 +256,13 @@ void _AvgPool3dNHWC(
     const int pad_w,
     const T* x,
     T* y) {
-  const int DxHxWxC = D * H * W * C;
-  const auto count = N * C * out_d * out_h * out_w;
+  const auto DxHxWxC = D * H * W * C;
+  const auto NxDoxHoxWoxC = N * C * out_d * out_h * out_w;
   std::array<int, 5> index = {0, 0, 0, 0, 0};
   std::array<int, 5> dims = {N, out_d, out_h, out_w, C};
   T val, area;
   int dstart, dend, hstart, hend, wstart, wend;
-  for (int i = 0; i < count; ++i) {
+  for (int i = 0; i < NxDoxHoxWoxC; ++i) {
     dstart = index[1] * stride_d - pad_d;
     hstart = index[2] * stride_h - pad_h;
     wstart = index[3] * stride_w - pad_w;
@@ -311,15 +311,15 @@ void _AvgPool3dGradNCHW(
     const int pad_w,
     const T* dy,
     T* dx) {
-  const int DxHxW = D * H * W;
-  const int CxDxHxW = C * DxHxW;
-  const int count = N * C * out_d * out_h * out_w;
+  const auto DxHxW = D * H * W;
+  const auto CxDxHxW = C * DxHxW;
+  const auto NxCxDoxHoxWo = N * C * out_d * out_h * out_w;
   std::array<int, 5> index = {0, 0, 0, 0, 0};
   std::array<int, 5> dims = {N, C, out_d, out_h, out_w};
   T area;
   int dstart, dend, hstart, hend, wstart, wend, xi;
   memset(dx, 0, sizeof(T) * N * CxDxHxW);
-  for (int i = 0; i < count; ++i) {
+  for (int i = 0; i < NxCxDoxHoxWo; ++i) {
     dstart = index[2] * stride_d - pad_d;
     hstart = index[3] * stride_h - pad_h;
     wstart = index[4] * stride_w - pad_w;
@@ -366,14 +366,14 @@ void _AvgPool3dGradNHWC(
     const int pad_w,
     const T* dy,
     T* dx) {
-  const int DxHxWxC = D * H * W * C;
-  const auto count = N * C * out_d * out_h * out_w;
+  const auto DxHxWxC = D * H * W * C;
+  const auto NxDoxHoxWoxC = N * C * out_d * out_h * out_w;
   std::array<int, 5> index = {0, 0, 0, 0, 0};
   std::array<int, 5> dims = {N, out_d, out_h, out_w, C};
   T area;
   int dstart, dend, hstart, hend, wstart, wend, xi;
   memset(dx, 0, sizeof(T) * N * DxHxWxC);
-  for (int i = 0; i < count; ++i) {
+  for (int i = 0; i < NxDoxHoxWoxC; ++i) {
     dstart = index[1] * stride_d - pad_d;
     hstart = index[2] * stride_h - pad_h;
     wstart = index[3] * stride_w - pad_w;
@@ -509,6 +509,6 @@ DEFINE_KERNEL_LAUNCHER(AvgPool3dGrad, double); // AvgPool3dGrad
 #undef DEFINE_KERNEL_LAUNCHER
 #undef DISPATCH_POOL_KERNEL
 
-} // namespace kernel
+} // namespace kernels
 
 } // namespace dragon

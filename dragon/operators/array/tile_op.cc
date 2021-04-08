@@ -21,7 +21,7 @@ void TileOp<Context>::DoRunWithType() {
     return; // Just copy the contents
   }
 
-  kernel::Tile(
+  kernels::Tile(
       X.ndim(),
       X.dims().data(),
       X.strides().data(),
@@ -33,7 +33,7 @@ void TileOp<Context>::DoRunWithType() {
 
 template <class Context>
 void TileOp<Context>::RunOnDevice() {
-  DispatchHelper<FullTensorTypes>::Call(this, Input(0));
+  DispatchHelper<dtypes::Generic>::Call(this, Input(0));
 }
 
 template <class Context>
@@ -51,7 +51,7 @@ void TileGradientOp<Context>::DoRunWithType() {
   } else {
     dx = dest_->template mutable_data<T, Context>();
   }
-  kernel::TileGrad(
+  kernels::TileGrad(
       dest_->count(0, axis_), dest_->count(axis_), repeat_, dy, dx, ctx());
 }
 
@@ -64,9 +64,9 @@ void TileGradientOp<Context>::RunOnDevice() {
   repeats(0, &num_repeats);
   vector<pair<int, int>> dispatch_axes;
   for (int i = 0; i < dY.ndim() && i < num_repeats; i++) {
-    auto repeat = repeats(i);
-    if (repeat > 1) {
-      dispatch_axes.push_back({repeat, i});
+    const auto repeats_val = repeats(i);
+    if (repeats_val > 1) {
+      dispatch_axes.push_back({repeats_val, i});
     }
   }
   std::sort(dispatch_axes.begin(), dispatch_axes.end());
@@ -81,17 +81,14 @@ void TileGradientOp<Context>::RunOnDevice() {
   src_ = &dY, dest_ = dX;
   if (dispatch_axes.size() % 2 == 0) dest_ = &nav_;
 
-  // Reduce N times along each tiled axis
+  // Reduce N times along each axis
   for (const auto& task : dispatch_axes) {
     axis_ = task.second, repeat_ = task.first;
-
     vec64_t X_dims(src_->dims());
     X_dims[axis_] /= repeat_;
     dest_->Reshape(X_dims);
-
-    DispatchHelper<FloatingTensorTypes>::Call(this, dY);
+    DispatchHelper<dtypes::Floating>::Call(this, dY);
     ctx()->FinishDeviceComputation();
-
     std::swap(src_, dest_);
     if (dispatch_axes.size() % 2 == 1) {
       if (dest_ == &dY) dest_ = &nav_;

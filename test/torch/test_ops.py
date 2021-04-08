@@ -92,6 +92,7 @@ class TestTensorOps(OpTestCase):
             data1, data2 = arange(a_shape), arange(b_shape, 1)
             a, b = new_tensor(data1, False), new_tensor(data2, False)
             self.assertEqual(a + b, data1 + data2)
+            self.assertEqual(1 + a, 1 + data1)
             a += b
             self.assertEqual(a, data1 + data2)
 
@@ -106,7 +107,7 @@ class TestTensorOps(OpTestCase):
             self.assertEqual(y, np.matmul(data1, data2) + data3)
 
     def test_argmax(self):
-        entries = [(0, True), (0, False), (1, True), (1, False), (None, False)]
+        entries = [(0, True), (0, False), (1, True), (1, False)]
         for axis, keepdims in entries:
             data = arange((2, 3))
             x = new_tensor(data)
@@ -116,7 +117,7 @@ class TestTensorOps(OpTestCase):
             self.assertEqual(x.argmax(axis, keepdims), result)
 
     def test_argmin(self):
-        entries = [(0, True), (0, False), (1, True), (1, False), (None, False)]
+        entries = [(0, True), (0, False), (1, True), (1, False)]
         for axis, keepdims in entries:
             data = arange((2, 3))
             x = new_tensor(data)
@@ -137,21 +138,39 @@ class TestTensorOps(OpTestCase):
             c.baddbmm_(a, b)
             self.assertEqual(c, np.matmul(data1, data2) + data3)
 
+    def test_bitwise_and(self):
+        for a_shape, b_shape in self.binary_test_shapes:
+            data1 = arange(a_shape, dtype='int32')
+            data2 = arange(b_shape, 1, dtype='int32')
+            a, b = new_tensor(data1, False), new_tensor(data2, False)
+            self.assertEqual(a & b, np.bitwise_and(data1, data2))
+            a &= b
+            self.assertEqual(a, np.bitwise_and(data1, data2))
+
     def test_bitwise_not(self):
         for shape in self.unary_test_shapes:
             data = np.random.binomial(1, 0.5, shape).astype('bool')
             x = new_tensor(data)
-            self.assertEqual(x.bitwise_not(), np.invert(data))
+            self.assertEqual(~x, np.invert(data))
             x.bitwise_not_()
             self.assertEqual(x, np.invert(data))
 
+    def test_bitwise_or(self):
+        for a_shape, b_shape in self.binary_test_shapes:
+            data1 = arange(a_shape, dtype='int32')
+            data2 = arange(b_shape, 1, dtype='int32')
+            a, b = new_tensor(data1, False), new_tensor(data2, False)
+            self.assertEqual(a | b, np.bitwise_or(data1, data2))
+            a |= b
+            self.assertEqual(a, np.bitwise_or(data1, data2))
+
     def test_bitwise_xor(self):
         for a_shape, b_shape in self.binary_test_shapes:
-            data1 = np.random.binomial(1, 0.5, a_shape).astype('bool')
-            data2 = np.random.binomial(1, 0.5, b_shape).astype('bool')
+            data1 = arange(a_shape, dtype='int32')
+            data2 = arange(b_shape, 1, dtype='int32')
             a, b = new_tensor(data1, False), new_tensor(data2, False)
-            self.assertEqual(a.bitwise_xor(b), np.bitwise_xor(data1, data2))
-            a.bitwise_xor_(b)
+            self.assertEqual(a ^ b, np.bitwise_xor(data1, data2))
+            a ^= b
             self.assertEqual(a, np.bitwise_xor(data1, data2))
 
     def test_bmm(self):
@@ -235,6 +254,12 @@ class TestTensorOps(OpTestCase):
             self.assertEqual(x.expand(shape), np.broadcast_to(data, shape))
             self.assertEqual(x.expand_as(x.expand(shape)), np.broadcast_to(data, shape))
 
+    def test_eye(self):
+        entries = [(2,), (2, 2), (2, 3), (3, 2)]
+        for shape in entries:
+            x = torch.eye(*shape, dtype='float32')
+            self.assertEqual(x, np.eye(*shape, dtype='float32'))
+
     def test_fill(self):
         entries = [((2, 3), 1), ((2, 3), 1.)]
         for shape, value in entries:
@@ -253,6 +278,7 @@ class TestTensorOps(OpTestCase):
             self.assertEqual(x, data)
             self.assertEqual(torch.empty(1).new_ones(shape), np.ones(shape))
             self.assertEqual(torch.empty(1).new_zeros(shape), np.zeros(shape))
+            self.assertEqual(torch.full_like(x, 0), np.zeros(shape))
 
     def test_flatten(self):
         data = arange((1, 2, 3))
@@ -292,7 +318,7 @@ class TestTensorOps(OpTestCase):
         for item in entries:
             try:
                 x.__getitem__(item)
-            except TypeError:
+            except (TypeError, NotImplementedError):
                 pass
 
     def test_greater(self):
@@ -356,6 +382,30 @@ class TestTensorOps(OpTestCase):
         x = new_tensor(data)
         self.assertEqual(x.log(), np.log(data))
 
+    def test_logical_and(self):
+        for a_shape, b_shape in self.binary_test_shapes:
+            data1, data2 = arange(a_shape), arange(b_shape, 1)
+            a, b = new_tensor(data1, False), new_tensor(data2, False)
+            self.assertEqual(a.logical_and(b), np.logical_and(data1, data2))
+
+    def test_logical_not(self):
+        for shape in self.unary_test_shapes:
+            data = arange(shape)
+            x = new_tensor(data)
+            self.assertEqual(x.logical_not(), np.logical_not(data))
+
+    def test_logical_or(self):
+        for a_shape, b_shape in self.binary_test_shapes:
+            data1, data2 = arange(a_shape), arange(b_shape, 1)
+            a, b = new_tensor(data1, False), new_tensor(data2, False)
+            self.assertEqual(a.logical_or(b), np.logical_or(data1, data2))
+
+    def test_logical_xor(self):
+        for a_shape, b_shape in self.binary_test_shapes:
+            data1, data2 = arange(a_shape), arange(b_shape, 1)
+            a, b = new_tensor(data1, False), new_tensor(data2, False)
+            self.assertEqual(a.logical_xor(b), np.logical_xor(data1, data2))
+
     def test_log_sum_exp(self):
         data = np.array([1., 2., 3.], 'float32')
         x = new_tensor(data)
@@ -364,9 +414,12 @@ class TestTensorOps(OpTestCase):
     def test_masked_fill(self):
         data = arange((2, 3))
         x = new_tensor(data)
-        x.masked_fill_(x > 2, 0)
+        mask = x > 2
+        y = x.masked_fill(mask, 0)
+        x.masked_fill_(mask, 0)
         data[data > 2] = 0
         self.assertEqual(x, data)
+        self.assertEqual(y, data)
 
     def test_matmul(self):
         test_shapes = [((2,), (2,)),
@@ -613,7 +666,7 @@ class TestTensorOps(OpTestCase):
         for shape, size_or_sections, dim in entries:
             data = arange(shape)
             x = new_tensor(data)
-            y = torch.split(x, size_or_sections, dim)
+            y = x.split(size_or_sections, dim)
             self.assertEqual(y, np.split(data, (2,), axis=1))
 
     def test_sqrt(self):
@@ -639,6 +692,28 @@ class TestTensorOps(OpTestCase):
             self.assertEqual(a - b, data1 - data2)
             a -= b
             self.assertEqual(a, data1 - data2)
+
+    def test_tril(self):
+        entries = [(3, 3), (3, 4,), (4, 3), (2, 3, 3)]
+        for shape in entries:
+            data = arange(shape, 1)
+            for k in range(-max(shape), max(shape) + 1):
+                x = new_tensor(data)
+                y = x.tril(k)
+                self.assertEqual(y, np.tril(data, k))
+                x.tril_(k)
+                self.assertEqual(x, np.tril(data, k))
+
+    def test_triu(self):
+        entries = [(3, 3), (3, 4,), (4, 3), (2, 3, 3)]
+        for shape in entries:
+            data = arange(shape, 1)
+            for k in range(-max(shape), max(shape) + 1):
+                x = new_tensor(data)
+                y = x.triu(k)
+                self.assertEqual(y, np.triu(data, k))
+                x.triu_(k)
+                self.assertEqual(x, np.triu(data, k))
 
     def test_topk(self):
         entries = [(2, None, True),

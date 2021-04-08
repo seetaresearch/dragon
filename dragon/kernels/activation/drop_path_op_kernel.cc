@@ -1,64 +1,68 @@
-#include "dragon/utils/device/common_openmp.h"
 #include "dragon/utils/math_functions.h"
 #include "dragon/utils/op_kernels.h"
 
 namespace dragon {
 
-namespace kernel {
+namespace kernels {
 
 namespace {
 
-template <typename T>
+template <typename T, typename AccT>
 void _DropPath(
-    const int rows,
-    const int cols,
-    const float scale,
+    const int N,
+    const int C,
+    const AccT scale,
+    const uint8_t* mask,
     const T* x,
-    const float* mask,
     T* y) {
-  auto count = rows * cols;
-  auto thresh = 1.f - (1.f / scale);
-#ifdef USE_OPENMP
-#pragma omp parallel for num_threads(OMP_THREADS(count))
-#endif
-  for (int i = 0; i < count; ++i) {
-    y[i] = x[i] * (T)(mask[i / cols] > thresh) * scale;
+  const auto NxC = N * C;
+  for (int i = 0; i < NxC; ++i) {
+    y[i] = convert::To<T>(convert::To<AccT>(x[i]) * AccT(mask[i / C]) * scale);
   }
-}
-
-template <>
-void _DropPath<float16>(
-    const int rows,
-    const int cols,
-    const float scale,
-    const float16* x,
-    const float* mask,
-    float16* y) {
-  CPU_FP16_NOT_SUPPORTED;
 }
 
 } // namespace
 
 /* ------------------- Launcher Separator ------------------- */
 
-#define DEFINE_KERNEL_LAUNCHER(T)             \
-  template <>                                 \
-  void DropPath<T, CPUContext>(               \
-      const int rows,                         \
-      const int cols,                         \
-      const float scale,                      \
-      const T* x,                             \
-      const float* mask,                      \
-      T* y,                                   \
-      CPUContext* ctx) {                      \
-    _DropPath(rows, cols, scale, x, mask, y); \
+#define DEFINE_KERNEL_LAUNCHER(T)                                      \
+  template <>                                                          \
+  void DropPath<T, CPUContext>(                                        \
+      const int N,                                                     \
+      const int C,                                                     \
+      const float ratio,                                               \
+      const float scale,                                               \
+      const T* x,                                                      \
+      T* y,                                                            \
+      uint8_t* mask,                                                   \
+      uint32_t* /* r */,                                               \
+      CPUContext* ctx) {                                               \
+    math::RandomBernoulli(N, 1.f - ratio, mask, ctx);                  \
+    _DropPath(N, C, math::AccmulatorType<T>::type(scale), mask, x, y); \
+  }
+
+#define DEFINE_GRAD_KERNEL_LAUNCHER(T)                                   \
+  template <>                                                            \
+  void DropPathGrad<T, CPUContext>(                                      \
+      const int N,                                                       \
+      const int C,                                                       \
+      const float scale,                                                 \
+      const uint8_t* mask,                                               \
+      const T* dy,                                                       \
+      T* dx,                                                             \
+      CPUContext* ctx) {                                                 \
+    _DropPath(N, C, math::AccmulatorType<T>::type(scale), mask, dy, dx); \
   }
 
 DEFINE_KERNEL_LAUNCHER(float16);
 DEFINE_KERNEL_LAUNCHER(float);
 DEFINE_KERNEL_LAUNCHER(double);
+DEFINE_GRAD_KERNEL_LAUNCHER(float16);
+DEFINE_GRAD_KERNEL_LAUNCHER(float);
+DEFINE_GRAD_KERNEL_LAUNCHER(double);
 #undef DEFINE_KERNEL_LAUNCHER
+#undef DEFINE_GRAD_KERNEL_LAUNCHER
 
-} // namespace kernel
+} // namespace kernels
 
 } // namespace dragon

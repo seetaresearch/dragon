@@ -22,7 +22,7 @@ void CuDNNEluOp<Context>::DoRunWithType() {
 
 template <class Context>
 void CuDNNEluOp<Context>::RunOnDevice() {
-  DispatchHelper<FloatingTensorTypes>::Call(this, Input(0));
+  DispatchHelper<dtypes::Floating>::Call(this, Input(0));
 }
 
 template <class Context>
@@ -47,7 +47,7 @@ void CuDNNEluGradientOp<Context>::DoRunWithType() {
 
 template <class Context>
 void CuDNNEluGradientOp<Context>::RunOnDevice() {
-  DispatchHelper<FloatingTensorTypes>::Call(this, Input(0));
+  DispatchHelper<dtypes::Floating>::Call(this, Input(0));
 }
 
 DEPLOY_CUDNN_OPERATOR(Elu);

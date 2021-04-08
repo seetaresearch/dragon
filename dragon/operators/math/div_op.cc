@@ -8,10 +8,8 @@ template <class Context>
 template <typename T>
 void DivOp<Context>::DoRunWithType() {
   auto &A = Input(0), &B = Input(1);
-
-  // Store for the gradient calculation
-  STORE_INPUT_SPEC(0);
-  STORE_INPUT_SPEC(1);
+  SET_INPUT_SPEC(0);
+  SET_INPUT_SPEC(1);
 
   vec64_t Y_dims(A.dims());
   if (A.dims() == B.dims()) {
@@ -40,14 +38,14 @@ void DivOp<Context>::DoRunWithType() {
 
 template <class Context>
 void DivOp<Context>::RunOnDevice() {
-  DispatchHelper<NumericalTensorTypes>::Call(this, Input(0));
+  DispatchHelper<dtypes::Numerical>::Call(this, Input(0));
 }
 
 template <class Context>
 template <typename T>
 void DivGradientOp<Context>::DoRunWithType() {
   auto &A = Input(0), &B = Input(1), &dY = Input(2);
-  auto &A_ref = RESTORE_INPUT_SPEC(0), &B_ref = RESTORE_INPUT_SPEC(1);
+  auto &A_ref = INPUT_SPEC(0), &B_ref = INPUT_SPEC(1);
   auto *dA = Output(0), *dB = Output(1);
 
   vec32_t A_broadcast_axes, B_broadcast_axes;
@@ -189,7 +187,7 @@ void DivGradientOp<Context>::DoRunWithType() {
 
 template <class Context>
 void DivGradientOp<Context>::RunOnDevice() {
-  DispatchHelper<FloatingTensorTypes>::Call(this, Input(2));
+  DispatchHelper<dtypes::Floating>::Call(this, Input(2));
 }
 
 DEPLOY_CPU_OPERATOR(Div);

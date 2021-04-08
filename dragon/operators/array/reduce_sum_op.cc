@@ -9,6 +9,7 @@ template <class Context>
 template <typename T>
 void ReduceSumOp<Context>::DoRunWithType() {
   auto &X = Input(0), *Y = Output(0);
+  SET_INPUT_SPEC(0);
 
   // Determine the reduce axes
   vec64_t Y_dims(X.dims()), Y_shape;
@@ -16,8 +17,9 @@ void ReduceSumOp<Context>::DoRunWithType() {
   vec32_t reduce_axes(axes_.begin(), axes_.end());
   if (axes_.empty()) {
     reduce_axes.resize(X.ndim());
-    for (int i = 0; i < X.ndim(); ++i)
+    for (int i = 0; i < X.ndim(); ++i) {
       reduce_axes[i] = i;
+    }
   }
   for (int i = 0; i < reduce_axes.size(); ++i) {
     auto axis = reduce_axes[i];
@@ -30,11 +32,10 @@ void ReduceSumOp<Context>::DoRunWithType() {
 
   // Squeeze the output shape if necessary
   for (int i = 0; i < X.ndim(); ++i) {
-    if (keep_dims_ || Y_dims[i] != 1) Y_shape.push_back(Y_dims[i]);
+    if (keep_dims_ || Y_dims[i] != 1) {
+      Y_shape.push_back(Y_dims[i]);
+    }
   }
-
-  // Store for the gradient calculation
-  STORE_INPUT_SPEC(0);
   Buffer("Y_dims")->template CopyFrom<int64_t>(Y_dims);
 
   if (X.count() == 1) {
@@ -54,21 +55,21 @@ void ReduceSumOp<Context>::DoRunWithType() {
 
 template <class Context>
 void ReduceSumOp<Context>::RunOnDevice() {
-  DispatchHelper<NumericalTensorTypes>::Call(this, Input(0));
+  DispatchHelper<dtypes::Numerical>::Call(this, Input(0));
 }
 
 template <class Context>
 template <typename T>
 void ReduceSumGradientOp<Context>::DoRunWithType() {
   auto &dY = Input(0), *dX = Output(0);
-  dX->ReshapeLike(RESTORE_INPUT_SPEC(0));
+  dX->ReshapeLike(INPUT_SPEC(0));
 
   if (dX->count() == 1) {
     dX->CopyFrom(dY, ctx());
   } else {
     vec64_t Y_dims;
     Buffer("Y_dims")->template CopyTo<int64_t>(Y_dims);
-    kernel::ReduceSumGrad(
+    kernels::ReduceSumGrad(
         dX->ndim(),
         dX->dims().data(),
         Y_dims.data(),
@@ -82,7 +83,7 @@ void ReduceSumGradientOp<Context>::DoRunWithType() {
 
 template <class Context>
 void ReduceSumGradientOp<Context>::RunOnDevice() {
-  DispatchHelper<FloatingTensorTypes>::Call(this, Input(0));
+  DispatchHelper<dtypes::Floating>::Call(this, Input(0));
 }
 
 DEPLOY_CPU_OPERATOR(ReduceSum);

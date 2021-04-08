@@ -3,43 +3,43 @@
 
 namespace dragon {
 
-namespace kernel {
+namespace kernels {
 
 namespace {
 
 template <typename T>
-void _CosGrad(const int count, const T* dy, const T* x, T* dx) {
-  EigenVectorArrayMap<T>(dx, count) = ConstEigenVectorArrayMap<T>(dy, count) *
-      (-ConstEigenVectorArrayMap<T>(x, count).sin());
+void _CosGrad(const int N, const T* dy, const T* x, T* dx) {
+  EigenVectorArrayMap<T>(dx, N) = ConstEigenVectorArrayMap<T>(dy, N) *
+      (-ConstEigenVectorArrayMap<T>(x, N).sin());
 }
 
 template <typename T>
-void _SinGrad(const int count, const T* dy, const T* x, T* dx) {
-  EigenVectorArrayMap<T>(dx, count) = ConstEigenVectorArrayMap<T>(dy, count) *
-      ConstEigenVectorArrayMap<T>(x, count).cos();
+void _SinGrad(const int N, const T* dy, const T* x, T* dx) {
+  EigenVectorArrayMap<T>(dx, N) = ConstEigenVectorArrayMap<T>(dy, N) *
+      ConstEigenVectorArrayMap<T>(x, N).cos();
 }
 
 template <typename T>
-void _ReciprocalGrad(const int count, const T* dy, const T* y, T* dx) {
-  EigenVectorArrayMap<T>(dx, count) = ConstEigenVectorArrayMap<T>(dy, count) *
-      (-ConstEigenVectorArrayMap<T>(y, count).square());
+void _ReciprocalGrad(const int N, const T* dy, const T* y, T* dx) {
+  EigenVectorArrayMap<T>(dx, N) = ConstEigenVectorArrayMap<T>(dy, N) *
+      (-ConstEigenVectorArrayMap<T>(y, N).square());
 }
 
 template <typename T>
-void _RsqrtGrad(const int count, const T* dy, const T* y, T* dx) {
-  EigenVectorArrayMap<T>(dx, count) = ConstEigenVectorArrayMap<T>(dy, count) *
-      (T(-0.5) * ConstEigenVectorArrayMap<T>(y, count).cube());
+void _RsqrtGrad(const int N, const T* dy, const T* y, T* dx) {
+  EigenVectorArrayMap<T>(dx, N) = ConstEigenVectorArrayMap<T>(dy, N) *
+      (T(-0.5) * ConstEigenVectorArrayMap<T>(y, N).cube());
 }
 
 } // namespace
 
 /* ------------------- Launcher Separator ------------------- */
 
-#define DEFINE_GRAD_KERNEL_LAUNCHER(name, T)                              \
-  template <>                                                             \
-  void name##Grad<T, CPUContext>(                                         \
-      const int count, const T* dy, const T* y, T* dx, CPUContext* ctx) { \
-    _##name##Grad(count, dy, y, dx);                                      \
+#define DEFINE_GRAD_KERNEL_LAUNCHER(name, T)                          \
+  template <>                                                         \
+  void name##Grad<T, CPUContext>(                                     \
+      const int N, const T* dy, const T* y, T* dx, CPUContext* ctx) { \
+    _##name##Grad(N, dy, y, dx);                                      \
   }
 
 DEFINE_GRAD_KERNEL_LAUNCHER(Cos, float);
@@ -52,11 +52,11 @@ DEFINE_GRAD_KERNEL_LAUNCHER(Rsqrt, float);
 DEFINE_GRAD_KERNEL_LAUNCHER(Rsqrt, double);
 #undef DEFINE_GRAD_KERNEL_LAUNCHER
 
-#define DEFINE_GRAD_KERNEL_LAUNCHER(name, T)                              \
-  template <>                                                             \
-  void name##Grad<T, CPUContext>(                                         \
-      const int count, const T* dy, const T* y, T* dx, CPUContext* ctx) { \
-    CPU_FP16_NOT_SUPPORTED;                                               \
+#define DEFINE_GRAD_KERNEL_LAUNCHER(name, T)                          \
+  template <>                                                         \
+  void name##Grad<T, CPUContext>(                                     \
+      const int N, const T* dy, const T* y, T* dx, CPUContext* ctx) { \
+    CPU_FP16_NOT_SUPPORTED;                                           \
   }
 
 DEFINE_GRAD_KERNEL_LAUNCHER(Cos, float16);
@@ -65,6 +65,6 @@ DEFINE_GRAD_KERNEL_LAUNCHER(Reciprocal, float16);
 DEFINE_GRAD_KERNEL_LAUNCHER(Rsqrt, float16);
 #undef DEFINE_GRAD_KERNEL_LAUNCHER
 
-} // namespace kernel
+} // namespace kernels
 
 } // namespace dragon

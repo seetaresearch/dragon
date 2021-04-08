@@ -36,7 +36,7 @@ def include_paths(cuda=False):
     Parameters
     ----------
     cuda : bool, optional, default=False
-        **True** to add cuda paths.
+        ``True`` to add cuda paths.
 
     Returns
     -------
@@ -62,7 +62,7 @@ def library_paths(cuda=False):
     Parameters
     ----------
     cuda : bool, optional, default=False
-        **True** to add cuda paths.
+        ``True`` to add cuda paths.
 
     Returns
     -------

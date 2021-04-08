@@ -3,69 +3,67 @@
 
 namespace dragon {
 
-namespace kernel {
+namespace kernels {
 
 namespace {
 
-void _DropBlock2dNCHW(
+void _MaskBlock2dNCHW(
     const int N,
     const int C,
     const int H,
     const int W,
-    const int seed_h,
-    const int seed_w,
     const int block_size,
     const uint32_t* r,
-    int* mask) {
-  const int HW = H * W;
-  const int CHW = C * HW;
-  const int count = N * seed_h * seed_w;
-  std::array<int, 3> idx = {0, 0, 0};
+    uint8_t* mask) {
+  const int seed_h = H - block_size + 1;
+  const int seed_w = W - block_size + 1;
+  const int num_seeds = N * seed_h * seed_w;
+  const int HxW = H * W;
+  const int CxHxW = C * HxW;
+  std::array<int, 3> index = {0, 0, 0};
   std::array<int, 3> dims = {N, seed_h, seed_w};
-  int offset;
-  for (int i = 0; i < count; ++i) {
+  for (int i = 0; i < num_seeds; ++i) {
     if (r[i] > 0) {
-      offset = idx[0] * CHW + idx[1] * W + idx[2];
+      const int offset = index[0] * CxHxW + index[1] * W + index[2];
       for (int c = 0; c < C; ++c) {
-        for (int bh = 0; bh < block_size; ++bh) {
-          for (int bw = 0; bw < block_size; ++bw) {
-            mask[offset + c * HW + bh * W + bw] &= 0;
+        for (int h_b = 0; h_b < block_size; ++h_b) {
+          for (int w_b = 0; w_b < block_size; ++w_b) {
+            mask[offset + c * HxW + h_b * W + w_b] &= uint8_t(0);
           }
         }
-      } // Share the mask between channels
+      }
     }
-    math::utils::IncreaseIndexInDims(3, dims.data(), idx.data());
+    math::utils::IncreaseIndexInDims(3, dims.data(), index.data());
   }
 }
 
-void _DropBlock2dNHWC(
+void _MaskBlock2dNHWC(
     const int N,
     const int C,
     const int H,
     const int W,
-    const int seed_h,
-    const int seed_w,
     const int block_size,
     const uint32_t* seed,
-    int* mask) {
-  const int WC = W * C;
-  const int HWC = H * WC;
-  const int count = N * seed_h * seed_w;
-  std::array<int, 3> idx = {0, 0, 0};
+    uint8_t* mask) {
+  const int seed_h = H - block_size + 1;
+  const int seed_w = W - block_size + 1;
+  const int num_seeds = N * seed_h * seed_w;
+  const int WxC = W * C;
+  const int HxWxC = H * WxC;
+  std::array<int, 3> index = {0, 0, 0};
   std::array<int, 3> dims = {N, seed_h, seed_w};
-  int offset;
-  for (int i = 0; i < count; ++i) {
+  for (int i = 0; i < num_seeds; ++i) {
     if (seed[i] > 0) {
-      offset = idx[0] * HWC + idx[1] * WC + idx[2] * C;
-      for (int bh = 0; bh < block_size; ++bh) {
-        for (int bw = 0; bw < block_size; ++bw) {
+      const int offset = index[0] * HxWxC + index[1] * WxC + index[2] * C;
+      for (int h_b = 0; h_b < block_size; ++h_b) {
+        for (int w_b = 0; w_b < block_size; ++w_b) {
           for (int c = 0; c < C; ++c) {
-            mask[offset + bh * WC + bw * C + c] &= 0;
+            mask[offset + h_b * WxC + w_b * C + c] &= uint8_t(0);
           }
         }
-      } // Share the mask between channels
+      }
     }
-    math::utils::IncreaseIndexInDims(3, dims.data(), idx.data());
+    math::utils::IncreaseIndexInDims(3, dims.data(), index.data());
   }
 }
 
@@ -73,31 +71,43 @@ void _DropBlock2dNHWC(
 
 /* ------------------- Launcher Separator ------------------- */
 
-template <>
-void DropBlock2d<CPUContext>(
-    const int N,
-    const int C,
-    const int H,
-    const int W,
-    const int seed_h,
-    const int seed_w,
-    const int block_size,
-    const float gamma,
-    const string& data_format,
-    uint32_t* r,
-    int* mask,
-    CPUContext* ctx) {
-  const int count = N * seed_h * seed_w;
-  math::RandomBernoulli(count, gamma, r, ctx);
-  if (data_format == "NCHW") {
-    _DropBlock2dNCHW(N, C, H, W, seed_h, seed_w, block_size, r, mask);
-  } else if (data_format == "NHWC") {
-    _DropBlock2dNHWC(N, C, H, W, seed_h, seed_w, block_size, r, mask);
-  } else {
-    LOG(FATAL) << "Unknown DataFormat: " << data_format;
+#define DEFINE_KERNEL_LAUNCHER(T)                          \
+  template <>                                              \
+  void DropBlock2d<T, CPUContext>(                         \
+      const int N,                                         \
+      const int C,                                         \
+      const int H,                                         \
+      const int W,                                         \
+      const int block_size,                                \
+      const float ratio,                                   \
+      const float scale,                                   \
+      const string& data_format,                           \
+      const T* x,                                          \
+      T* y,                                                \
+      uint8_t* mask,                                       \
+      uint32_t* r,                                         \
+      CPUContext* ctx) {                                   \
+    const int seed_h = H - block_size + 1;                 \
+    const int seed_w = W - block_size + 1;                 \
+    const int num_seeds = N * seed_h * seed_w;             \
+    const int NxCxHxW = N * C * H * W;                     \
+    math::Set(NxCxHxW, uint8_t(1), mask, ctx);             \
+    math::RandomBernoulli(num_seeds, ratio, r, ctx);       \
+    if (data_format == "NCHW") {                           \
+      _MaskBlock2dNCHW(N, C, H, W, block_size, r, mask);   \
+    } else if (data_format == "NHWC") {                    \
+      _MaskBlock2dNHWC(N, C, H, W, block_size, r, mask);   \
+    } else {                                               \
+      LOG(FATAL) << "Unknown DataFormat: " << data_format; \
+    }                                                      \
+    math::ApplyMask(NxCxHxW, scale, mask, x, y, ctx);      \
   }
-}
 
-} // namespace kernel
+DEFINE_KERNEL_LAUNCHER(float16);
+DEFINE_KERNEL_LAUNCHER(float);
+DEFINE_KERNEL_LAUNCHER(double);
+#undef DEFINE_KERNEL_LAUNCHER
+
+} // namespace kernels
 
 } // namespace dragon

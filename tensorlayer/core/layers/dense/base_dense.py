@@ -89,17 +89,9 @@ class Dense(layer.Layer):
         else:
             self.in_channels = inputs_shape[1]
             shape = [inputs_shape[1], self.n_units]
-        self.W = self.add_weight(
-            name='weights',
-            shape=shape,
-            init=self.W_init,
-        )
+        self.W = self.add_weight('weights', shape, init=self.W_init)
         if self.b_init:
-            self.b = self.add_weight(
-                name='biases',
-                shape=[self.n_units],
-                init=self.b_init,
-            )
+            self.b = self.add_weight('biases', [self.n_units], init=self.b_init)
 
     def forward(self, inputs):
         outputs = math_ops.gemm(

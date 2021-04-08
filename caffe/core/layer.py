@@ -16,10 +16,8 @@ from __future__ import print_function
 
 import numpy
 
-from dragon.core.autograph.tensor import TensorRef
-from dragon.core.eager import context as eager_context
-from dragon.core.framework import context
-from dragon.core.util import logging
+from dragon.core.autograph import context
+from dragon.core.framework.tensor import Tensor
 from dragon.vm.caffe.core.proto import caffe_pb2
 
 
@@ -36,20 +34,10 @@ class Layer(object):
 
         """
         self._proto = layer_param
-        self._name = layer_param.name
-        self._arguments, self.arguments = {'name': 'output'}, {}
-        # Store the inputs, outputs and trainable parameters.
-        self._bottom, self._top, self._blobs = [], [], []
-        for blob in layer_param.bottom:
-            self._bottom.append(blob)
-        for blob in layer_param.top:
-            self._top.append(blob)
-        # Store the loss weight to apply gradients.
-        self._loss_weight = layer_param.loss_weight \
-            if len(layer_param.loss_weight) > 0 else None
-        # Optional mirror stage argument for memory optimization.
-        if layer_param.HasField('mirror_stage'):
-            self._arguments['mirror_stage'] = layer_param.mirror_stage
+        self._bottom_names = [name for name in layer_param.bottom]
+        self._top_names = [name for name in layer_param.top]
+        self._blobs = []
+        self._call_layer = None
 
     @property
     def blobs(self):
@@ -59,36 +47,37 @@ class Layer(object):
     @property
     def bottom(self):
         """Return the bottom names."""
-        return self._bottom
-
-    @property
-    def loss_weight(self):
-        """Return the loss weight."""
-        return self._loss_weight
+        return self._bottom_names
 
     @property
     def name(self):
         """Return the layer name."""
-        return self._name
+        return self._proto.name
 
     @property
     def top(self):
         """Return the top names."""
-        return self._top
+        return self._top_names
 
-    def add_blob(self, value=None, filler=None, no_grad=False):
+    def add_blob(self, shape, filler, requires_grad=True):
         """Add a blob into this layer."""
-        # Set the name for reference explicitly.
-        data_name = context.get_name_scope() + 'param:{}'.format(len(self._blobs))
-        data, diff = TensorRef(data_name), TensorRef(data_name + '_grad')
-        if filler is not None:
-            data._register_as(**filler)
+        data = Tensor(shape, name='blob%d' % (len(self._blobs) + 1))
+        if filler.type == 'constant':
+            data.fill(filler.value)
+        elif filler.type == 'gaussian':
+            data.normal(filler.mean, filler.std)
+        elif filler.type == 'uniform':
+            data.uniform(filler.min, filler.max)
+        elif filler.type == 'xavier':
+            norm_modes = {0: 'fan_in', 1: 'fan_out', 2: 'fan_avg'}
+            data.glorot_uniform(norm_modes[filler.variance_norm])
+        elif filler.type == 'msra':
+            norm_modes = {0: 'fan_in', 1: 'fan_out', 2: 'fan_avg'}
+            data.glorot_normal(norm_modes[filler.variance_norm])
         else:
-            # Register a constant filler by default.
-            value = value if value else 0
-            data.constant(value=value)
-        # Append to the blobs.
-        self._blobs.append({'data': data, 'diff': None if no_grad else diff})
+            raise ValueError('Unknown filler type: ' + filler.type)
+        data.requires_grad = requires_grad
+        self._blobs.append({'data': data, 'diff': None})
 
     def from_proto(self, proto):
         """Deserialize from the proto.
@@ -110,16 +99,14 @@ class Layer(object):
                     raise ValueError('Neither <data> or <double_data> in blob proto.')
                 if len(blob_proto.shape.dim) > 0:
                     value = value.reshape([dim for dim in blob_proto.shape.dim])
-                self._blobs[i]['data'].set_value(value)
-                logging.info('Blob({}/param:{}) loaded, shape: {}, size: {}'
-                             .format(self._name, i, value.shape, value.size))
+                self._blobs[i]['data']._impl.FromNumpy(value, False)
 
     def setup(self, bottom):
         """Setup the layer."""
-        self.arguments = dict(self.arguments, **self._arguments)
         bottom = bottom[0] if len(bottom) == 1 else bottom
-        with eager_context.graph_mode():
-            return self.__call__(bottom)
+        with context.graph_mode():
+            call_layer = self._call_layer or self
+            return call_layer.__call__(bottom)
 
     def to_proto(self):
         """Serialize to the proto.
@@ -133,7 +120,7 @@ class Layer(object):
         proto = caffe_pb2.LayerParameter()
         proto.CopyFrom(self._proto)
         for blob in self._blobs:
-            value = blob['data'].get_value()
+            value = blob['data'].numpy()
             if str(value.dtype) == 'float32':
                 blob_proto = caffe_pb2.BlobProto(
                     data=value.flatten(),
@@ -146,21 +133,6 @@ class Layer(object):
                 raise ValueError('Either float32 or float64 blob is required.')
             proto.blobs.extend([blob_proto])
         return proto
-
-    @staticmethod
-    def get_filler(proto, filler_name):
-        """Return the filler from proto."""
-        if proto.HasField(filler_name):
-            filler = getattr(proto, filler_name)
-            return {
-                'type': filler.type.lower(),
-                'value': filler.value,
-                'low': filler.min,
-                'high': filler.max,
-                'mean': filler.mean,
-                'std': filler.std,
-            }
-        return None
 
     def __call__(self, bottom):
         """Define the forward pipeline."""

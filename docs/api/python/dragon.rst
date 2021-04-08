@@ -6,17 +6,17 @@ dragon
   Classes
   -------
 
-  `class EagerTensor <dragon/EagerTensor.html>`_
-  : Tensor abstraction for eager executing.
+  `class DeviceSpec <dragon/DeviceSpec.html>`_
+  : Describe a computation device.
 
   `class GradientTape <dragon/GradientTape.html>`_
   : Record the operations for auto differentiation.
 
   `class Tensor <dragon/Tensor.html>`_
-  : Tensor abstraction for graph executing.
+  : A multi-dimensional array for computation
 
   `class Workspace <dragon/Workspace.html>`_
-  : Sandbox to isolate the resources and computations.
+  : Standalone environment for resources and computations.
 
   Functions
   ---------
@@ -27,6 +27,9 @@ dragon
   `assign(...) <dragon/assign.html>`_
   : Assign the value to input.
 
+  `boolean_mask(...) <dragon/boolean_mask.html>`_
+  : Return the elements of input where mask is true.
+
   `broadcast_to(...) <dragon/broadcast_to.html>`_
   : Broadcast input according to a given shape.
 
@@ -34,13 +37,14 @@ dragon
   : Cast the data type of input.
 
   `channel_affine(...) <dragon/channel_affine.html>`_
-  : Apply affine transformation along the channels.
+  : Apply affine transformation to each channel of input.
 
   `channel_normalize(...) <dragon/channel_normalize.html>`_
-  : Normalize channels with mean and standard deviation.
+  : Apply normalization to each channel of input.
 
   `channel_shuffle(...) <dragon/channel_shuffle.html>`_
-  : Shuffle channels between a given number of groups.
+  : Apply group shuffle to each channel of input.
+  `[Zhang et.al, 2017] <https://arxiv.org/abs/1707.01083>`_.
 
   `concat(...) <dragon/concat.html>`_
   : Concatenate the inputs along the given axis.
@@ -48,17 +52,14 @@ dragon
   `constant(...) <dragon/constant.html>`_
   : Return a tensor initialized from the value.
 
-  `create_function(...) <dragon/create_function.html>`_
-  : Create a callable graph from the specified outputs.
-
   `device(...) <dragon/device.html>`_
   : Context-manager to nest the device spec.
 
   `eager_mode(...) <dragon/eager_mode.html>`_
   : Context-manager set the eager execution mode.
 
-  `eager_scope(...) <dragon/eager_mode.html>`_
-  : Context-manager to nest the name for eager resources.
+  `variable_scope(...) <dragon/eager_mode.html>`_
+  : Context-manager to nest the namespace for variables.
 
   `expand_dims(...) <dragon/expand_dims.html>`_
   : Expand the dimensions of input with size 1.
@@ -78,14 +79,14 @@ dragon
   `function(...) <dragon/function.html>`_
   : Compile a function and return an executable.
 
+  `gather(...) <dragon/gather.html>`_
+  : Gather the elements along the given axis using index.
+
   `get_num_threads(...) <dragon/get_num_threads.html>`_
   : Return the number of threads for cpu parallelism.
 
   `get_workspace(...) <dragon/get_workspace.html>`_
-  : Return the current default workspace.
-
-  `gradients(...) <dragon/gradients.html>`_
-  : Compute the symbolic derivatives of ``ys`` w.r.t. ``xs`` .
+  : Return the default workspace.
 
   `graph_mode(...) <dragon/graph_mode.html>`_
   : Context-manager set the graph execution mode.
@@ -93,20 +94,11 @@ dragon
   `identity(...) <dragon/identity.html>`_
   : Return a tensor copied from the input.
 
-  `index_select(...) <dragon/index_select.html>`_
-  : Select the elements according to the index along the given axis.
-
   `linspace(...) <dragon/linspace.html>`_
   : Generate evenly spaced values within intervals along the given axis.
 
   `load_library(...) <dragon/load_library.html>`_
   : Load a shared library.
-
-  `masked_assign(...) <dragon/masked_assign.html>`_
-  : Assign the value to input where mask is 1.
-
-  `masked_select(...) <dragon/masked_select.html>`_
-  : Select the elements of input where mask is 1.
 
   `name_scope(...) <dragon/name_scope.html>`_
   : Context-manager to nest the name as prefix for operations.
@@ -166,10 +158,16 @@ dragon
   : Return the identity of input with truncated gradient-flow.
 
   `tile(...) <dragon/tile.html>`_
-  : Tile the input according to the given repeats.
+  : Repeat elements along each axis of input.
 
   `transpose(...) <dragon/transpose.html>`_
   : Permute the dimensions of input.
+
+  `tril(...) <dragon/tril.html>`_
+  : Return the lower triangular part of input.
+
+  `triu(...) <dragon/triu.html>`_
+  : Return the upper triangular part of input.
 
   `unique(...) <dragon/unique.html>`_
   : Return the unique elements of input.
@@ -186,12 +184,13 @@ dragon
 .. toctree::
   :hidden:
 
-  dragon/EagerTensor
+  dragon/DeviceSpec
   dragon/GradientTape
   dragon/Tensor
   dragon/Workspace
   dragon/argsort
   dragon/assign
+  dragon/boolean_mask
   dragon/broadcast_to
   dragon/cast
   dragon/channel_affine
@@ -199,26 +198,21 @@ dragon
   dragon/channel_shuffle
   dragon/concat
   dragon/constant
-  dragon/create_function
   dragon/device
   dragon/eager_mode
-  dragon/eager_scope
   dragon/expand_dims
   dragon/eye
   dragon/eye_like
   dragon/fill
   dragon/flatten
   dragon/function
+  dragon/gather
   dragon/get_num_threads
   dragon/get_workspace
-  dragon/gradients
   dragon/graph_mode
   dragon/identity
-  dragon/index_select
   dragon/linspace
   dragon/load_library
-  dragon/masked_assign
-  dragon/masked_select
   dragon/name_scope
   dragon/nonzero
   dragon/ones
@@ -240,7 +234,10 @@ dragon
   dragon/stop_gradient
   dragon/tile
   dragon/transpose
+  dragon/tril
+  dragon/triu
   dragon/unique
+  dragon/variable_scope
   dragon/where
   dragon/zeros
   dragon/zeros_like

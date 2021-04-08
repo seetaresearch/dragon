@@ -7,7 +7,7 @@ template <class Context>
 template <typename T>
 void HardSwishOp<Context>::DoRunWithType() {
   auto &X = Input(0), *Y = Output(0);
-  kernel::HardSwish(
+  kernels::HardSwish(
       X.count(),
       alpha_,
       beta_,
@@ -18,14 +18,14 @@ void HardSwishOp<Context>::DoRunWithType() {
 
 template <class Context>
 void HardSwishOp<Context>::RunOnDevice() {
-  DispatchHelper<FloatingTensorTypes>::Call(this, Input(0));
+  DispatchHelper<dtypes::Floating>::Call(this, Input(0));
 }
 
 template <class Context>
 template <typename T>
 void HardSwishGradientOp<Context>::DoRunWithType() {
   auto &X = Input(0), &dY = Input(1), *dX = Output(0);
-  kernel::HardSwishGrad(
+  kernels::HardSwishGrad(
       X.count(),
       alpha_,
       beta_,
@@ -37,7 +37,7 @@ void HardSwishGradientOp<Context>::DoRunWithType() {
 
 template <class Context>
 void HardSwishGradientOp<Context>::RunOnDevice() {
-  DispatchHelper<FloatingTensorTypes>::Call(this, Input(0));
+  DispatchHelper<dtypes::Floating>::Call(this, Input(0));
 }
 
 DEPLOY_CPU_OPERATOR(HardSwish);

@@ -75,7 +75,8 @@ def Input(
         if shape is not None:
             shape = (batch_size,) + tuple(shape)
     if kwargs:
-        raise ValueError('Unrecognized keyword arguments: ' + kwargs.keys())
+        raise ValueError(
+            'Unrecognized keyword arguments: ' + ','.join(kwargs.keys()))
     if dtype is None:
         if tensor is not None:
             dtype = tensor.dtype
@@ -93,5 +94,5 @@ def Input(
     placeholder = array_ops.placeholder(
         dtype=dtype, shape=shape, name=name if name else 'input')
     if tensor is not None:
-        workspace.get_workspace().register_alias(tensor, placeholder.id)
+        workspace.get_workspace().set_alias(tensor, placeholder.id)
     return placeholder

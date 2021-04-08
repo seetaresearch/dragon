@@ -17,14 +17,14 @@ void ReciprocalOp<Context>::DoRunWithType() {
 
 template <class Context>
 void ReciprocalOp<Context>::RunOnDevice() {
-  DispatchHelper<FloatingTensorTypes>::Call(this, Input(0));
+  DispatchHelper<dtypes::Floating>::Call(this, Input(0));
 }
 
 template <class Context>
 template <typename T>
 void ReciprocalGradientOp<Context>::DoRunWithType() {
   auto &Y = Input(0), &dY = Input(1), *dX = Output(0);
-  kernel::ReciprocalGrad(
+  kernels::ReciprocalGrad(
       Y.count(),
       dY.template data<T, Context>(),
       Y.template data<T, Context>(),
@@ -34,7 +34,7 @@ void ReciprocalGradientOp<Context>::DoRunWithType() {
 
 template <class Context>
 void ReciprocalGradientOp<Context>::RunOnDevice() {
-  DispatchHelper<FloatingTensorTypes>::Call(this, Input(0));
+  DispatchHelper<dtypes::Floating>::Call(this, Input(0));
 }
 
 DEPLOY_CPU_OPERATOR(Reciprocal);

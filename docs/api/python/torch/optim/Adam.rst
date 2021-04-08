@@ -10,11 +10,6 @@ __init__
 Methods
 -------
 
-accumulate
-##########
-.. automethod:: dragon.vm.torch.optim.Optimizer.accumulate
-  :noindex:
-
 add_param_group
 ###############
 .. automethod:: dragon.vm.torch.optim.Optimizer.add_param_group
@@ -23,6 +18,11 @@ add_param_group
 step
 ####
 .. automethod:: dragon.vm.torch.optim.Optimizer.step
+  :noindex:
+
+sum_grad
+########
+.. automethod:: dragon.vm.torch.optim.Optimizer.sum_grad
   :noindex:
 
 zero_grad

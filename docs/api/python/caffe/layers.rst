@@ -88,14 +88,6 @@ vm.caffe.layers
   `class Reshape <layers/Reshape.html>`_
   : Change the dimensions of input.
 
-  `class ROIAlign <layers/ROIAlign.html>`_
-  : Apply the average roi align.
-  `[He et.al, 2017] <https://arxiv.org/abs/1703.06870>`_.
-
-  `class ROIPooling <layers/ROIPooling.html>`_
-  : Apply the max roi pooling.
-  `[Girshick, 2015] <https://arxiv.org/abs/1504.08083>`_.
-
   `class Scale <layers/Scale.html>`_
   : Compute the affine transformation along the given axes.
 
@@ -149,8 +141,6 @@ vm.caffe.layers
   layers/Reduction
   layers/ReLU
   layers/Reshape
-  layers/ROIAlign
-  layers/ROIPooling
   layers/Scale
   layers/Sigmoid
   layers/SigmoidCrossEntropyLoss

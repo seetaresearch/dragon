@@ -155,7 +155,7 @@ void MatMulOp<Context>::DoRunWithType() {
         1.f,
         A.template data<T, Context>(),
         B.template data<T, Context>(),
-        0.0f,
+        0.f,
         Y->Reshape(Y_dims)->template mutable_data<T, Context>(),
         ctx());
   } else if (!broadcasting) {
@@ -213,7 +213,7 @@ void MatMulOp<Context>::DoRunWithType() {
 
 template <class Context>
 void MatMulOp<Context>::RunOnDevice() {
-  DispatchHelper<FloatingTensorTypes>::Call(this, Input(0));
+  DispatchHelper<dtypes::Floating>::Call(this, Input(0));
 }
 
 template <class Context>
@@ -618,7 +618,7 @@ void MatMulGradientOp<Context>::DoRunWithType() {
 
 template <class Context>
 void MatMulGradientOp<Context>::RunOnDevice() {
-  DispatchHelper<FloatingTensorTypes>::Call(this, Input(0));
+  DispatchHelper<dtypes::Floating>::Call(this, Input(0));
 }
 
 DEPLOY_CPU_OPERATOR(MatMul);

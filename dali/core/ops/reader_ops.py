@@ -218,7 +218,7 @@ class TFRecordReader(object):
 
         """
         path, index_path, features = cls.check_files(path)
-        return ops.TFRecordReader(
+        return ops.readers.TFRecord(
             path=path,
             index_path=index_path,
             shard_id=shard_id,

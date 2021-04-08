@@ -20,7 +20,6 @@ import unittest
 import dragon
 import numpy as np
 
-from dragon.core.eager.context import context as execution_context
 from dragon.core.testing.unittest.common_utils import run_tests
 from dragon.core.testing.unittest.common_utils import TEST_CUDA
 
@@ -31,6 +30,33 @@ class TestContext(unittest.TestCase):
     def test_properties(self):
         dragon.random.set_seed(1337)
         dragon.set_num_threads(dragon.get_num_threads())
+
+    def test_device(self):
+        try:
+            with dragon.device('abc'):
+                pass
+        except ValueError:
+            pass
+
+    def test_name_scope(self):
+        with dragon.name_scope('a'):
+            with dragon.name_scope(''):
+                self.assertEqual(dragon.Tensor((), name='a').name, 'a/a')
+
+    def test_variable_scope(self):
+        with dragon.variable_scope('MyVariable'):
+            x = dragon.Tensor(())
+            self.assertTrue(x.id.startswith('MyVariable'))
+
+
+class TestDeviceSpec(unittest.TestCase):
+    """Test the device spec."""
+
+    def test_properties(self):
+        spec = dragon.DeviceSpec()
+        self.assertEqual(str(spec), 'cpu:0')
+        self.assertEqual(repr(spec), 'device(type=cpu, index=0)')
+        self.assertNotEqual(spec, dragon.DeviceSpec('cpu', 1))
 
 
 class TestGradientTape(unittest.TestCase):
@@ -72,60 +98,34 @@ class TestTensor(unittest.TestCase):
     """Test the tensor class."""
 
     def test_properties(self):
-        a, b = dragon.Tensor(()), dragon.EagerTensor(0)
+        a, b = dragon.Tensor(()), dragon.Tensor(())
         self.assertEqual(dragon.Tensor(()).ndim, 0)
-        self.assertEqual(dragon.Tensor(shape=(2,)).ndim, 1)
-        self.assertEqual(dragon.Tensor(None).shape, None)
-        self.assertEqual(dragon.Tensor(shape=(2,)).shape, (2,))
-        self.assertEqual(dragon.Tensor(None).size, 0)
         self.assertEqual(dragon.Tensor(()).size, 1)
-        self.assertEqual(dragon.Tensor(shape=(2, None)).size, math.inf)
+        self.assertEqual(dragon.Tensor(shape=(2,)).ndim, 1)
+        self.assertEqual(dragon.Tensor(shape=(2,)).shape, (2,))
         self.assertEqual(dragon.Tensor(shape=(2,)).size, 2)
-        self.assertEqual(dragon.Tensor(None, None).dtype, None)
-        self.assertEqual(dragon.Tensor(None, dtype='float32').dtype, 'float32')
-        self.assertEqual(dragon.EagerTensor(shape=(2,)).ndim, 1)
-        self.assertEqual(dragon.EagerTensor(shape=(2,)).shape, (2,))
-        self.assertEqual(dragon.EagerTensor(shape=(2,)).size, 2)
-        self.assertEqual(dragon.EagerTensor(shape=(2,), dtype='float32').dtype, 'float32')
-        self.assertEqual(dragon.EagerTensor().device, dragon.EagerTensor().device)
+        self.assertEqual(dragon.Tensor(shape=(2,), dtype='float32').dtype, 'float32')
+        self.assertEqual(dragon.Tensor(None, symbolic=True).size, 0)
+        self.assertEqual(dragon.Tensor((), symbolic=True).size, 1)
+        self.assertEqual(dragon.Tensor(None, symbolic=True).shape, None)
+        self.assertEqual(dragon.Tensor(shape=(2, None), symbolic=True).size, math.inf)
+        self.assertEqual(dragon.Tensor(None, dtype='float32', symbolic=True).dtype, 'float32')
+        self.assertEqual(dragon.Tensor(None, None, symbolic=True).dtype, None)
         self.assertNotEqual(a.__hash__(), b.__hash__())
-        self.assertNotEqual(a.__repr__(), b.__repr__())
-        self.assertNotEqual(b.__repr__(), dragon.EagerTensor((2,)).__repr__())
-        self.assertEqual(int(a.constant().set_value(1)), 1)
-        self.assertEqual(float(dragon.Tensor.from_value(1)), 1.)
-        self.assertEqual(float(dragon.EagerTensor.from_value(1)), 1.)
-        self.assertEqual(int(b.set_value(1)), 1)
-        self.assertEqual(float(b), 1.)
-        self.assertEqual(int(b.get_value()), 1)
+        self.assertEqual(a.__repr__(), b.__repr__())
+        self.assertNotEqual(a.__repr__(), dragon.Tensor((), symbolic=True).__repr__())
+        self.assertEqual(float(int(a)), float(b))
         try:
-            a.shape = 1
-        except TypeError:
-            pass
-        try:
-            b.shape = (2, 3)
-        except RuntimeError:
-            pass
-        try:
-            b.dtype = 'float64'
-        except RuntimeError:
-            pass
-        try:
-            b = dragon.EagerTensor(0, 0)
+            _ = dragon.Tensor(None)
         except ValueError:
             pass
-        with dragon.name_scope('a'):
-            a.name = 'a'
-            self.assertEqual(a.name, 'a/a')
-        with dragon.name_scope(''):
-            b.name = 'b'
-            self.assertEqual(b.name, 'b')
         b.requires_grad = True
         self.assertEqual(b.requires_grad, True)
 
     def test_dlpack_converter(self):
         data = np.array([0., 1., 2.], 'float32')
-        with dragon.device('cpu'), dragon.eager_scope():
-            x = dragon.EagerTensor(data, copy=True)
+        with dragon.device('cpu'):
+            x = dragon.constant(data, copy=True)
         x_to_dlpack = dragon.dlpack.to_dlpack(x)
         x_from_dlpack = dragon.dlpack.from_dlpack(x_to_dlpack)
         self.assertEqual(x_from_dlpack.shape, data.shape)
@@ -135,8 +135,8 @@ class TestTensor(unittest.TestCase):
     @unittest.skipIf(not TEST_CUDA, 'CUDA unavailable')
     def test_dlpack_converter_cuda(self):
         data = np.array([0., 1., 2.], 'float32')
-        with dragon.device('cuda', 0), execution_context().mode('EAGER_MODE'):
-            x = dragon.EagerTensor(data, copy=True) + 0
+        with dragon.device('cuda', 0):
+            x = dragon.constant(data, copy=True)
         x_to_dlpack = dragon.dlpack.to_dlpack(x)
         x_from_dlpack = dragon.dlpack.from_dlpack(x_to_dlpack)
         self.assertEqual(x_from_dlpack.device.type, 'cuda')
@@ -152,25 +152,15 @@ class TestWorkspace(unittest.TestCase):
     def test_clear(self):
         w = dragon.Workspace()
         with w.as_default():
-            x = dragon.EagerTensor(1)
+            x = dragon.Tensor((1,))
         self.assertEqual(x.size, 1)
         w.clear()
         self.assertEqual(x.size, 0)
 
-    def test_feed_tensor(self):
-        w = dragon.Workspace()
-        with w.as_default():
-            v1, v2 = dragon.EagerTensor(1), np.array(2)
-            x = dragon.Tensor((), name='test_feed_tensor/x')
-            w.feed_tensor(x, v1)
-            self.assertEqual(int(x), 1)
-            w.feed_tensor(x, v2)
-            self.assertEqual(int(x), 2)
-
     def test_merge_form(self):
         w1, w2 = dragon.Workspace(), dragon.Workspace()
         with w1.as_default():
-            x = dragon.Tensor((), name='test_merge_from/x').set_value(0)
+            x = dragon.constant(0)
         w2.merge_from(w1)
         with w2.as_default():
             self.assertEqual(int(x), 0)
@@ -178,17 +168,10 @@ class TestWorkspace(unittest.TestCase):
     def test_register_alias(self):
         w = dragon.Workspace()
         with w.as_default():
-            x = dragon.EagerTensor(1)
-            w.register_alias(x.id, 'test_register_alias/y')
-            self.assertEqual(int(w.fetch_tensor('test_register_alias/y')), 1)
-
-    def test_reset_tensor(self):
-        w = dragon.Workspace()
-        with w.as_default():
-            x = dragon.EagerTensor(1)
-            self.assertEqual(x.size, 1)
-            w.reset_tensor(x)
-            self.assertEqual(x.size, 0)
+            x = dragon.constant(1)
+            w.set_alias(x.id, 'test_register_alias/y')
+            alias_impl = w.get_tensor('test_register_alias/y')
+            self.assertEqual(int(alias_impl.ToNumpy()), 1)
 
     def test_reset_workspace(self):
         w = dragon.Workspace()

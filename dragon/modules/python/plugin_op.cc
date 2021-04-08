@@ -2,26 +2,24 @@
 
 #include "dragon/modules/python/plugin_op.h"
 
+namespace dragon {
+
 #ifdef USE_PYTHON3
 #define PyBytes_FromStringAndSize PyUnicode_FromStringAndSize
 #endif
 
-#define Bytes(str) PyBytes_FromStringAndSize(str, string(str).size())
-#define S2Bytes(cstr) Bytes(cstr.c_str())
+#define PyBytes_FromRawString(raw_string) \
+  PyBytes_FromStringAndSize(raw_string, string(raw_string).size())
 
-namespace dragon {
+#define PyBytes_FromStdString(std_string) \
+  PyBytes_FromStringAndSize(std_string.c_str(), std_string.size())
 
 template <class Context>
-PythonPluginInferOp<Context>::PythonPluginInferOp(
-    const OperatorDef& def,
-    Workspace* ws)
+PythonPluginOp<Context>::PythonPluginOp(const OperatorDef& def, Workspace* ws)
     : Operator<Context>(def, ws),
       module_name_(OP_SINGLE_ARG(string, "module_name", "")),
       class_name_(OP_SINGLE_ARG(string, "class_name", "")),
       kwargs_str_(OP_SINGLE_ARG(string, "kwargs_str", "")) {
-  // Optimization for all python ops
-  this->do_sync_ = false;
-
   // Initialize interpreter and load module
   Py_Initialize();
   auto* target_module = PyImport_ImportModule(module_name_.c_str());
@@ -38,24 +36,27 @@ PythonPluginInferOp<Context>::PythonPluginInferOp(
   inputs_ = PyList_New(InputSize());
   outputs_ = PyList_New(OutputSize());
   for (int i = 0; i < InputSize(); i++) {
-    PyList_SetItem(inputs_, i, S2Bytes(Input(i).name()));
+    PyList_SetItem(inputs_, i, PyBytes_FromStdString(Input(i).name()));
   }
   for (int i = 0; i < OutputSize(); i++) {
-    PyList_SetItem(outputs_, i, S2Bytes(Output(i)->name()));
+    PyList_SetItem(outputs_, i, PyBytes_FromStdString(Output(i)->name()));
   }
 
   // Set: self.kwargs_str
-  PyObject_SetAttr(self_, Bytes("kwargs_str"), S2Bytes(kwargs_str_));
+  PyObject_SetAttr(
+      self_,
+      PyBytes_FromRawString("kwargs_str"),
+      PyBytes_FromStdString(kwargs_str_));
 
   // Method: self.setup(inputs, outputs)
-  if (PyObject_HasAttr(self_, Bytes("setup"))) {
+  if (PyObject_HasAttr(self_, PyBytes_FromRawString("setup"))) {
     CHECK(PyObject_CallMethod(self_, "setup", "OO", inputs_, outputs_))
-        << MethodHelper("setup");
+        << CallMethodHelper("setup");
   }
 }
 
 template <class Context>
-string PythonPluginInferOp<Context>::MethodHelper(const string& method_name) {
+string PythonPluginOp<Context>::CallMethodHelper(const string& method_name) {
   std::stringstream ss;
   ss << "\nFailed to call: "
      << "<" + module_name_ << "." << class_name_ << "." << method_name
@@ -66,78 +67,41 @@ string PythonPluginInferOp<Context>::MethodHelper(const string& method_name) {
 }
 
 template <class Context>
-void PythonPluginInferOp<Context>::RunOnDevice() {
+void PythonPluginOp<Context>::RunOnDevice() {
   // GIL may have been released
   pybind11::gil_scoped_acquire g;
 
-  // Reset: self.phase
-  PyObject_SetAttr(self_, Bytes("phase"), S2Bytes(phase()));
+  // Atrribute: self.phase
+  PyObject_SetAttr(
+      self_, PyBytes_FromRawString("phase"), PyBytes_FromStdString(phase()));
 
-  // Method: self.reshape(*)
-  if (PyObject_HasAttr(self_, Bytes("reshape"))) {
+  // Method: self.reshape(input, outputs)
+  if (PyObject_HasAttr(self_, PyBytes_FromRawString("reshape"))) {
     CHECK(PyObject_CallMethod(self_, "reshape", "OO", inputs_, outputs_))
-        << MethodHelper("reshape");
+        << CallMethodHelper("reshape");
   }
 
   // Method: self.run(input, outputs)
   // Method: self.forward(input, outputs)
-  if (PyObject_HasAttr(self_, Bytes("forward"))) {
+  if (PyObject_HasAttr(self_, PyBytes_FromRawString("forward"))) {
     CHECK(PyObject_CallMethod(self_, "forward", "OO", inputs_, outputs_))
-        << MethodHelper("forward");
-  } else if (PyObject_HasAttr(self_, Bytes("run"))) {
+        << CallMethodHelper("forward");
+  } else if (PyObject_HasAttr(self_, PyBytes_FromRawString("run"))) {
     CHECK(PyObject_CallMethod(self_, "run", "OO", inputs_, outputs_))
-        << MethodHelper("run");
+        << CallMethodHelper("run");
   }
 }
-
-template <class Context>
-void PythonPluginGradientOp<Context>::RunOnDevice() {
-  // GIL may have been released
-  pybind11::gil_scoped_acquire g;
-
-  // Reset: self.phase
-  PyObject_SetAttr(this->self_, Bytes("phase"), S2Bytes(phase()));
-
-  // Method: self.reshape(inputs, outputs)
-  if (PyObject_HasAttr(this->self_, Bytes("reshape"))) {
-    CHECK(PyObject_CallMethod(
-        this->self_, "reshape", "OO", this->inputs_, this->outputs_))
-        << this->MethodHelper("reshape");
-  }
-
-  // Method: self.grad(inputs, outputs)
-  // Method: self.backward(inputs, outputs)
-  if (PyObject_HasAttr(this->self_, Bytes("backward"))) {
-    CHECK(PyObject_CallMethod(
-        this->self_, "backward", "OO", this->inputs_, this->outputs_))
-        << this->MethodHelper("backward");
-  } else if (PyObject_HasAttr(this->self_, Bytes("grad"))) {
-    CHECK(PyObject_CallMethod(
-        this->self_, "grad", "OO", this->inputs_, this->outputs_))
-        << this->MethodHelper("grad");
-  }
-}
-
-DEPLOY_CPU_OPERATOR(PythonPluginInfer);
-#ifdef USE_CUDA
-DEPLOY_CUDA_OPERATOR(PythonPluginInfer);
-#endif
-OPERATOR_SCHEMA(PythonPluginInfer);
 
 DEPLOY_CPU_OPERATOR(PythonPlugin);
 #ifdef USE_CUDA
 DEPLOY_CUDA_OPERATOR(PythonPlugin);
 #endif
+
 OPERATOR_SCHEMA(PythonPlugin);
+NO_GRADIENT(PythonPlugin);
 
-DEPLOY_CPU_OPERATOR(PythonPluginGradient);
-#ifdef USE_CUDA
-DEPLOY_CUDA_OPERATOR(PythonPluginGradient);
-#endif
-OPERATOR_SCHEMA(PythonPluginGradient);
-
-NO_GRADIENT(PythonPluginInfer);
-REGISTER_GRADIENT(PythonPlugin, GenericGradientMaker);
+#undef PyBytes_FromRawString
+#undef PyBytes_FromStdString
 
 } // namespace dragon
 

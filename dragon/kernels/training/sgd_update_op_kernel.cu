@@ -5,14 +5,14 @@
 
 namespace dragon {
 
-namespace kernel {
+namespace kernels {
 
 namespace {
 
 template <typename T>
 __global__ void
-_SGDUpdate(const int nthreads, const T lr, const T momentum, T* g, T* m) {
-  CUDA_1D_KERNEL_LOOP(i, nthreads) {
+_SGDUpdate(const int N, const T lr, const T momentum, T* g, T* m) {
+  CUDA_1D_KERNEL_LOOP(i, N) {
     T mi = m[i];
     g[i] = m[i] = momentum * mi + lr * g[i];
   }
@@ -24,17 +24,17 @@ _SGDUpdate(const int nthreads, const T lr, const T momentum, T* g, T* m) {
 
 template <>
 void SGDUpdate<float, CUDAContext>(
-    const int count,
+    const int N,
     const float lr,
     const float momentum,
     float* g,
     float* m,
     CUDAContext* ctx) {
-  _SGDUpdate<<<CUDA_BLOCKS(count), CUDA_THREADS, 0, ctx->cuda_stream()>>>(
-      count, lr, momentum, g, m);
+  _SGDUpdate<<<CUDA_BLOCKS(N), CUDA_THREADS, 0, ctx->cuda_stream()>>>(
+      N, lr, momentum, g, m);
 }
 
-} // namespace kernel
+} // namespace kernels
 
 } // namespace dragon
 

@@ -46,25 +46,20 @@ def device(device_type, device_index=0):
     device_type = device_type.lower()
     if device_type not in mapping.DEVICE_STRING_TO_DEVICE_TYPE:
         raise ValueError('Unsupported device type: ' + device_type)
-    return _GLOBAL_DEVICE_STACK.get_controller({
-        'device_type': mapping.DEVICE_STRING_TO_DEVICE_TYPE[device_type],
-        'device_index': device_index,
-    })
+    spec = device_spec.DeviceSpec(device_type, device_index)
+    return _GLOBAL_DEVICE_STACK.get_controller(spec)
 
 
-def eager_scope(data='${DATA}', graph='${GRAPH}'):
-    """Context-manager to nest the namespace for eager resources.
+def variable_scope(name):
+    """Context-manager to nest the namespace for variables.
 
     Parameters
     ----------
-    data : str, optional, default='${DATA}'
-        The namespace for resources traced by python.
-    graph : str, optional, default='${GRAPH}'
-        The namespace for resources traced by graph.
+    name : str
+        The namespace for tensors traced by python.
 
     """
-    domain_tuple = (graph, data)
-    return _GLOBAL_EAGER_STACK.get_controller(domain_tuple)
+    return _GLOBAL_VARIABLE_SCOPE_STACK.get_controller(name)
 
 
 def name_scope(name):
@@ -94,43 +89,32 @@ def name_scope(name):
     else:
         prefix = ''  # Avoid duplicated separators.
     default = get_name_scope() + prefix
-    return _GLOBAL_NAME_STACK.get_controller(default)
+    return _GLOBAL_NAME_SCOPE_STACK.get_controller(default)
 
 
-def get_device_info():
-    """Return the device info in current nesting."""
-    return _GLOBAL_DEVICE_STACK.get_default()
-
-
-def get_device_spec():
-    """Return the device spec in current nesting."""
-    dev_info = get_device_info()
-    if dev_info is not None:
-        return device_spec.DeviceSpec(
-            dev_info['device_type'],
-            dev_info['device_index'],
-        )
-    else:
+def get_device(use_default=True):
+    """Return the nesting or default device."""
+    spec = _GLOBAL_DEVICE_STACK.get_default()
+    if spec is None:
         cfg = config.config()
-        return device_spec.DeviceSpec(
-            cfg.device_type,
-            cfg.device_index,
-        )
+        spec = device_spec.DeviceSpec(
+            cfg.device_type, cfg.device_index)
+    return spec
 
 
-def get_eager_scope(requires_grad=False):
-    """Return the eager scope in current nesting."""
-    ret = _GLOBAL_EAGER_STACK.get_default()
-    return ret[0] if requires_grad else ret[1]
+def get_variable_scope(persistent=False):
+    """Return the variable scope in current nesting."""
+    base = _GLOBAL_VARIABLE_SCOPE_STACK.get_default()
+    return base + 'Ref' if persistent else base
 
 
 def get_name_scope():
     """Return the name scope in current nesting."""
-    ret = _GLOBAL_NAME_STACK.get_default()
+    ret = _GLOBAL_NAME_SCOPE_STACK.get_default()
     return ret if ret is not None else ''
 
 
 # Thread-local stack for nesting scope.
 _GLOBAL_DEVICE_STACK = tls.Stack()
-_GLOBAL_EAGER_STACK = tls.Stack([('${GRAPH}', '${DATA}')])
-_GLOBAL_NAME_STACK = tls.Stack()
+_GLOBAL_VARIABLE_SCOPE_STACK = tls.Stack(['Variable'])
+_GLOBAL_NAME_SCOPE_STACK = tls.Stack()

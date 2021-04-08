@@ -3,7 +3,7 @@
 
 namespace dragon {
 
-namespace kernel {
+namespace kernels {
 
 namespace {
 
@@ -24,29 +24,28 @@ void _Im2Col2dNCHW(
     const int dilation_w,
     const T* im,
     T* col) {
-  int h, w;
-  const int stride0 = H * W;
-  for (int c = 0; c < C; ++c, im += stride0) {
+  const auto HxW = H * W;
+  for (int c = 0; c < C; ++c, im += HxW) {
     for (int h_k = 0; h_k < kernel_h; ++h_k) {
       for (int w_k = 0; w_k < kernel_w; ++w_k) {
-        h = -pad_h + h_k * dilation_h;
+        int h = -pad_h + h_k * dilation_h;
         for (int h_out = 0; h_out < out_h; ++h_out) {
           if (!math::utils::IsAGeZeroAndALtB(h, H)) {
             memset(col, 0, out_w * sizeof(T));
             col += out_w;
           } else {
-            w = -pad_w + w_k * dilation_w;
+            int w = -pad_w + w_k * dilation_w;
             for (int w_out = 0; w_out < out_w; ++w_out) {
               *(col++) =
                   !math::utils::IsAGeZeroAndALtB(w, W) ? T(0) : im[h * W + w];
               w += stride_w;
-            } // End w_out
-          } // End if
+            }
+          }
           h += stride_h;
-        } // End h_out
-      } // End w_k
-    } // End h_k
-  } // End c
+        }
+      }
+    }
+  }
 }
 
 template <typename T>
@@ -66,19 +65,18 @@ void _Im2Col2dNHWC(
     const int dilation_w,
     const T* im,
     T* col) {
-  int hstart, h, wstart, w;
   for (int h_out = 0; h_out < out_h; ++h_out) {
-    hstart = h_out * stride_h - pad_h;
+    const int hstart = h_out * stride_h - pad_h;
     for (int w_out = 0; w_out < out_w; ++w_out) {
-      wstart = w_out * stride_w - pad_w;
+      const int wstart = w_out * stride_w - pad_w;
       for (int h_k = 0; h_k < kernel_h; ++h_k) {
-        h = hstart + h_k * dilation_h;
+        const int h = hstart + h_k * dilation_h;
         if (!math::utils::IsAGeZeroAndALtB(h, H)) {
           memset(col, 0, kernel_w * C * sizeof(T));
           col += kernel_w * C;
         } else {
           for (int w_k = 0; w_k < kernel_w; ++w_k) {
-            w = wstart + w_k * dilation_w;
+            const int w = wstart + w_k * dilation_w;
             if (!math::utils::IsAGeZeroAndALtB(w, W)) {
               memset(col, 0, C * sizeof(T));
               col += C;
@@ -86,13 +84,13 @@ void _Im2Col2dNHWC(
               const T* offset_im = im + (h * W + w) * C;
               for (int c = 0; c < C; ++c) {
                 *(col++) = offset_im[c];
-              } // End c
-            } // End if
-          } // End w_k
-        } // End if
-      } // End h_k
-    } // End w_out
-  } // End h_out
+              }
+            }
+          }
+        }
+      }
+    }
+  }
 }
 
 template <typename T>
@@ -112,30 +110,29 @@ void _Col2Im2dNCHW(
     const int dilation_w,
     const T* col,
     T* im) {
-  int h, w;
-  const int stride0 = H * W;
-  for (int c = 0; c < C; ++c, im += stride0) {
+  const auto HxW = H * W;
+  for (int c = 0; c < C; ++c, im += HxW) {
     for (int h_k = 0; h_k < kernel_h; ++h_k) {
       for (int w_k = 0; w_k < kernel_w; ++w_k) {
-        h = -pad_h + h_k * dilation_h;
+        int h = -pad_h + h_k * dilation_h;
         for (int h_out = 0; h_out < out_h; ++h_out) {
           if (!math::utils::IsAGeZeroAndALtB(h, H)) {
             col += out_w;
           } else {
-            w = -pad_w + w_k * dilation_w;
+            int w = -pad_w + w_k * dilation_w;
             for (int w_out = 0; w_out < out_w; ++w_out) {
               if (math::utils::IsAGeZeroAndALtB(w, W)) {
                 im[h * W + w] += *col;
               }
               ++col;
               w += stride_w;
-            } // End w_out
-          } // End if
+            }
+          }
           h += stride_h;
-        } // End h_out
-      } // End w_k
-    } // End h_k
-  } // End c
+        }
+      }
+    }
+  }
 }
 
 template <typename T>
@@ -155,18 +152,17 @@ void _Col2Im2dNHWC(
     const int dilation_w,
     const T* col,
     T* im) {
-  int hstart, h, wstart, w;
   for (int h_out = 0; h_out < out_h; ++h_out) {
-    hstart = -pad_h + stride_h * h_out;
+    const int hstart = -pad_h + stride_h * h_out;
     for (int w_out = 0; w_out < out_w; ++w_out) {
-      wstart = -pad_w + stride_w * w_out;
+      const int wstart = -pad_w + stride_w * w_out;
       for (int h_k = 0; h_k < kernel_h; ++h_k) {
-        h = hstart + h_k * dilation_h;
+        const int h = hstart + h_k * dilation_h;
         if (!math::utils::IsAGeZeroAndALtB(h, H)) {
           col += kernel_w * C;
         } else {
           for (int w_k = 0; w_k < kernel_w; ++w_k) {
-            w = wstart + w_k * dilation_w;
+            const int w = wstart + w_k * dilation_w;
             if (!math::utils::IsAGeZeroAndALtB(w, W)) {
               col += C;
             } else {
@@ -174,12 +170,12 @@ void _Col2Im2dNHWC(
               for (int c = 0; c < C; ++c) {
                 offset_im[c] += *(col++);
               }
-            } // End c
-          } // End w_k
-        } // End if
-      } // End h_k
-    } // End w_out
-  } // End h_out
+            }
+          }
+        }
+      }
+    }
+  }
 }
 
 template <typename T, bool kTransposed>
@@ -198,15 +194,15 @@ void _Im2ColNdNCHW(
   col_dims.insert(col_dims.end(), kshape, kshape + num_dims);
   col_dims.insert(col_dims.end(), out_shape, out_shape + num_dims);
   math::utils::ComputeStrides(num_dims, in_shape, in_strides.data());
-  const auto stride0 =
-      std::accumulate(in_shape, in_shape + num_dims, 1, std::multiplies<int>());
-  const auto count = std::accumulate(
+  const auto N = std::accumulate(
       col_dims.begin(), col_dims.end(), 1, std::multiplies<int>());
+  const auto S =
+      std::accumulate(in_shape, in_shape + num_dims, 1, std::multiplies<int>());
   vec32_t index(col_dims.size(), 0);
   int32_t im_idx, r;
-  for (int col_idx = 0; col_idx < count; ++col_idx) {
+  for (int col_idx = 0; col_idx < N; ++col_idx) {
     bool is_padding = false;
-    im_idx = index[0] * stride0;
+    im_idx = index[0] * S;
     for (int d = num_dims - 1; d >= 0; --d) {
       r = -pads[d] + index[d + 1] * dilations[d];
       r += index[d + 1 + num_dims] * strides[d];
@@ -242,11 +238,11 @@ void _Im2ColNdNHWC(
   col_dims.insert(col_dims.begin(), kshape, kshape + num_dims);
   col_dims.insert(col_dims.begin(), out_shape, out_shape + num_dims);
   math::utils::ComputeStrides(num_dims, in_shape, in_strides.data());
-  const auto count = std::accumulate(
+  const auto N = std::accumulate(
       col_dims.begin(), col_dims.end(), 1, std::multiplies<int>());
   vec32_t index(col_dims.size(), 0);
   int32_t im_idx, r;
-  for (int col_idx = 0; col_idx < count; ++col_idx) {
+  for (int col_idx = 0; col_idx < N; ++col_idx) {
     bool is_padding = false;
     im_idx = 0;
     for (int d = num_dims - 1; d >= 0; --d) {
@@ -383,6 +379,6 @@ DEFINE_KERNEL_LAUNCHER(Col2ImNd, true, double);
 #undef DEFINE_KERNEL_LAUNCHER
 #undef DISPATCH_CONV_KERNEL
 
-} // namespace kernel
+} // namespace kernels
 
 } // namespace dragon

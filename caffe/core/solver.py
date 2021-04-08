@@ -8,16 +8,18 @@
 #     <https://opensource.org/licenses/BSD-2-Clause>
 #
 # ------------------------------------------------------------
-"""The solver to optimize parameters."""
+"""Optimization solvers."""
 
 from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
 
+import collections
 import time
-from google.protobuf import text_format
 
-from dragon.core.autograph import def_function
+import google.protobuf.text_format
+
+from dragon.core.autograph import function_impl
 from dragon.core.training.adam import Adam
 from dragon.core.training.rmsprop import RMSprop
 from dragon.core.training.sgd import SGD
@@ -28,7 +30,7 @@ from dragon.vm.caffe.core.proto import caffe_pb2
 
 
 class Solver(object):
-    """The base solver class to optimize parameters."""
+    """Base solver class to optimize parameters."""
 
     def __init__(self, solver_file, is_root=True):
         """Create a ``Solver``.
@@ -36,107 +38,30 @@ class Solver(object):
         Parameters
         ----------
         solver_file : str
-            The path of solver file.
+            The path of text proto file to load solver.
         is_root : bool, optional, default=True
-            **True** to indicate a root solver.
+            ``True`` to indicate a root solver.
 
         """
         self._is_root = is_root
-        self._param = caffe_pb2.SolverParameter()
+        self._proto = caffe_pb2.SolverParameter()
         with open(solver_file, 'r') as f:
-            text_format.Parse(f.read(), self._param)
-        if self._param.iter_size > 1:
-            raise NotImplementedError('GradientAccum is deprecated.')
-        self._arguments = {
-            'scale': 1. / self._param.iter_size,
-            'clip_norm': float(self._param.clip_gradients),
-            'weight_decay': float(self._param.weight_decay)
-            if str(self._param.regularization_type) == 'L2' else 0,
+            google.protobuf.text_format.Parse(f.read(), self._proto)
+        if self._proto.iter_size > 1:
+            raise NotImplementedError('Gradient accumulation is not supported.')
+        self._optimizer_args = {
+            'scale': 1. / self._proto.iter_size,
+            'clip_norm': float(self._proto.clip_gradients),
+            'weight_decay': float(self._proto.weight_decay)
+            if str(self._proto.regularization_type) == 'L2' else 0,
         }
         self._optimizer = None
-        self._net, self._test_nets = None, []
-        self._iter = self._current_step = 0
+        self._net = None
+        self._test_nets = []
+        self._iter = 0
+        self._current_step = 0
         self._init_train_net()
         self._init_test_nets()
-
-    def _init_train_net(self):
-        """Initialize the train net."""
-        if self._param.HasField('net'):
-            self._net = Net(self._param.net, 'TRAIN')
-        if self._param.HasField('train_net'):
-            if self._net is not None:
-                raise RuntimeError('Specify either <net> or <train_net>.')
-            self._net = Net(self._param.train_net, 'TRAIN')
-
-    def _init_test_nets(self):
-        """Initialize the test nets."""
-        if not self._is_root:
-            # Only the root solver can do testing.
-            return
-        num_test_net = len(self._param.test_iter)
-        if num_test_net > 0:
-            if self._param.test_interval <= 0:
-                raise RuntimeError('Test interval is invalid.')
-        if len(self._param.test_net) > 0:
-            for test_net in self._param.test_net:
-                self._test_nets.append(Net(test_net, 'TEST'))
-            num_test_net -= len(self._param.test_net)
-        if num_test_net > 0:
-            self._test_nets.append(Net(self._param.net, 'TEST'))
-
-    def _get_learning_rate(self):
-        """Get the learning rate based on preset policy."""
-        policy = self._param.lr_policy
-        if policy == "step":
-            new_step = int(self.iter / self._param.stepsize)
-            if self._current_step != new_step:
-                new_lr = self._param.base_lr * pow(self._param.gamma, new_step)
-                self._current_step = new_step
-                self.base_lr = new_lr
-        elif policy == 'multistep':
-            if self._current_step < len(self._param.stepvalue) \
-                    and self.iter >= self._param.stepvalue[self._current_step]:
-                self._current_step = self._current_step + 1
-                logging.info(
-                    'MultiStep Status: Iteration {}, step = {}'
-                    .format(self.iter, self._current_step))
-                new_lr = self._param.base_lr * \
-                    pow(self._param.gamma, self._current_step)
-                self.base_lr = new_lr
-        elif policy == 'multifixed':
-            stage_lrs = self._param.stage_lr
-            stage_iters = self._param.stage_iter
-            if self.iter < stage_iters[self._current_step]:
-                self.base_lr = stage_lrs[self._current_step]
-            else:
-                if self._current_step + 1 < len(stage_iters):
-                    self._current_step = self._current_step + 1
-                    logging.info(
-                        'MultiFixed Status: Iteration {}, stage = {}'
-                        .format(self.iter, self._current_step))
-                    self.base_lr = stage_lrs[self._current_step]
-        elif policy == 'inv':
-            power = self._param.power
-            gamma = self._param.gamma
-            self.base_lr = self._param.base_lr * \
-                pow(1. + gamma * self.iter, -power)
-        elif policy == 'poly':
-            power = self._param.power
-            max_iter = self._param.max_iter
-            self.base_lr = self._param.base_lr * \
-                pow(1. - float(self.iter) / max_iter, power)
-
-    @def_function.function
-    def _apply_update(self):
-        """Apply the weights update."""
-        for blob in self.net._layer_blobs:
-            if blob.lr_multiplier > 0 and blob.diff is not None:
-                self._optimizer.apply_gradients(
-                    values_and_grads=[(blob.data, blob.diff)],
-                    lr_mult=blob.lr_multiplier,
-                    decay_mult=blob.decay_multiplier,
-                )
-        return self._optimizer
 
     @property
     def base_lr(self):
@@ -148,7 +73,7 @@ class Solver(object):
             The current learning rate.
 
         """
-        return self._optimizer.base_lr
+        return self._optimizer.lr
 
     @base_lr.setter
     def base_lr(self, value):
@@ -160,7 +85,7 @@ class Solver(object):
             The value of learning rate to set.
 
         """
-        self._optimizer.base_lr = value
+        self._optimizer.lr = value
 
     @property
     def iter(self):
@@ -214,7 +139,7 @@ class Solver(object):
         """Snapshot the parameters of train net."""
         self._net.save(
             '%s_iter_%d.caffemodel'
-            % (self._param.snapshot_prefix, self._iter))
+            % (self._proto.snapshot_prefix, self._iter))
 
     def step(self, num_iterations=1):
         """Step the train net.
@@ -225,59 +150,34 @@ class Solver(object):
             The number of iterations to step.
 
         """
-        start_step = self.iter
-        stop_step = start_step + num_iterations
-        loss_vec, smoothed_loss = [], 0.
-
+        end_iter = self.iter + num_iterations
         tic = time.time()
-        while self.iter < stop_step:
+        while self.iter < end_iter:
             # Test if necessary.
-            if self._is_root and self._param.test_interval > 0 and \
-                    self.iter % self._param.test_interval == 0:
-                if (self.iter == 0 and self._param.test_initialization) or \
-                        self.iter != 0:
+            if (self._proto.test_interval > 0 and
+                    self.iter % self._proto.test_interval == 0):
+                if (self.iter == 0 and self._proto.test_initialization) or self.iter != 0:
                     for test_idx in range(len(self._test_nets)):
                         self.test(test_idx)
-            # Forward, backward and compute loss.
-            loss = 0.
-            for i in range(self._param.iter_size):
-                self._net.forward_backward()
-                if self._is_root:
-                    for e in self.net.losses:
-                        values = e.get_value().flatten()
-                        for v in values:
-                            loss += v
-            if self._is_root:
-                loss /= self._param.iter_size
-                if len(loss_vec) < self._param.average_loss:
-                    loss_vec.append(loss)
-                    smoothed_loss *= (len(loss_vec) - 1)
-                    smoothed_loss += loss
-                    smoothed_loss /= len(loss_vec)
-                else:
-                    idx = (self.iter - start_step) % self._param.average_loss
-                    smoothed_loss += ((loss - loss_vec[idx]) / self._param.average_loss)
-                    loss_vec[idx] = loss
+            # Forward and backward pass.
+            self._net.forward()
+            # Display iteration info.
+            if self._is_root and self._proto.display:
+                if self.iter % self._proto.display == 0:
+                    logging.info('Iteration %d, lr = %f, time = %.2fs'
+                                 % (self.iter, self.base_lr, time.time() - tic))
+                    tic = time.time()
+                    for i, key in enumerate(self.net.outputs):
+                        value = self.net.blobs[key].data.numpy().mean()
+                        logging.info(' ' * 4 + 'Train net output #{}({}): {}'
+                                     .format(i, key, value))
             # Apply Update.
             self._get_learning_rate()
             self._apply_update()
-            # Display iteration info.
-            if self._is_root and self._param.display:
-                if self.iter % self._param.display == 0:
-                    logging.info(
-                        'Iteration %d, lr = %s, loss = %f, time = %.2fs'
-                        % (self.iter, str(self.base_lr), smoothed_loss, time.time() - tic))
-                    tic = time.time()
-                    for idx, net_output in enumerate(self.net.outputs):
-                        values = self.net.blobs[net_output].data.get_value().flatten()
-                        for v in values:
-                            logging.info(
-                                ' ' * 10 + 'Train net output #{}({}): {}'
-                                .format(idx, net_output, v))
             self.iter = self.iter + 1
             # Snapshot if necessary.
-            if self._param.snapshot:
-                if self.iter % self._param.snapshot == 0:
+            if self._proto.snapshot:
+                if self.iter % self._proto.snapshot == 0:
                     self.snapshot()
 
     def test(self, test_idx):
@@ -286,36 +186,95 @@ class Solver(object):
         Parameters
         ----------
         test_idx : int
-            The idx of test net.
+            The index of test net.
 
         """
-        test_score, output_id = [], []
         net = self._test_nets[test_idx]
-        test_iter = self._param.test_iter[test_idx]
-
+        net.copy_from(self._net.to_proto())
+        test_iter = self._proto.test_iter[test_idx]
+        test_scores = collections.defaultdict(float)
         for iter in range(test_iter):
             net.forward()
-            if not self._is_root:
-                continue
-            if iter == 0:
-                for key in net.outputs:
-                    values = net.blobs[key].data.get_value().flatten()
-                    for idx, value in enumerate(values):
-                        test_score.append(value)
-                        output_id.append(key)
-            else:
-                i = 0
-                for key in net.outputs:
-                    values = net.blobs[key].data.get_value().flatten()
-                    for idx, value in enumerate(values):
-                        test_score[i] += value
-                        i += 1
-
+            for key in net.outputs:
+                test_scores[key] += float(net.blobs[key].data.numpy().mean())
         logging.info('Iteration {}, Test net #{}'.format(self.iter, test_idx))
-        for i, score in enumerate(test_score):
-            logging.info(
-                ' ' * 10 + 'Test net output #%d(%s): %.4f'
-                % (i, output_id[i], score / test_iter))
+        for i, (key, score) in enumerate(test_scores.items()):
+            logging.info(' ' * 4 + 'Test net output #%d(%s): %.4f'
+                         % (i, key, score / test_iter))
+
+    def _init_train_net(self):
+        """Initialize the train net."""
+        if self._proto.HasField('net'):
+            self._net = Net(self._proto.net, 'TRAIN')
+        if self._proto.HasField('train_net'):
+            if self._net is not None:
+                raise RuntimeError('Specify either <net> or <train_net>.')
+            self._net = Net(self._proto.train_net, 'TRAIN')
+
+    def _init_test_nets(self):
+        """Initialize the test nets."""
+        if not self._is_root:
+            # Only the root solver can do testing.
+            return
+        num_test_net = len(self._proto.test_iter)
+        if num_test_net > 0:
+            if self._proto.test_interval <= 0:
+                raise RuntimeError('Test interval is invalid.')
+        if len(self._proto.test_net) > 0:
+            for test_net in self._proto.test_net:
+                self._test_nets.append(Net(test_net, 'TEST'))
+            num_test_net -= len(self._proto.test_net)
+        if num_test_net > 0:
+            self._test_nets.append(Net(self._proto.net, 'TEST'))
+
+    def _get_learning_rate(self):
+        """Get the learning rate based on preset policy."""
+        policy = self._proto.lr_policy
+        if policy == "step":
+            new_step = int(self.iter / self._proto.stepsize)
+            if self._current_step != new_step:
+                new_lr = self._proto.base_lr * pow(self._proto.gamma, new_step)
+                self._current_step = new_step
+                self.base_lr = new_lr
+        elif policy == 'multistep':
+            if self._current_step < len(self._proto.stepvalue) \
+                    and self.iter >= self._proto.stepvalue[self._current_step]:
+                self._current_step = self._current_step + 1
+                logging.info(
+                    'MultiStep Status: Iteration {}, step = {}'
+                    .format(self.iter, self._current_step))
+                new_lr = (self._proto.base_lr *
+                          pow(self._proto.gamma, self._current_step))
+                self.base_lr = new_lr
+        elif policy == 'multifixed':
+            stage_lrs = self._proto.stage_lr
+            stage_iters = self._proto.stage_iter
+            if self.iter < stage_iters[self._current_step]:
+                self.base_lr = stage_lrs[self._current_step]
+            else:
+                if self._current_step + 1 < len(stage_iters):
+                    self._current_step = self._current_step + 1
+                    logging.info(
+                        'MultiFixed Status: Iteration {}, stage = {}'
+                        .format(self.iter, self._current_step))
+                    self.base_lr = stage_lrs[self._current_step]
+        elif policy == 'inv':
+            power = self._proto.power
+            gamma = self._proto.gamma
+            self.base_lr = (self._proto.base_lr *
+                            pow(1. + gamma * self.iter, -power))
+        elif policy == 'poly':
+            power = self._proto.power
+            max_iter = self._proto.max_iter
+            self.base_lr = (self._proto.base_lr *
+                            pow(1. - float(self.iter) / max_iter, power))
+
+    @function_impl.function
+    def _apply_update(self):
+        """Apply the weights update."""
+        grads_and_vars = [(blob.diff, blob.data)
+                          for blob in self._net._learnable_blobs]
+        return self._optimizer.apply_gradients(grads_and_vars)
 
 
 class AdamSolver(Solver):
@@ -343,15 +302,15 @@ class AdamSolver(Solver):
         solver_file : str
             The path of solver file.
         is_root : bool, optional, default=True
-            **True** to indicate a root solver.
+            ``True`` to indicate a root solver.
 
         """
         super(AdamSolver, self).__init__(solver_file, is_root)
-        self._arguments['base_lr'] = self._param.base_lr
-        self._arguments['beta1'] = self._param.momentum
-        self._arguments['beta2'] = self._param.momentum2
-        self._arguments['eps'] = self._param.delta
-        self._optimizer = Adam(**self._arguments)
+        self._optimizer_args['lr'] = self._proto.base_lr
+        self._optimizer_args['beta1'] = self._proto.momentum
+        self._optimizer_args['beta2'] = self._proto.momentum2
+        self._optimizer_args['eps'] = self._proto.delta
+        self._optimizer = Adam(**self._optimizer_args)
 
 
 class NesterovSolver(Solver):
@@ -377,13 +336,13 @@ class NesterovSolver(Solver):
         solver_file : str
             The path of solver file.
         is_root : bool, optional, default=True
-            **True** to indicate a root solver.
+            ``True`` to indicate a root solver.
 
         """
         super(NesterovSolver, self).__init__(solver_file, is_root)
-        self._arguments['base_lr'] = self._param.base_lr
-        self._arguments['momentum'] = self._param.momentum
-        self._optimizer = Nesterov(**self._arguments)
+        self._optimizer_args['lr'] = self._proto.base_lr
+        self._optimizer_args['momentum'] = self._proto.momentum
+        self._optimizer = Nesterov(**self._optimizer_args)
 
 
 class RMSPropSolver(Solver):
@@ -410,14 +369,14 @@ class RMSPropSolver(Solver):
         solver_file : str
             The path of solver file.
         is_root : bool, optional, default=True
-            **True** to indicate a root solver.
+            ``True`` to indicate a root solver.
 
         """
         super(RMSPropSolver, self).__init__(solver_file, is_root)
-        self._arguments['base_lr'] = self._param.base_lr
-        self._arguments['decay'] = self._param.rms_decay
-        self._arguments['eps'] = self._param.delta
-        self._optimizer = RMSprop(**self._arguments)
+        self._optimizer_args['lr'] = self._proto.base_lr
+        self._optimizer_args['decay'] = self._proto.rms_decay
+        self._optimizer_args['eps'] = self._proto.delta
+        self._optimizer = RMSprop(**self._optimizer_args)
 
 
 class SGDSolver(Solver):
@@ -443,10 +402,10 @@ class SGDSolver(Solver):
         solver_file : str
             The path of solver file.
         is_root : bool, optional, default=True
-            **True** to indicate a root solver.
+            ``True`` to indicate a root solver.
 
         """
         super(SGDSolver, self).__init__(solver_file, is_root)
-        self._arguments['base_lr'] = self._param.base_lr
-        self._arguments['momentum'] = self._param.momentum
-        self._optimizer = SGD(**self._arguments)
+        self._optimizer_args['lr'] = self._proto.base_lr
+        self._optimizer_args['momentum'] = self._proto.momentum
+        self._optimizer = SGD(**self._optimizer_args)

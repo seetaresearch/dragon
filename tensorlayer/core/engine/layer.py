@@ -14,7 +14,6 @@ from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
 
-from dragon.core.framework import context
 from dragon.core.util import nest
 from dragon.vm.tensorlayer.core import activations
 from dragon.vm.tensorlayer.core.engine import module
@@ -106,7 +105,7 @@ class Layer(module.Module):
         Parameters
         ----------
         mode : bool
-            **True** for training otherwise evaluation.
+            ``True`` for training otherwise evaluation.
 
         """
         self._training = mode
@@ -173,19 +172,18 @@ class Layer(module.Module):
 
     def __call__(self, inputs, **kwargs):
         """The preprocessor for ``self.forward(...)``."""
-        with context.name_scope(self.name):
-            # Maybe build the layer at the first time.
-            if not self._built:
-                input_list = nest.flatten(inputs)
-                input_shapes = None
-                if all(hasattr(x, 'shape') for x in input_list):
-                    input_shapes = [x.shape for x in input_list]
-                    if not nest.is_sequence(inputs):
-                        input_shapes = input_shapes[0]
-                self.build(input_shapes)
+        # Maybe build the layer at the first time.
+        if not self._built:
+            input_list = nest.flatten(inputs)
+            input_shapes = None
+            if all(hasattr(x, 'shape') for x in input_list):
+                input_shapes = [x.shape for x in input_list]
+                if not nest.is_sequence(inputs):
+                    input_shapes = input_shapes[0]
+            self.build(input_shapes)
 
-            # Call the forward implementation to get outputs.
-            outputs = self.forward(inputs, **kwargs)
+        # Call the forward implementation to get outputs.
+        outputs = self.forward(inputs, **kwargs)
 
         # Record the nodes if necessary.
         if not self._nodes_fixed:

@@ -118,34 +118,26 @@ class BatchNorm(layer.Layer):
             num_features = self.num_features
         else:
             num_features = input_shape[self.axis]
-        self.beta = \
-            self.add_weight(
-                name='beta',
-                shape=[num_features],
-                init=self.beta_init if self.beta_init else 'zeros',
-                trainable=True if self.beta_init else False,
-            )
-        self.gamma = \
-            self.add_weight(
-                name="gamma",
-                shape=[num_features],
-                init=self.gamma_init if self.gamma_init else 'ones',
-                trainable=True if self.gamma_init else False,
-            )
-        self.moving_mean = \
-            self.add_weight(
-                name='moving_mean',
-                shape=[num_features],
-                init=self.moving_mean_init,
-                trainable=False,
-            )
-        self.moving_var = \
-            self.add_weight(
-                name="moving_var",
-                shape=[num_features],
-                init=self.moving_var_init,
-                trainable=False,
-            )
+        self.beta = self.add_weight(
+            name='beta',
+            shape=[num_features],
+            init=self.beta_init if self.beta_init else 'zeros',
+            trainable=True if self.beta_init else False)
+        self.gamma = self.add_weight(
+            name="gamma",
+            shape=[num_features],
+            init=self.gamma_init if self.gamma_init else 'ones',
+            trainable=True if self.gamma_init else False)
+        self.moving_mean = self.add_weight(
+            name='moving_mean',
+            shape=[num_features],
+            init=self.moving_mean_init,
+            trainable=False)
+        self.moving_var = self.add_weight(
+            name="moving_var",
+            shape=[num_features],
+            init=self.moving_var_init,
+            trainable=False)
         self._built = True
 
     def forward(self, inputs, **kwargs):
@@ -158,8 +150,7 @@ class BatchNorm(layer.Layer):
             axis=self.axis,
             momentum=self.decay,
             epsilon=self.epsilon,
-            use_stats=0 if self.training else 1,
-        )
+            use_stats=0 if self.training else 1)
         if self.act:
             outputs = self.act(outputs)
         return outputs

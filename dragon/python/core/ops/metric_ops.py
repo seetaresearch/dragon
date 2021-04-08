@@ -14,10 +14,9 @@ from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
 
-from dragon.core.eager import context
-from dragon.core.ops import metric_ops_lib
-from dragon.core.ops.utils import ArgHelper
-from dragon.core.ops.utils import OpSchema
+from dragon.core.autograph import context
+from dragon.core.autograph.op_impl import OpLib
+from dragon.core.autograph.op_impl import OpSchema
 
 
 @OpSchema.num_inputs(2)
@@ -29,11 +28,11 @@ def accuracy(inputs, axis=-1, top_k=1, ignore_index=None, **kwargs):
     inputs : Sequence[dragon.Tensor]
         The tensor ``logit`` and ``label``.
     axis : int, optional, default=-1
-        The axis of classes.
+        The axis to reduce, can be negative.
     top_k : int, optional, default=1
         The top-k accuracy to compute.
     ignore_index : int, optional
-        The label index to ignore.
+        The ignored value of target.
 
     Returns
     -------
@@ -41,14 +40,9 @@ def accuracy(inputs, axis=-1, top_k=1, ignore_index=None, **kwargs):
         The output tensor.
 
     """
-    args = ArgHelper.parse(locals())
-    op_lib = metric_ops_lib.Accuracy
     if context.executing_eagerly():
-        return op_lib \
-            .instantiate(
-                axis=axis,
-                top_k=top_k,
-                ignore_index=ignore_index,
-            ).apply(inputs)
-    else:
-        return op_lib.blend(**args)
+        return OpLib.execute(
+            'Accuracy', inputs, axis=axis, top_k=top_k,
+            ignore_index=ignore_index)
+    return OpLib.add('Accuracy', inputs, axis=axis, top_k=top_k,
+                     ignore_index=ignore_index, **kwargs)

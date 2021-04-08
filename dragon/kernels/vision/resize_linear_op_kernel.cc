@@ -3,7 +3,7 @@
 
 namespace dragon {
 
-namespace kernel {
+namespace kernels {
 
 namespace {
 
@@ -42,11 +42,11 @@ void _ResizeLinear2dNCHW(
     const bool align_corners,
     const T* x,
     T* y) {
+  const auto h_max = H - 1, w_max = W - 1;
+  const auto NxCxHoxWo = N * C * out_h * out_w;
   std::array<int, 4> index = {0, 0, 0, 0};
   std::array<int, 4> dims = {N, C, out_h, out_w};
-  const int h_max = H - 1, w_max = W - 1;
-  const auto count = N * C * out_h * out_w;
-  for (int i = 0; i < count; ++i) {
+  for (int i = 0; i < NxCxHoxWo; ++i) {
     const float h = TransformCoordinate(index[2], scale_h, align_corners);
     const float w = TransformCoordinate(index[3], scale_w, align_corners);
     const int ti = std::floor(h);
@@ -80,11 +80,11 @@ void _ResizeLinear2dNHWC(
     const bool align_corners,
     const T* x,
     T* y) {
+  const auto h_max = H - 1, w_max = W - 1;
+  const auto NxHoxWoxC = N * C * out_h * out_w;
   std::array<int, 4> index = {0, 0, 0, 0};
   std::array<int, 4> dims = {N, out_h, out_w, C};
-  const int h_max = H - 1, w_max = W - 1;
-  const auto count = N * C * out_h * out_w;
-  for (int i = 0; i < count; ++i) {
+  for (int i = 0; i < NxHoxWoxC; ++i) {
     const float h = TransformCoordinate(index[1], scale_h, align_corners);
     const float w = TransformCoordinate(index[2], scale_w, align_corners);
     const int ti = std::floor(h);
@@ -118,11 +118,11 @@ void _ResizeLinear2dGradNCHW(
     const bool align_corners,
     const T* dy,
     float* dx) {
+  const auto h_max = H - 1, w_max = W - 1;
+  const auto NxCxHoxWo = N * C * out_h * out_w;
   std::array<int, 4> index = {0, 0, 0, 0};
   std::array<int, 4> dims = {N, C, out_h, out_w};
-  const int h_max = H - 1, w_max = W - 1;
-  const auto count = N * C * out_h * out_w;
-  for (int i = 0; i < count; ++i) {
+  for (int i = 0; i < NxCxHoxWo; ++i) {
     const float h = TransformCoordinate(index[2], scale_h, align_corners);
     const float w = TransformCoordinate(index[3], scale_w, align_corners);
     const int ti = std::floor(h);
@@ -155,11 +155,11 @@ void _ResizeLinear2dGradNHWC(
     const bool align_corners,
     const T* dy,
     float* dx) {
+  const auto h_max = H - 1, w_max = W - 1;
+  const auto NxHoxWoxC = N * C * out_h * out_w;
   std::array<int, 4> index = {0, 0, 0, 0};
   std::array<int, 4> dims = {N, out_h, out_w, C};
-  const int h_max = H - 1, w_max = W - 1;
-  const auto count = N * C * out_h * out_w;
-  for (int i = 0; i < count; ++i) {
+  for (int i = 0; i < NxHoxWoxC; ++i) {
     const float h = TransformCoordinate(index[1], scale_h, align_corners);
     const float w = TransformCoordinate(index[2], scale_w, align_corners);
     const int ti = std::floor(h);
@@ -224,8 +224,8 @@ void _ResizeLinear2dGradNHWC(
         y);                                                      \
   }
 
-DEFINE_KERNEL_LAUNCHER(ResizeLinear2d, false, int8_t, int8_t);
 DEFINE_KERNEL_LAUNCHER(ResizeLinear2d, false, uint8_t, uint8_t);
+DEFINE_KERNEL_LAUNCHER(ResizeLinear2d, false, int8_t, int8_t);
 DEFINE_KERNEL_LAUNCHER(ResizeLinear2d, false, int, int);
 DEFINE_KERNEL_LAUNCHER(ResizeLinear2d, false, int64_t, int64_t);
 DEFINE_KERNEL_LAUNCHER(ResizeLinear2d, false, float16, float16);
@@ -237,6 +237,6 @@ DEFINE_KERNEL_LAUNCHER(ResizeLinear2dGrad, true, double, float); // Grad
 #undef DEFINE_KERNEL_LAUNCHER
 #undef DISPATCH_RESIZE_KERNEL
 
-} // namespace kernel
+} // namespace kernels
 
 } // namespace dragon

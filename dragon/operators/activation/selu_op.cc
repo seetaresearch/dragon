@@ -7,7 +7,7 @@ template <class Context>
 template <typename T>
 void SeluOp<Context>::DoRunWithType() {
   auto &X = Input(0), *Y = Output(0, {0});
-  kernel::Selu(
+  kernels::Selu(
       X.count(),
       alpha_,
       gamma_,
@@ -18,14 +18,14 @@ void SeluOp<Context>::DoRunWithType() {
 
 template <class Context>
 void SeluOp<Context>::RunOnDevice() {
-  DispatchHelper<FloatingTensorTypes>::Call(this, Input(0));
+  DispatchHelper<dtypes::Floating>::Call(this, Input(0));
 }
 
 template <class Context>
 template <typename T>
 void SeluGradientOp<Context>::DoRunWithType() {
   auto &Y = Input(0), &dY = Input(1), *dX = Output(0);
-  kernel::SeluGrad(
+  kernels::SeluGrad(
       Y.count(),
       alpha_,
       gamma_,
@@ -37,7 +37,7 @@ void SeluGradientOp<Context>::DoRunWithType() {
 
 template <class Context>
 void SeluGradientOp<Context>::RunOnDevice() {
-  DispatchHelper<FloatingTensorTypes>::Call(this, Input(0));
+  DispatchHelper<dtypes::Floating>::Call(this, Input(0));
 }
 
 DEPLOY_CPU_OPERATOR(Selu);

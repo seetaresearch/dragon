@@ -16,40 +16,24 @@
 #ifdef USE_PYTHON
 
 #include <pybind11/pybind11.h>
+
 #include "dragon/core/operator.h"
 
 namespace dragon {
 
 template <class Context>
-class PythonPluginInferOp : public Operator<Context> {
+class PythonPluginOp : public Operator<Context> {
  public:
-  PythonPluginInferOp(const OperatorDef& def, Workspace* ws);
+  PythonPluginOp(const OperatorDef& def, Workspace* ws);
   USE_OPERATOR_FUNCTIONS;
 
-  string MethodHelper(const string& method);
+  string CallMethodHelper(const string& method_name);
 
   void RunOnDevice() override;
 
  protected:
   PyObject *self_, *inputs_, *outputs_;
   string module_name_, class_name_, kwargs_str_;
-};
-
-template <class Context>
-class PythonPluginOp : public PythonPluginInferOp<Context> {
- public:
-  PythonPluginOp(const OperatorDef& def, Workspace* ws)
-      : PythonPluginInferOp<Context>(def, ws) {}
-};
-
-template <class Context>
-class PythonPluginGradientOp final : public PythonPluginInferOp<Context> {
- public:
-  PythonPluginGradientOp(const OperatorDef& def, Workspace* ws)
-      : PythonPluginInferOp<Context>(def, ws) {}
-  USE_OPERATOR_FUNCTIONS;
-
-  void RunOnDevice() override;
 };
 
 } // namespace dragon

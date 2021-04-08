@@ -7,7 +7,7 @@ template <class Context>
 template <typename T>
 void TanhOp<Context>::DoRunWithType() {
   auto &X = Input(0), *Y = Output(0, {0});
-  kernel::Tanh(
+  kernels::Tanh(
       X.count(),
       X.template data<T, Context>(),
       Y->ReshapeLike(X)->template mutable_data<T, Context>(),
@@ -16,14 +16,14 @@ void TanhOp<Context>::DoRunWithType() {
 
 template <class Context>
 void TanhOp<Context>::RunOnDevice() {
-  DispatchHelper<FloatingTensorTypes>::Call(this, Input(0));
+  DispatchHelper<dtypes::Floating>::Call(this, Input(0));
 }
 
 template <class Context>
 template <typename T>
 void TanhGradientOp<Context>::DoRunWithType() {
   auto &Y = Input(0), &dY = Input(1), *dX = Output(0);
-  kernel::TanhGrad(
+  kernels::TanhGrad(
       Y.count(),
       dY.template data<T, Context>(),
       Y.template data<T, Context>(),
@@ -33,7 +33,7 @@ void TanhGradientOp<Context>::DoRunWithType() {
 
 template <class Context>
 void TanhGradientOp<Context>::RunOnDevice() {
-  DispatchHelper<FloatingTensorTypes>::Call(this, Input(0));
+  DispatchHelper<dtypes::Floating>::Call(this, Input(0));
 }
 
 DEPLOY_CPU_OPERATOR(Tanh);

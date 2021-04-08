@@ -8,10 +8,9 @@ template <class Context>
 template <typename T>
 void ConcatOp<Context>::DoRunWithType() {
   auto &X = Input(0), *Y = Output(0);
-  CANONICALIZE_AXIS_WITH_TENSOR(X);
+  GET_OP_AXIS_ARG(axis, X.ndim(), 0);
 
-  // Store for the gradient calculation
-  STORE_INPUT_SPEC(0);
+  SET_INPUT_SPEC(0);
   vec64_t Y_dims(X.dims());
   for (int i = 1; i < InputSize(); ++i) {
     CHECK_EQ(X.ndim(), Input(i).ndim())
@@ -22,7 +21,7 @@ void ConcatOp<Context>::DoRunWithType() {
           << "\nAll inputs should have the same dims"
           << ", except the concat axis.";
     }
-    STORE_INPUT_SPEC(i);
+    SET_INPUT_SPEC(i);
     Y_dims[axis] += Input(i).dim(axis);
   }
 
@@ -45,19 +44,18 @@ void ConcatOp<Context>::DoRunWithType() {
 
 template <class Context>
 void ConcatOp<Context>::RunOnDevice() {
-  DispatchHelper<FullTensorTypes>::Call(this, Input(0));
+  DispatchHelper<dtypes::Generic>::Call(this, Input(0));
 }
 
 template <class Context>
 template <typename T>
 void ConcatGradientOp<Context>::DoRunWithType() {
   auto& dY = Input(0);
-  CANONICALIZE_AXIS_WITH_TENSOR(dY);
+  GET_OP_AXIS_ARG(axis, dY.ndim(), 0);
 
   int64_t input_offset = 0;
-
   for (int i = 0; i < OutputSize(); ++i) {
-    auto &X = RESTORE_INPUT_SPEC(i), *dX = Output(i);
+    auto &X = INPUT_SPEC(i), *dX = Output(i);
     if (dX->has_name()) {
       math::CopyMatrix(
           dY.count(0, axis),
@@ -74,7 +72,7 @@ void ConcatGradientOp<Context>::DoRunWithType() {
 
 template <class Context>
 void ConcatGradientOp<Context>::RunOnDevice() {
-  DispatchHelper<FloatingTensorTypes>::Call(this, Input(0));
+  DispatchHelper<dtypes::Floating>::Call(this, Input(0));
 }
 
 DEPLOY_CPU_OPERATOR(Concat);

@@ -14,10 +14,9 @@ from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
 
-from dragon.core.autograph.op_def import OpDef
-from dragon.core.eager import context
-from dragon.core.ops.utils import ArgHelper
-from dragon.core.ops.utils import OpSchema
+from dragon.core.autograph import context
+from dragon.core.autograph.op_impl import OpLib
+from dragon.core.autograph.op_impl import OpSchema
 
 
 def python_plugin(
@@ -26,7 +25,6 @@ def python_plugin(
     class_name,
     num_outputs=1,
     kwargs_str=None,
-    no_grad=True,
     **kwargs
 ):
     """Create a plugin operator from the python class.
@@ -42,9 +40,7 @@ def python_plugin(
     num_outputs : int, optional, default=1
         The number of outputs.
     kwargs_str : str, optional
-        The stringify kwargs kept for class.
-    no_grad : bool, optional, default=True
-        **True** to truncate the gradient of inputs.
+        The stringify keyword arguments.
 
     Returns
     -------
@@ -52,12 +48,11 @@ def python_plugin(
         The outputs.
 
     """
-    args = ArgHelper.parse(locals())
     if context.executing_eagerly():
         raise RuntimeError('Excepted the graph execution mode.')
-    else:
-        op_type = 'PythonPlugin' + ('Infer' if no_grad else '')
-        return OpDef.apply(op_type, **args)
+    return OpLib.add('PythonPlugin', inputs, module_name=module_name,
+                     class_name=class_name, num_outputs=num_outputs,
+                     kwargs_str=kwargs_str, **kwargs)
 
 
 @OpSchema.num_inputs(1)
@@ -77,8 +72,6 @@ def stop_gradient(inputs, **kwargs):
         An identity of input.
 
     """
-    args = ArgHelper.parse(locals())
     if context.executing_eagerly():
         raise RuntimeError('Excepted the graph execution mode.')
-    else:
-        return OpDef.apply('StopGradient', **args)
+    return OpLib.add('StopGradient', inputs, **kwargs)

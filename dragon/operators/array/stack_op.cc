@@ -8,12 +8,10 @@ template <class Context>
 template <typename T>
 void StackOp<Context>::DoRunWithType() {
   auto &X = Input(0), *Y = Output(0);
-  CANONICALIZE_AXIS_WITH_TENSOR_AND_OFFSET(X, 1);
+  GET_OP_AXIS_ARG(axis, X.ndim() + 1, 0);
 
+  SET_INPUT_SPEC(0);
   int num_stacks = InputSize();
-
-  // Store for the gradient calculation
-  STORE_INPUT_SPEC(0);
   vec64_t Y_dims(X.dims());
   Y_dims.insert(Y_dims.begin() + axis, num_stacks);
   for (int i = 1; i < num_stacks; ++i) {
@@ -23,7 +21,7 @@ void StackOp<Context>::DoRunWithType() {
       CHECK_EQ(X.dim(j), Input(i).dim(j))
           << "\nAll inputs should have the same dimensions.";
     }
-    STORE_INPUT_SPEC(i);
+    SET_INPUT_SPEC(i);
   }
 
   Y->Reshape(Y_dims);
@@ -45,19 +43,18 @@ void StackOp<Context>::DoRunWithType() {
 
 template <class Context>
 void StackOp<Context>::RunOnDevice() {
-  DispatchHelper<FullTensorTypes>::Call(this, Input(0));
+  DispatchHelper<dtypes::Generic>::Call(this, Input(0));
 }
 
 template <class Context>
 template <typename T>
 void StackGradientOp<Context>::DoRunWithType() {
-  auto &X_ref = RESTORE_INPUT_SPEC(0), &dY = Input(0);
-  CANONICALIZE_AXIS_WITH_TENSOR_AND_OFFSET(X_ref, 1)
+  auto &X_ref = INPUT_SPEC(0), &dY = Input(0);
+  GET_OP_AXIS_ARG(axis, X_ref.ndim() + 1, 0);
 
   int64_t input_offset = 0;
-
   for (int i = 0; i < OutputSize(); ++i) {
-    auto &X = RESTORE_INPUT_SPEC(i), *dX = Output(i);
+    auto &X = INPUT_SPEC(i), *dX = Output(i);
     if (dX->has_name()) {
       math::CopyMatrix(
           dY.count(0, axis),
@@ -74,7 +71,7 @@ void StackGradientOp<Context>::DoRunWithType() {
 
 template <class Context>
 void StackGradientOp<Context>::RunOnDevice() {
-  DispatchHelper<FullTensorTypes>::Call(this, Input(0));
+  DispatchHelper<dtypes::Generic>::Call(this, Input(0));
 }
 
 DEPLOY_CPU_OPERATOR(Stack);

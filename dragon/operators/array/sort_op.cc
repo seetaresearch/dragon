@@ -7,10 +7,8 @@ template <class Context>
 template <typename T>
 void SortOp<Context>::DoRunWithType() {
   auto &X = Input(0), *Y_value = Output(0), *Y_index = Output(1);
-  CANONICALIZE_AXIS_WITH_TENSOR(X);
-  axis = (axis == INT_MAX ? X.ndim() - 1 : axis);
-
-  kernel::TopSelect(
+  GET_OP_AXIS_ARG(axis, X.ndim(), -1);
+  kernels::TopK(
       X.count(0, axis),
       X.count(axis + 1),
       X.dim(axis),
@@ -24,7 +22,7 @@ void SortOp<Context>::DoRunWithType() {
 
 template <class Context>
 void SortOp<Context>::RunOnDevice() {
-  DispatchHelper<NumericalTensorTypes>::Call(this, Input(0));
+  DispatchHelper<dtypes::Numerical>::Call(this, Input(0));
 }
 
 DEPLOY_CPU_OPERATOR(Sort);
@@ -35,7 +33,7 @@ DEPLOY_CUDA_OPERATOR(Sort);
 OPERATOR_SCHEMA(Sort)
     /* X */
     .NumInputs(1)
-    /* Value, Index */
+    /* Y_value, Y_index */
     .NumOutputs(2);
 
 NO_GRADIENT(Sort);

@@ -4,7 +4,7 @@
 
 namespace dragon {
 
-namespace kernel {
+namespace kernels {
 
 namespace {
 
@@ -16,14 +16,14 @@ void _BatchNormExpectation(
     AccT* ex,
     AccT* ex2) {
   const int kCDim = kOrder == StorageOrder::NCHW ? 1 : 2;
-  const int count = dims[0] * dims[1] * dims[2];
-  std::array<int, 3> idx = {0, 0, 0};
-  for (int i = 0; i < count; ++i) {
+  const int NxCxS = dims[0] * dims[1] * dims[2];
+  std::array<int, 3> index = {0, 0, 0};
+  for (int i = 0; i < NxCxS; ++i) {
     const T x_val = x[i];
-    const int pi = idx[kCDim];
+    const int pi = index[kCDim];
     ex[pi] += x_val;
     ex2[pi] += x_val * x_val;
-    math::utils::IncreaseIndexInDims(3, dims.data(), idx.data());
+    math::utils::IncreaseIndexInDims(3, dims.data(), index.data());
   }
   for (int i = 0; i < dims[kCDim]; ++i) {
     ex[i] = ex[i] / normalizer;
@@ -93,13 +93,13 @@ void _BatchNormWGrad(
     AccT* dgamma,
     AccT* dbeta) {
   const int kCDim = kOrder == StorageOrder::NCHW ? 1 : 2;
-  const int count = dims[0] * dims[1] * dims[2];
-  std::array<int, 3> idx = {0, 0, 0};
-  for (int i = 0; i < count; ++i) {
-    const int pi = idx[kCDim];
+  const int NxCxS = dims[0] * dims[1] * dims[2];
+  std::array<int, 3> index = {0, 0, 0};
+  for (int i = 0; i < NxCxS; ++i) {
+    const int pi = index[kCDim];
     dgamma[pi] += dy[i] * (x[i] - mu[pi]) * rsig[pi];
     dbeta[pi] += dy[i];
-    math::utils::IncreaseIndexInDims(3, dims.data(), idx.data());
+    math::utils::IncreaseIndexInDims(3, dims.data(), index.data());
   }
 }
 
@@ -116,14 +116,14 @@ void _BatchNormTrainingGrad(
     const T* dy,
     T* dx) {
   const int kCDim = kOrder == StorageOrder::NCHW ? 1 : 2;
-  const int count = dims[0] * dims[1] * dims[2];
-  std::array<int, 3> idx = {0, 0, 0};
-  for (int i = 0; i < count; ++i) {
-    const int pi = idx[kCDim];
+  const int NxCxS = dims[0] * dims[1] * dims[2];
+  std::array<int, 3> index = {0, 0, 0};
+  for (int i = 0; i < NxCxS; ++i) {
+    const int pi = index[kCDim];
     const AccT x_norm = (x[i] - mu[pi]) * rsig[pi];
     dx[i] = gamma[pi] * rsig[pi] *
         (dy[i] - (x_norm * dgamma[pi] + dbeta[pi]) / normalizer);
-    math::utils::IncreaseIndexInDims(3, dims.data(), idx.data());
+    math::utils::IncreaseIndexInDims(3, dims.data(), index.data());
   }
 }
 
@@ -378,6 +378,6 @@ DEFINE_GRAD_KERNEL_LAUNCHER(double, double);
 #undef DEFINE_KERNEL_LAUNCHER
 #undef DEFINE_GRAD_KERNEL_LAUNCHER
 
-} // namespace kernel
+} // namespace kernels
 
 } // namespace dragon

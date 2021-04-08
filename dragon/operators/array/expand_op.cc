@@ -8,16 +8,15 @@ template <class Context>
 template <typename T>
 void ExpandOp<Context>::DoRunWithType() {
   auto &X = Input(0), *Y = Output(0);
+  SET_INPUT_SPEC(0);
 
   int num_dims;
   dims(0, &num_dims);
 
   vec64_t X_dims(num_dims), Y_dims;
-  for (int i = 0; i < num_dims; i++)
+  for (int i = 0; i < num_dims; i++) {
     X_dims[i] = dims(i);
-
-  // Store for the gradient calculation
-  STORE_INPUT_SPEC(0);
+  }
 
   if (math::utils::IsBinaryBroadcast(X.dims(), X_dims, Y_dims)) {
     math::Set(
@@ -36,14 +35,14 @@ void ExpandOp<Context>::DoRunWithType() {
 
 template <class Context>
 void ExpandOp<Context>::RunOnDevice() {
-  DispatchHelper<FullTensorTypes>::Call(this, Input(0));
+  DispatchHelper<dtypes::Generic>::Call(this, Input(0));
 }
 
 template <class Context>
 template <typename T>
 void ExpandGradientOp<Context>::DoRunWithType() {
   auto &dY = Input(0), *dX = Output(0);
-  dX->ReshapeLike(RESTORE_INPUT_SPEC(0));
+  dX->ReshapeLike(INPUT_SPEC(0));
 
   vec32_t X_broadcast_axes, _;
   vec32_t Y_dims(dY.dims().begin(), dY.dims().end());
@@ -68,7 +67,7 @@ void ExpandGradientOp<Context>::DoRunWithType() {
 
 template <class Context>
 void ExpandGradientOp<Context>::RunOnDevice() {
-  DispatchHelper<FloatingTensorTypes>::Call(this, Input(0));
+  DispatchHelper<dtypes::Floating>::Call(this, Input(0));
 }
 
 DEPLOY_CPU_OPERATOR(Expand);

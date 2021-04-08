@@ -32,13 +32,12 @@ except ImportError:
     ONNXBackendRep = object
     Device = deprecation.NotInstalled('onnx')
     DeviceType = deprecation.NotInstalled('onnx')
+    namedtupledict = collections.namedtuple
 
-from dragon.core.autograph import function_lib
-from dragon.core.eager.tensor import EagerTensor
+from dragon.core.autograph.graph_impl import GraphLib
 from dragon.core.framework import context
-from dragon.core.framework import device_spec
 from dragon.core.framework import workspace
-from dragon.core.proto import dragon_pb2
+from dragon.core.framework.tensor import Tensor
 from dragon.core.util import nest
 
 
@@ -58,9 +57,7 @@ class BackendRep(ONNXBackendRep):
         """
         if not isinstance(device, Device):
             device = Device(device)
-        graph_str = workspace.get_workspace().PrepareONNXModel(model)
-        graph_def = dragon_pb2.GraphDef()
-        graph_def.ParseFromString(graph_str)
+        execute_ws = workspace.get_workspace()
         if device.type == DeviceType.CPU:
             device_type, device_index = 'cpu', 0
         elif device.type == DeviceType.CUDA:
@@ -68,14 +65,16 @@ class BackendRep(ONNXBackendRep):
         else:
             raise ValueError('Unsupported device type: ' + device.type)
         with context.device(device_type, device_index):
-            self._function = function_lib.Function(name='ONNXGraph') \
-                                         .import_from(graph_def)
-        self._input_dict = collections.OrderedDict(
-            [(impl.name, EagerTensor(impl=impl, device=device_spec.DeviceSpec(
-                device_type, device_index))) for impl in self._function.inputs])
-        self._output_dict = collections.OrderedDict(
-            [(impl.name, EagerTensor(impl=impl, device=device_spec.DeviceSpec(
-                device_type, device_index))) for impl in self._function.outputs])
+            self._context = GraphLib.from_onnx(model)
+        self._input_dict = collections.OrderedDict()
+        self._output_dict = collections.OrderedDict()
+        for input in self._context._def.input:
+            impl = execute_ws.get_tensor(input)
+            self._input_dict[input] = Tensor(impl=impl)
+        for output in self._context._def.output:
+            impl = execute_ws.get_tensor(output)
+            self._output_dict[output] = Tensor(impl=impl)
+        self._output_tuple = namedtupledict('Outputs', self._context._def.output)
 
     def run(self, inputs, **kwargs):
         """Run the model.
@@ -101,9 +100,8 @@ class BackendRep(ONNXBackendRep):
                 ref._impl.FromNumpy(value)
         else:
             raise ValueError('Excepted sequence or dict inputs.')
-        self._function.callback(return_outputs=False)
-        named_outputs = namedtupledict('Outputs', list(self._output_dict.keys()))
-        return named_outputs(*(self._output_dict.values()))
+        self._context.run()
+        return self._output_tuple(*self._output_dict.values())
 
 
 class DragonBackend(Backend):
@@ -163,7 +161,7 @@ class DragonBackend(Backend):
         Returns
         -------
         bool
-            **True** if device is supported otherwise **False**.
+            ``True`` if device is supported otherwise ``False``.
 
         """
         device = Device(device_str)

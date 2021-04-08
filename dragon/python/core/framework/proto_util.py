@@ -15,9 +15,8 @@ from __future__ import division
 from __future__ import print_function
 
 import copy
-import sys
 
-from google.protobuf.message import Message
+import google.protobuf.message as message_proto
 import numpy
 
 from dragon.core.framework import backend
@@ -26,69 +25,34 @@ from dragon.core.framework import context
 from dragon.core.proto import dragon_pb2
 
 
-if sys.version_info >= (3, 0):
-    def make_argument(key, value):
-        """Make an argument."""
-        argument = dragon_pb2.Argument()
-        argument.name = key
-        if type(value) is float:
-            argument.f = value
-        elif type(value) in (bool, int, numpy.int64):
-            argument.i = value
-        elif type(value) is bytes:
-            argument.s = value
-        elif isinstance(value, str):
-            argument.s = str.encode(value)
-        elif isinstance(value, Message):
-            argument.s = value.SerializeToString()
-        elif all(type(v) is float for v in value):
-            argument.floats.extend(value)
-        elif all(type(v) is int for v in value):
-            argument.ints.extend(value)
-        elif all(type(v) is str for v in value):
-            argument.strings.extend([str.encode(v) for v in value])
-        elif all(isinstance(v, Message) for v in value):
-            argument.strings.extend([v.SerializeToString() for v in value])
-        else:
-            raise ValueError(
-                'Unknown argument type: '
-                'key = {}, value = {}, value_type = {}.'
-                .format(key, value, type(value).__name__))
-        return argument
-else:
-    def make_argument(key, value):
-        """Make an argument."""
-        argument = dragon_pb2.Argument()
-        argument.name = key
-        if type(value) is float:
-            argument.f = value
-        elif type(value) in (bool, int, long, numpy.int64):
-            argument.i = value
-        elif isinstance(value, str):
-            argument.s = value
-        elif type(value) is unicode:
-            argument.s = str(value)
-        elif isinstance(value, Message):
-            argument.s = value.SerializeToString()
-        elif all(type(v) is float for v in value):
-            argument.floats.extend(value)
-        elif all(type(v) is int for v in value):
-            argument.ints.extend(value)
-        elif all(type(v) is long for v in value):
-            argument.ints.extend(value)
-        elif all(type(v) is str for v in value):
-            argument.strings.extend(value)
-        elif all(type(v) is unicode for v in value):
-            argument.strings.extend([str(v) for v in value])
-        elif all(isinstance(v, Message) for v in value):
-            argument.strings.extend([v.SerializeToString() for v in value])
-        else:
-            raise ValueError(
-                'Unknown argument type: '
-                'key = {}, value = {}, value_type = {}.'
-                .format(key, value, type(value).__name__)
-            )
-        return argument
+def make_argument(key, value):
+    """Make an argument."""
+    argument = dragon_pb2.Argument()
+    argument.name = key
+    if type(value) is float:
+        argument.f = value
+    elif type(value) in (bool, int, numpy.int64):
+        argument.i = value
+    elif type(value) is bytes:
+        argument.s = value
+    elif isinstance(value, str):
+        argument.s = str.encode(value)
+    elif isinstance(value, message_proto.Message):
+        argument.s = value.SerializeToString()
+    elif all(type(v) is float for v in value):
+        argument.floats.extend(value)
+    elif all(type(v) is int for v in value):
+        argument.ints.extend(value)
+    elif all(type(v) is str for v in value):
+        argument.strings.extend([str.encode(v) for v in value])
+    elif all(isinstance(v, message_proto.Message) for v in value):
+        argument.strings.extend([v.SerializeToString() for v in value])
+    else:
+        raise ValueError(
+            'Unknown argument type: '
+            'key = {}, value = {}, value_type = {}.'
+            .format(key, value, type(value).__name__))
+    return argument
 
 
 def make_operator_def(
@@ -96,9 +60,10 @@ def make_operator_def(
     inputs=(),
     outputs=(),
     name='',
-    cache_key=None,
     device_option=None,
     arg=None,
+    cache_key=None,
+    to_impl=False,
     **kwargs
 ):
     """Make an operator def."""
@@ -110,39 +75,18 @@ def make_operator_def(
     if 'random_seed' in kwargs:
         op_def.device_option.random_seed = kwargs['random_seed']
         del kwargs['random_seed']
-    if cache_key is not None:
-        op_def.cache_key = cache_key
     if arg is not None:
         op_def.arg.extend(arg)
     for k, v in kwargs.items():
         if v is None:
             continue
         op_def.arg.add().CopyFrom(make_argument(k, v))
-    return op_def
-
-
-def make_operator_def_cpp(
-    op_type,
-    inputs=(),
-    outputs=(),
-    name='',
-    cache_key=None,
-    device_option=None,
-    arg=None,
-    **kwargs
-):
-    """Make an operator def with cpp implementation."""
-    op_def = backend.OperatorDef()
-    op_def.ParseFrom(
-        make_operator_def(
-            op_type,
-            inputs,
-            outputs,
-            name,
-            cache_key,
-            device_option,
-            arg,
-            **kwargs).SerializeToString())
+    if cache_key is not None:
+        op_def.arg.add().CopyFrom(make_argument('cache_key', cache_key))
+    if to_impl:
+        impl = backend.OperatorDef()
+        impl.ParseFrom(op_def.SerializeToString())
+        return impl
     return op_def
 
 
@@ -156,21 +100,9 @@ def make_device_option(device_type, device_id, rng_seed=None):
     return dev_opt
 
 
-_PREDEFINED_DEVICE_LIMITS = 16
-_PREDEFINED_DEVICE_DICT = {'cpu': 0, 'cuda': 1, 'cnml': 2}
-_PREDEFINED_DEVICE_OPTION_DICT = {}
-
-
-for i in range(_PREDEFINED_DEVICE_LIMITS):
-    for device, identifier in _PREDEFINED_DEVICE_DICT.items():
-        _PREDEFINED_DEVICE_OPTION_DICT[(device, i)] = \
-            make_device_option(identifier, i)
-
-
 def get_device_option(device_type, device_index=0, rng_seed=None):
     """Return the device option."""
-    ctx = (device_type, device_index)
-    option = _PREDEFINED_DEVICE_OPTION_DICT[ctx]
+    option = _ALL_DEVICE_OPTIONS[(device_type, device_index)]
     if rng_seed is not None:
         option_copy = copy.deepcopy(option)
         option_copy.random_seed = rng_seed
@@ -180,19 +112,22 @@ def get_device_option(device_type, device_index=0, rng_seed=None):
 
 def get_default_device_option():
     """Return the default device option."""
-    device_info = context.get_device_info()
-    if device_info is not None:
-        return get_device_option(
-            device_info['device_type'],
-            device_info['device_index'],
-        )
+    spec = context.get_device(use_default=False)
+    if spec is not None:
+        return get_device_option(spec.type, spec.index)
     return None
 
 
 def get_global_device_option():
     """Return the global device option."""
     cfg = config.config()
-    return get_device_option(
-        cfg.device_type,
-        cfg.device_index,
-    )
+    return get_device_option(cfg.device_type, cfg.device_index)
+
+
+_MAX_NUM_OF_DEVICES = 16
+_ALL_DEVICE_OPTIONS = {}
+_DEVICE_TO_IDENTIFIER = {'cpu': 0, 'cuda': 1, 'cnml': 2}
+
+for i in range(_MAX_NUM_OF_DEVICES):
+    for device, identifier in _DEVICE_TO_IDENTIFIER.items():
+        _ALL_DEVICE_OPTIONS[(device, i)] = make_device_option(identifier, i)

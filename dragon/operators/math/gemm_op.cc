@@ -1,6 +1,5 @@
 #include "dragon/operators/math/gemm_op.h"
 #include "dragon/core/workspace.h"
-#include "dragon/utils/filler.h"
 #include "dragon/utils/math_functions.h"
 
 namespace dragon {
@@ -9,42 +8,38 @@ template <class Context>
 template <typename T>
 void GemmOp<Context>::DoRunWithType() {
   auto &A = Input(0), &B = Input(1), *Y = Output(0);
-  CANONICALIZE_AXIS_WITH_TENSOR(A);
+  const auto A_axis = A.axis(-1), B_axis = B.axis(-1);
 
   // Check matrix A
-  auto M = transA_ ? A.count(axis) : A.count(0, axis);
-  auto K = transA_ ? A.count(0, axis) : A.count(axis);
+  auto M = transA_ ? A.count(A_axis) : A.count(0, A_axis);
+  auto K = transA_ ? A.count(0, A_axis) : A.count(A_axis);
 
   // Check matrix B
-  auto N = n_; // Init "N" from the argument
-  if (N <= 0) {
-    // Infer "N" from the B shape
-    N = B.count() / K;
-    CHECK_GT(N, 0) << "\nFailed to infer 'N' from "
-                   << "the B shape: " << B.DimString();
-  }
-  if (transB_ > 0) {
-    TENSOR_FILL(B, vec64_t({N, K}));
-    CHECK(B.ndim() == 2 && B.dim(1) == K)
-        << "\nMatrixB's dimensions should be [N, K].\n"
-        << "Got A as (" << M << ", " << K << "), "
-        << "and B as " << B.DimString();
+  auto N = transB_ ? B.count(0, B_axis) : B.count(B_axis);
+  auto K2 = transB_ ? B.count(B_axis) : B.count(0, B_axis);
+  if (transB_) {
+    CHECK_EQ(K, K2) << "\nMatrixB's dimensions should be (...," << K
+                    << "), got " << B.DimString() << ".";
   } else {
-    TENSOR_FILL(B, vec64_t({K, N}));
-    CHECK(B.ndim() == 2 && B.dim(0) == K)
-        << "\nMatrixB's dimensions should be [K, N].\n"
-        << "Got A as (" << M << ", " << K << "), "
-        << "and B as " << B.DimString();
+    CHECK_EQ(K, K2) << "\nMatrixB's dimensions should be reshaped to (" << K
+                    << "," << N << "), got " << B.DimString() << ".";
+  }
+
+  vec64_t Y_dims;
+  if (transA_) {
+    Y_dims.push_back(M);
+  } else {
+    Y_dims.insert(Y_dims.end(), A.dims().begin(), A.dims().begin() + A_axis);
+  }
+  if (transB_) {
+    Y_dims.insert(Y_dims.end(), B.dims().begin(), B.dims().begin() + B_axis);
+  } else {
+    Y_dims.push_back(N);
   }
 
   // Copy matrix C to Y if provided
-  vec64_t Y_dims(A.dims().begin(), A.dims().begin() + axis);
-  Y_dims.insert(transA_ ? Y_dims.begin() : Y_dims.end(), N);
   if (InputSize() > 2) {
     auto& C = Input(2);
-    if (C.ndim() == 0) {
-      TENSOR_FILL(C, vec64_t({N}));
-    }
     if (math::utils::IsBinaryBroadcast(Y_dims, C.dims(), Y_dims)) {
       math::Set(
           C.ndim(),
@@ -61,8 +56,8 @@ void GemmOp<Context>::DoRunWithType() {
   }
 
   math::Gemm(
-      (CBLAS_TRANSPOSE)transA_,
-      (CBLAS_TRANSPOSE)transB_,
+      transA_ > 0 ? CblasTrans : CblasNoTrans,
+      transB_ > 0 ? CblasTrans : CblasNoTrans,
       M,
       N,
       K,
@@ -76,7 +71,7 @@ void GemmOp<Context>::DoRunWithType() {
 
 template <class Context>
 void GemmOp<Context>::RunOnDevice() {
-  DispatchHelper<FloatingTensorTypes>::Call(this, Input(0));
+  DispatchHelper<dtypes::Floating>::Call(this, Input(0));
 }
 
 template <class Context>
@@ -84,25 +79,17 @@ template <typename T>
 void GemmGradientOp<Context>::DoRunWithType() {
   auto &A = Input(0), &B = Input(1), &dY = Input(3);
   auto *dA = Output(0), *dB = Output(1), *dC = Output(2);
-  CANONICALIZE_AXIS_WITH_TENSOR(A);
+  const auto A_axis = A.axis(-1), B_axis = B.axis(-1);
 
-  // Check matrix A
-  auto M = transA_ ? A.count(axis) : A.count(0, axis);
-  auto K = transA_ ? A.count(0, axis) : A.count(axis);
-
-  // Check matrix B
-  auto N = n_; // Init "N" from the argument
-  if (N <= 0) {
-    // Infer "N" from the B shape
-    N = B.count() / K;
-    CHECK_GT(N, 0) << "\nFailed to infer 'N' from "
-                   << "the B shape: " << B.DimString();
-  }
+  // Check matrix A/B
+  auto M = transA_ ? A.count(A_axis) : A.count(0, A_axis);
+  auto K = transA_ ? A.count(0, A_axis) : A.count(A_axis);
+  auto N = transB_ ? B.count(0, B_axis) : B.count(B_axis);
 
   if (dA->has_name()) {
     if (transA_ > 0) {
       math::Gemm(
-          transB_ ? CblasTrans : CblasNoTrans,
+          transB_ > 0 ? CblasTrans : CblasNoTrans,
           CblasTrans,
           K,
           M,
@@ -116,7 +103,7 @@ void GemmGradientOp<Context>::DoRunWithType() {
     } else {
       math::Gemm(
           CblasNoTrans,
-          transB_ ? CblasNoTrans : CblasTrans,
+          transB_ > 0 ? CblasNoTrans : CblasTrans,
           M,
           K,
           N,
@@ -130,10 +117,10 @@ void GemmGradientOp<Context>::DoRunWithType() {
   }
 
   if (dB->has_name()) {
-    if (transB_) {
+    if (transB_ > 0) {
       math::Gemm(
           CblasTrans,
-          transA_ ? CblasTrans : CblasNoTrans,
+          transA_ > 0 ? CblasTrans : CblasNoTrans,
           N,
           K,
           M,
@@ -145,7 +132,7 @@ void GemmGradientOp<Context>::DoRunWithType() {
           ctx());
     } else {
       math::Gemm(
-          transA_ ? CblasNoTrans : CblasTrans,
+          transA_ > 0 ? CblasNoTrans : CblasTrans,
           CblasNoTrans,
           K,
           N,
@@ -187,7 +174,7 @@ void GemmGradientOp<Context>::DoRunWithType() {
 
 template <class Context>
 void GemmGradientOp<Context>::RunOnDevice() {
-  DispatchHelper<FloatingTensorTypes>::Call(this, Input(0));
+  DispatchHelper<dtypes::Floating>::Call(this, Input(0));
 }
 
 DEPLOY_CPU_OPERATOR(Gemm);
@@ -217,9 +204,9 @@ namespace {
 class GradientMaker : public GradientMakerBase {
  public:
   GRADIENT_MAKER_CTOR(GradientMaker);
-  vector<OperatorDef> MakeDef() override {
-    return SingleDef(
-        def.type() + "Gradient",
+  void CreateGradientDefs() override {
+    AddGradientDef(
+        def().type() + "Gradient",
         "",
         vector<string>({I(0), I(1), I(2), GO(0)}),
         vector<string>({GI(0), GI(1), GI(2)}));

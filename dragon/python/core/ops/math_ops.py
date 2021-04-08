@@ -14,11 +14,10 @@ from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
 
-from dragon.core.eager import context
-from dragon.core.framework import ops
-from dragon.core.ops import math_ops_lib
-from dragon.core.ops.utils import ArgHelper
-from dragon.core.ops.utils import OpSchema
+from dragon.core.autograph import context
+from dragon.core.autograph.op_impl import OpLib
+from dragon.core.autograph.op_impl import OpSchema
+from dragon.core.ops import constant_ops
 
 
 @OpSchema.num_inputs(1)
@@ -45,12 +44,9 @@ def abs(inputs, **kwargs):
         The output tensor.
 
     """
-    args = ArgHelper.parse(locals())
-    op_lib = math_ops_lib.UnaryOp
     if context.executing_eagerly():
-        return op_lib.instantiate(op_type='Abs').apply([inputs])
-    else:
-        return op_lib.blend('Abs', **args)
+        return OpLib.execute('Abs', inputs)
+    return OpLib.add('Abs', inputs, **kwargs)
 
 
 @OpSchema.num_inputs(2)
@@ -79,52 +75,13 @@ def add(inputs, **kwargs):
         The output tensor.
 
     """
-    args = ArgHelper.parse(locals())
-    inputs = ops.remove_binary_scalar(inputs)
-    op_lib = math_ops_lib.BinaryOp
+    inputs = constant_ops.remove_scalars(inputs)
     if context.executing_eagerly():
-        return op_lib.instantiate(op_type='Add').apply(inputs)
-    else:
-        return op_lib.blend('Add', **args)
+        return OpLib.execute('Add', inputs)
+    return OpLib.add('Add', inputs, **kwargs)
 
 
 @OpSchema.num_inputs(1)
-def axpby(inputs, outputs=None, alpha=1., beta=1., **kwargs):
-    r"""Compute the element-wise addition from input to output.
-
-    .. math:: \text{out} = \alpha * \text{input} + \beta * \text{out}
-
-    If ``outputs`` is not provided, **zeros** will be used instead.
-
-    Parameters
-    ----------
-    inputs : dragon.Tensor
-        The input tensor.
-    outputs : dragon.Tensor, optional
-        The output tensor.
-    alpha : number, optional, default=1.
-        The value to :math:`\alpha`.
-    beta : number, optional, default=1.
-        The value to :math:`\beta`.
-
-    Returns
-    -------
-    dragon.Tensor
-        The output tensor.
-
-    """
-    args = ArgHelper.parse(locals())
-    args['alpha'], args['beta'] = float(alpha), float(beta)
-    op_lib = math_ops_lib.Axpby
-    if context.executing_eagerly():
-        return op_lib \
-            .instantiate(alpha=args['alpha'], beta=args['beta']) \
-            .apply([inputs], [outputs])
-    else:
-        return op_lib.blend(**args)
-
-
-@OpSchema.num_inputs(2)
 def bitwise_and(inputs, **kwargs):
     r"""Compute the element-wise AND bitwise operation.
 
@@ -133,10 +90,9 @@ def bitwise_and(inputs, **kwargs):
     Examples:
 
     ```python
-    a = dragon.constant([False, True, False, True])
-    b = dragon.constant([False, True, True, False])
-    print(dragon.bitwise.bitwise_and([a, b]))  # False, True, False, False
-    print(a * b)  # Equivalent operation
+    a = dragon.constant([0, -1, 2, -3, 4])
+    b = dragon.constant([-4, 3, -2, 1, 0])
+    print(dragon.bitwise.bitwise_and([a, b]))  # [0, 3, 2, 1, 0]
     ```
 
     Parameters
@@ -150,7 +106,10 @@ def bitwise_and(inputs, **kwargs):
         The output tensor.
 
     """
-    return mul(inputs, **kwargs)
+    inputs = constant_ops.remove_scalars(inputs)
+    if context.executing_eagerly():
+        return OpLib.execute('BitwiseAnd', inputs)
+    return OpLib.add('BitwiseAnd', inputs, **kwargs)
 
 
 @OpSchema.num_inputs(2)
@@ -162,10 +121,9 @@ def bitwise_or(inputs, **kwargs):
     Examples:
 
     ```python
-    a = dragon.constant([False, True, False, True])
-    b = dragon.constant([False, True, True, False])
-    print(dragon.bitwise.bitwise_or([a, b]))  # False, True, True, True
-    print(a + b)  # Equivalent operation
+    a = dragon.constant([0, -1, 2, -3, 4])
+    b = dragon.constant([-4, 3, -2, 1, 0])
+    print(dragon.bitwise.bitwise_or([a, b]))  # [-4, -1, -2, -3, 4]
     ```
 
     Parameters
@@ -179,7 +137,10 @@ def bitwise_or(inputs, **kwargs):
         The output tensor.
 
     """
-    return add(inputs, **kwargs)
+    inputs = constant_ops.remove_scalars(inputs)
+    if context.executing_eagerly():
+        return OpLib.execute('BitwiseOr', inputs)
+    return OpLib.add('BitwiseOr', inputs, **kwargs)
 
 
 @OpSchema.num_inputs(2)
@@ -191,10 +152,9 @@ def bitwise_xor(inputs, **kwargs):
     Examples:
 
     ```python
-    a = dragon.constant([False, True, False, True])
-    b = dragon.constant([False, True, True, False])
-    print(dragon.bitwise.bitwise_xor([a, b]))  # False, False, True, True
-    print(a - b)  # Equivalent operation
+    a = dragon.constant([0, -1, 2, -3, 4])
+    b = dragon.constant([-4, 3, -2, 1, 0])
+    print(dragon.bitwise.bitwise_xor([a, b]))  # [-4, -4, -4, -4, 4]
     ```
 
     Parameters
@@ -208,7 +168,10 @@ def bitwise_xor(inputs, **kwargs):
         The output tensor.
 
     """
-    return sub(inputs, **kwargs)
+    inputs = constant_ops.remove_scalars(inputs)
+    if context.executing_eagerly():
+        return OpLib.execute('BitwiseXor', inputs)
+    return OpLib.add('BitwiseXor', inputs, **kwargs)
 
 
 @OpSchema.num_inputs(1)
@@ -235,12 +198,9 @@ def ceil(inputs, **kwargs):
         The output tensor.
 
     """
-    args = ArgHelper.parse(locals())
-    op_lib = math_ops_lib.UnaryOp
     if context.executing_eagerly():
-        return op_lib.instantiate(op_type='Ceil').apply([inputs])
-    else:
-        return op_lib.blend('Ceil', **args)
+        return OpLib.execute('Ceil', inputs)
+    return OpLib.add('Ceil', inputs, **kwargs)
 
 
 @OpSchema.num_inputs(1)
@@ -248,6 +208,15 @@ def clip(inputs, low=None, high=None, **kwargs):
     r"""Compute the clipped input according to the given bounds.
 
     .. math:: \text{out} = \min(\max(\text{input}, \text{low}), \text{high})
+
+    Examples:
+
+    ```python
+    x = dragon.constant([0, 1, 2, 3])
+    print(dragon.math.clip(x, low=1))  # [1, 1, 2, 3]
+    print(dragon.math.clip(x, high=2))  # [0, 1, 2, 2]
+    print(dragon.math.clip(x, low=1, high=2))  # [1, 1, 2, 2]
+    ```
 
     Parameters
     ----------
@@ -264,20 +233,11 @@ def clip(inputs, low=None, high=None, **kwargs):
         The output tensor.
 
     """
-    args = ArgHelper.parse(locals())
-    if low is not None:
-        args['low'] = float(args['low'])
-    if high is not None:
-        args['high'] = float(args['high'])
-    op_lib = math_ops_lib.Clip
+    low = float(low) if low is not None else None
+    high = float(high) if high is not None else None
     if context.executing_eagerly():
-        return op_lib \
-            .instantiate(
-                low=args['low'],
-                high=args['high'],
-            ).apply([inputs])
-    else:
-        return op_lib.blend(**args)
+        return OpLib.execute('Clip', inputs, low=low, high=high)
+    return OpLib.add('Clip', inputs, low=low, high=high, **kwargs)
 
 
 @OpSchema.num_inputs(1)
@@ -304,12 +264,9 @@ def cos(inputs, **kwargs):
         The output tensor.
 
     """
-    args = ArgHelper.parse(locals())
-    op_lib = math_ops_lib.UnaryOp
     if context.executing_eagerly():
-        return op_lib.instantiate(op_type='Cos').apply([inputs])
-    else:
-        return op_lib.blend('Cos', **args)
+        return OpLib.execute('Cos', inputs)
+    return OpLib.add('Cos', inputs, **kwargs)
 
 
 @OpSchema.num_inputs(2)
@@ -338,63 +295,10 @@ def div(inputs, **kwargs):
         The output tensor.
 
     """
-    args = ArgHelper.parse(locals())
-    inputs = ops.remove_binary_scalar(inputs)
-    op_lib = math_ops_lib.BinaryOp
+    inputs = constant_ops.remove_scalars(inputs)
     if context.executing_eagerly():
-        return op_lib.instantiate(op_type='Div').apply(inputs)
-    else:
-        return op_lib.blend('Div', **args)
-
-
-@OpSchema.num_inputs(2)
-def dot(inputs, **kwargs):
-    r"""Compute the dot product.
-
-    .. math:: \text{out} = \text{input1} \cdot \text{input2}
-
-    If ``rank(input1)`` == ``rank(input2)`` == 1, compute vector product:
-
-    ```python
-    a = dragon.ones((2,))
-    b = dragon.ones((2,))
-    print(dragon.math.dot([a, b]))  # 2.0
-    ```
-
-    If ``rank(input1)`` == ``rank(input2)`` == 2, compute matrix multiplication:
-
-    ```python
-    a = dragon.ones((2, 3))
-    b = dragon.ones((3, 2))
-    print(dragon.math.dot([a, b]))  # [[[3. 3.], [3. 3.]]]
-    print(dragon.math.matmul([a, b]))  # Equivalent
-    ```
-
-    If ``rank(input1)`` >= 2, ``rank(input2)`` == 1, compute matrix-vector multiplication:
-
-    ```python
-    a = dragon.ones((2, 3))
-    b = dragon.ones((3,))
-    print(dragon.math.dot([a, b]))  # [[3. 3.]]
-    ```
-
-    Parameters
-    ----------
-    inputs : Sequence[dragon.Tensor]
-        The input1 and input2 tensor.
-
-    Returns
-    -------
-    dragon.Tensor
-        The output tensor.
-
-    """
-    args = ArgHelper.parse(locals())
-    op_lib = math_ops_lib.BinaryOp
-    if context.executing_eagerly():
-        return op_lib.instantiate(op_type='Dot').apply(inputs)
-    else:
-        return op_lib.blend('Dot', **args)
+        return OpLib.execute('Div', inputs)
+    return OpLib.add('Div', inputs, **kwargs)
 
 
 @OpSchema.num_inputs(2)
@@ -424,13 +328,10 @@ def equal(inputs, **kwargs):
         The output tensor.
 
     """
-    args = ArgHelper.parse(locals())
-    inputs = ops.remove_binary_scalar(inputs)
-    op_lib = math_ops_lib.BinaryOp
+    inputs = constant_ops.remove_scalars(inputs)
     if context.executing_eagerly():
-        return op_lib.instantiate(op_type='Equal').apply(inputs)
-    else:
-        return op_lib.blend('Equal', **args)
+        return OpLib.execute('Equal', inputs)
+    return OpLib.add('Equal', inputs, **kwargs)
 
 
 @OpSchema.num_inputs(1)
@@ -457,12 +358,9 @@ def exp(inputs, **kwargs):
         The output tensor.
 
     """
-    args = ArgHelper.parse(locals())
-    op_lib = math_ops_lib.UnaryOp
     if context.executing_eagerly():
-        return op_lib.instantiate(op_type='Exp').apply([inputs])
-    else:
-        return op_lib.blend('Exp', **args)
+        return OpLib.execute('Exp', inputs)
+    return OpLib.add('Exp', inputs, **kwargs)
 
 
 @OpSchema.num_inputs(1)
@@ -489,23 +387,13 @@ def floor(inputs, **kwargs):
         The output tensor.
 
     """
-    args = ArgHelper.parse(locals())
-    op_lib = math_ops_lib.UnaryOp
     if context.executing_eagerly():
-        return op_lib.instantiate(op_type='Floor').apply([inputs])
-    else:
-        return op_lib.blend('Floor', **args)
+        return OpLib.execute('Floor', inputs)
+    return OpLib.add('Floor', inputs, **kwargs)
 
 
 @OpSchema.num_inputs(2, 3)
-def gemm(
-    inputs,
-    alpha=1.0,
-    beta=1.0,
-    transpose_a=False,
-    transpose_b=False,
-    **kwargs
-):
+def gemm(inputs, alpha=1, beta=1, transpose_a=False, transpose_b=False, **kwargs):
     r"""Compute the general matrix multiplication.
 
     .. math:: \text{out} = \alpha AB + \beta C
@@ -514,14 +402,14 @@ def gemm(
     ----------
     inputs : Sequence[dragon.Tensor]
         The matrix :math:`A`, :math:`B` and optional :math:`C`.
-    alpha : float, optional, default=1.0
+    alpha : float, optional, default=1
         The value to :math:`\alpha`.
-    beta : float, optional, default=1.0
+    beta : float, optional, default=1
         The value to :math:`\beta`.
     transpose_a : bool, optional, default=False
-        **True** to transpose :math:`A` before computation.
+        ``True`` to transpose :math:`A` before computation.
     transpose_b : bool, optional, default=False
-        **True** to transpose :math:`B` before computation.
+        ``True`` to transpose :math:`B` before computation.
 
     Returns
     -------
@@ -529,23 +417,13 @@ def gemm(
         The output tensor.
 
     """
-    args = ArgHelper.parse(locals())
-    args['axis'] = kwargs.get('axis', -1)
-    args['alpha'], args['beta'] = float(alpha), float(beta)
-    op_lib = math_ops_lib.Gemm
+    alpha, beta = float(alpha), float(beta)
     if context.executing_eagerly():
-        return op_lib \
-            .instantiate(
-                axis=args['axis'],
-                alpha=args['alpha'],
-                beta=args['beta'],
-                transpose_a=transpose_a,
-                transpose_b=transpose_b,
-            ).apply(inputs)
-    else:
-        args['transA'] = args.pop('transpose_a')
-        args['transB'] = args.pop('transpose_b')
-        return op_lib.blend(**args)
+        return OpLib.execute(
+            'Gemm', inputs, alpha=alpha, beta=beta,
+            transA=transpose_a, transB=transpose_b)
+    return OpLib.add('Gemm', inputs, alpha=alpha, beta=beta,
+                     transA=transpose_a, transB=transpose_b, **kwargs)
 
 
 @OpSchema.num_inputs(2)
@@ -575,13 +453,10 @@ def greater(inputs, **kwargs):
         The output tensor.
 
     """
-    args = ArgHelper.parse(locals())
-    op_lib = math_ops_lib.BinaryOp
-    inputs = ops.remove_binary_scalar(inputs)
+    inputs = constant_ops.remove_scalars(inputs)
     if context.executing_eagerly():
-        return op_lib.instantiate(op_type='Greater').apply(inputs)
-    else:
-        return op_lib.blend('Greater', **args)
+        return OpLib.execute('Greater', inputs)
+    return OpLib.add('Greater', inputs, **kwargs)
 
 
 @OpSchema.num_inputs(2)
@@ -611,13 +486,10 @@ def greater_equal(inputs, **kwargs):
         The output tensor.
 
     """
-    args = ArgHelper.parse(locals())
-    inputs = ops.remove_binary_scalar(inputs)
-    op_lib = math_ops_lib.BinaryOp
+    inputs = constant_ops.remove_scalars(inputs)
     if context.executing_eagerly():
-        return op_lib.instantiate(op_type='GreaterEqual').apply(inputs)
-    else:
-        return op_lib.blend('GreaterEqual', **args)
+        return OpLib.execute('GreaterEqual', inputs)
+    return OpLib.add('GreaterEqual', inputs, **kwargs)
 
 
 @OpSchema.num_inputs(1)
@@ -649,12 +521,9 @@ def invert(inputs, **kwargs):
         The output tensor.
 
     """
-    args = ArgHelper.parse(locals())
-    op_lib = math_ops_lib.UnaryOp
     if context.executing_eagerly():
-        return op_lib.instantiate(op_type='Invert').apply([inputs])
-    else:
-        return op_lib.blend('Invert', **args)
+        return OpLib.execute('BitwiseNot', inputs)
+    return OpLib.add('BitwiseNot', inputs, **kwargs)
 
 
 @OpSchema.num_inputs(1)
@@ -681,12 +550,9 @@ def is_inf(inputs, **kwargs):
         The output tensor.
 
     """
-    args = ArgHelper.parse(locals())
-    op_lib = math_ops_lib.UnaryOp
     if context.executing_eagerly():
-        return op_lib.instantiate(op_type='IsInf').apply([inputs])
-    else:
-        return op_lib.blend('IsInf', **args)
+        return OpLib.execute('IsInf', inputs)
+    return OpLib.add('IsInf', inputs, **kwargs)
 
 
 @OpSchema.num_inputs(1)
@@ -713,44 +579,9 @@ def is_nan(inputs, **kwargs):
         The output tensor.
 
     """
-    args = ArgHelper.parse(locals())
-    op_lib = math_ops_lib.UnaryOp
     if context.executing_eagerly():
-        return op_lib.instantiate(op_type='IsNaN').apply([inputs])
-    else:
-        return op_lib.blend('IsNaN', **args)
-
-
-@OpSchema.num_inputs(1)
-def log(inputs, **kwargs):
-    r"""Compute the logarithm of input.
-
-    .. math:: \text{out} = \log(\text{input})
-
-    Examples:
-
-    ```python
-    x = dragon.constant([1., 2., 3.])
-    print(dragon.math.log(x))  # [0., 0.69314718, 1.09861229]
-    ```
-
-    Parameters
-    ----------
-    inputs : dragon.Tensor
-        The input tensor.
-
-    Returns
-    -------
-    dragon.Tensor
-        The output tensor.
-
-    """
-    args = ArgHelper.parse(locals())
-    op_lib = math_ops_lib.UnaryOp
-    if context.executing_eagerly():
-        return op_lib.instantiate(op_type='Log').apply([inputs])
-    else:
-        return op_lib.blend('Log', **args)
+        return OpLib.execute('IsNaN', inputs)
+    return OpLib.add('IsNaN', inputs, **kwargs)
 
 
 @OpSchema.num_inputs(2)
@@ -780,13 +611,10 @@ def less(inputs, **kwargs):
         The output tensor.
 
     """
-    args = ArgHelper.parse(locals())
-    inputs = ops.remove_binary_scalar(inputs)
-    op_lib = math_ops_lib.BinaryOp
+    inputs = constant_ops.remove_scalars(inputs)
     if context.executing_eagerly():
-        return op_lib.instantiate(op_type='Less').apply(inputs)
-    else:
-        return op_lib.blend('Less', **args)
+        return OpLib.execute('Less', inputs)
+    return OpLib.add('Less', inputs, **kwargs)
 
 
 @OpSchema.num_inputs(2)
@@ -816,13 +644,172 @@ def less_equal(inputs, **kwargs):
         The output tensor.
 
     """
-    args = ArgHelper.parse(locals())
-    inputs = ops.remove_binary_scalar(inputs)
-    op_lib = math_ops_lib.BinaryOp
+    inputs = constant_ops.remove_scalars(inputs)
     if context.executing_eagerly():
-        return op_lib.instantiate(op_type='LessEqual').apply(inputs)
-    else:
-        return op_lib.blend('LessEqual', **args)
+        return OpLib.execute('LessEqual', inputs)
+    return OpLib.add('LessEqual', inputs, **kwargs)
+
+
+@OpSchema.num_inputs(1)
+def log(inputs, **kwargs):
+    r"""Compute the logarithm of input.
+
+    .. math:: \text{out} = \log(\text{input})
+
+    Examples:
+
+    ```python
+    x = dragon.constant([1., 2., 3.])
+    print(dragon.math.log(x))  # [0., 0.69314718, 1.09861229]
+    ```
+
+    Parameters
+    ----------
+    inputs : dragon.Tensor
+        The input tensor.
+
+    Returns
+    -------
+    dragon.Tensor
+        The output tensor.
+
+    """
+    if context.executing_eagerly():
+        return OpLib.execute('Log', inputs)
+    return OpLib.add('Log', inputs, **kwargs)
+
+
+@OpSchema.num_inputs(2)
+def logical_and(inputs, **kwargs):
+    r"""Compute the element-wise AND logical operation.
+
+    .. math:: \text{out} = \text{input1} \mathbin{\&} \text{input2}
+
+    Examples:
+
+    ```python
+    a = dragon.constant([False, True, False, True])
+    b = dragon.constant([False, True, True, False])
+    c = dragon.constant([0, 1, 0, 2])
+    d = dragon.constant([0, 3, 4, 0])
+    print(dragon.math.logical_and([a, b]))  # [False, True, False, False]
+    print(dragon.math.logical_and([c, d]))  # [False, True, False, False]
+    ```
+
+    Parameters
+    ----------
+    inputs : Sequence[dragon.Tensor]
+        The input1 and input2 tensor.
+
+    Returns
+    -------
+    dragon.Tensor
+        The output tensor.
+
+    """
+    inputs = constant_ops.remove_scalars(inputs)
+    if context.executing_eagerly():
+        return OpLib.execute('And', inputs)
+    return OpLib.add('And', inputs, **kwargs)
+
+
+@OpSchema.num_inputs(1)
+def logical_not(inputs, **kwargs):
+    r"""Compute the element-wise NOT logical operation.
+
+    .. math:: \text{out} = \,\,\sim \text{input}
+
+    Examples:
+
+    ```python
+    a = dragon.constant([False, True, True])
+    b = dragon.constant([0, 1, 2])
+    print(dragon.math.logical_not(a))  # [True, False, False]
+    print(dragon.math.logical_not(b))  # [True, False, False]
+    ```
+
+    Parameters
+    ----------
+    inputs : dragon.Tensor
+        The input tensor.
+
+    Returns
+    -------
+    dragon.Tensor
+        The output tensor.
+
+    """
+    if context.executing_eagerly():
+        return OpLib.execute('Not', inputs)
+    return OpLib.add('Not', inputs, **kwargs)
+
+
+@OpSchema.num_inputs(2)
+def logical_or(inputs, **kwargs):
+    r"""Compute the element-wise OR logical operation.
+
+    .. math:: \text{out} = \text{input1} \mathbin{|} \text{input2}
+
+    Examples:
+
+    ```python
+    a = dragon.constant([False, True, False, True])
+    b = dragon.constant([False, True, True, False])
+    c = dragon.constant([0, 1, 0, 2])
+    d = dragon.constant([0, 3, 4, 0])
+    print(dragon.math.logical_or([a, b]))  # [False, True, True, True]
+    print(dragon.math.logical_or([c, d]))  # [False, True, True, True]
+    ```
+
+    Parameters
+    ----------
+    inputs : Sequence[dragon.Tensor]
+        The input1 and input2 tensor.
+
+    Returns
+    -------
+    dragon.Tensor
+        The output tensor.
+
+    """
+    inputs = constant_ops.remove_scalars(inputs)
+    if context.executing_eagerly():
+        return OpLib.execute('Or', inputs)
+    return OpLib.add('Or', inputs, **kwargs)
+
+
+@OpSchema.num_inputs(2)
+def logical_xor(inputs, **kwargs):
+    r"""Compute the element-wise XOR logical operation.
+
+    .. math:: \text{out} = \text{input1} \oplus \text{input2}
+
+    Examples:
+
+    ```python
+    a = dragon.constant([False, True, False, True])
+    b = dragon.constant([False, True, True, False])
+    c = dragon.constant([0, 1, 0, 2])
+    d = dragon.constant([0, 3, 4, 0])
+    print(dragon.math.logical_xor([a, b]))  # [False, False, True, True]
+    print(dragon.math.logical_xor([c, d]))  # [False, False, True, True]
+    ```
+
+    Parameters
+    ----------
+    inputs : Sequence[dragon.Tensor]
+        The input1 and input2 tensor.
+
+    Returns
+    -------
+    dragon.Tensor
+        The output tensor.
+
+    """
+    inputs = constant_ops.remove_scalars(inputs)
+    if context.executing_eagerly():
+        return OpLib.execute('Xor', inputs)
+    return OpLib.add('Xor', inputs, **kwargs)
 
 
 @OpSchema.num_inputs(2)
@@ -871,12 +858,10 @@ def matmul(inputs, **kwargs):
         The output tensor.
 
     """
-    args = ArgHelper.parse(locals())
-    op_lib = math_ops_lib.MatMul
+    inputs = constant_ops.remove_scalars(inputs)
     if context.executing_eagerly():
-        return op_lib.instantiate().apply(inputs)
-    else:
-        return op_lib.blend(**args)
+        return OpLib.execute('MatMul', inputs)
+    return OpLib.add('MatMul', inputs, **kwargs)
 
 
 @OpSchema.num_inputs(2)
@@ -896,13 +881,10 @@ def maximum(inputs, **kwargs):
         The output tensor.
 
     """
-    args = ArgHelper.parse(locals())
-    inputs = ops.remove_binary_scalar(inputs)
-    op_lib = math_ops_lib.BinaryOp
+    inputs = constant_ops.remove_scalars(inputs)
     if context.executing_eagerly():
-        return op_lib.instantiate(op_type='Maximum').apply(inputs)
-    else:
-        return op_lib.blend('Maximum', **args)
+        return OpLib.execute('Maximum', inputs)
+    return OpLib.add('Maximum', inputs, **kwargs)
 
 
 @OpSchema.num_inputs(2)
@@ -922,13 +904,10 @@ def minimum(inputs, **kwargs):
         The output tensor.
 
     """
-    args = ArgHelper.parse(locals())
-    inputs = ops.remove_binary_scalar(inputs)
-    op_lib = math_ops_lib.BinaryOp
+    inputs = constant_ops.remove_scalars(inputs)
     if context.executing_eagerly():
-        return op_lib.instantiate(op_type='Minimum').apply(inputs)
-    else:
-        return op_lib.blend('Minimum', **args)
+        return OpLib.execute('Minimum', inputs)
+    return OpLib.add('Minimum', inputs, **kwargs)
 
 
 @OpSchema.num_inputs(2)
@@ -957,13 +936,10 @@ def mul(inputs, **kwargs):
         The output tensor.
 
     """
-    args = ArgHelper.parse(locals())
-    inputs = ops.remove_binary_scalar(inputs)
-    op_lib = math_ops_lib.BinaryOp
+    inputs = constant_ops.remove_scalars(inputs)
     if context.executing_eagerly():
-        return op_lib.instantiate(op_type='Mul').apply(inputs)
-    else:
-        return op_lib.blend('Mul', **args)
+        return OpLib.execute('Mul', inputs)
+    return OpLib.add('Mul', inputs, **kwargs)
 
 
 @OpSchema.num_inputs(1)
@@ -988,12 +964,9 @@ def negative(inputs, **kwargs):
         The output tensor.
 
     """
-    args = ArgHelper.parse(locals())
-    op_lib = math_ops_lib.UnaryOp
     if context.executing_eagerly():
-        return op_lib.instantiate(op_type='Neg').apply([inputs])
-    else:
-        return op_lib.blend('Neg', **args)
+        return OpLib.execute('Neg', inputs)
+    return OpLib.add('Neg', inputs, **kwargs)
 
 
 @OpSchema.num_inputs(2)
@@ -1023,13 +996,10 @@ def not_equal(inputs, **kwargs):
         The output tensor.
 
     """
-    args = ArgHelper.parse(locals())
-    inputs = ops.remove_binary_scalar(inputs)
-    op_lib = math_ops_lib.BinaryOp
+    inputs = constant_ops.remove_scalars(inputs)
     if context.executing_eagerly():
-        return op_lib.instantiate(op_type='NotEqual').apply(inputs)
-    else:
-        return op_lib.blend('NotEqual', **args)
+        return OpLib.execute('NotEqual', inputs)
+    return OpLib.add('NotEqual', inputs, **kwargs)
 
 
 @OpSchema.num_inputs(2)
@@ -1058,13 +1028,10 @@ def pow(inputs, **kwargs):
         The output tensor.
 
     """
-    args = ArgHelper.parse(locals())
-    inputs = ops.remove_binary_scalar(inputs)
-    op_lib = math_ops_lib.BinaryOp
+    inputs = constant_ops.remove_scalars(inputs)
     if context.executing_eagerly():
-        return op_lib.instantiate(op_type='Pow').apply(inputs)
-    else:
-        return op_lib.blend('Pow', **args)
+        return OpLib.execute('Pow', inputs)
+    return OpLib.add('Pow', inputs, **kwargs)
 
 
 @OpSchema.num_inputs(1)
@@ -1091,12 +1058,9 @@ def reciprocal(inputs, **kwargs):
         The output tensor.
 
     """
-    args = ArgHelper.parse(locals())
-    op_lib = math_ops_lib.UnaryOp
     if context.executing_eagerly():
-        return op_lib.instantiate(op_type='Reciprocal').apply([inputs])
-    else:
-        return op_lib.blend('Reciprocal', **args)
+        return OpLib.execute('Reciprocal', inputs)
+    return OpLib.add('Reciprocal', inputs, **kwargs)
 
 
 @OpSchema.num_inputs(1)
@@ -1123,12 +1087,9 @@ def round(inputs, **kwargs):
         The output tensor.
 
     """
-    args = ArgHelper.parse(locals())
-    op_lib = math_ops_lib.UnaryOp
     if context.executing_eagerly():
-        return op_lib.instantiate(op_type='Round').apply([inputs])
-    else:
-        return op_lib.blend('Round', **args)
+        return OpLib.execute('Round', inputs)
+    return OpLib.add('Round', inputs, **kwargs)
 
 
 @OpSchema.num_inputs(1)
@@ -1155,12 +1116,9 @@ def rsqrt(inputs, **kwargs):
         The output tensor.
 
     """
-    args = ArgHelper.parse(locals())
-    op_lib = math_ops_lib.UnaryOp
     if context.executing_eagerly():
-        return op_lib.instantiate(op_type='Rsqrt').apply([inputs])
-    else:
-        return op_lib.blend('Rsqrt', **args)
+        return OpLib.execute('Rsqrt', inputs)
+    return OpLib.add('Rsqrt', inputs, **kwargs)
 
 
 @OpSchema.num_inputs(1)
@@ -1193,12 +1151,9 @@ def sign(inputs, **kwargs):
         The output tensor.
 
     """
-    args = ArgHelper.parse(locals())
-    op_lib = math_ops_lib.UnaryOp
     if context.executing_eagerly():
-        return op_lib.instantiate(op_type='Sign').apply([inputs])
-    else:
-        return op_lib.blend('Sign', **args)
+        return OpLib.execute('Sign', inputs)
+    return OpLib.add('Sign', inputs, **kwargs)
 
 
 @OpSchema.num_inputs(1)
@@ -1225,12 +1180,9 @@ def sin(inputs, **kwargs):
         The output tensor.
 
     """
-    args = ArgHelper.parse(locals())
-    op_lib = math_ops_lib.UnaryOp
     if context.executing_eagerly():
-        return op_lib.instantiate(op_type='Sin').apply([inputs])
-    else:
-        return op_lib.blend('Sin', **args)
+        return OpLib.execute('Sin', inputs)
+    return OpLib.add('Sin', inputs, **kwargs)
 
 
 @OpSchema.num_inputs(1)
@@ -1257,12 +1209,9 @@ def sqrt(inputs, **kwargs):
         The output tensor.
 
     """
-    args = ArgHelper.parse(locals())
-    op_lib = math_ops_lib.UnaryOp
     if context.executing_eagerly():
-        return op_lib.instantiate(op_type='Sqrt').apply([inputs])
-    else:
-        return op_lib.blend('Sqrt', **args)
+        return OpLib.execute('Sqrt', inputs)
+    return OpLib.add('Sqrt', inputs, **kwargs)
 
 
 @OpSchema.num_inputs(1)
@@ -1289,12 +1238,9 @@ def square(inputs, **kwargs):
         The output tensor.
 
     """
-    args = ArgHelper.parse(locals())
-    op_lib = math_ops_lib.UnaryOp
     if context.executing_eagerly():
-        return op_lib.instantiate(op_type='Square').apply([inputs])
-    else:
-        return op_lib.blend('Square', **args)
+        return OpLib.execute('Square', inputs)
+    return OpLib.add('Square', inputs, **kwargs)
 
 
 @OpSchema.num_inputs(2)
@@ -1323,10 +1269,7 @@ def sub(inputs, **kwargs):
         The output tensor.
 
     """
-    args = ArgHelper.parse(locals())
-    inputs = ops.remove_binary_scalar(inputs)
-    op_lib = math_ops_lib.BinaryOp
+    inputs = constant_ops.remove_scalars(inputs)
     if context.executing_eagerly():
-        return op_lib.instantiate(op_type='Sub').apply(inputs)
-    else:
-        return op_lib.blend('Sub', **args)
+        return OpLib.execute('Sub', inputs)
+    return OpLib.add('Sub', inputs, **kwargs)

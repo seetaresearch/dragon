@@ -20,7 +20,7 @@ from dragon.core import distributed
 from dragon.vm.torch.core.nn import functional as F
 from dragon.vm.torch.core.nn.modules.module import Module
 from dragon.vm.torch.core.nn.parameter import Parameter
-from dragon.vm.torch.core.ops.init import functional as init_funcs
+from dragon.vm.torch.core.ops import init_ops
 from dragon.vm.torch.core.tensor import Tensor
 
 
@@ -45,15 +45,14 @@ class _BatchNorm(Module):
             self.weight = Parameter(Tensor(num_features))
             self.bias = Parameter(Tensor(num_features))
         else:
-            self.register_buffer('weight', init_funcs.ones(num_features))
-            self.register_buffer('bias', init_funcs.zeros(num_features))
+            self.register_buffer('weight', init_ops.ones(num_features))
+            self.register_buffer('bias', init_ops.zeros(num_features))
         if self.track_running_stats:
             self.num_batches_tracked = 0
         else:
             self.num_batches_tracked = None
-        self.register_buffer('running_mean', init_funcs.zeros(num_features))
-        self.register_buffer('running_var', init_funcs.ones(num_features))
-        self.inputs = [self.running_mean, self.running_var, self.weight, self.bias]
+        self.register_buffer('running_mean', init_ops.zeros(num_features))
+        self.register_buffer('running_var', init_ops.ones(num_features))
         self.reset_parameters()
 
     def reset_running_stats(self):
@@ -78,10 +77,14 @@ class _BatchNorm(Module):
 
     def forward(self, input):
         return F.batch_norm(
-            input, *self.inputs,
+            input,
+            self.running_mean,
+            self.running_var,
+            self.weight,
+            self.bias,
             training=self.training,
             momentum=self._get_momentum(),
-            eps=self.eps
+            eps=self.eps,
         )
 
     def _apply(self, fn):
@@ -110,12 +113,14 @@ class BatchNorm1d(_BatchNorm):
 
     The normalization is defined as:
 
-    .. math:: y = \frac{x - \mathrm{E}[x]}{\sqrt{\mathrm{Var}[x] + \epsilon}} * \gamma + \beta
+    .. math:: y = \frac{x - \mathrm{E}[x]}
+                       {\sqrt{\mathrm{Var}[x] + \epsilon}}
+                  * \gamma + \beta
 
     The running average of statistics are calculated as:
 
-    .. math:: x_{\text{running}} = (1 - \text{momentum}) * x_{\text{running}} +
-                                   \text{momentum} * x_{\text{batch}}
+    .. math:: x_{\text{running}} = (1 - \text{momentum}) * x_{\text{running}}
+                                   + \text{momentum} * x_{\text{batch}}
 
     See Also
     --------
@@ -142,9 +147,9 @@ class BatchNorm1d(_BatchNorm):
         momentum : float, optional, default=0.1
             The value to :math:`\text{momentum}`.
         affine : bool, optional, default=True
-            **True** to apply a affine transformation.
+            ``True`` to apply a affine transformation.
         track_running_stats : bool, optional, default=True
-            **True** to using stats when switching to ``eval``.
+            ``True`` to using stats when switching to ``eval``.
 
         """
         super(BatchNorm1d, self).__init__(
@@ -160,12 +165,14 @@ class BatchNorm2d(_BatchNorm):
 
     The normalization is defined as:
 
-    .. math:: y = \frac{x - \mathrm{E}[x]}{\sqrt{\mathrm{Var}[x] + \epsilon}} * \gamma + \beta
+    .. math:: y = \frac{x - \mathrm{E}[x]}
+                       {\sqrt{\mathrm{Var}[x] + \epsilon}}
+                  * \gamma + \beta
 
     The running average of statistics are calculated as:
 
-    .. math:: x_{\text{running}} = (1 - \text{momentum}) * x_{\text{running}} +
-                                   \text{momentum} * x_{\text{batch}}
+    .. math:: x_{\text{running}} = (1 - \text{momentum}) * x_{\text{running}}
+                                   + \text{momentum} * x_{\text{batch}}
 
     See Also
     --------
@@ -192,9 +199,9 @@ class BatchNorm2d(_BatchNorm):
         momentum : float, optional, default=0.1
             The value to :math:`\text{momentum}`.
         affine : bool, optional, default=True
-            **True** to apply a affine transformation.
+            ``True`` to apply a affine transformation.
         track_running_stats : bool, optional, default=True
-            **True** to using stats when switching to ``eval``.
+            ``True`` to using stats when switching to ``eval``.
 
         """
         super(BatchNorm2d, self).__init__(
@@ -210,12 +217,14 @@ class BatchNorm3d(_BatchNorm):
 
     The normalization is defined as:
 
-    .. math:: y = \frac{x - \mathrm{E}[x]}{\sqrt{\mathrm{Var}[x] + \epsilon}} * \gamma + \beta
+    .. math:: y = \frac{x - \mathrm{E}[x]}
+                       {\sqrt{\mathrm{Var}[x] + \epsilon}}
+                  * \gamma + \beta
 
     The running average of statistics are calculated as:
 
-    .. math:: x_{\text{running}} = (1 - \text{momentum}) * x_{\text{running}} +
-                                   \text{momentum} * x_{\text{batch}}
+    .. math:: x_{\text{running}} = (1 - \text{momentum}) * x_{\text{running}}
+                                   + \text{momentum} * x_{\text{batch}}
 
     See Also
     --------
@@ -242,9 +251,9 @@ class BatchNorm3d(_BatchNorm):
         momentum : float, optional, default=0.1
             The value to :math:`\text{momentum}`.
         affine : bool, optional, default=True
-            **True** to apply a affine transformation.
+            ``True`` to apply a affine transformation.
         track_running_stats : bool, optional, default=True
-            **True** to using stats when switching to ``eval``.
+            ``True`` to using stats when switching to ``eval``.
 
         """
         super(BatchNorm3d, self).__init__(
@@ -260,16 +269,17 @@ class SyncBatchNorm(_BatchNorm):
 
     The normalization is defined as:
 
-    .. math:: y = \frac{x - \mathrm{E}[x]}{\sqrt{\mathrm{Var}[x] + \epsilon}} * \gamma + \beta
+    .. math:: y = \frac{x - \mathrm{E}[x]}
+                       {\sqrt{\mathrm{Var}[x] + \epsilon}}
+                  * \gamma + \beta
 
     The running average of statistics are calculated as:
 
-    .. math:: x_{\text{running}} = (1 - \text{momentum}) * x_{\text{running}} +
-                                   \text{momentum} * x_{\text{batch}}
+    .. math:: x_{\text{running}} = (1 - \text{momentum}) * x_{\text{running}}
+                                   + \text{momentum} * x_{\text{batch}}
 
-    Additionally, specify ``process_group`` to perform synchronization.
-
-    If not, value returning from ``dragon.distributed.get_group(...)`` will be used.
+    If :attr:`process_group` is ``None``,
+    use the value of ``dragon.distributed.get_group(...)``.
 
     See Also
     --------
@@ -297,9 +307,9 @@ class SyncBatchNorm(_BatchNorm):
         momentum : float, optional, default=0.1
             The value to :math:`\text{momentum}`.
         affine : bool, optional, default=True
-            **True** to apply a affine transformation.
+            ``True`` to apply a affine transformation.
         track_running_stats : bool, optional, default=True
-            **True** to using stats when switching to ``eval``.
+            ``True`` to using stats when switching to ``eval``.
         process_group : ProcessGroup, optional
             The group for communication.
 
@@ -315,15 +325,23 @@ class SyncBatchNorm(_BatchNorm):
     def forward(self, input):
         if self.training:
             return F.sync_batch_norm(
-                input, *self.inputs,
+                input,
+                self.running_mean,
+                self.running_var,
+                self.weight,
+                self.bias,
                 training=self.training,
                 momentum=self._get_momentum(),
                 eps=self.eps,
-                process_group=self.process_group
+                process_group=self.process_group,
             )
         else:
             return F.batch_norm(
-                input, *self.inputs,
+                input,
+                self.running_mean,
+                self.running_var,
+                self.weight,
+                self.bias,
                 training=self.training,
                 momentum=self._get_momentum(),
                 eps=self.eps

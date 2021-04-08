@@ -7,19 +7,17 @@ template <class Context>
 template <typename T>
 void TopKOp<Context>::DoRunWithType() {
   auto &X = Input(0), *Y_value = Output(0), *Y_index = Output(1);
-  CANONICALIZE_AXIS_WITH_TENSOR(X);
-  axis = (axis == INT_MAX ? X.ndim() - 1 : axis);
+  GET_OP_AXIS_ARG(axis, X.ndim(), -1);
 
-  // Determine the output dimensions
-  CHECK_LE(k_, X.dim(axis))
-      << "\nThe top-K argument is out of the reduced dimension.";
+  const auto C = X.dim(axis);
+  CHECK_LE(k_, C) << "\nThe top-K argument is out of the dimension.";
   auto Y_dims = X.dims();
   Y_dims[axis] = k_;
 
-  kernel::TopSelect(
+  kernels::TopK(
       X.count(0, axis),
       X.count(axis + 1),
-      X.dim(axis),
+      C,
       k_,
       largest_,
       X.template data<T, Context>(),
@@ -30,7 +28,7 @@ void TopKOp<Context>::DoRunWithType() {
 
 template <class Context>
 void TopKOp<Context>::RunOnDevice() {
-  DispatchHelper<NumericalTensorTypes>::Call(this, Input(0));
+  DispatchHelper<dtypes::Numerical>::Call(this, Input(0));
 }
 
 DEPLOY_CPU_OPERATOR(TopK);
@@ -41,7 +39,7 @@ DEPLOY_CUDA_OPERATOR(TopK);
 OPERATOR_SCHEMA(TopK)
     /* X */
     .NumInputs(1)
-    /* Value, Index */
+    /* Y_value, Y_index */
     .NumOutputs(2);
 
 NO_GRADIENT(TopK);

@@ -183,7 +183,7 @@ class GlobalAveragePooling1D(Pooling):
         super(GlobalAveragePooling1D, self).__init__(
             rank=1,
             pool_function=functools.partial(
-                vision_ops.pool, mode='avg', global_pool=True),
+                vision_ops.pool1d, mode='avg', global_pool=True),
             pool_size=0,
             strides=1,
             padding='valid',
@@ -207,7 +207,7 @@ class GlobalAveragePooling2D(Pooling):
         super(GlobalAveragePooling2D, self).__init__(
             rank=2,
             pool_function=functools.partial(
-                vision_ops.pool, mode='avg', global_pool=True),
+                vision_ops.pool2d, mode='avg', global_pool=True),
             pool_size=0,
             strides=1,
             padding='valid',
@@ -231,7 +231,7 @@ class GlobalAveragePooling3D(Pooling):
         super(GlobalAveragePooling3D, self).__init__(
             rank=3,
             pool_function=functools.partial(
-                vision_ops.pool, mode='avg', global_pool=True),
+                vision_ops.pool3d, mode='avg', global_pool=True),
             pool_size=0,
             strides=1,
             padding='valid',
@@ -255,7 +255,7 @@ class GlobalMaxPooling1D(Pooling):
         super(GlobalMaxPooling1D, self).__init__(
             rank=1,
             pool_function=functools.partial(
-                vision_ops.pool, mode='max', global_pool=True),
+                vision_ops.pool1d, mode='max', global_pool=True),
             pool_size=0,
             strides=1,
             padding='valid',
@@ -279,7 +279,7 @@ class GlobalMaxPooling2D(Pooling):
         super(GlobalMaxPooling2D, self).__init__(
             rank=2,
             pool_function=functools.partial(
-                vision_ops.pool, mode='max', global_pool=True),
+                vision_ops.pool2d, mode='max', global_pool=True),
             pool_size=0,
             strides=1,
             padding='valid',
@@ -303,7 +303,7 @@ class GlobalMaxPooling3D(Pooling):
         super(GlobalMaxPooling3D, self).__init__(
             rank=3,
             pool_function=functools.partial(
-                vision_ops.pool, mode='max', global_pool=True),
+                vision_ops.pool3d, mode='max', global_pool=True),
             pool_size=0,
             strides=1,
             padding='valid',

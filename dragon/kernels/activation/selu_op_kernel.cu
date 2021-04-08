@@ -6,102 +6,85 @@
 
 namespace dragon {
 
-namespace kernel {
+namespace kernels {
 
 namespace {
 
 template <typename T>
-__global__ void _Selu(
-    const int nthreads,
-    const float alphaXgamma,
-    const float gamma,
-    const T* x,
-    T* y) {
-  CUDA_1D_KERNEL_LOOP(i, nthreads) {
-#if __CUDA_ARCH__ >= 350
+__global__ void
+_Selu(const int N, const T scale, const T gamma, const T* x, T* y) {
+  CUDA_1D_KERNEL_LOOP(i, N) {
     y[i] = __ldg(x + i) > 0 ? gamma * __ldg(x + i)
-                            : alphaXgamma * (exp(__ldg(x + i)) - 1);
-#else
-    y[i] = x[i] > 0 ? gamma * x[i] : alphaXgamma * (exp(x[i]) - 1);
-#endif
+                            : scale * (exp(__ldg(x + i)) - 1);
   }
 }
 
-template <>
-__global__ void _Selu<half>(
-    const int nthreads,
-    const float alphaXgamma,
+__global__ void _Selu(
+    const int N,
+    const float scale,
     const float gamma,
     const half* x,
     half* y) {
-  CUDA_1D_KERNEL_LOOP(i, nthreads) {
+  CUDA_1D_KERNEL_LOOP(i, N) {
     const float val = __half2float(x[i]);
-    y[i] =
-        __float2half(val > 0.f ? gamma * val : alphaXgamma * (exp(val) - 1.f));
+    y[i] = __float2half(val > 0.f ? gamma * val : scale * (exp(val) - 1.f));
   }
 }
 
-template <>
-__global__ void _Selu<half2>(
-    const int nthreads,
-    const float alphaXgamma,
+__global__ void _Selu(
+    const int N,
+    const float scale,
     const float gamma,
     const half2* x,
     half2* y) {
-  CUDA_1D_KERNEL_LOOP(i, nthreads) {
+  CUDA_1D_KERNEL_LOOP(i, N) {
     const float2 val = __half22float2(x[i]);
     y[i] = __floats2half2_rn(
-        val.x > 0.f ? gamma * val.x : alphaXgamma * (exp(val.x) - 1.f),
-        val.y > 0.f ? gamma * val.y : alphaXgamma * (exp(val.y) - 1.f));
+        val.x > 0.f ? gamma * val.x : scale * (exp(val.x) - 1.f),
+        val.y > 0.f ? gamma * val.y : scale * (exp(val.y) - 1.f));
   }
 }
 
 template <typename T>
 __global__ void _SeluGrad(
-    const int nthreads,
-    const float alphaXgamma,
-    const float gamma,
+    const int N,
+    const T scale,
+    const T gamma,
     const T* dy,
     const T* y,
     T* dx) {
-  CUDA_1D_KERNEL_LOOP(i, nthreads) {
-#if __CUDA_ARCH__ >= 350
-    dx[i] = dy[i] * (__ldg(y + i) > 0 ? gamma : (alphaXgamma + __ldg(y + i)));
-#else
-    dx[i] = dy[i] * (y[i] > 0 ? gamma : (alphaXgamma + y[i]));
-#endif
+  CUDA_1D_KERNEL_LOOP(i, N) {
+    dx[i] = dy[i] * (__ldg(y + i) > 0 ? gamma : (scale + __ldg(y + i)));
   }
 }
 
-template <>
-__global__ void _SeluGrad<half>(
-    const int nthreads,
-    const float alphaXgamma,
+__global__ void _SeluGrad(
+    const int N,
+    const float scale,
     const float gamma,
     const half* dy,
     const half* y,
     half* dx) {
-  CUDA_1D_KERNEL_LOOP(i, nthreads) {
+  CUDA_1D_KERNEL_LOOP(i, N) {
     const float val = __half2float(y[i]);
-    dx[i] = __float2half(
-        __half2float(dy[i]) * (val > 0.f ? gamma : (alphaXgamma + val)));
+    dx[i] =
+        __float2half(__half2float(dy[i]) * (val > 0.f ? gamma : (scale + val)));
   }
 } // SeluGrad
 
-template <>
-__global__ void _SeluGrad<half2>(
-    const int nthreads,
-    const float alphaXgamma,
+__global__ void _SeluGrad(
+    const int N,
+    const float scale,
     const float gamma,
     const half2* dy,
     const half2* y,
     half2* dx) {
-  CUDA_1D_KERNEL_LOOP(i, nthreads) {
+  CUDA_1D_KERNEL_LOOP(i, N) {
     const float2 val = __half22float2(y[i]);
     const float2 grad = __half22float2(dy[i]);
     dx[i] = __floats2half2_rn(
-        grad.x * (val.x > 0.f ? gamma : (alphaXgamma + val.x)),
-        grad.y * (val.y > 0.f ? gamma : (alphaXgamma + val.y)));
+        grad.x * (val.x > 0.f ? gamma : (scale + val.x)),
+        grad.y * (val.y > 0.f ? gamma : (scale + val.y)));
   }
 } // SeluGrad
 
@@ -111,22 +94,22 @@ __global__ void _SeluGrad<half2>(
 
 template <>
 void Selu<float16, CUDAContext>(
-    const int count,
+    const int N,
     const float alpha,
     const float gamma,
     const float16* x,
     float16* y,
     CUDAContext* ctx) {
-  if ((count & 1) == 0) {
-    _Selu<<<CUDA_BLOCKS(count >> 1), CUDA_THREADS, 0, ctx->cuda_stream()>>>(
-        count >> 1,
+  if ((N & 1) == 0) {
+    _Selu<<<CUDA_BLOCKS(N >> 1), CUDA_THREADS, 0, ctx->cuda_stream()>>>(
+        N >> 1,
         alpha * gamma,
         gamma,
         reinterpret_cast<const half2*>(x),
         reinterpret_cast<half2*>(y));
   } else {
-    _Selu<<<CUDA_BLOCKS(count), CUDA_THREADS, 0, ctx->cuda_stream()>>>(
-        count,
+    _Selu<<<CUDA_BLOCKS(N), CUDA_THREADS, 0, ctx->cuda_stream()>>>(
+        N,
         alpha * gamma,
         gamma,
         reinterpret_cast<const half*>(x),
@@ -136,24 +119,24 @@ void Selu<float16, CUDAContext>(
 
 template <>
 void SeluGrad<float16, CUDAContext>(
-    const int count,
+    const int N,
     const float alpha,
     const float gamma,
     const float16* dy,
     const float16* y,
     float16* dx,
     CUDAContext* ctx) {
-  if ((count & 1) == 0) {
-    _SeluGrad<<<CUDA_BLOCKS(count >> 1), CUDA_THREADS, 0, ctx->cuda_stream()>>>(
-        count >> 1,
+  if ((N & 1) == 0) {
+    _SeluGrad<<<CUDA_BLOCKS(N >> 1), CUDA_THREADS, 0, ctx->cuda_stream()>>>(
+        N >> 1,
         alpha * gamma,
         gamma,
         reinterpret_cast<const half2*>(dy),
         reinterpret_cast<const half2*>(y),
         reinterpret_cast<half2*>(dx));
   } else {
-    _SeluGrad<<<CUDA_BLOCKS(count), CUDA_THREADS, 0, ctx->cuda_stream()>>>(
-        count,
+    _SeluGrad<<<CUDA_BLOCKS(N), CUDA_THREADS, 0, ctx->cuda_stream()>>>(
+        N,
         alpha * gamma,
         gamma,
         reinterpret_cast<const half*>(dy),
@@ -162,31 +145,31 @@ void SeluGrad<float16, CUDAContext>(
   }
 } // SeluGrad
 
-#define DEFINE_KERNEL_LAUNCHER(T)                                       \
-  template <>                                                           \
-  void Selu<T, CUDAContext>(                                            \
-      const int count,                                                  \
-      const float alpha,                                                \
-      const float gamma,                                                \
-      const T* x,                                                       \
-      T* y,                                                             \
-      CUDAContext* ctx) {                                               \
-    _Selu<<<CUDA_BLOCKS(count), CUDA_THREADS, 0, ctx->cuda_stream()>>>( \
-        count, alpha * gamma, gamma, x, y);                             \
+#define DEFINE_KERNEL_LAUNCHER(T)                                   \
+  template <>                                                       \
+  void Selu<T, CUDAContext>(                                        \
+      const int N,                                                  \
+      const float alpha,                                            \
+      const float gamma,                                            \
+      const T* x,                                                   \
+      T* y,                                                         \
+      CUDAContext* ctx) {                                           \
+    _Selu<<<CUDA_BLOCKS(N), CUDA_THREADS, 0, ctx->cuda_stream()>>>( \
+        N, T(alpha * gamma), T(gamma), x, y);                       \
   }
 
-#define DEFINE_GRAD_KERNEL_LAUNCHER(T)                                      \
-  template <>                                                               \
-  void SeluGrad<T, CUDAContext>(                                            \
-      const int count,                                                      \
-      const float alpha,                                                    \
-      const float gamma,                                                    \
-      const T* dy,                                                          \
-      const T* y,                                                           \
-      T* dx,                                                                \
-      CUDAContext* ctx) {                                                   \
-    _SeluGrad<<<CUDA_BLOCKS(count), CUDA_THREADS, 0, ctx->cuda_stream()>>>( \
-        count, alpha * gamma, gamma, dy, y, dx);                            \
+#define DEFINE_GRAD_KERNEL_LAUNCHER(T)                                  \
+  template <>                                                           \
+  void SeluGrad<T, CUDAContext>(                                        \
+      const int N,                                                      \
+      const float alpha,                                                \
+      const float gamma,                                                \
+      const T* dy,                                                      \
+      const T* y,                                                       \
+      T* dx,                                                            \
+      CUDAContext* ctx) {                                               \
+    _SeluGrad<<<CUDA_BLOCKS(N), CUDA_THREADS, 0, ctx->cuda_stream()>>>( \
+        N, T(alpha * gamma), T(gamma), dy, y, dx);                      \
   }
 
 DEFINE_KERNEL_LAUNCHER(float);
@@ -196,7 +179,7 @@ DEFINE_GRAD_KERNEL_LAUNCHER(double);
 #undef DEFINE_KERNEL_LAUNCHER
 #undef DEFINE_GRAD_KERNEL_LAUNCHER
 
-} // namespace kernel
+} // namespace kernels
 
 } // namespace dragon
 

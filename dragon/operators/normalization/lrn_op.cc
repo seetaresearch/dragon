@@ -11,7 +11,7 @@ void LRNOp<Context>::DoRunWithType() {
 template <class Context>
 void LRNOp<Context>::RunOnDevice() {
   Output(0)->ReshapeLike(Input(0));
-  DispatchHelper<FloatingTensorTypes>::Call(this, Input(0));
+  DispatchHelper<dtypes::Floating>::Call(this, Input(0));
 }
 
 template <class Context>
@@ -22,7 +22,7 @@ void LRNGradientOp<Context>::DoRunWithType() {
 template <class Context>
 void LRNGradientOp<Context>::RunOnDevice() {
   Output(0)->ReshapeLike(Input(-1));
-  DispatchHelper<FloatingTensorTypes>::Call(this, Input(-1));
+  DispatchHelper<dtypes::Floating>::Call(this, Input(-1));
 }
 
 DEPLOY_CPU_OPERATOR(LRN);
@@ -52,9 +52,9 @@ namespace {
 class GradientMaker final : public GradientMakerBase {
  public:
   GRADIENT_MAKER_CTOR(GradientMaker);
-  vector<OperatorDef> MakeDef() override {
-    return SingleDef(
-        def.type() + "Gradient",
+  void CreateGradientDefs() override {
+    AddGradientDef(
+        def().type() + "Gradient",
         "",
         vector<string>({I(0), O(0), GO(0)}),
         vector<string>({GI(0)}));

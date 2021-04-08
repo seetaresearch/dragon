@@ -48,7 +48,5 @@ from dragon.vm.caffe.core.layers.vision import Convolution
 from dragon.vm.caffe.core.layers.vision import Deconvolution
 from dragon.vm.caffe.core.layers.vision import LRN
 from dragon.vm.caffe.core.layers.vision import Pooling
-from dragon.vm.caffe.core.layers.vision import ROIAlign
-from dragon.vm.caffe.core.layers.vision import ROIPooling
 
 __all__ = [_s for _s in dir() if not _s.startswith('_')]

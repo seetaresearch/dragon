@@ -17,32 +17,6 @@ from __future__ import print_function
 from dragon.core.framework import config
 
 
-def set_execution(execution='GRAPH_MODE'):
-    """Set the execution mode for graph ir.
-
-    For changing the execution temporarily, use:
-
-    ```python
-    # Enter a context to enforce graph execution
-    with dragon.graph_mode():
-        pass
-
-    # Enter a context to enforce eager execution
-    with dragon.eager_mode():
-        pass
-    ```
-
-    Parameters
-    ----------
-    execution : {'GRAPH_MODE', 'EAGER_MODE'}, optional
-        The execution mode.
-
-    """
-    if execution not in ('GRAPH_MODE', 'EAGER_MODE'):
-        raise ValueError('Unsupported execution: ' + execution)
-    config.config().graph_execution = execution
-
-
 def set_optimization(level=1):
     """Set the optimization for graph ir.
 

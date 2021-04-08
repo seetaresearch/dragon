@@ -144,49 +144,6 @@ MATH_UTILS_DECL T Cube(const T x) {
 
 #if defined(__CUDACC__)
 
-template <typename T>
-inline __device__ T AtomicAdd(T* address, T val) {
-  return atomicAdd(address, val);
-}
-
-#if __CUDA_ARCH__ < 600
-inline __device__ double AtomicAdd(double* address, double val) {
-  unsigned long long int* address_as_ull = (unsigned long long int*)address;
-  unsigned long long int old = *address_as_ull, assumed;
-  do {
-    assumed = old;
-    old = atomicCAS(
-        address_as_ull,
-        assumed,
-        __double_as_longlong(val + __longlong_as_double(assumed)));
-  } while (assumed != old);
-  return __longlong_as_double(old);
-}
-#endif
-
-#if __CUDA_ARCH__ < 700
-inline __device__ half AtomicAdd(half* address, half val) {
-  unsigned int* address_as_ui =
-      (unsigned int*)((char*)address - ((size_t)address & 2));
-  unsigned int old = *address_as_ui, assumed;
-  __half_raw result;
-  do {
-    assumed = old;
-    result.x = (size_t)address & 2 ? (old >> 16) : (old & 0xffff);
-#if __CUDA_ARCH__ >= 530
-    result = __hadd(half(result), val);
-#else
-    result = __float2half(__half2float(half(result)) + __half2float(val));
-#endif
-    old = (size_t)address & 2 ? (old & 0xffff) | (result.x << 16)
-                              : (old & 0xffff0000) | result.x;
-    old = atomicCAS(address_as_ui, assumed, old);
-  } while (assumed != old);
-  result.x = (size_t)address & 2 ? (old >> 16) : (old & 0xffff);
-  return half(result);
-}
-#endif
-
 inline __device__ bool IsInf(half x) {
 #if __CUDA_ARCH__ >= 530
   return __hisinf(x);

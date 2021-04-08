@@ -22,13 +22,13 @@ namespace dragon {
 
 namespace python {
 
-namespace types {
+namespace dtypes {
 
 inline const int to_npy(const TypeMeta& type) {
   static std::unordered_map<TypeId, int> m{
       {TypeMeta::Id<bool>(), NPY_BOOL},
-      {TypeMeta::Id<int8_t>(), NPY_INT8},
       {TypeMeta::Id<uint8_t>(), NPY_UINT8},
+      {TypeMeta::Id<int8_t>(), NPY_INT8},
       {TypeMeta::Id<int>(), NPY_INT32},
       {TypeMeta::Id<int64_t>(), NPY_INT64},
       {TypeMeta::Id<float16>(), NPY_FLOAT16},
@@ -44,8 +44,8 @@ inline const TypeMeta& from_npy(int type) {
   static TypeMeta unknown_type;
   static std::unordered_map<int, TypeMeta> m{
       {NPY_BOOL, TypeMeta::Make<bool>()},
-      {NPY_INT8, TypeMeta::Make<int8_t>()},
       {NPY_UINT8, TypeMeta::Make<uint8_t>()},
+      {NPY_INT8, TypeMeta::Make<int8_t>()},
       {NPY_INT32, TypeMeta::Make<int>()},
       {NPY_INT64, TypeMeta::Make<int64_t>()},
       {NPY_FLOAT16, TypeMeta::Make<float16>()},
@@ -61,8 +61,8 @@ inline const TypeMeta& from_npy(int type) {
 inline DLDataType* to_dlpack(const TypeMeta& type) {
   static std::unordered_map<TypeId, DLDataType> m{
       {TypeMeta::Id<bool>(), DLDataType{1, 8, 1}},
-      {TypeMeta::Id<int8_t>(), DLDataType{0, 8, 1}},
       {TypeMeta::Id<uint8_t>(), DLDataType{1, 8, 1}},
+      {TypeMeta::Id<int8_t>(), DLDataType{0, 8, 1}},
       {TypeMeta::Id<int>(), DLDataType{0, 32, 1}},
       {TypeMeta::Id<int64_t>(), DLDataType{0, 64, 1}},
       {TypeMeta::Id<float16>(), DLDataType{2, 16, 1}},
@@ -100,7 +100,7 @@ inline const TypeMeta& from_dlpack(const DLDataType& type) {
   return mm.at(type.bits);
 }
 
-} // namespace types
+} // namespace dtypes
 
 } // namespace python
 

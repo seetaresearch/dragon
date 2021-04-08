@@ -14,9 +14,7 @@ from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
 
-from dragon.core.autograph.tensor import TensorRef
-from dragon.core.framework import context
-from dragon.core.framework import workspace
+from dragon.core.framework.tensor import Tensor
 from dragon.core.ops import activation_ops
 from dragon.core.ops import array_ops
 from dragon.core.ops import framework_ops
@@ -24,10 +22,11 @@ from dragon.core.ops import math_ops
 from dragon.core.ops import metric_ops
 from dragon.core.ops import normalization_ops
 from dragon.vm.caffe.core.layer import Layer
+from dragon.vm.caffe.core.proto import caffe_pb2
 
 
 class Accuracy(Layer):
-    r"""Compute the top-k accuracy.
+    """Compute the top-k accuracy.
 
     Examples:
 
@@ -50,7 +49,7 @@ class Accuracy(Layer):
     def __init__(self, layer_param):
         super(Accuracy, self).__init__(layer_param)
         param = layer_param.accuracy_param
-        self.arguments = {
+        self.call_args = {
             'axis': param.axis,
             'top_k': param.top_k,
             'ignore_index': param.ignore_label
@@ -58,11 +57,11 @@ class Accuracy(Layer):
         }
 
     def __call__(self, bottom):
-        return metric_ops.accuracy(bottom, **self.arguments)
+        return metric_ops.accuracy(bottom, **self.call_args)
 
 
 class ArgMax(Layer):
-    r"""Compute the index of maximum elements along the given axis.
+    """Compute the index of maximum elements along the given axis.
 
     Examples:
 
@@ -84,14 +83,14 @@ class ArgMax(Layer):
         param = layer_param.argmax_param
         if param.top_k != 1:
             raise ValueError('Top-k argmax is not supported.')
-        self.arguments = {'axis': param.axis, 'keepdims': True}
+        self.call_args = {'axis': param.axis, 'keepdims': True}
 
     def __call__(self, bottom):
-        return array_ops.argmax(bottom, **self.arguments)
+        return array_ops.argmax(bottom, **self.call_args)
 
 
 class BatchNorm(Layer):
-    r"""Apply the batch normalization.
+    """Apply the batch normalization.
     `[Ioffe & Szegedy, 2015] <https://arxiv.org/abs/1502.03167>`_.
 
     Examples:
@@ -114,47 +113,59 @@ class BatchNorm(Layer):
     def __init__(self, layer_param):
         super(BatchNorm, self).__init__(layer_param)
         param = layer_param.batch_norm_param
-        self.arguments = {
+        self.scale_layer = None
+        self.call_args = {
             'use_stats': int(param.use_global_stats)
             if param.HasField('use_global_stats') else -1,
             'momentum': param.moving_average_fraction,
             'epsilon': param.eps,
             'axis': 1,
         }
-        self.add_blob(value=0, no_grad=True)  # running_mean
-        self.add_blob(value=1, no_grad=True)  # running_var
-        self.add_blob(value=1, no_grad=True)  # running_num
-        self.add_blob(value=1, no_grad=True)  # fixed_gamma
-        self.add_blob(value=0, no_grad=True)  # fixed_beta
-        self._blobs[2]['data'].set_value([1.])
-        self._weight, self._bias = [blob['data'] for blob in self._blobs[3:5]]
-        del self._blobs[3:]  # Avoid to save the fixed blobs
-
-    def fuse_with_scale_layer(self, scale_layer):
-        self._weight = scale_layer._blobs[0]['data']
-        if len(scale_layer._blobs) == 2:
-            self._bias = scale_layer._blobs[1]['data']
-        scale_layer.__call__ = lambda *args, **kwargs: None
 
     def from_proto(self, proto):
+        if self._call_layer:
+            return
         super(BatchNorm, self).from_proto(proto)
-        current_ws = workspace.get_workspace()
-        running_num = float(current_ws.fetch_tensor(self._blobs[2]['data']))
-        if running_num != 1:
-            running_mean = current_ws.fetch_tensor(self._blobs[0]['data'])
-            running_var = current_ws.fetch_tensor(self._blobs[1]['data'])
-            current_ws.feed_tensor(self._blobs[0]['data'], running_mean / running_num)
-            current_ws.feed_tensor(self._blobs[1]['data'], running_var / running_num)
-            current_ws.feed_tensor(self._blobs[2]['data'], [1], dtype='float32')
+        div_factor = float(self.blobs[2]['data'])
+        if div_factor > 1:
+            for blob in self.blobs:
+                impl = blob['data']._impl
+                impl.FromNumpy(impl.ToNumpy() / div_factor, False)
+
+    def build(self, bottom):
+        weight_shape = [bottom.shape[1]]
+        one_filler = caffe_pb2.FillerParameter(type='constant', value=1)
+        zero_filler = caffe_pb2.FillerParameter(type='constant', value=0)
+        self.add_blob(weight_shape, zero_filler, False)  # running mean
+        self.add_blob(weight_shape, one_filler, False)  # running var
+        self.add_blob((1,), one_filler, False)  # running num
+        scale_layer = self.scale_layer
+        if scale_layer and scale_layer.inplace:
+            scale_layer.add_blob(weight_shape, scale_layer.filler)
+            if scale_layer.bias_term:
+                scale_layer.add_blob(weight_shape, scale_layer.bias_filler)
+                self.bias = scale_layer._blobs[1]['data']
+            else:
+                self.add_blob(weight_shape, zero_filler, False)
+                self.bias = self.blobs[3]['data']
+            self.weight = scale_layer._blobs[0]['data']
+            scale_layer.__call__ = lambda *args, **kwargs: None
+        else:
+            self.add_blob(weight_shape, one_filler, False)  # fixed gamma
+            self.add_blob(weight_shape, zero_filler, False)  # fixed beta
+            self.weight, self.bias = [blob['data'] for blob in self.blobs[3:5]]
+        del self.blobs[3:]  # Avoid to save the fixed blobs
 
     def __call__(self, bottom):
-        inputs = [bottom, self._weight, self._bias] + \
-                 [blob['data'] for blob in self._blobs[:2]]
-        return normalization_ops.batch_norm(inputs, **self.arguments)
+        if len(self.blobs) == 0:
+            self.build(bottom)
+        inputs = [bottom, self.weight, self.bias] + \
+                 [blob['data'] for blob in self.blobs[:2]]
+        return normalization_ops.batch_norm(inputs, **self.call_args)
 
 
 class Concat(Layer):
-    r"""Concatenate the inputs along the given axis.
+    """Concatenate the inputs along the given axis.
 
     Examples:
 
@@ -174,14 +185,14 @@ class Concat(Layer):
 
     def __init__(self, layer_param):
         super(Concat, self).__init__(layer_param)
-        self.arguments = {'axis': layer_param.concat_param.axis}
+        self.call_args = {'axis': layer_param.concat_param.axis}
 
     def __call__(self, bottom):
-        return array_ops.concat(bottom, **self.arguments)
+        return array_ops.concat(bottom, **self.call_args)
 
 
 class Crop(Layer):
-    r"""Select the elements according to the dimensions of second bottom.
+    """Select the elements according to the dimensions of second bottom.
 
     Examples:
 
@@ -204,22 +215,25 @@ class Crop(Layer):
     def __init__(self, layer_param):
         super(Crop, self).__init__(layer_param)
         param = layer_param.crop_param
-        offsets = [e for e in param.offset]
         self.axis = param.axis
-        self.arguments = {'starts': [[0] * param.axis] + offsets}
+        self.call_args = {'starts': [0] * param.axis + [v for v in param.offset]}
 
     def __call__(self, bottom):
         if not isinstance(bottom, (tuple, list)) or len(bottom) != 2:
             raise ValueError('Excepted two bottom blobs.')
-        sizes = array_ops.concat([
-            array_ops.shape(bottom[0])[:self.axis],
-            array_ops.shape(bottom[1])[self.axis:],
-        ])
-        return array_ops.slice(bottom[0], sizes=sizes, **self.arguments)
+        sizes = array_ops.concat([array_ops.shape(bottom[0])[:self.axis],
+                                  array_ops.shape(bottom[1])[self.axis:]])
+        output = array_ops.slice(bottom[0], sizes=sizes, **self.call_args)
+        try:
+            output._shape = (bottom[0].shape[:self.axis] +
+                             bottom[1].shape[self.axis:])
+        except (TypeError, IndexError):
+            pass
+        return output
 
 
 class Eltwise(Layer):
-    r"""Compute the element-wise operation on the sequence of inputs.
+    """Compute the element-wise operation on the sequence of inputs.
 
     Examples:
 
@@ -260,7 +274,7 @@ class Eltwise(Layer):
 
 
 class Flatten(Layer):
-    r"""Flatten the input along the given axes.
+    """Flatten the input along the given axes.
 
     Examples:
 
@@ -281,16 +295,14 @@ class Flatten(Layer):
     def __init__(self, layer_param):
         super(Flatten, self).__init__(layer_param)
         param = layer_param.flatten_param
-        axis, end_axis = param.axis, param.end_axis
-        num_axes = end_axis - axis + 1 if end_axis != -1 else -1
-        self.arguments = {'axis': axis, 'num_axes': num_axes}
+        self.call_args = {'axis': param.axis, 'end_axis': param.end_axis}
 
     def __call__(self, bottom):
-        return array_ops.flatten(bottom, **self.arguments)
+        return array_ops.flatten(bottom, **self.call_args)
 
 
 class InnerProduct(Layer):
-    r"""Compute the dense matrix multiplication along the given axes.
+    """Compute the dense matrix multiplication along the given axes.
 
     Examples:
 
@@ -311,22 +323,27 @@ class InnerProduct(Layer):
     def __init__(self, layer_param):
         super(InnerProduct, self).__init__(layer_param)
         param = layer_param.inner_product_param
-        self.arguments = {
-            'axis': param.axis,
-            'n': param.num_output,
-            'transpose_b': not param.transpose,
-        }
-        self.add_blob(filler=self.get_filler(param, 'weight_filler'))
-        if param.bias_term:
-            self.add_blob(filler=self.get_filler(param, 'bias_filler'))
+        self.out_channels = param.num_output
+        self.weight_filler = param.weight_filler
+        self.bias_filler = param.bias_filler
+        self.bias_term = param.bias_term
+        self.call_args = {'transpose_b': not param.transpose}
+
+    def build(self, bottom):
+        weight_shape = [self.out_channels, bottom.shape[1]]
+        self.add_blob(weight_shape, self.weight_filler)
+        if self.bias_term:
+            self.add_blob([self.out_channels], self.bias_filler)
 
     def __call__(self, bottom):
-        inputs = [bottom] + [blob['data'] for blob in self._blobs]
-        return math_ops.gemm(inputs, **self.arguments)
+        if len(self.blobs) == 0:
+            self.build(bottom)
+        inputs = [bottom] + [blob['data'] for blob in self.blobs]
+        return math_ops.gemm(inputs, **self.call_args)
 
 
 class Input(Layer):
-    r"""Produce input blobs with shape and dtype.
+    """Produce input blobs with shape and dtype.
 
     Examples:
 
@@ -347,28 +364,19 @@ class Input(Layer):
     def __init__(self, layer_param):
         super(Input, self).__init__(layer_param)
         param = layer_param.input_param
-        self.blob_shapes = []
+        self.output_shapes = []
         for i in range(len(self.top)):
-            if i < len(param.shape):
-                self.blob_shapes.append([e for e in param.shape[i].dim])
-            else:
-                self.blob_shapes.append(None)
+            self.output_shapes.append([e for e in param.shape[i].dim])
 
     def __call__(self, bottom):
-        name_scope = context.get_name_scope()
-        current_ws = workspace.get_workspace()
-        return [TensorRef(
-            name=current_ws.unique_name(
-                name_scope + 'output',
-                suffix=':{}'.format(i),
-                namespace='Tensor'),
-            shape=self.blob_shapes[i],
-            dtype='float32',
-        ).constant() for i in range(len(self.blob_shapes))]
+        outputs = []
+        for shape in self.output_shapes:
+            outputs.append(Tensor(shape, symbolic=True))
+        return outputs
 
 
 class Normalize(Layer):
-    r"""Apply the fused L2 normalization.
+    """Apply the L2 normalization.
     `[Liu et.al, 2015] <https://arxiv.org/abs/1506.04579>`_.
 
     Examples:
@@ -380,7 +388,6 @@ class Normalize(Layer):
       top: "conv4/norm"
       normalize_param {
         across_spatial: false
-        channel_shared: false
         eps: 1e-12
         scale_filler: {
           type: "constant"
@@ -395,25 +402,27 @@ class Normalize(Layer):
     def __init__(self, layer_param):
         super(Normalize, self).__init__(layer_param)
         param = layer_param.normalize_param
-        self.l2norm_arguments = {
-            'axis': 1,
-            'num_axes': -1 if param.across_spatial else 1,
-            'epsilon': param.eps,
-        }
-        self.affine_arguments = {
-            'axis': 1,
-            'num_axes': 0 if param.channel_shared else 1,
-        }
-        self.add_blob(filler=self.get_filler(param, 'scale_filler'), value=1)
+        self.filler = caffe_pb2.FillerParameter(type='constant', value=1)
+        self.filler = param.scale_filler if param.HasField('scale_filler') else self.filler
+        self.norm_args = {'axis': 1,
+                          'end_axis': -1 if param.across_spatial else 1,
+                          'epsilon': param.eps}
+        self.scale_args = {'axis': 1}
+
+    def build(self, bottom):
+        weight_shape = [bottom.shape[1]]
+        self.add_blob(weight_shape, self.filler)
 
     def __call__(self, bottom):
-        norm_out = [normalization_ops.lp_normalize(bottom, **self.l2norm_arguments)]
-        norm_out += [blob['data'] for blob in self._blobs]
-        return array_ops.channel_affine(norm_out, **self.affine_arguments)
+        if len(self.blobs) == 0:
+            self.build(bottom)
+        outputs = [normalization_ops.lp_normalize(bottom, **self.norm_args)]
+        outputs += [blob['data'] for blob in self.blobs]
+        return array_ops.channel_affine(outputs, **self.scale_args)
 
 
 class Permute(Layer):
-    r"""Permute the dimensions of input.
+    """Permute the dimensions of input.
 
     Examples:
 
@@ -436,14 +445,14 @@ class Permute(Layer):
     def __init__(self, layer_param):
         super(Permute, self).__init__(layer_param)
         param = layer_param.permute_param
-        self.arguments = {'perm': [e for e in param.order]}
+        self.call_args = {'perm': [e for e in param.order]}
 
     def __call__(self, bottom):
-        return array_ops.transpose(bottom, **self.arguments)
+        return array_ops.transpose(bottom, **self.call_args)
 
 
 class Python(Layer):
-    r"""Wrap a python class into a layer.
+    """Wrap a python class into a layer.
 
     Examples:
 
@@ -467,7 +476,7 @@ class Python(Layer):
     def __init__(self, layer_param):
         super(Python, self).__init__(layer_param)
         param = layer_param.python_param
-        self.arguments = {
+        self.call_args = {
             'module_name': param.module,
             'class_name': param.layer,
             'kwargs_str': param.param_str,
@@ -475,11 +484,11 @@ class Python(Layer):
         }
 
     def __call__(self, bottom):
-        return framework_ops.python_plugin(bottom, **self.arguments)
+        return framework_ops.python_plugin(bottom, **self.call_args)
 
 
 class Reduction(Layer):
-    r"""Compute the reduction value along the given axis.
+    """Compute the reduction value along the given axis.
 
     Examples:
 
@@ -504,18 +513,18 @@ class Reduction(Layer):
             if param.axis != -1:
                 raise ValueError('The negative axis can only be -1.')
         self.scale = param.coeff
-        self.arguments = {'axis': [param.axis]}
+        self.call_args = {'axis': [param.axis]}
         self.reduction = {1: array_ops.sum, 4: array_ops.mean}[param.operation]
 
     def __call__(self, bottom):
-        top = self.reduction(bottom, **self.arguments)
+        top = self.reduction(bottom, **self.call_args)
         if self.scale != 1:
             top *= self.scale
         return top
 
 
 class Reshape(Layer):
-    r"""Change the dimensions of input.
+    """Change the dimensions of input.
 
     Examples:
 
@@ -539,14 +548,14 @@ class Reshape(Layer):
     def __init__(self, layer_param):
         super(Reshape, self).__init__(layer_param)
         param = layer_param.reshape_param
-        self.arguments = {'shape': [e for e in param.shape.dim]}
+        self.call_args = {'shape': [dim for dim in param.shape.dim]}
 
     def __call__(self, bottom):
-        return array_ops.reshape(bottom, **self.arguments)
+        return array_ops.reshape(bottom, **self.call_args)
 
 
 class Scale(Layer):
-    r"""Compute the affine transformation along the given axes.
+    """Compute the affine transformation along the given axes.
 
     Examples:
 
@@ -554,7 +563,7 @@ class Scale(Layer):
     layer {
       type: "Scale"
       bottom: "conv1/bn"
-      top: "conv1/scale"
+      top: "conv1/bn"
       scale_param {
         axis: 1
         num_axes: 1
@@ -576,18 +585,31 @@ class Scale(Layer):
     def __init__(self, layer_param):
         super(Scale, self).__init__(layer_param)
         param = layer_param.scale_param
-        self.arguments = {'axis': param.axis, 'num_axes': param.num_axes}
-        self.add_blob(filler=self.get_filler(param, 'filler'), value=1)
-        if param.bias_term:
-            self.add_blob(filler=self.get_filler(param, 'bias_filler'))
+        self.axis = param.axis
+        self.num_axes = param.num_axes
+        end_axis = -1 if self.num_axes < 1 else self.axis + self.num_axes - 1
+        self.call_args = {'axis': self.axis, 'end_axis': end_axis}
+        self.filler = caffe_pb2.FillerParameter(type='constant', value=1)
+        self.filler = param.filler if param.HasField('filler') else self.filler
+        self.bias_filler = param.bias_filler
+        self.bias_term = param.bias_term
+        self.inplace = self.top[0] == self.bottom[0]
+
+    def build(self, bottom):
+        weight_shape = bottom.shape[self.axis:self.axis + self.num_axes]
+        self.add_blob(weight_shape, self.filler)
+        if self.bias_term:
+            self.add_blob(weight_shape, self.bias_filler)
 
     def __call__(self, bottom):
-        inputs = [bottom] + [blob['data'] for blob in self._blobs]
-        return array_ops.channel_affine(inputs, **self.arguments)
+        if len(self.blobs) == 0:
+            self.build(bottom)
+        inputs = [bottom] + [blob['data'] for blob in self.blobs]
+        return array_ops.channel_affine(inputs, **self.call_args)
 
 
 class Slice(Layer):
-    r"""Split the input into chunks along the given axis.
+    """Split the input into chunks along the given axis.
 
     Examples:
 
@@ -611,22 +633,18 @@ class Slice(Layer):
     def __init__(self, layer_param):
         super(Slice, self).__init__(layer_param)
         param = layer_param.slice_param
-        self.arguments = {
+        self.call_args = {
             'axis': param.axis,
             'num_or_size_splits': len(self.top),
             'slice_point': [e for e in param.slice_point],
         }
 
     def __call__(self, bottom):
-        return array_ops.split(bottom, **self.arguments)
+        return array_ops.split(bottom, **self.call_args)
 
 
 class Softmax(Layer):
-    r"""Apply the softmax function.
-
-    The **Softmax** function is defined as:
-
-    .. math:: \text{Softmax}(x_{i}) = \frac{\exp(x_{i})}{\sum_{j} \exp(x_{j})}
+    """Apply the softmax function.
 
     Examples:
 
@@ -645,14 +663,14 @@ class Softmax(Layer):
 
     def __init__(self, layer_param):
         super(Softmax, self).__init__(layer_param)
-        self.arguments = {'axis': layer_param.softmax_param.axis}
+        self.call_args = {'axis': layer_param.softmax_param.axis}
 
     def __call__(self, bottom):
-        return activation_ops.softmax(bottom, **self.arguments)
+        return activation_ops.softmax(bottom, **self.call_args)
 
 
 class StopGradient(Layer):
-    r"""Return the identity of input with truncated gradient-flow.
+    """Return the identity of input with truncated gradient-flow.
 
     Examples:
 
@@ -670,11 +688,11 @@ class StopGradient(Layer):
         super(StopGradient, self).__init__(layer_param)
 
     def __call__(self, bottom):
-        return framework_ops.stop_gradient(bottom, **self.arguments)
+        return framework_ops.stop_gradient(bottom)
 
 
 class Tile(Layer):
-    r"""Repeat the input according to the given axis.
+    """Repeat the input according to the given axis.
 
     Examples:
 
@@ -697,7 +715,7 @@ class Tile(Layer):
         param = layer_param.tile_param
         repeats = [1] * (param.axis + 1)
         repeats[param.axis] = param.tiles
-        self.arguments = {'repeats': repeats}
+        self.call_args = {'repeats': repeats}
 
     def __call__(self, bottom):
-        return array_ops.tile(bottom, **self.arguments)
+        return array_ops.tile(bottom, **self.call_args)

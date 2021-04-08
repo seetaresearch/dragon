@@ -1,0 +1,14 @@
+bitwise_and
+===========
+
+.. autofunction:: dragon.vm.torch.bitwise_and
+
+
+.. raw:: html
+
+  <style>
+    h1:before {
+      content: "torch.";
+      color: #103d3e;
+    }
+  </style>

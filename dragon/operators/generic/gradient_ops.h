@@ -18,20 +18,21 @@
 namespace dragon {
 
 template <class Context>
-class GradientGenerateOp final : public Operator<Context> {
+class GradientFillOp final : public Operator<Context> {
  public:
-  GradientGenerateOp(const OperatorDef& def, Workspace* ws)
-      : Operator<Context>(def, ws),
-        defaults_(OP_REPEATED_ARG(float, "defaults")) {}
+  GradientFillOp(const OperatorDef& def, Workspace* ws)
+      : Operator<Context>(def, ws), values_(OP_REPEATED_ARG(float, "values")) {}
   USE_OPERATOR_FUNCTIONS;
 
-  void RunOnDevice() override;
+  void RunOnDevice() override {
+    DispatchHelper<dtypes::Floating>::Call(this, Input(0));
+  }
 
   template <typename T>
   void DoRunWithType();
 
  protected:
-  vector<float> defaults_;
+  vector<float> values_;
 };
 
 template <class Context>

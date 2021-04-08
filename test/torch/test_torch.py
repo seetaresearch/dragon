@@ -74,6 +74,10 @@ class TestTensor(unittest.TestCase):
             _ = torch.Tensor(2, 3.)
         except ValueError:
             pass
+        try:
+            torch.Tensor(2).retain_grad()
+        except RuntimeError:
+            pass
 
     def test_dlpack_converter(self):
         data = np.array([0., 1., 2.], 'float32')

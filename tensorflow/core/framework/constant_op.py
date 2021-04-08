@@ -13,7 +13,7 @@ from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
 
-from dragon.core.ops import init_ops
+from dragon.core.ops import constant_ops
 
 
 def constant(value, dtype=None, shape=None, name='Const'):
@@ -44,5 +44,4 @@ def constant(value, dtype=None, shape=None, name='Const'):
         The output tensor.
 
     """
-    dtype = str(dtype) if dtype else None
-    return init_ops.constant(value, dtype, shape, name=name)
+    return constant_ops.constant(value, dtype=dtype, shape=shape, name=name)

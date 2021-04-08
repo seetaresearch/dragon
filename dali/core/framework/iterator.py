@@ -23,9 +23,9 @@ except ImportError:
     TensorGPU = object
 
 from dragon.core.device import cuda
-from dragon.core.eager.tensor import EagerTensor
 from dragon.core.framework import device_spec
 from dragon.core.framework import workspace
+from dragon.core.framework.tensor import Tensor
 from dragon.vm.dali.core.framework import types
 
 
@@ -152,7 +152,7 @@ class Iterator(object):
     @staticmethod
     def new_tensor(shape, dtype, device):
         """Return a new tensor abstraction."""
-        return EagerTensor(shape=shape, dtype=dtype, device=device)
+        return Tensor(shape=shape, dtype=dtype, device=device)
 
     def __iter__(self):
         """Return the iterator self."""
@@ -206,12 +206,12 @@ class Iterator(object):
     def _transfer_tensor(self, dali_tensor, target_tensor):
         """Transfer the dali tensor to the target."""
         target_shape = dali_tensor.shape()
-        device = target_tensor._device = \
-            self.new_device(
-                device_type='cuda' if isinstance(
-                    dali_tensor, TensorGPU) else 'cpu',
-                device_index=self._pipe.device_id,
-            )
+        device = self.new_device(
+            device_type='cuda' if isinstance(
+                dali_tensor, TensorGPU) else 'cpu',
+            device_index=self._pipe.device_id)
+        if hasattr(target_tensor, '_device'):
+            target_tensor._device = device
         impl = target_tensor._impl
         if target_shape != list(target_tensor.shape):
             new_capacity = not impl.Reshape(target_shape)

@@ -33,9 +33,9 @@ except ImportError:
     trt = deprecation.NotInstalled('tensorrt')
     TRT_LOGGER = deprecation.NotInstalled('tensorrt')
 
-from dragon.core.eager.tensor import EagerTensor
 from dragon.core.framework import device_spec
 from dragon.core.framework import workspace
+from dragon.core.framework.tensor import Tensor
 from dragon.core.util import logging
 from dragon.core.util import six
 
@@ -43,13 +43,7 @@ from dragon.core.util import six
 class Binding(object):
     """The binding wrapper for an input or output."""
 
-    def __init__(
-        self,
-        cuda_engine,
-        execution_context,
-        idx_or_name,
-        device_id,
-    ):
+    def __init__(self, cuda_engine, execution_context, idx_or_name, device_id):
         """Create a ``Binding``.
 
         Parameters
@@ -123,14 +117,11 @@ class Binding(object):
         if self._device_tensor is None:
             spec = device_spec.DeviceSpec('cuda', self.device_id)
             self._device_opt = spec.to_proto(serialized=True)
-            current_ws = workspace.get_workspace()
-            tensor = EagerTensor(device=spec)  # Hack the constructor.
-            tensor._gc = current_ws.collectors.TENSOR
-            tensor._impl = current_ws.create_tensor(
-                tensor._gc.alloc('${DLPACK}')).FromPointer(
-                self._shape, self._dtype,
-                self._device_opt, self.device_buffer.ptr)
-            self._device_tensor = tensor
+            default_ws = workspace.get_workspace()
+            impl = default_ws.create_tensor(scope='DLPack')
+            impl.FromPointer(self._shape, self._dtype,
+                             self._device_opt, self.device_buffer.ptr)
+            self._device_tensor = Tensor(impl=impl, deleter=default_ws._handle_pool)
         return self._device_tensor._impl.ToDLPack(self._device_opt, True)
 
     @property
@@ -184,14 +175,11 @@ class Binding(object):
         if self._host_tensor is None:
             spec = device_spec.DeviceSpec('cpu')
             self._host_opt = spec.to_proto(serialized=True)
-            current_ws = workspace.get_workspace()
-            tensor = EagerTensor(device=spec)  # Hack the constructor.
-            tensor._gc = current_ws.collectors.TENSOR
-            tensor._impl = current_ws.create_tensor(
-                tensor._gc.alloc('${DLPACK}')).FromPointer(
-                self._shape, self._dtype,
-                self._host_opt, self.host_buffer.ctypes.data)
-            self._host_tensor = tensor
+            default_ws = workspace.get_workspace()
+            impl = default_ws.create_tensor(scope='DLPack')
+            impl.FromPointer(self._shape, self._dtype,
+                             self._host_opt, self.host_buffer.ctypes.data)
+            self._host_tensor = Tensor(impl=impl, deleter=default_ws._handle_pool)
         return self._host_tensor._impl.ToDLPack(self._host_opt, True)
 
     @property
@@ -213,7 +201,7 @@ class Binding(object):
         Returns
         -------
         bool
-            **True** if binding is an input.
+            ``True`` if binding is an input.
 
         """
         return self._is_input
@@ -394,10 +382,8 @@ class Engine(object):
         """
         if len(inputs) < len(self.inputs):
             raise ValueError(
-                'Not enough inputs.\n'
-                'Expected %i, got %i.' %
-                (len(self.inputs), len(inputs))
-            )
+                'Not enough inputs. Expected %i, got %i.'
+                % (len(self.inputs), len(inputs)))
         if isinstance(inputs, dict):
             inputs = [inputs[b.name] for b in self.inputs]
 

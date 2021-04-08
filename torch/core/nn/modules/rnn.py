@@ -17,14 +17,14 @@ from __future__ import print_function
 import itertools
 import math
 import numbers
-import numpy
 
-from dragon.core.framework import config
+from dragon.core.util import math_util
+from dragon.core.util import nest
+from dragon.vm.torch.core.autograd.function_impl import FunctionLib
 from dragon.vm.torch.core.nn import functional as F
-from dragon.vm.torch.core.nn.modules import _functions as nn_funcs
 from dragon.vm.torch.core.nn.modules.module import Module
 from dragon.vm.torch.core.nn.parameter import Parameter
-from dragon.vm.torch.core.ops.init import functional as init_funcs
+from dragon.vm.torch.core.ops import init_ops
 from dragon.vm.torch.core.tensor import Tensor
 
 
@@ -42,69 +42,66 @@ class RNNBase(Module):
     ):
         super(RNNBase, self).__init__()
         self.mode = mode
-        self.num_gates = {'lstm': 4, 'gru': 3}.get(self.mode, 1)
         self.input_size = input_size
         self.hidden_size = hidden_size
         self.num_layers = num_layers
         self.bias = bias
         self.batch_first = batch_first
         self.dropout = dropout if dropout != 0 else None
-        self.dropout_state = {}
         self.bidirectional = bidirectional
-        self.num_directions = 2 if bidirectional else 1
         if batch_first:
-            raise NotImplementedError('Batch first is disabled.')
+            raise NotImplementedError('Batch first is not supported.')
         if not bias:
             raise NotImplementedError('Bias is required.')
         if not isinstance(dropout, numbers.Number) or \
                 not 0 <= dropout <= 1 or isinstance(dropout, bool):
-            raise ValueError("dropout should be a number in range [0, 1] "
-                             "representing the probability of an element being zeroed.")
-        self._register_parameters()
+            raise ValueError('<dropout> should be a number in range [0, 1] '
+                             'representing the probability of an element being zeroed.')
+        self._num_gates = {'lstm': 4, 'gru': 3}.get(self.mode, 1)
+        self._weights_shapes = []
+        self.flatten_parameters()
         self.reset_parameters()
 
     def reset_parameters(self):
         """Reset the parameters."""
-        numpy.random.seed(config.config().random_seed)
-        for li, di, pi in itertools.product(
-            range(self.num_layers),
-            range(self.num_directions),
-            range(self.num_gates * 2),
-        ):
-            self.reset_parameter(li, di, pi, 'matrix', 'orthogonal')
-            self.reset_parameter(li, di, pi, 'bias', 'zero')
+        stddev = 1.0 / math.sqrt(self.hidden_size)
+        for layer_id, param_id in itertools.product(
+                range(self.num_layers * (self.bidirectional + 1)),
+                range(self._num_gates * 2)):
+            i = layer_id * 2 + (param_id // self._num_gates)
+            j = i + len(self._weights_shapes) // 2
+            matrix_shape = self._weights_shapes[i][:]
+            bias_shape = self._weights_shapes[j][:]
+            matrix_shape[0] //= self._num_gates
+            bias_shape[0] //= self._num_gates
+            self._set_parameter(
+                init_ops.uniform(-stddev, stddev, matrix_shape),
+                layer_id, param_id, 'matrix')
+            self._set_parameter(
+                init_ops.uniform(-stddev, stddev, bias_shape),
+                layer_id, param_id, 'bias')
 
-    def reset_parameter(
-        self,
-        layer_id=0,
-        direction=0,
-        param_id=0,
-        type='matrix',
-        initializer='orthogonal',
-    ):
-        """Reset the specific parameter.
-
-        Parameters
-        ----------
-        layer_id : int, optional, default=0
-            The layer id.
-        direction : {0, 1}, optional, default=0
-            The direction flag.
-        param_id : int, optional, default=0
-            The param id.
-        type : {'matrix', 'bias'}, optional
-            The param type.
-        initializer : {'orthogonal', 'uniform', 'zero'}, optional
-            The optional initializer.
-
-        """
-        li, di, pi = layer_id, direction, param_id
-        li = li * self.num_directions + di
-        si = li * 2 + (pi // self.num_gates)
-        init_fn = getattr(self, '_{}_init'.format(initializer))
-        param_shape = getattr(self, '_{}_shape'.format(type))[si][:]
-        param_shape[0] //= self.num_gates  # Gate-Agnostic
-        self._set_parameter(li, pi, type, init_fn(param_shape))
+    def flatten_parameters(self):
+        """Flatten parameters into a single weights."""
+        gate_size = self._num_gates * self.hidden_size
+        # Compute the shape of weight and bias.
+        matrix_shapes, bias_shapes = [], []
+        for layer in range(self.num_layers):
+            for direction in range(int(self.bidirectional) + 1):
+                layer_input_size = self.input_size if layer == 0 \
+                    else self.hidden_size * self.num_directions
+                w_ih_shape = [gate_size, layer_input_size]
+                w_hh_shape = [gate_size, self.hidden_size]
+                b_ih_shape, b_hh_shape = [gate_size], [gate_size]
+                matrix_shapes.extend([w_ih_shape, w_hh_shape])
+                bias_shapes.extend([b_ih_shape, b_hh_shape])
+        # Compute total number of parameters.
+        self._weights_count = 0
+        self._weights_shapes = matrix_shapes + bias_shapes
+        for shape in self._weights_shapes:
+            self._weights_count += math_util.prod(shape)
+        # Create the flat float32 weights.
+        self.weights = Parameter(Tensor(self._weights_count))
 
     def extra_repr(self):
         s = '{input_size}, {hidden_size}'
@@ -121,93 +118,25 @@ class RNNBase(Module):
         return s.format(**self.__dict__)
 
     def forward(self, input, hx=None):
-        return nn_funcs.Recurrent \
-            .instantiate(
-                self.weights.device,
-                mode=self.mode,
-                num_layers=self.num_layers,
-                hidden_size=self.hidden_size,
-                bidirectional=self.bidirectional,
-                dropout_ratio=self.dropout,
-                is_training=self.training,
-            ).apply(input, self.weights, hx)
+        inputs = [input, self.weights]
+        if hx is not None:
+            inputs += nest.flatten(hx)
+        outputs = [None] * (3 if self.mode == 'lstm' else 2)
+        outputs = FunctionLib.apply(
+            'Recurrent', input.device, inputs, outputs=outputs,
+            rnn_mode=self.mode, bidirectional=self.bidirectional,
+            input_size=self.input_size, hidden_size=self.hidden_size,
+            dropout=self.dropout, phase='TRAIN' if self.training else 'TEST')
+        output, hidden = outputs[0], outputs[1:]
+        return output, hidden[0] if len(hidden) == 1 else hidden
 
-    @classmethod
-    def _orthogonal_init(cls, shape, gain=1, dtype='float32'):
-        """The orthogonal initializer."""
-        num_rows = 1
-        for dim in shape[:-1]:
-            num_rows *= dim
-        num_cols = shape[-1]
-        flat_shape = (num_cols, num_rows) if num_rows < num_cols \
-            else (num_rows, num_cols)
-        w = numpy.random.randn(*flat_shape)
-        q, r = numpy.linalg.qr(w)
-        # Make Q uniform
-        d = numpy.diag(r)
-        q *= numpy.sign(d)
-        if num_rows < num_cols:
-            q = q.T
-        return gain * q.reshape(shape).astype(dtype)
-
-    def _register_parameters(self):
-        """Register and flatten the parameters."""
-        if self.mode == 'lstm':
-            gate_size = 4 * self.hidden_size
-        elif self.mode == 'gru':
-            gate_size = 3 * self.hidden_size
-        else:
-            gate_size = self.hidden_size
-        # Compute the shape of weight and bias.
-        self._matrix_shape, self._bias_shape = [], []
-        for layer in range(self.num_layers):
-            for direction in range(self.num_directions):
-                layer_input_size = self.input_size if layer == 0 \
-                    else self.hidden_size * self.num_directions
-                w_ih_shape = [gate_size, layer_input_size]
-                w_hh_shape = [gate_size, self.hidden_size]
-                b_ih_shape, b_hh_shape = [gate_size], [gate_size]
-                # W (0 ~ 3), R (4 ~ 7)
-                self._matrix_shape.extend([w_ih_shape, w_hh_shape])
-                # Bw (0 ~ 3), Br (4 ~ 7)
-                self._bias_shape.extend([b_ih_shape, b_hh_shape])
-        # Compute total number of parameters.
-        self._weights_count = 0
-        for shape in self._matrix_shape + self._bias_shape:
-            self._weights_count += int(numpy.prod(shape))
-        # Create the flat float32 weights.
-        self.weights = Parameter(Tensor(self._weights_count))
-
-    def _set_parameter(self, layer_id, param_id, param_type, param):
-        """Set parameter to the flatten weights."""
-        if isinstance(param, numpy.ndarray):
-            param = Tensor(
-                param,
-                copy=False,
-                requires_grad=self.weights.requires_grad,
-            )
-        return nn_funcs.RNNParamSet \
-            .instantiate(
-                self.weights.device,
-                layer_id=layer_id,
-                param_id=param_id,
-                param_type=param_type,
-                mode=self.mode,
-                input_size=self.input_size,
-                hidden_size=self.hidden_size,
-                num_layers=self.num_layers,
-                num_directions=self.num_directions,
-            ).apply(param, self.weights)
-
-    def _uniform_init(self, shape, dtype='float32'):
-        """The uniform initializer."""
-        stdv = 1. / numpy.sqrt(self.hidden_size)
-        return numpy.random.uniform(-stdv, stdv, shape).astype(dtype)
-
-    @classmethod
-    def _zero_init(cls, shape, dtype='float32'):
-        """The zero initializer."""
-        return numpy.zeros(shape, dtype=dtype)
+    def _set_parameter(self, data, layer_id=0, param_id=0, param_type='matrix'):
+        """Set the data of a parameter."""
+        return FunctionLib.apply(
+            'RNNParamSet', data.device, [data], outputs=[self.weights],
+            rnn_mode=self.mode, bidirectional=self.bidirectional,
+            input_size=self.input_size, hidden_size=self.hidden_size,
+            layer_id=layer_id, param_id=param_id, param_type=param_type)
 
 
 class RNN(RNNBase):
@@ -248,9 +177,9 @@ class RNN(RNNBase):
         num_layers : int, optional, default=1
             The number of recurrent layers.
         bias : bool, optional, default=True
-            **True** to use bias.
+            ``True`` to use bias.
         batch_first : bool, optional, default=False
-            **True** to use order **[N, T, C]** otherwise **[T, N, C]**.
+            ``True`` to use order **[N, T, C]** otherwise **[T, N, C]**.
         dropout : number, optional, default=0
             The dropout ratio.
         bidirectional : bool, optional, default=False
@@ -297,9 +226,9 @@ class LSTM(RNNBase):
         num_layers : int, optional, default=1
             The number of recurrent layers.
         bias : bool, optional, default=True
-            **True** to use bias.
+            ``True`` to use bias.
         batch_first : bool, optional, default=False
-            **True** to use order **[N, T, C]** otherwise **[T, N, C]**.
+            ``True`` to use order **[N, T, C]** otherwise **[T, N, C]**.
         dropout : number, optional, default=0
             The dropout ratio.
         bidirectional : bool, optional, default=False
@@ -346,9 +275,9 @@ class GRU(RNNBase):
         num_layers : int, optional, default=1
             The number of recurrent layers.
         bias : bool, optional, default=True
-            **True** to use bias.
+            ``True`` to use bias.
         batch_first : bool, optional, default=False
-            **True** to use order **[N, T, C]** otherwise **[T, N, C]**.
+            ``True`` to use order **[N, T, C]** otherwise **[T, N, C]**.
         dropout : number, optional, default=0
             The dropout ratio.
         bidirectional : bool, optional, default=False
@@ -386,9 +315,9 @@ class RNNCellBase(Module):
         return s.format(**self.__dict__)
 
     def reset_parameters(self):
-        stdv = 1.0 / math.sqrt(self.hidden_size)
+        stddev = 1.0 / math.sqrt(self.hidden_size)
         for weight in self.parameters():
-            weight.data.uniform_(-stdv, stdv)
+            weight.data.uniform_(-stddev, stddev)
 
 
 class LSTMCell(RNNCellBase):
@@ -415,7 +344,7 @@ class LSTMCell(RNNCellBase):
         hidden_size : int
             The dimension of hidden state.
         bias : bool, optional, default=True
-            **True** to use bias.
+            ``True`` to use bias.
 
         """
         super(LSTMCell, self).__init__(
@@ -423,12 +352,9 @@ class LSTMCell(RNNCellBase):
 
     def forward(self, input, hx=None):
         if hx is None:
-            zeros = init_funcs.zeros(
-                input.size(0),
-                self.hidden_size,
-                dtype=input.dtype,
-                device=input.device,
-            )
+            zeros = init_ops.zeros(
+                input.size(0), self.hidden_size,
+                dtype=input.dtype, device=input.device)
             hx = (zeros, zeros)
         wx = F.linear(input, self.weight_ih, self.bias_ih)
         wh = F.linear(hx[0], self.weight_hh, self.bias_hh)

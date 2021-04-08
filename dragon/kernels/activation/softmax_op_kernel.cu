@@ -7,262 +7,139 @@
 
 namespace dragon {
 
-namespace kernel {
+namespace kernels {
 
 namespace {
 
-template <typename T>
-__global__ void _Softmax(
-    const int rows,
-    const int cols,
-    const int inner_dim,
-    const T lowest,
-    const T* x,
-    T* y) {
-  __shared__ T block_val;
-  __shared__ typename BlockReduce<T>::TempStorage storage;
-  CUDA_2D_KERNEL_LOOP1(i, rows) {
-    const int c = (i / inner_dim) * cols * inner_dim + (i % inner_dim);
+#define LDG2(x, i) convert::To<AccT>(__ldg(x + i))
 
-    T val = lowest;
-    CUDA_2D_KERNEL_LOOP2(j, cols) {
-      const int yi = c + j * inner_dim;
-#if __CUDA_ARCH__ >= 350
-      val = max(val, __ldg(x + yi));
-#else
-      val = max(val, x[yi]);
-#endif
+template <typename T, typename AccT>
+__global__ void
+_Softmax(const int NxS, const int S, const int C, const T* x, T* y) {
+  __shared__ AccT block_val;
+  __shared__ typename BlockReduce<AccT>::TempStorage storage;
+  CUDA_2D_KERNEL_LOOP1(i, NxS) {
+    const int offset = (i / S) * C * S + (i % S);
+    auto* offset_x = x + offset;
+    auto* offset_y = y + offset;
+
+    AccT val = convert::To<AccT>(__ldg(offset_x));
+    CUDA_2D_KERNEL_LOOP2(j, C) {
+      val = max(val, LDG2(offset_x, j * S));
     }
-    val = BlockReduce<T>(storage).Reduce(val, cub::Max());
+    val = BlockReduce<AccT>(storage).Reduce(val, cub::Max());
     if (threadIdx.x == 0) block_val = val;
     __syncthreads();
 
-    CUDA_2D_KERNEL_LOOP2(j, cols) {
-      const int yi = c + j * inner_dim;
-#if __CUDA_ARCH__ >= 350
-      y[yi] = exp(__ldg(x + yi) - block_val);
-#else
-      y[yi] = exp(x[yi] - block_val);
-#endif
+    CUDA_2D_KERNEL_LOOP2(j, C) {
+      const int k = j * S;
+      offset_y[k] = convert::To<T>(exp(LDG2(offset_x, k) - block_val));
     }
 
-    val = T(0);
-    CUDA_2D_KERNEL_LOOP2(j, cols) {
-      const int yi = c + j * inner_dim;
-      val += y[yi];
+    val = AccT(0);
+    CUDA_2D_KERNEL_LOOP2(j, C) {
+      val += convert::To<AccT>(offset_y[j * S]);
     }
-    val = BlockReduce<T>(storage).Sum(val);
+    val = BlockReduce<AccT>(storage).Sum(val);
     if (threadIdx.x == 0) block_val = val;
     __syncthreads();
 
-    CUDA_2D_KERNEL_LOOP2(j, cols) {
-      const int yi = c + j * inner_dim;
-      y[yi] /= block_val;
+    CUDA_2D_KERNEL_LOOP2(j, C) {
+      const int k = j * S;
+      offset_y[k] = convert::To<T>(convert::To<AccT>(offset_y[k]) / block_val);
     }
   }
 }
 
-template <>
-__global__ void _Softmax<half>(
-    const int rows,
-    const int cols,
-    const int inner_dim,
-    const half lowest,
-    const half* x,
-    half* y) {
-  __shared__ float block_val;
-  __shared__ typename BlockReduce<float>::TempStorage storage;
-  CUDA_2D_KERNEL_LOOP1(i, rows) {
-    const int c = (i / inner_dim) * cols * inner_dim + (i % inner_dim);
-
-    float val = __half2float(lowest);
-    CUDA_2D_KERNEL_LOOP2(j, cols) {
-      const int yi = c + j * inner_dim;
-      val = max(val, __half2float(__ldg(x + yi)));
-    }
-    val = BlockReduce<float>(storage).Reduce(val, cub::Max());
-    if (threadIdx.x == 0) block_val = val;
-    __syncthreads();
-
-    CUDA_2D_KERNEL_LOOP2(j, cols) {
-      const int yi = c + j * inner_dim;
-      y[yi] = __float2half(exp(__half2float(__ldg(x + yi)) - block_val));
-    }
-
-    val = 0.f;
-    CUDA_2D_KERNEL_LOOP2(j, cols) {
-      const int yi = c + j * inner_dim;
-      val += __half2float(y[yi]);
-    }
-    val = BlockReduce<float>(storage).Sum(val);
-    if (threadIdx.x == 0) block_val = val;
-    __syncthreads();
-
-    CUDA_2D_KERNEL_LOOP2(j, cols) {
-      const int yi = c + j * inner_dim;
-      y[yi] = __float2half(__half2float(y[yi]) / block_val);
-    }
-  }
-}
-
-template <typename T>
+template <typename T, typename AccT>
 __global__ void _SoftmaxGrad(
-    const int rows,
-    const int cols,
-    const int inner_dim,
+    const int NxS,
+    const int S,
+    const int C,
     const T* dy,
     const T* y,
     T* dx) {
-  __shared__ T block_val;
-  __shared__ typename BlockReduce<T>::TempStorage storage;
-  CUDA_2D_KERNEL_LOOP1(i, rows) {
-    const int c = (i / inner_dim) * cols * inner_dim + (i % inner_dim);
+  __shared__ AccT block_val;
+  __shared__ typename BlockReduce<AccT>::TempStorage storage;
+  CUDA_2D_KERNEL_LOOP1(i, NxS) {
+    const int offset = (i / S) * C * S + (i % S);
+    auto* offset_dy = dy + offset;
+    auto* offset_y = y + offset;
+    auto* offset_dx = dx + offset;
 
-    T val = T(0);
-    CUDA_2D_KERNEL_LOOP2(j, cols) {
-      const int yi = c + j * inner_dim;
-#if __CUDA_ARCH__ >= 350
-      val += __ldg(dy + yi) * __ldg(y + yi);
-#else
-      val += dy[yi] * y[yi];
-#endif
+    AccT val = AccT(0);
+    CUDA_2D_KERNEL_LOOP2(j, C) {
+      const int k = j * S;
+      val += LDG2(offset_dy, k) * LDG2(offset_y, k);
     }
-    val = BlockReduce<T>(storage).Sum(val);
+    val = BlockReduce<AccT>(storage).Sum(val);
     if (threadIdx.x == 0) block_val = val;
     __syncthreads();
 
-    CUDA_2D_KERNEL_LOOP2(j, cols) {
-      const int yi = c + j * inner_dim;
-#if __CUDA_ARCH__ >= 350
-      dx[yi] = (__ldg(dy + yi) - block_val) * __ldg(y + yi);
-#else
-      dx[yi] = (dy[yi] - block_val) * y[yi];
-#endif
+    CUDA_2D_KERNEL_LOOP2(j, C) {
+      const int k = j * S;
+      offset_dx[k] =
+          convert::To<T>((LDG2(offset_dy, k) - block_val) * LDG2(offset_y, k));
     }
   }
 }
 
-template <>
-__global__ void _SoftmaxGrad<half>(
-    const int rows,
-    const int cols,
-    const int inner_dim,
-    const half* dy,
-    const half* y,
-    half* dx) {
-  __shared__ float block_val;
-  __shared__ typename BlockReduce<float>::TempStorage storage;
-  CUDA_2D_KERNEL_LOOP1(i, rows) {
-    const int c = (i / inner_dim) * cols * inner_dim + (i % inner_dim);
-
-    float val = 0.f;
-    CUDA_2D_KERNEL_LOOP2(j, cols) {
-      const int yi = c + j * inner_dim;
-#if __CUDA_ARCH__ >= 350
-      val += __half2float(__ldg(dy + yi)) * __half2float(__ldg(y + yi));
-#else
-      val += __half2float(dy[yi]) * __half2float(y[yi]);
-#endif
-    }
-    val = BlockReduce<float>(storage).Sum(val);
-    if (threadIdx.x == 0) block_val = val;
-    __syncthreads();
-
-    CUDA_2D_KERNEL_LOOP2(j, cols) {
-      const int yi = c + j * inner_dim;
-#if __CUDA_ARCH__ >= 350
-      dx[yi] = __float2half(
-          (__half2float(__ldg(dy + yi)) - block_val) *
-          __half2float(__ldg(y + yi)));
-#else
-      dx[yi] = __float2half(
-          (__half2float(dy[yi]) - block_val) * __half2float(y[yi]));
-#endif
-    }
-  }
-} // SoftmaxGrad
+#undef LDG2
 
 } // namespace
 
 /* ------------------- Launcher Separator ------------------- */
 
-template <>
-void Softmax<float16, CUDAContext>(
-    const int outer_dim,
-    const int inner_dim,
-    const int axis_dim,
-    const float16* x,
-    float16* y,
-    CUDAContext* ctx) {
-  auto rows = outer_dim * inner_dim, cols = axis_dim;
-  _Softmax<<<CUDA_2D_BLOCKS(rows), CUDA_THREADS, 0, ctx->cuda_stream()>>>(
-      rows,
-      cols,
-      inner_dim,
-      convert::To<half>(std::numeric_limits<float>::lowest()),
-      reinterpret_cast<const half*>(x),
-      reinterpret_cast<half*>(y));
-}
-
-template <>
-void SoftmaxGrad<float16, CUDAContext>(
-    const int outer_dim,
-    const int inner_dim,
-    const int axis_dim,
-    const float16* dy,
-    const float16* y,
-    float16* dx,
-    CUDAContext* ctx) {
-  auto rows = outer_dim * inner_dim, cols = axis_dim;
-  _SoftmaxGrad<<<CUDA_2D_BLOCKS(rows), CUDA_THREADS, 0, ctx->cuda_stream()>>>(
-      rows,
-      cols,
-      inner_dim,
-      reinterpret_cast<const half*>(dy),
-      reinterpret_cast<const half*>(y),
-      reinterpret_cast<half*>(dx));
-}
-
-#define DEFINE_KERNEL_LAUNCHER(T)                                            \
-  template <>                                                                \
-  void Softmax<T, CUDAContext>(                                              \
-      const int outer_dim,                                                   \
-      const int inner_dim,                                                   \
-      const int axis_dim,                                                    \
-      const T* x,                                                            \
-      T* y,                                                                  \
-      CUDAContext* ctx) {                                                    \
-    auto rows = outer_dim * inner_dim, cols = axis_dim;                      \
-    _Softmax<<<CUDA_2D_BLOCKS(rows), CUDA_THREADS, 0, ctx->cuda_stream()>>>( \
-        rows, cols, inner_dim, std::numeric_limits<T>::lowest(), x, y);      \
+#define DEFINE_KERNEL_LAUNCHER(T)                                       \
+  template <>                                                           \
+  void Softmax<T, CUDAContext>(                                         \
+      const int N,                                                      \
+      const int S,                                                      \
+      const int C,                                                      \
+      const T* x,                                                       \
+      T* y,                                                             \
+      CUDAContext* ctx) {                                               \
+    const auto NxS = N * S;                                             \
+    _Softmax<math::ScalarType<T>::type, math::AccmulatorType<T>::type>  \
+        <<<CUDA_2D_BLOCKS(NxS), CUDA_THREADS, 0, ctx->cuda_stream()>>>( \
+            NxS,                                                        \
+            S,                                                          \
+            C,                                                          \
+            reinterpret_cast<const math::ScalarType<T>::type*>(x),      \
+            reinterpret_cast<math::ScalarType<T>::type*>(y));           \
   }
 
-#define DEFINE_GRAD_KERNEL_LAUNCHER(T)                           \
-  template <>                                                    \
-  void SoftmaxGrad<T, CUDAContext>(                              \
-      const int outer_dim,                                       \
-      const int inner_dim,                                       \
-      const int axis_dim,                                        \
-      const T* dy,                                               \
-      const T* y,                                                \
-      T* dx,                                                     \
-      CUDAContext* ctx) {                                        \
-    auto rows = outer_dim * inner_dim, cols = axis_dim;          \
-    _SoftmaxGrad<<<                                              \
-        CUDA_2D_BLOCKS(rows),                                    \
-        CUDA_THREADS,                                            \
-        0,                                                       \
-        ctx->cuda_stream()>>>(rows, cols, inner_dim, dy, y, dx); \
+#define DEFINE_GRAD_KERNEL_LAUNCHER(T)                                     \
+  template <>                                                              \
+  void SoftmaxGrad<T, CUDAContext>(                                        \
+      const int N,                                                         \
+      const int S,                                                         \
+      const int C,                                                         \
+      const T* dy,                                                         \
+      const T* y,                                                          \
+      T* dx,                                                               \
+      CUDAContext* ctx) {                                                  \
+    const auto NxS = N * S;                                                \
+    _SoftmaxGrad<math::ScalarType<T>::type, math::AccmulatorType<T>::type> \
+        <<<CUDA_2D_BLOCKS(NxS), CUDA_THREADS, 0, ctx->cuda_stream()>>>(    \
+            NxS,                                                           \
+            S,                                                             \
+            C,                                                             \
+            reinterpret_cast<const math::ScalarType<T>::type*>(dy),        \
+            reinterpret_cast<const math::ScalarType<T>::type*>(y),         \
+            reinterpret_cast<math::ScalarType<T>::type*>(dx));             \
   }
 
+DEFINE_KERNEL_LAUNCHER(float16);
 DEFINE_KERNEL_LAUNCHER(float);
 DEFINE_KERNEL_LAUNCHER(double);
+DEFINE_GRAD_KERNEL_LAUNCHER(float16);
 DEFINE_GRAD_KERNEL_LAUNCHER(float);
 DEFINE_GRAD_KERNEL_LAUNCHER(double);
 #undef DEFINE_KERNEL_LAUNCHER
 #undef DEFINE_GRAD_KERNEL_LAUNCHER
 
-} // namespace kernel
+} // namespace kernels
 
 } // namespace dragon
 

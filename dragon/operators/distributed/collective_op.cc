@@ -131,12 +131,12 @@ void CollectiveOp<Context>::RunOnDevice() {
   ctx()->FinishDeviceComputation();
   for (int i = 0; i < InputSize(); i++) {
     src_tensor_ = &Input(i);
-    DispatchHelper<NumericalTensorTypes>::Call(this, *src_tensor_);
+    DispatchHelper<dtypes::Numerical>::Call(this, *src_tensor_);
   }
   src_tensor_ = nullptr;
   for (int i = 0; i < InputSize(); i++) {
     dest_tensor_ = &Input(i);
-    DispatchHelper<NumericalTensorTypes>::Call(this, *dest_tensor_);
+    DispatchHelper<dtypes::Numerical>::Call(this, *dest_tensor_);
   }
 }
 

@@ -77,12 +77,13 @@ class SGD(optimizer.Optimizer):
         momentum : float, optional, default=0
             The initial value to :math:`\text{momentum}`.
         nesterov : bool, optional, default=False
-            **True** to switch to **NesterovSGD** optimizer.
+            ``True`` to switch to **NesterovSGD** optimizer.
         name : str, optional
             The optional optimizer name.
 
         """
         super(SGD, self).__init__(name, **kwargs)
+        self._set_hyper('lr', learning_rate)
+        self._set_hyper('momentum', momentum)
         self._op_type = ('Nesterov' if nesterov else 'SGD') + 'Update'
-        self._set_hyper('learning_rate', kwargs.get('lr', learning_rate), 'base_lr')
-        self._set_hyper("momentum", momentum, 'momentum')
+        self._hyper_aliases['learning_rate'] = 'lr'

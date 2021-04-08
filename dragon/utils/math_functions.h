@@ -13,6 +13,7 @@
 #ifndef DRAGON_UTILS_MATH_FUNCTIONS_H_
 #define DRAGON_UTILS_MATH_FUNCTIONS_H_
 
+#include "dragon/utils/math/atomics.h"
 #include "dragon/utils/math/blas.h"
 #include "dragon/utils/math/broadcast.h"
 #include "dragon/utils/math/elementwise.h"

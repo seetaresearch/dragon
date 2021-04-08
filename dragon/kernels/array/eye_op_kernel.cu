@@ -6,22 +6,24 @@
 
 namespace dragon {
 
-namespace kernel {
+namespace kernels {
 
 namespace {
 
-template <typename T>
-__global__ void _SetEye(const int n, const int m, const int k, T* y) {
-  CUDA_1D_KERNEL_LOOP(i, n) {
-    y[i * m + k + i] = T(1);
-  }
-}
-
-template <>
-__global__ void _SetEye<half>(const int n, const int m, const int k, half* y) {
-  const half kOne = __float2half(1.f);
-  CUDA_1D_KERNEL_LOOP(i, n) {
-    y[i * m + k + i] = kOne;
+template <typename T, bool kUpper>
+__global__ void
+_SetEye(const int nthreads, const int M, const int N, const int k, T* y) {
+  CUDA_1D_KERNEL_LOOP(index, nthreads) {
+    const int i = index % M;
+    if (kUpper) {
+      const int j = i + k;
+      y[index * N + min(j, N - 1)] =
+          j < N ? convert::To<T>(1.f) : convert::To<T>(0.f);
+    } else {
+      const int j = i - k;
+      y[index * N + max(j, 0)] =
+          j < 0 ? convert::To<T>(0.f) : convert::To<T>(1.f);
+    }
   }
 }
 
@@ -29,55 +31,39 @@ __global__ void _SetEye<half>(const int n, const int m, const int k, half* y) {
 
 /* ------------------- Launcher Separator ------------------- */
 
-template <>
-void Eye<float16, CUDAContext>(
-    const int n,
-    const int m,
-    const int k,
-    float16* y,
-    CUDAContext* ctx) {
-  math::Set(n * m, convert::To<float16>(0.f), y, ctx);
-  if (k > 0) {
-    if (m - k > 0) {
-      _SetEye<<<CUDA_BLOCKS(m - k), CUDA_THREADS, 0, ctx->cuda_stream()>>>(
-          m - k, m, k, reinterpret_cast<half*>(y));
-    }
-  } else {
-    if (n + k > 0) {
-      _SetEye<<<CUDA_BLOCKS(n + k), CUDA_THREADS, 0, ctx->cuda_stream()>>>(
-          n + k, m, 0, reinterpret_cast<half*>(y - k * m));
-    }
-  }
-}
-
-#define DEFINE_KERNEL_LAUNCHER(T)                                             \
-  template <>                                                                 \
-  void Eye<T, CUDAContext>(                                                   \
-      const int n, const int m, const int k, T* y, CUDAContext* ctx) {        \
-    math::Set(n* m, T(0), y, ctx);                                            \
-    if (k > 0) {                                                              \
-      if (m - k > 0) {                                                        \
-        _SetEye<<<CUDA_BLOCKS(m - k), CUDA_THREADS, 0, ctx->cuda_stream()>>>( \
-            m - k, m, k, y);                                                  \
-      }                                                                       \
-    } else {                                                                  \
-      if (n + k > 0) {                                                        \
-        _SetEye<<<CUDA_BLOCKS(n + k), CUDA_THREADS, 0, ctx->cuda_stream()>>>( \
-            n + k, m, 0, y - k * m);                                          \
-      }                                                                       \
-    }                                                                         \
+#define DEFINE_KERNEL_LAUNCHER(T)                                           \
+  template <>                                                               \
+  void SetEye<T, CUDAContext>(                                              \
+      const int batch_size,                                                 \
+      const int M,                                                          \
+      const int N,                                                          \
+      const int k,                                                          \
+      T* y,                                                                 \
+      CUDAContext* ctx) {                                                   \
+    const auto nthreads = batch_size * M;                                   \
+    math::Set(nthreads* N, convert::To<T>(0.f), y, ctx);                    \
+    if (k > 0) {                                                            \
+      _SetEye<T, true>                                                      \
+          <<<CUDA_BLOCKS(nthreads), CUDA_THREADS, 0, ctx->cuda_stream()>>>( \
+              nthreads, M, N, k, y);                                        \
+    } else {                                                                \
+      _SetEye<T, false>                                                     \
+          <<<CUDA_BLOCKS(nthreads), CUDA_THREADS, 0, ctx->cuda_stream()>>>( \
+              nthreads, M, N, -k, y);                                       \
+    }                                                                       \
   }
 
 DEFINE_KERNEL_LAUNCHER(bool);
-DEFINE_KERNEL_LAUNCHER(int8_t);
 DEFINE_KERNEL_LAUNCHER(uint8_t);
+DEFINE_KERNEL_LAUNCHER(int8_t);
 DEFINE_KERNEL_LAUNCHER(int);
 DEFINE_KERNEL_LAUNCHER(int64_t);
+DEFINE_KERNEL_LAUNCHER(float16);
 DEFINE_KERNEL_LAUNCHER(float);
 DEFINE_KERNEL_LAUNCHER(double);
 #undef DEFINE_KERNEL_LAUNCHER
 
-} // namespace kernel
+} // namespace kernels
 
 } // namespace dragon
 

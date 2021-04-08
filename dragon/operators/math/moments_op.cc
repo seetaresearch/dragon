@@ -45,7 +45,7 @@ void MomentsOp<Context>::DoRunWithType() {
         Y2->Reshape(Y_shape)->template mutable_data<OutputT, Context>(),
         ctx());
   } else {
-    kernel::Moments(
+    kernels::Moments(
         X_dims.size(),
         X_dims.data(),
         reduce_axes.size(),
@@ -59,7 +59,7 @@ void MomentsOp<Context>::DoRunWithType() {
 
 template <class Context>
 void MomentsOp<Context>::RunOnDevice() {
-  DispatchHelper<NumericalTensorTypes>::Call(this, Input(0));
+  DispatchHelper<dtypes::Numerical>::Call(this, Input(0));
 }
 
 DEPLOY_CPU_OPERATOR(Moments);

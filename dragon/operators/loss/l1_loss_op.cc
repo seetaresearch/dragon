@@ -22,7 +22,7 @@ void L1LossOp<Context>::DoRunWithType() {
 
   // Compute the error of inputs
   if (InputSize() > 1) {
-    STORE_INPUT_SPEC(1);
+    SET_INPUT_SPEC(1);
     math::Sub(
         X.count(),
         X.template data<T, Context>(),
@@ -50,7 +50,7 @@ void L1LossOp<Context>::DoRunWithType() {
     } else if (reduction_ == "MEAN") {
       normalizer *= X.count();
     }
-    kernel::ReduceLoss(
+    kernels::ReduceLoss(
         X.count(),
         0,
         normalizer,
@@ -63,7 +63,7 @@ void L1LossOp<Context>::DoRunWithType() {
 
 template <class Context>
 void L1LossOp<Context>::RunOnDevice() {
-  DispatchHelper<FloatingTensorTypes>::Call(this, Input(0));
+  DispatchHelper<dtypes::Floating>::Call(this, Input(0));
 }
 
 template <class Context>
@@ -99,7 +99,7 @@ void L1LossGradientOp<Context>::DoRunWithType() {
     } else if (reduction_ == "MEAN") {
       normalizer *= dX->count();
     }
-    kernel::ReduceLossGrad(
+    kernels::ReduceLossGrad(
         dX->count(), 0, normalizer, dy, (T*)nullptr, dx, ctx());
   }
 
@@ -116,7 +116,7 @@ void L1LossGradientOp<Context>::DoRunWithType() {
 template <class Context>
 void L1LossGradientOp<Context>::RunOnDevice() {
   Output(0)->ReshapeLike(Input(0));
-  DispatchHelper<FloatingTensorTypes>::Call(this, Input(0));
+  DispatchHelper<dtypes::Floating>::Call(this, Input(0));
 }
 
 DEPLOY_CPU_OPERATOR(L1Loss);

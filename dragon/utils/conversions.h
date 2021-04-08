@@ -180,6 +180,11 @@ CONVERSIONS_DECL half2 To<half2, float>(float val) {
 #endif
 }
 
+template <>
+CONVERSIONS_DECL half To<half, double>(double val) {
+  return To<half>(static_cast<float>(val));
+}
+
 #endif // USE_CUDA
 
 } // namespace convert

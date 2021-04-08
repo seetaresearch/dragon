@@ -55,6 +55,19 @@ else:
         return unbound.im_func
 
 
+def with_metaclass(meta, *bases):
+    class MetaClass(meta):
+
+        def __new__(cls, name, this_bases, d):
+            return meta(name, bases, d)
+
+        @classmethod
+        def __prepare__(cls, name, this_bases):
+            return meta.__prepare__(name, bases)
+
+    return type.__new__(MetaClass, 'TemporaryClass', (), {})
+
+
 def _import_module(name):
     """Import module, returning the module after the last dot."""
     __import__(name)
@@ -176,20 +189,12 @@ class _SixMetaPathImporter(object):
 
 
 _importer = _SixMetaPathImporter(__name__)
-
-
-_moved_attributes = [
-    MovedModule('pickle', 'cPickle', 'pickle'),
-]
-
-
+_moved_attributes = [MovedModule('pickle', 'cPickle', 'pickle')]
 for attr in _moved_attributes:
     setattr(_MovedItems, attr.name, attr)
     if isinstance(attr, MovedModule):
         _importer._add_module(attr, "moves." + attr.name)
 del attr
-
-
 _MovedItems._moved_attributes = _moved_attributes
 moves = _MovedItems(__name__ + '.moves')
 _importer._add_module(moves, 'moves')

@@ -8,10 +8,8 @@ template <class Context>
 template <typename T>
 void MulOp<Context>::DoRunWithType() {
   auto &A = Input(0), &B = Input(1);
-
-  // Store for the gradient calculation
-  STORE_INPUT_SPEC(0);
-  STORE_INPUT_SPEC(1);
+  SET_INPUT_SPEC(0);
+  SET_INPUT_SPEC(1);
 
   vec64_t Y_dims(A.dims());
   if (A.dims() == B.dims()) {
@@ -40,14 +38,14 @@ void MulOp<Context>::DoRunWithType() {
 
 template <class Context>
 void MulOp<Context>::RunOnDevice() {
-  DispatchHelper<FullTensorTypes>::Call(this, Input(0));
+  DispatchHelper<dtypes::Numerical>::Call(this, Input(0));
 }
 
 template <class Context>
 template <typename T>
 void MulGradientOp<Context>::DoRunWithType() {
   auto &A = Input(0), &B = Input(1), &dY = Input(2);
-  auto &A_ref = RESTORE_INPUT_SPEC(0), &B_ref = RESTORE_INPUT_SPEC(1);
+  auto &A_ref = INPUT_SPEC(0), &B_ref = INPUT_SPEC(1);
   auto *dA = Output(0), *dB = Output(1);
 
   vec32_t A_broadcast_axes, B_broadcast_axes;
@@ -172,7 +170,7 @@ void MulGradientOp<Context>::DoRunWithType() {
 
 template <class Context>
 void MulGradientOp<Context>::RunOnDevice() {
-  DispatchHelper<FloatingTensorTypes>::Call(this, Input(2));
+  DispatchHelper<dtypes::Floating>::Call(this, Input(2));
 }
 
 DEPLOY_CPU_OPERATOR(Mul);

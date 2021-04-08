@@ -33,19 +33,12 @@ class Adam(optimizer.Optimizer):
 
     """
 
-    def __init__(
-        self,
-        base_lr=0.001,
-        beta1=0.9,
-        beta2=0.999,
-        eps=1e-8,
-        **kwargs
-    ):
+    def __init__(self, lr=0.001, beta1=0.9, beta2=0.999, eps=1e-8, **kwargs):
         r"""Create an ``Adam`` updater.
 
         Parameters
         ----------
-        base_lr : float, optional, default=0.001
+        lr : float, optional, default=0.001
             The initial value to :math:`\text{lr}`.
         beta1 : float, optional, default=0.9
             The initial value to :math:`\beta_{1}`.
@@ -56,9 +49,7 @@ class Adam(optimizer.Optimizer):
 
         """
         super(Adam, self).__init__(**kwargs)
-        self._init_set_defaults({
-            'base_lr': base_lr,
-            'beta1': beta1,
-            'beta2': beta2,
-            'eps': eps,
-        })
+        self._set_hyper('lr', lr)
+        self._set_hyper('beta1', beta1)
+        self._set_hyper('beta2', beta2)
+        self._set_hyper('eps', eps)

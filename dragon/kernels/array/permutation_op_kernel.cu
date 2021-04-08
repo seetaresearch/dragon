@@ -7,54 +7,56 @@
 
 namespace dragon {
 
-namespace kernel {
+namespace kernels {
 
 namespace {
 
-__global__ void _Sequence(const int nthreads, half* y) {
-  CUDA_1D_KERNEL_LOOP(i, nthreads) {
+__global__ void _Sequence(const int N, half* y) {
+  CUDA_1D_KERNEL_LOOP(i, N) {
     y[i] = __float2half(float(i));
   }
 }
 
 } // namespace
 
+/* ------------------- Launcher Separator ------------------- */
+
 template <>
 void Permutation<float16, CUDAContext>(
-    const int count,
+    const int N,
     float16* y,
     uint32_t* r,
     CUDAContext* ctx) {
-  math::Random(count, r, ctx);
+  math::Random(N, r, ctx);
   auto values = thrust::device_ptr<half>(reinterpret_cast<half*>(y));
   auto keys = thrust::device_ptr<uint32_t>(r);
   auto policy = thrust::cuda::par.on(ctx->cuda_stream());
-  _Sequence<<<CUDA_BLOCKS(count), CUDA_THREADS, 0, ctx->cuda_stream()>>>(
-      count, reinterpret_cast<half*>(y));
-  thrust::sort_by_key(policy, keys, keys + count, values);
+  _Sequence<<<CUDA_BLOCKS(N), CUDA_THREADS, 0, ctx->cuda_stream()>>>(
+      N, reinterpret_cast<half*>(y));
+  thrust::sort_by_key(policy, keys, keys + N, values);
 }
 
-#define DEFINE_KERNEL_LAUNCHER(T)                             \
-  template <>                                                 \
-  void Permutation<T, CUDAContext>(                           \
-      const int count, T* y, uint32_t* r, CUDAContext* ctx) { \
-    math::Random(count, r, ctx);                              \
-    auto values = thrust::device_ptr<T>(y);                   \
-    auto keys = thrust::device_ptr<uint32_t>(r);              \
-    auto policy = thrust::cuda::par.on(ctx->cuda_stream());   \
-    thrust::sequence(policy, values, values + count);         \
-    thrust::sort_by_key(policy, keys, keys + count, values);  \
+#define DEFINE_KERNEL_LAUNCHER(T)                           \
+  template <>                                               \
+  void Permutation<T, CUDAContext>(                         \
+      const int N, T* y, uint32_t* r, CUDAContext* ctx) {   \
+    math::Random(N, r, ctx);                                \
+    auto values = thrust::device_ptr<T>(y);                 \
+    auto keys = thrust::device_ptr<uint32_t>(r);            \
+    auto policy = thrust::cuda::par.on(ctx->cuda_stream()); \
+    thrust::sequence(policy, values, values + N);           \
+    thrust::sort_by_key(policy, keys, keys + N, values);    \
   }
 
-DEFINE_KERNEL_LAUNCHER(int8_t);
 DEFINE_KERNEL_LAUNCHER(uint8_t);
+DEFINE_KERNEL_LAUNCHER(int8_t);
 DEFINE_KERNEL_LAUNCHER(int);
 DEFINE_KERNEL_LAUNCHER(int64_t);
 DEFINE_KERNEL_LAUNCHER(float);
 DEFINE_KERNEL_LAUNCHER(double);
 #undef DEFINE_KERNEL_LAUNCHER
 
-} // namespace kernel
+} // namespace kernels
 
 } // namespace dragon
 

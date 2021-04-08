@@ -6,9 +6,6 @@ dragon.autograph
   Functions
   ---------
 
-  `set_execution(...) <autograph/set_execution.html>`_
-  : Set the execution mode for graph ir.
-
   `set_optimization(...) <autograph/set_optimization.html>`_
   : Set the optimization for graph ir.
 
@@ -21,7 +18,6 @@ dragon.autograph
 .. toctree::
   :hidden:
 
-  autograph/set_execution
   autograph/set_optimization
   autograph/set_scheduler
   autograph/set_verbosity

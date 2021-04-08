@@ -59,15 +59,15 @@ dragon.nn
   : Rearrange depth data into spatial blocks.
 
   `dropout(...) <nn/dropout.html>`_
-  : Set the elements of the input to zero randomly.
+  : Set the elements of input to zero randomly.
   `[Srivastava et.al, 2014] <http://jmlr.org/papers/v15/srivastava14a.html>`_.
 
-  `drop_block2d(...) <nn/drop_block2d.html>`_
-  : Set the spatial blocks over input to zero randomly.
+  `drop_block(...) <nn/drop_block.html>`_
+  : Set the blocks over input to zero randomly.
   `[Ghiasi et.al, 2018] <https://arxiv.org/abs/1810.12890>`_.
 
   `drop_path(...) <nn/drop_path.html>`_
-  : Set the examples over the input to zero randomly.
+  : Set the examples over input to zero randomly.
   `[Larsson et.al, 2016] <https://arxiv.org/abs/1605.07648>`_.
 
   `elu(...) <nn/elu.html>`_
@@ -102,6 +102,9 @@ dragon.nn
 
   `log_softmax(...) <nn/log_softmax.html>`_
   : Compute the composite of logarithm and softmax.
+
+  `moments(...) <nn/moments.html>`_
+  : Compute the mean and variance of input along the given axis.
 
   `prelu(...) <nn/prelu.html>`_
   : Apply the parametric rectified linear unit.
@@ -161,7 +164,7 @@ dragon.nn
   nn/depthwise_conv2d
   nn/depth_to_space
   nn/dropout
-  nn/drop_block2d
+  nn/drop_block
   nn/drop_path
   nn/elu
   nn/group_norm
@@ -172,6 +175,7 @@ dragon.nn
   nn/leaky_relu
   nn/local_response_norm
   nn/log_softmax
+  nn/moments
   nn/pool
   nn/pool1d
   nn/pool2d

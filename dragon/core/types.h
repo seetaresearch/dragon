@@ -30,17 +30,13 @@ typedef std::vector<int> vec32_t;
 typedef std::vector<int64_t> vec64_t;
 
 #ifdef _MSC_VER
-
 typedef struct __declspec(align(2)) {
   unsigned short x;
 } float16;
-
 #else
-
 typedef struct {
   unsigned short x;
 } __attribute__((aligned(2))) float16;
-
 #endif
 
 /*! \brief Order in which the values are laid out in memory */
@@ -55,15 +51,42 @@ struct SimpleArray {
   T data[N];
 };
 
-namespace types {
+namespace dtypes {
+
+/*! \brief Base class of types */
+template <typename... Types>
+struct TypesBase {};
+
+/*! \brief Generic types */
+using Generic =
+    TypesBase<bool, uint8_t, int8_t, int, int64_t, float16, float, double>;
+
+/*! \brief Numerical types */
+using Numerical =
+    TypesBase<uint8_t, int8_t, int, int64_t, float16, float, double>;
+
+/*! \brief Unsigned types */
+using Unsigned = TypesBase<uint8_t>;
+
+/*! \brief Signed types */
+using Signed = TypesBase<int8_t, int, int64_t, float16, float, double>;
+
+/*! \brief Bitwise types */
+using Bitwise = TypesBase<bool, uint8_t, int8_t, int, int64_t>;
+
+/*! \brief Integral types */
+using Integral = TypesBase<uint8_t, int8_t, int, int64_t>;
+
+/*! \brief Floating types */
+using Floating = TypesBase<float16, float, double>;
 
 /*! \brief Convert the type string to meta */
 inline const TypeMeta& to_meta(const std::string& type) {
   static TypeMeta unknown_type;
   static std::unordered_map<std::string, TypeMeta> m{
       {"bool", TypeMeta::Make<bool>()},
-      {"int8", TypeMeta::Make<int8_t>()},
       {"uint8", TypeMeta::Make<uint8_t>()},
+      {"int8", TypeMeta::Make<int8_t>()},
       {"int32", TypeMeta::Make<int>()},
       {"int64", TypeMeta::Make<int64_t>()},
       {"float16", TypeMeta::Make<float16>()},
@@ -76,12 +99,12 @@ inline const TypeMeta& to_meta(const std::string& type) {
 }
 
 /*! \brief Convert the type meta to string */
-inline const std::string to_string(const TypeMeta& type) {
+inline const std::string& to_string(const TypeMeta& type) {
   static std::string unknown_type = "unknown";
   static std::unordered_map<TypeId, std::string> m{
       {TypeMeta::Id<bool>(), "bool"},
-      {TypeMeta::Id<int8_t>(), "int8"},
       {TypeMeta::Id<uint8_t>(), "uint8"},
+      {TypeMeta::Id<int8_t>(), "int8"},
       {TypeMeta::Id<int>(), "int32"},
       {TypeMeta::Id<int64_t>(), "int64"},
       {TypeMeta::Id<float16>(), "float16"},
@@ -95,11 +118,11 @@ inline const std::string to_string(const TypeMeta& type) {
 
 /*! \brief Convert the type argument to string */
 template <typename T>
-inline const std::string to_string() {
+inline const std::string& to_string() {
   return to_string(TypeMeta::Make<T>());
 }
 
-} // namespace types
+} // namespace dtypes
 
 } // namespace dragon
 

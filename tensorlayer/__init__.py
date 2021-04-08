@@ -20,9 +20,9 @@ import sys as _sys
 
 # Modules
 from dragon.vm.tensorlayer._api import activations
+from dragon.vm.tensorlayer._api import cost
 from dragon.vm.tensorlayer._api import initializers
 from dragon.vm.tensorlayer._api import layers
-from dragon.vm.tensorlayer._api import losses
 from dragon.vm.tensorlayer._api import models
 
 # Classes

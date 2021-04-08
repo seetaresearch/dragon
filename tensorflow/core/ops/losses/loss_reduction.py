@@ -19,7 +19,7 @@ from __future__ import print_function
 
 
 class Reduction(object):
-    """The reduction for losses."""
+    """The reduction for cost."""
 
     NONE = 'none'
     SUM = 'sum'

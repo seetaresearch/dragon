@@ -2,6 +2,7 @@
 #include "dragon/utils/device/common_eigen.h"
 #include "dragon/utils/math/blas.h"
 #include "dragon/utils/math/elementwise.h"
+#include "dragon/utils/math/functional.h"
 #include "dragon/utils/math/utils.h"
 
 namespace dragon {
@@ -9,6 +10,67 @@ namespace dragon {
 namespace math {
 
 namespace {
+
+template <typename InputT, typename OutputT, class Functor, bool BroadcastA>
+void _RowwiseBinaryFunc(
+    const int rows,
+    const int cols,
+    const Functor op,
+    const InputT* a,
+    const InputT* b,
+    OutputT* y) {
+  for (int i = 0; i < rows; ++i) {
+    for (int j = 0; j < cols; ++j) {
+      const int yi = i * cols + j;
+      const int ai = BroadcastA ? j : yi;
+      const int bi = BroadcastA ? yi : j;
+      y[yi] = op(a[ai], b[bi]);
+    }
+  }
+}
+
+template <typename InputT, typename OutputT, class Functor, bool BroadcastA>
+void _ColwiseBinaryFunc(
+    const int rows,
+    const int cols,
+    const Functor op,
+    const InputT* a,
+    const InputT* b,
+    OutputT* y) {
+  for (int i = 0; i < rows; ++i) {
+    for (int j = 0; j < cols; ++j) {
+      const int yi = i * cols + j;
+      const int ai = BroadcastA ? i : yi;
+      const int bi = BroadcastA ? yi : i;
+      y[yi] = op(a[ai], b[bi]);
+    }
+  }
+}
+
+template <typename InputT, typename OutputT, class Functor>
+void _BroadcastBinaryFunc(
+    const int num_dims,
+    const int64_t* a_strides,
+    const int64_t* b_strides,
+    const int64_t* y_dims,
+    const Functor op,
+    const InputT* a,
+    const InputT* b,
+    OutputT* y) {
+  const auto count =
+      std::accumulate(y_dims, y_dims + num_dims, 1, std::multiplies<int64_t>());
+  vec64_t index(num_dims, 0);
+  int64_t ai, bi;
+  for (int yi = 0; yi < count; ++yi) {
+    ai = bi = 0;
+    for (int d = num_dims - 1; d >= 0; --d) {
+      ai += index[d] * a_strides[d];
+      bi += index[d] * b_strides[d];
+    }
+    y[yi] = op(a[ai], b[bi]);
+    math::utils::IncreaseIndexInDims(num_dims, y_dims, index.data());
+  }
+}
 
 #define DECLARE_ROWWISE_COLWISE_BINARY_FUNC(name, OutputT)                 \
   template <typename T, bool BroadcastA>                                   \
@@ -33,29 +95,29 @@ DECLARE_ROWWISE_COLWISE_BINARY_FUNC(Greater, bool);
 DECLARE_ROWWISE_COLWISE_BINARY_FUNC(GreaterEqual, bool);
 #undef DECLARE_ROWWISE_COLWISE_BINARY_FUNC
 
-#define DEFINE_BROADCAST_1ST_FUNC(name, T, expr)                      \
+#define DEFINE_BROADCAST_1ST_FUNC(name, T, Expr)                      \
   template <>                                                         \
   void _Rowwise##name<T, true>(                                       \
       const int rows, const int cols, const T* a, const T* b, T* y) { \
     if (b == y) {                                                     \
-      EigenArrayMap<T>(y, cols, rows).colwise() expr## =              \
+      EigenArrayMap<T>(y, cols, rows).colwise() Expr## =              \
           ConstEigenVectorArrayMap<T>(a, cols);                       \
     } else {                                                          \
       EigenArrayMap<T>(y, cols, rows) =                               \
           ConstEigenArrayMap<T>(b, cols, rows)                        \
-              .colwise() expr ConstEigenVectorArrayMap<T>(a, cols);   \
+              .colwise() Expr ConstEigenVectorArrayMap<T>(a, cols);   \
     }                                                                 \
   }                                                                   \
   template <>                                                         \
   void _Colwise##name<T, true>(                                       \
       const int rows, const int cols, const T* a, const T* b, T* y) { \
     if (b == y) {                                                     \
-      EigenArrayMap<T>(y, cols, rows).rowwise() expr## =              \
+      EigenArrayMap<T>(y, cols, rows).rowwise() Expr## =              \
           ConstEigenVectorArrayMap<T>(a, rows).transpose();           \
     } else {                                                          \
       EigenArrayMap<T>(y, cols, rows) =                               \
           ConstEigenArrayMap<T>(b, cols, rows)                        \
-              .rowwise() expr ConstEigenVectorArrayMap<T>(a, rows)    \
+              .rowwise() Expr ConstEigenVectorArrayMap<T>(a, rows)    \
               .transpose();                                           \
     }                                                                 \
   }
@@ -74,7 +136,7 @@ DEFINE_BROADCAST_1ST_FUNC(Mul, float, *);
 DEFINE_BROADCAST_1ST_FUNC(Mul, double, *);
 #undef DEFINE_BROADCAST_1ST_FUNC
 
-#define DEFINE_BROADCAST_1ST_FUNC(name, T, expr)                      \
+#define DEFINE_BROADCAST_1ST_FUNC(name, T, Expr)                      \
   template <>                                                         \
   void _Rowwise##name<T, true>(                                       \
       const int rows, const int cols, const T* a, const T* b, T* y) { \
@@ -110,7 +172,7 @@ DEFINE_BROADCAST_1ST_FUNC(Sub, float, -);
 DEFINE_BROADCAST_1ST_FUNC(Sub, double, -);
 #undef DEFINE_BROADCAST_1ST_FUNC
 
-#define DEFINE_BROADCAST_1ST_FUNC(name, T, expr)                      \
+#define DEFINE_BROADCAST_1ST_FUNC(name, T, Expr)                      \
   template <>                                                         \
   void _Rowwise##name<T, true>(                                       \
       const int rows, const int cols, const T* a, const T* b, T* y) { \
@@ -148,29 +210,29 @@ DEFINE_BROADCAST_1ST_FUNC(Div, float, /);
 DEFINE_BROADCAST_1ST_FUNC(Div, double, /);
 #undef DEFINE_BROADCAST_1ST_FUNC
 
-#define DEFINE_BROADCAST_2ND_FUNC(name, T, expr)                      \
+#define DEFINE_BROADCAST_2ND_FUNC(name, T, Expr)                      \
   template <>                                                         \
   void _Rowwise##name<T, false>(                                      \
       const int rows, const int cols, const T* a, const T* b, T* y) { \
     if (a == y) {                                                     \
-      EigenArrayMap<T>(y, cols, rows).colwise() expr## =              \
+      EigenArrayMap<T>(y, cols, rows).colwise() Expr## =              \
           ConstEigenVectorArrayMap<T>(b, cols);                       \
     } else {                                                          \
       EigenArrayMap<T>(y, cols, rows) =                               \
           ConstEigenArrayMap<T>(a, cols, rows)                        \
-              .colwise() expr ConstEigenVectorArrayMap<T>(b, cols);   \
+              .colwise() Expr ConstEigenVectorArrayMap<T>(b, cols);   \
     }                                                                 \
   }                                                                   \
   template <>                                                         \
   void _Colwise##name<T, false>(                                      \
       const int rows, const int cols, const T* a, const T* b, T* y) { \
     if (a == y) {                                                     \
-      EigenArrayMap<T>(y, cols, rows).rowwise() expr## =              \
+      EigenArrayMap<T>(y, cols, rows).rowwise() Expr## =              \
           ConstEigenVectorArrayMap<T>(b, rows).transpose();           \
     } else {                                                          \
       EigenArrayMap<T>(y, cols, rows) =                               \
           ConstEigenArrayMap<T>(a, cols, rows)                        \
-              .rowwise() expr ConstEigenVectorArrayMap<T>(b, rows)    \
+              .rowwise() Expr ConstEigenVectorArrayMap<T>(b, rows)    \
               .transpose();                                           \
     }                                                                 \
   }
@@ -201,7 +263,7 @@ DEFINE_BROADCAST_2ND_FUNC(Div, float, /);
 DEFINE_BROADCAST_2ND_FUNC(Div, double, /);
 #undef DEFINE_BROADCAST_2ND_FUNC
 
-#define DEFINE_ROWWISE_COLWISE_BIANRY_FUNC(name, InputT, OutputT, expr)      \
+#define DEFINE_ROWWISE_COLWISE_BIANRY_FUNC(name, InputT, OutputT, Expr)      \
   template <>                                                                \
   void _Rowwise##name<InputT, true>(                                         \
       const int rows,                                                        \
@@ -211,7 +273,7 @@ DEFINE_BROADCAST_2ND_FUNC(Div, double, /);
       OutputT* y) {                                                          \
     EigenArrayMap<OutputT>(y, cols, rows) =                                  \
         ConstEigenVectorArrayMap<InputT>(a, cols).rowwise().replicate(rows)  \
-            expr ConstEigenArrayMap<InputT>(b, cols, rows);                  \
+            Expr ConstEigenArrayMap<InputT>(b, cols, rows);                  \
   }                                                                          \
   template <>                                                                \
   void _Colwise##name<InputT, true>(                                         \
@@ -222,7 +284,7 @@ DEFINE_BROADCAST_2ND_FUNC(Div, double, /);
       OutputT* y) {                                                          \
     EigenArrayMap<OutputT>(y, cols, rows) =                                  \
         ConstEigenVectorArrayMap2<InputT>(a, rows).colwise().replicate(cols) \
-            expr ConstEigenArrayMap<InputT>(b, cols, rows);                  \
+            Expr ConstEigenArrayMap<InputT>(b, cols, rows);                  \
   }                                                                          \
   template <>                                                                \
   void _Rowwise##name<InputT, false>(                                        \
@@ -233,7 +295,7 @@ DEFINE_BROADCAST_2ND_FUNC(Div, double, /);
       OutputT* y) {                                                          \
     EigenArrayMap<OutputT>(y, cols, rows) =                                  \
         ConstEigenArrayMap<InputT>(a, cols, rows)                            \
-            expr ConstEigenVectorArrayMap<InputT>(b, cols)                   \
+            Expr ConstEigenVectorArrayMap<InputT>(b, cols)                   \
                 .rowwise()                                                   \
                 .replicate(rows);                                            \
   }                                                                          \
@@ -246,62 +308,68 @@ DEFINE_BROADCAST_2ND_FUNC(Div, double, /);
       OutputT* y) {                                                          \
     EigenArrayMap<OutputT>(y, cols, rows) =                                  \
         ConstEigenArrayMap<InputT>(a, cols, rows)                            \
-            expr ConstEigenVectorArrayMap2<InputT>(b, rows)                  \
+            Expr ConstEigenVectorArrayMap2<InputT>(b, rows)                  \
                 .colwise()                                                   \
                 .replicate(cols);                                            \
   }
 
-DEFINE_ROWWISE_COLWISE_BIANRY_FUNC(Equal, int8_t, bool, ==);
+DEFINE_ROWWISE_COLWISE_BIANRY_FUNC(Equal, bool, bool, ==);
 DEFINE_ROWWISE_COLWISE_BIANRY_FUNC(Equal, uint8_t, bool, ==);
+DEFINE_ROWWISE_COLWISE_BIANRY_FUNC(Equal, int8_t, bool, ==);
 DEFINE_ROWWISE_COLWISE_BIANRY_FUNC(Equal, int, bool, ==);
 DEFINE_ROWWISE_COLWISE_BIANRY_FUNC(Equal, int64_t, bool, ==);
 DEFINE_ROWWISE_COLWISE_BIANRY_FUNC(Equal, float, bool, ==);
 DEFINE_ROWWISE_COLWISE_BIANRY_FUNC(Equal, double, bool, ==);
-DEFINE_ROWWISE_COLWISE_BIANRY_FUNC(NotEqual, int8_t, bool, !=);
+DEFINE_ROWWISE_COLWISE_BIANRY_FUNC(NotEqual, bool, bool, !=);
 DEFINE_ROWWISE_COLWISE_BIANRY_FUNC(NotEqual, uint8_t, bool, !=);
+DEFINE_ROWWISE_COLWISE_BIANRY_FUNC(NotEqual, int8_t, bool, !=);
 DEFINE_ROWWISE_COLWISE_BIANRY_FUNC(NotEqual, int, bool, !=);
 DEFINE_ROWWISE_COLWISE_BIANRY_FUNC(NotEqual, int64_t, bool, !=);
 DEFINE_ROWWISE_COLWISE_BIANRY_FUNC(NotEqual, float, bool, !=);
 DEFINE_ROWWISE_COLWISE_BIANRY_FUNC(NotEqual, double, bool, !=);
-DEFINE_ROWWISE_COLWISE_BIANRY_FUNC(Less, int8_t, bool, <);
+DEFINE_ROWWISE_COLWISE_BIANRY_FUNC(Less, bool, bool, <);
 DEFINE_ROWWISE_COLWISE_BIANRY_FUNC(Less, uint8_t, bool, <);
+DEFINE_ROWWISE_COLWISE_BIANRY_FUNC(Less, int8_t, bool, <);
 DEFINE_ROWWISE_COLWISE_BIANRY_FUNC(Less, int, bool, <);
 DEFINE_ROWWISE_COLWISE_BIANRY_FUNC(Less, int64_t, bool, <);
 DEFINE_ROWWISE_COLWISE_BIANRY_FUNC(Less, float, bool, <);
 DEFINE_ROWWISE_COLWISE_BIANRY_FUNC(Less, double, bool, <);
-DEFINE_ROWWISE_COLWISE_BIANRY_FUNC(LessEqual, int8_t, bool, <=);
+DEFINE_ROWWISE_COLWISE_BIANRY_FUNC(LessEqual, bool, bool, <=);
 DEFINE_ROWWISE_COLWISE_BIANRY_FUNC(LessEqual, uint8_t, bool, <=);
+DEFINE_ROWWISE_COLWISE_BIANRY_FUNC(LessEqual, int8_t, bool, <=);
 DEFINE_ROWWISE_COLWISE_BIANRY_FUNC(LessEqual, int, bool, <=);
 DEFINE_ROWWISE_COLWISE_BIANRY_FUNC(LessEqual, int64_t, bool, <=);
 DEFINE_ROWWISE_COLWISE_BIANRY_FUNC(LessEqual, float, bool, <=);
 DEFINE_ROWWISE_COLWISE_BIANRY_FUNC(LessEqual, double, bool, <=);
-DEFINE_ROWWISE_COLWISE_BIANRY_FUNC(Greater, int8_t, bool, >);
+DEFINE_ROWWISE_COLWISE_BIANRY_FUNC(Greater, bool, bool, >);
 DEFINE_ROWWISE_COLWISE_BIANRY_FUNC(Greater, uint8_t, bool, >);
+DEFINE_ROWWISE_COLWISE_BIANRY_FUNC(Greater, int8_t, bool, >);
 DEFINE_ROWWISE_COLWISE_BIANRY_FUNC(Greater, int, bool, >);
 DEFINE_ROWWISE_COLWISE_BIANRY_FUNC(Greater, int64_t, bool, >);
 DEFINE_ROWWISE_COLWISE_BIANRY_FUNC(Greater, float, bool, >);
 DEFINE_ROWWISE_COLWISE_BIANRY_FUNC(Greater, double, bool, >);
-DEFINE_ROWWISE_COLWISE_BIANRY_FUNC(GreaterEqual, int8_t, bool, >=);
+DEFINE_ROWWISE_COLWISE_BIANRY_FUNC(GreaterEqual, bool, bool, >=);
 DEFINE_ROWWISE_COLWISE_BIANRY_FUNC(GreaterEqual, uint8_t, bool, >=);
+DEFINE_ROWWISE_COLWISE_BIANRY_FUNC(GreaterEqual, int8_t, bool, >=);
 DEFINE_ROWWISE_COLWISE_BIANRY_FUNC(GreaterEqual, int, bool, >=);
 DEFINE_ROWWISE_COLWISE_BIANRY_FUNC(GreaterEqual, int64_t, bool, >=);
 DEFINE_ROWWISE_COLWISE_BIANRY_FUNC(GreaterEqual, float, bool, >=);
 DEFINE_ROWWISE_COLWISE_BIANRY_FUNC(GreaterEqual, double, bool, >=);
 #undef DEFINE_ROWWISE_COLWISE_BIANRY_FUNC
 
-#define DEFINE_ROWWISE_COLWISE_BIANRY_FUNC(name, T, func)                     \
+#define DEFINE_ROWWISE_COLWISE_BIANRY_FUNC(name, T, Func)                     \
   template <>                                                                 \
   void _Rowwise##name<T, true>(                                               \
       const int rows, const int cols, const T* a, const T* b, T* y) {         \
     EigenArrayMap<T>(y, cols, rows) =                                         \
-        ConstEigenVectorArrayMap<T>(a, cols).rowwise().replicate(rows).func(  \
+        ConstEigenVectorArrayMap<T>(a, cols).rowwise().replicate(rows).Func(  \
             ConstEigenArrayMap<T>(b, cols, rows));                            \
   }                                                                           \
   template <>                                                                 \
   void _Colwise##name<T, true>(                                               \
       const int rows, const int cols, const T* a, const T* b, T* y) {         \
     EigenArrayMap<T>(y, cols, rows) =                                         \
-        ConstEigenVectorArrayMap2<T>(a, rows).colwise().replicate(cols).func( \
+        ConstEigenVectorArrayMap2<T>(a, rows).colwise().replicate(cols).Func( \
             ConstEigenArrayMap<T>(b, cols, rows));                            \
   }                                                                           \
   template <>                                                                 \
@@ -309,7 +377,7 @@ DEFINE_ROWWISE_COLWISE_BIANRY_FUNC(GreaterEqual, double, bool, >=);
       const int rows, const int cols, const T* a, const T* b, T* y) {         \
     EigenArrayMap<T>(y, cols, rows) =                                         \
         ConstEigenArrayMap<T>(a, cols, rows)                                  \
-            .func(ConstEigenVectorArrayMap<T>(b, cols).rowwise().replicate(   \
+            .Func(ConstEigenVectorArrayMap<T>(b, cols).rowwise().replicate(   \
                 rows));                                                       \
   }                                                                           \
   template <>                                                                 \
@@ -317,7 +385,7 @@ DEFINE_ROWWISE_COLWISE_BIANRY_FUNC(GreaterEqual, double, bool, >=);
       const int rows, const int cols, const T* a, const T* b, T* y) {         \
     EigenArrayMap<T>(y, cols, rows) =                                         \
         ConstEigenArrayMap<T>(a, cols, rows)                                  \
-            .func(ConstEigenVectorArrayMap2<T>(b, rows).colwise().replicate(  \
+            .Func(ConstEigenVectorArrayMap2<T>(b, rows).colwise().replicate(  \
                 cols));                                                       \
   }
 
@@ -337,76 +405,77 @@ DEFINE_ROWWISE_COLWISE_BIANRY_FUNC(Maximum, float, max);
 DEFINE_ROWWISE_COLWISE_BIANRY_FUNC(Maximum, double, max);
 #undef DEFINE_ROWWISE_COLWISE_BIANRY_FUNC
 
-#define DEFINE_BROADCAST_BINARY_FUNC(name, OutputT, expr)             \
-  template <typename T>                                               \
-  void _Broadcast##name(                                              \
-      const int num_dims,                                             \
-      const int64_t* a_strides,                                       \
-      const int64_t* b_strides,                                       \
-      const int64_t* y_dims,                                          \
-      const T* a,                                                     \
-      const T* b,                                                     \
-      OutputT* y) {                                                   \
-    const auto count = std::accumulate(                               \
-        y_dims, y_dims + num_dims, 1, std::multiplies<int64_t>());    \
-    vec64_t idx(num_dims, 0);                                         \
-    int64_t ai, bi;                                                   \
-    for (int yi = 0; yi < count; ++yi) {                              \
-      ai = bi = 0;                                                    \
-      for (int d = num_dims - 1; d >= 0; --d) {                       \
-        ai += idx[d] * a_strides[d];                                  \
-        bi += idx[d] * b_strides[d];                                  \
-      }                                                               \
-      y[yi] = a[ai] expr b[bi];                                       \
-      math::utils::IncreaseIndexInDims(num_dims, y_dims, idx.data()); \
-    }                                                                 \
+#define DEFINE_ROWWISE_COLWISE_BIANRY_FUNC(name, OutputT, Functor)          \
+  template <typename T, bool BroadcastA>                                    \
+  void _Rowwise##name(                                                      \
+      const int rows, const int cols, const T* a, const T* b, OutputT* y) { \
+    _RowwiseBinaryFunc<T, OutputT, Functor<T>, BroadcastA>(                 \
+        rows, cols, Functor<T>(), a, b, y);                                 \
+  }                                                                         \
+  template <typename T, bool BroadcastA>                                    \
+  void _Colwise##name(                                                      \
+      const int rows, const int cols, const T* a, const T* b, OutputT* y) { \
+    _ColwiseBinaryFunc<T, OutputT, Functor<T>, BroadcastA>(                 \
+        rows, cols, Functor<T>(), a, b, y);                                 \
   }
 
-DEFINE_BROADCAST_BINARY_FUNC(Add, T, +);
-DEFINE_BROADCAST_BINARY_FUNC(Sub, T, -);
-DEFINE_BROADCAST_BINARY_FUNC(Mul, T, *);
-DEFINE_BROADCAST_BINARY_FUNC(Div, T, /);
-DEFINE_BROADCAST_BINARY_FUNC(Equal, bool, ==);
-DEFINE_BROADCAST_BINARY_FUNC(NotEqual, bool, !=);
-DEFINE_BROADCAST_BINARY_FUNC(Less, bool, <);
-DEFINE_BROADCAST_BINARY_FUNC(LessEqual, bool, <=);
-DEFINE_BROADCAST_BINARY_FUNC(Greater, bool, >);
-DEFINE_BROADCAST_BINARY_FUNC(GreaterEqual, bool, >=);
-#undef DEFINE_BROADCAST_BINARY_FUNC
+DEFINE_ROWWISE_COLWISE_BIANRY_FUNC(Add, T, std::plus);
+DEFINE_ROWWISE_COLWISE_BIANRY_FUNC(Sub, T, std::minus);
+DEFINE_ROWWISE_COLWISE_BIANRY_FUNC(Mul, T, std::multiplies);
+DEFINE_ROWWISE_COLWISE_BIANRY_FUNC(Div, T, std::divides);
+DEFINE_ROWWISE_COLWISE_BIANRY_FUNC(BitwiseAnd, T, std::bit_and);
+DEFINE_ROWWISE_COLWISE_BIANRY_FUNC(BitwiseOr, T, std::bit_or);
+DEFINE_ROWWISE_COLWISE_BIANRY_FUNC(BitwiseXor, T, std::bit_xor);
+DEFINE_ROWWISE_COLWISE_BIANRY_FUNC(Equal, bool, std::equal_to);
+DEFINE_ROWWISE_COLWISE_BIANRY_FUNC(NotEqual, bool, std::not_equal_to);
+DEFINE_ROWWISE_COLWISE_BIANRY_FUNC(Less, bool, std::less);
+DEFINE_ROWWISE_COLWISE_BIANRY_FUNC(LessEqual, bool, std::less_equal);
+DEFINE_ROWWISE_COLWISE_BIANRY_FUNC(Greater, bool, std::greater);
+DEFINE_ROWWISE_COLWISE_BIANRY_FUNC(GreaterEqual, bool, std::greater_equal);
+DEFINE_ROWWISE_COLWISE_BIANRY_FUNC(And, bool, std::logical_and);
+DEFINE_ROWWISE_COLWISE_BIANRY_FUNC(Or, bool, std::logical_or);
+DEFINE_ROWWISE_COLWISE_BIANRY_FUNC(Xor, bool, math::XorFunctor);
+DEFINE_ROWWISE_COLWISE_BIANRY_FUNC(Pow, T, math::PowFunctor);
+DEFINE_ROWWISE_COLWISE_BIANRY_FUNC(Minimum, T, math::MinFunctor);
+DEFINE_ROWWISE_COLWISE_BIANRY_FUNC(Maximum, T, math::MaxFunctor);
+#undef DEFINE_ROWWISE_COLWISE_BIANRY_FUNC
 
-#define DEFINE_BROADCAST_BINARY_FUNC(name, OutputT, func)             \
-  template <typename T>                                               \
-  void _Broadcast##name(                                              \
-      const int num_dims,                                             \
-      const int64_t* a_strides,                                       \
-      const int64_t* b_strides,                                       \
-      const int64_t* y_dims,                                          \
-      const T* a,                                                     \
-      const T* b,                                                     \
-      OutputT* y) {                                                   \
-    const auto count = std::accumulate(                               \
-        y_dims, y_dims + num_dims, 1, std::multiplies<int64_t>());    \
-    vec64_t idx(num_dims, 0);                                         \
-    int64_t ai, bi;                                                   \
-    for (int yi = 0; yi < count; ++yi) {                              \
-      ai = bi = 0;                                                    \
-      for (int d = num_dims - 1; d >= 0; --d) {                       \
-        ai += idx[d] * a_strides[d];                                  \
-        bi += idx[d] * b_strides[d];                                  \
-      }                                                               \
-      y[yi] = func(a[ai], b[bi]);                                     \
-      math::utils::IncreaseIndexInDims(num_dims, y_dims, idx.data()); \
-    }                                                                 \
+#define DEFINE_BROADCAST_BINARY_FUNC(name, OutputT, Functor)            \
+  template <typename T>                                                 \
+  void _Broadcast##name(                                                \
+      const int num_dims,                                               \
+      const int64_t* a_strides,                                         \
+      const int64_t* b_strides,                                         \
+      const int64_t* y_dims,                                            \
+      const T* a,                                                       \
+      const T* b,                                                       \
+      OutputT* y) {                                                     \
+    _BroadcastBinaryFunc(                                               \
+        num_dims, a_strides, b_strides, y_dims, Functor<T>(), a, b, y); \
   }
 
-DEFINE_BROADCAST_BINARY_FUNC(Pow, T, std::pow);
-DEFINE_BROADCAST_BINARY_FUNC(Minimum, T, std::min);
-DEFINE_BROADCAST_BINARY_FUNC(Maximum, T, std::max);
+DEFINE_BROADCAST_BINARY_FUNC(Add, T, std::plus);
+DEFINE_BROADCAST_BINARY_FUNC(Sub, T, std::minus);
+DEFINE_BROADCAST_BINARY_FUNC(Mul, T, std::multiplies);
+DEFINE_BROADCAST_BINARY_FUNC(Div, T, std::divides);
+DEFINE_BROADCAST_BINARY_FUNC(BitwiseAnd, T, std::bit_and);
+DEFINE_BROADCAST_BINARY_FUNC(BitwiseOr, T, std::bit_or);
+DEFINE_BROADCAST_BINARY_FUNC(BitwiseXor, T, std::bit_xor);
+DEFINE_BROADCAST_BINARY_FUNC(Equal, bool, std::equal_to);
+DEFINE_BROADCAST_BINARY_FUNC(NotEqual, bool, std::not_equal_to);
+DEFINE_BROADCAST_BINARY_FUNC(Less, bool, std::less);
+DEFINE_BROADCAST_BINARY_FUNC(LessEqual, bool, std::less_equal);
+DEFINE_BROADCAST_BINARY_FUNC(Greater, bool, std::greater);
+DEFINE_BROADCAST_BINARY_FUNC(GreaterEqual, bool, std::greater_equal);
+DEFINE_BROADCAST_BINARY_FUNC(And, bool, std::logical_and);
+DEFINE_BROADCAST_BINARY_FUNC(Or, bool, std::logical_or);
+DEFINE_BROADCAST_BINARY_FUNC(Xor, bool, math::XorFunctor);
+DEFINE_BROADCAST_BINARY_FUNC(Pow, T, math::PowFunctor);
+DEFINE_BROADCAST_BINARY_FUNC(Minimum, T, math::MinFunctor);
+DEFINE_BROADCAST_BINARY_FUNC(Maximum, T, math::MaxFunctor);
 #undef DEFINE_BROADCAST_BINARY_FUNC
 
 } // namespace
-
-/* ------------------- Launcher Separator ------------------- */
 
 #define DEFINE_SET_FUNC(T)                                                   \
   template <>                                                                \
@@ -522,107 +591,122 @@ DEFINE_SET_FUNC(double);
         y);                                                                \
   }
 
-DEFINE_BINARY_FUNC(Add, int8_t, int8_t);
 DEFINE_BINARY_FUNC(Add, uint8_t, uint8_t);
+DEFINE_BINARY_FUNC(Add, int8_t, int8_t);
 DEFINE_BINARY_FUNC(Add, int, int);
 DEFINE_BINARY_FUNC(Add, int64_t, int64_t);
 DEFINE_BINARY_FUNC(Add, float, float);
 DEFINE_BINARY_FUNC(Add, double, double);
-DEFINE_BINARY_FUNC(Sub, int8_t, int8_t);
 DEFINE_BINARY_FUNC(Sub, uint8_t, uint8_t);
+DEFINE_BINARY_FUNC(Sub, int8_t, int8_t);
 DEFINE_BINARY_FUNC(Sub, int, int);
 DEFINE_BINARY_FUNC(Sub, int64_t, int64_t);
 DEFINE_BINARY_FUNC(Sub, float, float);
 DEFINE_BINARY_FUNC(Sub, double, double);
-DEFINE_BINARY_FUNC(Mul, int8_t, int8_t);
 DEFINE_BINARY_FUNC(Mul, uint8_t, uint8_t);
+DEFINE_BINARY_FUNC(Mul, int8_t, int8_t);
 DEFINE_BINARY_FUNC(Mul, int, int);
 DEFINE_BINARY_FUNC(Mul, int64_t, int64_t);
 DEFINE_BINARY_FUNC(Mul, float, float);
 DEFINE_BINARY_FUNC(Mul, double, double);
-DEFINE_BINARY_FUNC(Div, int8_t, int8_t);
 DEFINE_BINARY_FUNC(Div, uint8_t, uint8_t);
+DEFINE_BINARY_FUNC(Div, int8_t, int8_t);
 DEFINE_BINARY_FUNC(Div, int, int);
 DEFINE_BINARY_FUNC(Div, int64_t, int64_t);
 DEFINE_BINARY_FUNC(Div, float, float);
 DEFINE_BINARY_FUNC(Div, double, double);
 DEFINE_BINARY_FUNC(Pow, float, float);
 DEFINE_BINARY_FUNC(Pow, double, double);
-DEFINE_BINARY_FUNC(Minimum, int8_t, int8_t);
 DEFINE_BINARY_FUNC(Minimum, uint8_t, uint8_t);
+DEFINE_BINARY_FUNC(Minimum, int8_t, int8_t);
 DEFINE_BINARY_FUNC(Minimum, int, int);
 DEFINE_BINARY_FUNC(Minimum, int64_t, int64_t);
 DEFINE_BINARY_FUNC(Minimum, float, float);
 DEFINE_BINARY_FUNC(Minimum, double, double);
-DEFINE_BINARY_FUNC(Maximum, int8_t, int8_t);
 DEFINE_BINARY_FUNC(Maximum, uint8_t, uint8_t);
+DEFINE_BINARY_FUNC(Maximum, int8_t, int8_t);
 DEFINE_BINARY_FUNC(Maximum, int, int);
 DEFINE_BINARY_FUNC(Maximum, int64_t, int64_t);
 DEFINE_BINARY_FUNC(Maximum, float, float);
 DEFINE_BINARY_FUNC(Maximum, double, double);
-DEFINE_BINARY_FUNC(Equal, int8_t, bool);
+DEFINE_BINARY_FUNC(BitwiseAnd, bool, bool);
+DEFINE_BINARY_FUNC(BitwiseAnd, uint8_t, uint8_t);
+DEFINE_BINARY_FUNC(BitwiseAnd, int8_t, int8_t);
+DEFINE_BINARY_FUNC(BitwiseAnd, int, int);
+DEFINE_BINARY_FUNC(BitwiseAnd, int64_t, int64_t);
+DEFINE_BINARY_FUNC(BitwiseOr, bool, bool);
+DEFINE_BINARY_FUNC(BitwiseOr, uint8_t, uint8_t);
+DEFINE_BINARY_FUNC(BitwiseOr, int8_t, int8_t);
+DEFINE_BINARY_FUNC(BitwiseOr, int, int);
+DEFINE_BINARY_FUNC(BitwiseOr, int64_t, int64_t);
+DEFINE_BINARY_FUNC(BitwiseXor, bool, bool);
+DEFINE_BINARY_FUNC(BitwiseXor, uint8_t, uint8_t);
+DEFINE_BINARY_FUNC(BitwiseXor, int8_t, int8_t);
+DEFINE_BINARY_FUNC(BitwiseXor, int, int);
+DEFINE_BINARY_FUNC(BitwiseXor, int64_t, int64_t);
+DEFINE_BINARY_FUNC(And, bool, bool);
+DEFINE_BINARY_FUNC(And, uint8_t, bool);
+DEFINE_BINARY_FUNC(And, int8_t, bool);
+DEFINE_BINARY_FUNC(And, int, bool);
+DEFINE_BINARY_FUNC(And, int64_t, bool);
+DEFINE_BINARY_FUNC(And, float, bool);
+DEFINE_BINARY_FUNC(And, double, bool);
+DEFINE_BINARY_FUNC(Or, bool, bool);
+DEFINE_BINARY_FUNC(Or, uint8_t, bool);
+DEFINE_BINARY_FUNC(Or, int8_t, bool);
+DEFINE_BINARY_FUNC(Or, int, bool);
+DEFINE_BINARY_FUNC(Or, int64_t, bool);
+DEFINE_BINARY_FUNC(Or, float, bool);
+DEFINE_BINARY_FUNC(Or, double, bool);
+DEFINE_BINARY_FUNC(Xor, bool, bool);
+DEFINE_BINARY_FUNC(Xor, uint8_t, bool);
+DEFINE_BINARY_FUNC(Xor, int8_t, bool);
+DEFINE_BINARY_FUNC(Xor, int, bool);
+DEFINE_BINARY_FUNC(Xor, int64_t, bool);
+DEFINE_BINARY_FUNC(Xor, float, bool);
+DEFINE_BINARY_FUNC(Xor, double, bool);
+DEFINE_BINARY_FUNC(Equal, bool, bool);
 DEFINE_BINARY_FUNC(Equal, uint8_t, bool);
+DEFINE_BINARY_FUNC(Equal, int8_t, bool);
 DEFINE_BINARY_FUNC(Equal, int, bool);
 DEFINE_BINARY_FUNC(Equal, int64_t, bool);
 DEFINE_BINARY_FUNC(Equal, float, bool);
 DEFINE_BINARY_FUNC(Equal, double, bool);
-DEFINE_BINARY_FUNC(NotEqual, int8_t, bool);
+DEFINE_BINARY_FUNC(NotEqual, bool, bool);
 DEFINE_BINARY_FUNC(NotEqual, uint8_t, bool);
+DEFINE_BINARY_FUNC(NotEqual, int8_t, bool);
 DEFINE_BINARY_FUNC(NotEqual, int, bool);
 DEFINE_BINARY_FUNC(NotEqual, int64_t, bool);
 DEFINE_BINARY_FUNC(NotEqual, float, bool);
 DEFINE_BINARY_FUNC(NotEqual, double, bool);
-DEFINE_BINARY_FUNC(Less, int8_t, bool);
+DEFINE_BINARY_FUNC(Less, bool, bool);
 DEFINE_BINARY_FUNC(Less, uint8_t, bool);
+DEFINE_BINARY_FUNC(Less, int8_t, bool);
 DEFINE_BINARY_FUNC(Less, int, bool);
 DEFINE_BINARY_FUNC(Less, int64_t, bool);
 DEFINE_BINARY_FUNC(Less, float, bool);
 DEFINE_BINARY_FUNC(Less, double, bool);
-DEFINE_BINARY_FUNC(LessEqual, int8_t, bool);
+DEFINE_BINARY_FUNC(LessEqual, bool, bool);
 DEFINE_BINARY_FUNC(LessEqual, uint8_t, bool);
+DEFINE_BINARY_FUNC(LessEqual, int8_t, bool);
 DEFINE_BINARY_FUNC(LessEqual, int, bool);
 DEFINE_BINARY_FUNC(LessEqual, int64_t, bool);
 DEFINE_BINARY_FUNC(LessEqual, float, bool);
 DEFINE_BINARY_FUNC(LessEqual, double, bool);
-DEFINE_BINARY_FUNC(Greater, int8_t, bool);
+DEFINE_BINARY_FUNC(Greater, bool, bool);
 DEFINE_BINARY_FUNC(Greater, uint8_t, bool);
+DEFINE_BINARY_FUNC(Greater, int8_t, bool);
 DEFINE_BINARY_FUNC(Greater, int, bool);
 DEFINE_BINARY_FUNC(Greater, int64_t, bool);
 DEFINE_BINARY_FUNC(Greater, float, bool);
 DEFINE_BINARY_FUNC(Greater, double, bool);
-DEFINE_BINARY_FUNC(GreaterEqual, int8_t, bool);
+DEFINE_BINARY_FUNC(GreaterEqual, bool, bool);
 DEFINE_BINARY_FUNC(GreaterEqual, uint8_t, bool);
+DEFINE_BINARY_FUNC(GreaterEqual, int8_t, bool);
 DEFINE_BINARY_FUNC(GreaterEqual, int, bool);
 DEFINE_BINARY_FUNC(GreaterEqual, int64_t, bool);
 DEFINE_BINARY_FUNC(GreaterEqual, float, bool);
 DEFINE_BINARY_FUNC(GreaterEqual, double, bool);
-#undef DEFINE_BINARY_FUNC
-
-#define DEFINE_BINARY_FUNC(name, T, dtype) \
-  template <>                              \
-  DRAGON_API void name<T, CPUContext>(     \
-      const int a_ndim,                    \
-      const int64_t* a_dims,               \
-      const int b_ndim,                    \
-      const int64_t* b_dims,               \
-      const T* a,                          \
-      const T* b,                          \
-      T* y,                                \
-      CPUContext* ctx) {                   \
-    name(                                  \
-        a_ndim,                            \
-        a_dims,                            \
-        b_ndim,                            \
-        b_dims,                            \
-        reinterpret_cast<const dtype*>(a), \
-        reinterpret_cast<const dtype*>(b), \
-        reinterpret_cast<dtype*>(y),       \
-        ctx);                              \
-  }
-
-DEFINE_BINARY_FUNC(Add, bool, uint8_t); // Or
-DEFINE_BINARY_FUNC(Sub, bool, uint8_t); // Xor
-DEFINE_BINARY_FUNC(Mul, bool, uint8_t); // And
 #undef DEFINE_BINARY_FUNC
 
 #define DEFINE_BINARY_FUNC(name, OutputT)    \
@@ -646,6 +730,9 @@ DEFINE_BINARY_FUNC(Div, float16);
 DEFINE_BINARY_FUNC(Pow, float16);
 DEFINE_BINARY_FUNC(Minimum, float16);
 DEFINE_BINARY_FUNC(Maximum, float16);
+DEFINE_BINARY_FUNC(And, bool);
+DEFINE_BINARY_FUNC(Or, bool);
+DEFINE_BINARY_FUNC(Xor, bool);
 DEFINE_BINARY_FUNC(Equal, bool);
 DEFINE_BINARY_FUNC(NotEqual, bool);
 DEFINE_BINARY_FUNC(Less, bool);

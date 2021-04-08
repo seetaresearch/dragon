@@ -95,9 +95,9 @@ class TFRecordExample(object):
         Parameters
         ----------
         pack_length : bool, optional, default=True
-            **True** to pack with length.
+            ``True`` to pack with length.
         pack_crc32 : bool, optional, default=True
-            **True** to pack with crc32.
+            ``True`` to pack with crc32.
 
         Returns
         -------

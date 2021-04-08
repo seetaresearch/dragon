@@ -6,44 +6,38 @@
 
 namespace dragon {
 
-namespace kernel {
+namespace kernels {
 
 namespace {
 
-template <typename T>
+template <typename T, typename AccT>
 __global__ void _DropPath(
-    const int nthreads,
-    const int cols,
-    const float thresh,
-    const T scale,
+    const int NxC,
+    const int C,
+    const AccT scale,
+    const uint32_t thresh,
+    const uint32_t* r,
     const T* x,
-    const float* mask,
-    T* y) {
-  CUDA_1D_KERNEL_LOOP(i, nthreads) {
-#if __CUDA_ARCH__ >= 350
-    y[i] = x[i] * T(__ldg(mask + (i / cols)) > thresh) * scale;
-#else
-    y[i] = x[i] * T(mask[i / cols] > thresh) * scale;
-#endif
+    T* y,
+    uint8_t* mask) {
+  CUDA_1D_KERNEL_LOOP(i, NxC) {
+    y[i] = convert::To<T>(
+        convert::To<AccT>(x[i]) *
+        AccT(mask[i / C] = (__ldg(r + i / C) > thresh)) * scale);
   }
 }
 
-__global__ void _DropPath(
-    const int nthreads,
-    const int cols,
-    const float thresh,
-    const float scale,
-    const half* x,
-    const float* mask,
-    half* y) {
-  CUDA_1D_KERNEL_LOOP(i, nthreads) {
-#if __CUDA_ARCH__ >= 350
-    y[i] = __float2half(
-        __half2float(x[i]) * float(__ldg(mask + (i / cols)) > thresh) * scale);
-#else
-    y[i] = __float2half(
-        __half2float(x[i]) * float(mask[i / cols] > thresh) * scale);
-#endif
+template <typename T, typename AccT>
+__global__ void _DropPathGrad(
+    const int NxC,
+    const int C,
+    const AccT scale,
+    const uint8_t* mask,
+    const T* dy,
+    T* dx) {
+  CUDA_1D_KERNEL_LOOP(i, NxC) {
+    dx[i] = convert::To<T>(
+        convert::To<AccT>(dy[i]) * AccT(__ldg(mask + i / C)) * scale);
   }
 }
 
@@ -51,48 +45,61 @@ __global__ void _DropPath(
 
 /* ------------------- Launcher Separator ------------------- */
 
-template <>
-void DropPath<float16, CUDAContext>(
-    const int rows,
-    const int cols,
-    const float scale,
-    const float16* x,
-    const float* mask,
-    float16* y,
-    CUDAContext* ctx) {
-  const auto nthreads = rows * cols;
-  const auto thresh = 1.f - (1.f / scale);
-  _DropPath<<<CUDA_BLOCKS(nthreads), CUDA_THREADS, 0, ctx->cuda_stream()>>>(
-      nthreads,
-      cols,
-      thresh,
-      scale,
-      reinterpret_cast<const half*>(x),
-      mask,
-      reinterpret_cast<half*>(y));
-}
-
-#define DEFINE_KERNEL_LAUNCHER(T)                                              \
-  template <>                                                                  \
-  void DropPath<T, CUDAContext>(                                               \
-      const int rows,                                                          \
-      const int cols,                                                          \
-      const float scale,                                                       \
-      const T* x,                                                              \
-      const float* mask,                                                       \
-      T* y,                                                                    \
-      CUDAContext* ctx) {                                                      \
-    const auto nthreads = rows * cols;                                         \
-    const auto thresh = 1.f - (1.f / scale);                                   \
-    _DropPath<<<CUDA_BLOCKS(nthreads), CUDA_THREADS, 0, ctx->cuda_stream()>>>( \
-        nthreads, cols, thresh, convert::To<T>(scale), x, mask, y);            \
+#define DEFINE_KERNEL_LAUNCHER(T)                                         \
+  template <>                                                             \
+  void DropPath<T, CUDAContext>(                                          \
+      const int N,                                                        \
+      const int C,                                                        \
+      const float ratio,                                                  \
+      const float scale,                                                  \
+      const T* x,                                                         \
+      T* y,                                                               \
+      uint8_t* mask,                                                      \
+      uint32_t* r,                                                        \
+      CUDAContext* ctx) {                                                 \
+    const auto NxC = N * C;                                               \
+    math::Random(N, r, ctx);                                              \
+    _DropPath<<<CUDA_BLOCKS(NxC), CUDA_THREADS, 0, ctx->cuda_stream()>>>( \
+        NxC,                                                              \
+        C,                                                                \
+        convert::To<math::AccmulatorType<T>::type>(scale),                \
+        static_cast<uint32_t>(UINT_MAX * ratio),                          \
+        r,                                                                \
+        reinterpret_cast<const math::ScalarType<T>::type*>(x),            \
+        reinterpret_cast<math::ScalarType<T>::type*>(y),                  \
+        mask);                                                            \
   }
 
+#define DEFINE_GRAD_KERNEL_LAUNCHER(T)                                        \
+  template <>                                                                 \
+  void DropPathGrad<T, CUDAContext>(                                          \
+      const int N,                                                            \
+      const int C,                                                            \
+      const float scale,                                                      \
+      const uint8_t* mask,                                                    \
+      const T* dy,                                                            \
+      T* dx,                                                                  \
+      CUDAContext* ctx) {                                                     \
+    const auto NxC = N * C;                                                   \
+    _DropPathGrad<<<CUDA_BLOCKS(NxC), CUDA_THREADS, 0, ctx->cuda_stream()>>>( \
+        NxC,                                                                  \
+        C,                                                                    \
+        convert::To<math::AccmulatorType<T>::type>(scale),                    \
+        mask,                                                                 \
+        reinterpret_cast<const math::ScalarType<T>::type*>(dy),               \
+        reinterpret_cast<math::ScalarType<T>::type*>(dx));                    \
+  }
+
+DEFINE_KERNEL_LAUNCHER(float16);
 DEFINE_KERNEL_LAUNCHER(float);
 DEFINE_KERNEL_LAUNCHER(double);
+DEFINE_GRAD_KERNEL_LAUNCHER(float16);
+DEFINE_GRAD_KERNEL_LAUNCHER(float);
+DEFINE_GRAD_KERNEL_LAUNCHER(double);
 #undef DEFINE_KERNEL_LAUNCHER
+#undef DEFINE_GRAD_KERNEL_LAUNCHER
 
-} // namespace kernel
+} // namespace kernels
 
 } // namespace dragon
 

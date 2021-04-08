@@ -6,15 +6,9 @@
 
 namespace dragon {
 
-namespace kernel {
+namespace kernels {
 
 namespace {
-
-#if __CUDA_ARCH__ >= 350
-#define LDG(x, i) convert::To<float>(__ldg(x + i))
-#else
-#define LDG(x, i) convert::To<float>(x[i])
-#endif
 
 template <typename T>
 float ComputeScale(T in_size, T out_size, bool align_corners) {
@@ -66,10 +60,10 @@ __global__ void _ResizeLinear2dNCHW(
     const int ri = w < W - 1 ? ceilf(w) : W - 1;
 
     const int offset = (n * C + c) * H;
-    const float tl = LDG(x, ((offset + ti) * W + li));
-    const float tr = LDG(x, ((offset + ti) * W + ri));
-    const float bl = LDG(x, ((offset + bi) * W + li));
-    const float br = LDG(x, ((offset + bi) * W + ri));
+    const float tl = convert::To<float>(__ldg(x + (offset + ti) * W + li));
+    const float tr = convert::To<float>(__ldg(x + (offset + ti) * W + ri));
+    const float bl = convert::To<float>(__ldg(x + (offset + bi) * W + li));
+    const float br = convert::To<float>(__ldg(x + (offset + bi) * W + ri));
     const float v = h - ti;
     const float u = w - li;
     const float t = tl + (tr - tl) * u;
@@ -106,10 +100,10 @@ __global__ void _ResizeLinear2dNHWC(
     const int ri = w < W - 1 ? ceilf(w) : W - 1;
 
     const int offset = n * H * W * C + c;
-    const float tl = LDG(x, offset + (ti * W + li) * C);
-    const float tr = LDG(x, offset + (ti * W + ri) * C);
-    const float bl = LDG(x, offset + (bi * W + li) * C);
-    const float br = LDG(x, offset + (bi * W + ri) * C);
+    const float tl = convert::To<float>(__ldg(x + offset + (ti * W + li) * C));
+    const float tr = convert::To<float>(__ldg(x + offset + (ti * W + ri) * C));
+    const float bl = convert::To<float>(__ldg(x + offset + (bi * W + li) * C));
+    const float br = convert::To<float>(__ldg(x + offset + (bi * W + ri) * C));
     const float v = h - ti;
     const float u = w - li;
     const float t = tl + (tr - tl) * u;
@@ -148,8 +142,8 @@ __global__ void _ResizeLinear2dGradNCHW(
     const int offset = (n * C + c) * H;
     const float v = h - ti;
     const float u = w - li;
-    const float dt = (1.f - v) * LDG(dy, yi);
-    const float db = v * LDG(dy, yi);
+    const float dt = (1.f - v) * convert::To<float>(__ldg(dy + yi));
+    const float db = v * convert::To<float>(__ldg(dy + yi));
     math::utils::AtomicAdd(&dx[(offset + ti) * W + li], (1.f - u) * dt);
     math::utils::AtomicAdd(&dx[(offset + ti) * W + ri], u * dt);
     math::utils::AtomicAdd(&dx[(offset + bi) * W + li], (1.f - u) * db);
@@ -187,8 +181,8 @@ __global__ void _ResizeLinear2dGradNHWC(
     const int offset = n * H * W * C + c;
     const float v = h - ti;
     const float u = w - li;
-    const float dt = (1.f - v) * LDG(dy, yi);
-    const float db = v * LDG(dy, yi);
+    const float dt = (1.f - v) * convert::To<float>(__ldg(dy + yi));
+    const float db = v * convert::To<float>(__ldg(dy + yi));
     math::utils::AtomicAdd(&dx[offset + (ti * W + li) * C], (1.f - u) * dt);
     math::utils::AtomicAdd(&dx[offset + (ti * W + ri) * C], u * dt);
     math::utils::AtomicAdd(&dx[offset + (bi * W + li) * C], (1.f - u) * db);
@@ -196,17 +190,15 @@ __global__ void _ResizeLinear2dGradNHWC(
   }
 }
 
-#undef LDG
-
 } // namespace
 
 /* ------------------- Launcher Separator ------------------- */
 
-#define DISPATCH_RESIZE_KERNEL(name, T, nblocks, nthreads, ...)            \
+#define DISPATCH_RESIZE_KERNEL(name, T, kBlocks, kThreads, ...)            \
   if (data_format == "NCHW") {                                             \
-    name##NCHW<<<nblocks, nthreads, 0, ctx->cuda_stream()>>>(__VA_ARGS__); \
+    name##NCHW<<<kBlocks, kThreads, 0, ctx->cuda_stream()>>>(__VA_ARGS__); \
   } else if (data_format == "NHWC") {                                      \
-    name##NHWC<<<nblocks, nthreads, 0, ctx->cuda_stream()>>>(__VA_ARGS__); \
+    name##NHWC<<<kBlocks, kThreads, 0, ctx->cuda_stream()>>>(__VA_ARGS__); \
   } else {                                                                 \
     LOG(FATAL) << "Unknown DataFormat: " << data_format;                   \
   }
@@ -247,8 +239,8 @@ __global__ void _ResizeLinear2dGradNHWC(
         reinterpret_cast<math::ScalarType<OutputT>::type*>(y));     \
   }
 
-DEFINE_KERNEL_LAUNCHER(ResizeLinear2d, false, int8_t, int8_t);
 DEFINE_KERNEL_LAUNCHER(ResizeLinear2d, false, uint8_t, uint8_t);
+DEFINE_KERNEL_LAUNCHER(ResizeLinear2d, false, int8_t, int8_t);
 DEFINE_KERNEL_LAUNCHER(ResizeLinear2d, false, int, int);
 DEFINE_KERNEL_LAUNCHER(ResizeLinear2d, false, int64_t, int64_t);
 DEFINE_KERNEL_LAUNCHER(ResizeLinear2d, false, float16, float16);
@@ -260,7 +252,7 @@ DEFINE_KERNEL_LAUNCHER(ResizeLinear2dGrad, true, double, float); // Grad
 #undef DEFINE_KERNEL_LAUNCHER
 #undef DISPATCH_RESIZE_KERNEL
 
-} // namespace kernel
+} // namespace kernels
 
 } // namespace dragon
 

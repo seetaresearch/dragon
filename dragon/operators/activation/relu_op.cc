@@ -8,14 +8,14 @@ template <typename T>
 void ReluOp<Context>::DoRunWithType() {
   auto &X = Input(0), *Y = Output(0, {0});
   if (max_value_ > 0.f) {
-    kernel::ReluN(
+    kernels::ReluN(
         X.count(),
         max_value_,
         X.template data<T, Context>(),
         Y->ReshapeLike(X)->template mutable_data<T, Context>(),
         ctx());
   } else {
-    kernel::Relu(
+    kernels::Relu(
         X.count(),
         alpha_,
         X.template data<T, Context>(),
@@ -26,7 +26,7 @@ void ReluOp<Context>::DoRunWithType() {
 
 template <class Context>
 void ReluOp<Context>::RunOnDevice() {
-  DispatchHelper<FloatingTensorTypes>::Call(this, Input(0));
+  DispatchHelper<dtypes::Floating>::Call(this, Input(0));
 }
 
 template <class Context>
@@ -34,7 +34,7 @@ template <typename T>
 void ReluGradientOp<Context>::DoRunWithType() {
   auto &Y = Input(0), &dY = Input(1), *dX = Output(0);
   if (max_value_ > 0.f) {
-    kernel::ReluNGrad(
+    kernels::ReluNGrad(
         Y.count(),
         max_value_,
         dY.template data<T, Context>(),
@@ -42,7 +42,7 @@ void ReluGradientOp<Context>::DoRunWithType() {
         dX->ReshapeLike(Y)->template mutable_data<T, Context>(),
         ctx());
   } else {
-    kernel::ReluGrad(
+    kernels::ReluGrad(
         Y.count(),
         alpha_,
         dY.template data<T, Context>(),
@@ -54,7 +54,7 @@ void ReluGradientOp<Context>::DoRunWithType() {
 
 template <class Context>
 void ReluGradientOp<Context>::RunOnDevice() {
-  DispatchHelper<FloatingTensorTypes>::Call(this, Input(0));
+  DispatchHelper<dtypes::Floating>::Call(this, Input(0));
 }
 
 DEPLOY_CPU_OPERATOR(Relu);

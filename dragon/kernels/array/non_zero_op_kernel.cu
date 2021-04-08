@@ -8,20 +8,20 @@
 
 namespace dragon {
 
-namespace kernel {
+namespace kernels {
 
 namespace {
 
-template <typename IndexType, typename CoordType, int D>
+template <typename IndexT, typename CoordT, int D>
 __global__ void _UnravelIndex(
-    const int nthreads,
+    const int N,
     const int num_dims,
     const SimpleArray<int, D> dims,
-    const IndexType* index,
-    CoordType* coord) {
-  CUDA_1D_KERNEL_LOOP(i, nthreads) {
-    IndexType tmp = index[i];
-    CoordType* offset_coord = coord + i * num_dims;
+    const IndexT* index,
+    CoordT* coord) {
+  CUDA_1D_KERNEL_LOOP(i, N) {
+    IndexT tmp = index[i];
+    CoordT* offset_coord = coord + i * num_dims;
     for (int d = num_dims - 1; d >= 0; --d) {
       FIXED_DIVISOR_DIV_MOD(dims.data[d], tmp, &tmp, (offset_coord + d));
     }
@@ -32,16 +32,16 @@ __global__ void _UnravelIndex(
 
 /* ------------------- Launcher Separator ------------------- */
 
-#define DEFINE_KERNEL_LAUNCHER(IndexType)             \
+#define DEFINE_KERNEL_LAUNCHER(IndexT)                \
   template <>                                         \
-  void Flagged<IndexType, CUDAContext>(               \
-      const int count,                                \
+  void Flagged<IndexT, CUDAContext>(                  \
+      const int N,                                    \
       const uint8_t* mask,                            \
-      IndexType* index,                               \
+      IndexT* index,                                  \
       int* num_selected,                              \
       CUDAContext* ctx) {                             \
-    IndexType num_selected_host;                      \
-    auto* num_selected_dev = index + count;           \
+    IndexT num_selected_host;                         \
+    auto* num_selected_dev = index + N;               \
     size_t ws_nbytes = 0;                             \
     cub::CountingInputIterator<int> itr(0);           \
     cub::DeviceSelect::Flagged(                       \
@@ -51,7 +51,7 @@ __global__ void _UnravelIndex(
         mask,                                         \
         index,                                        \
         static_cast<int64_t*>(nullptr),               \
-        count,                                        \
+        N,                                            \
         ctx->cuda_stream());                          \
     cub::DeviceSelect::Flagged(                       \
         ctx->workspace()->template data<CUDAContext>( \
@@ -61,12 +61,12 @@ __global__ void _UnravelIndex(
         mask,                                         \
         index,                                        \
         num_selected_dev,                             \
-        count,                                        \
+        N,                                            \
         ctx->cuda_stream());                          \
     CUDA_CHECK(cudaMemcpyAsync(                       \
         &num_selected_host,                           \
         num_selected_dev,                             \
-        sizeof(IndexType),                            \
+        sizeof(IndexT),                               \
         cudaMemcpyDefault,                            \
         ctx->cuda_stream()));                         \
     ctx->FinishDeviceComputation();                   \
@@ -77,24 +77,22 @@ DEFINE_KERNEL_LAUNCHER(int);
 DEFINE_KERNEL_LAUNCHER(int64_t);
 #undef DEFINE_KERNEL_LAUNCHER
 
-#define DEFINE_KERNEL_LAUNCHER(IndexType, CoordType)                  \
-  template <>                                                         \
-  void UnravelIndex<IndexType, CoordType, CUDAContext>(               \
-      const int count,                                                \
-      const int num_dims,                                             \
-      const int64_t* dims,                                            \
-      const IndexType* index,                                         \
-      CoordType* coord,                                               \
-      CUDAContext* ctx) {                                             \
-    CUDA_TENSOR_DIMS_CHECK(num_dims);                                 \
-    SimpleArray<int, CUDA_TENSOR_MAX_DIMS> X_dims;                    \
-    for (int i = 0; i < num_dims; ++i)                                \
-      X_dims.data[i] = dims[i];                                       \
-    _UnravelIndex<<<                                                  \
-        CUDA_BLOCKS(count),                                           \
-        CUDA_THREADS,                                                 \
-        0,                                                            \
-        ctx->cuda_stream()>>>(count, num_dims, X_dims, index, coord); \
+#define DEFINE_KERNEL_LAUNCHER(IndexT, CoordT)                              \
+  template <>                                                               \
+  void UnravelIndex<IndexT, CoordT, CUDAContext>(                           \
+      const int N,                                                          \
+      const int num_dims,                                                   \
+      const int64_t* dims,                                                  \
+      const IndexT* index,                                                  \
+      CoordT* coord,                                                        \
+      CUDAContext* ctx) {                                                   \
+    CUDA_TENSOR_DIMS_CHECK(num_dims);                                       \
+    SimpleArray<int, CUDA_TENSOR_MAX_DIMS> X_dims;                          \
+    for (int i = 0; i < num_dims; ++i) {                                    \
+      X_dims.data[i] = dims[i];                                             \
+    }                                                                       \
+    _UnravelIndex<<<CUDA_BLOCKS(N), CUDA_THREADS, 0, ctx->cuda_stream()>>>( \
+        N, num_dims, X_dims, index, coord);                                 \
   }
 
 DEFINE_KERNEL_LAUNCHER(int, int);
@@ -103,7 +101,7 @@ DEFINE_KERNEL_LAUNCHER(int64_t, int);
 DEFINE_KERNEL_LAUNCHER(int64_t, int64_t);
 #undef DEFINE_KERNEL_LAUNCHER
 
-} // namespace kernel
+} // namespace kernels
 
 } // namespace dragon
 

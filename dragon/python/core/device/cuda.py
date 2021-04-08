@@ -111,7 +111,7 @@ def is_available():
     Returns
     -------
     bool
-        **True** if available otherwise **False**.
+        ``True`` if available otherwise ``False``.
 
     """
     return backend.cudaIsDriverSufficient()

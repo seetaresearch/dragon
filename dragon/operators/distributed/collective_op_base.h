@@ -44,7 +44,7 @@ class CollectiveOpBase : public Operator<Context> {
     MPI_Group world_group;
     auto root = OP_SINGLE_ARG(int, "root", 0);
     auto group_world_ranks = OP_REPEATED_ARG(int64_t, "ranks");
-    auto group_world_root = (int)group_world_ranks[root];
+    auto group_world_root = int(group_world_ranks[root]);
     group_str_ = Tensor::DimString(group_world_ranks);
     MPI_Comm_group(MPI_COMM_WORLD, &world_group);
     MPI_Group_translate_ranks(

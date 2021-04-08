@@ -22,7 +22,7 @@ import itertools
 from dragon.core.util import six
 
 
-def _get_adaptive_pool_kwargs(input_sizes, output_sizes):
+def _get_adaptive_pool_args(input_sizes, output_sizes):
     stride, kernel_size = [], []
     for input_size, output_size in zip(input_sizes, output_sizes):
         if output_size == 1:

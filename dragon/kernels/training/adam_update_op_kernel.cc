@@ -1,13 +1,12 @@
-#include "dragon/utils/device/common_openmp.h"
 #include "dragon/utils/op_kernels.h"
 
 namespace dragon {
 
-namespace kernel {
+namespace kernels {
 
 template <>
 void AdamUpdate<float, CPUContext>(
-    const int count,
+    const int N,
     const float lr,
     const float beta1,
     const float beta2,
@@ -16,10 +15,7 @@ void AdamUpdate<float, CPUContext>(
     float* m,
     float* v,
     CPUContext* ctx) {
-#ifdef USE_OPENMP
-#pragma omp parallel for num_threads(OMP_THREADS(count))
-#endif
-  for (int i = 0; i < count; ++i) {
+  for (int i = 0; i < N; ++i) {
     float gi = g[i];
     float mi = m[i] = m[i] * beta1 + gi * (1 - beta1);
     float vi = v[i] = v[i] * beta2 + gi * gi * (1 - beta2);
@@ -27,6 +23,6 @@ void AdamUpdate<float, CPUContext>(
   }
 }
 
-} // namespace kernel
+} // namespace kernels
 
 } // namespace dragon

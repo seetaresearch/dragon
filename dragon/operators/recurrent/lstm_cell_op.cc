@@ -12,14 +12,14 @@ void LSTMCellOp<Context>::DoRunWithType() {
   auto* hx = Input(1).template data<T, Context>();
   auto* h = Output(0)->template mutable_data<T, Context>();
   auto* c = Output(1)->template mutable_data<T, Context>();
-  kernel::LSTMCell(Input(1).dim(0), Input(1).dim(-1), hx, x, c, h, ctx());
+  kernels::LSTMCell(Input(1).dim(0), Input(1).dim(-1), hx, x, c, h, ctx());
 }
 
 template <class Context>
 void LSTMCellOp<Context>::RunOnDevice() {
   Output(0)->ReshapeLike(Input(1));
   Output(1)->ReshapeLike(Input(1));
-  DispatchHelper<TensorTypes<float>>::Call(this, Input(0));
+  DispatchHelper<dtypes::TypesBase<float>>::Call(this, Input(0));
 }
 
 template <class Context>
@@ -37,7 +37,7 @@ void LSTMCellGradientOp<Context>::DoRunWithType() {
     math::Set(Input(-1).count(), convert::To<T>(0.f), dc, ctx());
   }
 
-  kernel::LSTMCellGrad(
+  kernels::LSTMCellGrad(
       Input(1).dim(0), Input(1).dim(-1), hx, x, c, dc, dh, dhx, dx, ctx());
 }
 
@@ -50,7 +50,7 @@ void LSTMCellGradientOp<Context>::RunOnDevice() {
     // We should Zero-Reset the dC
     Input(-1).ReshapeLike(Input(-2));
   }
-  DispatchHelper<TensorTypes<float>>::Call(this, Input(0));
+  DispatchHelper<dtypes::TypesBase<float>>::Call(this, Input(0));
 }
 
 DEPLOY_CPU_OPERATOR(LSTMCell);
@@ -80,15 +80,14 @@ namespace {
 class GradientMaker final : public GradientMakerBase {
  public:
   GRADIENT_MAKER_CTOR(GradientMaker);
-  vector<OperatorDef> MakeDef() override {
-    return SingleDef(
-        def.type() + "Gradient",
+  void CreateGradientDefs() override {
+    AddGradientDef(
+        def().type() + "Gradient",
         "",
         vector<string>({I(0), I(1), O(1), GO(0), GO(1)}),
         vector<string>({GI(0), GI(1)}));
   }
-  vector<float> defaults() override {
-    // Fill zero for dCNext
+  vector<float> grad_defaults() override {
     return {1.f, 0.f};
   }
 };

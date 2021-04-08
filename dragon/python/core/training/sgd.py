@@ -27,22 +27,20 @@ class SGD(optimizer.Optimizer):
 
     """
 
-    def __init__(self, base_lr=0.01, momentum=0.9, **kwargs):
+    def __init__(self, lr=0.01, momentum=0.9, **kwargs):
         r"""Create a ``SGD`` updater.
 
         Parameters
         ----------
-        base_lr : float, optional, default=0.01
+        lr : float, optional, default=0.01
             The initial value to :math:`\text{lr}`.
         momentum : float, optional, default=0.9
             The initial value to :math:`\text{momentum}`.
 
         """
         super(SGD, self).__init__(**kwargs)
-        self._init_set_defaults({
-            'base_lr': base_lr,
-            'momentum': momentum,
-        })
+        self._set_hyper('lr', lr)
+        self._set_hyper('momentum', momentum)
 
 
 class Nesterov(optimizer.Optimizer):
@@ -58,7 +56,7 @@ class Nesterov(optimizer.Optimizer):
 
     """
 
-    def __init__(self, base_lr=0.01, momentum=0.9, **kwargs):
+    def __init__(self, lr=0.01, momentum=0.9, **kwargs):
         r"""Create a ``Nesterov`` optimizer.
 
         Parameters
@@ -70,7 +68,5 @@ class Nesterov(optimizer.Optimizer):
 
         """
         super(Nesterov, self).__init__(**kwargs)
-        self._init_set_defaults({
-            'base_lr': base_lr,
-            'momentum': momentum,
-        })
+        self._set_hyper('lr', lr)
+        self._set_hyper('momentum', momentum)

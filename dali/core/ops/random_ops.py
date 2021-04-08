@@ -47,7 +47,7 @@ class CoinFlip(object):
             The operator.
 
         """
-        return ops.CoinFlip(probability=probability, **kwargs)
+        return ops.random.CoinFlip(probability=probability, **kwargs)
 
 
 class Uniform(object):
@@ -76,4 +76,4 @@ class Uniform(object):
             The operator.
 
         """
-        return ops.Uniform(range=range, **kwargs)
+        return ops.random.Uniform(range=range, **kwargs)

@@ -34,21 +34,14 @@ class RMSprop(optimizer.Optimizer):
 
     """
 
-    def __init__(
-        self,
-        base_lr=0.01,
-        momentum=0.,
-        decay=0.9,
-        eps=1e-8,
-        **kwargs
-    ):
+    def __init__(self, lr=0.01, momentum=0, decay=0.9, eps=1e-8, **kwargs):
         r"""Create a ``RMSProp`` optimizer.
 
         Parameters
         ----------
-        base_lr : float, optional, default=0.01
+        lr : float, optional, default=0.01
             The initial value to :math:`\text{lr}`.
-        momentum : float, optional, default=0.
+        momentum : float, optional, default=0
             The initial value to :math:`\text{momentum}`.
         decay : float, optional, default=0.9
             The initial value to :math:`\text{decay}`.
@@ -57,9 +50,7 @@ class RMSprop(optimizer.Optimizer):
 
         """
         super(RMSprop, self).__init__(**kwargs)
-        self._init_set_defaults({
-            'base_lr': base_lr,
-            'momentum': momentum,
-            'decay': decay,
-            'eps': eps,
-        })
+        self._set_hyper('lr', lr)
+        self._set_hyper('momentum', momentum)
+        self._set_hyper('decay', decay)
+        self._set_hyper('eps', eps)

@@ -23,9 +23,9 @@ try:
 except ImportError:
     onnx = None
 
-from dragon.core.autograph import function_lib
-from dragon.core.eager import context as eager_context
-from dragon.core.eager import backprop
+from dragon.core.autograph import context as eager_context
+from dragon.core.autograph import tape
+from dragon.core.autograph.graph_impl import GraphLib
 from dragon.core.framework import types
 from dragon.core.framework import workspace as workspace_util
 from dragon.core.proto import dragon_pb2
@@ -84,12 +84,10 @@ class DragonFrontend(object):
         blob_aliases = {}
         for i, alias in enumerate(output_names):
             blob_aliases[graph_def.output[i]] = alias
-            workspace.RegisterAlias(graph_def.output[i], alias)
             if graph_def.output[i] in value_info:
                 value_info[alias] = value_info[graph_def.output[i]]
         for i, alias in enumerate(input_names):
             blob_aliases[graph_def.input[i]] = alias
-            workspace.RegisterAlias(graph_def.input[i], alias)
             if graph_def.input[i] in value_info:
                 value_info[alias] = value_info[graph_def.input[i]]
 
@@ -105,9 +103,8 @@ class DragonFrontend(object):
                     value_info[k] = (value_info[k][0], v)
 
         # Prepare to make the graph.
-        onnx_graph = onnx.GraphProto(name=graph_def.name
-                                     if len(graph_def.name) > 0
-                                     else 'onnx-model')
+        onnx_graph = onnx.GraphProto(
+            name=graph_def.name if len(graph_def.name) > 0 else 'onnx-model')
         blob_shapes, blob_names = {}, {}
         blob_versions = collections.defaultdict(
             int, **dict((blob_aliases.get(k, k), 1)
@@ -127,7 +124,7 @@ class DragonFrontend(object):
         for op in graph_def.op:
             # Get the shape of inputs and outputs.
             for name in itertools.chain(op.input, op.output):
-                impl = workspace.GetTensor(name)
+                impl = workspace.get_tensor(name)
                 if impl is not None:
                     blob_shapes[name] = impl.dims
                 else:
@@ -138,8 +135,8 @@ class DragonFrontend(object):
 
             # Rewritten for names.
             for node in nodes:
-                node.input[:] = [blob_aliases.get(e, e) for e in node.input]
-                node.output[:] = [blob_aliases.get(e, e) for e in node.output]
+                node.input[:] = [blob_aliases.get(x, x) for x in node.input]
+                node.output[:] = [blob_aliases.get(y, y) for y in node.output]
                 cls._rewrite_for_ssa(node, context)
 
             # Convert constant outputs if necessary.
@@ -173,7 +170,7 @@ class DragonFrontend(object):
                         elem_type=value_info[name][0],
                         shape=value_info[name][1])])
             except KeyError:
-                impl = workspace.GetTensor(name)
+                impl = workspace.get_tensor(name)
                 if impl is not None:
                     initializer = helper.from_tensor(name, workspace)
                     onnx_graph.input.extend([
@@ -317,9 +314,7 @@ def record():
     `dragon.onnx.export(...)`_
 
     """
-    tape = backprop.Tape()
-    tape.retain_graph = True
-    return backprop._GLOBAL_TAPE_STACK.get_controller(tape)
+    return tape._GLOBAL_TAPE_STACK.get_controller(tape.GraphTape())
 
 
 def export(
@@ -388,21 +383,21 @@ def export(
 
     if eager_context.executing_eagerly():
         op_defs = []
-        tape = backprop.get_default_tape()
-        if tape is None:
+        graph_tape = tape.get_tape()
+        if not isinstance(graph_tape, tape.GraphTape):
             raise RuntimeError('Please enter with ``onnx.frontend.record()``.')
-        for op_def in tape._defs:
+        for op_def in graph_tape.get_op_defs():
             op_defs.append(dragon_pb2.OperatorDef())
             op_defs[-1].ParseFromString(op_def.SerializeAs())
         graph_def = dragon_pb2.GraphDef(op=op_defs)
     else:
-        symbolic_outputs = []
+        output_symbols = []
         for output in outputs:
-            if types.is_symbolic_tensor(output):
-                symbolic_outputs.append(output)
-        graph_func = function_lib.create_function(outputs=symbolic_outputs)
-        graph_func.callback()
-        graph_def = graph_func.graph_def
+            if types.is_tensor(output) and not output._is_variable:
+                output_symbols.append(output)
+        graph = GraphLib.from_outputs(output_symbols)
+        graph.run()
+        graph_def = graph._def
         graph_def.name = ''
 
     # Add inputs and outputs.

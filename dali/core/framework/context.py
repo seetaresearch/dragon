@@ -57,7 +57,7 @@ def get_device_type(mixed=False):
     Parameters
     ----------
     mixed : bool, optional, default=False
-        **True** to return ``mixed`` for gpu device.
+        ``True`` to return ``mixed`` for gpu device.
 
     Returns
     -------

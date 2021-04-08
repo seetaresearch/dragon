@@ -122,13 +122,13 @@ class Module(object):
         Parameters
         ----------
         recursive : bool, optional, default=True
-            **True** to traverse the submodules recursively.
+            ``True`` to traverse the submodules recursively.
         predicate : callable, optional
             The callable to select attribute.
         attribute_traversal_key : callable, optional
             The custom key function to be used in ``sorted(...)``.
         with_path : bool, optional, default=True
-            **True** to return *(paths, element)* otherwise *element*.
+            ``True`` to return *(paths, element)* otherwise *element*.
 
         Returns
         -------
@@ -188,7 +188,7 @@ def flatten_module(
         if key in attributes_to_ignore:
             continue
 
-        for leaf_path, leaf in nest.flatten_with_tuple_paths(module_dict[key]):
+        for leaf_path, leaf in nest.flatten_with_paths(module_dict[key]):
             leaf_path = (key,) + leaf_path
 
             if not with_path:

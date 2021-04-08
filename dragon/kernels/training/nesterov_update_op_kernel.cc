@@ -3,26 +3,23 @@
 
 namespace dragon {
 
-namespace kernel {
+namespace kernels {
 
 template <>
 void NesterovUpdate<float, CPUContext>(
-    const int count,
+    const int N,
     const float lr,
     const float momentum,
     float* g,
     float* m,
     CPUContext* ctx) {
-#ifdef USE_OPENMP
-#pragma omp parallel for num_threads(OMP_THREADS(count))
-#endif
-  for (int i = 0; i < count; ++i) {
+  for (int i = 0; i < N; ++i) {
     float mi = m[i];
     float mi_new = m[i] = momentum * mi + lr * g[i];
     g[i] = (1 + momentum) * mi_new - momentum * mi;
   }
 }
 
-} // namespace kernel
+} // namespace kernels
 
 } // namespace dragon

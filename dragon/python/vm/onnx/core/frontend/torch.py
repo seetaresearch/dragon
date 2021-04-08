@@ -17,13 +17,13 @@ from __future__ import print_function
 import collections
 import numpy
 
+from dragon.core.autograph import tape
 from dragon.core.framework import workspace
 from dragon.core.proto import dragon_pb2
 from dragon.core.util import nest
 from dragon.core.util import serialization
 from dragon.vm.onnx.core import helper
 from dragon.vm.onnx.core.frontend.native import graph_def_to_onnx_model
-from dragon.vm.torch.core.autograd import backprop
 
 
 def export(
@@ -125,10 +125,10 @@ def export(
         inputs = args = nest.flatten(args)
 
     # Run the model to get the outputs.
-    temporal_ws = workspace.Workspace()
-    temporal_ws.merge_from(workspace.get_workspace())
-    with temporal_ws.as_default():
-        with backprop.Tape(retain_graph=True) as _tape:
+    execute_ws = workspace.Workspace()
+    execute_ws.merge_from(workspace.get_workspace())
+    with execute_ws.as_default():
+        with tape.GraphTape() as model_tape:
             outputs = model(*args)
 
     # Process the outputs
@@ -158,7 +158,7 @@ def export(
             graph_def.output.extend([output_names[i]])
 
     # Add operators.
-    for op_def in _tape.defs:
+    for op_def in model_tape.get_op_defs():
         ops_def.append(dragon_pb2.OperatorDef())
         ops_def[-1].ParseFromString(op_def.SerializeAs())
     graph_def.op.extend(ops_def)
@@ -175,7 +175,7 @@ def export(
             constants[k] = v
 
     # Export.
-    with temporal_ws.as_default():
+    with execute_ws.as_default():
         model = graph_def_to_onnx_model(
             graph_def=graph_def,
             input_names=input_names,
@@ -184,7 +184,7 @@ def export(
             constants=constants,
             value_info=value_info,
             opset_version=opset_version,
-            workspace=temporal_ws,
+            workspace=execute_ws,
             verbose=verbose,
             enable_onnx_checker=enable_onnx_checker,
         )

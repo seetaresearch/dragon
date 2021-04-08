@@ -1,5 +1,5 @@
-#include "dragon/operators/loss/l2_loss_op.h"
 #include "dragon/core/workspace.h"
+#include "dragon/operators/loss/l2_loss_ops.h"
 #include "dragon/utils/math_functions.h"
 #include "dragon/utils/op_kernels.h"
 
@@ -22,7 +22,7 @@ void L2LossOp<Context>::DoRunWithType() {
 
   // Compute the error of inputs
   if (InputSize() > 1) {
-    STORE_INPUT_SPEC(1);
+    SET_INPUT_SPEC(1);
     math::Sub(
         X.count(),
         X.template data<T, Context>(),
@@ -50,7 +50,7 @@ void L2LossOp<Context>::DoRunWithType() {
     } else if (reduction_ == "MEAN") {
       normalizer *= X.count();
     }
-    kernel::ReduceLoss(
+    kernels::ReduceLoss(
         X.count(),
         0,
         normalizer,
@@ -63,7 +63,7 @@ void L2LossOp<Context>::DoRunWithType() {
 
 template <class Context>
 void L2LossOp<Context>::RunOnDevice() {
-  DispatchHelper<FloatingTensorTypes>::Call(this, Input(0));
+  DispatchHelper<dtypes::Floating>::Call(this, Input(0));
 }
 
 template <class Context>
@@ -97,7 +97,7 @@ void L2LossGradientOp<Context>::DoRunWithType() {
     } else if (reduction_ == "MEAN") {
       normalizer *= dX->count();
     }
-    kernel::ReduceLossGrad(
+    kernels::ReduceLossGrad(
         dX->count(), 0, float(normalizer) * 0.5f, dy, (T*)nullptr, dx, ctx());
   }
 
@@ -114,7 +114,7 @@ void L2LossGradientOp<Context>::DoRunWithType() {
 template <class Context>
 void L2LossGradientOp<Context>::RunOnDevice() {
   Output(0)->ReshapeLike(Input(0));
-  DispatchHelper<FloatingTensorTypes>::Call(this, Input(0));
+  DispatchHelper<dtypes::Floating>::Call(this, Input(0));
 }
 
 DEPLOY_CPU_OPERATOR(L2Loss);

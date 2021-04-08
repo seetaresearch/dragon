@@ -17,7 +17,7 @@ from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
 
-from dragon.core.eager import backprop
+from dragon.core.autograph import backprop
 
 
 class GradientTape(backprop.GradientTape):
@@ -46,7 +46,7 @@ class GradientTape(backprop.GradientTape):
         Parameters
         ----------
         persistent : bool, optional, default=False
-            **False** release resources once ``gradient(...)`` called.
+            ``False`` release resources once ``gradient(...)`` called.
 
         """
         super(GradientTape, self).__init__(persistent)

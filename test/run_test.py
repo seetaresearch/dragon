@@ -35,9 +35,7 @@ TESTS_AND_SOURCES = [
     ('torch/test_torch', 'dragon.vm.torch.core'),
 ]
 
-DISTRIBUTED_BLOCKLIST = [
-    'dragon/test_distributed',
-]
+DISTRIBUTED_BLOCKLIST = ['dragon/test_distributed']
 
 TESTS = [t[0] for t in TESTS_AND_SOURCES]
 SOURCES = [t[1] for t in TESTS_AND_SOURCES]

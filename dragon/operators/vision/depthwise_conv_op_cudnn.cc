@@ -3,7 +3,6 @@
 #include "dragon/core/workspace.h"
 #include "dragon/operators/vision/conv_op_impl.h"
 #include "dragon/operators/vision/depthwise_conv_op.h"
-#include "dragon/utils/filler.h"
 
 namespace dragon {
 
@@ -16,11 +15,10 @@ void CuDNNDepthwiseConvOp<Context>::DoRunWithType() {
   ConvOpBase<Context>::Reshape();
   CHECK_EQ(in_channels_, out_channels_)
       << "\nExcepted in/out channels to be same.";
-
-  TENSOR_FILL(W, w_shape_);
+  INITIALIZE_TENSOR_VIA_SPEC(W, w_shape_, T);
 
   if (num_axes_ == 1 || num_axes_ == 2) {
-    kernel::DepthwiseConv2d(
+    kernels::DepthwiseConv2d(
         X.dim(0),
         in_channels_,
         in_shape_[0],
@@ -45,7 +43,7 @@ void CuDNNDepthwiseConvOp<Context>::DoRunWithType() {
   }
 
   if (HasBias()) {
-    TENSOR_FILL(Input(2), b_shape_);
+    INITIALIZE_TENSOR_VIA_SPEC(Input(2), b_shape_, T);
     CuDNNSetBiasDesc<T>(&bias_desc_, X.ndim(), out_channels_, data_format());
     CuDNNSetTensorDesc<T>(&output_desc_, Y->dims(), data_format());
     CUDNN_CHECK(cudnnAddTensor(
@@ -61,7 +59,7 @@ void CuDNNDepthwiseConvOp<Context>::DoRunWithType() {
 
 template <class Context>
 void CuDNNDepthwiseConvOp<Context>::RunOnDevice() {
-  DispatchHelper<TensorTypes<float16, float>>::Call(this, Input(0));
+  DispatchHelper<dtypes::TypesBase<float16, float>>::Call(this, Input(0));
 }
 
 template <class Context>
@@ -75,7 +73,7 @@ void CuDNNDepthwiseConvGradientOp<Context>::DoRunWithType() {
 
   if (dX->has_name()) {
     if (num_axes_ == 1 || num_axes_ == 2) {
-      kernel::DepthwiseConv2dGrad(
+      kernels::DepthwiseConv2dGrad(
           X.dim(0),
           in_channels_,
           in_shape_[0],
@@ -102,7 +100,7 @@ void CuDNNDepthwiseConvGradientOp<Context>::DoRunWithType() {
 
   if (dW->has_name()) {
     if (num_axes_ == 1 || num_axes_ == 2) {
-      kernel::DepthwiseConv2dWGrad(
+      kernels::DepthwiseConv2dWGrad(
           X.dim(0),
           in_channels_,
           in_shape_[0],
@@ -143,7 +141,7 @@ void CuDNNDepthwiseConvGradientOp<Context>::DoRunWithType() {
 
 template <class Context>
 void CuDNNDepthwiseConvGradientOp<Context>::RunOnDevice() {
-  DispatchHelper<TensorTypes<float16, float>>::Call(this, Input(0));
+  DispatchHelper<dtypes::TypesBase<float16, float>>::Call(this, Input(0));
 }
 
 DEPLOY_CUDNN_OPERATOR(DepthwiseConv);

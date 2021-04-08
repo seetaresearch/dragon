@@ -6,15 +6,9 @@
 
 namespace dragon {
 
-namespace kernel {
+namespace kernels {
 
 namespace {
-
-#if __CUDA_ARCH__ >= 350
-#define LDG(x, i) __ldg(x + i)
-#else
-#define LDG(x, i) x[i]
-#endif
 
 template <typename T>
 __global__ void _Im2Col2dNCHW(
@@ -51,7 +45,7 @@ __global__ void _Im2Col2dNCHW(
         const int w = wstart + w_k * dilation_w;
         *offset_col = (math::utils::IsAGeZeroAndALtB(h, H) &&
                        math::utils::IsAGeZeroAndALtB(w, W))
-            ? LDG(offset_im, h_k * dilation_h * W + w_k * dilation_w)
+            ? __ldg(offset_im + h_k * dilation_h * W + w_k * dilation_w)
             : T(0);
         offset_col += (out_h * out_w);
       }
@@ -93,7 +87,7 @@ __global__ void _Im2Col2dNHWC(
         const int col_idx = (((col_start + h_k) * kernel_w + w_k) * C + c);
         col[col_idx] = (math::utils::IsAGeZeroAndALtB(h, H) &&
                         math::utils::IsAGeZeroAndALtB(w, W))
-            ? LDG(im, (h * W + w) * C + c)
+            ? __ldg(im + (h * W + w) * C + c)
             : T(0);
       }
     }
@@ -141,7 +135,7 @@ __global__ void _Col2Im2dNCHW(
           w_k /= dilation_w;
           col_idx = (c * kernel_h + h_k) * kernel_w + w_k;
           col_idx = (col_idx * out_h + h_out) * out_w + w_out;
-          val += convert::To<float>(LDG(col, col_idx));
+          val += convert::To<float>(__ldg(col + col_idx));
         }
       }
     }
@@ -190,7 +184,7 @@ __global__ void _Col2Im2dNHWC(
           w_k /= dilation_w;
           col_idx = (h_out * out_w) + w_out;
           col_idx = ((col_idx * kernel_h) + h_k) * kernel_w + w_k;
-          val += convert::To<float>(LDG(col, col_idx * C + c));
+          val += convert::To<float>(__ldg(col + col_idx * C + c));
         }
       }
     }
@@ -239,7 +233,7 @@ __global__ void _Im2ColNdNCHW(
         im_idx = im_idx * in_shape.data[d] + in_idx[d];
       }
       if (!Transposed) {
-        y[col_idx] = is_padding ? T(0) : LDG(x, im_idx);
+        y[col_idx] = is_padding ? T(0) : __ldg(x + im_idx);
       } else if (!is_padding) {
         math::utils::AtomicAdd(y + im_idx, x[col_idx]);
       }
@@ -289,7 +283,7 @@ __global__ void _Im2ColNdNHWC(
       }
       im_idx = im_idx * channel_dim + i % channel_dim;
       if (!Transposed) {
-        y[col_idx] = is_padding ? T(0) : LDG(x, im_idx);
+        y[col_idx] = is_padding ? T(0) : __ldg(x + im_idx);
       } else if (!is_padding) {
         math::utils::AtomicAdd(y + im_idx, x[col_idx]);
       }
@@ -297,17 +291,15 @@ __global__ void _Im2ColNdNHWC(
   }
 }
 
-#undef LDG
-
 } // namespace
 
 /* ------------------- Launcher Separator ------------------- */
 
-#define DISPATCH_CONV_KERNEL(name, nblocks, nthreads, ...)                 \
+#define DISPATCH_CONV_KERNEL(name, kBlocks, kThreads, ...)                 \
   if (data_format == "NCHW") {                                             \
-    name##NCHW<<<nblocks, nthreads, 0, ctx->cuda_stream()>>>(__VA_ARGS__); \
+    name##NCHW<<<kBlocks, kThreads, 0, ctx->cuda_stream()>>>(__VA_ARGS__); \
   } else if (data_format == "NHWC") {                                      \
-    name##NHWC<<<nblocks, nthreads, 0, ctx->cuda_stream()>>>(__VA_ARGS__); \
+    name##NHWC<<<kBlocks, kThreads, 0, ctx->cuda_stream()>>>(__VA_ARGS__); \
   } else {                                                                 \
     LOG(FATAL) << "Unknown DataFormat: " << data_format;                   \
   }
@@ -363,14 +355,14 @@ DEFINE_KERNEL_LAUNCHER(Col2Im2d, true, double);
 #undef DISPATCH_CONV_KERNEL
 
 #define DISPATCH_CONV_KERNEL(                                              \
-    name, kTransposed, T, nblocks, nthreads, channel_dim, kernel_dim, ...) \
+    name, kTransposed, T, kBlocks, nthreads, channel_dim, kernel_dim, ...) \
   if (data_format == "NCHW") {                                             \
     name##NCHW<T, 3, kTransposed>                                          \
-        <<<nblocks, nthreads, 0, ctx->cuda_stream()>>>(                    \
+        <<<kBlocks, nthreads, 0, ctx->cuda_stream()>>>(                    \
             kernel_dim, __VA_ARGS__);                                      \
   } else if (data_format == "NHWC") {                                      \
     name##NHWC<T, 3, kTransposed>                                          \
-        <<<nblocks, nthreads, 0, ctx->cuda_stream()>>>(                    \
+        <<<kBlocks, nthreads, 0, ctx->cuda_stream()>>>(                    \
             channel_dim, __VA_ARGS__);                                     \
   } else {                                                                 \
     LOG(FATAL) << "Unknown DataFormat: " << data_format;                   \
@@ -445,7 +437,7 @@ DEFINE_KERNEL_LAUNCHER(Col2ImNd, true, double);
 #undef DEFINE_KERNEL_LAUNCHER
 #undef DISPATCH_CONV_KERNEL
 
-} // namespace kernel
+} // namespace kernels
 
 } // namespace dragon
 

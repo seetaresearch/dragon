@@ -1,6 +1,5 @@
 #include "dragon/core/workspace.h"
 #include "dragon/operators/normalization/batch_norm_op.h"
-#include "dragon/utils/filler.h"
 
 #ifdef USE_CUDNN
 
@@ -10,10 +9,10 @@ template <class Context>
 template <typename T>
 void CuDNNBatchNormOp<Context>::DoRunWithType() {
   using ParamT = typename CuDNNType<T>::BNParamType;
-  TENSOR_FILL_WITH_TYPE(Input(1), vec64_t({C_}), ParamT);
-  TENSOR_FILL_WITH_TYPE(Input(2), vec64_t({C_}), ParamT);
-  TENSOR_FILL_WITH_TYPE(Input(3), vec64_t({C_}), ParamT);
-  TENSOR_FILL_WITH_TYPE(Input(4), vec64_t({C_}), ParamT);
+  INITIALIZE_TENSOR_VIA_SPEC(Input(1), vec64_t({C_}), ParamT);
+  INITIALIZE_TENSOR_VIA_SPEC(Input(2), vec64_t({C_}), ParamT);
+  INITIALIZE_TENSOR_VIA_SPEC(Input(3), vec64_t({C_}), ParamT);
+  INITIALIZE_TENSOR_VIA_SPEC(Input(4), vec64_t({C_}), ParamT);
 
   // Determine the descriptors
   if (Input(0).ndim() == 2) {
@@ -26,7 +25,7 @@ void CuDNNBatchNormOp<Context>::DoRunWithType() {
   CUDNN_CHECK(cudnnDeriveBNTensorDescriptor(bn_desc_, input_desc_, bn_mode_));
 
   // Dispatch the training or inference implementation
-  if (is_training_ > 0) {
+  if (training_ > 0) {
     auto* X_mu = Buffer("X_mu")->Reshape({C_});
     auto* X_rsig = Buffer("X_rsig")->Reshape({C_});
     CUDNN_CHECK(cudnnBatchNormalizationForwardTraining(
@@ -41,7 +40,7 @@ void CuDNNBatchNormOp<Context>::DoRunWithType() {
         bn_desc_,
         Input(1).template data<ParamT, Context>(), // gamma
         Input(2).template data<ParamT, Context>(), // beta
-        is_recomputing_ == 0 ? 1.f - momentum() : 0.f,
+        recomputing_ == 0 ? 1.f - momentum() : 0.f,
         Input(3).template mutable_data<ParamT, Context>(), // rm
         Input(4).template mutable_data<ParamT, Context>(), // rv
         epsilon_,
@@ -69,12 +68,12 @@ void CuDNNBatchNormOp<Context>::DoRunWithType() {
 template <class Context>
 void CuDNNBatchNormOp<Context>::RunOnDevice() {
   GetBaseArguments();
-  auto* flag = workspace()->GetTensor("/share/flag/recomputing");
-  is_recomputing_ = flag->template data<bool, CPUContext>()[0] ? 1 : 0;
+  auto* flag = workspace()->GetTensor("flagged/recomp");
+  recomputing_ = flag->template data<bool, CPUContext>()[0] ? 1 : 0;
 
   // Dispatch the training or inference impl
   Output(0)->ReshapeLike(Input(0));
-  DispatchHelper<FloatingTensorTypes>::Call(this, Input(0));
+  DispatchHelper<dtypes::Floating>::Call(this, Input(0));
 }
 
 template <class Context>
@@ -123,7 +122,7 @@ void CuDNNBatchNormGradientOp<Context>::RunOnDevice() {
 
   // Dispatch the training or inference implementation
   Output(0)->ReshapeLike(Input(0));
-  DispatchHelper<FloatingTensorTypes>::Call(this, Input(0));
+  DispatchHelper<dtypes::Floating>::Call(this, Input(0));
 }
 
 DEPLOY_CUDNN_OPERATOR(BatchNorm);

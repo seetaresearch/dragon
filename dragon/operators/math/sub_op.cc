@@ -8,10 +8,8 @@ template <class Context>
 template <typename T>
 void SubOp<Context>::DoRunWithType() {
   auto &A = Input(0), &B = Input(1);
-
-  // Store for the gradient calculation
-  STORE_INPUT_SPEC(0);
-  STORE_INPUT_SPEC(1);
+  SET_INPUT_SPEC(0);
+  SET_INPUT_SPEC(1);
 
   vec64_t Y_dims(A.dims());
   if (A.dims() == B.dims()) {
@@ -40,14 +38,14 @@ void SubOp<Context>::DoRunWithType() {
 
 template <class Context>
 void SubOp<Context>::RunOnDevice() {
-  DispatchHelper<FullTensorTypes>::Call(this, Input(0));
+  DispatchHelper<dtypes::Numerical>::Call(this, Input(0));
 }
 
 template <class Context>
 template <typename T>
 void SubGradientOp<Context>::DoRunWithType() {
   auto &dY = Input(0), *dA = Output(0), *dB = Output(1);
-  auto &A = RESTORE_INPUT_SPEC(0), &B = RESTORE_INPUT_SPEC(1);
+  auto &A = INPUT_SPEC(0), &B = INPUT_SPEC(1);
 
   vec32_t A_broadcast_axes, B_broadcast_axes;
   vec32_t Y_dims(dY.dims().begin(), dY.dims().end());
@@ -93,7 +91,7 @@ void SubGradientOp<Context>::DoRunWithType() {
 
 template <class Context>
 void SubGradientOp<Context>::RunOnDevice() {
-  DispatchHelper<FloatingTensorTypes>::Call(this, Input(0));
+  DispatchHelper<dtypes::Floating>::Call(this, Input(0));
 }
 
 DEPLOY_CPU_OPERATOR(Sub);

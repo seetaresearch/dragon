@@ -16,8 +16,7 @@ void NegOp<Context>::DoRunWithType() {
 
 template <class Context>
 void NegOp<Context>::RunOnDevice() {
-  DispatchHelper<TensorTypes<int8_t, int, int64_t, float16, float, double>>::
-      Call(this, Input(0));
+  DispatchHelper<dtypes::Signed>::Call(this, Input(0));
 }
 
 template <class Context>
@@ -33,7 +32,7 @@ void NegGradientOp<Context>::DoRunWithType() {
 
 template <class Context>
 void NegGradientOp<Context>::RunOnDevice() {
-  DispatchHelper<FloatingTensorTypes>::Call(this, Input(0));
+  DispatchHelper<dtypes::Floating>::Call(this, Input(0));
 }
 
 DEPLOY_CPU_OPERATOR(Neg);

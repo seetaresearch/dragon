@@ -304,9 +304,9 @@ def cumsum(x, axis=0, exclusive=False, reverse=False, name=None):
     axis : int, optional, default=0
         The cumulative axis.
     exclusive : bool, optional, default=False
-        **True** to exclude the top element.
+        ``True`` to exclude the top element.
     reverse : bool, optional, default=False
-        **True** to compute in the reverse direction.
+        ``True`` to compute in the reverse direction.
     name : str, optional
         The operation name.
 

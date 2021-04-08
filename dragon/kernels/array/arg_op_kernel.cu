@@ -2,67 +2,49 @@
 
 #include "dragon/core/context_cuda.h"
 #include "dragon/utils/device/common_cub.h"
-#include "dragon/utils/math/functional.h"
+#include "dragon/utils/math_functions.h"
 #include "dragon/utils/op_kernels.h"
 
 namespace dragon {
 
-namespace kernel {
+namespace kernels {
 
 namespace {
 
-template <typename T>
-struct ArgMaxFunctor {
+template <typename T, class CompareFunctor>
+struct ArgFunctor {
   inline __device__ cub::KeyValuePair<int64_t, T> operator()(
       const cub::KeyValuePair<int64_t, T>& lhs,
       const cub::KeyValuePair<int64_t, T>& rhs) const {
-    if ((greater_(rhs.value, lhs.value)) ||
-        (equal_(lhs.value, rhs.value) && (rhs.key < lhs.key))) {
+    if ((compare_functor_(rhs.value, lhs.value)) ||
+        (equal_functor_(lhs.value, rhs.value) && (rhs.key < lhs.key))) {
       return rhs;
     }
     return lhs;
   }
-  math::GreaterFunctor<T> greater_;
-  math::EqualFunctor<T> equal_;
-};
-
-template <typename T>
-struct ArgMinFunctor {
-  inline __device__ cub::KeyValuePair<int64_t, T> operator()(
-      const cub::KeyValuePair<int64_t, T>& lhs,
-      const cub::KeyValuePair<int64_t, T>& rhs) const {
-    if ((less_(rhs.value, lhs.value)) ||
-        (equal_(lhs.value, rhs.value) && (rhs.key < lhs.key))) {
-      return rhs;
-    }
-    return lhs;
-  }
-  math::LessFunctor<T> less_;
-  math::EqualFunctor<T> equal_;
+  CompareFunctor compare_functor_;
+  math::EqualFunctor<T> equal_functor_;
 };
 
 template <typename T, class Reducer>
 __global__ void _ArgReduce(
-    const int rows,
-    const int cols,
-    const int inner_dim,
+    const int NxS,
+    const int S,
+    const int C,
     const Reducer reducer,
     const T init,
     const T* x,
     int64_t* y) {
   typedef cub::KeyValuePair<int64_t, T> KeyValuePair;
   __shared__ typename BlockReduce<KeyValuePair>::TempStorage storage;
-  CUDA_2D_KERNEL_LOOP1(i, rows) {
-    auto key_val = KeyValuePair(-1, init);
-    CUDA_2D_KERNEL_LOOP2(j, cols) {
-      key_val = reducer(
-          key_val,
-          KeyValuePair(
-              j, x[((i / inner_dim) * cols + j) * inner_dim + i % inner_dim]));
+  CUDA_2D_KERNEL_LOOP1(i, NxS) {
+    auto kv = KeyValuePair(-1, init);
+    CUDA_2D_KERNEL_LOOP2(j, C) {
+      kv = reducer(kv, KeyValuePair(j, x[(i / S * C + j) * S + i % S]));
     }
-    key_val = BlockReduce<KeyValuePair>(storage).Reduce(key_val, reducer);
+    kv = BlockReduce<KeyValuePair>(storage).Reduce(kv, reducer);
     if (threadIdx.x == 0) {
-      y[i] = key_val.key;
+      y[i] = kv.key;
     }
   }
 }
@@ -71,114 +53,100 @@ __global__ void _ArgReduce(
 
 /* ------------------- Launcher Separator ------------------- */
 
-#define DEFINE_KERNEL_LAUNCHER(name, T1, T2, Reducer, kInit)                   \
-  template <>                                                                  \
-  void name<T1, CUDAContext>(                                                  \
-      const int outer_dim,                                                     \
-      const int inner_dim,                                                     \
-      const int axis_dim,                                                      \
-      const T1* x,                                                             \
-      int64_t* y,                                                              \
-      CUDAContext* ctx) {                                                      \
-    const auto rows = outer_dim * inner_dim;                                   \
-    const auto cols = axis_dim;                                                \
-    _ArgReduce<<<CUDA_2D_BLOCKS(rows), CUDA_THREADS, 0, ctx->cuda_stream()>>>( \
-        rows,                                                                  \
-        cols,                                                                  \
-        inner_dim,                                                             \
-        Reducer<T2>(),                                                         \
-        kInit,                                                                 \
-        reinterpret_cast<const T2*>(x),                                        \
-        y);                                                                    \
+#define DEFINE_KERNEL_LAUNCHER(name, T, CompareFunctor, kInit)                \
+  template <>                                                                 \
+  void name<T, CUDAContext>(                                                  \
+      const int N,                                                            \
+      const int S,                                                            \
+      const int C,                                                            \
+      const T* x,                                                             \
+      int64_t* y,                                                             \
+      CUDAContext* ctx) {                                                     \
+    using ScalarT = math::ScalarType<T>::type;                                \
+    const auto NxS = N * S;                                                   \
+    _ArgReduce<<<CUDA_2D_BLOCKS(NxS), CUDA_THREADS, 0, ctx->cuda_stream()>>>( \
+        NxS,                                                                  \
+        S,                                                                    \
+        C,                                                                    \
+        ArgFunctor<ScalarT, CompareFunctor<ScalarT>>(),                       \
+        kInit,                                                                \
+        reinterpret_cast<const ScalarT*>(x),                                  \
+        y);                                                                   \
   }
 
 DEFINE_KERNEL_LAUNCHER(
     ArgMax,
-    int8_t,
-    int8_t,
-    ArgMaxFunctor,
-    std::numeric_limits<int8_t>::lowest());
-DEFINE_KERNEL_LAUNCHER(
-    ArgMax,
     uint8_t,
-    uint8_t,
-    ArgMaxFunctor,
+    math::GreaterFunctor,
     std::numeric_limits<uint8_t>::lowest());
 DEFINE_KERNEL_LAUNCHER(
     ArgMax,
+    int8_t,
+    math::GreaterFunctor,
+    std::numeric_limits<int8_t>::lowest());
+DEFINE_KERNEL_LAUNCHER(
+    ArgMax,
     int,
-    int,
-    ArgMaxFunctor,
+    math::GreaterFunctor,
     std::numeric_limits<int>::lowest());
 DEFINE_KERNEL_LAUNCHER(
     ArgMax,
     int64_t,
-    int64_t,
-    ArgMaxFunctor,
+    math::GreaterFunctor,
     std::numeric_limits<int64_t>::lowest());
 DEFINE_KERNEL_LAUNCHER(
     ArgMax,
     float16,
-    half,
-    ArgMaxFunctor,
+    math::GreaterFunctor,
     cub::Traits<half>::Lowest());
 DEFINE_KERNEL_LAUNCHER(
     ArgMax,
     float,
-    float,
-    ArgMaxFunctor,
+    math::GreaterFunctor,
     std::numeric_limits<float>::lowest());
 DEFINE_KERNEL_LAUNCHER(
     ArgMax,
     double,
-    double,
-    ArgMaxFunctor,
+    math::GreaterFunctor,
     std::numeric_limits<double>::lowest());
 DEFINE_KERNEL_LAUNCHER(
     ArgMin,
-    int8_t,
-    int8_t,
-    ArgMinFunctor,
-    std::numeric_limits<int8_t>::max());
-DEFINE_KERNEL_LAUNCHER(
-    ArgMin,
     uint8_t,
-    uint8_t,
-    ArgMinFunctor,
+    math::LessFunctor,
     std::numeric_limits<uint8_t>::max());
 DEFINE_KERNEL_LAUNCHER(
     ArgMin,
+    int8_t,
+    math::LessFunctor,
+    std::numeric_limits<int8_t>::max());
+DEFINE_KERNEL_LAUNCHER(
+    ArgMin,
     int,
-    int,
-    ArgMinFunctor,
+    math::LessFunctor,
     std::numeric_limits<int>::max());
 DEFINE_KERNEL_LAUNCHER(
     ArgMin,
     int64_t,
-    int64_t,
-    ArgMinFunctor,
+    math::LessFunctor,
     std::numeric_limits<int64_t>::max());
 DEFINE_KERNEL_LAUNCHER(
     ArgMin,
     float16,
-    half,
-    ArgMinFunctor,
+    math::LessFunctor,
     cub::Traits<half>::Max());
 DEFINE_KERNEL_LAUNCHER(
     ArgMin,
     float,
-    float,
-    ArgMinFunctor,
+    math::LessFunctor,
     std::numeric_limits<float>::max());
 DEFINE_KERNEL_LAUNCHER(
     ArgMin,
     double,
-    double,
-    ArgMinFunctor,
+    math::LessFunctor,
     std::numeric_limits<double>::max());
 #undef DEFINE_KERNEL_LAUNCHER
 
-} // namespace kernel
+} // namespace kernels
 
 } // namespace dragon
 

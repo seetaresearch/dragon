@@ -21,7 +21,7 @@ template <class Context>
 class TileOp final : public Operator<Context> {
  public:
   TileOp(const OperatorDef& def, Workspace* ws) : Operator<Context>(def, ws) {
-    INIT_OP_REPEATED_ARG_WITH_DESC(int64_t, repeats);
+    INITIALIZE_OP_REPEATED_ARG(int64_t, repeats);
   }
   USE_OPERATOR_FUNCTIONS;
 
@@ -31,7 +31,7 @@ class TileOp final : public Operator<Context> {
   void DoRunWithType();
 
  protected:
-  DECLARE_OP_REPEATED_ARG_WITH_DESC(int64_t, repeats);
+  DECLARE_OP_REPEATED_ARG(int64_t, repeats);
 };
 
 template <class Context>
@@ -39,7 +39,7 @@ class TileGradientOp final : public Operator<Context> {
  public:
   TileGradientOp(const OperatorDef& def, Workspace* ws)
       : Operator<Context>(def, ws) {
-    INIT_OP_REPEATED_ARG_WITH_DESC(int64_t, repeats);
+    INITIALIZE_OP_REPEATED_ARG(int64_t, repeats);
   }
   USE_OPERATOR_FUNCTIONS;
 
@@ -51,11 +51,11 @@ class TileGradientOp final : public Operator<Context> {
  protected:
   Tensor *dest_, *src_, nav_;
   int64_t axis_, repeat_;
-  DECLARE_OP_REPEATED_ARG_WITH_DESC(int64_t, repeats);
+  DECLARE_OP_REPEATED_ARG(int64_t, repeats);
 };
 
-DEFINE_OP_REPEATED_ARG_WITH_DESC(int64_t, TileOp, repeats);
-DEFINE_OP_REPEATED_ARG_WITH_DESC(int64_t, TileGradientOp, repeats);
+DEFINE_OP_REPEATED_ARG(int64_t, TileOp, repeats);
+DEFINE_OP_REPEATED_ARG(int64_t, TileGradientOp, repeats);
 
 } // namespace dragon
 

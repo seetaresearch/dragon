@@ -1,6 +1,5 @@
 #include "dragon/operators/vision/bias_add_op.h"
 #include "dragon/core/workspace.h"
-#include "dragon/utils/filler.h"
 #include "dragon/utils/math_functions.h"
 #include "dragon/utils/op_kernels.h"
 
@@ -20,8 +19,8 @@ void BiasAddOp<Context>::DoRunWithType() {
     LOG(FATAL) << "Unknown DataFormat: " << data_format();
   }
 
-  TENSOR_FILL(B, vec64_t({C}));
-  kernel::BiasAdd(
+  INITIALIZE_TENSOR_VIA_SPEC(B, vec64_t({C}), T);
+  kernels::BiasAdd(
       N,
       S,
       C,
@@ -33,7 +32,7 @@ void BiasAddOp<Context>::DoRunWithType() {
 
 template <class Context>
 void BiasAddOp<Context>::RunOnDevice() {
-  DispatchHelper<FloatingTensorTypes>::Call(this, Input(0));
+  DispatchHelper<dtypes::Floating>::Call(this, Input(0));
 }
 
 template <class Context>
@@ -70,7 +69,7 @@ void BiasAddGradientOp<Context>::DoRunWithType() {
 
 template <class Context>
 void BiasAddGradientOp<Context>::RunOnDevice() {
-  DispatchHelper<FloatingTensorTypes>::Call(this, Input(0));
+  DispatchHelper<dtypes::Floating>::Call(this, Input(0));
 }
 
 DEPLOY_CPU_OPERATOR(BiasAdd);

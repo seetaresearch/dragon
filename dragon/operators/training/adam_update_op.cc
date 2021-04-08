@@ -6,15 +6,12 @@ namespace dragon {
 
 template <class Context>
 void AdamUpdateOp<Context>::ComputeUpdate(Tensor* dX) {
-  t_++;
-  auto beta1 = Parameter("beta1"), beta2 = Parameter("beta2");
-  auto coef = sqrt(1.f - pow(beta2, t_)) / (1.f - pow(beta1, t_));
-  kernel::AdamUpdate(
+  kernels::AdamUpdate(
       dX->count(),
-      Parameter("base_lr") * coef * this->lr_mult_,
-      beta1,
-      beta2,
-      Parameter("eps"),
+      lr_,
+      beta1_,
+      beta2_,
+      eps_,
       dX->template mutable_data<float, Context>(),
       Slot("m")->ReshapeLike(*dX)->template mutable_data<float, Context>(),
       Slot("v")->ReshapeLike(*dX)->template mutable_data<float, Context>(),
@@ -26,11 +23,7 @@ DEPLOY_CPU_OPERATOR(AdamUpdate);
 DEPLOY_CUDA_OPERATOR(AdamUpdate);
 #endif
 
-OPERATOR_SCHEMA(AdamUpdate)
-    /* dX */
-    .NumInputs(1)
-    /* X */
-    .NumOutputs(1);
+OPERATOR_SCHEMA(AdamUpdate).NumInputs(1, INT_MAX).NumOutputs(1, INT_MAX);
 
 NO_GRADIENT(AdamUpdate);
 

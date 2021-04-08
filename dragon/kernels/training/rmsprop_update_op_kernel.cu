@@ -5,13 +5,13 @@
 
 namespace dragon {
 
-namespace kernel {
+namespace kernels {
 
 namespace {
 
 template <typename T>
 __global__ void _RMSPropUpdate(
-    const int nthreads,
+    const int N,
     const T lr,
     const T momentum,
     const T decay,
@@ -19,7 +19,7 @@ __global__ void _RMSPropUpdate(
     T* g,
     T* m,
     T* v) {
-  CUDA_1D_KERNEL_LOOP(i, nthreads) {
+  CUDA_1D_KERNEL_LOOP(i, N) {
     T gi = g[i];
     T vi = v[i] = decay * v[i] + (1 - decay) * gi * gi;
     g[i] = m[i] = momentum * m[i] + (lr * gi / (sqrt(vi) + eps));
@@ -32,7 +32,7 @@ __global__ void _RMSPropUpdate(
 
 template <>
 void RMSPropUpdate<float, CUDAContext>(
-    const int count,
+    const int N,
     const float lr,
     const float momentum,
     const float decay,
@@ -41,11 +41,11 @@ void RMSPropUpdate<float, CUDAContext>(
     float* m,
     float* v,
     CUDAContext* ctx) {
-  _RMSPropUpdate<<<CUDA_BLOCKS(count), CUDA_THREADS, 0, ctx->cuda_stream()>>>(
-      count, lr, momentum, decay, eps, g, m, v);
+  _RMSPropUpdate<<<CUDA_BLOCKS(N), CUDA_THREADS, 0, ctx->cuda_stream()>>>(
+      N, lr, momentum, decay, eps, g, m, v);
 }
 
-} // namespace kernel
+} // namespace kernels
 
 } // namespace dragon
 

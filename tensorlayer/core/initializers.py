@@ -14,7 +14,7 @@ from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
 
-from dragon.core.eager import context
+from dragon.core.autograph import context as eager_context
 from dragon.core.ops import init_ops
 from dragon.core.util import six
 
@@ -23,12 +23,12 @@ class Initializer(object):
     """The base initializer class."""
 
     @staticmethod
-    def _getter(init_fn, **kwargs):
-        """Return an named eager tensor."""
-        with context.eager_mode():
-            value = init_fn(**kwargs)
-            value._name = kwargs.get('name', value.id)
-        return value
+    def _apply(init_fn, **kwargs):
+        """Apply the initialize function."""
+        with eager_context.eager_mode():
+            output = init_fn(**kwargs)
+            output._name = kwargs.get('name', None)
+        return output
 
     def __call__(self, shape, dtype='float32', **kwargs):
         """Return a tensor initialized as specified initializer.
@@ -50,11 +50,7 @@ class Initializer(object):
 
 
 class Constant(Initializer):
-    r"""Fill tensor with a scalar value.
-
-    .. math:: \text{tensor} \leftarrow \text{value}
-
-    """
+    """Fill tensor with a scalar value."""
 
     def __init__(self, value=0):
         """Create a ``Constant`` initializer.
@@ -68,23 +64,14 @@ class Constant(Initializer):
         self.value = value
 
     def __call__(self, shape, dtype='float32', **kwargs):
-        return self._getter(
-            init_ops.fill,
-            value=self.value,
-            shape=shape,
-            dtype=dtype,
-            **kwargs
-        )
+        return self._apply(
+            init_ops.fill, value=self.value, shape=shape, dtype=dtype, **kwargs)
 
 
 class GlorotNormal(Initializer):
-    r"""Fill tensor from a glorot normal distribution.
+    """Fill tensor from a glorot normal distribution."""
 
-    .. math:: \text{tensor} \sim \mathcal{N}(0, \frac{\text{scale}}{\text{fan}})
-
-    """
-
-    def __init__(self, mode='fan_in', scale=2.0):
+    def __init__(self, mode='fan_avg', scale=2.0):
         """Create a ``GlorotNormal`` initializer.
 
         Parameters
@@ -98,25 +85,15 @@ class GlorotNormal(Initializer):
         self.mode, self.scale = mode, scale
 
     def __call__(self, shape, dtype='float32', **kwargs):
-        return self._getter(
-            init_ops.glorot_normal,
-            mode=self.mode,
-            scale=self.scale,
-            shape=shape,
-            dtype=dtype,
-            **kwargs
-        )
+        return self._apply(
+            init_ops.glorot_normal, mode=self.mode, scale=self.scale,
+            shape=shape, dtype=dtype, **kwargs)
 
 
 class GlorotUniform(Initializer):
-    r"""Fill tensor from a glorot uniform distribution.
+    """Fill tensor from a glorot uniform distribution."""
 
-    .. math:: \text{tensor} \sim \mathcal{U}(-\sqrt{\frac{\text{scale}}{\text{fan}}},
-                                              \sqrt{\frac{\text{scale}}{\text{fan}}})
-
-    """
-
-    def __init__(self, mode='fan_in', scale=3.0):
+    def __init__(self, mode='fan_avg', scale=3.0):
         """Create a ``GlorotUniform`` initializer.
 
         Parameters
@@ -131,43 +108,25 @@ class GlorotUniform(Initializer):
         self.mode, self.scale = mode, scale
 
     def __call__(self, shape, dtype='float32', **kwargs):
-        return self._getter(
-            init_ops.glorot_uniform,
-            mode=self.mode,
-            scale=self.scale,
-            shape=shape,
-            dtype=dtype,
-            **kwargs
-        )
+        return self._apply(
+            init_ops.glorot_uniform, mode=self.mode, scale=self.scale,
+            shape=shape, dtype=dtype, **kwargs)
 
 
 class Ones(Initializer):
-    r"""Fill tensor with ones.
-
-    .. math:: \text{tensor} \leftarrow 1
-
-    """
+    """Fill tensor with ones."""
 
     def __init__(self):
         """Create a ``Ones`` initializer."""
         super(Ones, self).__init__()
 
     def __call__(self, shape, dtype='float32', **kwargs):
-        return self._getter(
-            init_ops.fill,
-            value=1,
-            shape=shape,
-            dtype=dtype,
-            **kwargs
-        )
+        return self._apply(
+            init_ops.fill, value=1, shape=shape, dtype=dtype, **kwargs)
 
 
 class RandomNormal(Initializer):
-    r"""Fill tensor from a normal distribution.
-
-    .. math:: \text{tensor} \sim \mathcal{N}(\mu, \sigma^{2})
-
-    """
+    """Fill tensor from a normal distribution."""
 
     def __init__(self, mean=0., stddev=0.05):
         r"""Create a ``RandomNormal`` initializer.
@@ -183,22 +142,13 @@ class RandomNormal(Initializer):
         self.mean, self.stddev = mean, stddev
 
     def __call__(self, shape, dtype='float32', **kwargs):
-        return self._getter(
-            init_ops.random_normal,
-            mean=self.mean,
-            std=self.stddev,
-            shape=shape,
-            dtype=dtype,
-            **kwargs
-        )
+        return self._apply(
+            init_ops.random_normal, mean=self.mean, std=self.stddev,
+            shape=shape, dtype=dtype, **kwargs)
 
 
 class RandomUniform(Initializer):
-    r"""Fill tensors from an uniform distribution.
-
-    .. math:: \text{tensor} \sim \mathcal{U}(\alpha, \beta)
-
-    """
+    """Fill tensors from an uniform distribution."""
 
     def __init__(self, minval=-0.05, maxval=0.05):
         r"""Create a ``RandomUniform`` initializer.
@@ -214,22 +164,13 @@ class RandomUniform(Initializer):
         self.minval, self.maxval = minval, maxval
 
     def __call__(self, shape, dtype='float32', **kwargs):
-        return self._getter(
-            init_ops.random_uniform,
-            low=self.minval,
-            high=self.maxval,
-            shape=shape,
-            dtype=dtype,
-            **kwargs
-        )
+        return self._apply(
+            init_ops.random_uniform, low=self.minval, high=self.maxval,
+            shape=shape, dtype=dtype, **kwargs)
 
 
 class TruncatedNormal(Initializer):
-    r"""Fill tensor from a truncated normal distribution.
-
-    .. math:: \text{tensor} \sim \mathcal{TN}(\mu, \sigma^{2}, \mu - 2\sigma, \mu + 2\sigma)
-
-    """
+    """Fill tensor from a truncated normal distribution."""
 
     def __init__(self, mean=0., stddev=0.05):
         r"""Create a ``TruncatedNormal`` initializer.
@@ -245,14 +186,9 @@ class TruncatedNormal(Initializer):
         self.mean, self.stddev = mean, stddev
 
     def __call__(self, shape, dtype='float32', **kwargs):
-        return self._getter(
-            init_ops.truncated_normal,
-            mean=self.mean,
-            std=self.stddev,
-            shape=shape,
-            dtype=dtype,
-            **kwargs
-        )
+        return self._apply(
+            init_ops.truncated_normal, mean=self.mean, std=self.stddev,
+            shape=shape, dtype=dtype, **kwargs)
 
 
 class Zeros(Initializer):
@@ -267,13 +203,8 @@ class Zeros(Initializer):
         super(Zeros, self).__init__()
 
     def __call__(self, shape, dtype='float32', **kwargs):
-        return self._getter(
-            init_ops.fill,
-            value=0,
-            shape=shape,
-            dtype=dtype,
-            **kwargs
-        )
+        return self._apply(
+            init_ops.fill, value=0, shape=shape, dtype=dtype, **kwargs)
 
 
 def get(identifier):
@@ -286,8 +217,7 @@ def get(identifier):
     else:
         raise TypeError(
             'Could not interpret initializer identifier: {}.'
-            .format(repr(identifier))
-        )
+            .format(repr(identifier)))
 
 
 # Aliases

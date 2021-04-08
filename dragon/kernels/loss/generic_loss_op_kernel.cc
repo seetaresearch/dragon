@@ -3,23 +3,23 @@
 
 namespace dragon {
 
-namespace kernel {
+namespace kernels {
 
 namespace {
 
 template <typename T>
 void _BroadcastLossGrad(
-    const int outer_dim,
-    const int inner_dim,
-    const int axis_dim,
-    const T* dy,
+    const int N,
+    const int S,
+    const int C,
+    const T* dl,
     T* dx) {
-  std::array<int, 3> dims = {outer_dim, axis_dim, inner_dim};
-  std::array<int, 3> idx = {0, 0, 0};
-  const int count = outer_dim * axis_dim * inner_dim;
-  for (int i = 0; i < count; ++i) {
-    dx[i] *= dy[idx[0] * inner_dim + idx[2]];
-    math::utils::IncreaseIndexInDims(3, dims.data(), idx.data());
+  const auto NxCxS = N * C * S;
+  std::array<int, 3> dims = {N, C, S};
+  std::array<int, 3> index = {0, 0, 0};
+  for (int i = 0; i < NxCxS; ++i) {
+    dx[i] *= dl[index[0] * S + index[2]];
+    math::utils::IncreaseIndexInDims(3, dims.data(), index.data());
   }
 }
 
@@ -27,7 +27,7 @@ void _BroadcastLossGrad(
 
 template <>
 void ReduceLoss<float16, CPUContext>(
-    const int count,
+    const int N,
     const int num_masks,
     const float normalizer,
     const float16* x,
@@ -39,10 +39,10 @@ void ReduceLoss<float16, CPUContext>(
 
 template <>
 void ReduceLossGrad<float16, CPUContext>(
-    const int count,
+    const int N,
     const int num_masks,
     const float normalizer,
-    const float16* dy,
+    const float16* dl,
     const float16* mask,
     float16* dx,
     CPUContext* ctx) {
@@ -51,10 +51,10 @@ void ReduceLossGrad<float16, CPUContext>(
 
 template <>
 void BroadcastLossGrad<float16, CPUContext>(
-    const int outer_dim,
-    const int inner_dim,
-    const int axis_dim,
-    const float16* dy,
+    const int N,
+    const int S,
+    const int C,
+    const float16* dl,
     float16* dx,
     CPUContext* ctx) {
   CPU_FP16_NOT_SUPPORTED;
@@ -63,7 +63,7 @@ void BroadcastLossGrad<float16, CPUContext>(
 #define DEFINE_KERNEL_LAUNCHER(T)                         \
   template <>                                             \
   void ReduceLoss<T, CPUContext>(                         \
-      const int count,                                    \
+      const int N,                                        \
       const int num_masks,                                \
       const float normalizer,                             \
       const T* x,                                         \
@@ -75,35 +75,35 @@ void BroadcastLossGrad<float16, CPUContext>(
         num_masks > 0 && normalizer < 0.f                 \
             ? (float)math::Sum(num_masks, 1.f, mask, ctx) \
             : normalizer);                                \
-    y[0] = math::Sum(count, 1.f / inv_scale, x, ctx);     \
+    y[0] = math::Sum(N, 1.f / inv_scale, x, ctx);         \
   }
 
-#define DEFINE_GRAD_KERNEL_LAUNCHER(T)                                      \
-  template <>                                                               \
-  void ReduceLossGrad<T, CPUContext>(                                       \
-      const int count,                                                      \
-      const int num_masks,                                                  \
-      const float normalizer,                                               \
-      const T* dy,                                                          \
-      const T* mask,                                                        \
-      T* dx,                                                                \
-      CPUContext* ctx) {                                                    \
-    float inv_scale = std::max(                                             \
-        0.5f,                                                               \
-        num_masks > 0 && normalizer < 0.f                                   \
-            ? (float)math::Sum(num_masks, 1.f, mask, ctx)                   \
-            : normalizer);                                                  \
-    math::Scale(count, convert::To<float>(dy[0]) / inv_scale, dx, dx, ctx); \
-  }                                                                         \
-  template <>                                                               \
-  void BroadcastLossGrad<T, CPUContext>(                                    \
-      const int outer_dim,                                                  \
-      const int inner_dim,                                                  \
-      const int axis_dim,                                                   \
-      const T* dy,                                                          \
-      T* dx,                                                                \
-      CPUContext* ctx) {                                                    \
-    _BroadcastLossGrad(outer_dim, inner_dim, axis_dim, dy, dx);             \
+#define DEFINE_GRAD_KERNEL_LAUNCHER(T)                                  \
+  template <>                                                           \
+  void ReduceLossGrad<T, CPUContext>(                                   \
+      const int N,                                                      \
+      const int num_masks,                                              \
+      const float normalizer,                                           \
+      const T* dl,                                                      \
+      const T* mask,                                                    \
+      T* dx,                                                            \
+      CPUContext* ctx) {                                                \
+    float inv_scale = std::max(                                         \
+        0.5f,                                                           \
+        num_masks > 0 && normalizer < 0.f                               \
+            ? (float)math::Sum(num_masks, 1.f, mask, ctx)               \
+            : normalizer);                                              \
+    math::Scale(N, convert::To<float>(dl[0]) / inv_scale, dx, dx, ctx); \
+  }                                                                     \
+  template <>                                                           \
+  void BroadcastLossGrad<T, CPUContext>(                                \
+      const int N,                                                      \
+      const int S,                                                      \
+      const int C,                                                      \
+      const T* dl,                                                      \
+      T* dx,                                                            \
+      CPUContext* ctx) {                                                \
+    _BroadcastLossGrad(N, S, C, dl, dx);                                \
   }
 
 DEFINE_KERNEL_LAUNCHER(float);
@@ -113,6 +113,6 @@ DEFINE_GRAD_KERNEL_LAUNCHER(double);
 #undef DEFINE_KERNEL_LAUNCHER
 #undef DEFINE_GRAD_KERNEL_LAUNCHER
 
-} // namespace kernel
+} // namespace kernels
 
 } // namespace dragon

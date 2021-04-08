@@ -14,16 +14,23 @@ from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
 
-from dragon.core.eager import context
-from dragon.core.ops import vision_ops_lib
-from dragon.core.ops.utils import ArgHelper
-from dragon.core.ops.utils import OpSchema
+from dragon.core.autograph import context
+from dragon.core.autograph.op_impl import OpLib
+from dragon.core.autograph.op_impl import OpSchema
 from dragon.core.util import nest
 
 
 @OpSchema.num_inputs(2)
-def bias_add(inputs, data_format='NCHW', **kwargs):
+def bias_add(inputs, data_format='NCHW', inplace=False, **kwargs):
     """Add the bias across channels to input.
+
+    Examples:
+
+    ```python
+    x = dragon.ones((1, 2, 3, 3))
+    bias = dragon.ones((2,))
+    print(dragon.nn.bias_add([x, bias]))
+    ```
 
     Parameters
     ----------
@@ -38,16 +45,13 @@ def bias_add(inputs, data_format='NCHW', **kwargs):
         The output tensor.
 
     """
-    args = ArgHelper.parse(locals())
     if data_format not in ('NCHW', 'NHWC'):
         raise ValueError('Unsupported data format: %s' % data_format)
-    op_lib = vision_ops_lib.BiasAdd
     if context.executing_eagerly():
-        return op_lib \
-            .instantiate(data_format=data_format) \
-            .apply(inputs, args.get('inplace', False))
-    else:
-        return op_lib.blend(**args)
+        return OpLib.execute(
+            'BiasAdd', inputs, outputs=[inputs if inplace else None],
+            data_format=data_format)
+    return OpLib.add('BiasAdd', inputs, data_format=data_format, **kwargs)
 
 
 @OpSchema.num_inputs(2, 3)
@@ -113,33 +117,39 @@ def conv(
         The output tensor.
 
     """
-    args = ArgHelper.parse(locals())
     if padding not in ('VALID', 'SAME', 'SAME_UPPER', 'SAME_LOWER'):
         raise ValueError('Unsupported padding algorithm: %s' % padding)
     if data_format not in ('NCHW', 'NHWC'):
         raise ValueError('Unsupported data format: %s' % data_format)
-    for k in ('strides', 'pads', 'dilations'):
-        args[k] = nest.flatten(args[k])
-    op_lib = vision_ops_lib.Conv
+    strides = nest.flatten(strides)
+    pads = nest.flatten(pads)
+    dilations = nest.flatten(dilations)
     if context.executing_eagerly():
         weight_shape = inputs[1].shape
-        return op_lib \
-            .instantiate(
-                dim_in=weight_shape[1],
-                dim_out=weight_shape[0],
-                kernel_shape=args['kernel_shape'],
-                strides=args['strides'],
-                pads=args['pads'],
-                dilations=args['dilations'],
-                group=group,
-                padding=padding,
-                data_format=data_format,
-                bias=len(inputs) > 2,
-                dtype=inputs[1].dtype,
-                input_shape=inputs[0].shape,
-            ).apply(inputs)
-    else:
-        return op_lib.blend(**args)
+        return OpLib.execute(
+            'Conv',
+            inputs,
+            dim_in=weight_shape[1],
+            dim_out=weight_shape[0],
+            kernel_shape=kernel_shape,
+            strides=strides,
+            pads=pads,
+            dilations=dilations,
+            group=group,
+            padding=padding,
+            data_format=data_format,
+            bias=len(inputs) > 2,
+            dtype=inputs[1].dtype,
+            input_shape=inputs[0].shape)
+    return OpLib.add('Conv', inputs,
+                     kernel_shape=kernel_shape,
+                     strides=strides,
+                     pads=pads,
+                     dilations=dilations,
+                     group=group,
+                     padding=padding,
+                     data_format=data_format,
+                     **kwargs)
 
 
 @OpSchema.num_inputs(2, 3)
@@ -363,8 +373,8 @@ def conv3d(
 
 
 @OpSchema.num_inputs(2, 3)
-@ArgHelper.repeated_desc('output_padding')
-@ArgHelper.repeated_desc('output_shape')
+@OpSchema.convert_arg('output_padding')
+@OpSchema.convert_arg('output_shape')
 def conv_transpose(
     inputs,
     kernel_shape=(3, 3),
@@ -437,7 +447,7 @@ def conv_transpose(
         The output tensor.
 
     """
-    args = ArgHelper.parse(locals())
+    args = OpSchema.parse_args(locals())
     if padding not in ('VALID', 'SAME', 'SAME_UPPER', 'SAME_LOWER'):
         raise ValueError('Unsupported padding algorithm: %s' % padding)
     if data_format not in ('NCHW', 'NHWC'):
@@ -448,31 +458,29 @@ def conv_transpose(
         args['padding'] = 'SAME'
     for k in ('strides', 'pads', 'dilations'):
         args[k] = nest.flatten(args[k])
-    op_lib = vision_ops_lib.ConvTranspose
     if context.executing_eagerly():
         weight_shape = inputs[1].shape
-        return op_lib \
-            .instantiate(
-                dim_in=weight_shape[0],
-                dim_out=weight_shape[1],
-                kernel_shape=args['kernel_shape'],
-                strides=args['strides'],
-                pads=args['pads'],
-                dilations=args['dilations'],
-                group=group,
-                padding=args['padding'],
-                output_padding=args['output_padding'],
-                output_shape=args['output_shape'],
-                data_format=data_format,
-                bias=len(inputs) > 2,
-                dtype=inputs[1].dtype,
-                input_shape=inputs[0].shape,
-            ).apply(inputs)
-    else:
-        return op_lib.blend(**args)
+        return OpLib.execute(
+            'ConvTranspose',
+            inputs,
+            dim_in=weight_shape[0],
+            dim_out=weight_shape[1],
+            kernel_shape=args['kernel_shape'],
+            strides=args['strides'],
+            pads=args['pads'],
+            dilations=args['dilations'],
+            group=group,
+            padding=args['padding'],
+            output_padding=args['output_padding'],
+            output_shape=args['output_shape'],
+            data_format=data_format,
+            bias=len(inputs) > 2,
+            dtype=inputs[1].dtype,
+            input_shape=inputs[0].shape)
+    return OpLib.add('ConvTranspose', **args)
 
 
-@OpSchema.num_inputs(2, 3)
+@OpSchema.num_inputs(min_num=2, max_num=3)
 def conv1d_transpose(
     inputs,
     kernel_shape=3,
@@ -558,7 +566,7 @@ def conv1d_transpose(
     )
 
 
-@OpSchema.num_inputs(2, 3)
+@OpSchema.num_inputs(min_num=2, max_num=3)
 def conv2d_transpose(
     inputs,
     kernel_shape=3,
@@ -644,7 +652,7 @@ def conv2d_transpose(
     )
 
 
-@OpSchema.num_inputs(2, 3)
+@OpSchema.num_inputs(min_num=2, max_num=3)
 def conv3d_transpose(
     inputs,
     kernel_shape=3,
@@ -789,34 +797,37 @@ def depthwise_conv2d(
         The output tensor.
 
     """
-    args = ArgHelper.parse(locals())
     if padding not in ('VALID', 'SAME', 'SAME_UPPER', 'SAME_LOWER'):
         raise ValueError('Unsupported padding algorithm: %s' % padding)
     if data_format not in ('NCHW', 'NHWC'):
         raise ValueError('Unsupported data format: %s' % data_format)
-    for key in ('kernel_shape', 'strides', 'pads', 'dilations'):
-        if key == 'pads':
-            args[key] = _normalize_pads(args[key], 2)
-        else:
-            args[key] = _normalize_tuple(args[key], 2)
-    op_lib = vision_ops_lib.DepthwiseConv
+    kernel_shape = _normalize_tuple(kernel_shape, 2)
+    strides = _normalize_tuple(strides, 2)
+    pads = _normalize_pads(pads, 2)
+    dilations = _normalize_tuple(dilations, 2)
     if context.executing_eagerly():
         weight_shape = inputs[1].shape
-        return op_lib \
-            .instantiate(
-                dim_in=weight_shape[1],
-                dim_out=weight_shape[0],
-                kernel_shape=args['kernel_shape'],
-                strides=args['strides'],
-                pads=args['pads'],
-                dilations=args['dilations'],
-                padding=padding,
-                data_format=data_format,
-                bias=len(inputs) > 2,
-                dtype=inputs[1].dtype,
-            ).apply(inputs)
-    else:
-        return op_lib.blend(**args)
+        return OpLib.execute(
+            'DepthwiseConv',
+            inputs,
+            dim_in=weight_shape[1],
+            dim_out=weight_shape[0],
+            kernel_shape=kernel_shape,
+            strides=strides,
+            pads=pads,
+            dilations=dilations,
+            padding=padding,
+            data_format=data_format,
+            bias=len(inputs) > 2,
+            dtype=inputs[1].dtype)
+    return OpLib.add('DepthwiseConv', inputs,
+                     kernel_shape=kernel_shape,
+                     strides=strides,
+                     pads=pads,
+                     dilations=dilations,
+                     padding=padding,
+                     data_format=data_format,
+                     **kwargs)
 
 
 @OpSchema.num_inputs(1)
@@ -827,7 +838,7 @@ def depth_to_space(inputs, block_size, data_format='NCHW', **kwargs):
 
     ```python
     n, c, h, w, bs = 1, 4, 1, 1, 2
-    x = dragon.arange(n * c * h * w).reshape((n, c, h, w))
+    x = dragon.range(n * c * h * w).reshape((n, c, h, w))
     y = dragon.reshape(x, (n, bs, bs, c // (bs ** 2), h, w))
     y = dragon.transpose(y, (0, 3, 4, 1, 5, 2))
     y = dragon.reshape(y, (n, c // (bs ** 2), h * bs, w * bs))
@@ -849,18 +860,14 @@ def depth_to_space(inputs, block_size, data_format='NCHW', **kwargs):
         The output tensor.
 
     """
-    args = ArgHelper.parse(locals())
     if data_format not in ('NCHW', 'NHWC'):
         raise ValueError('Unsupported data format: %s' % data_format)
-    op_lib = vision_ops_lib.DepthToSpace
     if context.executing_eagerly():
-        return op_lib \
-            .instantiate(
-                block_size=block_size,
-                data_format=data_format,
-            ).apply([inputs])
-    else:
-        return op_lib.blend(**args)
+        return OpLib.execute(
+            'DepthToSpace', inputs,
+            block_size=block_size, data_format=data_format)
+    return OpLib.add('DepthToSpace', inputs, block_size=block_size,
+                     data_format=data_format, **kwargs)
 
 
 @OpSchema.num_inputs(1)
@@ -930,31 +937,37 @@ def pool(
         The output tensor.
 
     """
-    args = ArgHelper.parse(locals())
-    args['mode'] = mode.upper()
-    if args['mode'] not in ('MAX', 'AVG'):
+    mode = mode.upper()
+    if mode not in ('MAX', 'AVG'):
         raise ValueError('Unsupported pooling mode: %s' % mode)
     if padding not in ('VALID', 'SAME', 'SAME_UPPER', 'SAME_LOWER'):
         raise ValueError('Unsupported padding algorithm: %s' % padding)
     if data_format not in ('NCHW', 'NHWC'):
         raise ValueError('Unsupported data format: %s' % data_format)
-    for k in ('strides', 'pads'):
-        args[k] = nest.flatten(args[k])
-    op_lib = vision_ops_lib.Pool
+    strides = nest.flatten(strides)
+    pads = nest.flatten(pads)
     if context.executing_eagerly():
-        return op_lib \
-            .instantiate(
-                kernel_shape=args['kernel_shape'],
-                strides=args['strides'],
-                pads=args['pads'],
-                padding=padding,
-                ceil_mode=ceil_mode,
-                mode=args['mode'],
-                data_format=data_format,
-                global_pool=global_pool,
-            ).apply([inputs])
-    else:
-        return op_lib.blend(**args)
+        return OpLib.execute(
+            'Pool',
+            inputs,
+            kernel_shape=kernel_shape,
+            strides=strides,
+            pads=pads,
+            padding=padding,
+            ceil_mode=ceil_mode,
+            mode=mode,
+            data_format=data_format,
+            global_pool=global_pool)
+    return OpLib.add('Pool', inputs,
+                     kernel_shape=kernel_shape,
+                     strides=strides,
+                     pads=pads,
+                     padding=padding,
+                     ceil_mode=ceil_mode,
+                     mode=mode,
+                     data_format=data_format,
+                     global_pool=global_pool,
+                     **kwargs)
 
 
 @OpSchema.num_inputs(1)
@@ -1190,8 +1203,8 @@ def pool3d(
 
 
 @OpSchema.num_inputs(1)
-@ArgHelper.repeated_desc('sizes')
-@ArgHelper.repeated_desc('scales')
+@OpSchema.convert_arg('sizes')
+@OpSchema.convert_arg('scales')
 def resize(
     inputs,
     sizes=None,
@@ -1246,28 +1259,28 @@ def resize(
         The output tensor.
 
     """
-    args = ArgHelper.parse(locals())
+    args = OpSchema.parse_args(locals())
     args['mode'] = mode.upper()
     if sizes is None and scales is None:
         raise ValueError('Specify either <sizes> or <scales>.')
     if data_format not in ('NCHW', 'NHWC'):
         raise ValueError('Unsupported data format: {}'.format(data_format))
-    op_lib = vision_ops_lib.Resize
     if context.executing_eagerly():
         if sizes is not None:
             args['sizes'] = nest.flatten(args['sizes'])
         if scales is not None:
             args['scales'] = nest.flatten(args['scales'])
-        return op_lib \
-            .instantiate(
-                mode=args['mode'],
-                align_corners=align_corners,
-                num_sizes=len(args['sizes']) if sizes is not None else 0,
-                num_scales=len(args['scales']) if scales is not None else 0,
-                data_format=data_format,
-            ).apply([inputs], args['sizes'], args['scales'])
-    else:
-        return op_lib.blend(**args)
+        return OpLib.execute(
+            'Resize',
+            inputs,
+            mode=args['mode'],
+            align_corners=align_corners,
+            num_sizes=len(args['sizes']) if sizes is not None else 0,
+            num_scales=len(args['scales']) if scales is not None else 0,
+            data_format=data_format,
+            sizes=args['sizes'],
+            scales=args['scales'])
+    return OpLib.add('Resize', **args)
 
 
 @OpSchema.num_inputs(2)
@@ -1275,7 +1288,7 @@ def roi_align(
     inputs,
     pooled_h,
     pooled_w,
-    spatial_scale=1.,
+    spatial_scale=1.0,
     sampling_ratio=2,
     **kwargs
 ):
@@ -1286,6 +1299,14 @@ def roi_align(
     where :math:`N` is the number of RoIs, and each column takes :math:`5` values
     for a sequence of :math:`[i_{\text{batch}}, x_{\min}, y_{\min}, x_{\max}, y_{\max}]`.
 
+    Examples:
+
+    ```python
+    x = dragon.range(18, dtype='float32').reshape((1, 2, 3, 3))
+    rois = dragon.constant([[0., 1., 1., 2.]], dtype='float32')
+    print(dragon.vision.roi_align([x, rois], pooled_h=1, pooled_w=1))
+    ```
+
     Parameters
     ----------
     inputs : Sequence[dragon.Tensor]
@@ -1294,7 +1315,7 @@ def roi_align(
         The output height.
     pooled_w : int, required
         The output width.
-    spatial_scale : float, optional, default=1.
+    spatial_scale : float, optional, default=1.0
         The input scale to the size of ``rois``.
     sampling_ratio : int, optional, default=2
         The number of sampling grids for ``rois``.
@@ -1305,19 +1326,21 @@ def roi_align(
         The output tensor.
 
     """
-    args = ArgHelper.parse(locals())
-    args['spatial_scale'] = float(spatial_scale)
-    op_lib = vision_ops_lib.RoiAlign
+    spatial_scale = float(spatial_scale)
     if context.executing_eagerly():
-        return op_lib \
-            .instantiate(
-                pooled_h=pooled_h,
-                pooled_w=pooled_w,
-                spatial_scale=args['spatial_scale'],
-                sampling_ratio=sampling_ratio,
-            ).apply(inputs)
-    else:
-        return op_lib.blend(**args)
+        return OpLib.execute(
+            'RoiAlign',
+            inputs,
+            pooled_h=pooled_h,
+            pooled_w=pooled_w,
+            spatial_scale=spatial_scale,
+            sampling_ratio=sampling_ratio)
+    return OpLib.add('RoiAlign', inputs,
+                     pooled_h=pooled_h,
+                     pooled_w=pooled_w,
+                     spatial_scale=spatial_scale,
+                     sampling_ratio=sampling_ratio,
+                     **kwargs)
 
 
 @OpSchema.num_inputs(2)
@@ -1325,7 +1348,7 @@ def roi_pool(
     inputs,
     pooled_h,
     pooled_w,
-    spatial_scale=1.,
+    spatial_scale=1.0,
     **kwargs
 ):
     r"""Apply the max roi pooling.
@@ -1335,6 +1358,14 @@ def roi_pool(
     where :math:`N` is the number of RoIs, and each column takes :math:`5` values
     for a sequence of :math:`[i_{\text{batch}}, x_{\min}, y_{\min}, x_{\max}, y_{\max}]`.
 
+    Examples:
+
+    ```python
+    x = dragon.range(18, dtype='float32').reshape((1, 2, 3, 3))
+    rois = dragon.constant([[0., 1., 1., 2.]], dtype='float32')
+    print(dragon.vision.roi_pool([x, rois], pooled_h=1, pooled_w=1))
+    ```
+
     Parameters
     ----------
     inputs : Sequence[dragon.Tensor]
@@ -1343,7 +1374,7 @@ def roi_pool(
         The output height.
     pooled_w : int, required
         The output width.
-    spatial_scale : float, optional, default=1.
+    spatial_scale : float, optional, default=1.0
         The input scale to the size of ``rois``.
 
     Returns
@@ -1352,18 +1383,19 @@ def roi_pool(
         The output tensor.
 
     """
-    args = ArgHelper.parse(locals())
-    args['spatial_scale'] = float(spatial_scale)
-    op_lib = vision_ops_lib.RoiPool
+    spatial_scale = float(spatial_scale)
     if context.executing_eagerly():
-        return op_lib \
-            .instantiate(
-                pooled_h=pooled_h,
-                pooled_w=pooled_w,
-                spatial_scale=args['spatial_scale'],
-            ).apply(inputs)
-    else:
-        return op_lib.blend(**args)
+        return OpLib.execute(
+            'RoiPool',
+            inputs,
+            pooled_h=pooled_h,
+            pooled_w=pooled_w,
+            spatial_scale=spatial_scale)
+    return OpLib.add('RoiPool', inputs,
+                     pooled_h=pooled_h,
+                     pooled_w=pooled_w,
+                     spatial_scale=spatial_scale,
+                     **kwargs)
 
 
 @OpSchema.num_inputs(1)
@@ -1374,7 +1406,7 @@ def space_to_depth(inputs, block_size, data_format='NCHW', **kwargs):
 
     ```python
     n, c, h, w, bs = 1, 2, 2, 2, 2
-    x = dragon.arange(n * c * h * w).reshape((n, c, h, w))
+    x = dragon.range(n * c * h * w).reshape((n, c, h, w))
     y = dragon.reshape(x, (n, c, h // bs, bs, w // bs, bs))
     y = dragon.transpose(y, (0, 3, 5, 1, 2, 4))
     y = dragon.reshape(y, (n, c * (bs ** 2), h // bs, w // bs))
@@ -1396,18 +1428,14 @@ def space_to_depth(inputs, block_size, data_format='NCHW', **kwargs):
         The output tensor.
 
     """
-    args = ArgHelper.parse(locals())
     if data_format not in ('NCHW', 'NHWC'):
         raise ValueError('Unsupported data format: %s' % data_format)
-    op_lib = vision_ops_lib.SpaceToDepth
     if context.executing_eagerly():
-        return op_lib \
-            .instantiate(
-                block_size=block_size,
-                data_format=data_format,
-            ).apply([inputs])
-    else:
-        return op_lib.blend(**args)
+        return OpLib.execute(
+            'SpaceToDepth', inputs,
+            block_size=block_size, data_format=data_format)
+    return OpLib.add('SpaceToDepth', inputs, block_size=block_size,
+                     data_format=data_format, **kwargs)
 
 
 def _normalize_tuple(value, rank):

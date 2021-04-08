@@ -37,29 +37,27 @@ from dragon._api import vision
 from dragon import vm
 
 # Classes
-from dragon.core.autograph.tensor import Tensor
-from dragon.core.eager.tensor import EagerTensor
-from dragon.core.eager.backprop import GradientTape
+from dragon.core.autograph.backprop import GradientTape
+from dragon.core.framework.device_spec import DeviceSpec
+from dragon.core.framework.tensor import Tensor
 from dragon.core.framework.workspace import Workspace
 
 # Functions
-from dragon.core.autograph.def_function import function
-from dragon.core.autograph.function_lib import create_function
-from dragon.core.autograph.grad_impl import gradients
-from dragon.core.eager.context import eager_mode
-from dragon.core.eager.context import graph_mode
+from dragon.core.autograph.context import eager_mode
+from dragon.core.autograph.context import graph_mode
+from dragon.core.autograph.function_impl import function
 from dragon.core.framework.backend import load_library
 from dragon.core.framework.config import get_num_threads
 from dragon.core.framework.config import set_num_threads
 from dragon.core.framework.context import device
-from dragon.core.framework.context import eager_scope
 from dragon.core.framework.context import name_scope
+from dragon.core.framework.context import variable_scope
 from dragon.core.framework.workspace import get_workspace
 from dragon.core.framework.workspace import reset_workspace
-from dragon.core.ops import tensorbind_eager as _
-from dragon.core.ops import tensorbind_symbol as _
+from dragon.core.ops import tensor_ops as _
 from dragon.core.ops.array_ops import argsort
 from dragon.core.ops.array_ops import assign
+from dragon.core.ops.array_ops import boolean_mask
 from dragon.core.ops.array_ops import broadcast_to
 from dragon.core.ops.array_ops import cast
 from dragon.core.ops.array_ops import channel_affine
@@ -68,11 +66,9 @@ from dragon.core.ops.array_ops import channel_shuffle
 from dragon.core.ops.array_ops import concat
 from dragon.core.ops.array_ops import expand_dims
 from dragon.core.ops.array_ops import flatten
+from dragon.core.ops.array_ops import gather
 from dragon.core.ops.array_ops import identity
-from dragon.core.ops.array_ops import index_select
 from dragon.core.ops.array_ops import linspace
-from dragon.core.ops.array_ops import masked_assign
-from dragon.core.ops.array_ops import masked_select
 from dragon.core.ops.array_ops import nonzero
 from dragon.core.ops.array_ops import one_hot
 from dragon.core.ops.array_ops import pad
@@ -87,11 +83,13 @@ from dragon.core.ops.array_ops import squeeze
 from dragon.core.ops.array_ops import stack
 from dragon.core.ops.array_ops import tile
 from dragon.core.ops.array_ops import transpose
+from dragon.core.ops.array_ops import tril
+from dragon.core.ops.array_ops import triu
 from dragon.core.ops.array_ops import unique
 from dragon.core.ops.array_ops import where
+from dragon.core.ops.constant_ops import constant
 from dragon.core.ops.framework_ops import python_plugin
 from dragon.core.ops.framework_ops import stop_gradient
-from dragon.core.ops.init_ops import constant
 from dragon.core.ops.init_ops import eye
 from dragon.core.ops.init_ops import eye_like
 from dragon.core.ops.init_ops import fill

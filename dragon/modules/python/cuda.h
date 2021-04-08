@@ -19,8 +19,6 @@ namespace dragon {
 
 namespace python {
 
-namespace cuda {
-
 class CUDAStream {
  public:
   explicit CUDAStream(int device_id) : device_id_(device_id) {
@@ -64,7 +62,7 @@ class CUDAStream {
 #endif
 };
 
-void RegisterModule(py::module& m) {
+void RegisterModule_cuda(py::module& m) {
   /*! \brief Return whether CUDA driver is sufficient */
   m.def("cudaIsDriverSufficient", []() {
 #ifdef USE_CUDA
@@ -136,7 +134,7 @@ void RegisterModule(py::module& m) {
 #endif
   });
 
-  /*! \brief Export the stream class */
+  /*! \brief CUDAStream class */
   py::class_<CUDAStream>(m, "CUDAStream")
       /*! \brief Default constructor */
       .def(py::init<int>())
@@ -150,8 +148,6 @@ void RegisterModule(py::module& m) {
       /*! \brief Synchronize the stream */
       .def("Synchronize", &CUDAStream::Synchronize);
 }
-
-} // namespace cuda
 
 } // namespace python
 

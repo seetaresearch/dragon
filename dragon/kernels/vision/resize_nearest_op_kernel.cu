@@ -6,17 +6,12 @@
 
 namespace dragon {
 
-namespace kernel {
+namespace kernels {
 
 namespace {
 
-#if __CUDA_ARCH__ >= 350
 #define LDG(x, i) __ldg(x + i)
 #define LDG2(x, i) convert::To<float>(__ldg(x + i))
-#else
-#define LDG(x, i) x[i]
-#define LDG2(x, i) convert::To<float>(x[i])
-#endif
 
 template <typename T>
 __global__ void _ResizeNearest2dNCHW(
@@ -243,11 +238,11 @@ __global__ void _ResizeNearest3dGradNHWC(
 
 /* ------------------- Launcher Separator ------------------- */
 
-#define DISPATCH_RESIZE_KERNEL(name, T, nblocks, nthreads, ...)            \
+#define DISPATCH_RESIZE_KERNEL(name, T, kBlocks, kThreads, ...)            \
   if (data_format == "NCHW") {                                             \
-    name##NCHW<<<nblocks, nthreads, 0, ctx->cuda_stream()>>>(__VA_ARGS__); \
+    name##NCHW<<<kBlocks, kThreads, 0, ctx->cuda_stream()>>>(__VA_ARGS__); \
   } else if (data_format == "NHWC") {                                      \
-    name##NHWC<<<nblocks, nthreads, 0, ctx->cuda_stream()>>>(__VA_ARGS__); \
+    name##NHWC<<<kBlocks, kThreads, 0, ctx->cuda_stream()>>>(__VA_ARGS__); \
   } else {                                                                 \
     LOG(FATAL) << "Unknown DataFormat: " << data_format;                   \
   }
@@ -286,8 +281,8 @@ __global__ void _ResizeNearest3dGradNHWC(
         reinterpret_cast<math::ScalarType<OutputT>::type*>(y));     \
   }
 
-DEFINE_KERNEL_LAUNCHER(ResizeNearest2d, false, int8_t, int8_t);
 DEFINE_KERNEL_LAUNCHER(ResizeNearest2d, false, uint8_t, uint8_t);
+DEFINE_KERNEL_LAUNCHER(ResizeNearest2d, false, int8_t, int8_t);
 DEFINE_KERNEL_LAUNCHER(ResizeNearest2d, false, int, int);
 DEFINE_KERNEL_LAUNCHER(ResizeNearest2d, false, int64_t, int64_t);
 DEFINE_KERNEL_LAUNCHER(ResizeNearest2d, false, float16, float16);
@@ -337,8 +332,8 @@ DEFINE_KERNEL_LAUNCHER(ResizeNearest2dGrad, true, double, float); // Grad
         reinterpret_cast<math::ScalarType<OutputT>::type*>(y));     \
   }
 
-DEFINE_KERNEL_LAUNCHER(ResizeNearest3d, false, int8_t, int8_t);
 DEFINE_KERNEL_LAUNCHER(ResizeNearest3d, false, uint8_t, uint8_t);
+DEFINE_KERNEL_LAUNCHER(ResizeNearest3d, false, int8_t, int8_t);
 DEFINE_KERNEL_LAUNCHER(ResizeNearest3d, false, int, int);
 DEFINE_KERNEL_LAUNCHER(ResizeNearest3d, false, int64_t, int64_t);
 DEFINE_KERNEL_LAUNCHER(ResizeNearest3d, false, float16, float16);
@@ -350,7 +345,7 @@ DEFINE_KERNEL_LAUNCHER(ResizeNearest3dGrad, true, double, float); // Grad
 #undef DEFINE_KERNEL_LAUNCHER
 #undef DISPATCH_RESIZE_KERNEL
 
-} // namespace kernel
+} // namespace kernels
 
 } // namespace dragon
 

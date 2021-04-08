@@ -18,12 +18,12 @@
 namespace dragon {
 
 template <class Context>
-class DropBlock2dOp final : public Operator<Context> {
+class DropBlockOp final : public Operator<Context> {
  public:
-  DropBlock2dOp(const OperatorDef& def, Workspace* ws)
+  DropBlockOp(const OperatorDef& def, Workspace* ws)
       : Operator<Context>(def, ws),
         block_size_(OP_SINGLE_ARG(int64_t, "block_size", 7)) {
-    INIT_OP_SINGLE_ARG_WITH_DESC(float, ratio, 0.1f);
+    INITIALIZE_OP_SINGLE_ARG(float, ratio, 0.1f);
   }
   USE_OPERATOR_FUNCTIONS;
 
@@ -34,22 +34,29 @@ class DropBlock2dOp final : public Operator<Context> {
 
  protected:
   int64_t block_size_;
-  DECLARE_OP_SINGLE_ARG_WITH_DESC(float, ratio);
+  DECLARE_OP_SINGLE_ARG(float, ratio);
 };
 
 template <class Context>
-class DropBlock2dGradientOp final : public Operator<Context> {
+class DropBlockGradientOp final : public Operator<Context> {
  public:
-  SIMPLE_CTOR_DTOR(DropBlock2dGradientOp);
+  DropBlockGradientOp(const OperatorDef& def, Workspace* ws)
+      : Operator<Context>(def, ws) {
+    INITIALIZE_OP_SINGLE_ARG(float, ratio, 0.1f);
+  }
   USE_OPERATOR_FUNCTIONS;
 
   void RunOnDevice() override;
 
   template <typename T>
   void DoRunWithType();
+
+ protected:
+  DECLARE_OP_SINGLE_ARG(float, ratio);
 };
 
-DEFINE_OP_SINGLE_ARG_WITH_DESC(float, DropBlock2dOp, ratio);
+DEFINE_OP_SINGLE_ARG(float, DropBlockOp, ratio);
+DEFINE_OP_SINGLE_ARG(float, DropBlockGradientOp, ratio);
 
 } // namespace dragon
 

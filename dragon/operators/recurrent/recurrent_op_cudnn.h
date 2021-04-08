@@ -56,7 +56,7 @@ class CuDNNRecurrentOpBase : public Operator<Context> {
         num_layers_(OP_SINGLE_ARG(int64_t, "num_layers", 1)),
         hidden_size_(OP_SINGLE_ARG(int64_t, "hidden_size", 0)),
         bidirectional_(OP_SINGLE_ARG(int64_t, "bidirectional", 0)),
-        dropout_ratio_(OP_SINGLE_ARG(float, "dropout_ratio", 1.f)),
+        dropout_(OP_SINGLE_ARG(float, "dropout", 0.f)),
         rng_seed_(def.device_option().random_seed()),
         enable_tensor_core_(TENSOR_CORE_AVAILABLE() ? 1 : 0) {
     // Determine the rnn direction
@@ -110,7 +110,7 @@ class CuDNNRecurrentOpBase : public Operator<Context> {
   void ResetDesc();
 
  public:
-  float dropout_ratio_;
+  float dropout_;
   unsigned long long rng_seed_;
   int64_t enable_tensor_core_;
   int64_t bidirectional_, states_initialized_;

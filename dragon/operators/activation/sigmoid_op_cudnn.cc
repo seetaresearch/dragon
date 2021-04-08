@@ -22,7 +22,7 @@ void CuDNNSigmoidOp<Context>::DoRunWithType() {
 
 template <class Context>
 void CuDNNSigmoidOp<Context>::RunOnDevice() {
-  DispatchHelper<FloatingTensorTypes>::Call(this, Input(0));
+  DispatchHelper<dtypes::Floating>::Call(this, Input(0));
 }
 
 template <class Context>
@@ -47,7 +47,7 @@ void CuDNNSigmoidGradientOp<Context>::DoRunWithType() {
 
 template <class Context>
 void CuDNNSigmoidGradientOp<Context>::RunOnDevice() {
-  DispatchHelper<FloatingTensorTypes>::Call(this, Input(0));
+  DispatchHelper<dtypes::Floating>::Call(this, Input(0));
 }
 
 DEPLOY_CUDNN_OPERATOR(Sigmoid);

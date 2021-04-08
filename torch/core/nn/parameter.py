@@ -28,7 +28,7 @@ class Parameter(Tensor):
     ```
 
     Typically, the gradient of a parameter should be computed,
-    while you can set ``requires_grad`` to **False** to ignore.
+    while you can set ``requires_grad`` to ``False`` to ignore.
     Froze a parameter from updating can be directly implemented
     by ignoring the it's gradient:
 

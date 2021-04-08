@@ -2,7 +2,7 @@
 
 #include "dragon/operators/recurrent/recurrent_op_cudnn.h"
 #include "dragon/core/workspace.h"
-#include "dragon/utils/filler.h"
+#include "dragon/utils/math_functions.h"
 
 namespace dragon {
 
@@ -18,7 +18,7 @@ void CuDNNRecurrentOpBase<Context>::ResetDesc() {
   auto y_dim = hidden_size_ * ndirections;
 
   // Setup Dropout
-  if (dropout_ratio_ < 1.f) {
+  if (dropout_ > 0.f) {
     if (!states_initialized_) {
       states_initialized_ = 1;
       auto cudnn_handle = ctx()->cudnn_handle();
@@ -31,7 +31,7 @@ void CuDNNRecurrentOpBase<Context>::ResetDesc() {
         CUDNN_CHECK(cudnnRestoreDropoutDescriptor(
             dropout_desc_,
             cudnn_handle,
-            dropout_ratio_,
+            dropout_,
             states,
             states_size_,
             rng_seed_));
@@ -41,7 +41,7 @@ void CuDNNRecurrentOpBase<Context>::ResetDesc() {
         CUDNN_CHECK(cudnnSetDropoutDescriptor(
             dropout_desc_,
             cudnn_handle,
-            dropout_ratio_,
+            dropout_,
             states,
             states_size_,
             rng_seed_));
@@ -138,10 +138,10 @@ void CuDNNRecurrentOp<Context>::DoRunWithType() {
   }
 
   if (InputSize() > 2) {
-    TENSOR_FILL(Input(2), hidden_dims_);
+    INITIALIZE_TENSOR_VIA_SPEC(Input(2), hidden_dims_, T);
   }
   if (InputSize() > 3) {
-    TENSOR_FILL(Input(3), hidden_dims_);
+    INITIALIZE_TENSOR_VIA_SPEC(Input(3), hidden_dims_, T);
   }
 
   Output(0)->Reshape(output_dims_);
@@ -222,7 +222,7 @@ void CuDNNRecurrentOp<Context>::DoRunWithType() {
 
 template <class Context>
 void CuDNNRecurrentOp<Context>::RunOnDevice() {
-  DispatchHelper<TensorTypes<float, float16>>::Call(this, Input(0));
+  DispatchHelper<dtypes::TypesBase<float, float16>>::Call(this, Input(0));
 }
 
 template <class Context>
@@ -319,7 +319,7 @@ void CuDNNRecurrentGradientOp<Context>::RunOnDevice() {
   Output(1)->ReshapeLike(Input(1)); // dW
   Output(2)->ReshapeLike(Input(2)); // dHx
   Output(3)->ReshapeLike(Input(3)); // dCx
-  DispatchHelper<FloatingTensorTypes>::Call(this, Input(0));
+  DispatchHelper<dtypes::Floating>::Call(this, Input(0));
 }
 
 DEPLOY_CUDNN_OPERATOR(Recurrent);

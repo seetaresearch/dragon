@@ -139,7 +139,7 @@ def is_initialized():
     Returns
     -------
     bool
-        **True** if initialized otherwise **False**.
+        ``True`` if initialized otherwise ``False``.
 
     """
     return _GLOBAL_MPI_CONTEXT is not None
@@ -151,7 +151,7 @@ def is_mpi_available():
     Returns
     -------
     bool
-        **True** if available otherwise **False**.
+        ``True`` if available otherwise ``False``.
 
     """
     return _b.mpiIsAvailable()
@@ -163,7 +163,7 @@ def is_nccl_available():
     Returns
     -------
     bool
-        **True** if available otherwise **False**.
+        ``True`` if available otherwise ``False``.
 
     """
     return _b.ncclIsAvailable()
@@ -255,7 +255,7 @@ def new_group(ranks=None, backend=None, verbose=False):
     backend : {'AUTO', 'MPI', 'NCCL'}, optional
         The optional backend.
     verbose : bool, optional, default=False
-        **True** to log the group info.
+        ``True`` to log the group info.
 
     """
     if ranks is None:

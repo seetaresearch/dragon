@@ -25,17 +25,13 @@ template <class Context>
 template <typename T>
 void SplitOp<Context>::DoRunWithType() {
   auto& X = Input(0);
-
   int num_splits = OutputSize();
-  CANONICALIZE_AXIS_WITH_TENSOR(X);
+  GET_OP_AXIS_ARG(axis, X.ndim(), 0);
   DETERMINE_RUNTIME_ARGS(X);
-
-  // Store for the gradient calculation
-  STORE_INPUT_SPEC(0);
+  SET_INPUT_SPEC(0);
 
   vec64_t Y_dims(X.dims());
   int64_t input_offset = 0, total_size = 0;
-
   for (int i = 0; i < num_splits; ++i) {
     total_size += size_splits[i];
     CHECK(size_splits[i] > 0 && total_size <= X.dim(axis))
@@ -59,7 +55,7 @@ void SplitOp<Context>::DoRunWithType() {
 
 template <class Context>
 void SplitOp<Context>::RunOnDevice() {
-  DispatchHelper<FullTensorTypes>::Call(this, Input(0));
+  DispatchHelper<dtypes::Generic>::Call(this, Input(0));
 }
 
 template <class Context>
@@ -67,7 +63,7 @@ template <typename T>
 void SplitGradientOp<Context>::DoRunWithType() {
   auto* dX = Output(0);
   int num_splits = InputSize();
-  CANONICALIZE_AXIS_WITH_TENSOR((*dX));
+  GET_OP_AXIS_ARG(axis, dX->ndim(), 0);
   DETERMINE_RUNTIME_ARGS((*dX));
 
   // Zero the missing gradients if necessary
@@ -83,7 +79,6 @@ void SplitGradientOp<Context>::DoRunWithType() {
   }
 
   int64_t output_offset = 0;
-
   for (int i = 0; i < num_splits; i++) {
     auto& dY = Input(i);
     if (dY.has_name()) {
@@ -102,9 +97,9 @@ void SplitGradientOp<Context>::DoRunWithType() {
 
 template <class Context>
 void SplitGradientOp<Context>::RunOnDevice() {
-  auto& X = RESTORE_INPUT_SPEC(0);
+  auto& X = INPUT_SPEC(0);
   Output(0)->ReshapeLike(X);
-  DispatchHelper<FloatingTensorTypes>::Call(this, X);
+  DispatchHelper<dtypes::Floating>::Call(this, X);
 }
 
 DEPLOY_CPU_OPERATOR(Split);

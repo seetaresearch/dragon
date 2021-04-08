@@ -8,7 +8,7 @@ template <class Context>
 template <typename T>
 void LinSpaceOp<Context>::DoRunWithType() {
   auto* Y = Output(0);
-  CANONICALIZE_AXIS_WITH_TENSOR((*Y));
+  GET_OP_AXIS_ARG(axis, Y->ndim(), 0);
 
   // Determine the generating range
   // Values are in a interval: [start, stop]
@@ -23,7 +23,7 @@ void LinSpaceOp<Context>::DoRunWithType() {
         << "[" << starts[i] << ", " << stops[i] << "].";
   }
 
-  kernel::LinSpace(
+  kernels::LinSpace(
       Y->dim(0),
       Y->ndim() > 1 ? Y->dim(1) : 1,
       axis,
@@ -36,7 +36,7 @@ void LinSpaceOp<Context>::DoRunWithType() {
 template <class Context>
 void LinSpaceOp<Context>::RunOnDevice() {
   InitializeOp<Context>::RunOnDevice();
-  DispatchHelper<NumericalTensorTypes>::Call(this);
+  DispatchHelper<dtypes::Numerical>::Call(this);
 }
 
 DEPLOY_CPU_OPERATOR(LinSpace);

@@ -15,15 +15,14 @@ from __future__ import division
 from __future__ import print_function
 
 import itertools
-import numpy
+import math
 
-from dragon.core.autograph.tensor import TensorRef
-from dragon.core.eager import context
-from dragon.core.eager.tensor import EagerTensor
-from dragon.core.framework import config
-from dragon.core.ops import rnn_ops_lib
-from dragon.core.ops.utils import ArgHelper
-from dragon.core.ops.utils import OpSchema
+from dragon.core.autograph import context
+from dragon.core.framework.tensor import Tensor
+from dragon.core.autograph.op_impl import OpLib
+from dragon.core.autograph.op_impl import OpSchema
+from dragon.core.ops import init_ops
+from dragon.core.util import math_util
 from dragon.core.util import nest
 
 
@@ -38,171 +37,91 @@ class RNNModule(object):
         num_layers=1,
         bidirectional=False,
         dropout=0,
-        name=None,
+        **kwargs
     ):
-        self.mode = mode.lower()
-        self.num_gates = {'lstm': 4, 'gru': 3}.get(self.mode, 1)
-        self.input_size = input_size
-        self.hidden_size = hidden_size
-        self.num_layers = num_layers
-        self.dropout = float(dropout) if dropout > 0 else None
-        self.bidirectional = bidirectional
-        self.num_directions = 2 if bidirectional else 1
-        self.name = name
-        self._register_parameters()
-        self.reset_parameters()
-
-    def forward(self, inputs, **kwargs):
-        """Compute the output of RNN."""
-        inputs = nest.flatten(inputs)
-        op_lib = rnn_ops_lib.Recurrent
-        if context.executing_eagerly():
-            inputs.insert(1, self._weights)
-            return op_lib \
-                .instantiate(
-                    mode=self.mode,
-                    num_layers=self.num_layers,
-                    hidden_size=self.hidden_size,
-                    bidirectional=self.bidirectional,
-                    dropout_ratio=self.dropout,
-                    is_training=kwargs.get('is_training', False),
-                ).apply(inputs)
-        else:
-            inputs.insert(1, self._weights_ref)
-            return op_lib.blend(
-                inputs=inputs,
-                rnn_mode=self.mode,
-                num_layers=self.num_layers,
-                hidden_size=self.hidden_size,
-                bidirectional=self.bidirectional,
-                dropout_ratio=self.dropout,
-            )
-
-    def reset_parameters(self):
-        """Reset the parameters."""
-        numpy.random.seed(config.config().random_seed)
-        for li, di, pi in itertools.product(
-            range(self.num_layers),
-            range(self.num_directions),
-            range(self.num_gates * 2),
-        ):
-            self.reset_parameter(li, di, pi, 'matrix', 'orthogonal')
-            self.reset_parameter(li, di, pi, 'bias', 'zero')
-
-    def reset_parameter(
-        self,
-        layer_id=0,
-        direction=0,
-        param_id=0,
-        type='matrix',
-        initializer='orthogonal',
-    ):
-        """Reset the specific parameter.
-
-        Parameters
-        ----------
-        layer_id : int, optional, default=0
-            The layer id.
-        direction : {0, 1}, optional, default=0
-            The direction flag.
-        param_id : int, optional, default=0
-            The param id.
-        type : {'matrix', 'bias'}, optional
-            The param type.
-        initializer : {'orthogonal', 'uniform', 'zero'}, optional
-            The optional initializer.
-
-        """
-        li, di, pi = layer_id, direction, param_id
-        li = li * self.num_directions + di
-        si = li * 2 + (pi // self.num_gates)
-        init_fn = getattr(self, '_{}_init'.format(initializer))
-        param_shape = getattr(self, '_{}_shape'.format(type))[si][:]
-        param_shape[0] //= self.num_gates  # Gate-Agnostic
-        self._set_parameter(li, pi, type, init_fn(param_shape))
+        self._mode = mode.lower()
+        self._num_gates = {'lstm': 4, 'gru': 3}.get(self._mode, 1)
+        self._input_size = input_size
+        self._hidden_size = hidden_size
+        self._num_layers = num_layers
+        self._dropout = float(dropout) if dropout > 0 else None
+        self._bidirectional = bidirectional
+        self._num_directions = 2 if bidirectional else 1
+        self._weights_shapes = []
+        self._create_weights()
+        self._initialize_weights()
 
     @property
     def weights(self):
-        """Return the flatten weights of RNN module."""
+        """Return the flatten RNN weights."""
+        return self._weights
+
+    def call(self, inputs, training=False, **kwargs):
+        """Compute the output of RNN."""
+        inputs = nest.flatten(inputs)
+        inputs.insert(1, self._weights)
         if context.executing_eagerly():
-            return self._weights
-        return self._weights_ref
+            return OpLib.execute(
+                'Recurrent', inputs, rnn_mode=self._mode,
+                num_layers=self._num_layers, hidden_size=self._hidden_size,
+                bidirectional=self._bidirectional, dropout=self._dropout,
+                phase='TRAIN' if training else 'TEST')
+        return OpLib.add(
+            'Recurrent', inputs, rnn_mode=self._mode,
+            num_layers=self._num_layers, hidden_size=self._hidden_size,
+            bidirectional=self._bidirectional, dropout_ratio=self._dropout)
 
-    @classmethod
-    def _orthogonal_init(cls, shape, gain=1, dtype='float32'):
-        """The orthogonal initializer."""
-        num_rows = 1
-        for dim in shape[:-1]:
-            num_rows *= dim
-        num_cols = shape[-1]
-        flat_shape = (num_cols, num_rows) if num_rows < num_cols \
-            else (num_rows, num_cols)
-        W = numpy.random.randn(*flat_shape)
-        q, r = numpy.linalg.qr(W)
-        # Make Q uniform.
-        d = numpy.diag(r)
-        q *= numpy.sign(d)
-        if num_rows < num_cols:
-            q = q.T
-        return gain * q.reshape(shape).astype(dtype)
-
-    def _register_parameters(self):
-        """Register and flatten the parameters."""
-        if self.mode == 'lstm':
-            gate_size = 4 * self.hidden_size
-        elif self.mode == 'gru':
-            gate_size = 3 * self.hidden_size
-        else:
-            gate_size = self.hidden_size
+    def _create_weights(self):
+        """Create a flat weights."""
+        gate_size = self._hidden_size * self._num_gates
         # Compute the shape of weight and bias.
-        self._matrix_shape, self._bias_shape = [], []
-        for layer in range(self.num_layers):
-            for direction in range(self.num_directions):
-                layer_input_size = self.input_size if layer == 0 \
-                    else self.hidden_size * self.num_directions
+        matrix_shapes, bias_shapes = [], []
+        for layer in range(self._num_layers):
+            for direction in range(self._num_directions):
+                layer_input_size = self._input_size if layer == 0 \
+                    else self._hidden_size * self._num_directions
                 w_ih_shape = [gate_size, layer_input_size]
-                w_hh_shape = [gate_size, self.hidden_size]
+                w_hh_shape = [gate_size, self._hidden_size]
                 b_ih_shape, b_hh_shape = [gate_size], [gate_size]
-                # W (0 ~ 3), R (4 ~ 7)
-                self._matrix_shape.extend([w_ih_shape, w_hh_shape])
-                # Bw (0 ~ 3), Br (4 ~ 7)
-                self._bias_shape.extend([b_ih_shape, b_hh_shape])
-        # Compute total number of parameters.
-        self._weights_count = 0
-        for shape in self._matrix_shape + self._bias_shape:
-            self._weights_count += int(numpy.prod(shape))
-        # Create the flat float32 weights.
-        self._weights = EagerTensor(shape=[self._weights_count], trainable=True)
-        self._weights_ref = TensorRef(self._weights.name)
+                matrix_shapes.extend([w_ih_shape, w_hh_shape])
+                bias_shapes.extend([b_ih_shape, b_hh_shape])
+        # Create single float32 weights.
+        weights_count = 0
+        self._weights_shapes = matrix_shapes + bias_shapes
+        for shape in self._weights_shapes:
+            weights_count += math_util.prod(shape)
+        self._weights = Tensor([weights_count])
+        self._weights.requires_grad = True
 
-    def _set_parameter(self, layer_id, param_id, param_type, param):
-        """Set parameter to the flatten weights."""
-        if isinstance(param, numpy.ndarray):
-            param = EagerTensor(param, copy=False)
-        return rnn_ops_lib.RNNParamSet \
-            .instantiate(
-                layer_id=layer_id,
-                param_id=param_id,
-                param_type=param_type,
-                mode=self.mode,
-                input_size=self.input_size,
-                hidden_size=self.hidden_size,
-                num_layers=self.num_layers,
-                num_directions=self.num_directions,
-            ).apply([self._weights, param])
+    def _initialize_weights(self):
+        """Initialize the flatten weights."""
+        stddev = 1.0 / math.sqrt(self._hidden_size)
+        for layer_id, param_id in itertools.product(
+                range(self._num_layers * (self._bidirectional + 1)),
+                range(self._num_gates * 2)):
+            i = layer_id * 2 + (param_id // self._num_gates)
+            j = i + len(self._weights_shapes) // 2
+            matrix_shape = self._weights_shapes[i][:]
+            bias_shape = self._weights_shapes[j][:]
+            matrix_shape[0] //= self._num_gates
+            bias_shape[0] //= self._num_gates
+            self._set_parameter(
+                init_ops.random_uniform(matrix_shape, -stddev, stddev),
+                layer_id, param_id, 'matrix')
+            self._set_parameter(
+                init_ops.random_uniform(bias_shape, -stddev, stddev),
+                layer_id, param_id, 'bias')
 
-    def _uniform_init(self, shape, dtype='float32'):
-        """The uniform initializer."""
-        stdv = 1. / numpy.sqrt(self.hidden_size)
-        return numpy.random.uniform(-stdv, stdv, shape).astype(dtype)
-
-    @classmethod
-    def _zero_init(cls, shape, dtype='float32'):
-        """The zero initializer."""
-        return numpy.zeros(shape, dtype=dtype)
+    def _set_parameter(self, data, layer_id=0, param_id=0, param_type='matrix'):
+        """Set the data of a parameter."""
+        return OpLib.execute(
+            'RNNParamSet', [data], outputs=[self._weights],
+            rnn_mode=self._mode, bidirectional=self._bidirectional,
+            input_size=self._input_size, hidden_size=self._hidden_size,
+            layer_id=layer_id, param_id=param_id, param_type=param_type)
 
     def __call__(self, *args, **kwargs):
-        return self.forward(args, **kwargs)
+        return self.call(args, **kwargs)
 
 
 class RNN(RNNModule):
@@ -348,7 +267,7 @@ class GRU(RNNModule):
 
 
 @OpSchema.num_inputs(2)
-def LSTMCell(inputs, **kwargs):
+def lstm_cell(inputs, **kwargs):
     r"""Apply a long short-term memory (LSTM) cell.
     `[Hochreiter & Schmidhuber, 1997] <https://doi.org/10.1162>`_.
 
@@ -360,12 +279,9 @@ def LSTMCell(inputs, **kwargs):
     Returns
     -------
     Sequence[dragon.Tensor]
-        The **h** and **c**.
+        The input "h" and "c" tensor.
 
     """
-    args = ArgHelper.parse(locals())
-    op_lib = rnn_ops_lib.LSTMCell
     if context.executing_eagerly():
-        return op_lib.instantiate().apply(inputs)
-    else:
-        return op_lib.blend(num_outputs=2, **args)
+        return OpLib.execute('LSTMCell', inputs, outputs=[None, None])
+    return OpLib.add('LSTMCell', num_outputs=2, **kwargs)

@@ -27,7 +27,7 @@ void CuDNNPoolOp<Context>::DoRunWithType() {
 
 template <class Context>
 void CuDNNPoolOp<Context>::RunOnDevice() {
-  DispatchHelper<FloatingTensorTypes>::Call(this, Input(0));
+  DispatchHelper<dtypes::Floating>::Call(this, Input(0));
 }
 
 template <class Context>
@@ -58,7 +58,7 @@ void CuDNNPoolGradientOp<Context>::DoRunWithType() {
 
 template <class Context>
 void CuDNNPoolGradientOp<Context>::RunOnDevice() {
-  DispatchHelper<FloatingTensorTypes>::Call(this, Input(0));
+  DispatchHelper<dtypes::Floating>::Call(this, Input(0));
 }
 
 DEPLOY_CUDNN_OPERATOR(Pool);

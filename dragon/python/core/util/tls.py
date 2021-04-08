@@ -20,12 +20,14 @@ import threading
 
 
 class Constant(threading.local):
+
     def __init__(self, **attrs):
         super(Constant, self).__init__()
         self.__dict__.update(attrs)
 
 
 class Stack(threading.local):
+
     def __init__(self, defaults=None):
         super(Stack, self).__init__()
         self._enforce_nesting = True

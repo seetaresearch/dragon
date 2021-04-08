@@ -63,7 +63,7 @@ class ImageDecoder(object):
         """
         if isinstance(output_type, six.string_types):
             output_type = getattr(types, output_type)
-        return ops.ImageDecoder(
+        return ops.decoders.Image(
             output_type=output_type,
             host_memory_padding=host_memory_padding,
             device_memory_padding=device_memory_padding,
@@ -124,7 +124,7 @@ class ImageDecoderRandomCrop(object):
         """
         if isinstance(output_type, six.string_types):
             output_type = getattr(types, output_type)
-        return ops.ImageDecoderRandomCrop(
+        return ops.decoders.ImageRandomCrop(
             output_type=output_type,
             host_memory_padding=host_memory_padding,
             device_memory_padding=device_memory_padding,

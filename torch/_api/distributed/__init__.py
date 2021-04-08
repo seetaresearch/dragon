@@ -14,7 +14,7 @@ from __future__ import absolute_import as _absolute_import
 from __future__ import division as _division
 from __future__ import print_function as _print_function
 
-from dragon.vm.torch.core.ops.distributed.functional import all_reduce
-from dragon.vm.torch.core.ops.distributed.functional import broadcast
+from dragon.vm.torch.core.ops.distributed_ops import all_reduce
+from dragon.vm.torch.core.ops.distributed_ops import broadcast
 
 __all__ = [_s for _s in dir() if not _s.startswith('_')]

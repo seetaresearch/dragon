@@ -20,9 +20,7 @@ from __future__ import print_function
 
 import numpy
 
-from dragon.core.autograph.tensor import TensorRef
-from dragon.core.framework import context
-from dragon.core.framework import workspace
+from dragon.core.framework.tensor import Tensor
 from dragon.core.ops import array_ops
 from dragon.core.ops import init_ops
 from dragon.core.ops import vision_ops
@@ -31,8 +29,8 @@ from dragon.core.ops import vision_ops
 def broadcast_to(input, shape, name=None):
     """Broadcast input according to a given shape.
 
-    The length of ``shape`` could either be less or
-    more than the number of input dimensions:
+    Length of ``shape`` could either be less or more
+    than the number of input dimensions:
 
     ```python
     a = tf.constant([[1], [2], [3]])
@@ -71,7 +69,7 @@ def broadcast_to(input, shape, name=None):
 def concat(values, axis, name='concat'):
     r"""Concatenate the values along the given axis.
 
-    All dimensions except the ``axis`` should be same:
+    All dimensions except the :attr:`axis` should be same:
 
     ```python
     x1 = tf.ones(shape=(2, 3))
@@ -80,11 +78,11 @@ def concat(values, axis, name='concat'):
     z = tf.concat([x1, x2], axis=0)  # Wrong
     ```
 
-    The ``axis`` can be negative representing the last-k axis:
+    :attr:`axis` can be negative:
 
     ```python
     y = tf.concat([x1, x2], axis=1)
-    z = tf.concat([x1, x2], axis=-1)  # z == y
+    z = tf.concat([x1, x2], axis=-1)  # Equivalent
     ```
 
     Parameters
@@ -147,12 +145,12 @@ def depth_to_space(input, block_size, data_format='NHWC', name=None):
 def expand_dims(input, axis, name=None):
     """Expand the dimensions of input with size 1.
 
-    The argument ``axis`` could be negative or **None**:
+    :attr:`axis` could be negative or ``None``:
 
     ```python
     x = tf.ones((2, 3, 4, 5))
 
-    # ``axis`` determines the size-1 position in output
+    # axis is the size-1 position in output
     print(tf.expand_dims(x, axis=0).shape)  # (2, 3, 4, 5) -> (1, 2, 3, 4, 5)
     print(tf.expand_dims(x, axis=1).shape)  # (2, 3, 4, 5) -> (2, 1, 3, 4, 5)
 
@@ -160,7 +158,7 @@ def expand_dims(input, axis, name=None):
     print(tf.expand_dims(x, axis=4).shape)   # (2, 3, 4, 5) -> (2, 3, 4, 5, 1)
     print(tf.expand_dims(x, axis=-1).shape)  # Equivalent
 
-    # Also, ``axis`` could be a sequence of integers
+    # Also, axis could be a sequence of integers
     print(tf.expand_dims(x, axis=[-1, -3]).shape)  # (2, 3, 4, 5) -> (2, 3, 4, 1, 5, 1)
     ```
 
@@ -220,9 +218,9 @@ def fill(dims, value=0, dtype=None, name=None):
 
 
 def gather(params, indices, axis=0, name=None):
-    """Select the elements according to the index along the given axis.
+    """Gather the elements along the given axis using index.
 
-    ``indices`` could be a **int64** tensor or a sequence with integers:
+    :attr:`indices` could be a ``int64`` tensor or a sequence with integers:
 
     ```python
     x = tf.constant([[1, 2, 3], [4, 5, 6]])
@@ -230,22 +228,14 @@ def gather(params, indices, axis=0, name=None):
     print(tf.gather(x, tf.constant([0, 1], tf.int64)))
     ```
 
-    More than one axis could be specified for ``indices``:
-
-    ```python
-    # The number of ``axis`` should less than ``rank(indices)``
-    # And these axes should be continuous
-    print(tf.gather(x, [0, 1], axis=[0, 1]))
-    ```
-
     Parameters
     ----------
     params : dragon.Tensor
         The tensor to provide elements.
     indices : Union[Sequence[int], dragon.Tensor]
-        The indices of select.
+        The indices to gather.
     axis : Union[int, Sequence[int]], optional, default=0
-        The axis where the indices aligned.
+        The axis to gather.
     name : str, optional
         The operation name.
 
@@ -255,7 +245,7 @@ def gather(params, indices, axis=0, name=None):
         The output tensor.
 
     """
-    return array_ops.index_select(params, indices, axis=axis, name=name)
+    return array_ops.gather(params, indices, axis=axis, name=name)
 
 
 def identity(input, name=None):
@@ -353,14 +343,14 @@ def one_hot(
                 \text{on\_value}, & \text{ otherwise }
             \end{cases}
 
-    The max value of input, i.e., the ``depth`` should be specified:
+    The max value of input, i.e., the :attr:`depth` should be specified:
 
     ```python
     x = tf.constant([0, 1, 2, 3], tf.int64)
     print(tf.one_hot(x, depth=5))  # depth >= 4 will be ok
     ```
 
-    You can also set the ``on_value`` or ``off_value``:
+    Use :attr:`on_value` or :attr:`off_value` custom filling:
 
     ```python
     print(tf.one_hot(x, depth=4, on_value=2, off_value=3))
@@ -403,7 +393,7 @@ def pad(
 ):
     r"""Pad the input according to the given sizes.
 
-    The ``paddings`` should be a sequence with :math:`N` tuples,
+    :attr:`paddings` should be a sequence with :math:`N` tuples,
     where :math:`N` is the number of input dimensions:
 
     ```python
@@ -477,14 +467,7 @@ def placeholder(dtype=None, shape=None, name=None):
         The output tensor.
 
     """
-    # Construct a tensor from the explicit name
-    return TensorRef(
-        workspace.get_workspace().unique_name(
-            context.get_name_scope() + name if name else 'Placeholder',
-            suffix=':0', namespace='Tensor'),
-        dtype=dtype if dtype else dtype,
-        shape=shape,
-    ).constant()
+    return Tensor(shape, dtype, name=name, symbolic=True)
 
 
 def reshape(tensor, shape, name=None):
@@ -558,14 +541,12 @@ def slice(input_, begin, size, name=None):
     print(x[0:1, 1:2:, 2:3])  # Equivalent
     ```
 
-    The ``size`` accepts value **-1** or **0**:
+    :attr:`size` accepts value ``-1`` or ``0``:
 
     ```python
     x = tf.constant([[[0, 1, 2], [3, 4, 5]]])
-
     # Set ``0`` to squeeze dimensions with size 1
     print(tf.slice(x, [0, 1, 2], [0, 0, 0]))  # 5
-
     # Set ``-1`` to take all the remained elements
     print(tf.slice(x, [0, 0, 0], [-1, -1, -1]))  # [[[0, 1, 2], [3, 4, 5]]]
     ```
@@ -647,7 +628,7 @@ def split(
     print(tf.split(x, num_or_size_splits=(1, 2)))
     ```
 
-    The ``axis`` can be negative representing the last-k axis:
+    :attr:`axis` can be negative:
 
     ```python
     x = tf.constant([[1, 2], [3, 4], [5, 6]])
@@ -678,12 +659,12 @@ def split(
 def squeeze(input, axis=None, name=None):
     """Remove the dimensions of input with size 1.
 
-    The argument ``axis`` could be negative or **None**:
+    :attr:`axis` could be negative or ``None``:
 
     ```python
     x = tf.ones((1, 2, 2, 1))
 
-    # Remove all matched dimensions if ``axis`` is None
+    # Remove all matched dimensions if axis is None
     # Otherwise, only the specified axes will be removed
     print(tf.squeeze(x).shape)  # (1, 2, 2, 1) -> (2, 2)
     print(tf.squeeze(x, axis=0).shape)  # (1, 2, 2, 1) -> (2, 2, 1)
@@ -692,7 +673,7 @@ def squeeze(input, axis=None, name=None):
     print(tf.squeeze(x, axis=3).shape)  # (1, 2, 2, 1) -> (1, 2, 2)
     print(tf.squeeze(x, axis=-1).shape)  # Equivalent
 
-    # Also, ``axis`` could be a sequence of integers
+    # Also, axis could be a sequence of integers
     print(tf.squeeze(x, axis=[0, 3]).shape)  # (1, 2, 2, 1) -> (2, 2)
     ```
 
@@ -715,6 +696,23 @@ def squeeze(input, axis=None, name=None):
 
 
 def tile(input, multiples, name=None):
+    """Tile input according to the given repeats.
+
+    Parameters
+    ----------
+    input : dragon.Tensor
+        The input tensor.
+    multiples : Sequence[Union[int, dragon.Tensor]]
+        The number of repetitions for each axis.
+    name : str, optional
+        The operation name.
+
+    Returns
+    -------
+    dragon.Tensor
+        The output tensor.
+
+    """
     return array_ops.tile(input, repeats=multiples, name=name)
 
 

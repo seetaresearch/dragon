@@ -19,7 +19,6 @@ void UnifiedMemory::ToCPU(size_t size) {
       state_ = SYNCED;
       break;
     case STATE_AT_CPU:
-    case STATE_AT_CNML:
     case SYNCED:
       break;
   }
@@ -43,7 +42,6 @@ void UnifiedMemory::ToCUDA(size_t size) {
       state_ = SYNCED;
       break;
     case STATE_AT_CUDA:
-    case STATE_AT_CNML:
     case SYNCED:
       break;
   }
@@ -60,10 +58,6 @@ const void* UnifiedMemory::cuda_data(size_t size) {
   return (const void*)cuda_ptr_;
 }
 
-const void* UnifiedMemory::cnml_data() {
-  return (const void*)cnml_ptr_;
-}
-
 void* UnifiedMemory::mutable_cpu_data(size_t size) {
   ToCPU(size);
   state_ = STATE_AT_CPU;
@@ -75,11 +69,6 @@ void* UnifiedMemory::mutable_cuda_data(size_t size) {
   ToCUDA(size);
   state_ = STATE_AT_CUDA;
   return cuda_ptr_;
-}
-
-void* UnifiedMemory::mutable_cnml_data() {
-  state_ = STATE_AT_CNML;
-  return cnml_ptr_;
 }
 
 void UnifiedMemory::set_cpu_data(void* cpu_ptr, size_t size) {
@@ -145,15 +134,12 @@ Map<string, string> UnifiedMemory::info() const {
       {UNINITIALIZED, "uninitialized"},
       {STATE_AT_CPU, "cpu"},
       {STATE_AT_CUDA, "cuda"},
-      {STATE_AT_CNML, "cnml"},
       {SYNCED, "device"},
   };
   string state_str = state_map[state_];
   if (state_str == "device") {
     if (cuda_ptr_) {
       state_str = "cuda";
-    } else if (cnml_ptr_) {
-      state_str = "cnml";
     } else {
       LOG(FATAL) << "Device activated, but got invalid mem pointer.";
     }

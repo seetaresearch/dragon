@@ -38,11 +38,13 @@ from dragon.vm.torch.core.nn.functional import drop_block2d
 from dragon.vm.torch.core.nn.functional import drop_path
 from dragon.vm.torch.core.nn.functional import dropout
 from dragon.vm.torch.core.nn.functional import elu
+from dragon.vm.torch.core.nn.functional import embedding
 from dragon.vm.torch.core.nn.functional import group_norm
 from dragon.vm.torch.core.nn.functional import hardsigmoid
 from dragon.vm.torch.core.nn.functional import hardswish
 from dragon.vm.torch.core.nn.functional import kl_div
 from dragon.vm.torch.core.nn.functional import l1_loss
+from dragon.vm.torch.core.nn.functional import layer_norm
 from dragon.vm.torch.core.nn.functional import leaky_relu
 from dragon.vm.torch.core.nn.functional import linear
 from dragon.vm.torch.core.nn.functional import local_response_norm
@@ -52,6 +54,7 @@ from dragon.vm.torch.core.nn.functional import max_pool1d
 from dragon.vm.torch.core.nn.functional import max_pool2d
 from dragon.vm.torch.core.nn.functional import max_pool3d
 from dragon.vm.torch.core.nn.functional import mse_loss
+from dragon.vm.torch.core.nn.functional import multi_head_attention_forward
 from dragon.vm.torch.core.nn.functional import nll_loss
 from dragon.vm.torch.core.nn.functional import normalize
 from dragon.vm.torch.core.nn.functional import pad

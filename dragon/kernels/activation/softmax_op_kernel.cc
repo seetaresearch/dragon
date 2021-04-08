@@ -1,52 +1,40 @@
+#include "dragon/utils/device/common_eigen.h"
 #include "dragon/utils/math_functions.h"
 #include "dragon/utils/op_kernels.h"
 
 namespace dragon {
 
-namespace kernel {
+namespace kernels {
 
 namespace {
 
 template <typename T>
-void _Softmax(
-    const int outer_dim,
-    const int inner_dim,
-    const int axis_dim,
-    const T* x,
-    T* y) {
-  int row_offset, col_offset, yi;
-  auto x_stride = axis_dim * inner_dim;
-  for (int i = 0; i < outer_dim; ++i) {
-    row_offset = i * axis_dim * inner_dim;
-    for (int j = 0; j < inner_dim; ++j) {
-      col_offset = row_offset + j;
-      T val = x[col_offset];
-      for (int k = 1; k < axis_dim; ++k) {
-        yi = col_offset + k * inner_dim;
-        val = std::max(val, x[yi]);
-      }
-      for (int k = 0; k < axis_dim; ++k) {
-        yi = col_offset + k * inner_dim;
-        y[yi] = std::exp(x[yi] - val);
-      }
-      val = y[col_offset];
-      for (int k = 1; k < axis_dim; ++k) {
-        yi = col_offset + k * inner_dim;
-        val += y[yi];
-      }
-      for (int k = 0; k < axis_dim; ++k) {
-        yi = col_offset + k * inner_dim;
-        y[yi] /= val;
-      }
+void _Softmax(const int N, const int S, const int C, const T* x, T* y) {
+  if (S == 1) {
+    ConstEigenArrayMap<T> X(x, C, N);
+    EigenArrayMap<T> Y(y, C, N);
+    Y = (X.rowwise() - X.colwise().maxCoeff()).exp();
+    Y = Y.rowwise() / Y.colwise().sum();
+    return;
+  }
+  for (int i = 0; i < N; ++i) {
+    const auto offset = i * C * S;
+    for (int j = 0; j < S; ++j) {
+      ConstEigenStridedVectorArrayMap<T> X_vec(
+          x + offset + j, 1, C, EigenInnerStride(S));
+      EigenStridedVectorArrayMap<T> Y_vec(
+          y + offset + j, 1, C, EigenInnerStride(S));
+      Y_vec = (X_vec - X_vec.maxCoeff()).exp();
+      Y_vec /= Y_vec.sum();
     }
   }
 }
 
 template <>
 void _Softmax<float16>(
-    const int outer_dim,
-    const int inner_dim,
-    const int axis_dim,
+    const int N,
+    const int S,
+    const int C,
     const float16* x,
     float16* y) {
   CPU_FP16_NOT_SUPPORTED;
@@ -54,36 +42,38 @@ void _Softmax<float16>(
 
 template <typename T>
 void _SoftmaxGrad(
-    const int outer_dim,
-    const int inner_dim,
-    const int axis_dim,
+    const int N,
+    const int S,
+    const int C,
     const T* dy,
     const T* y,
     T* dx) {
-  int row_offset, col_offset, yi;
-  auto x_stride = axis_dim * inner_dim;
-  for (int i = 0; i < outer_dim; ++i) {
-    row_offset = i * axis_dim * inner_dim;
-    for (int j = 0; j < inner_dim; ++j) {
-      col_offset = row_offset + j;
-      T val = dy[col_offset] * y[col_offset];
-      for (int k = 1; k < axis_dim; ++k) {
-        yi = col_offset + k * inner_dim;
-        val += dy[yi] * y[yi];
-      }
-      for (int k = 0; k < axis_dim; ++k) {
-        yi = col_offset + k * inner_dim;
-        dx[yi] = (dy[yi] - val) * y[yi];
-      }
+  if (S == 1) {
+    ConstEigenArrayMap<T> dY(dy, C, N);
+    ConstEigenArrayMap<T> Y(y, C, N);
+    EigenArrayMap<T> dX(dx, C, N);
+    dX = (dY.rowwise() - (dY * Y).colwise().sum()) * Y;
+    return;
+  }
+  for (int i = 0; i < N; ++i) {
+    const auto offset = i * C * S;
+    for (int j = 0; j < S; ++j) {
+      ConstEigenStridedVectorArrayMap<T> dY_vec(
+          dy + offset + j, 1, C, EigenInnerStride(S));
+      ConstEigenStridedVectorArrayMap<T> Y_vec(
+          y + offset + j, 1, C, EigenInnerStride(S));
+      EigenStridedVectorArrayMap<T> dX_vec(
+          dx + offset + j, 1, C, EigenInnerStride(S));
+      dX_vec = (dY_vec - (dY_vec * Y_vec).sum()) * Y_vec;
     }
   }
 }
 
 template <>
 void _SoftmaxGrad<float16>(
-    const int outer_dim,
-    const int inner_dim,
-    const int axis_dim,
+    const int N,
+    const int S,
+    const int C,
     const float16* dy,
     const float16* y,
     float16* dx) {
@@ -94,29 +84,29 @@ void _SoftmaxGrad<float16>(
 
 /* ------------------- Launcher Separator ------------------- */
 
-#define DEFINE_KERNEL_LAUNCHER(T)                   \
-  template <>                                       \
-  void Softmax<T, CPUContext>(                      \
-      const int outer_dim,                          \
-      const int inner_dim,                          \
-      const int axis_dim,                           \
-      const T* x,                                   \
-      T* y,                                         \
-      CPUContext* ctx) {                            \
-    _Softmax(outer_dim, inner_dim, axis_dim, x, y); \
+#define DEFINE_KERNEL_LAUNCHER(T) \
+  template <>                     \
+  void Softmax<T, CPUContext>(    \
+      const int N,                \
+      const int S,                \
+      const int C,                \
+      const T* x,                 \
+      T* y,                       \
+      CPUContext* ctx) {          \
+    _Softmax(N, S, C, x, y);      \
   }
 
-#define DEFINE_GRAD_KERNEL_LAUNCHER(T)                       \
-  template <>                                                \
-  void SoftmaxGrad<T, CPUContext>(                           \
-      const int outer_dim,                                   \
-      const int inner_dim,                                   \
-      const int axis_dim,                                    \
-      const T* dy,                                           \
-      const T* y,                                            \
-      T* dx,                                                 \
-      CPUContext* ctx) {                                     \
-    _SoftmaxGrad(outer_dim, inner_dim, axis_dim, dy, y, dx); \
+#define DEFINE_GRAD_KERNEL_LAUNCHER(T) \
+  template <>                          \
+  void SoftmaxGrad<T, CPUContext>(     \
+      const int N,                     \
+      const int S,                     \
+      const int C,                     \
+      const T* dy,                     \
+      const T* y,                      \
+      T* dx,                           \
+      CPUContext* ctx) {               \
+    _SoftmaxGrad(N, S, C, dy, y, dx);  \
   }
 
 DEFINE_KERNEL_LAUNCHER(float16);
@@ -128,6 +118,6 @@ DEFINE_GRAD_KERNEL_LAUNCHER(double);
 #undef DEFINE_KERNEL_LAUNCHER
 #undef DEFINE_GRAD_KERNEL_LAUNCHER
 
-} // namespace kernel
+} // namespace kernels
 
 } // namespace dragon

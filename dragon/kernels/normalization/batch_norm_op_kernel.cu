@@ -7,17 +7,12 @@
 
 namespace dragon {
 
-namespace kernel {
+namespace kernels {
 
 namespace {
 
-#if __CUDA_ARCH__ >= 350
 #define LDG(x, i) __ldg(x + i)
 #define LDG2(x, i) convert::To<AccT>(__ldg(x + i))
-#else
-#define LDG(x, i) x[i]
-#define LDG2(x, i) convert::To<AccT>(x[i])
-#endif
 
 template <typename T, typename AccT, StorageOrder kOrder>
 __global__ void _BatchNormExpectation(
@@ -28,12 +23,12 @@ __global__ void _BatchNormExpectation(
     const T* x,
     AccT* ex,
     AccT* ex2) {
-  const int outer_dim = N * S;
+  const int NxS = N * S;
   __shared__ typename BlockReduce<AccT>::TempStorage ex_storage;
   __shared__ typename BlockReduce<AccT>::TempStorage ex2_storage;
   CUDA_2D_KERNEL_LOOP1(i, C) {
     AccT ex_val = AccT(0), ex2_val = AccT(0);
-    CUDA_2D_KERNEL_LOOP2(j, outer_dim) {
+    CUDA_2D_KERNEL_LOOP2(j, NxS) {
       const int xi = kOrder == StorageOrder::NCHW ? (j / S * C + i) * S + j % S
                                                   : j * C + i;
       ex_val += LDG2(x, xi);
@@ -58,24 +53,24 @@ __global__ void _BatchNormFusedParams(
     T* scale,
     T* bias) {
   CUDA_1D_KERNEL_LOOP(i, C) {
-    const T scale_val = scale[i] = gamma[i] * rsig[i];
-    bias[i] = fma(-scale_val, mu[i], beta[i]);
+    const T val = scale[i] = gamma[i] * rsig[i];
+    bias[i] = fma(-val, mu[i], beta[i]);
   }
 }
 
 template <typename T, typename AccT, StorageOrder kOrder>
 __global__ void _BatchNormAffine(
-    const int nthreads,
+    const int NxCxS,
     const int C,
     const int S,
     const T* x,
     const AccT* scale,
     const AccT* bias,
     T* y) {
-  CUDA_1D_KERNEL_LOOP(i, nthreads) {
-    const int pi = kOrder == StorageOrder::NCHW ? (i / S) % C : i % C;
+  CUDA_1D_KERNEL_LOOP(i, NxCxS) {
+    const int j = kOrder == StorageOrder::NCHW ? i / S % C : i % C;
     y[i] = convert::To<T>(
-        fma(convert::To<AccT>(x[i]), LDG(scale, pi), LDG(bias, pi)));
+        fma(convert::To<AccT>(x[i]), LDG(scale, j), LDG(bias, j)));
   }
 }
 
@@ -90,16 +85,16 @@ __global__ void _BatchNormWGrad(
     const T* dy,
     AccT* dgamma,
     AccT* dbeta) {
-  const int outer_dim = N * S;
+  const int NxS = N * S;
   __shared__ typename BlockReduce<AccT>::TempStorage dg_storage;
   __shared__ typename BlockReduce<AccT>::TempStorage db_storage;
   CUDA_2D_KERNEL_LOOP1(i, C) {
     AccT dg_val = AccT(0), db_val = AccT(0);
-    CUDA_2D_KERNEL_LOOP2(j, outer_dim) {
-      const int xi = kOrder == StorageOrder::NCHW ? (j / S * C + i) * S + j % S
-                                                  : j * C + i;
-      dg_val += LDG2(dy, xi) * (LDG2(x, xi) - LDG(mu, i)) * LDG(rsig, i);
-      db_val += LDG2(dy, xi);
+    CUDA_2D_KERNEL_LOOP2(j, NxS) {
+      const int idx = kOrder == StorageOrder::NCHW ? (j / S * C + i) * S + j % S
+                                                   : j * C + i;
+      dg_val += LDG2(dy, idx) * (LDG2(x, idx) - LDG(mu, i)) * LDG(rsig, i);
+      db_val += LDG2(dy, idx);
     }
     dg_val = BlockReduce<AccT>(dg_storage).Sum(dg_val);
     db_val = BlockReduce<AccT>(db_storage).Sum(db_val);
@@ -112,8 +107,7 @@ __global__ void _BatchNormWGrad(
 
 template <typename T, typename AccT, StorageOrder kOrder>
 __global__ void _BatchNormTrainingGrad(
-    const int nthreads,
-    const int N,
+    const int NxCxS,
     const int C,
     const int S,
     const AccT normalizer,
@@ -125,30 +119,31 @@ __global__ void _BatchNormTrainingGrad(
     const AccT* dbeta,
     const T* dy,
     T* dx) {
-  CUDA_1D_KERNEL_LOOP(i, nthreads) {
-    const int pi = kOrder == StorageOrder::NCHW ? (i / S) % C : i % C;
+  CUDA_1D_KERNEL_LOOP(i, NxCxS) {
+    const int j = kOrder == StorageOrder::NCHW ? i / S % C : i % C;
     dx[i] = convert::To<T>(
-        LDG(gamma, pi) * LDG(rsig, pi) *
-        (LDG2(dy, i) -
-         fma((LDG2(x, i) - LDG(mu, pi)) * LDG(rsig, pi),
-             LDG(dgamma, pi),
-             LDG(dbeta, pi)) /
+        LDG(gamma, j) * LDG(rsig, j) *
+        (convert::To<AccT>(dy[i]) -
+         fma((convert::To<AccT>(x[i]) - LDG(mu, j)) * LDG(rsig, j),
+             LDG(dgamma, j),
+             LDG(dbeta, j)) /
              normalizer));
   }
 }
 
 template <typename T, typename AccT, StorageOrder kOrder>
 __global__ void _BatchNormInferenceGrad(
-    const int nthreads,
+    const int NxCxS,
     const int C,
     const int S,
     const AccT* rsig,
     const AccT* gamma,
     const T* dy,
     T* dx) {
-  CUDA_1D_KERNEL_LOOP(i, nthreads) {
-    const int pi = kOrder == StorageOrder::NCHW ? (i / S) % C : i % C;
-    dx[i] = convert::To<T>(LDG(gamma, pi) * LDG2(dy, i) * LDG(rsig, pi));
+  CUDA_1D_KERNEL_LOOP(i, NxCxS) {
+    const int j = kOrder == StorageOrder::NCHW ? i / S % C : i % C;
+    dx[i] =
+        convert::To<T>(LDG(gamma, j) * convert::To<AccT>(dy[i]) * LDG(rsig, j));
   }
 }
 
@@ -159,13 +154,13 @@ __global__ void _BatchNormInferenceGrad(
 
 /* ------------------- Launcher Separator ------------------- */
 
-#define DISPATCH_BATCHNORM_KERNEL(name, T, AccT, nblocks, nthreads, ...) \
+#define DISPATCH_BATCHNORM_KERNEL(name, T, AccT, kBlocks, kThreads, ...) \
   if (data_format == "NCHW") {                                           \
     name<T, AccT, StorageOrder::NCHW>                                    \
-        <<<nblocks, nthreads, 0, ctx->cuda_stream()>>>(__VA_ARGS__);     \
+        <<<kBlocks, kThreads, 0, ctx->cuda_stream()>>>(__VA_ARGS__);     \
   } else if (data_format == "NHWC") {                                    \
     name<T, AccT, StorageOrder::NHWC>                                    \
-        <<<nblocks, nthreads, 0, ctx->cuda_stream()>>>(__VA_ARGS__);     \
+        <<<kBlocks, kThreads, 0, ctx->cuda_stream()>>>(__VA_ARGS__);     \
   } else {                                                               \
     LOG(FATAL) << "Unknown DataFormat: " << data_format;                 \
   }
@@ -186,7 +181,7 @@ __global__ void _BatchNormInferenceGrad(
       AccT* bias,                                                     \
       T* y,                                                           \
       CUDAContext* ctx) {                                             \
-    const auto nthreads = N * C * S;                                  \
+    const auto NxCxS = N * C * S;                                     \
     _BatchNormFusedParams<<<                                          \
         CUDA_BLOCKS(C),                                               \
         CUDA_THREADS,                                                 \
@@ -196,9 +191,9 @@ __global__ void _BatchNormInferenceGrad(
         _BatchNormAffine,                                             \
         math::ScalarType<T>::type,                                    \
         AccT,                                                         \
-        CUDA_BLOCKS(nthreads),                                        \
+        CUDA_BLOCKS(NxCxS),                                           \
         CUDA_THREADS,                                                 \
-        nthreads,                                                     \
+        NxCxS,                                                        \
         C,                                                            \
         S,                                                            \
         reinterpret_cast<const math::ScalarType<T>::type*>(x),        \
@@ -278,15 +273,14 @@ __global__ void _BatchNormInferenceGrad(
       const T* dy,                                                \
       T* dx,                                                      \
       CUDAContext* ctx) {                                         \
-    const auto nthreads = N * C * S;                              \
+    const auto NxCxS = N * C * S;                                 \
     DISPATCH_BATCHNORM_KERNEL(                                    \
         _BatchNormTrainingGrad,                                   \
         math::ScalarType<T>::type,                                \
         AccT,                                                     \
-        CUDA_BLOCKS(nthreads),                                    \
+        CUDA_BLOCKS(NxCxS),                                       \
         CUDA_THREADS,                                             \
-        nthreads,                                                 \
-        N,                                                        \
+        NxCxS,                                                    \
         C,                                                        \
         S,                                                        \
         normalizer,                                               \
@@ -314,7 +308,7 @@ __global__ void _BatchNormInferenceGrad(
       AccT* dbeta,                                                \
       T* dx,                                                      \
       CUDAContext* ctx) {                                         \
-    const auto nthreads = N * C * S;                              \
+    const auto NxCxS = N * C * S;                                 \
     if (dgamma != nullptr) {                                      \
       DISPATCH_BATCHNORM_KERNEL(                                  \
           _BatchNormWGrad,                                        \
@@ -336,9 +330,9 @@ __global__ void _BatchNormInferenceGrad(
         _BatchNormInferenceGrad,                                  \
         math::ScalarType<T>::type,                                \
         AccT,                                                     \
-        CUDA_BLOCKS(nthreads),                                    \
+        CUDA_BLOCKS(NxCxS),                                       \
         CUDA_THREADS,                                             \
-        nthreads,                                                 \
+        NxCxS,                                                    \
         C,                                                        \
         S,                                                        \
         rsig,                                                     \
@@ -357,7 +351,7 @@ DEFINE_GRAD_KERNEL_LAUNCHER(double, double);
 #undef DEFINE_GRAD_KERNEL_LAUNCHER
 #undef DISPATCH_BATCHNORM_KERNEL
 
-} // namespace kernel
+} // namespace kernels
 
 } // namespace dragon
 

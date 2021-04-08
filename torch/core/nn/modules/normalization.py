@@ -16,16 +16,17 @@ from __future__ import print_function
 
 import inspect
 
+from dragon.core.util import nest
 from dragon.vm.torch.core.nn import functional as F
 from dragon.vm.torch.core.nn.modules.module import Module
 from dragon.vm.torch.core.nn.parameter import Parameter
-from dragon.vm.torch.core.ops.array import functional as array_funcs
-from dragon.vm.torch.core.ops.init import functional as init_funcs
+from dragon.vm.torch.core.ops import array_ops
+from dragon.vm.torch.core.ops import init_ops
 from dragon.vm.torch.core.tensor import Tensor
 
 
 class AffineChannel(Module):
-    """Apply affine transformation along the channels.
+    """Apply affine transformation to channels.
 
     Affine is often taken as a post-processing of normalization.
 
@@ -68,11 +69,11 @@ class AffineChannel(Module):
         num_features : int
             The number of channels.
         bias : bool, optional, default=True
-            **True** to attach a bias.
+            ``True`` to attach a bias.
         fix_weight : bool, optional, default=False
-            **True** to frozen the ``weight``.
+            ``True`` to frozen the ``weight``.
         fix_bias : bool, optional, default=False
-            **True** to frozen the ``bias``.
+            ``True`` to frozen the ``bias``.
         inplace : bool, optional, default=False
             Whether to do the operation in-place.
 
@@ -81,16 +82,16 @@ class AffineChannel(Module):
         self.num_features = num_features
         self.inplace = inplace
         if not fix_weight:
-            self.weight = Parameter(init_funcs.ones(num_features))
+            self.weight = Parameter(init_ops.ones(num_features))
             if inplace:
                 raise ValueError('In-place operation requires fixed weight.')
         else:
-            self.register_buffer('weight', init_funcs.ones(num_features))
+            self.register_buffer('weight', init_ops.ones(num_features))
         if bias:
             if not fix_bias:
-                self.bias = Parameter(init_funcs.zeros(num_features))
+                self.bias = Parameter(init_ops.zeros(num_features))
             else:
-                self.register_buffer('bias', init_funcs.zeros(num_features))
+                self.register_buffer('bias', init_ops.zeros(num_features))
         else:
             self.bias = None
 
@@ -102,7 +103,7 @@ class AffineChannel(Module):
         return s
 
     def forward(self, input):
-        return array_funcs.channel_affine(
+        return array_ops.channel_affine(
             input,
             self.weight,
             self.bias,
@@ -117,8 +118,9 @@ class GroupNorm(Module):
 
     The normalization is defined as:
 
-    .. math::
-        y = \frac{x - \mathrm{E}[x]}{\sqrt{\mathrm{Var}[x] + \epsilon}} * \gamma + \beta
+    .. math:: y = \frac{x - \mathrm{E}[x]}
+                       {\sqrt{\mathrm{Var}[x] + \epsilon}}
+                  * \gamma + \beta
 
     Examples:
 
@@ -146,13 +148,13 @@ class GroupNorm(Module):
         Parameters
         ----------
         num_groups : int
-            The number of groups to split.
+            The number of groups.
         num_channels : int
             The number of channels.
         eps : float, optional, default=1e-5
             The value to :math:`\epsilon`.
         affine : bool, optional, default=True
-            **True** to apply a affine transformation.
+            ``True`` to apply a affine transformation.
 
         """
         super(GroupNorm, self).__init__()
@@ -164,9 +166,8 @@ class GroupNorm(Module):
             self.weight = Parameter(Tensor(num_channels))
             self.bias = Parameter(Tensor(num_channels))
         else:
-            self.register_buffer('weight', init_funcs.ones(num_channels))
-            self.register_buffer('bias', init_funcs.zeros(num_channels))
-        self.inputs = [self.weight, self.bias]
+            self.register_buffer('weight', init_ops.ones(num_channels))
+            self.register_buffer('bias', init_ops.zeros(num_channels))
         self.reset_parameters()
 
     def reset_parameters(self):
@@ -183,16 +184,84 @@ class GroupNorm(Module):
 
     def forward(self, input):
         return F.group_norm(
-            input, *self.inputs,
-            groups=self.num_groups,
-            eps=self.eps
-        )
+            input, self.num_groups, self.weight, self.bias, self.eps)
 
     def _apply(self, fn):
         lambda_source = inspect.getsource(fn)
         if 'half_()' in lambda_source:
             return self  # Float32 parameters are required.
         return super(GroupNorm, self)._apply(fn)
+
+
+class LayerNorm(Module):
+    r"""Apply the layer normalization.
+    `[Ba et.al, 2016] <https://arxiv.org/abs/1607.06450>`_
+
+    The normalization is defined as:
+
+    .. math:: y = \frac{x - \mathrm{E}[x]}
+                       {\sqrt{\mathrm{Var}[x] + \epsilon}}
+                  * \gamma + \beta
+
+    Examples:
+
+    ```python
+    x = torch.randn(2, 3, 4)
+    m = torch.nn.LayerNorm(x.size()[1:])
+    y = m(x)
+    ```
+
+    See Also
+    --------
+    `torch.nn.functional.layer_norm(...)`_
+
+    """
+
+    def __init__(self, normalized_shape, eps=1e-5, elementwise_affine=True):
+        r"""Create a ``LayerNorm`` module.
+
+        Parameters
+        ----------
+        normalized_shape : Union[int, Sequence[int]]
+            The size normalized over the last dimensions.
+        eps : float, optional, default=1e-5
+            The value to :math:`\epsilon`.
+        elementwise_affine : bool, optional, default=True
+            ``True`` to apply a affine transformation.
+
+        """
+        super(LayerNorm, self).__init__()
+        self.normalized_shape = tuple(nest.flatten(normalized_shape))
+        self.eps = eps
+        self.elementwise_affine = elementwise_affine
+        if self.elementwise_affine:
+            self.weight = Parameter(Tensor(*self.normalized_shape))
+            self.bias = Parameter(Tensor(*self.normalized_shape))
+        else:
+            self.register_buffer('weight', init_ops.ones(*self.normalized_shape))
+            self.register_buffer('bias', init_ops.zeros(*self.normalized_shape))
+        self.reset_parameters()
+
+    def reset_parameters(self):
+        if self.elementwise_affine:
+            self.weight.data.one_()
+            self.bias.data.zero_()
+
+    def extra_repr(self):
+        return '{normalized_shape}, ' \
+               'eps={eps}, ' \
+               'elementwise_affine={elementwise_affine}' \
+               .format(**self.__dict__)
+
+    def forward(self, input):
+        return F.layer_norm(
+            input, self.normalized_shape, self.weight, self.bias, self.eps)
+
+    def _apply(self, fn):
+        lambda_source = inspect.getsource(fn)
+        if 'half_()' in lambda_source:
+            return self  # Float32 parameters are required.
+        return super(LayerNorm, self)._apply(fn)
 
 
 class LocalResponseNorm(Module):
@@ -203,8 +272,8 @@ class LocalResponseNorm(Module):
 
     .. math::
         y_{i} = x_{i}\left(k + \frac{\alpha}{n}
-            \sum_{j=\max(0, i-n/2)}^{\min(N-1,i+n/2)}x_{j}^2
-        \right)^{-\beta}
+                     \sum_{j=\max(0, i-n/2)}^{\min(N-1,i+n/2)}x_{j}^2
+                     \right)^{-\beta}
 
     Examples:
 

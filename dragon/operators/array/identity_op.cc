@@ -7,9 +7,7 @@ namespace dragon {
 template <class Context>
 void IdentityOp<Context>::RunOnDevice() {
   auto &X = Input(0), *Y = Output(0, {0});
-  // Store for the gradient calculation
-  STORE_INPUT_SPEC(0);
-  // Maybe copy the contents
+  SET_INPUT_SPEC(0);
   Y->ReshapeLike(X)->CopyFrom(X, ctx());
 }
 

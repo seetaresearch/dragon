@@ -5,7 +5,7 @@
 
 namespace dragon {
 
-namespace kernel {
+namespace kernels {
 
 namespace {
 
@@ -418,11 +418,11 @@ __global__ void _AvgPool3dGradNHWC(
 
 /* ------------------- Launcher Separator ------------------- */
 
-#define DISPATCH_POOL_KERNEL(name, nblocks, nthreads, ...)                 \
+#define DISPATCH_POOL_KERNEL(name, kBlocks, kThreads, ...)                 \
   if (data_format == "NCHW") {                                             \
-    name##NCHW<<<nblocks, nthreads, 0, ctx->cuda_stream()>>>(__VA_ARGS__); \
+    name##NCHW<<<kBlocks, kThreads, 0, ctx->cuda_stream()>>>(__VA_ARGS__); \
   } else if (data_format == "NHWC") {                                      \
-    name##NHWC<<<nblocks, nthreads, 0, ctx->cuda_stream()>>>(__VA_ARGS__); \
+    name##NHWC<<<kBlocks, kThreads, 0, ctx->cuda_stream()>>>(__VA_ARGS__); \
   } else {                                                                 \
     LOG(FATAL) << "Unknown DataFormat: " << data_format;                   \
   }
@@ -530,7 +530,7 @@ DEFINE_KERNEL_LAUNCHER(AvgPool3dGrad, double, (D * H * W)); // AvgPool3dGrad
 #undef DEFINE_KERNEL_LAUNCHER
 #undef DISPATCH_POOL_KERNEL
 
-} // namespace kernel
+} // namespace kernels
 
 } // namespace dragon
 

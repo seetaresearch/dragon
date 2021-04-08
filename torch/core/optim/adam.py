@@ -18,6 +18,8 @@ from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
 
+import collections
+
 from dragon.vm.torch.core.optim.optimizer import Optimizer
 
 
@@ -63,7 +65,7 @@ class Adam(Optimizer):
         weight_decay : float, optional, default=0
             The L2 penalty factor to weight.
         amsgrad : bool, optional, default=False
-            **True** to switch to **AMSGrad** optimizer.
+            ``True`` to switch to **AMSGrad** optimizer.
         scale : float, optional, default=1
             The scaling factor to gradient.
         clip_norm : float, optional, default=0
@@ -80,23 +82,16 @@ class Adam(Optimizer):
             raise ValueError("Invalid beta parameter at index 1: {}".format(betas[1]))
         if amsgrad:
             raise NotImplementedError
-        defaults = dict(
-            lr=lr,
-            beta1=betas[0],
-            beta2=betas[1],
-            eps=eps,
-            amsgrad=amsgrad,
-            scale=scale,
-            clip_norm=clip_norm,
-            weight_decay=weight_decay,
-        )
+        defaults = dict(lr=lr, beta1=betas[0], beta2=betas[1],
+                        eps=eps, amsgrad=amsgrad, weight_decay=weight_decay,
+                        scale=scale, clip_norm=clip_norm)
         super(Adam, self).__init__(params, defaults)
-        self._shared_args = {
-            'lr': 'base_lr',
-            'beta1': 'beta1',
-            'beta2': 'beta2',
-            'eps': 'eps',
-            'scale': 'scale',
-            'clip_norm': 'clip_norm',
-            'weight_decay': 'weight_decay',
+        self._hyper = {
+            'lr': ('lr', collections.defaultdict(str)),
+            'beta1': ('beta1', collections.defaultdict(str)),
+            'beta2': ('beta2', collections.defaultdict(str)),
+            'eps': ('eps', collections.defaultdict(str)),
+            'weight_decay': ('weight_decay', collections.defaultdict(str)),
+            'scale': ('scale', collections.defaultdict(str)),
+            'clip_norm': ('clip_norm', collections.defaultdict(str)),
         }

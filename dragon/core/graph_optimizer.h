@@ -35,9 +35,6 @@ class GraphOptimizer {
   /*! \brief Build the DAG */
   void BuildDAG(const GraphDef& graph);
 
-  /*! \brief Eliminate the unused outputs and operators */
-  GraphDef EliminateUnused(const GraphDef& graph);
-
   /*! \brief Plan the inplace for inputs */
   void PlanInplace(
       const GraphDef& graph,
@@ -48,16 +45,10 @@ class GraphOptimizer {
       const GraphDef& graph,
       Map<string, vec32_t>& subgraph_indices);
 
-  /*! \brief Allocate the shared buffer for outputs */
-  GraphDef SimulateGC(const GraphDef& graph);
+  /*! \brief Eliminate the intermediate outputs */
+  GraphDef EliminateIntermediates(const GraphDef& graph);
 
  protected:
-  /*! \brief Remote the unused nodes from a sink to all sources */
-  void EliminateUnusedNode(const string& sink);
-
-  /*! \brief Remote the unused nodes from a source to a sink */
-  void EliminateUnusedNode(const string& source, const string& sink);
-
   /* \brief The graph workspace */
   Workspace* ws_;
 
@@ -67,8 +58,8 @@ class GraphOptimizer {
   /* \brief The traversal flags */
   Map<string, bool> visited_, used_;
 
-  /* \brief The reference count */
-  Map<string, int> reference_count_;
+  /* \brief The inputs counter */
+  Map<string, int> inputs_count_;
 
  private:
   DISABLE_COPY_AND_ASSIGN(GraphOptimizer);

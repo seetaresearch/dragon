@@ -11,14 +11,14 @@ void ResizeOp<Context>::DoRunWithType() {
   auto &X = Input(0), *Y = Output(0);
 
   // Store for the gradient calculation
-  STORE_INPUT_SPEC(0);
+  SET_INPUT_SPEC(0);
   Buffer("in_dims")->template CopyFrom<int64_t>(in_dims_);
   Buffer("out_dims")->template CopyFrom<int64_t>(out_dims_);
 
   // Dispatch kernel according to mode and dimensions
   if (mode_ == "NEAREST") {
     if (out_dims_.size() == 1 || out_dims_.size() == 2) {
-      kernel::ResizeNearest2d(
+      kernels::ResizeNearest2d(
           in_dims_[0],
           in_dims_[1],
           in_dims_[2],
@@ -30,7 +30,7 @@ void ResizeOp<Context>::DoRunWithType() {
           Y->Reshape(out_shape_)->template mutable_data<T, Context>(),
           ctx());
     } else if (out_dims_.size() == 3) {
-      kernel::ResizeNearest3d(
+      kernels::ResizeNearest3d(
           in_dims_[0],
           in_dims_[1],
           in_dims_[2],
@@ -49,7 +49,7 @@ void ResizeOp<Context>::DoRunWithType() {
     }
   } else if (mode_ == "LINEAR") {
     if (out_dims_.size() == 1 || out_dims_.size() == 2) {
-      kernel::ResizeLinear2d(
+      kernels::ResizeLinear2d(
           in_dims_[0],
           in_dims_[1],
           in_dims_[2],
@@ -132,7 +132,7 @@ void ResizeOp<Context>::RunOnDevice() {
     LOG(FATAL) << "Specify either <sizes> or <scales>.";
   }
 
-  DispatchHelper<NumericalTensorTypes>::Call(this, X);
+  DispatchHelper<dtypes::Numerical>::Call(this, X);
 }
 
 template <class Context>
@@ -146,10 +146,10 @@ void ResizeGradientOp<Context>::DoRunWithType() {
       ? (float*)nullptr
       : ctx()->workspace()->template data<float, Context>({dX->count()})[0];
 
-  // Accumulate gradient to dX or a float32 buffer
+  // Accumulate to dX
   if (mode_ == "NEAREST") {
     if (out_dims_.size() == 1 || out_dims_.size() == 2) {
-      kernel::ResizeNearest2dGrad(
+      kernels::ResizeNearest2dGrad(
           in_dims_[0],
           in_dims_[1],
           in_dims_[2],
@@ -161,7 +161,7 @@ void ResizeGradientOp<Context>::DoRunWithType() {
           dx_acc != nullptr ? dx_acc : reinterpret_cast<float*>(dx),
           ctx());
     } else if (out_dims_.size() == 3) {
-      kernel::ResizeNearest3dGrad(
+      kernels::ResizeNearest3dGrad(
           in_dims_[0],
           in_dims_[1],
           in_dims_[2],
@@ -180,7 +180,7 @@ void ResizeGradientOp<Context>::DoRunWithType() {
     }
   } else if (mode_ == "LINEAR") {
     if (out_dims_.size() == 1 || out_dims_.size() == 2) {
-      kernel::ResizeLinear2dGrad(
+      kernels::ResizeLinear2dGrad(
           in_dims_[0],
           in_dims_[1],
           in_dims_[2],
@@ -199,7 +199,7 @@ void ResizeGradientOp<Context>::DoRunWithType() {
     LOG(FATAL) << "Unknown interpolation mode: " << mode_;
   }
 
-  // Convert buffer data to dX if necessary
+  // Convert to dX if necessary
   if (dx_acc != nullptr) {
     math::Cast(dX->count(), dx_acc, dx, ctx());
   }
@@ -207,10 +207,10 @@ void ResizeGradientOp<Context>::DoRunWithType() {
 
 template <class Context>
 void ResizeGradientOp<Context>::RunOnDevice() {
-  Output(0)->ReshapeLike(RESTORE_INPUT_SPEC(0));
+  Output(0)->ReshapeLike(INPUT_SPEC(0));
   Buffer("in_dims")->template CopyTo<int64_t>(in_dims_);
   Buffer("out_dims")->template CopyTo<int64_t>(out_dims_);
-  DispatchHelper<FloatingTensorTypes>::Call(this, Input(0));
+  DispatchHelper<dtypes::Floating>::Call(this, Input(0));
 }
 
 DEPLOY_CPU_OPERATOR(Resize);

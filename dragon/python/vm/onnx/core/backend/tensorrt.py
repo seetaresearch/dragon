@@ -116,7 +116,6 @@ class BackendRep(ONNXBackendRep):
 
         self._output_shapes = {}
         self._output_dtypes = {}
-
         for output in model.graph.output:
             dims = output.type.tensor_type.shape.dim
             output_shape = tuple([dim.dim_value for dim in dims])
@@ -156,12 +155,10 @@ class BackendRep(ONNXBackendRep):
         outputs = self._engine.run(
             inputs, optimization_profile=optimization_profile)
         output_names = [output.name for output in self._engine.outputs]
-
         for i, (name, array) in enumerate(zip(output_names, outputs)):
             if self._output_dtypes[name] == onnx.TensorProto.INT64 and \
                     array.dtype == numpy.int32:
                 outputs[i] = numpy.array(outputs[i], dtype=numpy.int64)
-
         return onnx_helper.namedtupledict('Outputs', output_names)(*outputs)
 
     def _add_optimization_profiles(self, profiles):
@@ -275,7 +272,7 @@ class TensorRTBackend(Backend):
         Returns
         -------
         bool
-            **True** if device is supported otherwise **False**.
+            ``True`` if device is supported otherwise ``False``.
 
         """
         device = Device(device_str)

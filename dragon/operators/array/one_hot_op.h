@@ -23,8 +23,8 @@ class OneHotOp final : public Operator<Context> {
   OneHotOp(const OperatorDef& def, Workspace* ws)
       : Operator<Context>(def, ws),
         depth_(OP_SINGLE_ARG(int64_t, "depth", -1)),
-        on_value_(OP_SINGLE_ARG(int64_t, "on_value", 1)),
-        off_value_(OP_SINGLE_ARG(int64_t, "off_value", 0)) {}
+        on_value_(OP_SINGLE_ARG(float, "on_value", 1.f)),
+        off_value_(OP_SINGLE_ARG(float, "off_value", 0.f)) {}
   USE_OPERATOR_FUNCTIONS;
 
   void RunOnDevice() override;
@@ -33,7 +33,8 @@ class OneHotOp final : public Operator<Context> {
   void DoRunWithType();
 
  protected:
-  int64_t depth_, on_value_, off_value_;
+  int64_t depth_;
+  float on_value_, off_value_;
 };
 
 } // namespace dragon

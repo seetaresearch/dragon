@@ -7,7 +7,7 @@ namespace math {
 
 template <>
 DRAGON_API void Scale<float16, CPUContext>(
-    const int n,
+    const int N,
     const float alpha,
     const float16* x,
     float16* y,
@@ -18,9 +18,9 @@ DRAGON_API void Scale<float16, CPUContext>(
 #define DEFINE_SCALE_FUNC(T)                                               \
   template <>                                                              \
   DRAGON_API void Scale<T, CPUContext>(                                    \
-      const int n, const float alpha, const T* x, T* y, CPUContext* ctx) { \
-    EigenVectorArrayMap<T>(y, n) =                                         \
-        ConstEigenVectorArrayMap<T>(x, n) * (T)alpha;                      \
+      const int N, const float alpha, const T* x, T* y, CPUContext* ctx) { \
+    EigenVectorArrayMap<T>(y, N) =                                         \
+        ConstEigenVectorArrayMap<T>(x, N) * T(alpha);                      \
   }
 
 DEFINE_SCALE_FUNC(int8_t);
@@ -34,9 +34,9 @@ DEFINE_SCALE_FUNC(double);
 #define DEFINE_COPY_FUNC(T)                             \
   template <>                                           \
   DRAGON_API void Copy<T, CPUContext>(                  \
-      const int n, const T* x, T* y, CPUContext* ctx) { \
-    if (x != y && n > 0) {                              \
-      memcpy(y, x, sizeof(T) * n);                      \
+      const int N, const T* x, T* y, CPUContext* ctx) { \
+    if (x != y && N > 0) {                              \
+      memcpy(y, x, sizeof(T) * N);                      \
     }                                                   \
   }
 
@@ -53,15 +53,15 @@ DEFINE_COPY_FUNC(double);
 #define DEFINE_COPY_FUNC(T)                                               \
   template <>                                                             \
   DRAGON_API void Copy<T, CPUContext>(                                    \
-      const int n,                                                        \
+      const int N,                                                        \
       const int incx,                                                     \
       const int incy,                                                     \
       const T* x,                                                         \
       T* y,                                                               \
       CPUContext* ctx) {                                                  \
-    if (x != y && n > 0) {                                                \
-      EigenStridedVectorMap<T>(y, 1, n, EigenInnerStride(incy)) =         \
-          ConstEigenStridedVectorMap<T>(x, 1, n, EigenInnerStride(incx)); \
+    if (x != y && N > 0) {                                                \
+      EigenStridedVectorMap<T>(y, 1, N, EigenInnerStride(incy)) =         \
+          ConstEigenStridedVectorMap<T>(x, 1, N, EigenInnerStride(incx)); \
     }                                                                     \
   }
 
@@ -78,20 +78,20 @@ DEFINE_COPY_FUNC(double);
 #define DEFINE_COPY_FUNC(T)                            \
   template <>                                          \
   DRAGON_API void CopyMatrix<T, CPUContext>(           \
-      const int m,                                     \
-      const int n,                                     \
+      const int M,                                     \
+      const int N,                                     \
       const int ldx,                                   \
       const int ldy,                                   \
       const T* x,                                      \
       T* y,                                            \
       CPUContext* ctx) {                               \
-    if (m <= 0 || n <= 0) return;                      \
-    if (ldx == n && ldy == n) {                        \
-      if (x != y) memcpy(y, x, sizeof(T) * m * n);     \
+    if (M <= 0 || N <= 0) return;                      \
+    if (ldx == N && ldy == N) {                        \
+      if (x != y) memcpy(y, x, sizeof(T) * M * N);     \
       return;                                          \
     }                                                  \
-    for (int i = 0; i < m; ++i) {                      \
-      memcpy(y + ldy * i, x + ldx * i, sizeof(T) * n); \
+    for (int i = 0; i < M; ++i) {                      \
+      memcpy(y + ldy * i, x + ldx * i, sizeof(T) * N); \
     }                                                  \
   }
 
@@ -107,7 +107,7 @@ DEFINE_COPY_FUNC(double);
 
 template <>
 DRAGON_API void Axpy<float16, CPUContext>(
-    const int n,
+    const int N,
     const float alpha,
     const float16* x,
     float16* y,
@@ -118,9 +118,9 @@ DRAGON_API void Axpy<float16, CPUContext>(
 #define DEFINE_AXPY_FUNC(T)                                                \
   template <>                                                              \
   DRAGON_API void Axpy<T, CPUContext>(                                     \
-      const int n, const float alpha, const T* x, T* y, CPUContext* ctx) { \
-    EigenVectorArrayMap<T>(y, n) +=                                        \
-        ConstEigenVectorArrayMap<T>(x, n) * (T)alpha;                      \
+      const int N, const float alpha, const T* x, T* y, CPUContext* ctx) { \
+    EigenVectorArrayMap<T>(y, N) +=                                        \
+        ConstEigenVectorArrayMap<T>(x, N) * T(alpha);                      \
   }
 
 DEFINE_AXPY_FUNC(int8_t);
@@ -134,14 +134,14 @@ DEFINE_AXPY_FUNC(double);
 #define DEFINE_AXPBY_FUNC(T)            \
   template <>                           \
   DRAGON_API void Axpby<T, CPUContext>( \
-      const int n,                      \
+      const int N,                      \
       const float alpha,                \
       const T* x,                       \
       const float beta,                 \
       T* y,                             \
       CPUContext* ctx) {                \
-    Scale(n, beta, y, y, ctx);          \
-    Axpy(n, alpha, x, y, ctx);          \
+    Scale(N, beta, y, y, ctx);          \
+    Axpy(N, alpha, x, y, ctx);          \
   }
 
 DEFINE_AXPBY_FUNC(int8_t);
@@ -155,7 +155,7 @@ DEFINE_AXPBY_FUNC(double);
 
 template <>
 DRAGON_API void Dot<float16, CPUContext>(
-    int n,
+    int N,
     const float16* a,
     const float16* b,
     float16* y,
@@ -166,13 +166,13 @@ DRAGON_API void Dot<float16, CPUContext>(
 #define DEFINE_DOT_FUNC(T)                                                 \
   template <>                                                              \
   DRAGON_API void Dot<T, CPUContext>(                                      \
-      int n, const T* a, const T* b, T* y, CPUContext* ctx) {              \
-    *y = ConstEigenVectorMap<T>(a, n).dot(ConstEigenVectorMap<T>(b, n));   \
+      int N, const T* a, const T* b, T* y, CPUContext* ctx) {              \
+    *y = ConstEigenVectorMap<T>(a, N).dot(ConstEigenVectorMap<T>(b, N));   \
   }                                                                        \
   template <>                                                              \
   DRAGON_API T Dot<T, CPUContext>(                                         \
-      int n, const T* a, const T* b, CPUContext* ctx) {                    \
-    return ConstEigenVectorMap<T>(a, n).dot(ConstEigenVectorMap<T>(b, n)); \
+      int N, const T* a, const T* b, CPUContext* ctx) {                    \
+    return ConstEigenVectorMap<T>(a, N).dot(ConstEigenVectorMap<T>(b, N)); \
   }
 
 DEFINE_DOT_FUNC(float);
@@ -182,12 +182,12 @@ DEFINE_DOT_FUNC(double);
 #define DEFINE_ASUM_FUNC(T)                                                    \
   template <>                                                                  \
   DRAGON_API void ASum<T, CPUContext>(                                         \
-      const int n, const T* x, T* y, CPUContext* ctx) {                        \
-    *y = ConstEigenVectorArrayMap<T>(x, n).abs().sum();                        \
+      const int N, const T* x, T* y, CPUContext* ctx) {                        \
+    *y = ConstEigenVectorArrayMap<T>(x, N).abs().sum();                        \
   }                                                                            \
   template <>                                                                  \
-  DRAGON_API T ASum<T, CPUContext>(const int n, const T* x, CPUContext* ctx) { \
-    return ConstEigenVectorArrayMap<T>(x, n).abs().sum();                      \
+  DRAGON_API T ASum<T, CPUContext>(const int N, const T* x, CPUContext* ctx) { \
+    return ConstEigenVectorArrayMap<T>(x, N).abs().sum();                      \
   }
 
 DEFINE_ASUM_FUNC(float);

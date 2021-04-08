@@ -44,7 +44,6 @@ class GemmGradientOp final : public Operator<Context> {
  public:
   GemmGradientOp(const OperatorDef& def, Workspace* ws)
       : Operator<Context>(def, ws),
-        n_(OP_SINGLE_ARG(int64_t, "n", 0)),
         alpha_(OP_SINGLE_ARG(float, "alpha", 1.f)),
         beta_(OP_SINGLE_ARG(float, "beta", 1.f)),
         transA_(OP_SINGLE_ARG(int64_t, "transA", 0)),
@@ -58,7 +57,7 @@ class GemmGradientOp final : public Operator<Context> {
 
  protected:
   float alpha_, beta_;
-  int64_t n_, transA_, transB_;
+  int64_t transA_, transB_;
 };
 
 } // namespace dragon

@@ -100,7 +100,7 @@ template <typename T>
 void CuDNNSetBiasDesc(
     cudnnTensorDescriptor_t* desc,
     const int num_dims,
-    const int64_t num_elements,
+    const int64_t N,
     const std::string& data_format);
 
 } // namespace dragon

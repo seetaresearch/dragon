@@ -3,51 +3,42 @@
 
 namespace dragon {
 
-namespace kernel {
+namespace kernels {
 
 namespace {
 
 template <typename T>
 void _ChannelAffine(
-    const int outer_dim,
-    const int axis_dim,
+    const int N,
+    const int S,
+    const int C,
     const T* x,
-    const T* w,
-    const T* b,
+    const T* scale,
+    const T* bias,
     T* y) {
-  if (b != nullptr) {
-    EigenArrayMap<T>(y, axis_dim, outer_dim) =
-        (ConstEigenArrayMap<T>(x, axis_dim, outer_dim).colwise() *
-         ConstEigenVectorArrayMap<T>(w, axis_dim))
-            .colwise() +
-        ConstEigenVectorArrayMap<T>(b, axis_dim);
-  } else {
-    EigenArrayMap<T>(y, axis_dim, outer_dim) =
-        ConstEigenArrayMap<T>(x, axis_dim, outer_dim).colwise() *
-        ConstEigenVectorArrayMap<T>(w, axis_dim);
+  if (S == 1) {
+    if (bias != nullptr) {
+      EigenArrayMap<T>(y, C, N) = (ConstEigenArrayMap<T>(x, C, N).colwise() *
+                                   ConstEigenVectorArrayMap<T>(scale, C))
+                                      .colwise() +
+          ConstEigenVectorArrayMap<T>(bias, C);
+    } else {
+      EigenArrayMap<T>(y, C, N) = ConstEigenArrayMap<T>(x, C, N).colwise() *
+          ConstEigenVectorArrayMap<T>(scale, C);
+    }
+    return;
   }
-}
-
-template <typename T>
-void _ChannelAffine(
-    const int outer_dim,
-    const int inner_dim,
-    const int axis_dim,
-    const T* x,
-    const T* w,
-    const T* b,
-    T* y) {
-  for (int i = 0; i < outer_dim; ++i) {
-    for (int j = 0; j < axis_dim; ++j) {
-      if (b != nullptr) {
-        EigenVectorArrayMap<T>(y, inner_dim) =
-            ConstEigenVectorArrayMap<T>(x, inner_dim) * w[j] + b[j];
+  for (int i = 0; i < N; ++i) {
+    for (int j = 0; j < C; ++j) {
+      if (bias != nullptr) {
+        EigenVectorArrayMap<T>(y, S) =
+            ConstEigenVectorArrayMap<T>(x, S) * scale[j] + bias[j];
       } else {
-        EigenVectorArrayMap<T>(y, inner_dim) =
-            ConstEigenVectorArrayMap<T>(x, inner_dim) * w[j];
+        EigenVectorArrayMap<T>(y, S) =
+            ConstEigenVectorArrayMap<T>(x, S) * scale[j];
       }
-      x += inner_dim;
-      y += inner_dim;
+      x += S;
+      y += S;
     }
   }
 }
@@ -58,9 +49,9 @@ void _ChannelAffine(
 
 template <>
 void ChannelAffine<float16, CPUContext>(
-    const int outer_dim,
-    const int inner_dim,
-    const int axis_dim,
+    const int N,
+    const int S,
+    const int C,
     const float16* x,
     const float16* w,
     const float16* b,
@@ -69,32 +60,28 @@ void ChannelAffine<float16, CPUContext>(
   CPU_FP16_NOT_SUPPORTED;
 }
 
-#define DEFINE_KERNEL_LAUNCHER(T)                                 \
-  template <>                                                     \
-  void ChannelAffine<T, CPUContext>(                              \
-      const int outer_dim,                                        \
-      const int inner_dim,                                        \
-      const int axis_dim,                                         \
-      const T* x,                                                 \
-      const T* w,                                                 \
-      const T* b,                                                 \
-      T* y,                                                       \
-      CPUContext* ctx) {                                          \
-    if (inner_dim == 1) {                                         \
-      _ChannelAffine(outer_dim, axis_dim, x, w, b, y);            \
-    } else {                                                      \
-      _ChannelAffine(outer_dim, inner_dim, axis_dim, x, w, b, y); \
-    }                                                             \
+#define DEFINE_KERNEL_LAUNCHER(T)               \
+  template <>                                   \
+  void ChannelAffine<T, CPUContext>(            \
+      const int N,                              \
+      const int S,                              \
+      const int C,                              \
+      const T* x,                               \
+      const T* scale,                           \
+      const T* bias,                            \
+      T* y,                                     \
+      CPUContext* ctx) {                        \
+    _ChannelAffine(N, S, C, x, scale, bias, y); \
   }
 
-DEFINE_KERNEL_LAUNCHER(int8_t);
 DEFINE_KERNEL_LAUNCHER(uint8_t);
+DEFINE_KERNEL_LAUNCHER(int8_t);
 DEFINE_KERNEL_LAUNCHER(int);
 DEFINE_KERNEL_LAUNCHER(int64_t);
 DEFINE_KERNEL_LAUNCHER(float);
 DEFINE_KERNEL_LAUNCHER(double);
 #undef DEFINE_KERNEL_LAUNCHER
 
-} // namespace kernel
+} // namespace kernels
 
 } // namespace dragon

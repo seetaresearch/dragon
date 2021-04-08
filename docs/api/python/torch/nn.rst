@@ -142,6 +142,10 @@ vm.torch.nn
   `class Linear <nn/Linear.html>`_
   : Apply the linear transformation.
 
+  `class LayerNorm <nn/LayerNorm.html>`_
+  : Apply the layer normalization.
+  `[Ba et.al, 2016] <https://arxiv.org/abs/1607.06450>`_
+
   `class LocalResponseNorm <nn/LocalResponseNorm.html>`_
   : Apply the local response normalization.
   `[Krizhevsky et.al, 2012] <http://www.cs.toronto.edu/~hinton/absps/imagenet.pdf>`_.
@@ -169,8 +173,15 @@ vm.torch.nn
   `class Module <nn/Module.html>`_
   : The base class of modules.
 
+  `class ModuleList <nn/ModuleList.html>`_
+  : The list module container.
+
   `class MSELoss <nn/MSELoss.html>`_
   : Compute the element-wise squared error.
+
+  `class MultiheadAttention <nn/MultiheadAttention.html>`_
+  : Apply the multihead attention.
+  `[Vaswani et.al, 2017] <https://arxiv.org/abs/1706.03762>`_.
 
   `class NLLLoss <nn/NLLLoss.html>`_
   : Compute the negative likelihood loss with sparse labels.
@@ -216,6 +227,9 @@ vm.torch.nn
   : Apply the scaled exponential linear unit.
   `[Klambauer et.al, 2017] <https://arxiv.org/abs/1706.02515>`_.
 
+  `class Sequential <nn/Sequential.html>`_
+  : The sequential module container.
+
   `class Sigmoid <nn/Sigmoid.html>`_
   : Apply the sigmoid function.
 
@@ -236,6 +250,22 @@ vm.torch.nn
 
   `class Tanh <nn/Tanh.html>`_
   : Apply the tanh function.
+
+  `class TransformerDecoder <nn/TransformerDecoder.html>`_
+  : Standard transformer decoder.
+  `[Vaswani et.al, 2017] <https://arxiv.org/abs/1706.03762>`_.
+
+  `class TransformerDecoderLayer <nn/TransformerDecoderLayer.html>`_
+  : Layer for a standard transformer decoder.
+  `[Vaswani et.al, 2017] <https://arxiv.org/abs/1706.03762>`_.
+
+  `class TransformerEncoder <nn/TransformerEncoder.html>`_
+  : Standard transformer encoder.
+  `[Vaswani et.al, 2017] <https://arxiv.org/abs/1706.03762>`_.
+
+  `class TransformerEncoderLayer <nn/TransformerEncoderLayer.html>`_
+  : Layer for a standard transformer encoder.
+  `[Vaswani et.al, 2017] <https://arxiv.org/abs/1706.03762>`_.
 
   `class SyncBatchNorm <nn/SyncBatchNorm.html>`_
   : Apply the sync batch normalization over input.
@@ -295,6 +325,7 @@ vm.torch.nn
   nn/Identity
   nn/KLDivLoss
   nn/L1Loss
+  nn/LayerNorm
   nn/LeakyReLU
   nn/Linear
   nn/LocalResponseNorm
@@ -305,7 +336,9 @@ vm.torch.nn
   nn/MaxPool2d
   nn/MaxPool3d
   nn/Module
+  nn/ModuleList
   nn/MSELoss
+  nn/MultiheadAttention
   nn/NLLLoss
   nn/Parameter
   nn/PReLU
@@ -319,12 +352,17 @@ vm.torch.nn
   nn/ReplicationPad3d
   nn/RNN
   nn/SELU
+  nn/Sequential
   nn/Sigmoid
   nn/SigmoidFocalLoss
   nn/SmoothL1Loss
   nn/Softmax
   nn/Swish
   nn/Tanh
+  nn/TransformerDecoder
+  nn/TransformerDecoderLayer
+  nn/TransformerEncoder
+  nn/TransformerEncoderLayer
   nn/SyncBatchNorm
   nn/Upsample
   nn/UpsamplingBilinear2d

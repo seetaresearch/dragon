@@ -3,7 +3,7 @@
 
 namespace dragon {
 
-namespace kernel {
+namespace kernels {
 
 namespace {
 
@@ -17,11 +17,11 @@ void _ChannelNormalize(
     const float* mean,
     const float* std,
     OutputT* y) {
-  const auto count =
+  const auto N =
       std::accumulate(y_dims, y_dims + num_dims, 1, std::multiplies<int64_t>());
   vec64_t idx(num_dims, 0);
   int64_t xi, wi;
-  for (int yi = 0; yi < count; ++yi) {
+  for (int yi = 0; yi < N; ++yi) {
     xi = 0;
     for (int d = num_dims - 1; d >= 0; --d) {
       xi += idx[d] * x_strides[d];
@@ -75,6 +75,6 @@ DEFINE_KERNEL_LAUNCHER(double, float);
 DEFINE_KERNEL_LAUNCHER(double, double);
 #undef DEFINE_KERNEL_LAUNCHER
 
-} // namespace kernel
+} // namespace kernels
 
 } // namespace dragon

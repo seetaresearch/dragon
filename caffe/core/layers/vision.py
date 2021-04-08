@@ -53,33 +53,39 @@ class Convolution(Layer):
     def __init__(self, layer_param):
         super(Convolution, self).__init__(layer_param)
         param = layer_param.convolution_param
-        self.arguments = {
-            'out_channels': param.num_output,
-            'kernel_shape': [int(e) for e in param.kernel_size],
-            'strides': [int(e) for e in param.stride] if len(param.stride) > 0 else [1],
-            'pads': [int(e) for e in param.pad] if len(param.pad) > 0 else [0],
-            'dilations': [int(e) for e in param.dilation] if len(param.dilation) > 0 else [1],
-            'group': int(param.group),
-            'padding': 'VALID',
-            'data_format': 'NCHW',
-        }
-        if param.HasField('kernel_h'):
-            assert param.HasField('kernel_w')
-            self.arguments['kernel_shape'] = [param.kernel_h, param.kernel_w]
-        if param.HasField('stride_h'):
-            assert param.HasField('stride_w')
-            self.arguments['strides'] = [param.stride_h, param.stride_w]
-        if param.HasField('pad_h'):
-            assert param.HasField('pad_w')
-            self.arguments['pads'] = [param.pad_h, param.pad_w]
-        self.add_blob(filler=self.get_filler(param, 'weight_filler'))
-        if param.bias_term:
-            self.add_blob(filler=self.get_filler(param, 'bias_filler'))
+        self.kernel_shape = param.kernel_size or [1]
+        self.strides = param.stride or [1]
+        self.pads = param.pad or [0]
+        self.dilations = param.dilation or [1]
+        self.out_channels = param.num_output
+        self.weight_filler = param.weight_filler
+        self.bias_filler = param.bias_filler
+        self.bias_term = param.bias_term
+        self.call_args = {'group': param.group}
+
+    def build(self, bottom):
+        num_axes = len(bottom.shape) - 2
+        if num_axes < 1:
+            raise ValueError(
+                'Bottom 0 of layer "{}" is {}d, excepted 3d/4d/5d.'
+                .format(self.name, len(bottom.shape)))
+        in_channels = bottom.shape[1]
+        for k in ('kernel_shape', 'strides', 'pads', 'dilations'):
+            self.call_args[k] = [int(d) for d in getattr(self, k)]
+            if len(self.call_args[k]) < num_axes:
+                reps = num_axes - len(self.call_args[k])
+                self.call_args[k] += [self.call_args[k][-1]] * reps
+        weight_shape = [self.out_channels, in_channels] + self.call_args['kernel_shape']
+        self.add_blob(weight_shape, self.weight_filler)
+        if self.bias_term:
+            self.add_blob([self.out_channels], self.bias_filler)
 
     def __call__(self, bottom):
+        if len(self.blobs) == 0:
+            self.build(bottom)
         inputs = [bottom] + [blob['data'] for blob in self._blobs]
-        conv_op = 'conv{}d'.format(len(bottom.shape) - 2)
-        return getattr(vision_ops, conv_op)(inputs, **self.arguments)
+        conv_op = 'conv{}d'.format(len(self.call_args['kernel_shape']))
+        return getattr(vision_ops, conv_op)(inputs, **self.call_args)
 
 
 class Deconvolution(Convolution):
@@ -116,10 +122,29 @@ class Deconvolution(Convolution):
     def __init__(self, layer_param):
         super(Deconvolution, self).__init__(layer_param)
 
+    def build(self, bottom):
+        num_axes = len(bottom.shape) - 2
+        if num_axes < 1:
+            raise ValueError(
+                'Bottom 0 of layer "{}" is {}d, excepted 3d/4d/5d.'
+                .format(self.name, len(bottom.shape)))
+        in_channels = bottom.shape[1]
+        for k in ('kernel_shape', 'strides', 'pads', 'dilations'):
+            self.call_args[k] = [int(d) for d in getattr(self, k)]
+            if len(self.call_args[k]) < num_axes:
+                reps = num_axes - len(self.call_args[k])
+                self.call_args[k] += [self.call_args[k][-1]] * reps
+        weight_shape = [in_channels, self.out_channels] + self.call_args['kernel_shape']
+        self.add_blob(weight_shape, self.weight_filler)
+        if self.bias_term:
+            self.add_blob([self.out_channels], self.bias_filler)
+
     def __call__(self, bottom):
+        if len(self.blobs) == 0:
+            self.build(bottom)
         inputs = [bottom] + [blob['data'] for blob in self._blobs]
-        conv_op = 'conv{}d_transpose'.format(len(bottom.shape) - 2)
-        return getattr(vision_ops, conv_op)(inputs, **self.arguments)
+        conv_op = 'conv{}d_transpose'.format(len(self.call_args['kernel_shape']))
+        return getattr(vision_ops, conv_op)(inputs, **self.call_args)
 
 
 class LRN(Layer):
@@ -148,17 +173,14 @@ class LRN(Layer):
         super(LRN, self).__init__(layer_param)
         param = layer_param.lrn_param
         if param.norm_region > 0:
-            raise NotImplementedError('WITHIN_CHANNEL mode is not implemented.')
-        self.arguments = {
-            'size': param.local_size,
-            'alpha': param.alpha,
-            'beta': param.beta,
-            'bias': param.k,
-            'data_format': 'NCHW',
-        }
+            raise NotImplementedError('<WITHIN_CHANNEL> mode is not implemented.')
+        self.op_args = {'size': param.local_size,
+                        'alpha': param.alpha,
+                        'beta': param.beta,
+                        'bias': param.k}
 
     def __call__(self, bottom):
-        return normalization_ops.local_response_norm(bottom, **self.arguments)
+        return normalization_ops.local_response_norm(bottom, **self.op_args)
 
 
 class Pooling(Layer):
@@ -184,93 +206,26 @@ class Pooling(Layer):
     def __init__(self, layer_param):
         super(Pooling, self).__init__(layer_param)
         param = layer_param.pooling_param
-        self.arguments = {
+        self.kernel_shape = [param.kernel_size or 1]
+        self.strides = [param.stride or 1]
+        self.pads = [param.pad or 0]
+        self.call_args = {
             'ceil_mode': True,
             'mode': {0: 'MAX', 1: 'AVG'}[param.pool],
-            'data_format': 'NCHW',
             'global_pool': param.global_pooling,
         }
-        if not param.HasField('kernel_h'):
-            self.arguments['kernel_shape'] = [param.kernel_size]
-        else:
-            self.arguments['kernel_shape'] = [param.kernel_h, param.kernel_w]
-        if not param.HasField('pad_h'):
-            self.arguments['pads'] = [param.pad]
-        else:
-            self.arguments['pads'] = [param.pad_h, param.pad_w]
-        if not param.HasField('stride_h'):
-            self.arguments['strides'] = [param.stride]
-        else:
-            self.arguments['strides'] = [param.stride_h, param.stride_w]
 
     def __call__(self, bottom):
-        pool_op = 'pool{}d'.format(len(bottom.shape) - 2)
-        return getattr(vision_ops, pool_op)(bottom, **self.arguments)
-
-
-class ROIAlign(Layer):
-    r"""Apply the average roi align.
-    `[He et.al, 2017] <https://arxiv.org/abs/1703.06870>`_.
-
-    Examples:
-
-    ```python
-    layer {
-      type: "ROIAlign"
-      bottom: "conv5_3"
-      top: "roi_pool4"
-      roi_pooling_param {
-        pooled_w: 7
-        pooled_h: 7
-        spatial_scale: 0.0625
-      }
-    }
-    ```
-
-    """
-
-    def __init__(self, layer_param):
-        super(ROIAlign, self).__init__(layer_param)
-        param = layer_param.roi_pooling_param
-        self.arguments = {
-            'pool_h': int(param.pooled_h),
-            'pool_w': int(param.pooled_w),
-            'spatial_scale': param.spatial_scale,
-        }
-
-    def __call__(self, bottom):
-        return vision_ops.roi_align(bottom, **self.arguments)
-
-
-class ROIPooling(Layer):
-    r"""Apply the max roi pooling.
-    `[Girshick, 2015] <https://arxiv.org/abs/1504.08083>`_.
-
-    Examples:
-
-    ```python
-    layer {
-      type: "ROIPooling"
-      bottom: "conv5_3"
-      top: "roi_pool4"
-      roi_pooling_param {
-        pooled_w: 7
-        pooled_h: 7
-        spatial_scale: 0.0625
-      }
-    }
-    ```
-
-    """
-
-    def __init__(self, layer_param):
-        super(ROIPooling, self).__init__(layer_param)
-        param = layer_param.roi_pooling_param
-        self.arguments = {
-            'pool_h': int(param.pooled_h),
-            'pool_w': int(param.pooled_w),
-            'spatial_scale': param.spatial_scale,
-        }
-
-    def __call__(self, bottom):
-        return vision_ops.roi_pool(bottom, **self.arguments)
+        num_axes = len(bottom.shape) - 2
+        if num_axes < 1:
+            raise ValueError(
+                'Bottom 0 of layer "{}" is {}d, excepted 3d/4d/5d.'
+                .format(self.name, len(bottom.shape)))
+        call_args = self.call_args.copy()
+        for k in ('kernel_shape', 'strides', 'pads'):
+            call_args[k] = [int(d) for d in getattr(self, k)]
+            if len(call_args[k]) < num_axes:
+                reps = num_axes - len(call_args[k])
+                call_args[k] += [call_args[k][-1]] * reps
+        pool_op = 'pool{}d'.format(num_axes)
+        return getattr(vision_ops, pool_op)(bottom, **call_args)

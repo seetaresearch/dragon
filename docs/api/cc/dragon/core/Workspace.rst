@@ -23,10 +23,6 @@ CreateTensor
 ############
 .. doxygenfunction:: dragon::Workspace::CreateTensor
 
-GetFillerInfo
-#############
-.. doxygenfunction:: dragon::Workspace::GetFillerInfo
-
 GetTensor
 #########
 .. doxygenfunction:: dragon::Workspace::GetTensor
@@ -39,14 +35,6 @@ MergeFrom
 #########
 .. doxygenfunction:: dragon::Workspace::MergeFrom
 
-RegisterAlias
-#############
-.. doxygenfunction:: dragon::Workspace::RegisterAlias
-
-ResetTensor
-###########
-.. doxygenfunction:: dragon::Workspace::ResetTensor
-
 RunGraph
 ########
 .. doxygenfunction:: dragon::Workspace::RunGraph
@@ -54,6 +42,10 @@ RunGraph
 RunOperator
 ###########
 .. doxygenfunction:: dragon::Workspace::RunOperator
+
+SetAlias
+########
+.. doxygenfunction:: dragon::Workspace::SetAlias
 
 TryGetTensor
 ############

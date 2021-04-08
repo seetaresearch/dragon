@@ -74,6 +74,39 @@ DRAGON_API void Div(
     Context* ctx);
 
 template <typename T, class Context>
+DRAGON_API void BitwiseAnd(
+    const int A_ndim,
+    const int64_t* A_dims,
+    const int B_ndim,
+    const int64_t* B_dims,
+    const T* a,
+    const T* b,
+    T* y,
+    Context* ctx);
+
+template <typename T, class Context>
+DRAGON_API void BitwiseOr(
+    const int A_ndim,
+    const int64_t* A_dims,
+    const int B_ndim,
+    const int64_t* B_dims,
+    const T* a,
+    const T* b,
+    T* y,
+    Context* ctx);
+
+template <typename T, class Context>
+DRAGON_API void BitwiseXor(
+    const int A_ndim,
+    const int64_t* A_dims,
+    const int B_ndim,
+    const int64_t* B_dims,
+    const T* a,
+    const T* b,
+    T* y,
+    Context* ctx);
+
+template <typename T, class Context>
 DRAGON_API void Pow(
     const int A_ndim,
     const int64_t* A_dims,
@@ -104,6 +137,39 @@ DRAGON_API void Maximum(
     const T* a,
     const T* b,
     T* y,
+    Context* ctx);
+
+template <typename T, class Context>
+DRAGON_API void And(
+    const int A_ndim,
+    const int64_t* A_dims,
+    const int B_ndim,
+    const int64_t* B_dims,
+    const T* a,
+    const T* b,
+    bool* y,
+    Context* ctx);
+
+template <typename T, class Context>
+DRAGON_API void Or(
+    const int A_ndim,
+    const int64_t* A_dims,
+    const int B_ndim,
+    const int64_t* B_dims,
+    const T* a,
+    const T* b,
+    bool* y,
+    Context* ctx);
+
+template <typename T, class Context>
+DRAGON_API void Xor(
+    const int A_ndim,
+    const int64_t* A_dims,
+    const int B_ndim,
+    const int64_t* B_dims,
+    const T* a,
+    const T* b,
+    bool* y,
     Context* ctx);
 
 template <typename T, class Context>

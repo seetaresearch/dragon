@@ -15,13 +15,13 @@ from __future__ import division as _division
 from __future__ import print_function as _print_function
 
 # Classes
-from dragon.vm.torch.core.autograd.function import Function
+from dragon.vm.torch.core.autograd.function_impl import FunctionLib
 from dragon.vm.torch.core.autograd.grad_mode import enable_grad
 from dragon.vm.torch.core.autograd.grad_mode import no_grad
 from dragon.vm.torch.core.autograd.grad_mode import set_grad_enabled
 from dragon.vm.torch.core.autograd.variable import Variable
 
 # Functions
-from dragon.vm.torch.core.autograd.backprop import backward
+from dragon.vm.torch.core.autograd.functional import backward
 
 __all__ = [_s for _s in dir() if not _s.startswith('_')]

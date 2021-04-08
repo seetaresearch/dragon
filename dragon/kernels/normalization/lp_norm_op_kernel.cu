@@ -7,13 +7,13 @@
 
 namespace dragon {
 
-namespace kernel {
+namespace kernels {
 
 namespace {
 
 template <typename T, typename AccT>
 __global__ void _L1Normalize(
-    const int nblocks,
+    const int kBlocks,
     const int inner_dim,
     const int reduce_dim,
     const AccT normalizer,
@@ -22,7 +22,7 @@ __global__ void _L1Normalize(
     T* y) {
   __shared__ AccT norm;
   __shared__ typename BlockReduce<AccT>::TempStorage storage;
-  CUDA_2D_KERNEL_LOOP1(i, nblocks) {
+  CUDA_2D_KERNEL_LOOP1(i, kBlocks) {
     auto offset = (i / inner_dim) * reduce_dim * inner_dim + (i % inner_dim);
     AccT sum = AccT(0);
     CUDA_2D_KERNEL_LOOP2(j, reduce_dim) {
@@ -42,7 +42,7 @@ __global__ void _L1Normalize(
 
 template <typename T, typename AccT>
 __global__ void _L2Normalize(
-    const int nblocks,
+    const int kBlocks,
     const int inner_dim,
     const int reduce_dim,
     const AccT normalizer,
@@ -51,7 +51,7 @@ __global__ void _L2Normalize(
     T* y) {
   __shared__ AccT norm;
   __shared__ typename BlockReduce<AccT>::TempStorage storage;
-  CUDA_2D_KERNEL_LOOP1(i, nblocks) {
+  CUDA_2D_KERNEL_LOOP1(i, kBlocks) {
     auto offset = (i / inner_dim) * reduce_dim * inner_dim + (i % inner_dim);
     AccT sum = AccT(0);
     CUDA_2D_KERNEL_LOOP2(j, reduce_dim) {
@@ -71,7 +71,7 @@ __global__ void _L2Normalize(
 
 template <typename T, typename AccT>
 __global__ void _L1NormalizeGrad(
-    const int nblocks,
+    const int kBlocks,
     const int inner_dim,
     const int reduce_dim,
     const AccT normalizer,
@@ -81,7 +81,7 @@ __global__ void _L1NormalizeGrad(
     T* dx) {
   __shared__ AccT norm, norm2, sum;
   __shared__ typename BlockReduce<AccT>::TempStorage storage;
-  CUDA_2D_KERNEL_LOOP1(i, nblocks) {
+  CUDA_2D_KERNEL_LOOP1(i, kBlocks) {
     auto offset = (i / inner_dim) * reduce_dim * inner_dim + (i % inner_dim);
     AccT val1 = AccT(0), val2 = AccT(0);
     CUDA_2D_KERNEL_LOOP2(j, reduce_dim) {
@@ -108,7 +108,7 @@ __global__ void _L1NormalizeGrad(
 
 template <typename T, typename AccT>
 __global__ void _L2NormalizeGrad(
-    const int nblocks,
+    const int kBlocks,
     const int inner_dim,
     const int reduce_dim,
     const AccT normalizer,
@@ -118,7 +118,7 @@ __global__ void _L2NormalizeGrad(
     T* dx) {
   __shared__ AccT norm, norm3, sum;
   __shared__ typename BlockReduce<AccT>::TempStorage storage;
-  CUDA_2D_KERNEL_LOOP1(i, nblocks) {
+  CUDA_2D_KERNEL_LOOP1(i, kBlocks) {
     auto offset = (i / inner_dim) * reduce_dim * inner_dim + (i % inner_dim);
     AccT val1 = AccT(0), val2 = AccT(0);
     CUDA_2D_KERNEL_LOOP2(j, reduce_dim) {
@@ -158,10 +158,10 @@ __global__ void _L2NormalizeGrad(
       const T* x,                                                           \
       T* y,                                                                 \
       CUDAContext* ctx) {                                                   \
-    const auto nblocks = outer_dim * inner_dim;                             \
+    const auto kBlocks = outer_dim * inner_dim;                             \
     _##name<math::ScalarType<T>::type, AccT>                                \
-        <<<CUDA_2D_BLOCKS(nblocks), CUDA_THREADS, 0, ctx->cuda_stream()>>>( \
-            nblocks,                                                        \
+        <<<CUDA_2D_BLOCKS(kBlocks), CUDA_THREADS, 0, ctx->cuda_stream()>>>( \
+            kBlocks,                                                        \
             inner_dim,                                                      \
             reduce_dim,                                                     \
             AccT(normalizer),                                               \
@@ -182,10 +182,10 @@ __global__ void _L2NormalizeGrad(
       const T* x,                                                           \
       T* dx,                                                                \
       CUDAContext* ctx) {                                                   \
-    const auto nblocks = outer_dim * inner_dim;                             \
+    const auto kBlocks = outer_dim * inner_dim;                             \
     _##name<math::ScalarType<T>::type, AccT>                                \
-        <<<CUDA_2D_BLOCKS(nblocks), CUDA_THREADS, 0, ctx->cuda_stream()>>>( \
-            nblocks,                                                        \
+        <<<CUDA_2D_BLOCKS(kBlocks), CUDA_THREADS, 0, ctx->cuda_stream()>>>( \
+            kBlocks,                                                        \
             inner_dim,                                                      \
             reduce_dim,                                                     \
             AccT(normalizer),                                               \
@@ -210,7 +210,7 @@ DEFINE_GRAD_KERNEL_LAUNCHER(L2NormalizeGrad, double, double);
 #undef DEFINE_KERNEL_LAUNCHER
 #undef DEFINE_GRAD_KERNEL_LAUNCHER
 
-} // namespace kernel
+} // namespace kernels
 
 } // namespace dragon
 

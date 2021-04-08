@@ -8,6 +8,7 @@ template <class Context>
 template <typename T>
 void SpaceToDepthOp<Context>::DoRunWithType() {
   auto &X = Input(0), *Y = Output(0);
+  SET_INPUT_SPEC(0);
 
   int start_axis, end_axis, perm_count = 0;
   int num_dims = X.ndim(), num_axes = X.ndim() - 2;
@@ -68,11 +69,10 @@ void SpaceToDepthOp<Context>::DoRunWithType() {
   }
 
   // Store for the gradient calculation
-  STORE_INPUT_SPEC(0);
   Buffer("X_strides")->template CopyFrom<int64_t>(x_strides);
   Buffer("Y_dims")->template CopyFrom<int64_t>(y_dims);
 
-  kernel::Transpose(
+  kernels::Transpose(
       x_strides.size(),
       x_strides.data(),
       y_dims.data(),
@@ -83,7 +83,7 @@ void SpaceToDepthOp<Context>::DoRunWithType() {
 
 template <class Context>
 void SpaceToDepthOp<Context>::RunOnDevice() {
-  DispatchHelper<FullTensorTypes>::Call(this, Input(0));
+  DispatchHelper<dtypes::Generic>::Call(this, Input(0));
 }
 
 DEPLOY_CPU_OPERATOR(SpaceToDepth);

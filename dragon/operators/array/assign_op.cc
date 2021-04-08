@@ -1,5 +1,5 @@
+#include "dragon/operators/array/assign_op.h"
 #include "dragon/core/workspace.h"
-#include "dragon/operators/array/assign_ops.h"
 #include "dragon/utils/math_functions.h"
 #include "dragon/utils/op_kernels.h"
 
@@ -69,7 +69,7 @@ void AssignOp<Context>::DoRunWithType() {
   Y->ReshapeLike(Y_ref)->CopyFrom(Y_ref, ctx());
 
   // Update with the new data
-  kernel::Assign(
+  kernels::Assign(
       num_dims,
       X_dims.data(),
       Y->strides().data(),
@@ -81,7 +81,7 @@ void AssignOp<Context>::DoRunWithType() {
 
 template <class Context>
 void AssignOp<Context>::RunOnDevice() {
-  DispatchHelper<FullTensorTypes>::Call(this, Input(0));
+  DispatchHelper<dtypes::Generic>::Call(this, Input(0));
 }
 
 DEPLOY_CPU_OPERATOR(Assign);

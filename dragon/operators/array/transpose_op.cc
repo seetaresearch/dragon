@@ -24,11 +24,11 @@ void TransposeOp<Context>::DoRunWithType() {
   }
 
   // Store for the gradient calculation
-  STORE_INPUT_SPEC(0);
+  SET_INPUT_SPEC(0);
   Buffer("X_strides")->template CopyFrom<int64_t>(X_strides);
   Buffer("Y_dims")->template CopyFrom<int64_t>(Y_dims);
 
-  kernel::Transpose(
+  kernels::Transpose(
       num_dims,
       X_strides.data(),
       Y_dims.data(),
@@ -39,20 +39,20 @@ void TransposeOp<Context>::DoRunWithType() {
 
 template <class Context>
 void TransposeOp<Context>::RunOnDevice() {
-  DispatchHelper<FullTensorTypes>::Call(this, Input(0));
+  DispatchHelper<dtypes::Generic>::Call(this, Input(0));
 }
 
 template <class Context>
 template <typename T>
 void TransposeGradientOp<Context>::DoRunWithType() {
   auto &dY = Input(0), *dX = Output(0);
-  dX->ReshapeLike(RESTORE_INPUT_SPEC(0));
+  dX->ReshapeLike(INPUT_SPEC(0));
 
   vec64_t X_strides, Y_dims;
   Buffer("X_strides")->template CopyTo<int64_t>(X_strides);
   Buffer("Y_dims")->template CopyTo<int64_t>(Y_dims);
 
-  kernel::TransposeGrad(
+  kernels::TransposeGrad(
       X_strides.size(),
       X_strides.data(),
       Y_dims.data(),
@@ -63,7 +63,7 @@ void TransposeGradientOp<Context>::DoRunWithType() {
 
 template <class Context>
 void TransposeGradientOp<Context>::RunOnDevice() {
-  DispatchHelper<FloatingTensorTypes>::Call(this, Input(0));
+  DispatchHelper<dtypes::Floating>::Call(this, Input(0));
 }
 
 DEPLOY_CPU_OPERATOR(Transpose);

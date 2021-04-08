@@ -18,6 +18,8 @@ from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
 
+import collections
+
 from dragon.vm.torch.core.optim.optimizer import Optimizer
 from dragon.vm.torch.core.optim.optimizer import required
 
@@ -88,7 +90,7 @@ class SGD(Optimizer):
         weight_decay : float, optional, default=0
             The L2 penalty factor to weight.
         nesterov : bool, optional, default=False
-            **True** to switch to **NesterovSGD** optimizer.
+            ``True`` to switch to **NesterovSGD** optimizer.
         scale : float, optional, default=1
             The scaling factor to gradient.
         clip_norm : float, optional, default=0
@@ -99,23 +101,17 @@ class SGD(Optimizer):
             raise ValueError('Invalid learning rate: {}'.format(lr))
         if momentum < 0.:
             raise ValueError('Invalid momentum value: {}'.format(momentum))
-        defaults = dict(
-            lr=lr,
-            momentum=momentum,
-            dampening=dampening,
-            nesterov=nesterov,
-            scale=scale,
-            clip_norm=clip_norm,
-            weight_decay=weight_decay,
-        )
+        defaults = dict(lr=lr, momentum=momentum, dampening=dampening,
+                        nesterov=nesterov, weight_decay=weight_decay,
+                        scale=scale, clip_norm=clip_norm)
         if nesterov and (momentum <= 0. or dampening != 0.):
             raise ValueError('Nesterov momentum requires a momentum and zero dampening.')
         super(SGD, self).__init__(params, defaults)
         self._op_type = ('Nesterov' if nesterov else 'SGD') + 'Update'
-        self._shared_args = {
-            'lr': 'base_lr',
-            'momentum': 'momentum',
-            'scale': 'scale',
-            'clip_norm': 'clip_norm',
-            'weight_decay': 'weight_decay',
+        self._hyper = {
+            'lr': ('lr', collections.defaultdict(str)),
+            'momentum': ('momentum', collections.defaultdict(str)),
+            'weight_decay': ('weight_decay', collections.defaultdict(str)),
+            'scale': ('scale', collections.defaultdict(str)),
+            'clip_norm': ('clip_norm', collections.defaultdict(str)),
         }

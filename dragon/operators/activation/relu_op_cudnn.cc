@@ -26,7 +26,7 @@ void CuDNNReluOp<Context>::RunOnDevice() {
     // CuDNN does not support LeakyReLU
     return ReluOp<Context>::RunOnDevice();
   }
-  DispatchHelper<FloatingTensorTypes>::Call(this, Input(0));
+  DispatchHelper<dtypes::Floating>::Call(this, Input(0));
 }
 
 template <class Context>
@@ -55,7 +55,7 @@ void CuDNNReluGradientOp<Context>::RunOnDevice() {
     // CuDNN does not support LeakyReLU and ClippedReLU
     return ReluGradientOp<Context>::RunOnDevice();
   }
-  DispatchHelper<FloatingTensorTypes>::Call(this, Input(0));
+  DispatchHelper<dtypes::Floating>::Call(this, Input(0));
 }
 
 DEPLOY_CUDNN_OPERATOR(Relu);

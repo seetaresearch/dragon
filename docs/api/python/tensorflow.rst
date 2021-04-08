@@ -55,13 +55,10 @@ vm.tensorflow
   : Return a tensor filled with the scalar value.
 
   `gather(...) <tensorflow/gather.html>`_
-  : Select the elements according to the index along the given axis.
+  : Gather the elements along the given axis using index.
 
   `function(...) <tensorflow/function.html>`_
   : Create a callable graph from the python function.
-
-  `gradients(...) <tensorflow/gradients.html>`_
-  : Compute the symbolic derivatives of ``ys`` w.r.t. ``xs`` .
 
   `identity(...) <tensorflow/identity.html>`_
   : Return a tensor copied from the input.
@@ -105,6 +102,9 @@ vm.tensorflow
   `squeeze(...) <tensorflow/squeeze.html>`_
   : Remove the dimensions of input with size 1.
 
+  `tile(...) <tensorflow/tile.html>`_
+  : Tile input according to the given repeats.
+
   `transpose(...) <tensorflow/transpose.html>`_
   : Permute the dimensions of input.
 
@@ -140,7 +140,6 @@ vm.tensorflow
   tensorflow/fill
   tensorflow/function
   tensorflow/gather
-  tensorflow/gradients
   tensorflow/identity
   tensorflow/linspace
   tensorflow/name_scope
@@ -155,6 +154,7 @@ vm.tensorflow
   tensorflow/sort
   tensorflow/split
   tensorflow/squeeze
+  tensorflow/tile
   tensorflow/transpose
   tensorflow/unique
   tensorflow/unique_with_counts

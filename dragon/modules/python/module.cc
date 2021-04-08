@@ -1,8 +1,6 @@
-#include "dragon/modules/python/autograd.h"
 #include "dragon/modules/python/cuda.h"
-#include "dragon/modules/python/dlpack.h"
+#include "dragon/modules/python/gradient.h"
 #include "dragon/modules/python/mpi.h"
-#include "dragon/modules/python/operator.h"
 #include "dragon/modules/python/proto.h"
 #include "dragon/modules/python/sysconfig.h"
 #include "dragon/modules/python/tensor.h"
@@ -11,26 +9,16 @@ namespace dragon {
 
 namespace python {
 
-#define REGISTER_MODULE(namespace) namespace ::RegisterModule(m)
+#define REGISTER_MODULE(module_name) RegisterModule_##module_name(m)
 
-#define REGISTER_TENSOR_FETCHER(type, ...) \
-  REGISTER_CLASS(TensorFetcherRegistry, type, __VA_ARGS__)
-
-DEFINE_REGISTRY(TensorFetcherRegistry, TensorFetcherBase);
-
-REGISTER_TENSOR_FETCHER(bool, NumpyFetcher);
-REGISTER_TENSOR_FETCHER(int8, NumpyFetcher);
-REGISTER_TENSOR_FETCHER(uint8, NumpyFetcher);
-REGISTER_TENSOR_FETCHER(int32, NumpyFetcher);
-REGISTER_TENSOR_FETCHER(int64, NumpyFetcher);
-REGISTER_TENSOR_FETCHER(float16, NumpyFetcher);
-REGISTER_TENSOR_FETCHER(float32, NumpyFetcher);
-REGISTER_TENSOR_FETCHER(float64, NumpyFetcher);
-REGISTER_TENSOR_FETCHER(string, StringFetcher);
-#undef REGISTER_TENSOR_FETCHER
+inline string GetVerboseDef(const string& def_str, const string& type) {
+  auto s = string("\n") + def_str;
+  s.pop_back();
+  return type + " {" + str::replace_all(s, "\n", "\n  ") + "\n}\n";
+}
 
 PYBIND11_MODULE(libdragon_python, m) {
-  /*! \brief Export the Workspace class */
+  /*! \brief Workspace class */
   py::class_<Workspace>(m, "Workspace")
       /*! \brief Default constructor */
       .def(py::init<const string&>())
@@ -47,35 +35,19 @@ PYBIND11_MODULE(libdragon_python, m) {
       /*! \brief Merge resources from another workspace */
       .def("MergeFrom", &Workspace::MergeFrom)
 
-      /*! \brief Clear the cached resources */
+      /*! \brief Release the created resources */
       .def("Clear", &Workspace::Clear)
+
+      /* \brief Set an alias for the target */
+      .def("SetAlias", &Workspace::SetAlias)
 
       /*! \brief Return an unique name */
       .def("UniqueName", &Workspace::UniqueName)
 
-      /*! \brief Reset the tensor */
-      .def("ResetTensor", &Workspace::ResetTensor)
-
-      /*! \brief Return whether the tensor is existing */
-      .def(
-          "HasTensor",
-          [](Workspace* self, const string& name) {
-            return self->HasTensor(name);
-          })
-
       /*! \brief Create the tensor */
       .def(
           "CreateTensor",
-          [](Workspace* self, const string& name, const string& filler_str) {
-            if (!filler_str.empty()) {
-              FillerInfo filler_info;
-              if (!filler_info.ParseFromString(filler_str)) {
-                LOG(FATAL) << "Failed to parse the FillerInfo.";
-              }
-              return self->CreateTensor(name, &filler_info);
-            }
-            return self->CreateTensor(name);
-          },
+          &Workspace::CreateTensor,
           py::return_value_policy::reference)
 
       /*! \brief Return the tensor */
@@ -86,55 +58,6 @@ PYBIND11_MODULE(libdragon_python, m) {
           },
           py::return_value_policy::reference)
 
-      /* \brief Register an alias for the name */
-      .def(
-          "RegisterAlias",
-          [](Workspace* self, const string& name, const string& alias) {
-            return self->RegisterAlias(name, alias);
-          })
-
-      /*! \brief Copy the array data to tensor */
-      .def(
-          "FeedTensor",
-          [](Workspace* self,
-             const string& name,
-             py::object value,
-             const string& ctx) {
-            DeviceOption dev;
-            if (!ctx.empty()) {
-              CHECK(dev.ParseFromString(ctx))
-                  << "\nFailed to parse the DeviceOption.";
-            }
-            auto* tensor = self->CreateTensor(name);
-            unique_ptr<TensorFeederBase> feeder(new NumpyFeeder());
-            feeder->Feed(
-                dev, reinterpret_cast<PyArrayObject*>(value.ptr()), tensor);
-          })
-
-      /*! \brief Copy the tensor data to array */
-      .def(
-          "FetchTensor",
-          [](Workspace* self, const string& name) {
-            CHECK(self->HasTensor(name))
-                << "\nTensor(" + name + ") does not exist.\n"
-                << "Have you registered it?";
-            auto* tensor = self->GetTensor(name);
-            string type = ::dragon::types::to_string(tensor->meta());
-            if (type == "unknown") {
-              LOG(FATAL) << "Tensor(" << tensor->name() << ") "
-                         << "does not initialize or had been reset.";
-              return py::object();
-            } else {
-              if (TensorFetcherRegistry()->Has(type)) {
-                return TensorFetcherRegistry()->Create(type)->Fetch(*tensor);
-              } else {
-                LOG(FATAL) << "Type of tensor(" << tensor->name() << ") "
-                           << "is not supported to fetch.";
-                return py::object();
-              }
-            }
-          })
-
       /*! \brief Return the size of memory used by tensors on given device */
       .def(
           "MemoryAllocated",
@@ -142,12 +65,11 @@ PYBIND11_MODULE(libdragon_python, m) {
             size_t size = 0;
             for (const auto& name : self->tensors(false)) {
               auto* memory = self->GetTensor(name)->memory(false, true);
-              if (memory) {
-                if (device_type == "cpu") {
-                  size += memory->size();
-                } else {
-                  size += memory->size(device_type, device_id);
-                }
+              if (memory == nullptr) continue;
+              if (device_type == "cpu") {
+                size += memory->size();
+              } else {
+                size += memory->size(device_type, device_id);
               }
             }
             return size;
@@ -156,13 +78,10 @@ PYBIND11_MODULE(libdragon_python, m) {
       /*! \brief Run the operator */
       .def(
           "RunOperator",
-          [](Workspace* self, OperatorDef* def, const bool verbose) {
+          [](Workspace* self, OperatorDef* def, bool verbose) {
             py::gil_scoped_release g;
             if (verbose) {
-              auto msg = string("\n") + def->DebugString();
-              msg.pop_back();
-              PRINT(INFO) << "op {" << str::replace_all(msg, "\n", "\n  ")
-                          << "\n}\n";
+              PRINT(INFO) << GetVerboseDef(def->DebugString(), "op");
             }
             self->RunOperator(*def);
           })
@@ -170,14 +89,11 @@ PYBIND11_MODULE(libdragon_python, m) {
       /*! \brief Run the operators */
       .def(
           "RunOperator",
-          [](Workspace* self, vector<OperatorDef*>& defs, const bool verbose) {
+          [](Workspace* self, vector<OperatorDef*>& defs, bool verbose) {
             py::gil_scoped_release g;
             for (auto* def : defs) {
               if (verbose) {
-                auto msg = string("\n") + def->DebugString();
-                msg.pop_back();
-                PRINT(INFO)
-                    << "op {" << str::replace_all(msg, "\n", "\n  ") << "\n}\n";
+                PRINT(INFO) << GetVerboseDef(def->DebugString(), "op");
               }
               self->RunOperator(*def);
             }
@@ -186,15 +102,12 @@ PYBIND11_MODULE(libdragon_python, m) {
       /*! \brief Run the operator from serialized def */
       .def(
           "RunOperator",
-          [](Workspace* self, const string& serialized, const bool verbose) {
+          [](Workspace* self, const string& serialized, bool verbose) {
             OperatorDef def;
             CHECK(def.ParseFromString(serialized));
             py::gil_scoped_release g;
             if (verbose) {
-              auto msg = string("\n") + def.DebugString();
-              msg.pop_back();
-              PRINT(INFO) << "op {" << str::replace_all(msg, "\n", "\n  ")
-                          << "\n}\n";
+              PRINT(INFO) << GetVerboseDef(def.DebugString(), "op");
             }
             self->RunOperator(def);
           })
@@ -202,7 +115,7 @@ PYBIND11_MODULE(libdragon_python, m) {
       /*! \brief Create the graph */
       .def(
           "CreateGraph",
-          [](Workspace* self, const string& serialized, const bool verbose) {
+          [](Workspace* self, const string& serialized, bool verbose) {
             GraphDef graph_def;
             CHECK(graph_def.ParseFromString(serialized))
                 << "\nFailed to parse the GraphDef.";
@@ -216,10 +129,7 @@ PYBIND11_MODULE(libdragon_python, m) {
                 }
               }
               if (could_be_serialized) {
-                auto msg = string("\n") + def.DebugString();
-                msg.pop_back();
-                LOG(INFO) << "\ngraph {" << str::replace_all(msg, "\n", "\n  ")
-                          << "\n}\n";
+                PRINT(INFO) << GetVerboseDef(def.DebugString(), "graph");
               }
             }
             // Return the graph name may be different from the def
@@ -244,32 +154,19 @@ PYBIND11_MODULE(libdragon_python, m) {
           [](Workspace* self,
              const vector<OperatorDef*>& op_defs,
              const vector<string>& targets,
+             const vector<string>& grad_grads,
              const vector<string>& sources,
-             const vector<string>& input_grads,
-             const vector<string>& empty_grads,
-             const bool retain_grads,
-             const bool verbose) {
-            GraphDef graph_def;
-            GraphGradientMaker maker;
-            for (const auto& name : empty_grads) {
-              maker.add_empty_grad(name);
-            }
-            for (const auto& name : sources) {
-              maker.add_retained_grad(name + "_grad");
-            }
-            maker.Make(op_defs, targets, input_grads, graph_def);
+             bool optimize,
+             bool verbose) {
+            GradientTape tape;
+            tape.CreateGradientDefs(op_defs, targets, grad_grads);
             py::gil_scoped_release g;
-            if (!retain_grads) {
-              graph_def = maker.Optimize(graph_def);
-            }
-            for (const auto& op_def : graph_def.op()) {
+            if (optimize) tape.Optimize(sources);
+            for (const auto& op : tape.def().op()) {
               if (verbose) {
-                auto msg = string("\n") + op_def.DebugString();
-                msg.pop_back();
-                PRINT(INFO)
-                    << "op {" << str::replace_all(msg, "\n", "\n  ") << "\n}\n";
+                PRINT(INFO) << GetVerboseDef(op.DebugString(), "op");
               }
-              self->RunOperator(op_def);
+              self->RunOperator(op);
             }
           })
 
@@ -287,15 +184,15 @@ PYBIND11_MODULE(libdragon_python, m) {
   // Initialization once importing
   []() { import_array1(); }();
 
-  REGISTER_MODULE(autograd);
   REGISTER_MODULE(cuda);
+  REGISTER_MODULE(gradient);
   REGISTER_MODULE(mpi);
-  REGISTER_MODULE(ops);
   REGISTER_MODULE(proto);
   REGISTER_MODULE(sysconfig);
   REGISTER_MODULE(tensor);
-#undef REGISTER_MODULE
 }
+
+#undef REGISTER_MODULE
 
 } // namespace python
 

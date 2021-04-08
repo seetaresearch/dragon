@@ -14,40 +14,32 @@ from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
 
-from dragon.core.autograph.tensor import Tensor
-from dragon.core.eager import context
-from dragon.core.eager.tensor import EagerTensor
-from dragon.core.framework import ops
+from dragon.core.autograph import context
+from dragon.core.autograph.op_impl import OpLib
+from dragon.core.autograph.op_impl import OpSchema
 from dragon.core.framework import types
-from dragon.core.ops import array_ops_lib
-from dragon.core.ops.utils import ArgHelper
-from dragon.core.ops.utils import OpSchema
+from dragon.core.ops import constant_ops
 from dragon.core.util import nest
 
 
 @OpSchema.num_inputs(1)
-def argmax(inputs, axis=None, keepdims=False, **kwargs):
+def argmax(inputs, axis=0, keepdims=False, **kwargs):
     """Compute the index of maximum elements along the given axis.
 
-    The argument ``axis`` could be negative or **None**:
+    :attr:`axis` could be negative:
 
     ```python
+    # A negative axis is the last-k axis
     x = dragon.constant([[1, 2, 3], [4, 5, 6]])
-
-    # A negative ``axis`` is the last-k axis
-    print(dragon.math.argmax(x, 1))
-    print(dragon.math.argmax(x, -1))  # Equivalent
-
-    # If ``axis`` is None, the vector-style reduction
-    # will be applied to return a scalar index
-    print(dragon.math.argmax(x))  # 5
+    print(dragon.math.argmax(x, axis=1))
+    print(dragon.math.argmax(x, axis=-1))  # Equivalent
     ```
 
     Parameters
     ----------
     inputs : dragon.Tensor
         The input tensor.
-    axis : int, optional
+    axis : int, optional, default=0
         The axis to reduce.
     keepdims : bool, optional, default=False
         Keep the reduced dimension or not.
@@ -58,42 +50,29 @@ def argmax(inputs, axis=None, keepdims=False, **kwargs):
         The index of maximum elements.
 
     """
-    args = ArgHelper.parse(locals())
-    op_lib = array_ops_lib.ArgReduce
     if context.executing_eagerly():
-        return op_lib \
-            .instantiate(
-                op_type='ArgMax',
-                axis=axis,
-                keepdims=keepdims,
-            ).apply([inputs])
-    else:
-        return op_lib.blend('ArgMax', **args)
+        return OpLib.execute('ArgMax', inputs, axis=axis, keepdims=keepdims)
+    return OpLib.add('ArgMax', inputs, axis=axis, keepdims=keepdims)
 
 
 @OpSchema.num_inputs(1)
-def argmin(inputs, axis=None, keepdims=False, **kwargs):
+def argmin(inputs, axis=0, keepdims=False, **kwargs):
     """Compute the index of minimum elements along the given axis.
 
-    The argument ``axis`` could be negative or **None**:
+    :attr:`axis` could be negative:
 
     ```python
+    # A negative axis is the last-k axis
     x = dragon.constant([[1, 2, 3], [4, 5, 6]])
-
-    # A negative ``axis`` is the last-k axis
-    print(dragon.math.argmin(x, 1))
-    print(dragon.math.argmin(x, -1))  # Equivalent
-
-    # If ``axis`` is None, the vector-style reduction
-    # will be applied to return a scalar index
-    print(dragon.math.argmin(x))
+    print(dragon.math.argmin(x, axis=1))
+    print(dragon.math.argmin(x, axis=-1))  # Equivalent
     ```
 
     Parameters
     ----------
     inputs : dragon.Tensor
         The input tensor.
-    axis : int, optional
+    axis : int, optional, default=0
         The axis to reduce.
     keepdims : bool, optional, default=False
         Keep the reduced dimension or not.
@@ -104,36 +83,28 @@ def argmin(inputs, axis=None, keepdims=False, **kwargs):
         The index of minimum elements.
 
     """
-    args = ArgHelper.parse(locals())
-    op_lib = array_ops_lib.ArgReduce
     if context.executing_eagerly():
-        return op_lib \
-            .instantiate(
-                op_type='ArgMin',
-                axis=axis,
-                keepdims=keepdims,
-            ).apply([inputs])
-    else:
-        return op_lib.blend('ArgMin', **args)
+        return OpLib.execute('ArgMin', inputs, axis=axis, keepdims=keepdims)
+    return OpLib.add('ArgMin', inputs, axis=axis, keepdims=keepdims)
 
 
 @OpSchema.num_inputs(1)
 def argsort(inputs, axis=-1, descending=False, **kwargs):
     """Return the index of sorted elements along the given axis.
 
-    By default, the last axis is chosen:
+    :attr:`axis` could be negative:
 
     ```python
     x = dragon.constant([[1, 2, 3], [3, 2, 1]])
-    index1 = dragon.argsort(x)
-    index2 = dragon.argsort(x, axis=1)  # Equivalent
+    index1 = dragon.argsort(x, axis=1)
+    index2 = dragon.argsort(x, axis=-1)  # Equivalent
     ```
 
-    Sort in the inverse order if ``descending`` is **True**:
+    Use :attr:`descending` to sort in the inverse order:
 
     ```python
     x = dragon.constant([1, 2, 3])
-    index1 = dragon.argsort(-x)
+    index1 = dragon.argsort(-x, descending=False)
     index2 = dragon.argsort(x, descending=True)  # Equivalent
     ```
 
@@ -152,23 +123,18 @@ def argsort(inputs, axis=-1, descending=False, **kwargs):
         The output tensor.
 
     """
-    args = ArgHelper.parse(locals())
-    op_lib = array_ops_lib.Sort
     if context.executing_eagerly():
-        return op_lib \
-            .instantiate(
-                axis=axis,
-                descending=descending,
-            ).apply([inputs])[1]
-    else:
-        args['num_outputs'] = 2
-        return op_lib.blend(**args)[1]
+        return OpLib.execute(
+            'Sort', inputs, outputs=[None, None], axis=axis,
+            descending=descending)[1]
+    return OpLib.add('Sort', inputs, axis=axis,
+                     descending=descending, num_outputs=2)[1]
 
 
 @OpSchema.num_inputs(2)
-@ArgHelper.repeated_desc('starts')
-@ArgHelper.repeated_desc('sizes')
-def assign(inputs, starts=None, sizes=None, **kwargs):
+@OpSchema.convert_arg('starts')
+@OpSchema.convert_arg('sizes')
+def assign(inputs, starts=None, sizes=None, copy=False, **kwargs):
     r"""Assign the value to input.
 
     .. math:: \text{input}[\text{start}:\text{start} + \text{size}, ...] = \text{value}
@@ -177,10 +143,12 @@ def assign(inputs, starts=None, sizes=None, **kwargs):
     ----------
     inputs : Sequence[dragon.Tensor]
         The input and value tensor.
-    starts : Sequence[Union[int, dragon.Tensor]], optional
+    starts : Union[Sequence[int], dragon.Tensor]], optional
         The start location for each dimension.
-    sizes : Sequence[Union[int, dragon.Tensor]], optional
-        The number of elements assigned from start.
+    sizes : Union[Sequence[int], dragon.Tensor]], optional
+        The number of elements from start.
+    copy : bool, optional, default=False
+        Return a new tensor or call in-place.
 
     Returns
     -------
@@ -188,34 +156,50 @@ def assign(inputs, starts=None, sizes=None, **kwargs):
         The output tensor.
 
     """
-    args = ArgHelper.parse(locals())
-    inplace = args.pop('inplace') if 'inplace' in args else False
-    inputs[1] = ops.scalar_to_tensor(inputs[1], inputs[0].dtype)
-    op_lib = array_ops_lib.Assign
+    args = OpSchema.parse_args(locals())
+    inputs = constant_ops.remove_scalars(inputs)
     if context.executing_eagerly():
         starts = args['starts'] if starts is not None else [0]
         sizes = args['sizes'] if sizes is not None else [-1]
-        return op_lib \
-            .instantiate(ndim=len(starts)) \
-            .apply(inputs, starts, sizes, inplace=inplace)
-    else:
-        return op_lib.blend(**args)
+        return OpLib.execute(
+            'Assign', inputs, outputs=[None if copy else inputs[0]],
+            ndim=len(starts), starts=starts, sizes=sizes)
+    return OpLib.add('Assign', **args)
+
+
+@OpSchema.num_inputs(2)
+def boolean_mask(inputs, **kwargs):
+    """Return the elements of input where mask is true.
+
+    Parameters
+    ----------
+    inputs : Sequence[dragon.Tensor]
+        The input and mask tensor.
+
+    Returns
+    -------
+    dragon.Tensor
+        The output tensor.
+
+    """
+    if context.executing_eagerly():
+        return OpLib.execute('BooleanMask', inputs)
+    return OpLib.add('BooleanMask', inputs, **kwargs)
 
 
 @OpSchema.num_inputs(1)
-@ArgHelper.repeated_desc(name='shape', name_v2='dims')
+@OpSchema.convert_arg(name='shape', name_v2='dims')
 def broadcast_to(inputs, shape, **kwargs):
-    """Broadcast input according to a given shape.
+    """Broadcast input to the given shape.
 
-    The length of ``shape`` could either be less or
-    more than the number of input dimensions:
+    Length of ``shape`` could either be less or more
+    than the number of input dimensions:
 
     ```python
     a = dragon.constant([[1], [2], [3]])
     # Shape: (3, 1) -> (3, 2)
     print(dragon.broadcast_to(a, shape=(3, 2)))
-    print(dragon.broadcast_to(a, shape=(2,)))     # Equivalent
-    print(dragon.broadcast_to(a, shape=(-1, 2)))  # Equivalent
+    print(dragon.broadcast_to(a, shape=(2,)))  # Equivalent
 
     # Shape: (3,) -> (1, 3) -> (2, 3)
     b = dragon.constant([1, 2, 3])
@@ -239,19 +223,16 @@ def broadcast_to(inputs, shape, **kwargs):
         The output tensor.
 
     """
-    args = ArgHelper.parse(locals())
-    op_lib = array_ops_lib.Expand
+    args = OpSchema.parse_args(locals())
     if context.executing_eagerly():
-        return op_lib \
-            .instantiate(ndim=len(args['dims'])) \
-            .apply([inputs], args['dims'])
-    else:
-        return op_lib.blend(**args)
+        return OpLib.execute(
+            'Expand', inputs, ndim=len(args['dims']), dims=args['dims'])
+    return OpLib.add('Expand', **args)
 
 
 @OpSchema.num_inputs(1)
-def cast(inputs, dtype, **kwargs):
-    """Cast the data type of input.
+def cast(inputs, dtype, copy=True, **kwargs):
+    """Convert the data type of input.
 
     Examples:
 
@@ -265,7 +246,9 @@ def cast(inputs, dtype, **kwargs):
     inputs : dragon.Tensor
         The input tensor.
     dtype : str
-        The data type to cast to.
+        The data type to convert to.
+    copy : bool, optional, default=True
+        Return a new tensor or call in-place.
 
     Returns
     -------
@@ -273,43 +256,24 @@ def cast(inputs, dtype, **kwargs):
         The output tensor.
 
     """
-    args = ArgHelper.parse(locals())
-    inplace = args.pop('inplace') if 'inplace' in args else False
-    op_lib = array_ops_lib.Cast
     if context.executing_eagerly():
-        return op_lib \
-            .instantiate(dtype=dtype) \
-            .apply([inputs], inplace=inplace)
-    else:
-        if inputs.dtype == dtype:
-            return inputs
-        if inplace:
-            args['inputs'], args['outputs'] = [], [inputs]
-        return op_lib.blend(**args)
+        return OpLib.execute(
+            'Cast', inputs, outputs=[None] if copy else inputs, dtype=dtype)
+    return OpLib.add('Cast', inputs, dtype=dtype, **kwargs)
 
 
 @OpSchema.num_inputs(2, 3)
-def channel_affine(inputs, axis=1, num_axes=1, **kwargs):
-    r"""Apply affine transformation along the channels.
-
-    .. math:: \text{out} = \text{weight} * \text{input} + \text{bias}
-
-    The range of channels to transform is given by:
-
-    .. math:: [\text{axis}, \text{axis} + \text{num\_axes})
-
-    Set ``axis`` to specific the start axis.
-
-    Set ``num_axes`` to -1 will transform all remained axes.
+def channel_affine(inputs, axis=-1, end_axis=None, **kwargs):
+    r"""Apply affine transformation to each channel of input.
 
     Parameters
     ----------
     inputs : Sequence[dragon.Tensor]
         The input, weight and optional bias tensor.
-    axis : int, optional, default=1
-        The start axis, can be negative.
-    num_axes : int, optional, default=1
-        The number of axes to transform.
+    axis : int, optional, default=-1
+        The first channel axis.
+    end_axis : int, optional
+        The last channel axis.
 
     Returns
     -------
@@ -317,19 +281,17 @@ def channel_affine(inputs, axis=1, num_axes=1, **kwargs):
         The output tensor.
 
     """
-    args = ArgHelper.parse(locals())
-    inplace = args.pop('inplace') if 'inplace' in args else False
-    op_lib = array_ops_lib.ChannelAffine
+    outputs = kwargs.pop('outputs', [None])
     if context.executing_eagerly():
-        return op_lib \
-            .instantiate(axis=axis, num_axes=num_axes) \
-            .apply(inputs, inplace=inplace)
-    else:
-        return op_lib.blend(**args)
+        return OpLib.execute(
+            'ChannelAffine', inputs, outputs=outputs,
+            axis=axis, end_axis=end_axis)
+    return OpLib.add('ChannelAffine', inputs,
+                     axis=axis, end_axis=end_axis, **kwargs)
 
 
 @OpSchema.num_inputs(1)
-@ArgHelper.repeated_desc('perm')
+@OpSchema.convert_arg('perm')
 def channel_normalize(
     inputs,
     mean,
@@ -339,9 +301,9 @@ def channel_normalize(
     perm=None,
     **kwargs
 ):
-    """Normalize channels with mean and standard deviation.
+    """Apply normalization to each channel of input.
 
-    The ``axis`` can be negative representing the last-k axis:
+    :attr:`axis` can be negative:
 
     ```python
     m = s = (1., 1., 1.)
@@ -350,7 +312,7 @@ def channel_normalize(
     print(dragon.channel_normalize(x, m, s, axis=-1))  # Equivalent
     ```
 
-    If ``perm`` is provided, ``axis`` is selected from the output layout:
+    If :attr:`perm` provided, :attr:`axis` is selected from the output layout:
 
     ```python
     m, s = (1., 2., 3.), (1., 1., 1.)
@@ -369,7 +331,7 @@ def channel_normalize(
     std : Sequence[float], required
         The standard deviation to divide.
     axis : int, optional, default=-1
-        The axis to normalize.
+        The channel axis.
     dtype : str, optional, default='float32'
         The output data type.
     perm : Sequence[Union[int, dragon.Tensor]], optional
@@ -381,34 +343,36 @@ def channel_normalize(
         The output tensor.
 
     """
-    args = ArgHelper.parse(locals())
-    op_lib = array_ops_lib.ChannelNormalize
+    args = OpSchema.parse_args(locals())
     if context.executing_eagerly():
-        return op_lib \
-            .instantiate(
-                axis=axis,
-                ndim=len(args['perm']) if perm is not None else 0,
-                mean=mean,
-                std=std,
-                dtype=dtype,
-            ).apply([inputs], args['perm'])
-    else:
-        return op_lib.blend(**args)
+        return OpLib.execute(
+            'ChannelNormalize', inputs,
+            axis=axis, mean=mean, std=std, dtype=dtype,
+            ndim=len(args['perm']) if perm is not None else 0,
+            perm=args['perm'])
+    return OpLib.add('ChannelNormalize', **args)
 
 
 @OpSchema.num_inputs(1)
-def channel_shuffle(inputs, axis=0, group=1, **kwargs):
-    """Shuffle channels between a given number of groups.
+def channel_shuffle(inputs, axis=-1, group=1, **kwargs):
+    """Apply group shuffle to each channel of input.
     `[Zhang et.al, 2017] <https://arxiv.org/abs/1707.01083>`_.
+
+    Examples:
+
+    ```python
+    x = dragon.constant([1, 2, 3, 4])
+    print(dragon.channel_shuffle(x, group=2))  # [1, 3, 2, 4]
+    ```
 
     Parameters
     ----------
     inputs : dragon.Tensor
         The inputs.
-    axis : int, optional, default=0
-        The axis of channels.
+    axis : int, optional, default=-1
+        The channel axis.
     group : int, optional, default=1
-        The number of groups.
+        The number of shuffle groups.
 
     Returns
     -------
@@ -416,23 +380,16 @@ def channel_shuffle(inputs, axis=0, group=1, **kwargs):
         The output tensor.
 
     """
-    args = ArgHelper.parse(locals())
-    op_lib = array_ops_lib.ChannelShuffle
     if context.executing_eagerly():
-        return op_lib \
-            .instantiate(
-                axis=axis,
-                group=group,
-            ).apply([inputs])
-    else:
-        return op_lib.blend(**args)
+        return OpLib.execute('ChannelShuffle', inputs, axis=axis, group=group)
+    return OpLib.add('ChannelShuffle', inputs, axis=axis, group=group, **kwargs)
 
 
 @OpSchema.num_inputs(1, 2147483647)
 def concat(inputs, axis=0, **kwargs):
     """Concatenate the inputs along the given axis.
 
-    All dimensions except the ``axis`` should be same:
+    All dimensions except the :attr:`axis` should be same:
 
     ```python
     x1 = dragon.ones(shape=(2, 3))
@@ -441,11 +398,12 @@ def concat(inputs, axis=0, **kwargs):
     z = dragon.concat([x1, x2], axis=0)  # Wrong
     ```
 
-    The ``axis`` can be negative representing the last-k axis:
+    :attr:`axis` can be negative:
 
     ```python
-    y = dragon.concat([x1, x2], axis=1)
-    z = dragon.concat([x1, x2], axis=-1)  # z == y
+    x = dragon.constant([[1, 2], [3, 4]])
+    y = dragon.concat([x, x], axis=1)
+    z = dragon.concat([x, x], axis=-1)  # Equivalent
     ```
 
     Parameters
@@ -461,36 +419,32 @@ def concat(inputs, axis=0, **kwargs):
         The output tensor.
 
     """
-    args = ArgHelper.parse(locals())
-    op_lib = array_ops_lib.Concat
     if context.executing_eagerly():
-        return op_lib.instantiate(axis=axis).apply(inputs)
-    else:
-        return op_lib.blend(**args)
+        return OpLib.execute('Concat', inputs, axis=axis)
+    return OpLib.add('Concat', inputs, axis=axis, **kwargs)
 
 
 @OpSchema.num_inputs(1)
 def cumsum(inputs, axis=0, exclusive=False, reverse=False, **kwargs):
     """Compute the cumulative sum of elements along the given axis.
 
-    The argument ``axis`` could be negative:
+    :attr:`axis` could be negative:
 
     ```python
-    x = dragon.constant([[1, 2, 3], [4, 5, 6]])
-
     # A negative axis is the last-k axis
-    print(dragon.math.cumsum(x, 1))   # [[1, 3, 6], [4, 9, 15]]
-    print(dragon.math.cumsum(x, -1))  # Equivalent
+    x = dragon.constant([[1, 2, 3], [4, 5, 6]])
+    print(dragon.math.cumsum(x, axis=1))   # [[1, 3, 6], [4, 9, 15]]
+    print(dragon.math.cumsum(x, axis=-1))  # Equivalent
     ```
 
-    To exclude the top element, set the ``exclusive``:
+    Use :attr:`exclusive` to exclude the top element:
 
     ```python
     x = dragon.constant([1, 2, 3])
     print(dragon.math.cumsum(x, exclusive=True))  # [0, 1, 3]
     ```
 
-    Also, ``reverse`` could be set to reverse the cumulative direction:
+    Use :attr:`reverse` to reverse the cumulative direction:
 
     ```python
     x = dragon.constant([1, 2, 3])
@@ -504,11 +458,11 @@ def cumsum(inputs, axis=0, exclusive=False, reverse=False, **kwargs):
     inputs : dragon.Tensor
         The input tensor.
     axis : int, optional, default=0
-        The cumulative axis.
+        The axis to cumulate.
     exclusive : bool, optional, default=False
-        **True** to exclude the top element.
+        ``True`` to exclude the top element.
     reverse : bool, optional, default=False
-        **True** to compute in the reverse direction.
+        ``True`` to cumulate in a reverse direction.
 
     Returns
     -------
@@ -516,30 +470,23 @@ def cumsum(inputs, axis=0, exclusive=False, reverse=False, **kwargs):
         The output tensor.
 
     """
-    args = ArgHelper.parse(locals())
-    op_lib = array_ops_lib.Cumulative
     if context.executing_eagerly():
-        return op_lib  \
-            .instantiate(
-                operation='Sum',
-                axis=axis,
-                exclusive=exclusive,
-                reverse=reverse,
-            ).apply([inputs])
-    else:
-        return op_lib.blend('CumSum', **args)
+        return OpLib.execute(
+            'CumSum', inputs, axis=axis, exclusive=exclusive, reverse=reverse)
+    return OpLib.add('CumSum', inputs, axis=axis,
+                     exclusive=exclusive, reverse=reverse)
 
 
 @OpSchema.num_inputs(1)
-def expand_dims(inputs, axis, **kwargs):
+def expand_dims(inputs, axis, copy=True, **kwargs):
     """Expand the dimensions of input with size 1.
 
-    The argument ``axis`` could be negative or **None**:
+    :attr:`axis` could be negative or ``None``:
 
     ```python
     x = dragon.ones((2, 3, 4, 5))
 
-    # ``axis`` determines the size-1 position in output
+    # axis is the size-1 position in output
     print(dragon.expand_dims(x, axis=0).shape)  # (2, 3, 4, 5) -> (1, 2, 3, 4, 5)
     print(dragon.expand_dims(x, axis=1).shape)  # (2, 3, 4, 5) -> (2, 1, 3, 4, 5)
 
@@ -547,7 +494,7 @@ def expand_dims(inputs, axis, **kwargs):
     print(dragon.expand_dims(x, axis=4).shape)   # (2, 3, 4, 5) -> (2, 3, 4, 5, 1)
     print(dragon.expand_dims(x, axis=-1).shape)  # Equivalent
 
-    # Also, ``axis`` could be a sequence of integers
+    # Also, axis could be a sequence of integers
     print(dragon.expand_dims(x, axis=[-1, -3]).shape)  # (2, 3, 4, 5) -> (2, 3, 4, 1, 5, 1)
     ```
 
@@ -556,7 +503,9 @@ def expand_dims(inputs, axis, **kwargs):
     inputs : dragon.Tensor
         The input tensor.
     axis : Union[int, Sequence[int]]
-        The axis to insert the new dimension(s).
+        The axis to insert the new dimension.
+    copy : bool, optional, default=True
+        Return a new tensor or call in-place.
 
     Returns
     -------
@@ -564,32 +513,25 @@ def expand_dims(inputs, axis, **kwargs):
         The output tensor.
 
     """
-    args = ArgHelper.parse(locals())
-    args.pop('axis')
-    args['axes'] = None if axis is None else nest.flatten(axis)
-    inplace = args.pop('inplace') if 'inplace' in args else False
-    op_lib = array_ops_lib.ExpandDims
+    axes = None if axis is None else nest.flatten(axis)
     if context.executing_eagerly():
-        return op_lib.instantiate(
-            axes=args['axes'],
-        ).apply([inputs], inplace=inplace)
-    else:
-        return op_lib.blend(**args)
+        return OpLib.execute(
+            'Unsqueeze', inputs, outputs=[None] if copy else inputs, axes=axes)
+    return OpLib.add('Unsqueeze', inputs, axes=axes, **kwargs)
 
 
 @OpSchema.num_inputs(1)
-def flatten(inputs, axis=0, num_axes=-1, keep_axes=None, **kwargs):
+def flatten(inputs, axis=0, end_axis=-1, copy=True, **kwargs):
     r"""Flatten the input along the given axes.
 
-    Set ``keep_axes`` to flatten if shape is dynamic.
+    Set :attr:`keep_axes` to flatten if shape is dynamic.
 
     Examples:
 
     ```python
-    x = dragon.Tensor(shape=[1, 2, 3, 4]).constant()
-    print(dragon.flatten(x, axis=1, num_axes=-1).shape)  # (1, 24)
-    print(dragon.flatten(x, axis=1, num_axes=2).shape)  # (1, 6, 4)
-    print(dragon.flatten(x, keep_axes=1))  # (24,)
+    x = dragon.ones((1, 2, 3, 4))
+    print(dragon.flatten(x, axis=1).shape)  # (1, 24)
+    print(dragon.flatten(x, axis=1, end_axis=2).shape)  # (1, 6, 4)
     ```
 
     Parameters
@@ -597,11 +539,9 @@ def flatten(inputs, axis=0, num_axes=-1, keep_axes=None, **kwargs):
     inputs : dragon.Tensor
         The input tensor.
     axis : int, optional, default=0
-        The start axis to flatten, can be negative.
-    num_axes : int, optional, default=-1
-        The number of axes to flatten.
-    keep_axes : int, optional
-        The number of axes to keep.
+        The first axis to flatten.
+    end_axis : int, optional, default=-1
+        The last axis to flatten.
 
     Returns
     -------
@@ -609,25 +549,55 @@ def flatten(inputs, axis=0, num_axes=-1, keep_axes=None, **kwargs):
         The output tensor.
 
     """
-    args = ArgHelper.parse(locals())
-    inplace = args.pop('inplace') if 'inplace' in args else False
-    op_lib = array_ops_lib.Flatten
     if context.executing_eagerly():
-        return op_lib \
-            .instantiate(
-                axis=axis,
-                num_axes=num_axes,
-                keep_axes=keep_axes,
-            ).apply([inputs], inplace=inplace)
-    else:
-        return op_lib.blend(**args)
+        return OpLib.execute(
+            'Flatten', inputs, outputs=[None] if copy else inputs,
+            axis=axis, end_axis=end_axis)
+    return OpLib.add('Flatten', inputs, axis=axis, end_axis=end_axis, **kwargs)
+
+
+@OpSchema.num_inputs(2)
+def gather(inputs, axis=0, end_axis=None, **kwargs):
+    """Gather the elements along the given axis using index.
+
+    Index should be a ``int64`` tensor:
+
+    ```python
+    input = dragon.constant([[1, 2, 3], [4, 5, 6]])
+    index = dragon.constant([1])
+    print(dragon.gather([input, index]))  # [[4, 5, 6]]
+    ```
+
+    More than one axis could be specified to gather:
+
+    ```python
+    # Along the continuous axes: [axis, end_axis]
+    print(dragon.gather([input, index], axis=0, end_axis=1))
+    ```
+
+    Parameters
+    ----------
+    inputs : Sequence[dragon.Tensor]
+        The input and index tensor.
+    axis : int, optional, default=0
+        The first axis to gather.
+    end_axis : int, optional
+        The last axis to gather.
+
+    Returns
+    -------
+    dragon.Tensor
+        The output tensor.
+
+    """
+    if context.executing_eagerly():
+        return OpLib.execute('Gather', inputs, axis=axis, end_axis=end_axis)
+    return OpLib.add('Gather', inputs, axis=axis, end_axis=end_axis, **kwargs)
 
 
 @OpSchema.num_inputs(1)
 def identity(inputs, **kwargs):
     """Return a tensor copied from the input.
-
-    Examples:
 
     Examples:
 
@@ -653,83 +623,21 @@ def identity(inputs, **kwargs):
         The output tensor.
 
     """
-    args = ArgHelper.parse(locals())
-    inplace = args.pop('inplace') if 'inplace' in args else False
-    op_lib = array_ops_lib.Identity
     if context.executing_eagerly():
-        return op_lib.instantiate().apply([inputs], inplace=inplace)
-    else:
-        return op_lib.blend(**args)
-
-
-@OpSchema.num_inputs(1)
-def index_select(inputs, index, axis=0, **kwargs):
-    """Select the elements according to the index along the given axis.
-
-    ``index`` could be a **int64** tensor or a sequence with integers:
-
-    ```python
-    x = dragon.constant([[1, 2, 3], [4, 5, 6]])
-    print(dragon.index_select(x, [0, 1]))
-    print(dragon.index_select(x, dragon.constant([0, 1], 'int64')))
-    ```
-
-    More than one axis could be specified for ``index``:
-
-    ```python
-    # The number of ``axis`` should less than ``rank(index)``
-    # And these axes should be continuous
-    print(dragon.index_select(x, [0, 1], axis=[0, 1]))
-    ```
-
-    Parameters
-    ----------
-    inputs : dragon.Tensor
-        The input tensor.
-    index : Union[Sequence[int], dragon.Tensor]
-        The index to select elements.
-    axis : Union[int, Sequence[int]], optional, default=0
-        The axis where the index aligned.
-
-    Returns
-    -------
-    dragon.Tensor
-        The output tensor.
-
-    """
-    args = ArgHelper.parse(locals())
-    axes = nest.flatten(axis)
-    axes.sort()
-    if axes[-1] != (axes[0] + len(axes) - 1):
-        raise ValueError('The <axis> should be a continuous sequence.')
-    op_lib = array_ops_lib.IndexSelect
-    if context.executing_eagerly():
-        if not types.is_eager_tensor(index):
-            index = EagerTensor(index, dtype='int64')
-        return op_lib \
-            .instantiate(
-                axis=axes[0],
-                num_axes=len(axes),
-            ).apply([inputs, index])
-    else:
-        if not isinstance(index, Tensor):
-            index = Tensor.from_value(index, 'int64')
-        args['inputs'], args['index'] = \
-            [args['inputs'], index], None
-        args['axis'], args['num_axes'] = axes[0], len(axes)
-        return op_lib.blend(**args)
+        return OpLib.execute('Identity', inputs)
+    return OpLib.add('Identity', inputs, **kwargs)
 
 
 def linspace(start, stop, num, dtype='int64', axis=0, **kwargs):
     r"""Generate evenly spaced values within intervals along the given axis.
 
-    Interval :math:`[\text{start}, \text{stop})` is determined for ``num`` values:
+    Range :math:`[\text{start}, \text{stop})` is determined for :attr:`num` values:
 
     ```python
     x = dragon.linspace(2, 4, num=3)  # [2, 3, 4]
     ```
 
-    More than one intervals are accepted to generate N-d coordinates:
+    More than one ranges are accepted to generate N-d coordinates:
 
     ```python
     x = dragon.linspace([1, 2], [3, 4], num=3, axis=0)  # [[1, 2], [2, 3], [3, 4]]
@@ -739,9 +647,9 @@ def linspace(start, stop, num, dtype='int64', axis=0, **kwargs):
     Parameters
     ----------
     start : Union[number, Sequence[number]]
-        The start(s) of interval.
+        The start of range.
     stop: Union[number, Sequence[number]]
-        The stop(s) of interval.
+        The stop of range.
     num : int
         The number of values to generate.
     dtype : str, optional, default='int64'
@@ -755,90 +663,27 @@ def linspace(start, stop, num, dtype='int64', axis=0, **kwargs):
         The output tensor.
 
     """
-    args = ArgHelper.parse(locals())
-    args['dtype'] = args['dtype'].lower()
-    args['start'] = nest.flatten(start)
-    args['stop'] = nest.flatten(stop)
-    args.pop('num')
-    args['dims'] = []
-    if len(args['start']) > 1 or args['start'] == start:
-        args['dims'] = [len(args['start'])]
-    axis = axis if axis >= 0 else axis + len(args['dims']) + 1
-    args['dims'].insert(axis, num)
-    op_lib = array_ops_lib.LinSpace
-    trainable = args.pop('trainable') if 'trainable' in args else False
+    dtype = dtype.lower()
+    starts = [float(elem) for elem in nest.flatten(start)]
+    stops = [float(elem) for elem in nest.flatten(stop)]
+    dims = []
+    if len(starts) > 1 or starts == start:
+        dims = [len(starts)]
+    axis = axis if axis >= 0 else axis + len(dims) + 1
+    dims.insert(axis, num)
     if context.executing_eagerly():
-        return op_lib \
-            .instantiate(
-                ndim=len(args['dims']),
-                num_intervals=len(args['start']),
-                dtype=dtype,
-                axis=axis,
-            ).apply(args['dims'], args['start'], args['stop'], trainable=trainable)
-    else:
-        return op_lib.blend(**args)
-
-
-@OpSchema.num_inputs(3)
-def masked_assign(inputs, **kwargs):
-    r"""Assign the value to input where mask is 1.
-
-    .. math::
-        \text{input}_{i} =
-            \begin{cases}
-                \text{value}_{i}, & \text{ if } \text{mask}_{i} = 1 \\
-                \text{input}_{i}, & \text{ otherwise }
-        \end{cases}
-
-    Parameters
-    ----------
-    inputs : Sequence[dragon.Tensor]
-        The input, value and mask tensor.
-
-    Returns
-    -------
-    dragon.Tensor
-        The input tensor.
-
-    """
-    args = ArgHelper.parse(locals())
-    inplace = args.pop('inplace') if 'inplace' in args else False
-    inputs[1] = ops.scalar_to_tensor(inputs[1], inputs[0].dtype)
-    op_lib = array_ops_lib.MaskedAssign
-    if context.executing_eagerly():
-        return op_lib.instantiate().apply(inputs, inplace=inplace)
-    else:
-        return op_lib.blend(**args)
-
-
-@OpSchema.num_inputs(2)
-def masked_select(inputs, **kwargs):
-    """Select the elements of input where mask is 1.
-
-    Parameters
-    ----------
-    inputs : Sequence[dragon.Tensor]
-        The input and mask tensor.
-
-    Returns
-    -------
-    dragon.Tensor
-        The output tensor.
-
-    """
-    args = ArgHelper.parse(locals())
-    op_lib = array_ops_lib.MaskedSelect
-    if context.executing_eagerly():
-        return op_lib.instantiate().apply(inputs)
-    else:
-        return op_lib.blend(**args)
+        return OpLib.execute(
+            'LinSpace', [], ndim=len(dims), num_intervals=len(starts),
+            axis=axis, dtype=dtype, dims=dims, start=starts, stop=stops)
+    return OpLib.add('LinSpace', [], axis=axis, dtype=dtype, dims=dims,
+                     start=starts, stop=stops, **kwargs)
 
 
 @OpSchema.num_inputs(1)
 def max(inputs, axis=None, keepdims=False, **kwargs):
     """Compute the max value of elements along the given axis.
 
-    The argument ``axis`` could be negative or **None**:
+    :attr:`axis` could be negative or ``None``:
 
     ```python
     x = dragon.constant([[1, 2, 3], [4, 5, 6]])
@@ -849,10 +694,10 @@ def max(inputs, axis=None, keepdims=False, **kwargs):
 
     # If ``axis`` is None, the vector-style reduction
     # will be applied to return a scalar result
-    print(dragon.math.max(x))  # Result is 6
+    print(dragon.math.max(x))  # 6
 
     # Also, ``axis`` could be a sequence of integers
-    print(dragon.math.max(x, [0, 1]))  # Result is 6
+    print(dragon.math.max(x, [0, 1]))  # 6
     ```
 
     Parameters
@@ -870,40 +715,32 @@ def max(inputs, axis=None, keepdims=False, **kwargs):
         The output tensor.
 
     """
-    args = ArgHelper.parse(locals())
-    args.pop('axis')
-    args['axes'] = None if axis is None else nest.flatten(axis)
-    op_lib = array_ops_lib.Reduce
+    axes = None if axis is None else nest.flatten(axis)
     if context.executing_eagerly():
-        return op_lib  \
-            .instantiate(
-                operation='Max',
-                axes=args['axes'],
-                keepdims=keepdims,
-            ).apply([inputs])
-    else:
-        return op_lib.blend('ReduceMax', **args)
+        return OpLib.execute('ReduceMax', inputs, axes=axes, keepdims=keepdims)
+    return OpLib.add('ReduceMax', inputs,
+                     axes=axes, keepdims=keepdims, **kwargs)
 
 
 @OpSchema.num_inputs(1)
 def mean(inputs, axis=None, keepdims=False, **kwargs):
     """Compute the mean value of elements along the given axis.
 
-    The argument ``axis`` could be negative or **None**:
+    :attr:`axis` could be negative or ``None``:
 
     ```python
-    x = dragon.constant([[1, 2, 3], [4, 5, 6]])
+    x = dragon.constant([[1, 2, 3], [4, 5, 6]], dtype='float32')
 
     # A negative axis is the last-k axis
     print(dragon.math.mean(x, 1))
     print(dragon.math.mean(x, -1))  # Equivalent
 
-    # If ``axis`` is None, the vector-style reduction
+    # If axis is None, the vector-style reduction
     # will be applied to return a scalar result
-    print(dragon.math.mean(x))  # Result is 3
+    print(dragon.math.mean(x))  # 3.5
 
-    # Also, ``axis`` could be a sequence of integers
-    print(dragon.math.mean(x, [0, 1]))  # Result is 3
+    # Also, axis could be a sequence of integers
+    print(dragon.math.mean(x, [0, 1]))  # 3.5
     ```
 
     Parameters
@@ -921,26 +758,18 @@ def mean(inputs, axis=None, keepdims=False, **kwargs):
         The output tensor.
 
     """
-    args = ArgHelper.parse(locals())
-    args.pop('axis')
-    args['axes'] = None if axis is None else nest.flatten(axis)
-    op_lib = array_ops_lib.Reduce
+    axes = None if axis is None else nest.flatten(axis)
     if context.executing_eagerly():
-        return op_lib  \
-            .instantiate(
-                operation='Mean',
-                axes=args['axes'],
-                keepdims=keepdims,
-            ).apply([inputs])
-    else:
-        return op_lib.blend('ReduceMean', **args)
+        return OpLib.execute('ReduceMean', inputs, axes=axes, keepdims=keepdims)
+    return OpLib.add('ReduceMean', inputs,
+                     axes=axes, keepdims=keepdims, **kwargs)
 
 
 @OpSchema.num_inputs(1)
 def min(inputs, axis=None, keepdims=False, **kwargs):
     """Compute the min value of elements along the given axis.
 
-    The argument ``axis`` could be negative or **None**:
+    :attr:`axis` could be negative or ``None``:
 
     ```python
     x = dragon.constant([[1, 2, 3], [4, 5, 6]])
@@ -951,10 +780,10 @@ def min(inputs, axis=None, keepdims=False, **kwargs):
 
     # If ``axis`` is None, the vector-style reduction
     # will be applied to return a scalar result
-    print(dragon.math.min(x))  # Result is 1
+    print(dragon.math.min(x))  # 1
 
     # Also, ``axis`` could be a sequence of integers
-    print(dragon.math.min(x, [0, 1]))  # Result is 1
+    print(dragon.math.min(x, [0, 1]))  # 1
     ```
 
     Parameters
@@ -972,52 +801,44 @@ def min(inputs, axis=None, keepdims=False, **kwargs):
         The output tensor.
 
     """
-    args = ArgHelper.parse(locals())
-    args.pop('axis')
-    args['axes'] = None if axis is None else nest.flatten(axis)
-    op_lib = array_ops_lib.Reduce
+    axes = None if axis is None else nest.flatten(axis)
     if context.executing_eagerly():
-        return op_lib  \
-            .instantiate(
-                operation='Min',
-                axes=args['axes'],
-                keepdims=keepdims,
-            ).apply([inputs])
-    else:
-        return op_lib.blend('ReduceMin', **args)
+        return OpLib.execute('ReduceMin', inputs, axes=axes, keepdims=keepdims)
+    return OpLib.add('ReduceMin', inputs,
+                     axes=axes, keepdims=keepdims, **kwargs)
 
 
 @OpSchema.num_inputs(1)
 def moments(inputs, axis=None, keepdims=False, **kwargs):
-    r"""Compute the mean and variance of input along the given axes.
+    r"""Compute the mean and variance of input along the given axis.
 
     .. math::
         \begin{cases}
-            \text{mean} = \frac{1}{n}\sum(\text{input}) \\
-            \text{variance} = \frac{1}{n}\sum(x - \text{mean}(\text{input}))^{2}
+            \mathrm{E}[x] = \frac{1}{n}\sum(x) \\
+            \mathrm{Var}[x] = \frac{1}{n}\sum(x - \mathrm{E}[x])^{2}
         \end{cases}
 
-    The argument ``axis`` could be negative or **None**:
+    :attr:`axis` could be negative or ``None``:
 
     ```python
-    x = dragon.constant([[1, 2, 3], [4, 5, 6]])
+    x = dragon.constant([[1, 2, 3], [4, 5, 6]], dtype='float32')
 
     # A negative axis is the last-k axis
-    print(dragon.math.moments(x, 1))
-    print(dragon.math.moments(x, -1))  # Equivalent
+    print(dragon.nn.moments(x, 1))
+    print(dragon.nn.moments(x, -1))  # Equivalent
 
-    # If ``axis`` is None, the vector-style reduction
+    # If axis is None, reduce as a vector and return scalars
     # will be applied to return a scalar result
-    print(dragon.math.moments(x))  # Mean is 3.5, Var is 2.916667
+    print(dragon.nn.moments(x))  # mean is 3.5, var is 2.916667
 
-    # Also, ``axis`` could be a sequence of integers
-    print(dragon.math.moments(x, [0, 1]))  # Mean is 3.5, Var is 2.916667
+    # Also, axis could be a sequence of integers
+    print(dragon.nn.moments(x, [0, 1]))  # mean is 3.5, var is 2.916667
     ```
 
     Parameters
     ----------
     inputs : dragon.Tensor
-        The tensor :math:`x`.
+        The input tensor.
     axis : Union[int, Sequence[int]], optional
         The axis to reduce.
     keepdims : bool, optional, default=False
@@ -1031,38 +852,32 @@ def moments(inputs, axis=None, keepdims=False, **kwargs):
         The variance tensor.
 
     """
-    args = ArgHelper.parse(locals())
-    args.pop('axis')
-    args['axes'] = None if axis is None else nest.flatten(axis)
-    op_lib = array_ops_lib.Moments
+    axes = None if axis is None else nest.flatten(axis)
     if context.executing_eagerly():
-        return op_lib \
-            .instantiate(
-                axes=args['axes'],
-                keepdims=keepdims,
-            ).apply([inputs])
-    else:
-        return op_lib.blend(num_outputs=2, **args)
+        return OpLib.execute(
+            'Moments', inputs, outputs=[None, None],
+            axes=axes, keepdims=keepdims)
+    return OpLib.add('Moments', inputs, num_outputs=2,
+                     axes=axes, keepdims=keepdims, **kwargs)
 
 
 @OpSchema.num_inputs(1)
-def multinomial(inputs, num_samples=1, epsilon=0, normalize=False, **kwargs):
-    """Return a tensor with index sampled from multinomial distribution.
+def multinomial(inputs, sample_size=1, **kwargs):
+    """Return an index tensor sampled from the multinomial distribution.
 
-    If ``normalize`` is **True**, negative input is accepted.
+    Examples:
 
-    Otherwise, input should be non-negative.
+    ```python
+    input = dragon.math.log(dragon.constant([0.5, 0.5]))
+    index = dragon.random.multinomial(input)
+    ```
 
     Parameters
     ----------
     inputs : dragon.Tensor
         The input tensor.
-    num_samples : int, optional, default=1
+    sample_size : int, optional, default=1
         The number of samples.
-    epsilon : float, optional, default=0
-        The epsilon value to apply e-greedy strategy.
-    normalize : bool, optional, default=False
-        Whether to normalize the input.
 
     Returns
     -------
@@ -1070,18 +885,9 @@ def multinomial(inputs, num_samples=1, epsilon=0, normalize=False, **kwargs):
         The output tensor.
 
     """
-    args = ArgHelper.parse(locals())
-    args['epsilon'] = float(epsilon)
-    op_lib = array_ops_lib.Multinomial
     if context.executing_eagerly():
-        return op_lib \
-            .instantiate(
-                num_samples=num_samples,
-                epsilon=args['epsilon'],
-                normalize=normalize,
-            ).apply([inputs])
-    else:
-        return op_lib.blend(**args)
+        return OpLib.execute('Multinomial', inputs, sample_size=sample_size)
+    return OpLib.add('Multinomial', inputs, sample_size=sample_size, **kwargs)
 
 
 @OpSchema.num_inputs(1)
@@ -1101,12 +907,9 @@ def nonzero(inputs, **kwargs):
         The output tensor.
 
     """
-    args = ArgHelper.parse(locals())
-    op_lib = array_ops_lib.NonZero
     if context.executing_eagerly():
-        return op_lib.instantiate().apply([inputs])
-    else:
-        return op_lib.blend(**args)
+        return OpLib.execute('NonZero', inputs)
+    return OpLib.add('NonZero', inputs, **kwargs)
 
 
 @OpSchema.num_inputs(1)
@@ -1120,16 +923,17 @@ def one_hot(inputs, depth, on_value=1, off_value=0, **kwargs):
                 \text{on\_value}, & \text{ otherwise }
             \end{cases}
 
-    The max value of input, i.e., the ``depth`` should be specified:
+    The max value of input, i.e., the :attr:`depth` should be specified:
 
     ```python
-    x = dragon.constant([0, 1, 2, 3], dtype='int64')
+    x = dragon.constant([0, 1, 2, 3])
     print(dragon.one_hot(x, depth=5))  # depth >= 4 will be ok
     ```
 
-    You can also set the ``on_value`` or ``off_value``:
+    Use :attr:`on_value` or :attr:`off_value` custom filling:
 
     ```python
+    x = dragon.constant([0, 1, 2, 3])
     print(dragon.one_hot(x, depth=4, on_value=2, off_value=3))
     ```
 
@@ -1139,9 +943,9 @@ def one_hot(inputs, depth, on_value=1, off_value=0, **kwargs):
         The input tensor.
     depth : int
         The depth of representation.
-    on_value : int, optional, default=1
+    on_value : number, optional, default=1
         The value for equal branch.
-    off_value : int, optional, default=0
+    off_value : number, optional, default=0
         The value for not-equal branch.
 
     Returns
@@ -1150,24 +954,20 @@ def one_hot(inputs, depth, on_value=1, off_value=0, **kwargs):
         The output tensor.
 
     """
-    args = ArgHelper.parse(locals())
-    op_lib = array_ops_lib.OneHot
+    on_value, off_value = float(on_value), float(off_value)
     if context.executing_eagerly():
-        return op_lib \
-            .instantiate(
-                depth=depth,
-                on_value=on_value,
-                off_value=off_value,
-            ).apply([inputs])
-    else:
-        return op_lib.blend(**args)
+        return OpLib.execute(
+            'OneHot', inputs, depth=depth,
+            on_value=on_value, off_value=off_value)
+    return OpLib.add('OneHot', inputs, depth=depth, on_value=on_value,
+                     off_value=off_value, **kwargs)
 
 
 @OpSchema.num_inputs(1)
 def pad(inputs, pads, mode='constant', value=0, **kwargs):
     r"""Pad the input according to the given sizes.
 
-    The ``pads`` should be a sequence with :math:`N` tuples,
+    :attr:`pads` should be a sequence with :math:`N` tuples,
     where :math:`N` is the number of input dimensions:
 
     ```python
@@ -1180,13 +980,10 @@ def pad(inputs, pads, mode='constant', value=0, **kwargs):
 
     ```python
     x = dragon.constant([[1, 2, 3], [4, 5, 6]])
-
     # ConstantPad
     print(dragon.pad(x, [[0, 1], [1, 0]], 'constant', 9))
-
     # ReflectPad
     print(dragon.pad(x, [[0, 1], [1, 0]], 'reflect'))
-
     # EdgePad
     print(dragon.pad(x, [[0, 1], [1, 0]], 'edge'))
     ```
@@ -1196,11 +993,11 @@ def pad(inputs, pads, mode='constant', value=0, **kwargs):
     inputs : dragon.Tensor
         The input tensor.
     pads : Sequence[Tuple[int], Tuple[dragon.Tensor]]
-        The begins and ends of padding.
+        The padding begins and ends.
     mode : {'constant', 'reflect', 'edge'}, optional
         The padding mode.
     value : number, optional, default=0
-        The value used in **constant** mode.
+        The value used in ``'constant'`` mode.
 
     Returns
     -------
@@ -1208,9 +1005,7 @@ def pad(inputs, pads, mode='constant', value=0, **kwargs):
         The output tensor.
 
     """
-    args = ArgHelper.parse(locals())
-    args['value'] = float(value)
-    args['mode'] = mode.upper()
+    value, mode = float(value), mode.upper()
     pads_begin, pads_end = [], []
     for pad in pads:
         if len(pad) != 2:
@@ -1219,27 +1014,22 @@ def pad(inputs, pads, mode='constant', value=0, **kwargs):
                 'should be 2, got {}.'.format(len(pad)))
         pads_begin.append(pad[0])
         pads_end.append(pad[1])
-    args['pads'] = pads_begin + pads_end
-    op_lib = array_ops_lib.Pad
+    pads = pads_begin + pads_end
     if context.executing_eagerly():
-        return op_lib \
-            .instantiate(
-                ndim=len(pads_begin),
-                value=args['value'],
-                mode=args['mode'],
-            ).apply([inputs], args['pads'])
-    else:
-        return op_lib.blend(**args)
+        return OpLib.execute(
+            'Pad', inputs, mode=mode, value=value,
+            ndim=len(pads_begin), pads=pads)
+    return OpLib.add('Pad', inputs, value=value, mode=mode, pads=pads, **kwargs)
 
 
-@ArgHelper.desc('limit', as_target=True)
+@OpSchema.convert_arg('limit')
 def permutation(limit, dtype='int64', **kwargs):
     r"""Return a tensor with value in the permuted range.
 
-    Specify ``limit`` to determine an interval :math:`[0, \text{limit})`:
+    Set :attr:`limit` to determine a range :math:`[0, \text{limit})`:
 
     ```python
-    x = dragon.permutation(4)
+    x = dragon.random.permutation(4)
     ```
 
     Parameters
@@ -1255,34 +1045,30 @@ def permutation(limit, dtype='int64', **kwargs):
         The output tensor.
 
     """
-    args = ArgHelper.parse(locals())
+    args = OpSchema.parse_args(locals())
     args['dtype'] = args['dtype'].lower()
-    op_lib = array_ops_lib.Permutation
-    trainable = args.pop('trainable') if 'trainable' in args else False
     if context.executing_eagerly():
-        return op_lib \
-            .instantiate(dtype=dtype) \
-            .apply(args['limit'], trainable=trainable)
-    else:
-        return op_lib.blend(**args)
+        return OpLib.execute(
+            'Permutation', [], dtype=dtype, limit=args['limit'])
+    return OpLib.add('Permutation', [], **args)
 
 
 def range(start, limit=None, delta=1, dtype='int64', **kwargs):
     r"""Return a tensor of evenly spaced values within a interval.
 
-    Specify ``start`` and ``limit`` to determine an interval:
+    Use :attr:`start` and :attr:`limit` for a simple range:
 
     ```python
     x = dragon.range(2, 4)  # [2, 3]
     ```
 
-    If ``limit`` is **None**, interval :math:`[0, \text{start})` will be taken instead:
+    If :attr:`limit` is ``None``, range :math:`[0, \text{start})` will be taken:
 
     ```python
     x = dragon.range(5)  # [0, 1, 2, 3, 4]
     ```
 
-    Set ``delta`` to make the strides:
+    Use :attr:`delta` to make a striding range:
 
     ```python
     x = dragon.range(5, delta=2)  # [0, 2, 4]
@@ -1297,7 +1083,7 @@ def range(start, limit=None, delta=1, dtype='int64', **kwargs):
     delta : number, optional, default=1
         The spacing between two elements.
     dtype : str, optional, default='int64'
-        The optional data type.
+        The output data type.
 
     Returns
     -------
@@ -1305,32 +1091,33 @@ def range(start, limit=None, delta=1, dtype='int64', **kwargs):
         The output tensor.
 
     """
-    args = ArgHelper.parse(locals())
-    args['dtype'] = args['dtype'].lower()
-    if limit is None:
-        args['slice'] = (float(start), float(delta))
-    else:
-        args['slice'] = (float(start), float(limit), float(delta))
-    args.pop('start')
-    args.pop('limit')
-    args.pop('delta')
-    op_lib = array_ops_lib.Range
-    trainable = args.pop('trainable') if 'trainable' in args else False
+    dtype = dtype.lower()
+    slice = [float(start), float(delta)]
+    if limit is not None:
+        slice.insert(1, float(limit))
     if context.executing_eagerly():
-        return op_lib.instantiate(
-            num_args=len(args['slice']),
-            dtype=dtype,
-        ).apply(args['slice'], trainable=trainable)
-    else:
-        return op_lib.blend(**args)
+        return OpLib.execute(
+            'Range', [], num_args=len(slice), dtype=dtype, slice=slice)
+    return OpLib.add('Range', [], slice=slice, dtype=dtype, **kwargs)
 
 
 @OpSchema.num_inputs(1)
-@ArgHelper.desc('repeats')
+@OpSchema.convert_arg('repeats')
 def repeat(inputs, axis=None, repeats=1, **kwargs):
     """Repeat the elements along the given axis.
 
-    If ``axis`` is **None**, flattened results will be returned.
+    Examples:
+
+    ```python
+    x = dragon.constant([[1, 2], [3, 4]])
+
+    # A negative axis is the last-k axis
+    print(dragon.repeat(x, axis=1, repeats=2))  # [[1, 1, 2, 2], [3, 3, 4, 4]]
+    print(dragon.repeat(x, axis=-1, repeats=2))  # Equivalent
+
+    # If axis is None, repeat a flattened input
+    print(dragon.repeat(x, repeats=2))  # [1, 1, 2, 2, 3, 3, 4, 4]
+    ```
 
     Parameters
     ----------
@@ -1339,7 +1126,7 @@ def repeat(inputs, axis=None, repeats=1, **kwargs):
     axis : int, optional
         The axis to repeat.
     repeats : Union[int, dragon.Tensor], optional, default=1
-        The magnitude of repeating.
+        The repeat size.
 
     Returns
     -------
@@ -1347,21 +1134,16 @@ def repeat(inputs, axis=None, repeats=1, **kwargs):
         The output tensor.
 
     """
-    args = ArgHelper.parse(locals())
-    op_lib = array_ops_lib.Repeat
+    args = OpSchema.parse_args(locals())
     if context.executing_eagerly():
-        return op_lib  \
-            .instantiate(
-                axis=axis,
-                repeats=args['repeats'],
-            ).apply([inputs])
-    else:
-        return op_lib.blend(**args)
+        return OpLib.execute(
+            'Repeat', inputs, axis=axis, repeats=args['repeats'])
+    return OpLib.add('Repeat', **args)
 
 
 @OpSchema.num_inputs(1)
-@ArgHelper.repeated_desc(name='shape', name_v2='dims')
-def reshape(inputs, shape, **kwargs):
+@OpSchema.convert_arg(name='shape', name_v2='dims')
+def reshape(inputs, shape, copy=True, **kwargs):
     r"""Change the dimensions of input.
 
     Examples:
@@ -1369,16 +1151,16 @@ def reshape(inputs, shape, **kwargs):
     ```python
     # Provide a determined value for each dimension if possible
     x = dragon.ones(shape=(1, 2, 3, 4))
-    print(dragon.reshape(x, shape=[6, 4]).shape)  # [6, 4]
+    print(dragon.reshape(x, shape=(6, 4)).shape)  # (6, 4)
 
     # Set the existing dimensions to ``0`` if it unchanged
-    print(dragon.reshape(x, shape=[0, 0, 12]).shape)  # [1, 2, 12]
-    print(dragon.reshape(x, shape=[0, 0, 0, 0]).shape)  # [1, 2, 3, 4]
-    print(dragon.reshape(x, shape=[0, 0, 0, 0, 0]).shape)  # Wrong
+    print(dragon.reshape(x, shape=(0, 0, 12)).shape)  # (1, 2, 12)
+    print(dragon.reshape(x, shape=(0, 0, 0, 0)).shape)  # (1, 2, 3, 4)
+    print(dragon.reshape(x, shape=(0, 0, 0, 0, 0)).shape)  # Wrong
 
     # You can also set ``-1`` once to infer the value
-    print(dragon.reshape(x, shape=[-1, 4]).shape)  # [6, 4]
-    print(dragon.reshape(x, shape=[-1, -1]).shape)  # Wrong
+    print(dragon.reshape(x, shape=(-1, 4)).shape)  # (6, 4)
+    print(dragon.reshape(x, shape=(-1, -1)).shape)  # Wrong
     ```
 
     Parameters
@@ -1387,6 +1169,8 @@ def reshape(inputs, shape, **kwargs):
         The input tensor.
     shape : Union[Sequence[int], dragon.Tensor]
         The output shape.
+    copy : bool, optional, default=True
+        Return a new tensor or call in-place.
 
     Returns
     -------
@@ -1394,15 +1178,13 @@ def reshape(inputs, shape, **kwargs):
         The output tensor.
 
     """
-    args = ArgHelper.parse(locals())
-    inplace = args.pop('inplace') if 'inplace' in args else False
-    op_lib = array_ops_lib.Reshape
+    args = OpSchema.parse_args(locals())
     if context.executing_eagerly():
-        return op_lib \
-            .instantiate(ndim=len(args['dims'])) \
-            .apply([inputs], args['dims'], inplace=inplace)
-    else:
-        return op_lib.blend(**args)
+        return OpLib.execute(
+            'Reshape', inputs, outputs=[None] if copy else inputs,
+            ndim=len(args['dims']), dims=args['dims'])
+    args.pop('copy')
+    return OpLib.add('Reshape', **args)
 
 
 @OpSchema.num_inputs(1)
@@ -1413,7 +1195,7 @@ def shape(inputs, **kwargs):
 
     ```python
     x = dragon.ones((2, 3))
-    print(x.shape)          # Return a sequence
+    print(x.shape)  # Return a sequence
     print(dragon.shape(x))  # Return a tensor
     ```
 
@@ -1428,17 +1210,14 @@ def shape(inputs, **kwargs):
         The tensor shape.
 
     """
-    args = ArgHelper.parse(locals())
-    op_lib = array_ops_lib.Shape
-    if isinstance(inputs, EagerTensor):
-        return op_lib.instantiate().apply([inputs])
-    else:
-        return op_lib.blend(**args)
+    if context.executing_eagerly():
+        return OpLib.execute('Shape', inputs)
+    return OpLib.add('Shape', inputs, **kwargs)
 
 
 @OpSchema.num_inputs(1)
-@ArgHelper.repeated_desc('starts')
-@ArgHelper.repeated_desc('sizes')
+@OpSchema.convert_arg('starts')
+@OpSchema.convert_arg('sizes')
 def slice(inputs, starts, sizes, **kwargs):
     """Select the elements according to the given sections.
 
@@ -1450,14 +1229,12 @@ def slice(inputs, starts, sizes, **kwargs):
     print(x[0:1, 1:2:, 2:3])  # Equivalent
     ```
 
-    The ``sizes`` accepts value **-1** or **0**:
+    :attr:`sizes` accepts value ``-1`` or ``0``:
 
     ```python
     x = dragon.constant([[[0, 1, 2], [3, 4, 5]]])
-
     # Set ``0`` to squeeze dimensions with size 1
     print(dragon.slice(x, [0, 1, 2], [0, 0, 0]))  # 5
-
     # Set ``-1`` to take all the remained elements
     print(dragon.slice(x, [0, 0, 0], [-1, -1, -1]))  # [[[0, 1, 2], [3, 4, 5]]]
     ```
@@ -1477,33 +1254,32 @@ def slice(inputs, starts, sizes, **kwargs):
         The output tensor.
 
     """
-    args = ArgHelper.parse(locals())
-    op_lib = array_ops_lib.Slice
+    args = OpSchema.parse_args(locals())
     if context.executing_eagerly():
-        return op_lib \
-            .instantiate(ndim=len(args['starts'])) \
-            .apply([inputs], args['starts'], args['sizes'])
-    else:
-        return op_lib.blend(**args)
+        return OpLib.execute(
+            'Slice', inputs, ndim=len(args['starts']),
+            starts=args['starts'], sizes=args['sizes'])
+    return OpLib.add('Slice', **args)
 
 
 @OpSchema.num_inputs(1)
 def sort(inputs, axis=-1, descending=False, **kwargs):
     """Return the sorted elements along the given axis.
 
-    By default, the last axis is chosen:
+    :attr:`axis` could be negative:
 
     ```python
+    # A negative axis is the last-k axis
     x = dragon.constant([[1, 2, 3], [3, 2, 1]])
-    value1, index1 = dragon.sort(x)
-    value2, index2 = dragon.sort(x, axis=1)  # Equivalent
+    value1, index1 = dragon.sort(x, axis=1)
+    value2, index2 = dragon.sort(x, axis=-1)  # Equivalent
     ```
 
-    Sort in the inverse order if ``descending`` is **True**:
+    Use :attr:`descending` to sort in the inverse order:
 
     ```python
     x = dragon.constant([1, 2, 3])
-    _, index1 = dragon.sort(-x)
+    _, index1 = dragon.sort(-x, descending=False)
     _, index2 = dragon.sort(x, descending=True)  # Equivalent
     ```
 
@@ -1512,7 +1288,7 @@ def sort(inputs, axis=-1, descending=False, **kwargs):
     inputs : dragon.Tensor
         The input tensor.
     axis : int, optional, default=-1
-        The axis to sort elements.
+        The axis to sort.
     descending : bool, optional, default=False
         Sort in the descending order or not.
 
@@ -1522,17 +1298,12 @@ def sort(inputs, axis=-1, descending=False, **kwargs):
         The value and index tensor.
 
     """
-    args = ArgHelper.parse(locals())
-    op_lib = array_ops_lib.Sort
     if context.executing_eagerly():
-        return op_lib \
-            .instantiate(
-                axis=axis,
-                descending=descending,
-            ).apply([inputs])
-    else:
-        args['num_outputs'] = 2
-        return op_lib.blend(**args)
+        return OpLib.execute(
+            'Sort', inputs, outputs=[None, None], axis=axis,
+            descending=descending)
+    return OpLib.add('Sort', inputs, axis=axis,
+                     descending=descending, num_outputs=2)
 
 
 @OpSchema.num_inputs(1)
@@ -1555,7 +1326,7 @@ def split(
     print(dragon.split(x, num_or_size_splits=(1, 2)))
     ```
 
-    The ``axis`` can be negative representing the last-k axis:
+    :attr:`axis` can be negative:
 
     ```python
     x = dragon.constant([[1, 2], [3, 4], [5, 6]])
@@ -1578,7 +1349,7 @@ def split(
     num_or_size_splits: Union[int, Sequence[int]]
         The number or size of chunks.
     axis : int, optional, default=0
-        The axis to split, can be negative.
+        The axis to split.
     slice_points : Sequence[int], optional
         The optional slice points.
 
@@ -1588,8 +1359,6 @@ def split(
         The outputs.
 
     """
-    args = ArgHelper.parse(locals())
-    op_lib = array_ops_lib.Split
     if nest.is_sequence(num_or_size_splits):
         num_splits = len(num_or_size_splits)
         size_splits = num_or_size_splits
@@ -1602,28 +1371,23 @@ def split(
                 'Excepted %d values for <slice_points>.'
                 % len(slice_points))
     if context.executing_eagerly():
-        return op_lib \
-            .instantiate(
-                axis=axis,
-                size_splits=size_splits,
-                slice_points=slice_points,
-            ).apply([inputs], num_splits)
-    else:
-        args.pop('num_or_size_splits')
-        args['size_splits'] = size_splits
-        return op_lib.blend(num_outputs=num_splits, **args)
+        return OpLib.execute(
+            'Split', inputs, outputs=[None] * num_splits,
+            axis=axis, size_splits=size_splits, slice_points=slice_points)
+    return OpLib.add('Split', inputs, num_outputs=num_splits, axis=axis,
+                     size_splits=size_splits, slice_points=slice_points, **kwargs)
 
 
 @OpSchema.num_inputs(1)
-def squeeze(inputs, axis=None, **kwargs):
+def squeeze(inputs, axis=None, copy=True, **kwargs):
     """Remove the dimensions of input with size 1.
 
-    The argument ``axis`` could be negative or **None**:
+    :attr:`axis` could be negative or ``None``:
 
     ```python
     x = dragon.ones((1, 2, 2, 1))
 
-    # Remove all matched dimensions if ``axis`` is None
+    # Remove all matched dimensions if axis is None
     # Otherwise, only the specified axes will be removed
     print(dragon.squeeze(x).shape)          # (1, 2, 2, 1) -> (2, 2)
     print(dragon.squeeze(x, axis=0).shape)  # (1, 2, 2, 1) -> (2, 2, 1)
@@ -1632,7 +1396,7 @@ def squeeze(inputs, axis=None, **kwargs):
     print(dragon.squeeze(x, axis=3).shape)   # (1, 2, 2, 1) -> (1, 2, 2)
     print(dragon.squeeze(x, axis=-1).shape)  # Equivalent
 
-    # Also, ``axis`` could be a sequence of integers
+    # Also, axis could be a sequence of integers
     print(dragon.squeeze(x, axis=[0, 3]).shape)  # (1, 2, 2, 1) -> (2, 2)
     ```
 
@@ -1642,6 +1406,8 @@ def squeeze(inputs, axis=None, **kwargs):
         The input tensor.
     axis : Union[int, Sequence[int]], optional
         The axis to remove.
+    copy : bool, optional, default=True
+        Return a new tensor or call in-place.
 
     Returns
     -------
@@ -1649,31 +1415,40 @@ def squeeze(inputs, axis=None, **kwargs):
         The output tensor.
 
     """
-    args = ArgHelper.parse(locals())
-    args.pop('axis')
-    args['axes'] = None if axis is None else nest.flatten(axis)
-    inplace = args.pop('inplace') if 'inplace' in args else False
-    op_lib = array_ops_lib.Squeeze
+    axes = None if axis is None else nest.flatten(axis)
     if context.executing_eagerly():
-        return op_lib \
-            .instantiate(axes=args['axes']) \
-            .apply([inputs], inplace=inplace)
-    else:
-        return op_lib.blend(**args)
+        return OpLib.execute(
+            'Squeeze', inputs, outputs=[None] if copy else inputs, axes=axes)
+    return OpLib.add('Squeeze', inputs, axes=axes, **kwargs)
 
 
 @OpSchema.num_inputs(1, 2147483647)
 def stack(inputs, axis=0, **kwargs):
     """Stack the inputs along the given axis.
 
-    All the dimensions of inputs should be same.
+    All the dimensions of inputs should be same:
+
+    ```python
+    x1 = dragon.ones(shape=(2, 3))
+    x2 = dragon.zeros(shape=(2, 4))
+    y = dragon.stack([x1, x1])  # Ok
+    z = dragon.stack([x1, x2])  # Wrong
+    ```
+
+    :attr:`axis` can be negative:
+
+    ```python
+    x = dragon.constant([[1, 2], [3, 4]])
+    y = dragon.stack([x, x], axis=1)
+    z = dragon.stack([x, x], axis=-1)  # Equivalent
+    ```
 
     Parameters
     ----------
     inputs : Sequence[dragon.Tensor]
-        The inputs.
+        The input tensors.
     axis : int, optional, default=0
-        The axis to stack, can be negative.
+        The axis to stack.
 
     Returns
     -------
@@ -1681,21 +1456,16 @@ def stack(inputs, axis=0, **kwargs):
         The output tensor.
 
     """
-    args = ArgHelper.parse(locals())
-    op_lib = array_ops_lib.Stack
     if context.executing_eagerly():
-        return op_lib \
-            .instantiate(axis=axis) \
-            .apply(inputs)
-    else:
-        return op_lib.blend(**args)
+        return OpLib.execute('Stack', inputs, axis=axis)
+    return OpLib.add('Stack', inputs, axis=axis, **kwargs)
 
 
 @OpSchema.num_inputs(1)
 def sum(inputs, axis=None, keepdims=False, **kwargs):
     """Compute the sum value of elements along the given axis.
 
-    The argument ``axis`` could be negative or **None**:
+    :attr:`axis` could be negative or ``None``:
 
     ```python
     x = dragon.constant([[1, 2, 3], [4, 5, 6]])
@@ -1704,12 +1474,12 @@ def sum(inputs, axis=None, keepdims=False, **kwargs):
     print(dragon.math.sum(x, 1))
     print(dragon.math.sum(x, -1))  # Equivalent
 
-    # If ``axis`` is None, the vector-style reduction
+    # If axis is None, the vector-style reduction
     # will be applied to return a scalar result
-    print(dragon.math.sum(x))  # Result is 21
+    print(dragon.math.sum(x))  # 21
 
-    # Also, ``axis`` could be a sequence of int
-    print(dragon.math.sum(x, [0, 1]))  # Result is 21
+    # Also, axis could be a sequence of integers
+    print(dragon.math.sum(x, [0, 1]))  # 21
     ```
 
     Parameters
@@ -1727,32 +1497,31 @@ def sum(inputs, axis=None, keepdims=False, **kwargs):
         The output tensor.
 
     """
-    args = ArgHelper.parse(locals())
-    args.pop('axis')
-    args['axes'] = None if axis is None else nest.flatten(axis)
-    op_lib = array_ops_lib.Reduce
+    axes = None if axis is None else nest.flatten(axis)
     if context.executing_eagerly():
-        return op_lib  \
-            .instantiate(
-                operation='Sum',
-                axes=args['axes'],
-                keepdims=keepdims,
-            ).apply([inputs])
-    else:
-        return op_lib.blend('ReduceSum', **args)
+        return OpLib.execute('ReduceSum', inputs, axes=axes, keepdims=keepdims)
+    return OpLib.add('ReduceSum', inputs,
+                     axes=axes, keepdims=keepdims, **kwargs)
 
 
 @OpSchema.num_inputs(1)
-@ArgHelper.repeated_desc(name='repeats')
+@OpSchema.convert_arg(name='repeats')
 def tile(inputs, repeats, **kwargs):
-    r"""Tile the input according to the given repeats.
+    """Repeat elements along each axis of input.
+
+    Examples:
+
+    ```python
+    x = dragon.constant([[1, 2], [3, 4]])
+    print(dragon.tile(x, repeats=(1, 2)))  # [[1, 2, 1, 2], [3, 4, 3, 4]]
+    ```
 
     Parameters
     ----------
     inputs : dragon.Tensor
         The input tensor.
-    repeats : Sequence[Union[int, dragon.Tensor]]
-        The number of repetitions for each axis.
+    repeats : Union[Sequence[int], dragon.Tensor]]
+        The repetition for each axis.
 
     Returns
     -------
@@ -1760,18 +1529,15 @@ def tile(inputs, repeats, **kwargs):
         The output tensor.
 
     """
-    args = ArgHelper.parse(locals())
-    op_lib = array_ops_lib.Tile
+    args = OpSchema.parse_args(locals())
     if context.executing_eagerly():
-        return op_lib \
-            .instantiate(ndim=len(args['repeats'])) \
-            .apply([inputs], args['repeats'])
-    else:
-        return op_lib.blend(**args)
+        return OpLib.execute(
+            'Tile', inputs, ndim=len(args['repeats']), repeats=args['repeats'])
+    return OpLib.add('Tile', **args)
 
 
 @OpSchema.num_inputs(1)
-@ArgHelper.repeated_desc('perm')
+@OpSchema.convert_arg('perm')
 def transpose(inputs, perm=None, **kwargs):
     r"""Permute the dimensions of input.
 
@@ -1790,7 +1556,7 @@ def transpose(inputs, perm=None, **kwargs):
     ----------
     inputs : dragon.Tensor
         The input tensor.
-    perm : Sequence[Union[int, dragon.Tensor]], optional
+    perm : Union[Sequence[int], dragon.Tensor]], optional
         The output permutation.
 
     Returns
@@ -1799,34 +1565,113 @@ def transpose(inputs, perm=None, **kwargs):
         The output tensor.
 
     """
-    args = ArgHelper.parse(locals())
-    op_lib = array_ops_lib.Transpose
+    args = OpSchema.parse_args(locals())
     if context.executing_eagerly():
-        return op_lib \
-            .instantiate(
-                ndim=len(args['perm']) if perm is not None else 0,
-            ).apply([inputs], args['perm'])
-    else:
-        return op_lib.blend(**args)
+        return OpLib.execute(
+            'Transpose', inputs,
+            ndim=len(args['perm']) if perm is not None else 0,
+            perm=args['perm'])
+    return OpLib.add('Transpose', **args)
+
+
+@OpSchema.num_inputs(1)
+def tril(inputs, k=0, copy=True, **kwargs):
+    r"""Return the lower triangular part of input.
+
+    .. math::
+        \text{out}_{ij} =
+            \begin{cases}
+                0, & \text{ if } j > i + k \\
+                \text{input}_{ij}, & \text{ otherwise }
+            \end{cases}
+
+    Examples:
+
+    ```python
+    x = dragon.ones((3, 3))
+    print(dragon.tril(x))
+    ```
+
+    Parameters
+    ----------
+    inputs : dragon.Tensor
+        The input tensor.
+    k : int, optional, default=0
+        Diagonal above which to zero elements.
+    copy : bool, optional, default=True
+        Return a new tensor or call in-place.
+
+    Returns
+    -------
+    dragon.Tensor
+        The output tensor.
+
+    """
+    if context.executing_eagerly():
+        return OpLib.execute(
+            'Triangular', inputs, outputs=[None] if copy else inputs,
+            k=k, upper=False)
+    return OpLib.add('Triangular', inputs, k=k, upper=False, **kwargs)
+
+
+@OpSchema.num_inputs(1)
+def triu(inputs, k=0, copy=True, **kwargs):
+    r"""Return the upper triangular part of input.
+
+    .. math::
+        \text{out}_{ij} =
+            \begin{cases}
+                0, & \text{ if } j < i + k \\
+                \text{input}_{ij}, & \text{ otherwise }
+            \end{cases}
+
+    Examples:
+
+    ```python
+    x = dragon.ones((3, 3))
+    print(dragon.triu(x))
+    ```
+
+    Parameters
+    ----------
+    inputs : dragon.Tensor
+        The input tensor.
+    k : int, optional, default=0
+        Diagonal below which to zero elements.
+    copy : bool, optional, default=True
+        Return a new tensor or call in-place.
+
+    Returns
+    -------
+    dragon.Tensor
+        The output tensor.
+
+    """
+    if context.executing_eagerly():
+        return OpLib.execute(
+            'Triangular', inputs, outputs=[None] if copy else inputs,
+            k=k, upper=True)
+    return OpLib.add('Triangular', inputs, k=k, upper=True, **kwargs)
 
 
 @OpSchema.num_inputs(1)
 def top_k(inputs, k=1, axis=-1, largest=True, sorted=True, **kwargs):
     """Return the top-K largest or smallest elements along the given axis.
 
-    By default, the last axis is chosen:
+    :attr:`axis` could be negative:
 
     ```python
+    # A negative axis is the last-k axis
     x = dragon.constant([[1, 2, 3], [3, 2, 1]])
-    value1, index1 = dragon.math.top_k(x, k=2)
-    value2, index2 = dragon.math.top_k(x, k=2, axis=1)  # Equivalent
+    value1, index1 = dragon.math.top_k(x, k=2, axis=1)
+    value2, index2 = dragon.math.top_k(x, k=2, axis=-1)  # Equivalent
     ```
 
-    If ``largest`` is **False**, the k smallest elements are returned:
+    If ``largest`` is ``False``, the k smallest elements are returned:
 
     ```python
     x = dragon.constant([1, 2, 3])
-    _, index1 = dragon.math.top_k(-x)
+    _, index1 = dragon.math.top_k(-x, largest=True)
     _, index2 = dragon.math.top_k(x, largest=False)  # Equivalent
     ```
 
@@ -1837,7 +1682,7 @@ def top_k(inputs, k=1, axis=-1, largest=True, sorted=True, **kwargs):
     k : int, optional, default=1
         The number of top elements to select.
     axis : int, optional, default=-1
-        The axis to select elements.
+        The axis to retrieve.
     largest : bool, optional, default=True
         Return largest or smallest elements.
     sorted : bool, optional, default=True
@@ -1849,19 +1694,12 @@ def top_k(inputs, k=1, axis=-1, largest=True, sorted=True, **kwargs):
         The value and index tensor.
 
     """
-    args = ArgHelper.parse(locals())
-    op_lib = array_ops_lib.TopK
     if context.executing_eagerly():
-        return op_lib \
-            .instantiate(
-                k=k,
-                axis=axis,
-                largest=largest,
-                sorted=sorted,
-            ).apply([inputs])
-    else:
-        args['num_outputs'] = 2
-        return op_lib.blend(**args)
+        return OpLib.execute(
+            'TopK', inputs, outputs=[None, None], k=k, axis=axis,
+            largest=largest, sorted=sorted)
+    return OpLib.add('TopK', inputs, num_outputs=2, k=k, axis=axis,
+                     largest=largest, sorted=sorted, **kwargs)
 
 
 @OpSchema.num_inputs(1)
@@ -1905,16 +1743,14 @@ def unique(inputs, return_inverse=False, return_counts=False, **kwargs):
         The counts tensor.
 
     """
-    args = ArgHelper.parse(locals())
-    op_lib = array_ops_lib.Unique
+    num_outputs = 1 + return_inverse + return_counts
     if context.executing_eagerly():
-        return op_lib.instantiate(
-            return_inverse=return_inverse,
-            return_counts=return_counts,
-        ).apply([inputs])
-    else:
-        num_outputs = 1 + return_inverse + return_counts
-        return op_lib.blend(num_outputs=num_outputs, **args)
+        return OpLib.execute(
+            'Unique', inputs, outputs=[None] * num_outputs,
+            return_inverse=return_inverse, return_counts=return_counts)
+    return OpLib.add('Unique', inputs, num_outputs=num_outputs,
+                     return_inverse=return_inverse,
+                     return_counts=return_counts, **kwargs)
 
 
 @OpSchema.num_inputs(1, 3)
@@ -1928,12 +1764,27 @@ def where(inputs, **kwargs):
                 \text{input2}_{i}, & \text{ otherwise }
             \end{cases}
 
-    Return the index of **True** elements, if only the ``condition`` is given.
+    Examples:
+
+    ```python
+    a = dragon.constant([1, 2, 3])
+    b = dragon.constant([3, 2, 1])
+    print(dragon.where([a > b, a, b]))  # [3, 2, 3]
+    ```
+
+    If only the ``condition`` is given,
+    return the coordinates of ``True`` elements:
+
+    ```python
+    x = dragon.constant([[True, False, True],
+                         [False, True, True]])
+    print(dragon.where(x))  # [[0, 0], [0, 2], [1, 1], [1, 2]]
+    ```
 
     Parameters
     ----------
     inputs : Sequence[dragon.Tensor]
-        The input1, input2 and condition tensor.
+        The condition, input1 and input2 tensor.
 
     Returns
     -------
@@ -1942,14 +1793,12 @@ def where(inputs, **kwargs):
 
     See Also
     --------
-    dragon.nonzero()
+    `dragon.nonzero(...)`_
 
     """
     if types.is_tensor(inputs) or len(inputs) == 1:
         return nonzero(inputs, **kwargs)
-    args = ArgHelper.parse(locals())
-    op_lib = array_ops_lib.Where
+    args = OpSchema.parse_args(locals())
     if context.executing_eagerly():
-        return op_lib.instantiate().apply(inputs)
-    else:
-        return op_lib.blend(**args)
+        return OpLib.execute('Where', inputs)
+    return OpLib.add('Where', inputs, **kwargs)

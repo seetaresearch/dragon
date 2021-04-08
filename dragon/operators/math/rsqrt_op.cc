@@ -8,7 +8,7 @@ template <class Context>
 template <typename T>
 void RsqrtGradientOp<Context>::DoRunWithType() {
   auto &Y = Input(0), &dY = Input(1), *dX = Output(0);
-  kernel::RsqrtGrad(
+  kernels::RsqrtGrad(
       Y.count(),
       dY.template data<T, Context>(),
       Y.template data<T, Context>(),
@@ -18,7 +18,7 @@ void RsqrtGradientOp<Context>::DoRunWithType() {
 
 template <class Context>
 void RsqrtGradientOp<Context>::RunOnDevice() {
-  DispatchHelper<FloatingTensorTypes>::Call(this, Input(0));
+  DispatchHelper<dtypes::Floating>::Call(this, Input(0));
 }
 
 DEPLOY_CPU_OPERATOR(RsqrtGradient);

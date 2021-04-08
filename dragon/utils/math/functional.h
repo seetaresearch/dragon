@@ -21,7 +21,7 @@ namespace dragon {
 namespace math {
 
 /*
- * Binary Arithmetic Functors
+ * Arithmetic Functors
  */
 
 template <typename T>
@@ -442,6 +442,215 @@ struct PowFunctor<half2> {
   }
 };
 #endif
+
+/*
+ * Logical Functors
+ */
+
+template <typename T>
+struct NotFunctor {
+#if defined(__CUDA_ARCH__)
+  inline __device__ bool operator()(const T& x) const {
+    return !x;
+  }
+#else
+  inline bool operator()(const T& x) const {
+    return !x;
+  }
+#endif
+};
+
+template <>
+struct NotFunctor<float16> {
+#if defined(__CUDA_ARCH__)
+  inline __device__ bool operator()(const float16& x) const {
+    return !__half2float(*reinterpret_cast<const half*>(&x));
+  }
+#else
+  inline bool operator()(const float16& x) const {
+    return !convert::To<float>(x);
+  }
+#endif
+};
+
+#if defined(__CUDA_ARCH__)
+template <>
+struct NotFunctor<half> {
+  inline __device__ bool operator()(const half& x) const {
+    return !__half2float(x);
+  }
+};
+#endif
+
+template <typename T>
+struct AndFunctor {
+#if defined(__CUDA_ARCH__)
+  inline __device__ bool operator()(const T& lhs, const T& rhs) const {
+    return lhs && rhs;
+  }
+#else
+  inline bool operator()(const T& lhs, const T& rhs) const {
+    return lhs && rhs;
+  }
+#endif
+};
+
+template <>
+struct AndFunctor<float16> {
+#if defined(__CUDA_ARCH__)
+  inline __device__ bool operator()(const float16& lhs, const float16& rhs)
+      const {
+    return __half2float(*reinterpret_cast<const half*>(&lhs)) &&
+        __half2float(*reinterpret_cast<const half*>(&rhs));
+  }
+#else
+  inline bool operator()(const float16& lhs, const float16& rhs) const {
+    return convert::To<float>(lhs) && convert::To<float>(rhs);
+  }
+#endif
+};
+
+#if defined(__CUDA_ARCH__)
+template <>
+struct AndFunctor<half> {
+  inline __device__ bool operator()(const half& lhs, const half& rhs) const {
+    return __half2float(lhs) && __half2float(rhs);
+  }
+};
+#endif
+
+template <typename T>
+struct OrFunctor {
+#if defined(__CUDA_ARCH__)
+  inline __device__ bool operator()(const T& lhs, const T& rhs) const {
+    return lhs || rhs;
+  }
+#else
+  inline bool operator()(const T& lhs, const T& rhs) const {
+    return lhs || rhs;
+  }
+#endif
+};
+
+template <>
+struct OrFunctor<float16> {
+#if defined(__CUDA_ARCH__)
+  inline __device__ bool operator()(const float16& lhs, const float16& rhs)
+      const {
+    return __half2float(*reinterpret_cast<const half*>(&lhs)) ||
+        __half2float(*reinterpret_cast<const half*>(&rhs));
+  }
+#else
+  inline bool operator()(const float16& lhs, const float16& rhs) const {
+    return convert::To<float>(lhs) || convert::To<float>(rhs);
+  }
+#endif
+};
+
+#if defined(__CUDA_ARCH__)
+template <>
+struct OrFunctor<half> {
+  inline __device__ bool operator()(const half& lhs, const half& rhs) const {
+    return __half2float(lhs) || __half2float(rhs);
+  }
+};
+#endif
+
+template <typename T>
+struct XorFunctor {
+#if defined(__CUDA_ARCH__)
+  inline __device__ bool operator()(const T& lhs, const T& rhs) const {
+    return convert::To<bool>(lhs) ^ convert::To<bool>(rhs);
+  }
+#else
+  inline bool operator()(const T& lhs, const T& rhs) const {
+    return convert::To<bool>(lhs) ^ convert::To<bool>(rhs);
+  }
+#endif
+};
+
+template <>
+struct XorFunctor<float16> {
+#if defined(__CUDA_ARCH__)
+  inline __device__ bool operator()(const float16& lhs, const float16& rhs)
+      const {
+    return convert::To<bool>(
+               __half2float(*reinterpret_cast<const half*>(&lhs))) ^
+        convert::To<bool>(__half2float(*reinterpret_cast<const half*>(&rhs)));
+  }
+#else
+  inline bool operator()(const float16& lhs, const float16& rhs) const {
+    return convert::To<bool>(convert::To<float>(lhs)) ^
+        convert::To<bool>(convert::To<float>(rhs));
+  }
+#endif
+};
+
+#if defined(__CUDA_ARCH__)
+template <>
+struct XorFunctor<half> {
+  inline __device__ bool operator()(const half& lhs, const half& rhs) const {
+    return convert::To<bool>(__half2float(lhs)) ^
+        convert::To<bool>(__half2float(rhs));
+  }
+};
+#endif
+
+/*
+ * Bitwise Functors
+ */
+
+template <typename T>
+struct BitNotFunctor {
+#if defined(__CUDA_ARCH__)
+  inline __device__ T operator()(const T& x) const {
+    return ~x;
+  }
+#else
+  inline T operator()(const T& x) const {
+    return ~x;
+  }
+#endif
+};
+
+template <typename T>
+struct BitAndFunctor {
+#if defined(__CUDA_ARCH__)
+  inline __device__ T operator()(const T& lhs, const T& rhs) const {
+    return lhs & rhs;
+  }
+#else
+  inline T operator()(const T& lhs, const T& rhs) const {
+    return lhs & rhs;
+  }
+#endif
+};
+
+template <typename T>
+struct BitOrFunctor {
+#if defined(__CUDA_ARCH__)
+  inline __device__ T operator()(const T& lhs, const T& rhs) const {
+    return lhs | rhs;
+  }
+#else
+  inline T operator()(const T& lhs, const T& rhs) const {
+    return lhs | rhs;
+  }
+#endif
+};
+
+template <typename T>
+struct BitXorFunctor {
+#if defined(__CUDA_ARCH__)
+  inline __device__ T operator()(const T& lhs, const T& rhs) const {
+    return lhs ^ rhs;
+  }
+#else
+  inline T operator()(const T& lhs, const T& rhs) const {
+    return lhs ^ rhs;
+  }
+#endif
+};
 
 /*
  * Compare Functors

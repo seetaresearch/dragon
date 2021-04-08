@@ -38,8 +38,10 @@ class DRAGON_API Workspace {
       const string& scope = "",
       const bool zero_based = false);
 
-  /* \brief Register an alias for the target */
-  void RegisterAlias(const string& target, const string& alias);
+  /* \brief Set an alias for the target */
+  void SetAlias(const string& target, const string& alias) {
+    alias_map_[alias] = target;
+  }
 
   /*! \brief Return whether tensor is existing */
   bool HasTensor(const string& name, bool external = true) const {
@@ -47,19 +49,13 @@ class DRAGON_API Workspace {
   }
 
   /*! \brief Create the tensor */
-  Tensor* CreateTensor(const string& name, FillerInfo* filler = nullptr);
+  Tensor* CreateTensor(const string& name);
 
   /*! \brief Try to return the tensor */
   Tensor* TryGetTensor(const string& name, bool external = true) const;
 
   /*! \brief Return the tensor */
   Tensor* GetTensor(const string& name, bool external = true) const;
-
-  /*! \brief Reset the tensor */
-  void ResetTensor(const string& name);
-
-  /*! \brief Return the filler info */
-  FillerInfo* GetFillerInfo(const string& name);
 
   /*! \brief Run the operator */
   void RunOperator(const OperatorDef& def);
@@ -91,7 +87,7 @@ class DRAGON_API Workspace {
       const vector<size_t>& segments,
       const string& name = "data:0") {
     vector<void*> group(segments.size());
-    group[0] = CreateTensor("/share/buffer/" + name)
+    group[0] = CreateTensor("shared/buffer/" + name)
                    ->Reshape({(int64_t)std::accumulate(
                        segments.begin(), segments.end(), size_t(0))})
                    ->template mutable_data<uint8_t, Context>();
@@ -122,25 +118,22 @@ class DRAGON_API Workspace {
   /*! \brief The workspace name */
   string name_;
 
-  /*! \brief The external tensors */
-  Map<string, Tensor*> external_tensor_map_;
-
   /*! \brief The unique indices */
   Map<string, Map<string, int64_t>> unique_index_map_;
 
-  /*! \brief The registered fillers */
-  Map<string, FillerInfo> filler_map_;
-
-  /*! \brief The registered aliases */
+  /*! \brief The created aliases */
   Map<string, string> alias_map_;
 
-  /*! \brief The cached tensors */
+  /*! \brief The created tensors */
   Map<string, unique_ptr<Tensor>> tensor_map_;
 
-  /*! \brief The cached operators */
+  /*! \brief The external tensors */
+  Map<string, Tensor*> external_tensor_map_;
+
+  /*! \brief The created operators */
   Map<string, unique_ptr<OperatorBase>> operator_map_;
 
-  /*! \brief The cached graphs */
+  /*! \brief The created graphs */
   Map<string, unique_ptr<GraphBase>> graph_map_;
 
   DISABLE_COPY_AND_ASSIGN(Workspace);

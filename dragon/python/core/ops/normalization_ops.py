@@ -15,15 +15,13 @@ from __future__ import division
 from __future__ import print_function
 
 from dragon.core import distributed
-from dragon.core.eager import context
-from dragon.core.ops import normalization_ops_lib
-from dragon.core.ops.utils import ArgHelper
-from dragon.core.ops.utils import OpSchema
-from dragon.core.util import nest
+from dragon.core.autograph import context
+from dragon.core.autograph.op_impl import OpLib
+from dragon.core.autograph.op_impl import OpSchema
 
 
 @OpSchema.num_inputs(5)
-@ArgHelper.desc('momentum', as_target=False)
+@OpSchema.convert_arg('momentum', as_target=False)
 def batch_norm(
     inputs,
     axis=-1,
@@ -37,12 +35,14 @@ def batch_norm(
 
     The normalization is defined as:
 
-    .. math:: y = \frac{x - \mathrm{E}[x]}{\sqrt{\mathrm{Var}[x] + \epsilon}} * \gamma + \beta
+    .. math:: y = \frac{x - \mathrm{E}[x]}
+                       {\sqrt{\mathrm{Var}[x] + \epsilon}}
+                  * \gamma + \beta
 
     The running average of statistics are calculated as:
 
-    .. math:: x_{\text{running}} = \text{momentum} * x_{\text{running}} +
-                                   (1 - \text{momentum}) * x_{\text{batch}}
+    .. math:: x_{\text{running}} = \text{momentum} * x_{\text{running}}
+                                   + (1 - \text{momentum}) * x_{\text{batch}}
 
     Parameters
     ----------
@@ -63,31 +63,34 @@ def batch_norm(
         The output tensor.
 
     """
-    args = ArgHelper.parse(locals())
+    args = OpSchema.parse_args(locals())
     args['epsilon'] = float(epsilon)
-    op_lib = normalization_ops_lib.BatchNorm
     if context.executing_eagerly():
-        return op_lib \
-            .instantiate(
-                axis=axis,
-                epsilon=args['epsilon'],
-                use_stats=use_stats,
-            ).apply(inputs, args['momentum'])
-    else:
-        return op_lib.blend(**args)
+        return OpLib.execute(
+            'BatchNorm', inputs, axis=axis, epsilon=args['epsilon'],
+            use_stats=use_stats, momentum=args['momentum'])
+    return OpLib.add('BatchNorm', **args)
 
 
 @OpSchema.num_inputs(3)
-def group_norm(inputs, axis=-1, group=32, epsilon=1e-5, **kwargs):
+def group_norm(inputs, axis=-1, group=0, epsilon=1e-5, **kwargs):
     r"""Apply the group normalization.
     `[Wu & He, 2018] <https://arxiv.org/abs/1803.08494>`_.
 
     The normalization is defined as:
 
-    .. math:: y = \frac{x - \mathrm{E}[x]}{\sqrt{\mathrm{Var}[x] + \epsilon}} * \gamma + \beta
+    .. math:: y = \frac{x - \mathrm{E}[x]}
+                       {\sqrt{\mathrm{Var}[x] + \epsilon}}
+                  * \gamma + \beta
 
-    Note that it turns out to be **InstanceNorm**, if ``group`` is  **0**,
-    or **LayerNorm**, if ``group`` is **1**.
+    :attr:`group` could be zero to apply the instance normalization:
+
+    ```python
+    gamma, beta = dragon.ones((3,)), dragon.zeros((3,))
+    x = dragon.constant([[1., 2., 3.], [4., 5., 6.]], dtype=gamma.dtype)
+    y = dragon.nn.group_norm([x, gamma, beta], group=0)
+    print(y)  # [[0., 0., 0.], [0., 0., 0.]]
+    ```
 
     Parameters
     ----------
@@ -95,7 +98,7 @@ def group_norm(inputs, axis=-1, group=32, epsilon=1e-5, **kwargs):
         The tensor ``x``, ``gamma`` and ``beta``.
     axis : int, optional, default=-1
         The channel axis.
-    group : int, optional, default=32
+    group : int, optional, default=0
         The group size.
     epsilon : float, optional, default=1e-5
         The value to :math:`\epsilon`.
@@ -106,18 +109,12 @@ def group_norm(inputs, axis=-1, group=32, epsilon=1e-5, **kwargs):
         The output tensor.
 
     """
-    args = ArgHelper.parse(locals())
-    args['epsilon'] = float(epsilon)
-    op_lib = normalization_ops_lib.GroupNorm
+    epsilon = float(epsilon)
     if context.executing_eagerly():
-        return op_lib \
-            .instantiate(
-                axis=axis,
-                group=group,
-                epsilon=args['epsilon'],
-            ).apply(inputs)
-    else:
-        return op_lib.blend(**args)
+        return OpLib.execute(
+            'GroupNorm', inputs, axis=axis, group=group, epsilon=epsilon)
+    return OpLib.add('GroupNorm', inputs, axis=axis,
+                     group=group, epsilon=epsilon, **kwargs)
 
 
 @OpSchema.num_inputs(3)
@@ -127,7 +124,9 @@ def instance_norm(inputs, axis=-1, epsilon=1e-5, **kwargs):
 
     The normalization is defined as:
 
-    .. math:: \text{out} = \frac{x - \mathrm{E}[x]}{\sqrt{\mathrm{Var}[x] + \epsilon}} * \gamma + \beta
+    .. math:: y = \frac{x - \mathrm{E}[x]}
+                       {\sqrt{\mathrm{Var}[x] + \epsilon}}
+                  * \gamma + \beta
 
     Parameters
     ----------
@@ -154,14 +153,16 @@ def layer_norm(inputs, axis=-1, epsilon=1e-5, **kwargs):
 
     The normalization is defined as:
 
-    .. math:: \text{out} = \frac{x - \mathrm{E}[x]}{\sqrt{\mathrm{Var}[x] + \epsilon}} * \gamma + \beta
+    .. math:: y = \frac{x - \mathrm{E}[x]}
+                       {\sqrt{\mathrm{Var}[x] + \epsilon}}
+                  * \gamma + \beta
 
     Parameters
     ----------
     inputs : Sequence[dragon.Tensor]
         The tensor ``x``, ``gamma`` and ``beta``.
     axis : int, optional, default=-1
-        The channel axis.
+        The start axis of normalized dimensions.
     epsilon : float, optional, default=1e-5
         The value to :math:`\epsilon`.
 
@@ -171,32 +172,43 @@ def layer_norm(inputs, axis=-1, epsilon=1e-5, **kwargs):
         The output tensor.
 
     """
-    return group_norm(inputs, axis=axis, group=1, epsilon=epsilon, **kwargs)
+    epsilon = float(epsilon)
+    if context.executing_eagerly():
+        return OpLib.execute(
+            'LayerNorm', inputs, axis=axis, epsilon=epsilon)
+    return OpLib.add('LayerNorm', inputs, axis=axis, epsilon=epsilon, **kwargs)
 
 
 @OpSchema.num_inputs(1)
-def lp_normalize(inputs, axis=None, p=2, epsilon=1e-12, reduction='sum', **kwargs):
+def lp_normalize(
+    inputs,
+    axis=-1,
+    end_axis=None,
+    p=2,
+    epsilon=1e-12,
+    reduction='sum',
+    **kwargs
+):
     r"""Apply the lp normalization.
 
-    The **Lp-Normalization** is defined as:
+    The normalization is defined as:
 
-    .. math:: \text{out} = \frac{x}{\max(\left\|x\right\|_{p}, \epsilon)}
+    .. math:: y = \frac{x}{\max(\left\|x\right\|_{p}, \epsilon)}
 
-    The argument ``axis`` could be negative or **None**:
+    :attr:`axis` could be negative:
 
     ```python
     x = dragon.constant([[1, 2, 3], [4, 5, 6]], 'float32')
-
-    # A negative ``axis`` is the last-k axis
+    # A negative axis is the last-k axis
     print(dragon.math.lp_normalize(x, 1))
     print(dragon.math.lp_normalize(x, -1))  # Equivalent
+    ```
 
-    # If ``axis`` is None, the vector-style reduction
-    # will be applied to compute a norm scalar
-    print(dragon.math.lp_normalize(x))
+    More than one axis could be specified to reduce:
 
-    # Also, ``axis`` could be a sequence of integers
-    print(dragon.math.lp_normalize(x, [0, 1]))
+    ```python
+    # Along the continuous axes: [axis, end_axis]
+    print(dragon.math.lp_normalize(x, axis=0, end_axis=1))
     ```
 
     Parameters
@@ -205,8 +217,10 @@ def lp_normalize(inputs, axis=None, p=2, epsilon=1e-12, reduction='sum', **kwarg
         The tensor :math:`x`.
     p : int, optional, default=2
         The order of the normalization.
-    axis : Union[int, Sequence[int]], optional
-        The axis to compute the norm.
+    axis : int, optional, default=-1
+        The first axis to reduce.
+    end_axis : int, optional
+        The last axis to reduce.
     epsilon : float, optional, default=1e-12
         The value to :math:`\epsilon`.
     reduction : {'sum', 'mean'}, optional
@@ -218,30 +232,14 @@ def lp_normalize(inputs, axis=None, p=2, epsilon=1e-12, reduction='sum', **kwarg
         The output tensor.
 
     """
-    args = ArgHelper.parse(locals())
-    if axis is None:
-        args['axis'], args['num_axes'] = 0, -1
-    else:
-        axes = nest.flatten(axis)
-        axes.sort()
-        if axes[-1] != (axes[0] + len(axes) - 1):
-            raise ValueError('The <axis> should be a continuous sequence.')
-        args['axis'], args['num_axes'] = axes[0], len(axes)
-    args['num_axes'] = kwargs.get('num_axes', args['num_axes'])
-    args['epsilon'] = float(epsilon)
-    args['reduction'] = reduction.upper()
-    op_lib = normalization_ops_lib.LpNormalize
+    epsilon = float(epsilon)
+    reduction = reduction.upper()
     if context.executing_eagerly():
-        return op_lib \
-            .instantiate(
-                p=p,
-                axis=args['axis'],
-                num_axes=args['num_axes'],
-                epsilon=args['epsilon'],
-                reduction=args['reduction'],
-            ).apply([inputs])
-    else:
-        return op_lib.blend(**args)
+        return OpLib.execute(
+            'LpNormalize', inputs, p=p, axis=axis, end_axis=end_axis,
+            epsilon=epsilon, reduction=reduction)
+    return OpLib.add('LpNormalize', inputs, p=p, axis=axis, end_axis=end_axis,
+                     epsilon=epsilon, reduction=reduction, **kwargs)
 
 
 @OpSchema.num_inputs(1)
@@ -260,9 +258,9 @@ def local_response_norm(
     The normalization is defined as:
 
     .. math::
-        out_{i} = x_{i}\left(k + \frac{\alpha}{n}
-                       \sum_{j=\max(0, i-n/2)}^{\min(N-1,i+n/2)}x_{j}^2
-                       \right)^{-\beta}
+        y_{i} = x_{i}\left(k + \frac{\alpha}{n}
+                     \sum_{j=\max(0, i-n/2)}^{\min(N-1,i+n/2)}x_{j}^2
+                     \right)^{-\beta}
 
     Parameters
     ----------
@@ -285,27 +283,22 @@ def local_response_norm(
         The output tensor.
 
     """
-    args = ArgHelper.parse(locals())
+    args = OpSchema.parse_args(locals())
     if data_format not in ('NCHW', 'NHWC'):
         raise ValueError('Unsupported data format: %s' % data_format)
-    args['alpha'], args['beta'], args['bias'] = \
-        float(alpha), float(beta), float(bias)
-    op_lib = normalization_ops_lib.LocalResponseNorm
+    args['alpha'] = float(alpha)
+    args['beta'] = float(beta)
+    args['bias'] = float(bias)
     if context.executing_eagerly():
-        return op_lib \
-            .instantiate(
-                size=size,
-                alpha=args['alpha'],
-                beta=args['beta'],
-                bias=args['bias'],
-                data_format=data_format,
-            ).apply([inputs])
-    else:
-        return op_lib.blend('LRN', **args)
+        op = op_lib.create(
+            'LRN', size=size, alpha=args['alpha'], beta=args['beta'],
+            bias=args['bias'], data_format=data_format)
+        return op.execute([inputs])
+    return op_lib.symbolize('LRN', **args)
 
 
-@OpSchema.num_inputs(5)
-@ArgHelper.desc('momentum', as_target=False)
+@OpSchema.num_inputs(min_num=5, max_num=5)
+@OpSchema.convert_arg('momentum', as_target=False)
 def sync_batch_norm(
     inputs,
     axis=-1,
@@ -320,12 +313,14 @@ def sync_batch_norm(
 
     The normalization is defined as:
 
-    .. math:: \text{out} = \frac{x - \mathrm{E}[x]}{\sqrt{\mathrm{Var}[x] + \epsilon}} * \gamma + \beta
+    .. math:: y = \frac{x - \mathrm{E}[x]}
+                       {\sqrt{\mathrm{Var}[x] + \epsilon}}
+                  * \gamma + \beta
 
     The running average of statistics are calculated as:
 
-    .. math:: x_{\text{running}} = \text{momentum} * x_{\text{running}} +
-                                   (1 - \text{momentum}) * x_{\text{batch}}
+    .. math:: x_{\text{running}} = \text{momentum} * x_{\text{running}}
+                                   + (1 - \text{momentum}) * x_{\text{batch}}
 
     Parameters
     ----------
@@ -348,21 +343,16 @@ def sync_batch_norm(
         The output tensor.
 
     """
-    args = ArgHelper.parse(locals())
+    args = OpSchema.parse_args(locals())
     args['epsilon'] = float(epsilon)
     if process_group is None:
         process_group = distributed.get_group()
     if process_group is None:
         raise ValueError('<process_group> is required.')
-    op_lib = normalization_ops_lib.SyncBatchNorm
     if context.executing_eagerly():
-        return op_lib \
-            .instantiate(
-                axis=axis,
-                epsilon=args['epsilon'],
-                use_stats=use_stats,
-                process_group=process_group,
-            ).apply(inputs, args['momentum'])
-    else:
-        args.update(process_group.arguments)
-        return op_lib.blend(**args)
+        op = op_lib.create(
+            'SyncBatchNorm', axis=axis, epsilon=args['epsilon'],
+            use_stats=use_stats, process_group=process_group)
+        return op.execute(inputs, momentum=args['momentum'])
+    args.update(process_group.arguments)
+    return op_lib.symbolize('SyncBatchNorm', **args)

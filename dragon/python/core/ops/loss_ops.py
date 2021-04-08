@@ -14,11 +14,10 @@ from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
 
-from dragon.core.eager import context
+from dragon.core.autograph import context
+from dragon.core.autograph.op_impl import OpLib
+from dragon.core.autograph.op_impl import OpSchema
 from dragon.core.ops import activation_ops
-from dragon.core.ops import loss_ops_lib
-from dragon.core.ops.utils import ArgHelper
-from dragon.core.ops.utils import OpSchema
 
 
 @OpSchema.num_inputs(2)
@@ -26,7 +25,7 @@ def ctc_loss(inputs, padding_mask=-1, **kwargs):
     r"""Compute the ctc loss with batched labels.
     `[Graves & Gomez, 2006] <http://www.cs.utoronto.ca/~graves/icml_2006.pdf>`_.
 
-    The shape of ``logit`` and ``label`` should be :math:`(T, N, C)`,
+    The shape of ``input`` and ``target`` should be :math:`(T, N, C)`,
     :math:`(N, C)` respectively, where :math:`T` is the sequence length,
     :math:`N` is the batch size, and :math:`C` is max label length. The range
     of ``labels`` should be :math:`[1, C)`, as :math:`0` is reserved for blank.
@@ -36,7 +35,7 @@ def ctc_loss(inputs, padding_mask=-1, **kwargs):
     Parameters
     ----------
     inputs : Sequence[dragon.Tensor]
-        The tensor ``logit`` and ``label``.
+        The tensor ``input`` and ``target``.
     padding_mask : int, optional, default=-1
         The mask for padding the redundant labels.
 
@@ -46,18 +45,15 @@ def ctc_loss(inputs, padding_mask=-1, **kwargs):
         The output tensor.
 
     """
-    args = ArgHelper.parse(locals())
     inputs[0] = activation_ops.softmax(inputs[0], axis=2)
-    op_lib = loss_ops_lib.Operator
     if context.executing_eagerly():
         raise NotImplementedError
-    else:
-        return op_lib.blend('CTCLoss', **args)
+    return OpLib.add('CTCLoss', inputs, padding_mask=padding_mask, **kwargs)
 
 
 @OpSchema.num_inputs(1, 2)
 def l1_loss(inputs, reduction='mean', **kwargs):
-    r"""Compute the element-wise absolute value difference.
+    r"""Compute the loss of element-wise absolute value difference.
 
     The **L1Loss** function is defined as:
 
@@ -66,15 +62,15 @@ def l1_loss(inputs, reduction='mean', **kwargs):
     Examples:
 
     ```python
-    logit = dragon.constant([1., 2., 3.])
-    target = dragon.constant([0., 0., 0.])
-    print(dragon.losses.l1_loss([logit, target]))  # 2.0
+    x = dragon.constant([1., 2., 3.])
+    y = dragon.constant([0., 0., 0.])
+    print(dragon.losses.l1_loss([x, y]))  # 2.0
     ```
 
     Parameters
     ----------
     inputs : Sequence[dragon.Tensor]
-        The tensor ``logit`` and ``target``.
+        The tensor ``input`` and ``target``.
     reduction : {'none', 'sum', 'mean'}, optional
         The reduction method.
 
@@ -84,20 +80,15 @@ def l1_loss(inputs, reduction='mean', **kwargs):
         The output tensor.
 
     """
-    args = ArgHelper.parse(locals())
-    args['reduction'] = reduction.upper()
-    op_lib = loss_ops_lib.L1Loss
+    reduction = reduction.upper()
     if context.executing_eagerly():
-        return op_lib \
-            .instantiate(reduction=args['reduction']) \
-            .apply(inputs)
-    else:
-        return op_lib.blend(**args)
+        return OpLib.execute('L1Loss', inputs, reduction=reduction)
+    return OpLib.add('L1Loss', inputs, reduction=reduction, **kwargs)
 
 
-@OpSchema.num_inputs(1, 2)
+@OpSchema.num_inputs(min_num=1, max_num=2)
 def l2_loss(inputs, reduction='mean', **kwargs):
-    r"""Compute the element-wise squared error.
+    r"""Compute the loss of element-wise squared error.
 
     The **L2Loss** function is defined as:
 
@@ -106,15 +97,15 @@ def l2_loss(inputs, reduction='mean', **kwargs):
     Examples:
 
     ```python
-    logit = dragon.constant([1., 2., 3.])
-    target = dragon.constant([0., 0., 0.])
-    print(dragon.losses.l2_loss([logit, target]))  # 4.666666
+    x = dragon.constant([1., 2., 3.])
+    y = dragon.constant([0., 0., 0.])
+    print(dragon.losses.l2_loss([x, y]))  # 4.666666
     ```
 
     Parameters
     ----------
     inputs : Sequence[dragon.Tensor]
-        The tensor ``logit`` and ``target``.
+        The tensor ``input`` and ``target``.
     reduction : {'none', 'sum', 'mean'}, optional
         The reduction method.
 
@@ -124,82 +115,33 @@ def l2_loss(inputs, reduction='mean', **kwargs):
         The output tensor.
 
     """
-    args = ArgHelper.parse(locals())
-    args['reduction'] = reduction.upper()
-    op_lib = loss_ops_lib.L2Loss
+    reduction = reduction.upper()
     if context.executing_eagerly():
-        return op_lib \
-            .instantiate(reduction=args['reduction']) \
-            .apply(inputs)
-    else:
-        return op_lib.blend(**args)
+        return OpLib.execute('L2Loss', inputs, reduction=reduction)
+    return OpLib.add('L2Loss', inputs, reduction=reduction, **kwargs)
 
 
 @OpSchema.num_inputs(2)
-def nll_loss(
-    inputs,
-    axis=1,
-    ignore_index=None,
-    reduction='valid',
-    **kwargs
-):
-    r"""Compute the negative likelihood loss with sparse labels.
-
-    The **NLLLoss** function is defined as:
-
-    .. math:: \text{NLLLoss}(p_{t}) = -\log(p_{t})
-
-    Parameters
-    ----------
-    inputs : Sequence[dragon.Tensor]
-        The tensor ``logit`` and ``label``.
-    axis : int, optional, default=1
-        The reduce axis, can be negative.
-    ignore_index : int, optional
-        The label index to ignore.
-    reduction : {'none', 'sum', 'mean', 'valid'}, optional
-        The reduction method.
-
-    Returns
-    -------
-    dragon.Tensor
-        The output tensor.
-
-    """
-    args = ArgHelper.parse(locals())
-    args['reduction'] = reduction.upper()
-    op_lib = loss_ops_lib.NLLLoss
-    if context.executing_eagerly():
-        return op_lib  \
-            .instantiate(
-                axis=axis,
-                reduction=args['reduction'],
-                ignore_index=ignore_index,
-            ).apply(inputs)
-    else:
-        return op_lib.blend(**args)
-
-
-@OpSchema.num_inputs(2)
-def sigmoid_cross_entropy(inputs, reduction='valid', **kwargs):
-    r"""Compute the sigmoid cross entropy with contiguous targets.
-
-    The **CrossEntropy** function is defined as:
-
-    .. math:: \text{CrossEntropy}(p_{t}) = -\log(p_{t})
+def nll_loss(inputs, axis=-1, ignore_index=None, reduction='valid', **kwargs):
+    """Compute the loss of negative likelihood.
 
     Examples:
 
     ```python
-    logit = dragon.constant([0.1, 0.2, 0.3, 0.4])
-    target = dragon.constant([0., 0., 1., 1.])
-    print(dragon.losses.sigmoid_cross_entropy([logit, target]))  # 0.65247655
+    x = dragon.constant([[0.5, 0.5], [0.3, 0.7]])
+    x = dragon.math.log(x)
+    y = dragon.constant([1, 0])
+    print(dragon.losses.nll_loss([x, y]))  # 0.9485599
     ```
 
     Parameters
     ----------
     inputs : Sequence[dragon.Tensor]
-        The tensor ``logit`` and ``target``.
+        The tensor ``input`` and ``target``.
+    axis : int, optional, default=-1
+        The reduce axis.
+    ignore_index : int, optional
+        The ignored value of target.
     reduction : {'none', 'sum', 'mean', 'valid'}, optional
         The reduction method.
 
@@ -209,46 +151,81 @@ def sigmoid_cross_entropy(inputs, reduction='valid', **kwargs):
         The output tensor.
 
     """
-    args = ArgHelper.parse(locals())
-    args['reduction'] = reduction.upper()
-    op_lib = loss_ops_lib.SigmoidCrossEntropy
+    reduction = reduction.upper()
     if context.executing_eagerly():
-        return op_lib \
-            .instantiate(reduction=args['reduction']) \
-            .apply(inputs)
-    else:
-        return op_lib.blend(**args)
+        return OpLib.execute(
+            'NLLLoss', inputs, axis=axis, ignore_index=ignore_index,
+            reduction=reduction)
+    return OpLib.add('NLLLoss', inputs, axis=axis, ignore_index=ignore_index,
+                     reduction=reduction, **kwargs)
+
+
+@OpSchema.num_inputs(2)
+def sigmoid_cross_entropy_loss(inputs, reduction='valid', **kwargs):
+    """Compute the loss of sigmoid cross entropy.
+
+    Examples:
+
+    ```python
+    x = dragon.constant([0.1, 0.2, 0.3, 0.4])
+    y = dragon.constant([0., 0., 1., 1.])
+    print(dragon.losses.sigmoid_cross_entropy_loss([x, y]))  # 0.65247655
+    ```
+
+    Parameters
+    ----------
+    inputs : Sequence[dragon.Tensor]
+        The tensor ``input`` and ``target``.
+    reduction : {'none', 'sum', 'mean', 'valid'}, optional
+        The reduction method.
+
+    Returns
+    -------
+    dragon.Tensor
+        The output tensor.
+
+    """
+    reduction = reduction.upper()
+    if context.executing_eagerly():
+        return OpLib.execute(
+            'SigmoidCrossEntropyLoss', inputs, reduction=reduction)
+    return OpLib.add('SigmoidCrossEntropyLoss', inputs,
+                     reduction=reduction, **kwargs)
 
 
 @OpSchema.num_inputs(2)
 def sigmoid_focal_loss(
     inputs,
-    axis=1,
+    axis=-1,
     alpha=0.25,
-    gamma=2.,
-    negative_index=None,
+    gamma=2.0,
+    start_index=0,
     reduction='valid',
     **kwargs
 ):
-    r"""Compute the sigmoid focal loss with sparse labels.
+    """Compute the focal loss of sigmoid cross entropy.
     `[Lin et.al, 2017] <https://arxiv.org/abs/1708.02002>`_.
 
-    The Focal loss function is defined as:
+    Examples:
 
-    .. math:: \text{FocalLoss}(p_{t}) = -(1 - p_{t})^{\gamma}\log(p_{t})
+    ```python
+    x = dragon.constant([[0.5, 0.5], [0.3, 0.7]])
+    y = dragon.constant([1, 0])
+    print(dragon.losses.sigmoid_focal_loss([x, y]))  # 0.3472295
+    ```
 
     Parameters
     ----------
     inputs : Sequence[dragon.Tensor]
-        The tensor ``logit`` and ``label``.
-    axis : int, optional, default=1
+        The tensor ``input`` and ``target``.
+    axis : int, optional, default=-1
         The reduce axis, can be negative.
     alpha : float, optional, default=0.25
-        The scale factor on the rare class.
-    gamma : float, optional, default=2.
+        The scale factor to the positive classes.
+    gamma : float, optional, default=2.0
         The exponential decay factor on the easy examples.
-    negative_index : int, optional
-        The negative class index.
+    start_index : int, optional, default=0
+        The start value of target.
     reduction : {'none', 'sum', 'mean', 'valid'}, optional
         The reduction method.
 
@@ -258,27 +235,20 @@ def sigmoid_focal_loss(
         The output tensor.
 
     """
-    args = ArgHelper.parse(locals())
-    args['alpha'] = float(args['alpha'])
-    args['gamma'] = float(args['gamma'])
-    args['reduction'] = reduction.upper()
-    op_lib = loss_ops_lib.SigmoidFocalLoss
+    alpha, gamma = float(alpha), float(gamma)
+    reduction = reduction.upper()
     if context.executing_eagerly():
-        return op_lib \
-            .instantiate(
-                axis=axis,
-                alpha=args['alpha'],
-                gamma=args['gamma'],
-                negative_index=negative_index,
-                reduction=args['reduction'],
-            ).apply(inputs)
-    else:
-        return op_lib.blend(**args)
+        return OpLib.execute(
+            'SigmoidFocalLoss', inputs, axis=axis, alpha=alpha, gamma=gamma,
+            start_index=start_index, reduction=reduction)
+    return OpLib.add('SigmoidFocalLoss', inputs, axis=axis,
+                     alpha=alpha, gamma=gamma, start_index=start_index,
+                     reduction=reduction, **kwargs)
 
 
 @OpSchema.num_inputs(1, 2)
-def smooth_l1_loss(inputs, beta=1., reduction='mean', **kwargs):
-    r"""Compute the element-wise error transited from L1 and L2.
+def smooth_l1_loss(inputs, beta=1.0, reduction='mean', **kwargs):
+    r"""Compute the loss of element-wise error transited from L1 and L2.
     `[Girshick, 2015] <https://arxiv.org/abs/1504.08083>`_.
 
     The **SmoothL1Loss** function is defined as:
@@ -290,11 +260,19 @@ def smooth_l1_loss(inputs, beta=1., reduction='mean', **kwargs):
                 |x - y| - 0.5 * beta, & \text{ otherwise }
             \end{cases}
 
+    Examples:
+
+    ```python
+    x = dragon.constant([1., 2., 3.])
+    y = dragon.constant([0., 0., 0.])
+    print(dragon.losses.smooth_l1_loss([x, y]))  # 1.5
+    ```
+
     Parameters
     ----------
     inputs : Sequence[dragon.Tensor]
-        The tensor ``logit`` and ``target``.
-    beta : float, optional, default=1.
+        The tensor ``input`` and ``target``.
+    beta : float, optional, default=1.0
         The transition point from L1 to L2 loss
     reduction : {'none', 'sum', 'mean'}, optional
         The reduction method.
@@ -305,94 +283,43 @@ def smooth_l1_loss(inputs, beta=1., reduction='mean', **kwargs):
         The output tensor.
 
     """
-    args = ArgHelper.parse(locals())
-    args['beta'] = float(args['beta'])
-    args['reduction'] = reduction.upper()
-    op_lib = loss_ops_lib.SmoothL1Loss
+    beta = float(beta)
+    reduction = reduction.upper()
     if context.executing_eagerly():
-        return op_lib \
-            .instantiate(
-                beta=args['beta'],
-                reduction=args['reduction'],
-            ).apply(inputs)
-    else:
-        return op_lib.blend(**args)
+        return OpLib.execute(
+            'SmoothL1Loss', inputs, beta=beta, reduction=reduction)
+    return OpLib.add('SmoothL1Loss', inputs, beta=beta,
+                     reduction=reduction, **kwargs)
 
 
 @OpSchema.num_inputs(2)
-def softmax_cross_entropy(inputs, axis=1, reduction='mean', **kwargs):
-    r"""Compute the softmax cross entropy with contiguous targets.
-
-    The **CrossEntropy** function is defined as:
-
-    .. math:: \text{CrossEntropy}(p_{t}) = -\log(p_{t})
-
-    Examples:
-
-    ```python
-    logit = dragon.constant([[0.5, 0.5], [0.3, 0.7]])
-    target = dragon.constant([[0., 1., ], [1., 0.]])
-    print(dragon.losses.softmax_cross_entropy([logit, target]))  # 0.8030813
-    ```
-
-    Parameters
-    ----------
-    inputs : Sequence[dragon.Tensor]
-        The tensor ``logit`` and ``target``.
-    axis : int, optional, default=1
-        The axis to reduce, can be negative.
-    reduction : {'none', 'sum', 'mean'}, optional
-        The reduction method.
-
-    Returns
-    -------
-    dragon.Tensor
-        The output tensor.
-
-    """
-    args = ArgHelper.parse(locals())
-    args['reduction'] = reduction.upper()
-    op_lib = loss_ops_lib.SoftmaxCrossEntropy
-    if context.executing_eagerly():
-        return op_lib \
-            .instantiate(
-                axis=axis,
-                reduction=args['reduction'],
-            ).apply(inputs)
-    else:
-        return op_lib.blend(**args)
-
-
-@OpSchema.num_inputs(2)
-def sparse_softmax_cross_entropy(
+def softmax_cross_entropy_loss(
     inputs,
-    axis=1,
+    axis=-1,
     ignore_index=None,
     reduction='valid',
     **kwargs
 ):
-    r"""Compute the softmax cross entropy with sparse labels.
+    """Compute the loss of softmax cross entropy.
 
-    The **CrossEntropy** function is defined as:
-
-    .. math:: \text{CrossEntropy}(p_{t}) = -\log(p_{t})
-
-    Examples:
+    Both sparse or dense targets are supported:
 
     ```python
-    logit = dragon.constant([[0.5, 0.5], [0.3, 0.7]])
-    label = dragon.constant([1, 0])
-    print(dragon.losses.sparse_softmax_cross_entropy([logit, label]))  # 0.8030813
+    x = dragon.constant([[0.5, 0.5], [0.3, 0.7]])
+    y1 = dragon.constant([1, 0])
+    y2 = dragon.constant([[0., 1., ], [1., 0.]])
+    print(dragon.losses.softmax_cross_entropy_loss([x, y1]))  # 0.8030813
+    print(dragon.losses.softmax_cross_entropy_loss([x, y2]))  # Equivalent
     ```
 
     Parameters
     ----------
     inputs : Sequence[dragon.Tensor]
-        The tensor ``logit`` and ``label``.
-    axis : int, optional, default=1
-        The axis to reduce, can be negative.
+        The tensor ``input`` and ``target``.
+    axis : int, optional, default=-1
+        The axis to compute softmax.
     ignore_index : int, optional
-        The label index to ignore.
+        The ignored value of target.
     reduction : {'none', 'sum', 'mean', 'valid'}, optional
         The reduction method.
 
@@ -402,15 +329,10 @@ def sparse_softmax_cross_entropy(
         The output tensor.
 
     """
-    args = ArgHelper.parse(locals())
-    args['reduction'] = reduction.upper()
-    op_lib = loss_ops_lib.SparseSoftmaxCrossEntropy
+    reduction = reduction.upper()
     if context.executing_eagerly():
-        return op_lib \
-            .instantiate(
-                axis=axis,
-                reduction=args['reduction'],
-                ignore_index=ignore_index,
-            ).apply(inputs)
-    else:
-        return op_lib.blend(**args)
+        return OpLib.execute(
+            'SoftmaxCrossEntropyLoss', inputs, axis=axis,
+            ignore_index=ignore_index, reduction=reduction)
+    return OpLib.add('SoftmaxCrossEntropyLoss', inputs, axis=axis,
+                     ignore_index=ignore_index, reduction=reduction, **kwargs)

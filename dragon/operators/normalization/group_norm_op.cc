@@ -1,6 +1,6 @@
 #include "dragon/operators/normalization/group_norm_op.h"
 #include "dragon/core/workspace.h"
-#include "dragon/utils/filler.h"
+#include "dragon/utils/math_functions.h"
 #include "dragon/utils/op_kernels.h"
 
 namespace dragon {
@@ -9,8 +9,8 @@ template <class Context>
 template <typename T>
 void GroupNormOp<Context>::DoRunWithType() {
   using ParamT = typename math::AccmulatorType<T>::type;
-  TENSOR_FILL_WITH_TYPE(Input(1), vec64_t({C_}), ParamT);
-  TENSOR_FILL_WITH_TYPE(Input(2), vec64_t({C_}), ParamT);
+  INITIALIZE_TENSOR_VIA_SPEC(Input(1), vec64_t({C_}), ParamT);
+  INITIALIZE_TENSOR_VIA_SPEC(Input(2), vec64_t({C_}), ParamT);
 
   auto* X_mu = Buffer("X_mu")->Reshape({N_, G_});
   auto* X_rsig = Buffer("X_rsig")->Reshape({N_, G_});
@@ -23,20 +23,20 @@ void GroupNormOp<Context>::DoRunWithType() {
 
   // Compute the moments
   if (data_format() == "NCHW") {
-    vec32_t dims = {(int)(N_ * G_), (int)(D_ * S_)};
+    vec32_t dims = {int(N_ * G_), int(D_ * S_)};
     vec32_t axes = {1};
-    kernel::Moments(2, dims.data(), 1, axes.data(), x, mu, rsig, ctx());
+    kernels::Moments(2, dims.data(), 1, axes.data(), x, mu, rsig, ctx());
   } else if (data_format() == "NHWC") {
-    vec32_t dims = {(int)N_, (int)S_, (int)G_, (int)D_};
+    vec32_t dims = {int(N_), int(S_), int(G_), int(D_)};
     vec32_t axes = {1, 3};
-    kernel::Moments(4, dims.data(), 2, axes.data(), x, mu, rsig, ctx());
+    kernels::Moments(4, dims.data(), 2, axes.data(), x, mu, rsig, ctx());
   }
 
   // Inverse stddev from variance
   math::InvStd(N_ * G_, epsilon_, rsig, rsig, ctx());
 
   // Fuse parameters to compute affine transformation
-  kernel::GroupNorm(
+  kernels::GroupNorm(
       N_,
       G_,
       D_,
@@ -57,7 +57,7 @@ template <class Context>
 void GroupNormOp<Context>::RunOnDevice() {
   GetBaseArguments();
   Output(0)->ReshapeLike(Input(0));
-  DispatchHelper<FloatingTensorTypes>::Call(this, Input(0));
+  DispatchHelper<dtypes::Floating>::Call(this, Input(0));
 }
 
 template <class Context>
@@ -71,7 +71,7 @@ void GroupNormGradientOp<Context>::DoRunWithType() {
   auto* X_bias = Buffer("X_bias")->Reshape({N_, G_});
 
   // Gradient w.r.t. gamma, beta and input
-  kernel::GroupNormGrad(
+  kernels::GroupNormGrad(
       N_,
       G_,
       D_,
@@ -94,7 +94,7 @@ template <class Context>
 void GroupNormGradientOp<Context>::RunOnDevice() {
   GetBaseArguments();
   Output(0)->ReshapeLike(Input(0));
-  DispatchHelper<FloatingTensorTypes>::Call(this, Input(0));
+  DispatchHelper<dtypes::Floating>::Call(this, Input(0));
 }
 
 DEPLOY_CPU_OPERATOR(GroupNorm);
@@ -124,9 +124,9 @@ namespace {
 class GradientMaker final : public GradientMakerBase {
  public:
   GRADIENT_MAKER_CTOR(GradientMaker);
-  vector<OperatorDef> MakeDef() override {
-    return SingleDef(
-        def.type() + "Gradient",
+  void CreateGradientDefs() override {
+    AddGradientDef(
+        def().type() + "Gradient",
         "",
         vector<string>({I(0), I(1), GO(0)}),
         vector<string>({GI(0), GI(1), GI(2)}));

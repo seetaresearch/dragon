@@ -4,7 +4,7 @@
 
 namespace dragon {
 
-namespace kernel {
+namespace kernels {
 
 namespace {
 
@@ -77,14 +77,14 @@ void _GroupNormInternalGrad(
     AccT* db) {
   const int kGDim = kOrder == StorageOrder::NCHW ? 1 : 2;
   const int kDDim = kOrder == StorageOrder::NCHW ? 2 : 3;
-  const int count = dims[0] * dims[1] * dims[2] * dims[3];
-  std::array<int, 4> idx = {0, 0, 0, 0};
-  for (int i = 0; i < count; ++i) {
-    const int mi = idx[0] * dims[kGDim] + idx[kGDim];
-    const int gi = idx[kGDim] * dims[kDDim] + idx[kDDim];
+  const int NxGxKxS = dims[0] * dims[1] * dims[2] * dims[3];
+  std::array<int, 4> index = {0, 0, 0, 0};
+  for (int i = 0; i < NxGxKxS; ++i) {
+    const int mi = index[0] * dims[kGDim] + index[kGDim];
+    const int gi = index[kGDim] * dims[kDDim] + index[kDDim];
     ds[mi] += gamma[gi] * dy[i] * x[i];
     db[mi] += gamma[gi] * dy[i];
-    math::utils::IncreaseIndexInDims(4, dims.data(), idx.data());
+    math::utils::IncreaseIndexInDims(4, dims.data(), index.data());
   }
 }
 
@@ -103,20 +103,20 @@ void _GroupNormGrad(
     T* dx) {
   const int kGDim = kOrder == StorageOrder::NCHW ? 1 : 2;
   const int kDDim = kOrder == StorageOrder::NCHW ? 2 : 3;
-  const int count = dims[0] * dims[1] * dims[2] * dims[3];
+  const int NxGxKxS = dims[0] * dims[1] * dims[2] * dims[3];
   const int S = kOrder == StorageOrder::NCHW ? dims[3] : dims[1];
   const AccT denom = AccT(1) / static_cast<AccT>(dims[kDDim] * S);
-  std::array<int, 4> idx = {0, 0, 0, 0};
-  for (int i = 0; i < count; ++i) {
-    const int mi = idx[0] * dims[kGDim] + idx[kGDim];
-    const int gi = idx[kGDim] * dims[kDDim] + idx[kDDim];
+  std::array<int, 4> index = {0, 0, 0, 0};
+  for (int i = 0; i < NxGxKxS; ++i) {
+    const int mi = index[0] * dims[kGDim] + index[kGDim];
+    const int gi = index[kGDim] * dims[kDDim] + index[kDDim];
     const AccT u = (db[mi] * mu[mi] - ds[mi]) * (x[i] - mu[mi]) *
         math::utils::Cube(rsig[mi]);
     const AccT v = db[mi] * rsig[mi];
     dx[i] = gamma[gi] * dy[i] * rsig[mi] + (u - v) * denom;
     dgamma[gi] += dy[i] * (x[i] - mu[mi]) * rsig[mi];
     dbeta[gi] += dy[i];
-    math::utils::IncreaseIndexInDims(4, dims.data(), idx.data());
+    math::utils::IncreaseIndexInDims(4, dims.data(), index.data());
   }
 }
 
@@ -233,6 +233,6 @@ DEFINE_GRAD_KERNEL_LAUNCHER(double, double);
 #undef DEFINE_KERNEL_LAUNCHER
 #undef DEFINE_GRAD_KERNEL_LAUNCHER
 
-} // namespace kernel
+} // namespace kernels
 
 } // namespace dragon

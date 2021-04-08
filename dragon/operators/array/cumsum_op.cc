@@ -8,9 +8,8 @@ template <class Context>
 template <typename T>
 void CumSumOp<Context>::DoRunWithType() {
   auto &X = Input(0), *Y = Output(0);
-  CANONICALIZE_AXIS_WITH_TENSOR(X);
-
-  kernel::CumSum(
+  GET_OP_AXIS_ARG(axis, X.ndim(), 0);
+  kernels::CumSum(
       X.count(0, axis),
       X.count(axis + 1),
       X.dim(axis),
@@ -23,16 +22,15 @@ void CumSumOp<Context>::DoRunWithType() {
 
 template <class Context>
 void CumSumOp<Context>::RunOnDevice() {
-  DispatchHelper<NumericalTensorTypes>::Call(this, Input(0));
+  DispatchHelper<dtypes::Numerical>::Call(this, Input(0));
 }
 
 template <class Context>
 template <typename T>
 void CumSumGradientOp<Context>::DoRunWithType() {
   auto &dY = Input(0), *dX = Output(0);
-  CANONICALIZE_AXIS_WITH_TENSOR(dY);
-
-  kernel::CumSum(
+  GET_OP_AXIS_ARG(axis, dY.ndim(), 0);
+  kernels::CumSum(
       dY.count(0, axis),
       dY.count(axis + 1),
       dY.dim(axis),
@@ -45,7 +43,7 @@ void CumSumGradientOp<Context>::DoRunWithType() {
 
 template <class Context>
 void CumSumGradientOp<Context>::RunOnDevice() {
-  DispatchHelper<FloatingTensorTypes>::Call(this, Input(0));
+  DispatchHelper<dtypes::Floating>::Call(this, Input(0));
 }
 
 DEPLOY_CPU_OPERATOR(CumSum);

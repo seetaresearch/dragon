@@ -7,7 +7,7 @@ template <class Context>
 template <typename T>
 void HardSigmoidOp<Context>::DoRunWithType() {
   auto &X = Input(0), *Y = Output(0, {0});
-  kernel::HardSigmoid(
+  kernels::HardSigmoid(
       X.count(),
       alpha_,
       beta_,
@@ -18,14 +18,14 @@ void HardSigmoidOp<Context>::DoRunWithType() {
 
 template <class Context>
 void HardSigmoidOp<Context>::RunOnDevice() {
-  DispatchHelper<FloatingTensorTypes>::Call(this, Input(0));
+  DispatchHelper<dtypes::Floating>::Call(this, Input(0));
 }
 
 template <class Context>
 template <typename T>
 void HardSigmoidGradientOp<Context>::DoRunWithType() {
   auto &Y = Input(0), &dY = Input(1), *dX = Output(0);
-  kernel::HardSigmoidGrad(
+  kernels::HardSigmoidGrad(
       Y.count(),
       alpha_,
       dY.template data<T, Context>(),
@@ -36,7 +36,7 @@ void HardSigmoidGradientOp<Context>::DoRunWithType() {
 
 template <class Context>
 void HardSigmoidGradientOp<Context>::RunOnDevice() {
-  DispatchHelper<FloatingTensorTypes>::Call(this, Input(0));
+  DispatchHelper<dtypes::Floating>::Call(this, Input(0));
 }
 
 DEPLOY_CPU_OPERATOR(HardSigmoid);

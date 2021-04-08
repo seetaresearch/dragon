@@ -18,6 +18,8 @@ from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
 
+import collections
+
 from dragon.vm.torch.core.optim.optimizer import Optimizer
 
 
@@ -80,23 +82,16 @@ class RMSprop(Optimizer):
             raise ValueError("Invalid momentum value: {}".format(momentum))
         if not 0. <= alpha:
             raise ValueError("Invalid alpha value: {}".format(alpha))
-        defaults = dict(
-            lr=lr,
-            momentum=momentum,
-            alpha=alpha,
-            eps=eps,
-            centered=centered,
-            scale=scale,
-            clip_norm=clip_norm,
-            weight_decay=weight_decay,
-        )
+        defaults = dict(lr=lr, momentum=momentum, alpha=alpha,
+                        eps=eps, centered=centered, weight_decay=weight_decay,
+                        scale=scale, clip_norm=clip_norm)
         super(RMSprop, self).__init__(params, defaults)
-        self._shared_args = {
-            'lr': 'base_lr',
-            'momentum': 'momentum',
-            'alpha': 'decay',
-            'eps': 'eps',
-            'scale': 'scale',
-            'clip_norm': 'clip_norm',
-            'weight_decay': 'weight_decay',
+        self._hyper = {
+            'lr': ('lr', collections.defaultdict(str)),
+            'momentum': ('momentum', collections.defaultdict(str)),
+            'alpha': ('decay', collections.defaultdict(str)),
+            'eps': ('eps', collections.defaultdict(str)),
+            'weight_decay': ('weight_decay', collections.defaultdict(str)),
+            'scale': ('scale', collections.defaultdict(str)),
+            'clip_norm': ('clip_norm', collections.defaultdict(str)),
         }

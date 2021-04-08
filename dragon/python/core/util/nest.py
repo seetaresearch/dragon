@@ -28,7 +28,7 @@ def is_nested(input):
     Returns
     -------
     bool
-        **True** if input is a sequence or dict otherwise **False**.
+        ``True`` if input is a sequence or dict otherwise ``False``.
 
     """
     return is_sequence(input) or isinstance(input, dict)
@@ -45,7 +45,7 @@ def is_sequence(input):
     Returns
     -------
     bool
-        **True** if input is a sequence otherwise **False**.
+        ``True`` if input is a sequence otherwise ``False``.
 
     """
     return (isinstance(input, six.collections_abc.Sequence) and

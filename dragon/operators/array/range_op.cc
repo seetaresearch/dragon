@@ -26,7 +26,7 @@ void RangeOp<Context>::DoRunWithType() {
                      << "[" << start << ", " << limit
                      << ") with delta = " << delta << ".";
 
-  kernel::Range(
+  kernels::Range(
       count,
       start,
       delta,
@@ -36,7 +36,7 @@ void RangeOp<Context>::DoRunWithType() {
 
 template <class Context>
 void RangeOp<Context>::RunOnDevice() {
-  DispatchHelper<NumericalTensorTypes>::Call(this);
+  DispatchHelper<dtypes::Numerical>::Call(this);
 }
 
 DEPLOY_CPU_OPERATOR(Range);

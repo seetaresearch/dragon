@@ -16,22 +16,14 @@ namespace {
 template <typename T>
 __global__ void _RowwiseSet(const int n, const int cols, const T* x, T* y) {
   CUDA_1D_KERNEL_LOOP(i, n) {
-#if __CUDA_ARCH__ >= 350
     y[i] = __ldg(x + i % cols);
-#else
-    y[i] = x[i % cols];
-#endif
   }
 }
 
 template <typename T>
 __global__ void _ColwiseSet(const int n, const int cols, const T* x, T* y) {
   CUDA_1D_KERNEL_LOOP(i, n) {
-#if __CUDA_ARCH__ >= 350
     y[i] = __ldg(x + i / cols);
-#else
-    y[i] = x[i / cols];
-#endif
   }
 }
 
@@ -50,11 +42,7 @@ __global__ void _BroadcastSet(
       FIXED_DIVISOR_DIV_MOD(y_dims.data[d], tmp, &tmp, &r);
       xi += r * x_strides.data[d];
     }
-#if __CUDA_ARCH__ >= 350
     y[yi] = __ldg(x + xi);
-#else
-    y[yi] = x[xi];
-#endif
   }
 }
 
@@ -70,11 +58,7 @@ __global__ void _RowwiseBinaryFunc(
     const int i = yi % cols;
     const int ai = BroadcastA ? i : yi;
     const int bi = BroadcastA ? yi : i;
-#if __CUDA_ARCH__ >= 350
     y[yi] = op(__ldg(a + ai), __ldg(b + bi));
-#else
-    y[yi] = op(a[ai], b[bi]);
-#endif
   }
 }
 
@@ -90,11 +74,7 @@ __global__ void _ColwiseBinaryFunc(
     const int i = yi / cols;
     const int ai = BroadcastA ? i : yi;
     const int bi = BroadcastA ? yi : i;
-#if __CUDA_ARCH__ >= 350
     y[yi] = op(__ldg(a + ai), __ldg(b + bi));
-#else
-    y[yi] = op(a[ai], b[bi]);
-#endif
   }
 }
 
@@ -117,11 +97,7 @@ __global__ void _BroadcastBinaryFunc(
       ai += r * a_strides.data[d];
       bi += r * b_strides.data[d];
     }
-#if __CUDA_ARCH__ >= 350
     y[yi] = op(__ldg(a + ai), __ldg(b + bi));
-#else
-    y[yi] = op(a[ai], b[bi]);
-#endif
   }
 }
 
@@ -146,17 +122,11 @@ __global__ void _BroadcastWhere(
       bi += r * b_strides.data[d];
       ci += r * c_strides.data[d];
     }
-#if __CUDA_ARCH__ >= 350
     y[yi] = __ldg(c + ci) ? __ldg(a + ai) : __ldg(b + bi);
-#else
-    y[yi] = c[ci] ? a[ai] : b[bi];
-#endif
   }
 }
 
 } // namespace
-
-/* ------------------- Launcher Separator ------------------- */
 
 #define DEFINE_SET_FUNC(T, ScalarT)                                      \
   template <>                                                            \
@@ -231,8 +201,8 @@ __global__ void _BroadcastWhere(
   }
 
 DEFINE_SET_FUNC(bool, uint8_t);
-DEFINE_SET_FUNC(int8_t, int8_t);
 DEFINE_SET_FUNC(uint8_t, uint8_t);
+DEFINE_SET_FUNC(int8_t, int8_t);
 DEFINE_SET_FUNC(int, int);
 DEFINE_SET_FUNC(int64_t, int64_t);
 DEFINE_SET_FUNC(float16, half);
@@ -356,29 +326,29 @@ DEFINE_SET_FUNC(double, double);
             reinterpret_cast<math::ScalarType<OutputT>::type*>(y));           \
   }
 
-DEFINE_BINARY_FUNC(Add, int8_t, int8_t, math::PlusFunctor);
 DEFINE_BINARY_FUNC(Add, uint8_t, uint8_t, math::PlusFunctor);
+DEFINE_BINARY_FUNC(Add, int8_t, int8_t, math::PlusFunctor);
 DEFINE_BINARY_FUNC(Add, int, int, math::PlusFunctor);
 DEFINE_BINARY_FUNC(Add, int64_t, int64_t, math::PlusFunctor);
 DEFINE_BINARY_FUNC(Add, float16, float16, math::PlusFunctor);
 DEFINE_BINARY_FUNC(Add, float, float, math::PlusFunctor);
 DEFINE_BINARY_FUNC(Add, double, double, math::PlusFunctor);
-DEFINE_BINARY_FUNC(Sub, int8_t, int8_t, math::MinusFunctor);
 DEFINE_BINARY_FUNC(Sub, uint8_t, uint8_t, math::MinusFunctor);
+DEFINE_BINARY_FUNC(Sub, int8_t, int8_t, math::MinusFunctor);
 DEFINE_BINARY_FUNC(Sub, int, int, math::MinusFunctor);
 DEFINE_BINARY_FUNC(Sub, int64_t, int64_t, math::MinusFunctor);
 DEFINE_BINARY_FUNC(Sub, float16, float16, math::MinusFunctor);
 DEFINE_BINARY_FUNC(Sub, float, float, math::MinusFunctor);
 DEFINE_BINARY_FUNC(Sub, double, double, math::MinusFunctor);
-DEFINE_BINARY_FUNC(Mul, int8_t, int8_t, math::MultipliesFunctor);
 DEFINE_BINARY_FUNC(Mul, uint8_t, uint8_t, math::MultipliesFunctor);
+DEFINE_BINARY_FUNC(Mul, int8_t, int8_t, math::MultipliesFunctor);
 DEFINE_BINARY_FUNC(Mul, int, int, math::MultipliesFunctor);
 DEFINE_BINARY_FUNC(Mul, int64_t, int64_t, math::MultipliesFunctor);
 DEFINE_BINARY_FUNC(Mul, float16, float16, math::MultipliesFunctor);
 DEFINE_BINARY_FUNC(Mul, float, float, math::MultipliesFunctor);
 DEFINE_BINARY_FUNC(Mul, double, double, math::MultipliesFunctor);
-DEFINE_BINARY_FUNC(Div, int8_t, int8_t, math::DividesFunctor);
 DEFINE_BINARY_FUNC(Div, uint8_t, uint8_t, math::DividesFunctor);
+DEFINE_BINARY_FUNC(Div, int8_t, int8_t, math::DividesFunctor);
 DEFINE_BINARY_FUNC(Div, int, int, math::DividesFunctor);
 DEFINE_BINARY_FUNC(Div, int64_t, int64_t, math::DividesFunctor);
 DEFINE_BINARY_FUNC(Div, float16, float16, math::DividesFunctor);
@@ -387,57 +357,90 @@ DEFINE_BINARY_FUNC(Div, double, double, math::DividesFunctor);
 DEFINE_BINARY_FUNC(Pow, float16, float16, math::PowFunctor);
 DEFINE_BINARY_FUNC(Pow, float, float, math::PowFunctor);
 DEFINE_BINARY_FUNC(Pow, double, double, math::PowFunctor);
-DEFINE_BINARY_FUNC(Minimum, int8_t, int8_t, math::MinFunctor);
 DEFINE_BINARY_FUNC(Minimum, uint8_t, uint8_t, math::MinFunctor);
+DEFINE_BINARY_FUNC(Minimum, int8_t, int8_t, math::MinFunctor);
 DEFINE_BINARY_FUNC(Minimum, int, int, math::MinFunctor);
 DEFINE_BINARY_FUNC(Minimum, int64_t, int64_t, math::MinFunctor);
 DEFINE_BINARY_FUNC(Minimum, float16, float16, math::MinFunctor);
 DEFINE_BINARY_FUNC(Minimum, float, float, math::MinFunctor);
 DEFINE_BINARY_FUNC(Minimum, double, double, math::MinFunctor);
-DEFINE_BINARY_FUNC(Maximum, int8_t, int8_t, math::MaxFunctor);
 DEFINE_BINARY_FUNC(Maximum, uint8_t, uint8_t, math::MaxFunctor);
+DEFINE_BINARY_FUNC(Maximum, int8_t, int8_t, math::MaxFunctor);
 DEFINE_BINARY_FUNC(Maximum, int, int, math::MaxFunctor);
 DEFINE_BINARY_FUNC(Maximum, int64_t, int64_t, math::MaxFunctor);
 DEFINE_BINARY_FUNC(Maximum, float16, float16, math::MaxFunctor);
 DEFINE_BINARY_FUNC(Maximum, float, float, math::MaxFunctor);
 DEFINE_BINARY_FUNC(Maximum, double, double, math::MaxFunctor);
-DEFINE_BINARY_FUNC(Equal, int8_t, bool, math::EqualFunctor);
+DEFINE_BINARY_FUNC(BitwiseAnd, uint8_t, uint8_t, math::BitAndFunctor);
+DEFINE_BINARY_FUNC(BitwiseAnd, int8_t, int8_t, math::BitAndFunctor);
+DEFINE_BINARY_FUNC(BitwiseAnd, int, int, math::BitAndFunctor);
+DEFINE_BINARY_FUNC(BitwiseAnd, int64_t, int64_t, math::BitAndFunctor);
+DEFINE_BINARY_FUNC(BitwiseOr, uint8_t, uint8_t, math::BitOrFunctor);
+DEFINE_BINARY_FUNC(BitwiseOr, int8_t, int8_t, math::BitOrFunctor);
+DEFINE_BINARY_FUNC(BitwiseOr, int, int, math::BitOrFunctor);
+DEFINE_BINARY_FUNC(BitwiseOr, int64_t, int64_t, math::BitOrFunctor);
+DEFINE_BINARY_FUNC(BitwiseXor, uint8_t, uint8_t, math::BitXorFunctor);
+DEFINE_BINARY_FUNC(BitwiseXor, int8_t, int8_t, math::BitXorFunctor);
+DEFINE_BINARY_FUNC(BitwiseXor, int, int, math::BitXorFunctor);
+DEFINE_BINARY_FUNC(BitwiseXor, int64_t, int64_t, math::BitXorFunctor);
+DEFINE_BINARY_FUNC(And, uint8_t, bool, math::AndFunctor);
+DEFINE_BINARY_FUNC(And, int8_t, bool, math::AndFunctor);
+DEFINE_BINARY_FUNC(And, int, bool, math::AndFunctor);
+DEFINE_BINARY_FUNC(And, int64_t, bool, math::AndFunctor);
+DEFINE_BINARY_FUNC(And, float16, bool, math::AndFunctor);
+DEFINE_BINARY_FUNC(And, float, bool, math::AndFunctor);
+DEFINE_BINARY_FUNC(And, double, bool, math::AndFunctor);
+DEFINE_BINARY_FUNC(Or, uint8_t, bool, math::OrFunctor);
+DEFINE_BINARY_FUNC(Or, int8_t, bool, math::OrFunctor);
+DEFINE_BINARY_FUNC(Or, int, bool, math::OrFunctor);
+DEFINE_BINARY_FUNC(Or, int64_t, bool, math::OrFunctor);
+DEFINE_BINARY_FUNC(Or, float16, bool, math::OrFunctor);
+DEFINE_BINARY_FUNC(Or, float, bool, math::OrFunctor);
+DEFINE_BINARY_FUNC(Or, double, bool, math::OrFunctor);
+DEFINE_BINARY_FUNC(Xor, uint8_t, bool, math::XorFunctor);
+DEFINE_BINARY_FUNC(Xor, int8_t, bool, math::XorFunctor);
+DEFINE_BINARY_FUNC(Xor, int, bool, math::XorFunctor);
+DEFINE_BINARY_FUNC(Xor, int64_t, bool, math::XorFunctor);
+DEFINE_BINARY_FUNC(Xor, float16, bool, math::XorFunctor);
+DEFINE_BINARY_FUNC(Xor, float, bool, math::XorFunctor);
+DEFINE_BINARY_FUNC(Xor, double, bool, math::XorFunctor);
 DEFINE_BINARY_FUNC(Equal, uint8_t, bool, math::EqualFunctor);
+DEFINE_BINARY_FUNC(Equal, int8_t, bool, math::EqualFunctor);
 DEFINE_BINARY_FUNC(Equal, int, bool, math::EqualFunctor);
 DEFINE_BINARY_FUNC(Equal, int64_t, bool, math::EqualFunctor);
 DEFINE_BINARY_FUNC(Equal, float16, bool, math::EqualFunctor);
 DEFINE_BINARY_FUNC(Equal, float, bool, math::EqualFunctor);
 DEFINE_BINARY_FUNC(Equal, double, bool, math::EqualFunctor);
-DEFINE_BINARY_FUNC(NotEqual, int8_t, bool, math::NotEqualFunctor);
 DEFINE_BINARY_FUNC(NotEqual, uint8_t, bool, math::NotEqualFunctor);
+DEFINE_BINARY_FUNC(NotEqual, int8_t, bool, math::NotEqualFunctor);
 DEFINE_BINARY_FUNC(NotEqual, int, bool, math::NotEqualFunctor);
 DEFINE_BINARY_FUNC(NotEqual, int64_t, bool, math::NotEqualFunctor);
 DEFINE_BINARY_FUNC(NotEqual, float16, bool, math::NotEqualFunctor);
 DEFINE_BINARY_FUNC(NotEqual, float, bool, math::NotEqualFunctor);
 DEFINE_BINARY_FUNC(NotEqual, double, bool, math::NotEqualFunctor);
-DEFINE_BINARY_FUNC(Less, int8_t, bool, math::LessFunctor);
 DEFINE_BINARY_FUNC(Less, uint8_t, bool, math::LessFunctor);
+DEFINE_BINARY_FUNC(Less, int8_t, bool, math::LessFunctor);
 DEFINE_BINARY_FUNC(Less, int, bool, math::LessFunctor);
 DEFINE_BINARY_FUNC(Less, int64_t, bool, math::LessFunctor);
 DEFINE_BINARY_FUNC(Less, float16, bool, math::LessFunctor);
 DEFINE_BINARY_FUNC(Less, float, bool, math::LessFunctor);
 DEFINE_BINARY_FUNC(Less, double, bool, math::LessFunctor);
-DEFINE_BINARY_FUNC(LessEqual, int8_t, bool, math::LessEqualFunctor);
 DEFINE_BINARY_FUNC(LessEqual, uint8_t, bool, math::LessEqualFunctor);
+DEFINE_BINARY_FUNC(LessEqual, int8_t, bool, math::LessEqualFunctor);
 DEFINE_BINARY_FUNC(LessEqual, int, bool, math::LessEqualFunctor);
 DEFINE_BINARY_FUNC(LessEqual, int64_t, bool, math::LessEqualFunctor);
 DEFINE_BINARY_FUNC(LessEqual, float16, bool, math::LessEqualFunctor);
 DEFINE_BINARY_FUNC(LessEqual, float, bool, math::LessEqualFunctor);
 DEFINE_BINARY_FUNC(LessEqual, double, bool, math::LessEqualFunctor);
-DEFINE_BINARY_FUNC(Greater, int8_t, bool, math::GreaterFunctor);
 DEFINE_BINARY_FUNC(Greater, uint8_t, bool, math::GreaterFunctor);
+DEFINE_BINARY_FUNC(Greater, int8_t, bool, math::GreaterFunctor);
 DEFINE_BINARY_FUNC(Greater, int, bool, math::GreaterFunctor);
 DEFINE_BINARY_FUNC(Greater, int64_t, bool, math::GreaterFunctor);
 DEFINE_BINARY_FUNC(Greater, float16, bool, math::GreaterFunctor);
 DEFINE_BINARY_FUNC(Greater, float, bool, math::GreaterFunctor);
 DEFINE_BINARY_FUNC(Greater, double, bool, math::GreaterFunctor);
-DEFINE_BINARY_FUNC(GreaterEqual, int8_t, bool, math::GreaterEqualFunctor);
 DEFINE_BINARY_FUNC(GreaterEqual, uint8_t, bool, math::GreaterEqualFunctor);
+DEFINE_BINARY_FUNC(GreaterEqual, int8_t, bool, math::GreaterEqualFunctor);
 DEFINE_BINARY_FUNC(GreaterEqual, int, bool, math::GreaterEqualFunctor);
 DEFINE_BINARY_FUNC(GreaterEqual, int64_t, bool, math::GreaterEqualFunctor);
 DEFINE_BINARY_FUNC(GreaterEqual, float16, bool, math::GreaterEqualFunctor);
@@ -445,31 +448,40 @@ DEFINE_BINARY_FUNC(GreaterEqual, float, bool, math::GreaterEqualFunctor);
 DEFINE_BINARY_FUNC(GreaterEqual, double, bool, math::GreaterEqualFunctor);
 #undef DEFINE_BINARY_FUNC
 
-#define DEFINE_BINARY_FUNC(name, T, ScalarT) \
-  template <>                                \
-  DRAGON_API void name<T, CUDAContext>(      \
-      const int a_ndim,                      \
-      const int64_t* a_dims,                 \
-      const int b_ndim,                      \
-      const int64_t* b_dims,                 \
-      const T* a,                            \
-      const T* b,                            \
-      T* y,                                  \
-      CUDAContext* ctx) {                    \
-    name(                                    \
-        a_ndim,                              \
-        a_dims,                              \
-        b_ndim,                              \
-        b_dims,                              \
-        reinterpret_cast<const ScalarT*>(a), \
-        reinterpret_cast<const ScalarT*>(b), \
-        reinterpret_cast<ScalarT*>(y),       \
-        ctx);                                \
+#define DEFINE_BINARY_FUNC(name, InputT, OutputT, InputAliasT, OutputAliasT) \
+  template <>                                                                \
+  DRAGON_API void name<InputT, CUDAContext>(                                 \
+      const int a_ndim,                                                      \
+      const int64_t* a_dims,                                                 \
+      const int b_ndim,                                                      \
+      const int64_t* b_dims,                                                 \
+      const InputT* a,                                                       \
+      const InputT* b,                                                       \
+      OutputT* y,                                                            \
+      CUDAContext* ctx) {                                                    \
+    name(                                                                    \
+        a_ndim,                                                              \
+        a_dims,                                                              \
+        b_ndim,                                                              \
+        b_dims,                                                              \
+        reinterpret_cast<const InputAliasT*>(a),                             \
+        reinterpret_cast<const InputAliasT*>(b),                             \
+        reinterpret_cast<OutputAliasT*>(y),                                  \
+        ctx);                                                                \
   }
 
-DEFINE_BINARY_FUNC(Add, bool, uint8_t); // Or
-DEFINE_BINARY_FUNC(Sub, bool, uint8_t); // Xor
-DEFINE_BINARY_FUNC(Mul, bool, uint8_t); // And
+DEFINE_BINARY_FUNC(BitwiseAnd, bool, bool, uint8_t, uint8_t);
+DEFINE_BINARY_FUNC(BitwiseOr, bool, bool, uint8_t, uint8_t);
+DEFINE_BINARY_FUNC(BitwiseXor, bool, bool, uint8_t, uint8_t);
+DEFINE_BINARY_FUNC(And, bool, bool, uint8_t, bool);
+DEFINE_BINARY_FUNC(Or, bool, bool, uint8_t, bool);
+DEFINE_BINARY_FUNC(Xor, bool, bool, uint8_t, bool);
+DEFINE_BINARY_FUNC(Equal, bool, bool, uint8_t, bool);
+DEFINE_BINARY_FUNC(NotEqual, bool, bool, uint8_t, bool);
+DEFINE_BINARY_FUNC(Less, bool, bool, uint8_t, bool);
+DEFINE_BINARY_FUNC(LessEqual, bool, bool, uint8_t, bool);
+DEFINE_BINARY_FUNC(Greater, bool, bool, uint8_t, bool);
+DEFINE_BINARY_FUNC(GreaterEqual, bool, bool, uint8_t, bool);
 #undef DEFINE_BINARY_FUNC
 
 #define DEFINE_WHERE_FUNC(T, ScalarT)                                       \
@@ -542,8 +554,8 @@ DEFINE_BINARY_FUNC(Mul, bool, uint8_t); // And
   }
 
 DEFINE_WHERE_FUNC(bool, uint8_t);
-DEFINE_WHERE_FUNC(int8_t, int8_t);
 DEFINE_WHERE_FUNC(uint8_t, uint8_t);
+DEFINE_WHERE_FUNC(int8_t, int8_t);
 DEFINE_WHERE_FUNC(int, int);
 DEFINE_WHERE_FUNC(int64_t, int64_t);
 DEFINE_WHERE_FUNC(float16, half);

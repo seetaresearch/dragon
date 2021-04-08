@@ -42,39 +42,37 @@ void CuDNNSetTensorDesc(
     const vec64_t& strides) {
   CHECK_EQ(dims.size(), strides.size());
   CHECK(dims.size() >= 3 && dims.size() <= 8);
-  vec32_t dimA(dims.begin(), dims.end());
-  vec32_t strideA(strides.begin(), strides.end());
   CUDNN_CHECK(cudnnSetTensorNdDescriptor(
       *desc,
       CuDNNType<T>::type,
-      (int)dimA.size(),
-      dimA.data(),
-      strideA.data()));
+      int(dims.size()),
+      vec32_t({dims.begin(), dims.end()}).data(),
+      vec32_t({strides.begin(), strides.end()}).data()));
 }
 
 template <typename T>
 void CuDNNSetTensorDesc(cudnnTensorDescriptor_t* desc, const vec64_t& dims) {
-  // CuDNN requires ndimensions from 3 to 8
-  // Expand or Squeeze dimensions to pass the check
-  vec64_t dummy_dims(dims);
+  // CuDNN requires ndimensions from 3 to 8.
+  // Expand or squeeze dimensions to pass the check.
+  vec64_t dims_v2(dims);
   if (dims.size() < 3) {
-    dummy_dims.resize(3, 1);
+    dims_v2.resize(3, 1);
   } else if (dims.size() > 8) {
     auto size = std::accumulate(
         dims.data(), dims.data() + dims.size(), 1, std::multiplies<int64_t>());
-    dummy_dims = {size, 1, 1};
+    dims_v2 = {size, 1, 1};
   }
-  int ndim = (int)dummy_dims.size();
-  int* dimA = new int[ndim];
-  int* strideA = new int[ndim];
+  int num_dims = int(dims_v2.size());
+  int* dimA = new int[num_dims];
+  int* strideA = new int[num_dims];
   int64_t stride = 1;
-  for (int i = ndim - 1; i >= 0; i--) {
-    strideA[i] = (int)stride;
-    dimA[i] = (int)dummy_dims[i];
+  for (int i = num_dims - 1; i >= 0; i--) {
+    strideA[i] = int(stride);
+    dimA[i] = int(dims_v2[i]);
     stride *= dimA[i];
   }
   CUDNN_CHECK(cudnnSetTensorNdDescriptor(
-      *desc, CuDNNType<T>::type, ndim, dimA, strideA));
+      *desc, CuDNNType<T>::type, num_dims, dimA, strideA));
   delete[] dimA;
   delete[] strideA;
 }
@@ -135,15 +133,11 @@ template <typename T>
 void CuDNNSetBiasDesc(
     cudnnTensorDescriptor_t* desc,
     const int num_dims,
-    const int64_t num_elements,
+    const int64_t N,
     const std::string& data_format) {
-  vec64_t dummy_dims((size_t)num_dims - 1, 1);
-  if (data_format == "NCHW") {
-    dummy_dims.insert(dummy_dims.begin() + 1, num_elements);
-  } else {
-    dummy_dims.insert(dummy_dims.end(), num_elements);
-  }
-  CuDNNSetTensorDesc<T>(desc, dummy_dims, data_format);
+  vec64_t dims(num_dims - 1, 1);
+  dims.insert(data_format == "NCHW" ? dims.begin() + 1 : dims.end(), N);
+  CuDNNSetTensorDesc<T>(desc, dims, data_format);
 }
 
 #define INSTANTIATE_API(T)                                       \

@@ -1,48 +1,41 @@
 #ifdef USE_CUDA
 
 #include "dragon/core/context_cuda.h"
+#include "dragon/utils/math_functions.h"
 #include "dragon/utils/op_kernels.h"
 
 namespace dragon {
 
-namespace kernel {
+namespace kernels {
 
 namespace {
 
+#define LDG(x, i) __ldg(x + i)
+#define LDG2(x, i) __half2float(__ldg(x + i))
+
 template <typename T>
 __global__ void
-_HardSwish(const int nthreads, const T alpha, const T beta, const T* x, T* y) {
-  CUDA_1D_KERNEL_LOOP(i, nthreads) {
-#if __CUDA_ARCH__ >= 350
-    y[i] = __ldg(x + i) * max(T(0), min(T(1), fma(__ldg(x + i), alpha, beta)));
-#else
-    y[i] = x[i] * max(T(0), min(T(1), fma(x[i], alpha, beta)));
-#endif
+_HardSwish(const int N, const T alpha, const T beta, const T* x, T* y) {
+  CUDA_1D_KERNEL_LOOP(i, N) {
+    y[i] = LDG(x, i) * max(T(0), min(T(1), fma(LDG(x, i), alpha, beta)));
   }
 }
 
 __global__ void _HardSwish(
-    const int nthreads,
+    const int N,
     const float alpha,
     const float beta,
     const half* x,
     half* y) {
-  CUDA_1D_KERNEL_LOOP(i, nthreads) {
-#if __CUDA_ARCH__ >= 350
+  CUDA_1D_KERNEL_LOOP(i, N) {
     y[i] = __float2half(
-        __half2float(__ldg(x + i)) *
-        max(0.f, min(1.f, fma(__half2float(__ldg(x + i)), alpha, beta))));
-#else
-    y[i] = __float2half(
-        __half2float(x[i]) *
-        max(0.f, min(1.f, fma(__half2float(x[i]), alpha, beta))));
-#endif
+        LDG2(x, i) * max(0.f, min(1.f, fma(LDG2(x, i), alpha, beta))));
   }
 }
 
 template <typename T>
 __global__ void _HardSwishGrad(
-    const int nthreads,
+    const int N,
     const T alpha,
     const T beta,
     const T* dy,
@@ -50,22 +43,15 @@ __global__ void _HardSwishGrad(
     T* dx) {
   const T bound = beta / alpha;
   const T alpha2x = alpha * T(2);
-  CUDA_1D_KERNEL_LOOP(i, nthreads) {
-#if __CUDA_ARCH__ >= 350
-    dx[i] = (__ldg(x + i) < -bound)
+  CUDA_1D_KERNEL_LOOP(i, N) {
+    dx[i] = (LDG(x, i) < -bound)
         ? T(0)
-        : (__ldg(x + i) < bound) ? dy[i] * fma(__ldg(x + i), alpha2x, beta)
-                                 : dy[i];
-#else
-    dx[i] = (x[i] < -bound)
-        ? T(0)
-        : (x[i] < bound) ? dy[i] * fma(x[i], alpha2x, beta) : dy[i];
-#endif
+        : (LDG(x, i) < bound) ? dy[i] * fma(LDG(x, i), alpha2x, beta) : dy[i];
   }
 }
 
 __global__ void _HardSwishGrad(
-    const int nthreads,
+    const int N,
     const float alpha,
     const float beta,
     const half* dy,
@@ -74,7 +60,7 @@ __global__ void _HardSwishGrad(
   const float bound = beta / alpha;
   const float alpha2x = alpha * 2.f;
   const half kZero = __float2half(0.f);
-  CUDA_1D_KERNEL_LOOP(i, nthreads) {
+  CUDA_1D_KERNEL_LOOP(i, N) {
     const float val = __half2float(x[i]);
     dx[i] = (val < -bound) ? kZero
                            : (val < bound)
@@ -83,82 +69,59 @@ __global__ void _HardSwishGrad(
   }
 } // HardSwishGrad
 
+#undef LDG
+#undef LDG2
+
 } // namespace
 
 /* ------------------- Launcher Separator ------------------- */
 
-template <>
-void HardSwish<float16, CUDAContext>(
-    const int count,
-    const float alpha,
-    const float beta,
-    const float16* x,
-    float16* y,
-    CUDAContext* ctx) {
-  _HardSwish<<<CUDA_BLOCKS(count), CUDA_THREADS, 0, ctx->cuda_stream()>>>(
-      count,
-      alpha,
-      beta,
-      reinterpret_cast<const half*>(x),
-      reinterpret_cast<half*>(y));
-}
+#define DEFINE_KERNEL_LAUNCHER(T)                                        \
+  template <>                                                            \
+  void HardSwish<T, CUDAContext>(                                        \
+      const int N,                                                       \
+      const float alpha,                                                 \
+      const float beta,                                                  \
+      const T* x,                                                        \
+      T* y,                                                              \
+      CUDAContext* ctx) {                                                \
+    _HardSwish<<<CUDA_BLOCKS(N), CUDA_THREADS, 0, ctx->cuda_stream()>>>( \
+        N,                                                               \
+        convert::To<math::AccmulatorType<T>::type>(alpha),               \
+        convert::To<math::AccmulatorType<T>::type>(beta),                \
+        reinterpret_cast<const math::ScalarType<T>::type*>(x),           \
+        reinterpret_cast<math::ScalarType<T>::type*>(y));                \
+  }
 
-template <>
-void HardSwishGrad<float16, CUDAContext>(
-    const int count,
-    const float alpha,
-    const float beta,
-    const float16* dy,
-    const float16* x,
-    float16* dx,
-    CUDAContext* ctx) {
-  _HardSwishGrad<<<CUDA_BLOCKS(count), CUDA_THREADS, 0, ctx->cuda_stream()>>>(
-      count,
-      alpha,
-      beta,
-      reinterpret_cast<const half*>(dy),
-      reinterpret_cast<const half*>(x),
-      reinterpret_cast<half*>(dx));
-} // HardSwishGrad
-
-#define DEFINE_KERNEL_LAUNCHER(T)                                            \
+#define DEFINE_GRAD_KERNEL_LAUNCHER(T)                                       \
   template <>                                                                \
-  void HardSwish<T, CUDAContext>(                                            \
-      const int count,                                                       \
+  void HardSwishGrad<T, CUDAContext>(                                        \
+      const int N,                                                           \
       const float alpha,                                                     \
       const float beta,                                                      \
+      const T* dy,                                                           \
       const T* x,                                                            \
-      T* y,                                                                  \
+      T* dx,                                                                 \
       CUDAContext* ctx) {                                                    \
-    _HardSwish<<<CUDA_BLOCKS(count), CUDA_THREADS, 0, ctx->cuda_stream()>>>( \
-        count, T(alpha), T(beta), x, y);                                     \
+    _HardSwishGrad<<<CUDA_BLOCKS(N), CUDA_THREADS, 0, ctx->cuda_stream()>>>( \
+        N,                                                                   \
+        convert::To<math::AccmulatorType<T>::type>(alpha),                   \
+        convert::To<math::AccmulatorType<T>::type>(beta),                    \
+        reinterpret_cast<const math::ScalarType<T>::type*>(dy),              \
+        reinterpret_cast<const math::ScalarType<T>::type*>(x),               \
+        reinterpret_cast<math::ScalarType<T>::type*>(dx));                   \
   }
 
-#define DEFINE_GRAD_KERNEL_LAUNCHER(T)                              \
-  template <>                                                       \
-  void HardSwishGrad<T, CUDAContext>(                               \
-      const int count,                                              \
-      const float alpha,                                            \
-      const float beta,                                             \
-      const T* dy,                                                  \
-      const T* x,                                                   \
-      T* dx,                                                        \
-      CUDAContext* ctx) {                                           \
-    _HardSwishGrad<<<                                               \
-        CUDA_BLOCKS(count),                                         \
-        CUDA_THREADS,                                               \
-        0,                                                          \
-        ctx->cuda_stream()>>>(count, T(alpha), T(beta), dy, x, dx); \
-  }
-
+DEFINE_KERNEL_LAUNCHER(float16);
 DEFINE_KERNEL_LAUNCHER(float);
 DEFINE_KERNEL_LAUNCHER(double);
+DEFINE_GRAD_KERNEL_LAUNCHER(float16);
 DEFINE_GRAD_KERNEL_LAUNCHER(float);
 DEFINE_GRAD_KERNEL_LAUNCHER(double);
 #undef DEFINE_KERNEL_LAUNCHER
 #undef DEFINE_GRAD_KERNEL_LAUNCHER
 
-} // namespace kernel
+} // namespace kernels
 
 } // namespace dragon
 

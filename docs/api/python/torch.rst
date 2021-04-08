@@ -51,14 +51,17 @@ vm.torch
   `argsort(...) <torch/argsort.html>`_
   : Return the index of sorted elements along the given dimension.
 
-  `axpby(...) <torch/axpby.html>`_
-  : Compute the element-wise addition from input to output.
-
   `baddbmm(...) <torch/baddbmm.html>`_
   : Add input to the result of batched matrix-matrix multiplication.
 
+  `bitwise_and(...) <torch/bitwise_and.html>`_
+  : Compute the element-wise AND bitwise operation.
+
   `bitwise_not(...) <torch/bitwise_not.html>`_
   : Compute the element-wise NOT bitwise operation.
+
+  `bitwise_or(...) <torch/bitwise_or.html>`_
+  : Compute the element-wise OR bitwise operation.
 
   `bitwise_xor(...) <torch/bitwise_xor.html>`_
   : Compute the element-wise XOR bitwise operation.
@@ -73,13 +76,13 @@ vm.torch
   : Compute the smallest integer not less than input.
 
   `channel_affine(...) <torch/channel_affine.html>`_
-  : Apply affine transformation along the channels.
+  : Apply affine transformation to each channel of input.
 
   `channel_normalize(...) <torch/channel_normalize.html>`_
-  : Normalize channels with mean and standard deviation.
+  : Apply normalization to each channel of input.
 
   `channel_shuffle(...) <torch/channel_shuffle.html>`_
-  : Shuffle channels between a given number of groups.
+  : Apply group shuffle to each channel of input.
   `[Zhang et.al, 2017] <https://arxiv.org/abs/1707.01083>`_.
 
   `chunk(...) <torch/chunk.html>`_
@@ -143,10 +146,22 @@ vm.torch
   : Compute the element-wise less-equal comparison.
 
   `linspace(...) <torch/linspace.html>`_
-  : Generate evenly spaced values within intervals along the given axis.
+  : Generate evenly spaced values within intervals along the given dimension.
 
   `log(...) <torch/log.html>`_
   : Compute the natural logarithm of input.
+
+  `logical_and(...) <torch/logical_and.html>`_
+  : Compute the element-wise AND logical operation.
+
+  `logical_not(...) <torch/logical_not.html>`_
+  : Compute the element-wise NOT logical operation.
+
+  `logical_or(...) <torch/logical_or.html>`_
+  : Compute the element-wise OR logical operation.
+
+  `logical_xor(...) <torch/logical_xor.html>`_
+  : Compute the element-wise XOR logical operation.
 
   `logsumexp(...) <torch/logsumexp.html>`_
   : Apply the composite of log, sum, and exp to input.
@@ -155,7 +170,7 @@ vm.torch
   : Compute the element-wise less comparison.
 
   `masked_select(...) <torch/logsumexp.html>`_
-  : Select the input elements where mask is 1.
+  : Select the input elements where mask is true.
 
   `matmul(...) <torch/matmul.html>`_
   : Compute the matrix multiplication.
@@ -223,9 +238,6 @@ vm.torch
   `reciprocal(...) <torch/reciprocal.html>`_
   : Compute the reciprocal of input.
 
-  `repeat(...) <torch/repeat.html>`_
-  : Repeat elements along the specified dimensions.
-
   `reshape(...) <torch/reshape.html>`_
   : Change the shape of input.
 
@@ -265,11 +277,20 @@ vm.torch
   `tensor(...) <torch/tensor.html>`_
   : Create a tensor initializing the content from data.
 
+  `tile(...) <torch/tile.html>`_
+  : Repeat elements along each dimension of input.
+
   `topk(...) <torch/topk.html>`_
   : Return the top-K largest or smallest elements along the given dimension.
 
   `transpose(...) <torch/transpose.html>`_
   : Return a new tensor with two dimensions swapped.
+
+  `tril(...) <torch/tril.html>`_
+  : Return the lower triangular part of input.
+
+  `triu(...) <torch/triu.html>`_
+  : Return the upper triangular part of input.
 
   `unique(...) <torch/unique.html>`_
   : Return the unique elements of input.
@@ -298,9 +319,10 @@ vm.torch
   torch/argmax
   torch/argmin
   torch/argsort
-  torch/axpby
   torch/baddbmm
+  torch/bitwise_and
   torch/bitwise_not
+  torch/bitwise_or
   torch/bitwise_xor
   torch/bmm
   torch/cat
@@ -333,6 +355,10 @@ vm.torch
   torch/le
   torch/linspace
   torch/log
+  torch/logical_and
+  torch/logical_not
+  torch/logical_or
+  torch/logical_xor
   torch/logsumexp
   torch/lt
   torch/masked_select
@@ -359,7 +385,6 @@ vm.torch
   torch/randn
   torch/randperm
   torch/reciprocal
-  torch/repeat
   torch/reshape
   torch/round
   torch/rsqrt
@@ -374,8 +399,11 @@ vm.torch
   torch/sub
   torch/sum
   torch/tensor
+  torch/tile
   torch/topk
   torch/transpose
+  torch/tril
+  torch/triu
   torch/unique
   torch/unsqueeze
   torch/where

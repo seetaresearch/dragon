@@ -16,23 +16,15 @@ from __future__ import print_function
 
 import numpy
 
-from dragon.core.autograph.tensor import Tensor
-from dragon.core.eager import context as eager_context
-from dragon.core.eager.tensor import EagerTensor
+from dragon.core.autograph import context as eager_context
 from dragon.core.framework import context
+from dragon.core.framework import workspace
+from dragon.core.framework.tensor import Tensor
 from dragon.vm.tensorflow.core.framework import dtypes
 from dragon.vm.tensorflow.core.ops import init_ops
 
 
-class VariableMetaclass(object):
-    """Meta class for various variables."""
-
-    @property
-    def trainable(self):
-        return True
-
-
-class Variable(VariableMetaclass, EagerTensor):
+class Variable(Tensor):
     """Resource variable."""
 
     def __init__(
@@ -44,25 +36,35 @@ class Variable(VariableMetaclass, EagerTensor):
         shape=None,
     ):
         """Create a ``Variable``."""
-        super(Variable, self).__init__(trainable=trainable)
-        name = name if name else 'Variable'
-        dtype = str(dtype) if dtype else None
-        self._name = context.get_name_scope() + name + ':0'
-        # Determine th value.
-        if isinstance(initial_value, numpy.ndarray):
-            if dtype is None or initial_value.dtype == dtype:
-                initial_value = initial_value.copy()
-        elif isinstance(initial_value, EagerTensor):
-            initial_value = initial_value.get_value()
-            if dtype is None or initial_value.dtype == dtype:
-                initial_value = initial_value.copy()
-        elif isinstance(initial_value, Tensor):
-            initial_value = initial_value.get_value()
+        # Determine the initial value.
+        if isinstance(initial_value, Tensor):
+            value = initial_value.numpy()
+        else:
+            value = initial_value
         # Determine the data type and shape.
-        initial_value = numpy.array(initial_value, dtype, copy=False)
+        dtype = str(dtype) if dtype is not None else dtype
+        value = numpy.array(value, dtype, copy=False)
         if shape is not None:
-            initial_value = initial_value.reshape(shape)
-        self._from_array(initial_value)
+            if value.size == 1:
+                # Broadcast with scalar value.
+                scalar = value.flatten()[0]
+                value = numpy.empty(shape, value.dtype)
+                value.fill(scalar)
+            else:
+                # Reshape.
+                value = value.reshape(shape)
+        # Initialize tensor from the value.
+        default_ws = workspace.get_workspace()
+        super(Variable, self).__init__(
+            shape=value.shape,
+            dtype=value.dtype,
+            impl=default_ws.create_tensor(
+                scope=context.get_variable_scope())
+            .FromNumpy(value, True),
+            deleter=default_ws._handle_pool,
+            name=name,
+        )
+        self.requires_grad = trainable
 
     @property
     def trainable(self):

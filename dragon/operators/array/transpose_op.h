@@ -22,7 +22,7 @@ class TransposeOp final : public Operator<Context> {
  public:
   TransposeOp(const OperatorDef& def, Workspace* ws)
       : Operator<Context>(def, ws) {
-    INIT_OP_REPEATED_ARG_WITH_DESC(int64_t, perm);
+    INITIALIZE_OP_REPEATED_ARG(int64_t, perm);
   }
   USE_OPERATOR_FUNCTIONS;
 
@@ -32,7 +32,7 @@ class TransposeOp final : public Operator<Context> {
   void DoRunWithType();
 
  protected:
-  DECLARE_OP_REPEATED_ARG_WITH_DESC(int64_t, perm);
+  DECLARE_OP_REPEATED_ARG(int64_t, perm);
 };
 
 template <class Context>
@@ -47,7 +47,7 @@ class TransposeGradientOp : public Operator<Context> {
   void DoRunWithType();
 };
 
-DEFINE_OP_REPEATED_ARG_WITH_DESC(int64_t, TransposeOp, perm);
+DEFINE_OP_REPEATED_ARG(int64_t, TransposeOp, perm);
 
 } // namespace dragon
 

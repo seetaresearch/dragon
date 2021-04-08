@@ -23,15 +23,13 @@ namespace dragon {
 
 namespace python {
 
-namespace mpi {
-
 #define MPI_CHECK(condition, error_string)                     \
   do {                                                         \
     int error_code = condition;                                \
     CHECK_EQ(error_code, MPI_SUCCESS) << "\n" << error_string; \
   } while (0)
 
-void RegisterModule(py::module& m) {
+void RegisterModule_mpi(py::module& m) {
   /*! \brief Return whether MPI is available */
   m.def("mpiIsAvailable", []() {
 #ifdef USE_MPI
@@ -144,8 +142,6 @@ void RegisterModule(py::module& m) {
 }
 
 #undef MPI_CHECK
-
-} // namespace mpi
 
 } // namespace python
 

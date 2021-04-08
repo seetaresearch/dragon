@@ -20,6 +20,9 @@ import os
 import platform
 import sys
 
+_get_dlopen_flags = getattr(sys, 'getdlopenflags', None)
+_set_dlopen_flags = getattr(sys, 'setdlopenflags', None)
+
 if platform.system() == 'Windows':
     package_root = os.path.dirname(__file__)
     dll_paths = [os.path.join(package_root, 'lib')]
@@ -27,7 +30,7 @@ if platform.system() == 'Windows':
     os.environ['PATH'] = ';'.join(dll_paths)
 
 try:
-    from dragon.lib.libdragon_python import *
+    from dragon.lib.libdragon_python import *  # noqa
 except ImportError as e:
     print('Cannot import dragon. Error: {0}'.format(str(e)))
     sys.exit(1)
@@ -36,14 +39,14 @@ except ImportError as e:
 @contextlib.contextmanager
 def dlopen_guard(extra_flags=ctypes.RTLD_GLOBAL):
     old_flags = None
-    if _getdlopenflags and _setdlopenflags:
-        old_flags = _getdlopenflags()
-        _setdlopenflags(old_flags | extra_flags)
+    if _get_dlopen_flags and _set_dlopen_flags:
+        old_flags = _get_dlopen_flags()
+        _set_dlopen_flags(old_flags | extra_flags)
     try:
         yield
     finally:
         if old_flags is not None:
-            _setdlopenflags(old_flags)
+            _set_dlopen_flags(old_flags)
 
 
 def load_library(library_location):
@@ -62,19 +65,3 @@ def load_library(library_location):
         raise FileNotFoundError('Invalid path: %s' % library_location)
     with dlopen_guard():
         ctypes.cdll.LoadLibrary(library_location)
-    _reload_registry()
-
-
-def _reload_registry():
-    """Reload the list of registries."""
-    global REGISTERED_OPERATORS
-    global NO_GRADIENT_OPERATORS
-    REGISTERED_OPERATORS = frozenset(s for s in RegisteredOperators())
-    NO_GRADIENT_OPERATORS = frozenset(s for s in NoGradientOperators())
-
-
-_getdlopenflags = getattr(sys, 'getdlopenflags', None)
-_setdlopenflags = getattr(sys, 'setdlopenflags', None)
-
-REGISTERED_OPERATORS = frozenset(s for s in RegisteredOperators())
-NO_GRADIENT_OPERATORS = frozenset(s for s in NoGradientOperators())

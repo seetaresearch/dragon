@@ -14,8 +14,9 @@ void ReduceMinOp<Context>::DoRunWithType() {
   vec32_t reduce_axes(axes_.begin(), axes_.end());
   if (axes_.empty()) {
     reduce_axes.resize(X.ndim());
-    for (int i = 0; i < X.ndim(); ++i)
+    for (int i = 0; i < X.ndim(); ++i) {
       reduce_axes[i] = i;
+    }
   }
   for (int i = 0; i < reduce_axes.size(); ++i) {
     auto axis = reduce_axes[i];
@@ -28,7 +29,9 @@ void ReduceMinOp<Context>::DoRunWithType() {
 
   // Squeeze the output shape if necessary
   for (int i = 0; i < X.ndim(); ++i) {
-    if (keep_dims_ || Y_dims[i] != 1) Y_shape.push_back(Y_dims[i]);
+    if (keep_dims_ || Y_dims[i] != 1) {
+      Y_shape.push_back(Y_dims[i]);
+    }
   }
 
   if (X.count() == 1) {
@@ -48,7 +51,7 @@ void ReduceMinOp<Context>::DoRunWithType() {
 
 template <class Context>
 void ReduceMinOp<Context>::RunOnDevice() {
-  DispatchHelper<NumericalTensorTypes>::Call(this, Input(0));
+  DispatchHelper<dtypes::Numerical>::Call(this, Input(0));
 }
 
 DEPLOY_CPU_OPERATOR(ReduceMin);

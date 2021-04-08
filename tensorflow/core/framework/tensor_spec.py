@@ -87,7 +87,7 @@ class TensorSpec(object):
         Returns
         -------
         bool
-            **True** if compatible otherwise **False**.
+            ``True`` if compatible otherwise ``False``.
 
         """
         def dtype_is_compatible_with(spec_or_tensor):

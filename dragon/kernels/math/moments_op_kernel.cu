@@ -1,24 +1,18 @@
 #ifdef USE_CUDA
 
 #include "dragon/core/context_cuda.h"
-#include "dragon/utils/conversions.h"
 #include "dragon/utils/device/common_cub.h"
 #include "dragon/utils/math_functions.h"
 #include "dragon/utils/op_kernels.h"
 
 namespace dragon {
 
-namespace kernel {
+namespace kernels {
 
 namespace {
 
-#if __CUDA_ARCH__ >= 350
 #define LDG(x, i) __ldg(x + i)
 #define LDG2(x, i) convert::To<AccT>(__ldg(x + i))
-#else
-#define LDG(x, i) x[i]
-#define LDG2(x, i) convert::To<AccT>(x[i])
-#endif
 
 template <typename T, typename AccT>
 __global__ void _RowwiseMoments(
@@ -79,8 +73,8 @@ __global__ void _GenericMoments(
     const int rows,
     const int cols,
     const int num_dims,
-    const SimpleArray<int, D> x_dims,
-    const SimpleArray<int, D> x_strides,
+    const SimpleArray<int, D> X_dims,
+    const SimpleArray<int, D> X_strides,
     const T* x,
     AccT* mean,
     AccT* var) {
@@ -93,8 +87,8 @@ __global__ void _GenericMoments(
       int xi = 0, c = i * cols + j;
       for (int d = num_dims - 1; d >= 0; --d) {
         int r;
-        FIXED_DIVISOR_DIV_MOD(x_dims.data[d], c, &c, &r);
-        xi += r * x_strides.data[d];
+        FIXED_DIVISOR_DIV_MOD(X_dims.data[d], c, &c, &r);
+        xi += r * X_strides.data[d];
       }
       m_val += LDG2(x, xi);
       v_val += math::utils::Square(LDG2(x, xi));
@@ -198,8 +192,8 @@ void _Moments(
         ctx);                                                  \
   }
 
-DEFINE_KERNEL_LAUNCHER(int8_t, float);
 DEFINE_KERNEL_LAUNCHER(uint8_t, float);
+DEFINE_KERNEL_LAUNCHER(int8_t, float);
 DEFINE_KERNEL_LAUNCHER(int, float);
 DEFINE_KERNEL_LAUNCHER(int64_t, double);
 DEFINE_KERNEL_LAUNCHER(float16, float);
@@ -207,7 +201,7 @@ DEFINE_KERNEL_LAUNCHER(float, float);
 DEFINE_KERNEL_LAUNCHER(double, double);
 #undef DEFINE_KERNEL_LAUNCHER
 
-} // namespace kernel
+} // namespace kernels
 
 } // namespace dragon
 

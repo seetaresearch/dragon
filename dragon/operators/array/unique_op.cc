@@ -27,7 +27,7 @@ void UniqueOp<Context>::DoRunWithType() {
     counts = Y_counts->template mutable_data<int64_t, Context>();
   }
 
-  kernel::Unique(
+  kernels::Unique(
       X.count(),
       X.template data<T, Context>(),
       Y->ReshapeLike(X)->template mutable_data<T, Context>(),
@@ -43,7 +43,7 @@ void UniqueOp<Context>::DoRunWithType() {
 
 template <class Context>
 void UniqueOp<Context>::RunOnDevice() {
-  DispatchHelper<NumericalTensorTypes>::Call(this, Input(0));
+  DispatchHelper<dtypes::Numerical>::Call(this, Input(0));
 }
 
 DEPLOY_CPU_OPERATOR(Unique);

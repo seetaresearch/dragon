@@ -12,14 +12,15 @@ void DropoutOp<Context>::DoRunWithType() {
   if (phase() == "TEST") {
     Y->ReshapeLike(X)->CopyFrom(X, ctx());
   } else if (phase() == "TRAIN") {
-    Buffer("mask")->ReshapeLike(X);
-    kernel::Dropout(
+    auto* X_mask = Buffer("X_mask")->ReshapeLike(X);
+    auto drop_ratio = ratio();
+    kernels::Dropout(
         X.count(),
-        ratio(),
-        1.f / (1.f - ratio()),
+        drop_ratio,
+        1.f / (1.f - drop_ratio),
         X.template data<T, Context>(),
-        Buffer("mask")->template mutable_data<uint8_t, Context>(),
         Y->ReshapeLike(X)->template mutable_data<T, Context>(),
+        X_mask->template mutable_data<uint8_t, Context>(),
         ctx()->workspace()->template data<uint32_t, Context>({X.count()})[0],
         ctx());
   } else {
@@ -29,7 +30,7 @@ void DropoutOp<Context>::DoRunWithType() {
 
 template <class Context>
 void DropoutOp<Context>::RunOnDevice() {
-  DispatchHelper<FloatingTensorTypes>::Call(this, Input(0));
+  DispatchHelper<dtypes::Floating>::Call(this, Input(0));
 }
 
 template <class Context>
@@ -39,11 +40,11 @@ void DropoutGradientOp<Context>::DoRunWithType() {
   if (phase() == "TEST") {
     NOT_IMPLEMENTED;
   } else if (phase() == "TRAIN") {
-    kernel::ApplyMask(
+    math::ApplyMask(
         dY.count(),
         1.f / (1.f - ratio()),
+        Buffer("X_mask")->template data<uint8_t, Context>(),
         dY.template data<T, Context>(),
-        Buffer("mask")->template data<uint8_t, Context>(),
         dX->ReshapeLike(dY)->template mutable_data<T, Context>(),
         ctx());
   } else {
@@ -53,7 +54,7 @@ void DropoutGradientOp<Context>::DoRunWithType() {
 
 template <class Context>
 void DropoutGradientOp<Context>::RunOnDevice() {
-  DispatchHelper<FloatingTensorTypes>::Call(this, Input(0));
+  DispatchHelper<dtypes::Floating>::Call(this, Input(0));
 }
 
 DEPLOY_CPU_OPERATOR(Dropout);

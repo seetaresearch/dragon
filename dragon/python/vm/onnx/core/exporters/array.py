@@ -47,7 +47,7 @@ def cast_exporter(op_def, context):
         raise ValueError('ONNX does not support in-place cast.')
     for arg in op_def.arg:
         if arg.name == 'dtype':
-            helper.add_attribute(node, 'dtype', helper.tensor_type(arg.s))
+            helper.add_attribute(node, 'to', helper.tensor_type(arg.s))
     return node, const_tensors
 
 
@@ -59,10 +59,8 @@ def channel_affine_exporter(op_def, context):
     for arg in op_def.arg:
         if arg.name == 'axis':
             helper.add_attribute(node, 'axis', arg.i)
-        elif arg.name == 'num_axes':
-            helper.add_attribute(node, 'num_axes', arg.i)
-    # Weights and biases
-    const_tensors = [helper.from_tensor(e, context.ws) for e in op_def.input[1:]]
+        elif arg.name == 'end_axis':
+            helper.add_attribute(node, 'end_axis', arg.i)
     return node, const_tensors
 
 
@@ -85,10 +83,6 @@ def channel_normalize_exporter(op_def, context):
         elif arg.name == 'perm_desc':
             values = helper.fetch_argument(op_def, arg, context.ws)
             helper.add_attribute(node, 'perm', values)
-        elif arg.name == 'perm_descs':
-            if len(arg.strings) > 0:
-                values = helper.fetch_arguments(op_def, arg, context.ws)
-                helper.add_attribute(node, 'perm', values)
     return node, const_tensors
 
 
@@ -132,19 +126,6 @@ def expand_exporter(op_def, context):
     return node, [shape]
 
 
-@export_util.register('ExpandDims')
-def expand_dims_exporter(op_def, context):
-    node, const_tensors = export_util.translate(**locals())
-    node.op_type = 'Unsqueeze'
-    axes = None
-    for arg in op_def.arg:
-        if arg.name == 'axes':
-            axes = arg.ints
-    if axes is not None:
-        helper.add_attribute(node, 'axes', axes)
-    return node, const_tensors
-
-
 @export_util.register('Eye')
 def eye_exporter(op_def, context):
     node, const_tensors = export_util.translate(**locals())
@@ -172,21 +153,24 @@ def flatten_exporter(op_def, context):
                 raise ValueError(
                     'Excepted <num_axes> is -1, '
                     'got {}.'.format(arg.i))
-        elif arg.name == 'keep_axes':
-            raise ValueError('<keep_axes> should not be set.')
     return node, None
 
 
-@export_util.register('IndexSelect')
-def index_select_exporter(op_def, context):
+@export_util.register('Gather')
+def gather_exporter(op_def, context):
     node, const_tensors = export_util.translate(**locals())
-    node.op_type = 'Gather'
+    axis, end_axis = None, None
     for arg in op_def.arg:
         if arg.name == 'axis':
+            axis = arg.i
             helper.add_attribute(node, 'axis', arg.i)
-        elif arg.name == 'num_axes':
-            if arg.i > 1:
-                raise ValueError('Reshape to avoid selecting multiple axes.')
+        elif arg.name == 'end_axis':
+            end_axis = arg.i
+            if end_axis < 0:
+                input_shape = context.blob_shapes[op_def.input[0]]
+                end_axis += len(input_shape)
+    if end_axis is not None and axis != end_axis:
+        raise ValueError('Reshape to avoid multiple axes.')
     return node, const_tensors
 
 
@@ -195,7 +179,7 @@ def multinomial_exporter(op_def, context):
     node, const_tensors = export_util.translate(**locals())
     helper.add_attribute(node, 'dtype', helper.tensor_type('int64'))
     for arg in op_def.arg:
-        if arg.name == 'num_samples':
+        if arg.name == 'sample_size':
             helper.add_attribute(node, 'sample_size', arg.i)
     return node, const_tensors
 
@@ -204,15 +188,15 @@ def multinomial_exporter(op_def, context):
 def one_hot_exporter(op_def, context):
     node, const_tensors = export_util.translate(**locals())
     helper.add_attribute(node, 'axis', -1)
-    depth, on_value, off_value = 1, 1, 0
+    depth, on_value, off_value = 1, 1., 0.
     dtype = context.ws.FetchTensor(node.output[0]).dtype
     for arg in op_def.arg:
         if arg.name == 'depth':
             depth = arg.i
         elif arg.name == 'on_value':
-            on_value = arg.i
+            on_value = arg.f
         elif arg.name == 'off_value':
-            off_value = arg.i
+            off_value = arg.f
     depth = helper.from_array(
         numpy.array(depth, 'int64'),
         context.unique_name(op_def.input[0] + '/one_hot/depth'),
@@ -234,8 +218,6 @@ def pad_exporter(op_def, context):
             pads = [int(e) for e in arg.ints]
         elif arg.name == 'pads_desc':
             pads = helper.fetch_argument(op_def, arg, context.ws)
-        elif arg.name == 'pads_descs':
-            pads = helper.fetch_arguments(op_def, arg, context.ws)
         elif arg.name == 'mode':
             helper.add_attribute(node, 'mode', arg.s.lower())
         elif arg.name == 'value':
@@ -332,8 +314,6 @@ def reshape_exporter(op_def, context):
             dims = [int(e) for e in arg.ints]
         elif arg.name == 'dims_desc':
             dims = helper.fetch_argument(op_def, arg, context.ws)
-        elif arg.name == 'dims_descs':
-            dims = helper.fetch_arguments(op_def, arg, context.ws)
     for axis, dim in enumerate(dims):
         shape[axis] = dim if dim <= 0 else shape[axis]
     shape = helper.from_array(
@@ -353,14 +333,10 @@ def slice_exporter(op_def, context):
             starts = [int(e) for e in arg.ints]
         elif arg.name == 'starts_desc':
             starts = helper.fetch_argument(op_def, arg, context.ws)
-        elif arg.name == 'starts_descs':
-            starts = helper.fetch_arguments(op_def, arg, context.ws)
         elif arg.name == 'sizes':
             sizes = [int(e) for e in arg.ints]
         elif arg.name == 'sizes_desc':
             sizes = helper.fetch_argument(op_def, arg, context.ws)
-        elif arg.name == 'sizes_descs':
-            sizes = helper.fetch_arguments(op_def, arg, context.ws)
     for i, size in enumerate(sizes):
         if size == -1:
             ends.append(in_shape[i])
@@ -432,8 +408,6 @@ def tile_exporter(op_def, context):
             repeats = [e for e in arg.ints]
         elif arg.name == 'repeats_desc':
             repeats = helper.fetch_argument(op_def, arg, context.ws)
-        elif arg.name == 'repeats_descs':
-            repeats = helper.fetch_arguments(op_def, arg, context.ws)
     repeats = helper.from_array(
         numpy.array(repeats, 'int64'),
         context.unique_name(op_def.input[0] + '/tile/repeats'),
@@ -451,10 +425,6 @@ def transpose_exporter(op_def, context):
         elif arg.name == 'perm_desc':
             values = helper.fetch_argument(op_def, arg, context.ws)
             helper.add_attribute(node, 'perm', values)
-        elif arg.name == 'perm_descs':
-            if len(arg.strings) > 0:
-                values = helper.fetch_arguments(op_def, arg, context.ws)
-                helper.add_attribute(node, 'perm', values)
     return node, None
 
 
@@ -532,4 +502,16 @@ def unique_exporter(op_def, context):
     elif len(op_def.output) == 3:
         outputs.extend([op_def.output[1], op_def.output[2]])
     node.output[:] = outputs
+    return node, const_tensors
+
+
+@export_util.register('Unsqueeze')
+def unsqueeze_exporter(op_def, context):
+    node, const_tensors = export_util.translate(**locals())
+    axes = None
+    for arg in op_def.arg:
+        if arg.name == 'axes':
+            axes = arg.ints
+    if axes is not None:
+        helper.add_attribute(node, 'axes', axes)
     return node, const_tensors

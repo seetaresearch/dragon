@@ -53,7 +53,7 @@ def is_grad_enabled():
     Returns
     -------
     bool
-        **True** if enabling auto-grad.
+        ``True`` if enabling auto-grad.
 
     """
     return _GLOBAL_GRAD_OPTION.enabled

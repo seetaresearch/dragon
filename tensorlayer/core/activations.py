@@ -48,7 +48,7 @@ def leaky_relu(x, alpha=0.2, name="leaky_relu", **kwargs):
     alpha : float, optional, default=0.2
         The value to :math:`\alpha`.
     name : str, optional
-        The optional operator name.
+        The operator name.
 
     Returns
     -------

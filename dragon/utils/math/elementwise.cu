@@ -110,140 +110,126 @@ DEFINE_UNARY_FUNCTOR(SqrtHalf2, sqrt);
  * Unary Function Kernels
  */
 
-template <typename T, class Functor>
+template <typename InputT, typename OutputT, class Functor>
 __global__ void
-_SimpleUnaryFunc(const int nthreads, const Functor op, const T* x, T* y) {
-  CUDA_1D_KERNEL_LOOP(i, nthreads) {
+_SimpleUnaryFunc(const int N, const Functor op, const InputT* x, OutputT* y) {
+  CUDA_1D_KERNEL_LOOP(i, N) {
     y[i] = op(x[i]);
   }
 }
 
 template <typename T>
-__global__ void _Abs(const int n, const T* x, T* y) {
-  CUDA_1D_KERNEL_LOOP(i, n) {
+__global__ void _Abs(const int N, const T* x, T* y) {
+  CUDA_1D_KERNEL_LOOP(i, N) {
     const T val = x[i];
     y[i] = val > 0 ? val : -val;
   }
 }
 
 template <>
-__global__ void _Abs<half>(const int n, const half* x, half* y) {
-  CUDA_1D_KERNEL_LOOP(i, n) {
+__global__ void _Abs<half>(const int N, const half* x, half* y) {
+  CUDA_1D_KERNEL_LOOP(i, N) {
     const float val = __half2float(x[i]);
     y[i] = __float2half(val > 0 ? val : -val);
   }
 }
 
 template <>
-__global__ void _Abs<half2>(const int n, const half2* x, half2* y) {
-  CUDA_1D_KERNEL_LOOP(i, n) {
+__global__ void _Abs<half2>(const int N, const half2* x, half2* y) {
+  CUDA_1D_KERNEL_LOOP(i, N) {
     const float2 val = __half22float2(x[i]);
     y[i] = __floats2half2_rn(
         val.x > 0.f ? val.x : -val.x, val.y > 0.f ? val.y : -val.y);
   }
 }
 
-__global__ void _Inv(const int n, const float* x, float* y) {
-  CUDA_1D_KERNEL_LOOP(i, n) {
+__global__ void _Inv(const int N, const float* x, float* y) {
+  CUDA_1D_KERNEL_LOOP(i, N) {
     y[i] = __frcp_rn(x[i]);
   }
 }
 
-__global__ void _Inv(const int n, const double* x, double* y) {
-  CUDA_1D_KERNEL_LOOP(i, n) {
+__global__ void _Inv(const int N, const double* x, double* y) {
+  CUDA_1D_KERNEL_LOOP(i, N) {
     y[i] = __drcp_rn(x[i]);
   }
 }
 
 template <typename T>
-__global__ void _InvStd(const int n, const T eps, const T* x, T* y) {
-  CUDA_1D_KERNEL_LOOP(i, n) {
+__global__ void _InvStd(const int N, const T eps, const T* x, T* y) {
+  CUDA_1D_KERNEL_LOOP(i, N) {
     y[i] = rsqrt(x[i] + eps);
   }
 }
 
-__global__ void _InvStd(const int n, const float eps, const half* x, half* y) {
-  CUDA_1D_KERNEL_LOOP(i, n) {
+__global__ void _InvStd(const int N, const float eps, const half* x, half* y) {
+  CUDA_1D_KERNEL_LOOP(i, N) {
     y[i] = __float2half(rsqrt(__half2float(x[i]) + eps));
   }
 }
 
 __global__ void
-_InvStd(const int n, const float eps, const half2* x, half2* y) {
-  CUDA_1D_KERNEL_LOOP(i, n) {
+_InvStd(const int N, const float eps, const half2* x, half2* y) {
+  CUDA_1D_KERNEL_LOOP(i, N) {
     const float2 val = __half22float2(x[i]);
     y[i] = __floats2half2_rn(rsqrt(val.x + eps), rsqrt(val.y + eps));
   }
 }
 
 template <typename T>
-__global__ void _Invert(const int n, const T* x, T* y) {
-  CUDA_1D_KERNEL_LOOP(i, n) {
-    y[i] = ~x[i];
-  }
-}
-
-template <>
-__global__ void _Invert<bool>(const int n, const bool* x, bool* y) {
-  CUDA_1D_KERNEL_LOOP(i, n) {
-    y[i] = !x[i];
-  }
-}
-
-template <typename T>
-__global__ void _Powx(const int n, const T exponent, const T* x, T* y) {
-  CUDA_1D_KERNEL_LOOP(i, n) {
+__global__ void _Powx(const int N, const T exponent, const T* x, T* y) {
+  CUDA_1D_KERNEL_LOOP(i, N) {
     y[i] = pow(x[i], exponent);
   }
 }
 
 __global__ void
-_Powx(const int n, const float exponent, const half* x, half* y) {
-  CUDA_1D_KERNEL_LOOP(i, n) {
+_Powx(const int N, const float exponent, const half* x, half* y) {
+  CUDA_1D_KERNEL_LOOP(i, N) {
     y[i] = __float2half(pow(__half2float(x[i]), exponent));
   }
 }
 
 __global__ void
-_Powx(const int n, const float exponent, const half2* x, half2* y) {
-  CUDA_1D_KERNEL_LOOP(i, n) {
+_Powx(const int N, const float exponent, const half2* x, half2* y) {
+  CUDA_1D_KERNEL_LOOP(i, N) {
     const float2 val = __half22float2(x[i]);
     y[i] = __floats2half2_rn(pow(val.x, exponent), pow(val.y, exponent));
   }
 }
 
 template <typename T>
-__global__ void _Set(const int n, const T alpha, T* x) {
-  CUDA_1D_KERNEL_LOOP(i, n) {
+__global__ void _Set(const int N, const T alpha, T* x) {
+  CUDA_1D_KERNEL_LOOP(i, N) {
     x[i] = alpha;
   }
 }
 
 template <typename T>
-__global__ void _Sign(const int n, const T* x, T* y) {
-  CUDA_1D_KERNEL_LOOP(i, n) {
+__global__ void _Sign(const int N, const T* x, T* y) {
+  CUDA_1D_KERNEL_LOOP(i, N) {
     y[i] = math::utils::Sign(x[i]);
   }
 }
 
 template <>
-__global__ void _Sign<uint8_t>(const int n, const uint8_t* x, uint8_t* y) {
-  CUDA_1D_KERNEL_LOOP(i, n) {
+__global__ void _Sign<uint8_t>(const int N, const uint8_t* x, uint8_t* y) {
+  CUDA_1D_KERNEL_LOOP(i, N) {
     y[i] = x[i] > 0 ? uint8_t(1) : uint8_t(0);
   }
 }
 
 template <>
-__global__ void _Sign<half>(const int n, const half* x, half* y) {
-  CUDA_1D_KERNEL_LOOP(i, n) {
+__global__ void _Sign<half>(const int N, const half* x, half* y) {
+  CUDA_1D_KERNEL_LOOP(i, N) {
     const float val = __half2float(x[i]);
     y[i] = __float2half(math::utils::Sign(val));
   }
 }
 
 template <>
-__global__ void _Sign<half2>(const int n, const half2* x, half2* y) {
-  CUDA_1D_KERNEL_LOOP(i, n) {
+__global__ void _Sign<half2>(const int N, const half2* x, half2* y) {
+  CUDA_1D_KERNEL_LOOP(i, N) {
     const float2 val = __half22float2(x[i]);
     y[i] =
         __floats2half2_rn(math::utils::Sign(val.x), math::utils::Sign(val.y));
@@ -251,82 +237,93 @@ __global__ void _Sign<half2>(const int n, const half2* x, half2* y) {
 }
 
 template <typename T>
-__global__ void _Square(const int n, const T* x, T* y) {
-  CUDA_1D_KERNEL_LOOP(i, n) {
+__global__ void _Square(const int N, const T* x, T* y) {
+  CUDA_1D_KERNEL_LOOP(i, N) {
     y[i] = math::utils::Square(x[i]);
   }
 }
 
 template <typename T>
-__global__ void _NotZero(const int nthreads, const T* x, bool* y) {
-  CUDA_1D_KERNEL_LOOP(i, nthreads) {
+__global__ void _NotZero(const int N, const T* x, bool* y) {
+  CUDA_1D_KERNEL_LOOP(i, N) {
     y[i] = x[i] != T(0) ? true : false;
   }
 }
 
 template <>
-__global__ void _NotZero<half>(const int nthreads, const half* x, bool* y) {
-  CUDA_1D_KERNEL_LOOP(i, nthreads) {
+__global__ void _NotZero<half>(const int N, const half* x, bool* y) {
+  CUDA_1D_KERNEL_LOOP(i, N) {
     y[i] = __half2float(x[i]) != 0.f ? true : false;
   }
 }
 
 template <typename T>
-__global__ void _IsInf(const int n, const T* x, bool* y) {
-  CUDA_1D_KERNEL_LOOP(i, n) {
+__global__ void _IsInf(const int N, const T* x, bool* y) {
+  CUDA_1D_KERNEL_LOOP(i, N) {
     y[i] = math::utils::IsInf(x[i]);
   }
 }
 
 template <>
-__global__ void _IsInf<half>(const int n, const half* x, bool* y) {
-  CUDA_1D_KERNEL_LOOP(i, n) {
+__global__ void _IsInf<half>(const int N, const half* x, bool* y) {
+  CUDA_1D_KERNEL_LOOP(i, N) {
     y[i] = math::utils::IsInf(x[i]);
   }
 }
 
 template <typename T>
-__global__ void _IsNaN(const int n, const T* x, bool* y) {
-  CUDA_1D_KERNEL_LOOP(i, n) {
+__global__ void _IsNaN(const int N, const T* x, bool* y) {
+  CUDA_1D_KERNEL_LOOP(i, N) {
     y[i] = math::utils::IsNaN(x[i]);
   }
 }
 
 template <>
-__global__ void _IsNaN<half>(const int n, const half* x, bool* y) {
-  CUDA_1D_KERNEL_LOOP(i, n) {
+__global__ void _IsNaN<half>(const int N, const half* x, bool* y) {
+  CUDA_1D_KERNEL_LOOP(i, N) {
     y[i] = math::utils::IsNaN(x[i]);
   }
 }
 
 template <typename T>
-__global__ void _ReplaceNaN(const int n, const T value, const T* x, T* y) {
-  CUDA_1D_KERNEL_LOOP(i, n) {
-#if __CUDA_ARCH__ >= 350
+__global__ void _ReplaceNaN(const int N, const T value, const T* x, T* y) {
+  CUDA_1D_KERNEL_LOOP(i, N) {
     y[i] = math::utils::IsNaN(__ldg(x + i)) ? value : __ldg(x + i);
-#else
-    y[i] = math::utils::IsNaN(x[i]) ? value : x[i];
-#endif
   }
 }
 
 template <>
 __global__ void
-_ReplaceNaN<half>(const int n, const half value, const half* x, half* y) {
-  CUDA_1D_KERNEL_LOOP(i, n) {
-#if __CUDA_ARCH__ >= 350
+_ReplaceNaN<half>(const int N, const half value, const half* x, half* y) {
+  CUDA_1D_KERNEL_LOOP(i, N) {
     y[i] = math::utils::IsNaN(__ldg(x + i)) ? value : __ldg(x + i);
-#else
-    y[i] = math::utils::IsNaN(x[i]) ? value : x[i];
-#endif
   }
 }
 
 template <typename T, class Functor>
 __global__ void
-_Bias(const int n, const T beta, const Functor op, const T* x, T* y) {
-  CUDA_1D_KERNEL_LOOP(i, n) {
+_Bias(const int N, const T beta, const Functor op, const T* x, T* y) {
+  CUDA_1D_KERNEL_LOOP(i, N) {
     y[i] = op(x[i], beta);
+  }
+}
+
+template <typename T>
+__global__ void
+_ApplyMask(const int N, const T alpha, const uint8_t* mask, const T* x, T* y) {
+  CUDA_1D_KERNEL_LOOP(i, N) {
+    y[i] = x[i] * T(mask[i]) * alpha;
+  }
+}
+
+__global__ void _ApplyMask(
+    const int N,
+    const float alpha,
+    const uint8_t* mask,
+    const half* x,
+    half* y) {
+  CUDA_1D_KERNEL_LOOP(i, N) {
+    y[i] = __float2half(__half2float(x[i]) * (alpha * float(mask[i])));
   }
 }
 
@@ -336,89 +333,95 @@ _Bias(const int n, const T beta, const Functor op, const T* x, T* y) {
 
 template <typename InputT, typename OutputT, class Functor>
 __global__ void _SimpleBinaryFunc(
-    const int n,
+    const int N,
     const Functor op,
     const InputT* a,
     const InputT* b,
     OutputT* y) {
-  CUDA_1D_KERNEL_LOOP(i, n) {
+  CUDA_1D_KERNEL_LOOP(i, N) {
     y[i] = op(a[i], b[i]);
   }
 }
 
 template <typename T>
 __global__ void
-_Where(const int n, const T* a, const T* b, const bool* c, T* y) {
-  CUDA_1D_KERNEL_LOOP(i, n) {
+_Where(const int N, const T* a, const T* b, const bool* c, T* y) {
+  CUDA_1D_KERNEL_LOOP(i, N) {
     y[i] = c[i] ? a[i] : b[i];
   }
 }
 
 } // namespace
 
-/* ------------------- Launcher Separator ------------------- */
-
-#define DEFINE_UNARY_FUNC(name, T, Functor)                                    \
+#define DEFINE_UNARY_FUNC(name, InputT, OutputT, Functor)                      \
   template <>                                                                  \
-  DRAGON_API void name<T, CUDAContext>(                                        \
-      const int n, const T* x, T* y, CUDAContext* ctx) {                       \
-    _SimpleUnaryFunc<<<CUDA_BLOCKS(n), CUDA_THREADS, 0, ctx->cuda_stream()>>>( \
-        n, Functor<T>(), x, y);                                                \
+  DRAGON_API void name<InputT, CUDAContext>(                                   \
+      const int N, const InputT* x, OutputT* y, CUDAContext* ctx) {            \
+    _SimpleUnaryFunc<<<CUDA_BLOCKS(N), CUDA_THREADS, 0, ctx->cuda_stream()>>>( \
+        N, Functor<InputT>(), x, y);                                           \
   }
 
-DEFINE_UNARY_FUNC(Neg, int8_t, NegFunctor);
-DEFINE_UNARY_FUNC(Neg, int, NegFunctor);
-DEFINE_UNARY_FUNC(Neg, int64_t, NegFunctor);
-DEFINE_UNARY_FUNC(Neg, float, NegFunctor);
-DEFINE_UNARY_FUNC(Neg, double, NegFunctor);
-DEFINE_UNARY_FUNC(Ceil, float, CeilFunctor);
-DEFINE_UNARY_FUNC(Ceil, double, CeilFunctor);
-DEFINE_UNARY_FUNC(Cos, float, CosFunctor);
-DEFINE_UNARY_FUNC(Cos, double, CosFunctor);
-DEFINE_UNARY_FUNC(Exp, float, ExpFunctor);
-DEFINE_UNARY_FUNC(Exp, double, ExpFunctor);
-DEFINE_UNARY_FUNC(Floor, float, FloorFunctor);
-DEFINE_UNARY_FUNC(Floor, double, FloorFunctor);
-DEFINE_UNARY_FUNC(Log, float, LogFunctor);
-DEFINE_UNARY_FUNC(Log, double, LogFunctor);
-DEFINE_UNARY_FUNC(Round, float, RoundFunctor);
-DEFINE_UNARY_FUNC(Round, double, RoundFunctor);
-DEFINE_UNARY_FUNC(Rsqrt, float, RsqrtFunctor);
-DEFINE_UNARY_FUNC(Rsqrt, double, RsqrtFunctor);
-DEFINE_UNARY_FUNC(Sin, float, SinFunctor);
-DEFINE_UNARY_FUNC(Sin, double, SinFunctor);
-DEFINE_UNARY_FUNC(Sqrt, float, SqrtFunctor);
-DEFINE_UNARY_FUNC(Sqrt, double, SqrtFunctor);
+DEFINE_UNARY_FUNC(BitwiseNot, bool, bool, math::BitNotFunctor);
+DEFINE_UNARY_FUNC(BitwiseNot, uint8_t, uint8_t, math::BitNotFunctor);
+DEFINE_UNARY_FUNC(BitwiseNot, int8_t, int8_t, math::BitNotFunctor);
+DEFINE_UNARY_FUNC(BitwiseNot, int, int, math::BitNotFunctor);
+DEFINE_UNARY_FUNC(BitwiseNot, int64_t, int64_t, math::BitNotFunctor);
+DEFINE_UNARY_FUNC(Not, bool, bool, math::NotFunctor);
+DEFINE_UNARY_FUNC(Not, uint8_t, bool, math::NotFunctor);
+DEFINE_UNARY_FUNC(Not, int8_t, bool, math::NotFunctor);
+DEFINE_UNARY_FUNC(Not, int, bool, math::NotFunctor);
+DEFINE_UNARY_FUNC(Not, int64_t, bool, math::NotFunctor);
+DEFINE_UNARY_FUNC(Not, float16, bool, math::NotFunctor);
+DEFINE_UNARY_FUNC(Not, float, bool, math::NotFunctor);
+DEFINE_UNARY_FUNC(Not, double, bool, math::NotFunctor);
+DEFINE_UNARY_FUNC(Neg, int8_t, int8_t, NegFunctor);
+DEFINE_UNARY_FUNC(Neg, int, int, NegFunctor);
+DEFINE_UNARY_FUNC(Neg, int64_t, int64_t, NegFunctor);
+DEFINE_UNARY_FUNC(Neg, float, float, NegFunctor);
+DEFINE_UNARY_FUNC(Neg, double, double, NegFunctor);
+DEFINE_UNARY_FUNC(Ceil, float, float, CeilFunctor);
+DEFINE_UNARY_FUNC(Ceil, double, double, CeilFunctor);
+DEFINE_UNARY_FUNC(Cos, float, float, CosFunctor);
+DEFINE_UNARY_FUNC(Cos, double, double, CosFunctor);
+DEFINE_UNARY_FUNC(Exp, float, float, ExpFunctor);
+DEFINE_UNARY_FUNC(Exp, double, double, ExpFunctor);
+DEFINE_UNARY_FUNC(Floor, float, float, FloorFunctor);
+DEFINE_UNARY_FUNC(Floor, double, double, FloorFunctor);
+DEFINE_UNARY_FUNC(Log, float, float, LogFunctor);
+DEFINE_UNARY_FUNC(Log, double, double, LogFunctor);
+DEFINE_UNARY_FUNC(Round, float, float, RoundFunctor);
+DEFINE_UNARY_FUNC(Round, double, double, RoundFunctor);
+DEFINE_UNARY_FUNC(Rsqrt, float, float, RsqrtFunctor);
+DEFINE_UNARY_FUNC(Rsqrt, double, double, RsqrtFunctor);
+DEFINE_UNARY_FUNC(Sin, float, float, SinFunctor);
+DEFINE_UNARY_FUNC(Sin, double, double, SinFunctor);
+DEFINE_UNARY_FUNC(Sqrt, float, float, SqrtFunctor);
+DEFINE_UNARY_FUNC(Sqrt, double, double, SqrtFunctor);
 #undef DEFINE_UNARY_FUNC
 
 #define DEFINE_UNARY_FUNC(name, T)                                             \
   template <>                                                                  \
   DRAGON_API void name<T, CUDAContext>(                                        \
-      const int n, const T* x, T* y, CUDAContext* ctx) {                       \
-    _##name<<<CUDA_BLOCKS(n), CUDA_THREADS, 0, ctx->cuda_stream()>>>(n, x, y); \
+      const int N, const T* x, T* y, CUDAContext* ctx) {                       \
+    _##name<<<CUDA_BLOCKS(N), CUDA_THREADS, 0, ctx->cuda_stream()>>>(N, x, y); \
   }
 
-DEFINE_UNARY_FUNC(Abs, int8_t);
 DEFINE_UNARY_FUNC(Abs, uint8_t);
+DEFINE_UNARY_FUNC(Abs, int8_t);
 DEFINE_UNARY_FUNC(Abs, int);
 DEFINE_UNARY_FUNC(Abs, int64_t);
 DEFINE_UNARY_FUNC(Abs, float);
 DEFINE_UNARY_FUNC(Abs, double);
 DEFINE_UNARY_FUNC(Inv, float);
 DEFINE_UNARY_FUNC(Inv, double);
-DEFINE_UNARY_FUNC(Invert, bool);
-DEFINE_UNARY_FUNC(Invert, int8_t);
-DEFINE_UNARY_FUNC(Invert, uint8_t);
-DEFINE_UNARY_FUNC(Invert, int);
-DEFINE_UNARY_FUNC(Invert, int64_t);
-DEFINE_UNARY_FUNC(Sign, int8_t);
 DEFINE_UNARY_FUNC(Sign, uint8_t);
+DEFINE_UNARY_FUNC(Sign, int8_t);
 DEFINE_UNARY_FUNC(Sign, int);
 DEFINE_UNARY_FUNC(Sign, int64_t);
 DEFINE_UNARY_FUNC(Sign, float);
 DEFINE_UNARY_FUNC(Sign, double);
-DEFINE_UNARY_FUNC(Square, int8_t);
 DEFINE_UNARY_FUNC(Square, uint8_t);
+DEFINE_UNARY_FUNC(Square, int8_t);
 DEFINE_UNARY_FUNC(Square, int);
 DEFINE_UNARY_FUNC(Square, int64_t);
 DEFINE_UNARY_FUNC(Square, float);
@@ -428,24 +431,24 @@ DEFINE_UNARY_FUNC(Square, double);
 #define DEFINE_UNARY_FUNC(name, HalfFunctor, Half2Functor)           \
   template <>                                                        \
   DRAGON_API void name<float16, CUDAContext>(                        \
-      const int n, const float16* x, float16* y, CUDAContext* ctx) { \
-    if ((n & 1) == 0) {                                              \
+      const int N, const float16* x, float16* y, CUDAContext* ctx) { \
+    if ((N & 1) == 0) {                                              \
       _SimpleUnaryFunc<<<                                            \
-          CUDA_BLOCKS(n >> 1),                                       \
+          CUDA_BLOCKS(N >> 1),                                       \
           CUDA_THREADS,                                              \
           0,                                                         \
           ctx->cuda_stream()>>>(                                     \
-          n >> 1,                                                    \
+          N >> 1,                                                    \
           Half2Functor<half2>(),                                     \
           reinterpret_cast<const half2*>(x),                         \
           reinterpret_cast<half2*>(y));                              \
     } else {                                                         \
       _SimpleUnaryFunc<<<                                            \
-          CUDA_BLOCKS(n),                                            \
+          CUDA_BLOCKS(N),                                            \
           CUDA_THREADS,                                              \
           0,                                                         \
           ctx->cuda_stream()>>>(                                     \
-          n,                                                         \
+          N,                                                         \
           HalfFunctor<half>(),                                       \
           reinterpret_cast<const half*>(x),                          \
           reinterpret_cast<half*>(y));                               \
@@ -468,15 +471,15 @@ DEFINE_UNARY_FUNC(Sqrt, SqrtHalfFunctor, SqrtHalf2Functor);
 #define DEFINE_UNARY_FUNC(name)                                              \
   template <>                                                                \
   DRAGON_API void name<float16, CUDAContext>(                                \
-      const int n, const float16* x, float16* y, CUDAContext* ctx) {         \
-    if ((n & 1) == 0) {                                                      \
-      _##name<<<CUDA_BLOCKS(n >> 1), CUDA_THREADS, 0, ctx->cuda_stream()>>>( \
-          n >> 1,                                                            \
+      const int N, const float16* x, float16* y, CUDAContext* ctx) {         \
+    if ((N & 1) == 0) {                                                      \
+      _##name<<<CUDA_BLOCKS(N >> 1), CUDA_THREADS, 0, ctx->cuda_stream()>>>( \
+          N >> 1,                                                            \
           reinterpret_cast<const half2*>(x),                                 \
           reinterpret_cast<half2*>(y));                                      \
     } else {                                                                 \
-      _##name<<<CUDA_BLOCKS(n), CUDA_THREADS, 0, ctx->cuda_stream()>>>(      \
-          n, reinterpret_cast<const half*>(x), reinterpret_cast<half*>(y));  \
+      _##name<<<CUDA_BLOCKS(N), CUDA_THREADS, 0, ctx->cuda_stream()>>>(      \
+          N, reinterpret_cast<const half*>(x), reinterpret_cast<half*>(y));  \
     }                                                                        \
   }
 
@@ -485,73 +488,69 @@ DEFINE_UNARY_FUNC(Sign);
 DEFINE_UNARY_FUNC(Square);
 #undef DEFINE_UNARY_FUNC
 
-/* y = value */
-
 #define DEFINE_SET_FUNC(T)                                                  \
   template <>                                                               \
   DRAGON_API void Set<T, CUDAContext>(                                      \
-      const int n, const T value, T* y, CUDAContext* ctx) {                 \
+      const int N, const T value, T* y, CUDAContext* ctx) {                 \
     if (value == T(0)) {                                                    \
-      CUDA_CHECK(cudaMemsetAsync(y, 0, sizeof(T) * n, ctx->cuda_stream())); \
+      CUDA_CHECK(cudaMemsetAsync(y, 0, sizeof(T) * N, ctx->cuda_stream())); \
     } else {                                                                \
-      _Set<<<CUDA_BLOCKS(n), CUDA_THREADS, 0, ctx->cuda_stream()>>>(        \
-          n, value, y);                                                     \
+      _Set<<<CUDA_BLOCKS(N), CUDA_THREADS, 0, ctx->cuda_stream()>>>(        \
+          N, value, y);                                                     \
     }                                                                       \
   }
 
 template <>
 DRAGON_API void Set<float16, CUDAContext>(
-    const int n,
+    const int N,
     const float16 value,
     float16* y,
     CUDAContext* ctx) {
   if (value.x == (unsigned short)0) {
-    CUDA_CHECK(cudaMemsetAsync(y, 0, sizeof(float16) * n, ctx->cuda_stream()));
+    CUDA_CHECK(cudaMemsetAsync(y, 0, sizeof(float16) * N, ctx->cuda_stream()));
     return;
   }
-  if ((n & 1) == 0) {
-    _Set<<<CUDA_BLOCKS(n >> 1), CUDA_THREADS, 0, ctx->cuda_stream()>>>(
-        n >> 1, convert::To<half2>(value), reinterpret_cast<half2*>(y));
+  if ((N & 1) == 0) {
+    _Set<<<CUDA_BLOCKS(N >> 1), CUDA_THREADS, 0, ctx->cuda_stream()>>>(
+        N >> 1, convert::To<half2>(value), reinterpret_cast<half2*>(y));
   } else {
-    _Set<<<CUDA_BLOCKS(n), CUDA_THREADS, 0, ctx->cuda_stream()>>>(n, value, y);
+    _Set<<<CUDA_BLOCKS(N), CUDA_THREADS, 0, ctx->cuda_stream()>>>(N, value, y);
   }
 }
 
 DEFINE_SET_FUNC(bool);
-DEFINE_SET_FUNC(int8_t);
 DEFINE_SET_FUNC(uint8_t);
+DEFINE_SET_FUNC(int8_t);
 DEFINE_SET_FUNC(int);
 DEFINE_SET_FUNC(int64_t);
 DEFINE_SET_FUNC(float);
 DEFINE_SET_FUNC(double);
 #undef DEFINE_SET_FUNC
 
-/* y = 1 / sqrt(x + eps) */
-
 #define DEFINE_INVSTD_FUNC(T)                                             \
   template <>                                                             \
   DRAGON_API void InvStd<T, CUDAContext>(                                 \
-      const int n, const float eps, const T* x, T* y, CUDAContext* ctx) { \
-    _InvStd<<<CUDA_BLOCKS(n), CUDA_THREADS, 0, ctx->cuda_stream()>>>(     \
-        n, (T)eps, x, y);                                                 \
+      const int N, const float eps, const T* x, T* y, CUDAContext* ctx) { \
+    _InvStd<<<CUDA_BLOCKS(N), CUDA_THREADS, 0, ctx->cuda_stream()>>>(     \
+        N, (T)eps, x, y);                                                 \
   }
 
 template <>
 DRAGON_API void InvStd<float16, CUDAContext>(
-    const int n,
+    const int N,
     const float eps,
     const float16* x,
     float16* y,
     CUDAContext* ctx) {
-  if ((n & 1) == 0) {
-    _InvStd<<<CUDA_BLOCKS(n >> 1), CUDA_THREADS, 0, ctx->cuda_stream()>>>(
-        n >> 1,
+  if ((N & 1) == 0) {
+    _InvStd<<<CUDA_BLOCKS(N >> 1), CUDA_THREADS, 0, ctx->cuda_stream()>>>(
+        N >> 1,
         eps,
         reinterpret_cast<const half2*>(x),
         reinterpret_cast<half2*>(y));
   } else {
-    _InvStd<<<CUDA_BLOCKS(n), CUDA_THREADS, 0, ctx->cuda_stream()>>>(
-        n, eps, reinterpret_cast<const half*>(x), reinterpret_cast<half*>(y));
+    _InvStd<<<CUDA_BLOCKS(N), CUDA_THREADS, 0, ctx->cuda_stream()>>>(
+        N, eps, reinterpret_cast<const half*>(x), reinterpret_cast<half*>(y));
   }
 }
 
@@ -559,32 +558,30 @@ DEFINE_INVSTD_FUNC(float);
 DEFINE_INVSTD_FUNC(double);
 #undef DEFINE_INVSTD_FUNC
 
-/* y = x^e */
-
 #define DEFINE_POWX_FUNC(T)                                                    \
   template <>                                                                  \
   DRAGON_API void Powx<T, CUDAContext>(                                        \
-      const int n, const float exponent, const T* x, T* y, CUDAContext* ctx) { \
-    _Powx<<<CUDA_BLOCKS(n), CUDA_THREADS, 0, ctx->cuda_stream()>>>(            \
-        n, (T)exponent, x, y);                                                 \
+      const int N, const float exponent, const T* x, T* y, CUDAContext* ctx) { \
+    _Powx<<<CUDA_BLOCKS(N), CUDA_THREADS, 0, ctx->cuda_stream()>>>(            \
+        N, (T)exponent, x, y);                                                 \
   }
 
 template <>
 DRAGON_API void Powx<float16, CUDAContext>(
-    const int n,
+    const int N,
     const float exponent,
     const float16* x,
     float16* y,
     CUDAContext* ctx) {
-  if ((n & 1) == 0) {
-    _Powx<<<CUDA_BLOCKS(n >> 1), CUDA_THREADS, 0, ctx->cuda_stream()>>>(
-        n >> 1,
+  if ((N & 1) == 0) {
+    _Powx<<<CUDA_BLOCKS(N >> 1), CUDA_THREADS, 0, ctx->cuda_stream()>>>(
+        N >> 1,
         exponent,
         reinterpret_cast<const half2*>(x),
         reinterpret_cast<half2*>(y));
   } else {
-    _Powx<<<CUDA_BLOCKS(n), CUDA_THREADS, 0, ctx->cuda_stream()>>>(
-        n,
+    _Powx<<<CUDA_BLOCKS(N), CUDA_THREADS, 0, ctx->cuda_stream()>>>(
+        N,
         exponent,
         reinterpret_cast<const half*>(x),
         reinterpret_cast<half*>(y));
@@ -595,100 +592,92 @@ DEFINE_POWX_FUNC(float);
 DEFINE_POWX_FUNC(double);
 #undef DEFINE_POWX_FUNC
 
-/* y = notzero(x) */
-
-#define DEFINE_NOT_ZERO_FUNC(T)                                            \
-  template <>                                                              \
-  DRAGON_API void NotZero<T, CUDAContext>(                                 \
-      const int count, const T* x, bool* y, CUDAContext* ctx) {            \
-    _NotZero<<<CUDA_BLOCKS(count), CUDA_THREADS, 0, ctx->cuda_stream()>>>( \
-        count, x, y);                                                      \
+#define DEFINE_NOT_ZERO_FUNC(T)                                        \
+  template <>                                                          \
+  DRAGON_API void NotZero<T, CUDAContext>(                             \
+      const int N, const T* x, bool* y, CUDAContext* ctx) {            \
+    _NotZero<<<CUDA_BLOCKS(N), CUDA_THREADS, 0, ctx->cuda_stream()>>>( \
+        N, x, y);                                                      \
   }
 
 template <>
 DRAGON_API void NotZero<float16, CUDAContext>(
-    const int count,
+    const int N,
     const float16* x,
     bool* y,
     CUDAContext* ctx) {
-  _NotZero<<<CUDA_BLOCKS(count), CUDA_THREADS, 0, ctx->cuda_stream()>>>(
-      count, reinterpret_cast<const half*>(x), y);
+  _NotZero<<<CUDA_BLOCKS(N), CUDA_THREADS, 0, ctx->cuda_stream()>>>(
+      N, reinterpret_cast<const half*>(x), y);
 }
 
 DEFINE_NOT_ZERO_FUNC(bool);
-DEFINE_NOT_ZERO_FUNC(int8_t);
 DEFINE_NOT_ZERO_FUNC(uint8_t);
+DEFINE_NOT_ZERO_FUNC(int8_t);
 DEFINE_NOT_ZERO_FUNC(int);
 DEFINE_NOT_ZERO_FUNC(int64_t);
 DEFINE_NOT_ZERO_FUNC(float);
 DEFINE_NOT_ZERO_FUNC(double);
 #undef DEFINE_NOT_ZERO_FUNC
 
-/* y = isinf(x) */
-
 #define DEFINE_IS_INF_FUNC(T)                                                 \
   template <>                                                                 \
   DRAGON_API void IsInf<T, CUDAContext>(                                      \
-      const int n, const T* x, bool* y, CUDAContext* ctx) {                   \
-    _IsInf<<<CUDA_BLOCKS(n), CUDA_THREADS, 0, ctx->cuda_stream()>>>(n, x, y); \
+      const int N, const T* x, bool* y, CUDAContext* ctx) {                   \
+    _IsInf<<<CUDA_BLOCKS(N), CUDA_THREADS, 0, ctx->cuda_stream()>>>(N, x, y); \
   }
 
 template <>
 DRAGON_API void IsInf<float16, CUDAContext>(
-    const int n,
+    const int N,
     const float16* x,
     bool* y,
     CUDAContext* ctx) {
-  _IsInf<<<CUDA_BLOCKS(n), CUDA_THREADS, 0, ctx->cuda_stream()>>>(
-      n, reinterpret_cast<const half*>(x), y);
+  _IsInf<<<CUDA_BLOCKS(N), CUDA_THREADS, 0, ctx->cuda_stream()>>>(
+      N, reinterpret_cast<const half*>(x), y);
 }
 
 DEFINE_IS_INF_FUNC(float);
 DEFINE_IS_INF_FUNC(double);
 #undef DEFINE_IS_INF_FUNC
 
-/* y = isnan(x) */
-
 #define DEFINE_IS_NAN_FUNC(T)                                                 \
   template <>                                                                 \
   DRAGON_API void IsNaN<T, CUDAContext>(                                      \
-      const int n, const T* x, bool* y, CUDAContext* ctx) {                   \
-    _IsNaN<<<CUDA_BLOCKS(n), CUDA_THREADS, 0, ctx->cuda_stream()>>>(n, x, y); \
+      const int N, const T* x, bool* y, CUDAContext* ctx) {                   \
+    _IsNaN<<<CUDA_BLOCKS(N), CUDA_THREADS, 0, ctx->cuda_stream()>>>(N, x, y); \
   }
 
 template <>
 DRAGON_API void IsNaN<float16, CUDAContext>(
-    const int n,
+    const int N,
     const float16* x,
     bool* y,
     CUDAContext* ctx) {
-  _IsNaN<<<CUDA_BLOCKS(n), CUDA_THREADS, 0, ctx->cuda_stream()>>>(
-      n, reinterpret_cast<const half*>(x), y);
+  _IsNaN<<<CUDA_BLOCKS(N), CUDA_THREADS, 0, ctx->cuda_stream()>>>(
+      N, reinterpret_cast<const half*>(x), y);
 }
 
 DEFINE_IS_NAN_FUNC(float);
 DEFINE_IS_NAN_FUNC(double);
 #undef DEFINE_IS_NAN_FUNC
 
-/* y = isnan(x) ? value : x */
-
 #define DEFINE_REPLACE_NAN_FUNC(T)                                        \
   template <>                                                             \
   DRAGON_API void ReplaceNaN<T, CUDAContext>(                             \
-      const int n, const T value, const T* x, T* y, CUDAContext* ctx) {   \
-    _ReplaceNaN<<<CUDA_BLOCKS(n), CUDA_THREADS, 0, ctx->cuda_stream()>>>( \
-        n, value, x, y);                                                  \
+      const int N, const T value, const T* x, T* y, CUDAContext* ctx) {   \
+    _ReplaceNaN<<<CUDA_BLOCKS(N), CUDA_THREADS, 0, ctx->cuda_stream()>>>( \
+        N, value, x, y);                                                  \
   }
 
 template <>
 DRAGON_API void ReplaceNaN<float16, CUDAContext>(
-    const int n,
+    const int N,
     const float16 value,
     const float16* x,
     float16* y,
     CUDAContext* ctx) {
-  _ReplaceNaN<<<CUDA_BLOCKS(n), CUDA_THREADS, 0, ctx->cuda_stream()>>>(
-      n,
+  _ReplaceNaN<<<CUDA_BLOCKS(N), CUDA_THREADS, 0, ctx->cuda_stream()>>>(
+      N,
       convert::To<half>(value),
       reinterpret_cast<const half*>(x),
       reinterpret_cast<half*>(y));
@@ -698,35 +687,33 @@ DEFINE_REPLACE_NAN_FUNC(float);
 DEFINE_REPLACE_NAN_FUNC(double);
 #undef DEFINE_REPLACE_NAN_FUNC
 
-/* y = x + beta */
-
 #define DEFINE_BIAS_FUNC(T)                                                \
   template <>                                                              \
   DRAGON_API void Bias<T, CUDAContext>(                                    \
-      const int n, const float beta, const T* x, T* y, CUDAContext* ctx) { \
+      const int N, const float beta, const T* x, T* y, CUDAContext* ctx) { \
     if (beta == 0.f) return;                                               \
-    _Bias<<<CUDA_BLOCKS(n), CUDA_THREADS, 0, ctx->cuda_stream()>>>(        \
-        n, (T)beta, math::PlusFunctor<T>(), x, y);                         \
+    _Bias<<<CUDA_BLOCKS(N), CUDA_THREADS, 0, ctx->cuda_stream()>>>(        \
+        N, (T)beta, math::PlusFunctor<T>(), x, y);                         \
   }
 
 template <>
 DRAGON_API void Bias<float16, CUDAContext>(
-    const int n,
+    const int N,
     const float beta,
     const float16* x,
     float16* y,
     CUDAContext* ctx) {
   if (beta == 0.f) return;
-  if ((n & 1) == 0) {
-    _Bias<<<CUDA_BLOCKS(n >> 1), CUDA_THREADS, 0, ctx->cuda_stream()>>>(
-        n >> 1,
+  if ((N & 1) == 0) {
+    _Bias<<<CUDA_BLOCKS(N >> 1), CUDA_THREADS, 0, ctx->cuda_stream()>>>(
+        N >> 1,
         convert::To<half2>(beta),
         math::PlusFunctor<half2>(),
         reinterpret_cast<const half2*>(x),
         reinterpret_cast<half2*>(y));
   } else {
-    _Bias<<<CUDA_BLOCKS(n), CUDA_THREADS, 0, ctx->cuda_stream()>>>(
-        n,
+    _Bias<<<CUDA_BLOCKS(N), CUDA_THREADS, 0, ctx->cuda_stream()>>>(
+        N,
         convert::To<half>(beta),
         math::PlusFunctor<half>(),
         reinterpret_cast<const half*>(x),
@@ -734,57 +721,83 @@ DRAGON_API void Bias<float16, CUDAContext>(
   }
 }
 
-DEFINE_BIAS_FUNC(int8_t);
 DEFINE_BIAS_FUNC(uint8_t);
+DEFINE_BIAS_FUNC(int8_t);
 DEFINE_BIAS_FUNC(int);
 DEFINE_BIAS_FUNC(int64_t);
 DEFINE_BIAS_FUNC(float);
 DEFINE_BIAS_FUNC(double);
 #undef DEFINE_BIAS_FUNC
 
+#define DEFINE_APPLY_MASK_FUNC(T, AccT)                                  \
+  template <>                                                            \
+  DRAGON_API void ApplyMask<T, CUDAContext>(                             \
+      const int N,                                                       \
+      const float alpha,                                                 \
+      const uint8_t* mask,                                               \
+      const T* x,                                                        \
+      T* y,                                                              \
+      CUDAContext* ctx) {                                                \
+    _ApplyMask<<<CUDA_BLOCKS(N), CUDA_THREADS, 0, ctx->cuda_stream()>>>( \
+        N,                                                               \
+        convert::To<AccT>(alpha),                                        \
+        mask,                                                            \
+        reinterpret_cast<const math::ScalarType<T>::type*>(x),           \
+        reinterpret_cast<math::ScalarType<T>::type*>(y));                \
+  }
+
+DEFINE_APPLY_MASK_FUNC(uint8_t, uint8_t);
+DEFINE_APPLY_MASK_FUNC(int8_t, int8_t);
+DEFINE_APPLY_MASK_FUNC(int, int);
+DEFINE_APPLY_MASK_FUNC(int64_t, int64_t);
+DEFINE_APPLY_MASK_FUNC(float16, float);
+DEFINE_APPLY_MASK_FUNC(float, float);
+DEFINE_APPLY_MASK_FUNC(double, double);
+#undef DEFINE_APPLY_MASK_FUNC
+
 #define DEFINE_BINARY_FUNC(name, InputT, OutputT, Functor)          \
   template <>                                                       \
   DRAGON_API void name<InputT, CUDAContext>(                        \
-      const int n,                                                  \
+      const int N,                                                  \
       const InputT* a,                                              \
       const InputT* b,                                              \
       OutputT* y,                                                   \
       CUDAContext* ctx) {                                           \
     _SimpleBinaryFunc<<<                                            \
-        CUDA_BLOCKS(n),                                             \
+        CUDA_BLOCKS(N),                                             \
         CUDA_THREADS,                                               \
         0,                                                          \
         ctx->cuda_stream()>>>(                                      \
-        n,                                                          \
+        N,                                                          \
         Functor<math::ScalarType<InputT>::type>(),                  \
         reinterpret_cast<const math::ScalarType<InputT>::type*>(a), \
         reinterpret_cast<const math::ScalarType<InputT>::type*>(b), \
         reinterpret_cast<math::ScalarType<OutputT>::type*>(y));     \
   }
 
-DEFINE_BINARY_FUNC(Add, int8_t, int8_t, math::PlusFunctor);
 DEFINE_BINARY_FUNC(Add, uint8_t, uint8_t, math::PlusFunctor);
+DEFINE_BINARY_FUNC(Add, int8_t, int8_t, math::PlusFunctor);
 DEFINE_BINARY_FUNC(Add, int, int, math::PlusFunctor);
 DEFINE_BINARY_FUNC(Add, int64_t, int64_t, math::PlusFunctor);
 DEFINE_BINARY_FUNC(Add, float16, float16, math::PlusFunctor);
 DEFINE_BINARY_FUNC(Add, float, float, math::PlusFunctor);
 DEFINE_BINARY_FUNC(Add, double, double, math::PlusFunctor);
-DEFINE_BINARY_FUNC(Sub, int8_t, int8_t, math::MinusFunctor);
 DEFINE_BINARY_FUNC(Sub, uint8_t, uint8_t, math::MinusFunctor);
+DEFINE_BINARY_FUNC(Sub, int8_t, int8_t, math::MinusFunctor);
 DEFINE_BINARY_FUNC(Sub, int, int, math::MinusFunctor);
 DEFINE_BINARY_FUNC(Sub, int64_t, int64_t, math::MinusFunctor);
 DEFINE_BINARY_FUNC(Sub, float16, float16, math::MinusFunctor);
 DEFINE_BINARY_FUNC(Sub, float, float, math::MinusFunctor);
 DEFINE_BINARY_FUNC(Sub, double, double, math::MinusFunctor);
-DEFINE_BINARY_FUNC(Mul, int8_t, int8_t, math::MultipliesFunctor);
 DEFINE_BINARY_FUNC(Mul, uint8_t, uint8_t, math::MultipliesFunctor);
+DEFINE_BINARY_FUNC(Mul, int8_t, int8_t, math::MultipliesFunctor);
 DEFINE_BINARY_FUNC(Mul, int, int, math::MultipliesFunctor);
 DEFINE_BINARY_FUNC(Mul, int64_t, int64_t, math::MultipliesFunctor);
 DEFINE_BINARY_FUNC(Mul, float16, float16, math::MultipliesFunctor);
 DEFINE_BINARY_FUNC(Mul, float, float, math::MultipliesFunctor);
 DEFINE_BINARY_FUNC(Mul, double, double, math::MultipliesFunctor);
-DEFINE_BINARY_FUNC(Div, int8_t, int8_t, math::DividesFunctor);
 DEFINE_BINARY_FUNC(Div, uint8_t, uint8_t, math::DividesFunctor);
+DEFINE_BINARY_FUNC(Div, int8_t, int8_t, math::DividesFunctor);
 DEFINE_BINARY_FUNC(Div, int, int, math::DividesFunctor);
 DEFINE_BINARY_FUNC(Div, int64_t, int64_t, math::DividesFunctor);
 DEFINE_BINARY_FUNC(Div, float16, float16, math::DividesFunctor);
@@ -793,57 +806,102 @@ DEFINE_BINARY_FUNC(Div, double, double, math::DividesFunctor);
 DEFINE_BINARY_FUNC(Pow, float16, float16, math::PowFunctor);
 DEFINE_BINARY_FUNC(Pow, float, float, math::PowFunctor);
 DEFINE_BINARY_FUNC(Pow, double, double, math::PowFunctor);
-DEFINE_BINARY_FUNC(Minimum, int8_t, int8_t, math::MinFunctor);
 DEFINE_BINARY_FUNC(Minimum, uint8_t, uint8_t, math::MinFunctor);
+DEFINE_BINARY_FUNC(Minimum, int8_t, int8_t, math::MinFunctor);
 DEFINE_BINARY_FUNC(Minimum, int, int, math::MinFunctor);
 DEFINE_BINARY_FUNC(Minimum, int64_t, int64_t, math::MinFunctor);
 DEFINE_BINARY_FUNC(Minimum, float16, float16, math::MinFunctor);
 DEFINE_BINARY_FUNC(Minimum, float, float, math::MinFunctor);
 DEFINE_BINARY_FUNC(Minimum, double, double, math::MinFunctor);
-DEFINE_BINARY_FUNC(Maximum, int8_t, int8_t, math::MaxFunctor);
 DEFINE_BINARY_FUNC(Maximum, uint8_t, uint8_t, math::MaxFunctor);
+DEFINE_BINARY_FUNC(Maximum, int8_t, int8_t, math::MaxFunctor);
 DEFINE_BINARY_FUNC(Maximum, int, int, math::MaxFunctor);
 DEFINE_BINARY_FUNC(Maximum, int64_t, int64_t, math::MaxFunctor);
 DEFINE_BINARY_FUNC(Maximum, float16, float16, math::MaxFunctor);
 DEFINE_BINARY_FUNC(Maximum, float, float, math::MaxFunctor);
 DEFINE_BINARY_FUNC(Maximum, double, double, math::MaxFunctor);
-DEFINE_BINARY_FUNC(Equal, int8_t, bool, math::EqualFunctor);
+DEFINE_BINARY_FUNC(BitwiseAnd, bool, bool, math::BitAndFunctor);
+DEFINE_BINARY_FUNC(BitwiseAnd, uint8_t, uint8_t, math::BitAndFunctor);
+DEFINE_BINARY_FUNC(BitwiseAnd, int8_t, int8_t, math::BitAndFunctor);
+DEFINE_BINARY_FUNC(BitwiseAnd, int, int, math::BitAndFunctor);
+DEFINE_BINARY_FUNC(BitwiseAnd, int64_t, int64_t, math::BitAndFunctor);
+DEFINE_BINARY_FUNC(BitwiseOr, bool, bool, math::BitOrFunctor);
+DEFINE_BINARY_FUNC(BitwiseOr, uint8_t, uint8_t, math::BitOrFunctor);
+DEFINE_BINARY_FUNC(BitwiseOr, int8_t, int8_t, math::BitOrFunctor);
+DEFINE_BINARY_FUNC(BitwiseOr, int, int, math::BitOrFunctor);
+DEFINE_BINARY_FUNC(BitwiseOr, int64_t, int64_t, math::BitOrFunctor);
+DEFINE_BINARY_FUNC(BitwiseXor, bool, bool, math::BitXorFunctor);
+DEFINE_BINARY_FUNC(BitwiseXor, uint8_t, uint8_t, math::BitXorFunctor);
+DEFINE_BINARY_FUNC(BitwiseXor, int8_t, int8_t, math::BitXorFunctor);
+DEFINE_BINARY_FUNC(BitwiseXor, int, int, math::BitXorFunctor);
+DEFINE_BINARY_FUNC(BitwiseXor, int64_t, int64_t, math::BitXorFunctor);
+DEFINE_BINARY_FUNC(And, bool, bool, math::AndFunctor);
+DEFINE_BINARY_FUNC(And, uint8_t, bool, math::AndFunctor);
+DEFINE_BINARY_FUNC(And, int8_t, bool, math::AndFunctor);
+DEFINE_BINARY_FUNC(And, int, bool, math::AndFunctor);
+DEFINE_BINARY_FUNC(And, int64_t, bool, math::AndFunctor);
+DEFINE_BINARY_FUNC(And, float16, bool, math::AndFunctor);
+DEFINE_BINARY_FUNC(And, float, bool, math::AndFunctor);
+DEFINE_BINARY_FUNC(And, double, bool, math::AndFunctor);
+DEFINE_BINARY_FUNC(Or, bool, bool, math::OrFunctor);
+DEFINE_BINARY_FUNC(Or, uint8_t, bool, math::OrFunctor);
+DEFINE_BINARY_FUNC(Or, int8_t, bool, math::OrFunctor);
+DEFINE_BINARY_FUNC(Or, int, bool, math::OrFunctor);
+DEFINE_BINARY_FUNC(Or, int64_t, bool, math::OrFunctor);
+DEFINE_BINARY_FUNC(Or, float16, bool, math::OrFunctor);
+DEFINE_BINARY_FUNC(Or, float, bool, math::OrFunctor);
+DEFINE_BINARY_FUNC(Or, double, bool, math::OrFunctor);
+DEFINE_BINARY_FUNC(Xor, bool, bool, math::XorFunctor);
+DEFINE_BINARY_FUNC(Xor, uint8_t, bool, math::XorFunctor);
+DEFINE_BINARY_FUNC(Xor, int8_t, bool, math::XorFunctor);
+DEFINE_BINARY_FUNC(Xor, int, bool, math::XorFunctor);
+DEFINE_BINARY_FUNC(Xor, int64_t, bool, math::XorFunctor);
+DEFINE_BINARY_FUNC(Xor, float16, bool, math::XorFunctor);
+DEFINE_BINARY_FUNC(Xor, float, bool, math::XorFunctor);
+DEFINE_BINARY_FUNC(Xor, double, bool, math::XorFunctor);
+DEFINE_BINARY_FUNC(Equal, bool, bool, math::EqualFunctor);
 DEFINE_BINARY_FUNC(Equal, uint8_t, bool, math::EqualFunctor);
+DEFINE_BINARY_FUNC(Equal, int8_t, bool, math::EqualFunctor);
 DEFINE_BINARY_FUNC(Equal, int, bool, math::EqualFunctor);
 DEFINE_BINARY_FUNC(Equal, int64_t, bool, math::EqualFunctor);
 DEFINE_BINARY_FUNC(Equal, float16, bool, math::EqualFunctor);
 DEFINE_BINARY_FUNC(Equal, float, bool, math::EqualFunctor);
 DEFINE_BINARY_FUNC(Equal, double, bool, math::EqualFunctor);
-DEFINE_BINARY_FUNC(NotEqual, int8_t, bool, math::NotEqualFunctor);
+DEFINE_BINARY_FUNC(NotEqual, bool, bool, math::NotEqualFunctor);
 DEFINE_BINARY_FUNC(NotEqual, uint8_t, bool, math::NotEqualFunctor);
+DEFINE_BINARY_FUNC(NotEqual, int8_t, bool, math::NotEqualFunctor);
 DEFINE_BINARY_FUNC(NotEqual, int, bool, math::NotEqualFunctor);
 DEFINE_BINARY_FUNC(NotEqual, int64_t, bool, math::NotEqualFunctor);
 DEFINE_BINARY_FUNC(NotEqual, float16, bool, math::NotEqualFunctor);
 DEFINE_BINARY_FUNC(NotEqual, float, bool, math::NotEqualFunctor);
 DEFINE_BINARY_FUNC(NotEqual, double, bool, math::NotEqualFunctor);
-DEFINE_BINARY_FUNC(Less, int8_t, bool, math::LessFunctor);
+DEFINE_BINARY_FUNC(Less, bool, bool, math::LessFunctor);
 DEFINE_BINARY_FUNC(Less, uint8_t, bool, math::LessFunctor);
+DEFINE_BINARY_FUNC(Less, int8_t, bool, math::LessFunctor);
 DEFINE_BINARY_FUNC(Less, int, bool, math::LessFunctor);
 DEFINE_BINARY_FUNC(Less, int64_t, bool, math::LessFunctor);
 DEFINE_BINARY_FUNC(Less, float16, bool, math::LessFunctor);
 DEFINE_BINARY_FUNC(Less, float, bool, math::LessFunctor);
 DEFINE_BINARY_FUNC(Less, double, bool, math::LessFunctor);
-DEFINE_BINARY_FUNC(LessEqual, int8_t, bool, math::LessEqualFunctor);
+DEFINE_BINARY_FUNC(LessEqual, bool, bool, math::LessEqualFunctor);
 DEFINE_BINARY_FUNC(LessEqual, uint8_t, bool, math::LessEqualFunctor);
+DEFINE_BINARY_FUNC(LessEqual, int8_t, bool, math::LessEqualFunctor);
 DEFINE_BINARY_FUNC(LessEqual, int, bool, math::LessEqualFunctor);
 DEFINE_BINARY_FUNC(LessEqual, int64_t, bool, math::LessEqualFunctor);
 DEFINE_BINARY_FUNC(LessEqual, float16, bool, math::LessEqualFunctor);
 DEFINE_BINARY_FUNC(LessEqual, float, bool, math::LessEqualFunctor);
 DEFINE_BINARY_FUNC(LessEqual, double, bool, math::LessEqualFunctor);
-DEFINE_BINARY_FUNC(Greater, int8_t, bool, math::GreaterFunctor);
+DEFINE_BINARY_FUNC(Greater, bool, bool, math::GreaterFunctor);
 DEFINE_BINARY_FUNC(Greater, uint8_t, bool, math::GreaterFunctor);
+DEFINE_BINARY_FUNC(Greater, int8_t, bool, math::GreaterFunctor);
 DEFINE_BINARY_FUNC(Greater, int, bool, math::GreaterFunctor);
 DEFINE_BINARY_FUNC(Greater, int64_t, bool, math::GreaterFunctor);
 DEFINE_BINARY_FUNC(Greater, float16, bool, math::GreaterFunctor);
 DEFINE_BINARY_FUNC(Greater, float, bool, math::GreaterFunctor);
 DEFINE_BINARY_FUNC(Greater, double, bool, math::GreaterFunctor);
-DEFINE_BINARY_FUNC(GreaterEqual, int8_t, bool, math::GreaterEqualFunctor);
+DEFINE_BINARY_FUNC(GreaterEqual, bool, bool, math::GreaterEqualFunctor);
 DEFINE_BINARY_FUNC(GreaterEqual, uint8_t, bool, math::GreaterEqualFunctor);
+DEFINE_BINARY_FUNC(GreaterEqual, int8_t, bool, math::GreaterEqualFunctor);
 DEFINE_BINARY_FUNC(GreaterEqual, int, bool, math::GreaterEqualFunctor);
 DEFINE_BINARY_FUNC(GreaterEqual, int64_t, bool, math::GreaterEqualFunctor);
 DEFINE_BINARY_FUNC(GreaterEqual, float16, bool, math::GreaterEqualFunctor);
@@ -851,39 +909,22 @@ DEFINE_BINARY_FUNC(GreaterEqual, float, bool, math::GreaterEqualFunctor);
 DEFINE_BINARY_FUNC(GreaterEqual, double, bool, math::GreaterEqualFunctor);
 #undef DEFINE_BINARY_FUNC
 
-#define DEFINE_BINARY_FUNC(name, T, ScalarT)                         \
-  template <>                                                        \
-  DRAGON_API void name<T, CUDAContext>(                              \
-      const int n, const T* a, const T* b, T* y, CUDAContext* ctx) { \
-    name(                                                            \
-        n,                                                           \
-        reinterpret_cast<const ScalarT*>(a),                         \
-        reinterpret_cast<const ScalarT*>(b),                         \
-        reinterpret_cast<ScalarT*>(y),                               \
-        ctx);                                                        \
-  }
-
-DEFINE_BINARY_FUNC(Add, bool, uint8_t); // Or
-DEFINE_BINARY_FUNC(Sub, bool, uint8_t); // Xor
-DEFINE_BINARY_FUNC(Mul, bool, uint8_t); // And
-#undef DEFINE_BINARY_FUNC
-
 #define DEFINE_WHERE_FUNC(T)                                         \
   template <>                                                        \
   DRAGON_API void Where<T, CUDAContext>(                             \
-      const int n,                                                   \
+      const int N,                                                   \
       const T* a,                                                    \
       const T* b,                                                    \
       const bool* c,                                                 \
       T* y,                                                          \
       CUDAContext* ctx) {                                            \
-    _Where<<<CUDA_BLOCKS(n), CUDA_THREADS, 0, ctx->cuda_stream()>>>( \
-        n, a, b, c, y);                                              \
+    _Where<<<CUDA_BLOCKS(N), CUDA_THREADS, 0, ctx->cuda_stream()>>>( \
+        N, a, b, c, y);                                              \
   }
 
+DEFINE_WHERE_FUNC(uint8_t);
 DEFINE_WHERE_FUNC(bool);
 DEFINE_WHERE_FUNC(int8_t);
-DEFINE_WHERE_FUNC(uint8_t);
 DEFINE_WHERE_FUNC(int);
 DEFINE_WHERE_FUNC(int64_t);
 DEFINE_WHERE_FUNC(float16);

@@ -8,7 +8,7 @@ template <class Context>
 template <typename T>
 void PermutationOp<Context>::DoRunWithType() {
   auto* Y = Output(0)->Reshape({limit()});
-  kernel::Permutation(
+  kernels::Permutation(
       Y->count(),
       Y->template mutable_data<T, Context>(),
       ctx()->workspace()->template data<uint32_t, Context>({Y->count()})[0],
@@ -17,7 +17,7 @@ void PermutationOp<Context>::DoRunWithType() {
 
 template <class Context>
 void PermutationOp<Context>::RunOnDevice() {
-  DispatchHelper<NumericalTensorTypes>::Call(this);
+  DispatchHelper<dtypes::Numerical>::Call(this);
 }
 
 DEPLOY_CPU_OPERATOR(Permutation);

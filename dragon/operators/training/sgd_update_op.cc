@@ -6,14 +6,10 @@ namespace dragon {
 
 template <class Context>
 void SGDUpdateOp<Context>::ComputeUpdate(Tensor* dX) {
-  // Momentum Correction, See arXiv:1706.02677
-  auto lr = Parameter("base_lr") * this->lr_mult_;
-  if (last_lr_ > 0) correction_ = lr / last_lr_;
-  last_lr_ = lr; // Record the last value
-  kernel::SGDUpdate(
+  kernels::SGDUpdate(
       dX->count(),
-      lr,
-      Parameter("momentum") * correction_,
+      lr_,
+      momentum_ * correction_,
       dX->template mutable_data<float, Context>(),
       Slot("m")->ReshapeLike(*dX)->template mutable_data<float, Context>(),
       ctx());
@@ -24,11 +20,7 @@ DEPLOY_CPU_OPERATOR(SGDUpdate);
 DEPLOY_CUDA_OPERATOR(SGDUpdate);
 #endif
 
-OPERATOR_SCHEMA(SGDUpdate)
-    /* dX */
-    .NumInputs(1)
-    /* X */
-    .NumOutputs(1);
+OPERATOR_SCHEMA(SGDUpdate).NumInputs(1, INT_MAX).NumOutputs(1, INT_MAX);
 
 NO_GRADIENT(SGDUpdate);
 

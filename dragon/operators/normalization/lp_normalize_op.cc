@@ -5,30 +5,19 @@
 
 namespace dragon {
 
-#define CANONICALIZE_AXES_WITH_TENSOR(tensor)            \
-  CANONICALIZE_AXIS_WITH_TENSOR(tensor);                 \
-  auto num_axes = OP_SINGLE_ARG(int64_t, "num_axes", 1); \
-  if (num_axes < 0) {                                    \
-    num_axes = tensor.ndim() - axis;                     \
-  } else if (num_axes == 0) {                            \
-    num_axes = 1;                                        \
-  }                                                      \
-  CHECK(axis + num_axes <= tensor.ndim())                \
-      << "\nInvalid number of axes. Got " << num_axes    \
-      << ", excepted in the range [1, " << tensor.ndim() - axis << "]."
-
 template <class Context>
 template <typename T>
 void LpNormalizeOp<Context>::DoRunWithType() {
   auto &X = Input(0), *Y = Output(0);
-  CANONICALIZE_AXES_WITH_TENSOR(X);
+  GET_OP_AXIS_ARG(axis, X.ndim(), -1);
+  GET_OP_AXIS_ARG(end_axis, X.ndim(), axis);
+  auto reduce_dim = X.count(axis, end_axis + 1);
 
-  // Normalize input with a scaled norm
-  auto reduce_dim = X.count(axis, axis + num_axes);
+  // Normalize input with a scaled Lp-norm
   if (p_ == 1) {
-    kernel::L1Normalize(
+    kernels::L1Normalize(
         X.count(0, axis),
-        X.count(axis + num_axes),
+        X.count(end_axis + 1),
         reduce_dim,
         reduction_ == "MEAN" ? float(reduce_dim) : 1.f,
         epsilon_,
@@ -36,9 +25,9 @@ void LpNormalizeOp<Context>::DoRunWithType() {
         Y->ReshapeLike(X)->template mutable_data<T, Context>(),
         ctx());
   } else if (p_ == 2) {
-    kernel::L2Normalize(
+    kernels::L2Normalize(
         X.count(0, axis),
-        X.count(axis + num_axes),
+        X.count(end_axis + 1),
         reduce_dim,
         reduction_ == "MEAN" ? float(reduce_dim) : 1.f,
         epsilon_,
@@ -52,20 +41,21 @@ void LpNormalizeOp<Context>::DoRunWithType() {
 
 template <class Context>
 void LpNormalizeOp<Context>::RunOnDevice() {
-  DispatchHelper<FloatingTensorTypes>::Call(this, Input(0));
+  DispatchHelper<dtypes::Floating>::Call(this, Input(0));
 }
 
 template <class Context>
 template <typename T>
 void LpNormalizeGradientOp<Context>::DoRunWithType() {
   auto &X = Input(0), &dY = Input(1), *dX = Output(0);
-  CANONICALIZE_AXES_WITH_TENSOR(X);
+  GET_OP_AXIS_ARG(axis, X.ndim(), -1);
+  GET_OP_AXIS_ARG(end_axis, X.ndim(), axis);
+  auto reduce_dim = X.count(axis, end_axis + 1);
 
-  auto reduce_dim = X.count(axis, axis + num_axes);
   if (p_ == 1) {
-    kernel::L1NormalizeGrad(
+    kernels::L1NormalizeGrad(
         X.count(0, axis),
-        X.count(axis + num_axes),
+        X.count(end_axis + 1),
         reduce_dim,
         reduction_ == "MEAN" ? float(reduce_dim) : 1.f,
         epsilon_,
@@ -74,9 +64,9 @@ void LpNormalizeGradientOp<Context>::DoRunWithType() {
         dX->ReshapeLike(X)->template mutable_data<T, Context>(),
         ctx());
   } else if (p_ == 2) {
-    kernel::L2NormalizeGrad(
+    kernels::L2NormalizeGrad(
         X.count(0, axis),
-        X.count(axis + num_axes),
+        X.count(end_axis + 1),
         reduce_dim,
         reduction_ == "MEAN" ? float(reduce_dim) : 1.f,
         epsilon_,
@@ -91,7 +81,7 @@ void LpNormalizeGradientOp<Context>::DoRunWithType() {
 
 template <class Context>
 void LpNormalizeGradientOp<Context>::RunOnDevice() {
-  DispatchHelper<FloatingTensorTypes>::Call(this, Input(0));
+  DispatchHelper<dtypes::Floating>::Call(this, Input(0));
 }
 
 DEPLOY_CPU_OPERATOR(LpNormalize);
@@ -117,7 +107,5 @@ OPERATOR_SCHEMA(LpNormalizeGradient)
     .NumOutputs(1);
 
 REGISTER_GRADIENT(LpNormalize, GenericGradientMaker);
-
-#undef CANONICALIZE_AXES_WITH_TENSOR
 
 } // namespace dragon

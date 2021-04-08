@@ -6,84 +6,48 @@
 
 namespace dragon {
 
-namespace kernel {
+namespace kernels {
 
 namespace {
 
-template <typename T>
+template <typename T, typename AccT>
 __global__ void _CumSum(
-    const int rows,
-    const int cols,
-    const int inner_dim,
+    const int NxS,
+    const int S,
+    const int C,
     const bool exclusive,
     const T* x,
     T* y) {
-  CUDA_1D_KERNEL_LOOP(i, rows) {
-    int c = (i / inner_dim) * cols * inner_dim + (i % inner_dim);
-    y[c] = exclusive ? T(0) : x[c];
-    for (int j = 1; j < cols; ++j) {
-      const int yi = c + inner_dim;
-      y[yi] = math::PlusFunctor<T>()(y[c], x[exclusive ? c : yi]);
-      c = yi;
+  CUDA_1D_KERNEL_LOOP(i, NxS) {
+    int offset = i / S * C * S + i % S;
+    y[offset] = exclusive ? convert::To<T>(AccT(0)) : x[offset];
+    for (int j = 1; j < C; ++j) {
+      const int index = offset + S;
+      y[index] = convert::To<T>(
+          convert::To<AccT>(y[offset]) +
+          convert::To<AccT>(x[exclusive ? offset : index]));
+      offset = index;
     }
   }
 }
 
-template <>
-__global__ void _CumSum<half>(
-    const int rows,
-    const int cols,
-    const int inner_dim,
-    const bool exclusive,
-    const half* x,
-    half* y) {
-  const half kZero = __float2half(0.f);
-  CUDA_1D_KERNEL_LOOP(i, rows) {
-    int c = (i / inner_dim) * cols * inner_dim + (i % inner_dim);
-    y[c] = exclusive ? kZero : x[c];
-    for (int j = 1; j < cols; ++j) {
-      const int yi = c + inner_dim;
-      y[yi] = math::PlusFunctor<half>()(y[c], x[exclusive ? c : yi]);
-      c = yi;
-    }
-  }
-}
-
-template <typename T>
+template <typename T, typename AccT>
 __global__ void _CumSumReverse(
-    const int rows,
-    const int cols,
-    const int inner_dim,
+    const int NxS,
+    const int S,
+    const int C,
     const bool exclusive,
     const T* x,
     T* y) {
-  CUDA_1D_KERNEL_LOOP(i, rows) {
-    int c = ((i / inner_dim) * cols + (cols - 1)) * inner_dim + (i % inner_dim);
-    y[c] = exclusive ? T(0) : x[c];
-    for (int j = cols - 2; j >= 0; --j) {
-      const int yi = c - inner_dim;
-      y[yi] = math::PlusFunctor<T>()(y[c], x[exclusive ? c : yi]);
-      c = yi;
-    }
-  }
-}
-
-template <>
-__global__ void _CumSumReverse<half>(
-    const int rows,
-    const int cols,
-    const int inner_dim,
-    const bool exclusive,
-    const half* x,
-    half* y) {
-  const half kZero = __float2half(0.f);
-  CUDA_1D_KERNEL_LOOP(i, rows) {
-    int c = ((i / inner_dim) * cols + (cols - 1)) * inner_dim + (i % inner_dim);
-    y[c] = exclusive ? kZero : x[c];
-    for (int j = cols - 2; j >= 0; --j) {
-      const int yi = c - inner_dim;
-      y[yi] = math::PlusFunctor<half>()(y[c], x[exclusive ? c : yi]);
-      c = yi;
+  CUDA_1D_KERNEL_LOOP(i, NxS) {
+    int offset = (i / S * C + C - 1) * S + i % S;
+    y[offset] = exclusive ? convert::To<T>(AccT(0)) : x[offset];
+    for (int j = C - 2; j >= 0; --j) {
+      const int index = offset - S;
+      y[index] = convert::To<T>(
+          convert::To<AccT>(y[offset]) +
+          convert::To<AccT>(x[exclusive ? offset : index]));
+      offset = index;
     }
   }
 }
@@ -92,69 +56,49 @@ __global__ void _CumSumReverse<half>(
 
 /* ------------------- Launcher Separator ------------------- */
 
-template <>
-void CumSum<float16, CUDAContext>(
-    const int outer_dim,
-    const int inner_dim,
-    const int axis_dim,
-    const bool exclusive,
-    const bool reverse,
-    const float16* x,
-    float16* y,
-    CUDAContext* ctx) {
-  auto rows = outer_dim * inner_dim, cols = axis_dim;
-  if (reverse) {
-    _CumSumReverse<<<CUDA_BLOCKS(rows), CUDA_THREADS, 0, ctx->cuda_stream()>>>(
-        rows,
-        cols,
-        inner_dim,
-        exclusive,
-        reinterpret_cast<const half*>(x),
-        reinterpret_cast<half*>(y));
-  } else {
-    _CumSum<<<CUDA_BLOCKS(rows), CUDA_THREADS, 0, ctx->cuda_stream()>>>(
-        rows,
-        cols,
-        inner_dim,
-        exclusive,
-        reinterpret_cast<const half*>(x),
-        reinterpret_cast<half*>(y));
-  }
-}
-
-#define DEFINE_KERNEL_LAUNCHER(T)                                          \
-  template <>                                                              \
-  void CumSum<T, CUDAContext>(                                             \
-      const int outer_dim,                                                 \
-      const int inner_dim,                                                 \
-      const int axis_dim,                                                  \
-      const bool exclusive,                                                \
-      const bool reverse,                                                  \
-      const T* x,                                                          \
-      T* y,                                                                \
-      CUDAContext* ctx) {                                                  \
-    auto rows = outer_dim * inner_dim, cols = axis_dim;                    \
-    if (reverse) {                                                         \
-      _CumSumReverse<<<                                                    \
-          CUDA_BLOCKS(rows),                                               \
-          CUDA_THREADS,                                                    \
-          0,                                                               \
-          ctx->cuda_stream()>>>(rows, cols, inner_dim, exclusive, x, y);   \
-    } else {                                                               \
-      _CumSum<<<CUDA_BLOCKS(rows), CUDA_THREADS, 0, ctx->cuda_stream()>>>( \
-          rows, cols, inner_dim, exclusive, x, y);                         \
-    }                                                                      \
+#define DEFINE_KERNEL_LAUNCHER(T, AccT)                                \
+  template <>                                                          \
+  void CumSum<T, CUDAContext>(                                         \
+      const int N,                                                     \
+      const int S,                                                     \
+      const int C,                                                     \
+      const bool exclusive,                                            \
+      const bool reverse,                                              \
+      const T* x,                                                      \
+      T* y,                                                            \
+      CUDAContext* ctx) {                                              \
+    const auto NxS = N * S;                                            \
+    if (reverse) {                                                     \
+      _CumSumReverse<math::ScalarType<T>::type, AccT>                  \
+          <<<CUDA_BLOCKS(NxS), CUDA_THREADS, 0, ctx->cuda_stream()>>>( \
+              NxS,                                                     \
+              S,                                                       \
+              C,                                                       \
+              exclusive,                                               \
+              reinterpret_cast<const math::ScalarType<T>::type*>(x),   \
+              reinterpret_cast<math::ScalarType<T>::type*>(y));        \
+    } else {                                                           \
+      _CumSum<math::ScalarType<T>::type, AccT>                         \
+          <<<CUDA_BLOCKS(NxS), CUDA_THREADS, 0, ctx->cuda_stream()>>>( \
+              NxS,                                                     \
+              S,                                                       \
+              C,                                                       \
+              exclusive,                                               \
+              reinterpret_cast<const math::ScalarType<T>::type*>(x),   \
+              reinterpret_cast<math::ScalarType<T>::type*>(y));        \
+    }                                                                  \
   }
 
-DEFINE_KERNEL_LAUNCHER(int8_t);
-DEFINE_KERNEL_LAUNCHER(uint8_t);
-DEFINE_KERNEL_LAUNCHER(int);
-DEFINE_KERNEL_LAUNCHER(int64_t);
-DEFINE_KERNEL_LAUNCHER(float);
-DEFINE_KERNEL_LAUNCHER(double);
+DEFINE_KERNEL_LAUNCHER(uint8_t, uint8_t);
+DEFINE_KERNEL_LAUNCHER(int8_t, int8_t);
+DEFINE_KERNEL_LAUNCHER(int, int);
+DEFINE_KERNEL_LAUNCHER(int64_t, int64_t);
+DEFINE_KERNEL_LAUNCHER(float16, float);
+DEFINE_KERNEL_LAUNCHER(float, float);
+DEFINE_KERNEL_LAUNCHER(double, double);
 #undef DEFINE_KERNEL_LAUNCHER
 
-} // namespace kernel
+} // namespace kernels
 
 } // namespace dragon
 

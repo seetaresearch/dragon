@@ -24,8 +24,8 @@ class ResizeOp final : public Operator<Context> {
       : Operator<Context>(def, ws),
         mode_(str::upper(OP_SINGLE_ARG(string, "mode", "NEAREST"))),
         align_corners_(OP_SINGLE_ARG(int64_t, "align_corners", 0)) {
-    INIT_OP_REPEATED_ARG_WITH_DESC(float, scales);
-    INIT_OP_REPEATED_ARG_WITH_DESC(int64_t, sizes);
+    INITIALIZE_OP_REPEATED_ARG(float, scales);
+    INITIALIZE_OP_REPEATED_ARG(int64_t, sizes);
   }
   USE_OPERATOR_FUNCTIONS;
 
@@ -38,8 +38,8 @@ class ResizeOp final : public Operator<Context> {
   string mode_;
   int64_t align_corners_;
   vec64_t in_dims_, out_dims_, out_shape_;
-  DECLARE_OP_REPEATED_ARG_WITH_DESC(float, scales);
-  DECLARE_OP_REPEATED_ARG_WITH_DESC(int64_t, sizes);
+  DECLARE_OP_REPEATED_ARG(float, scales);
+  DECLARE_OP_REPEATED_ARG(int64_t, sizes);
 };
 
 template <class Context>
@@ -62,8 +62,8 @@ class ResizeGradientOp final : public Operator<Context> {
   vec64_t in_dims_, out_dims_;
 };
 
-DEFINE_OP_REPEATED_ARG_WITH_DESC(float, ResizeOp, scales);
-DEFINE_OP_REPEATED_ARG_WITH_DESC(int64_t, ResizeOp, sizes);
+DEFINE_OP_REPEATED_ARG(float, ResizeOp, scales);
+DEFINE_OP_REPEATED_ARG(int64_t, ResizeOp, sizes);
 
 } // namespace dragon
 

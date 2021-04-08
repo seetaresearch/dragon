@@ -15,9 +15,11 @@ from __future__ import division
 from __future__ import print_function
 
 from dragon.vm.torch.core.nn import functional as F
+from dragon.vm.torch.core.nn.init import xavier_uniform_
+from dragon.vm.torch.core.nn.modules.linear import Linear
 from dragon.vm.torch.core.nn.modules.module import Module
 from dragon.vm.torch.core.nn.parameter import Parameter
-from dragon.vm.torch.core.ops.init import functional as init_funcs
+from dragon.vm.torch.core.ops import init_ops
 from dragon.vm.torch.core.tensor import Tensor
 
 
@@ -118,7 +120,7 @@ class GumbelSoftmax(Module):
             input = probs.log()
         else:
             input = logits - logits.logsumexp(dim=self.dim, keepdim=True)
-        u_dist = init_funcs.rand(input.shape, dtype=input.dtype, device=input.device)
+        u_dist = init_ops.rand(input.shape, dtype=input.dtype, device=input.device)
         gumbels = -((-(u_dist.log())).log())
         scores = (input + gumbels) / self.tau
         return F.softmax(scores, self.dim, self.inplace)
@@ -292,6 +294,110 @@ class LogSoftmax(Module):
 
     def forward(self, input):
         return F.log_softmax(input, self.dim)
+
+
+class MultiheadAttention(Module):
+    """Apply the multihead attention.
+    `[Vaswani et.al, 2017] <https://arxiv.org/abs/1706.03762>`_.
+
+    See Also
+    --------
+    `torch.nn.functional.multi_head_attention_forward(...)`_
+
+    """
+
+    def __init__(
+        self,
+        embed_dim,
+        num_heads,
+        dropout=0.,
+        bias=True,
+        kdim=None,
+        vdim=None,
+    ):
+        """Create a ``MultiheadAttention`` module.
+
+        Parameters
+        ----------
+        embed_dim : int
+            The dimension of input embeddings.
+        num_heads : int
+            The number of parallel heads.
+        dropout: float, optional, default=0.
+            The probability to set the attention to zero.
+        bias : bool, optional, default=True
+            Add a bias tensor to output or not.
+        kdim : int, optional
+            The dimension of key embedding.
+        vdim : int, optional
+            The dimension of value embedding.
+
+        """
+        super(MultiheadAttention, self).__init__()
+        self.embed_dim = embed_dim
+        self.kdim = kdim if kdim is not None else embed_dim
+        self.vdim = vdim if vdim is not None else embed_dim
+        self._qkv_same_embed_dim = self.kdim == embed_dim and self.vdim == embed_dim
+        self.num_heads = num_heads
+        self.dropout = dropout
+        self.head_dim = embed_dim // num_heads
+        if self.head_dim * num_heads != self.embed_dim:
+            raise ValueError('<embed_dim> must be divisible by <num_heads>.')
+        if not self._qkv_same_embed_dim:
+            self.q_proj_weight = Parameter(Tensor(embed_dim, embed_dim))
+            self.k_proj_weight = Parameter(Tensor(embed_dim, self.kdim))
+            self.v_proj_weight = Parameter(Tensor(embed_dim, self.vdim))
+            self.register_parameter('in_proj_weight', None)
+        else:
+            self.in_proj_weight = Parameter(Tensor(3 * embed_dim, embed_dim))
+            self.register_parameter('q_proj_weight', None)
+            self.register_parameter('k_proj_weight', None)
+            self.register_parameter('v_proj_weight', None)
+        if bias:
+            self.in_proj_bias = Parameter(Tensor(3 * embed_dim))
+        else:
+            self.register_parameter('in_proj_bias', None)
+        self.out_proj = Linear(embed_dim, embed_dim, bias=True)
+        self.reset_parameters()
+
+    def reset_parameters(self):
+        if self._qkv_same_embed_dim:
+            xavier_uniform_(self.in_proj_weight)
+        else:
+            xavier_uniform_(self.q_proj_weight)
+            xavier_uniform_(self.k_proj_weight)
+            xavier_uniform_(self.v_proj_weight)
+        if self.in_proj_bias is not None:
+            self.in_proj_bias.zero_()
+            self.out_proj.bias.zero_()
+
+    def forward(
+        self,
+        query,
+        key,
+        value,
+        key_padding_mask=None,
+        need_weights=True,
+        attn_mask=None,
+    ):
+        return F.multi_head_attention_forward(
+            query, key, value,
+            embed_dim_to_check=self.embed_dim,
+            num_heads=self.num_heads,
+            in_proj_weight=self.in_proj_weight,
+            in_proj_bias=self.in_proj_bias,
+            out_proj_weight=self.out_proj.weight,
+            out_proj_bias=self.out_proj.bias,
+            dropout_p=self.dropout,
+            training=self.training,
+            key_padding_mask=key_padding_mask,
+            need_weights=need_weights,
+            attn_mask=attn_mask,
+            use_separate_proj_weight=not self._qkv_same_embed_dim,
+            q_proj_weight=self.q_proj_weight,
+            k_proj_weight=self.k_proj_weight,
+            v_proj_weight=self.v_proj_weight,
+        )
 
 
 class PReLU(Module):
