@@ -132,7 +132,7 @@ DEFINE_UNARY_FUNC(Sign, double, [](double x) {
     _SimpleUnaryFunc(N, Functor<InputT>(), x, y);                  \
   }
 
-DEFINE_UNARY_FUNC(BitwiseNot, bool, bool, std::bit_not);
+DEFINE_UNARY_FUNC(BitwiseNot, bool, bool, std::logical_not);
 DEFINE_UNARY_FUNC(BitwiseNot, uint8_t, uint8_t, std::bit_not);
 DEFINE_UNARY_FUNC(BitwiseNot, int8_t, int8_t, std::bit_not);
 DEFINE_UNARY_FUNC(BitwiseNot, int, int, std::bit_not);

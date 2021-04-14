@@ -17,6 +17,7 @@ from __future__ import print_function
 from dragon.core.util import nest
 from dragon.vm.torch.core.autograd.function_impl import FunctionLib
 from dragon.vm.torch.core.ops import constant_ops
+from dragon.vm.torch.core.ops import init_ops
 from dragon.vm.torch.core.tensor import Tensor
 
 
@@ -422,6 +423,44 @@ def flatten(input, start_dim=0, end_dim=-1, out=None):
     return FunctionLib.apply(
         'Flatten', input.device, [input], outputs=[out],
         axis=start_dim, end_axis=end_dim)
+
+
+def gather(input, dim, index, out=None):
+    """Gather elements along the given dimension of index.
+
+    Number of dimensions of :attr:`input`, :attr:`index` should be same.
+    For 3-d input, output is gathered as:
+
+    ```python
+    out[i, j, k] = input[index[i, j, k], j, k]
+    out[i, j, k] = input[i, index[i, j, k], k]
+    out[i, j, k] = input[i, j, index[i, j, k]]
+    ```
+
+    Examples:
+
+    ```python
+    x = torch.tensor([[1, 2], [3, 4]])
+    index = torch.tensor([[0, 0], [0, 1]])
+    print(torch.gather(x, 0, index))  # [[1, 2], [1, 4]]
+    print(torch.gather(x, 1, index))  # [[1, 1], [3, 4]]
+    ```
+
+    Parameters
+    ----------
+    input : dragon.vm.torch.Tensor
+        The input tensor.
+    dim : int
+        The dimension of index values.
+    index : dragon.vm.torch.Tensor
+        The index tensor.
+    out : dragon.vm.torch.Tensor, optional
+        The output tensor.
+
+    """
+    return FunctionLib.apply(
+        'GatherElements', input.device, [input, index],
+        outputs=[out], axis=dim)
 
 
 def index_select(input, dim, index, out=None):
@@ -857,6 +896,96 @@ def reshape(input, shape, out=None):
     return FunctionLib.apply(
         'Reshape', input.device, [input], outputs=[out],
         ndim=len(shape), dims=shape)
+
+
+def scatter(input, dim, index, src, out=None):
+    """Update elements along the given dimension of index.
+
+    Number of dimensions of :attr:`input`, :attr:`index`, and :attr:`src`
+    should be same. For 3-d input, output is updated as:
+
+    ```python
+    out[index[i, j, k], j, k] = src[i, j, k]  # ``dim`` is 0
+    out[i, index[i, j, k], k] = src[i, j, k]  # ``dim`` is 1
+    out[i, j, index[i, j, k]] = src[i, j, k]  # ``dim`` is 2
+    ```
+
+    Examples:
+
+    ```python
+    y = torch.tensor([[1, 2], [3, 4]])
+    x = torch.tensor([[5, 6], [7, 8]])
+    index = torch.tensor([[0, 1], [1, 0]])
+    print(torch.scatter(y, 0, index, x))  # [[5, 8], [7, 6]]
+    print(torch.scatter(y, 1, index, x))  # [[5, 6], [8, 7]]
+    print(torch.scatter(y, 0, index, 8))  # [[8, 8], [8, 8]]
+    ```
+
+    Parameters
+    ----------
+    input : dragon.vm.torch.Tensor
+        The input tensor.
+    dim : int
+        The dimension of index values.
+    index : dragon.vm.torch.Tensor
+        The index tensor.
+    src : Union[dragon.vm.torch.Tensor, number]
+        The tensor to update from.
+    out : dragon.vm.torch.Tensor, optional
+        The output tensor.
+
+    """
+    if not isinstance(src, Tensor):
+        src = init_ops.full_like(
+            index, src, dtype=input.dtype, device=input.device)
+    return FunctionLib.apply(
+        'ScatterElements', input.device, [input, index, src],
+        outputs=[out], axis=dim)
+
+
+def scatter_add(input, dim, index, src, out=None):
+    """Add elements along the given dimension of index.
+
+    Number of dimensions of :attr:`input`, :attr:`index`, and :attr:`src`
+    should be same. For 3-d input, output is updated as:
+
+    ```python
+    out[index[i, j, k], j, k] += src[i, j, k]  # ``dim`` is 0
+    out[i, index[i, j, k], k] += src[i, j, k]  # ``dim`` is 1
+    out[i, j, index[i, j, k]] += src[i, j, k]  # ``dim`` is 2
+    ```
+
+    Examples:
+
+    ```python
+    y = torch.tensor([[1, 2], [3, 4]])
+    x = torch.tensor([[5, 6], [7, 8]])
+    index = torch.tensor([[0, 0], [0, 0]])
+    print(torch.scatter_add(y, 0, index, x))  # [[13, 16], [3, 4]]
+    print(torch.scatter_add(y, 1, index, x))  # [[12, 2], [18, 4]]
+    print(torch.scatter_add(y, 0, index, 8))  # [[17, 18], [3, 4]]
+    ```
+
+    Parameters
+    ----------
+    input : dragon.vm.torch.Tensor
+        The input tensor.
+    dim : int
+        The dimension of index values.
+    index : dragon.vm.torch.Tensor
+        The index tensor.
+    src : Union[dragon.vm.torch.Tensor, number]
+        The tensor to add from.
+    out : dragon.vm.torch.Tensor, optional
+        The output tensor.
+
+    """
+    if not isinstance(src, Tensor):
+        src = init_ops.full_like(
+            index, src, dtype=input.dtype, device=input.device)
+    return FunctionLib.apply(
+        'ScatterAdd', input.device, [input, index, src],
+        outputs=[out], axis=dim)
 
 
 def sort(input, dim=-1, descending=False, out=None):

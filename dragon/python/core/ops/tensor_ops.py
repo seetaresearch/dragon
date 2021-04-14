@@ -126,6 +126,27 @@ def div(self, other):
     return _apply_binary_op([self, other], 'Div')
 
 
+def eq(self, other):
+    """Compute element-wise equal comparison.
+
+    Parameters
+    ----------
+    other : Union[dragon.Tensor, number]
+        The value to compare.
+
+    Returns
+    -------
+    dragon.Tensor
+        The output tensor.
+
+    See Also
+    --------
+    `dragon.math.equal(...)`_
+
+    """
+    return _apply_binary_op([self, other], 'Equal')
+
+
 def fill(self, value):
     r"""Fill self with a scalar value.
 
@@ -514,6 +535,27 @@ def mul(self, other):
 
     """
     return _apply_binary_op([self, other], 'Mul')
+
+
+def ne(self, other):
+    """Compute element-wise not-equal comparison.
+
+    Parameters
+    ----------
+    other : Union[dragon.Tensor, number]
+        The value to compare.
+
+    Returns
+    -------
+    dragon.Tensor
+        The output tensor.
+
+    See Also
+    --------
+    `dragon.math.not_equal(...)`_
+
+    """
+    return _apply_binary_op([self, other], 'NotEqual')
 
 
 def neg(self):
@@ -946,6 +988,7 @@ Tensor.truncated_normal = truncated_normal
 Tensor.uniform = uniform
 Tensor.__add__ = add
 Tensor.__and__ = _and
+Tensor.__eq__ = eq
 Tensor.__ge__ = ge
 Tensor.__getitem__ = getitem
 Tensor.__gt__ = gt
@@ -961,6 +1004,7 @@ Tensor.__ixor__ = ixor
 Tensor.__le__ = le
 Tensor.__lt__ = lt
 Tensor.__mul__ = mul
+Tensor.__ne__ = ne
 Tensor.__neg__ = neg
 Tensor.__or__ = _or
 Tensor.__radd__ = radd

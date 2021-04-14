@@ -136,7 +136,7 @@ class TestTensor(unittest.TestCase):
     def test_dlpack_converter_cuda(self):
         data = np.array([0., 1., 2.], 'float32')
         with dragon.device('cuda', 0):
-            x = dragon.constant(data, copy=True)
+            x = dragon.constant(data, copy=True) + 0
         x_to_dlpack = dragon.dlpack.to_dlpack(x)
         x_from_dlpack = dragon.dlpack.from_dlpack(x_to_dlpack)
         self.assertEqual(x_from_dlpack.device.type, 'cuda')

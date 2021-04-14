@@ -414,6 +414,16 @@ def gather_spec(args, inputs, outputs):
     return outputs
 
 
+@register('GatherElements')
+def gather_elements_spec(args, inputs, outputs):
+    outputs[0]._dtype = inputs[0].dtype
+    try:
+        outputs[0]._shape = inputs[1]._shape[:]
+    except TypeError:
+        pass
+    return outputs
+
+
 @register(['IsInf', 'IsNaN', 'Not'])
 def is_spec(args, inputs, outputs):
     outputs[0]._dtype = 'bool'

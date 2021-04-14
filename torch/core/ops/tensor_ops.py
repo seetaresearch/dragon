@@ -15,6 +15,7 @@ from __future__ import division
 from __future__ import print_function
 
 from dragon.core.util import nest
+from dragon.vm.torch.core.autograd import grad_mode
 from dragon.vm.torch.core.autograd.function_impl import FunctionLib
 from dragon.vm.torch.core.ops import array_ops
 from dragon.vm.torch.core.ops import constant_ops
@@ -932,6 +933,29 @@ def floor_(self):
     return math_ops.floor(self, self)
 
 
+def gather(self, dim, index):
+    """Gather elements along the given dimension of index.
+
+    Parameters
+    ----------
+    dim : int
+        The dimension of index values.
+    index : dragon.vm.torch.Tensor
+        The index tensor.
+
+    Returns
+    -------
+    dragon.vm.torch.Tensor
+        The output tensor.
+
+    See Also
+    --------
+    `torch.gather(...)`_
+
+    """
+    return array_ops.gather(self, dim, index)
+
+
 def ge(self, other):
     r"""Compute the element-wise greater-equal comparison.
 
@@ -1685,6 +1709,40 @@ def neg_(self):
     return math_ops.neg(self, self)
 
 
+def new_empty(self, *size, dtype=None, device=None, requires_grad=False):
+    """Return a tensor filled with uninitialized data.
+
+    Refer this tensor if ``dtype`` and ``device`` not provided.
+
+    Parameters
+    ----------
+    size : int...
+        The size of output tensor.
+    dtype : str, optional
+        The optional data type.
+    device : dragon.vm.torch.device, optional
+        The optional device of returned tensor.
+    requires_grad : bool, optional, default=False
+        ``True`` to record gradient for returned tensor.
+
+    Returns
+    -------
+    dragon.vm.torch.Tensor
+        The output tensor.
+
+    See Also
+    --------
+    `torch.empty(...)`_
+
+    """
+    return init_ops.empty(
+        *nest.flatten(size),
+        dtype=self.dtype if dtype is None else dtype,
+        device=self.device if device is None else device,
+        requires_grad=requires_grad,
+    )
+
+
 def new_full(
     self,
     size,
@@ -1723,6 +1781,40 @@ def new_full(
     return init_ops.full(
         size,
         fill_value,
+        dtype=self.dtype if dtype is None else dtype,
+        device=self.device if device is None else device,
+        requires_grad=requires_grad,
+    )
+
+
+def new_tensor(self, data, dtype=None, device=None, requires_grad=False):
+    """Return a tensor initializing from the given data.
+
+    Refer this tensor if ``dtype`` and ``device`` not provided.
+
+    Parameters
+    ----------
+    data : array_like
+        The data to initialize from.
+    dtype : str, optional
+        The optional data type.
+    device : dragon.vm.torch.device, optional
+        The optional device of returned tensor.
+    requires_grad : bool, optional, default=False
+        ``True`` to record gradient for returned tensor.
+
+    Returns
+    -------
+    dragon.vm.torch.Tensor
+        The output tensor.
+
+    See Also
+    --------
+    `torch.tensor(...)`_
+
+    """
+    return constant_ops.tensor(
+        data,
         dtype=self.dtype if dtype is None else dtype,
         device=self.device if device is None else device,
         requires_grad=requires_grad,
@@ -1975,6 +2067,118 @@ def rsqrt_(self):
 
     """
     return math_ops.rsqrt(self, self)
+
+
+def scatter(self, dim, index, src):
+    """Return a tensor with elements updated from the source.
+
+    Parameters
+    ----------
+    dim : int
+        The dimension of index values.
+    index : dragon.vm.torch.Tensor
+        The index tensor.
+    src : Union[dragon.vm.torch.Tensor, number]
+        The tensor to update from.
+
+    Returns
+    -------
+    dragon.vm.torch.Tensor
+        The output tensor.
+
+    See Also
+    --------
+    `torch.scatter(...)`_
+
+    """
+    return array_ops.scatter(self, dim, index, src)
+
+
+def scatter_(self, dim, index, src, reduce=None):
+    """Update elements from the source.
+
+    Parameters
+    ----------
+    dim : int
+        The dimension of index values.
+    index : dragon.vm.torch.Tensor
+        The index tensor.
+    src : Union[dragon.vm.torch.Tensor, number]
+        The tensor to update from.
+    reduce : str, optional
+        ``'add'`` or ``'multiply'``.
+
+    Returns
+    -------
+    dragon.vm.torch.Tensor
+        The output tensor.
+
+    See Also
+    --------
+    `torch.scatter(...)`_
+
+    """
+    if reduce:
+        if reduce == 'add':
+            return self.scatter_add_(dim, index, src)
+        elif reduce == 'multiply':
+            to_mul = init_ops.ones_like(self, self.dtype, device=self.device)
+            with grad_mode.no_grad():
+                to_mul.scatter_(dim, index, src)
+            return math_ops.mul(self, to_mul, self)
+        else:
+            raise ValueError('Unknown reduction: ' + reduce)
+    return array_ops.scatter(self, dim, index, src, self)
+
+
+def scatter_add(self, dim, index, src):
+    """Return a tensor with elements added from the source.
+
+    Parameters
+    ----------
+    dim : int
+        The dimension of index values.
+    index : dragon.vm.torch.Tensor
+        The index tensor.
+    src : Union[dragon.vm.torch.Tensor, number]
+        The tensor to add from.
+
+    Returns
+    -------
+    dragon.vm.torch.Tensor
+        The output tensor.
+
+    See Also
+    --------
+    `torch.scatter_add(...)`_
+
+    """
+    return array_ops.scatter_add(self, dim, index, src)
+
+
+def scatter_add_(self, dim, index, src):
+    """Add elements from the source.
+
+    Parameters
+    ----------
+    dim : int
+        The dimension of index values.
+    index : dragon.vm.torch.Tensor
+        The index tensor.
+    src : Union[dragon.vm.torch.Tensor, number]
+        The tensor to add from.
+
+    Returns
+    -------
+    dragon.vm.torch.Tensor
+        The output tensor.
+
+    See Also
+    --------
+    `torch.scatter_add(...)`_
+
+    """
+    return array_ops.scatter_add(self, dim, index, src, self)
 
 
 def setitem(self, key, value):
@@ -2644,6 +2848,7 @@ Tensor.float = _float
 Tensor.float_ = _float_
 Tensor.floor = floor
 Tensor.floor_ = floor_
+Tensor.gather = gather
 Tensor.ge = ge
 Tensor.gt = gt
 Tensor.half = half
@@ -2680,7 +2885,9 @@ Tensor.narrow = narrow
 Tensor.ne = ne
 Tensor.neg = neg
 Tensor.neg_ = neg_
+Tensor.new_empty = new_empty
 Tensor.new_full = new_full
+Tensor.new_tensor = new_tensor
 Tensor.nonzero = nonzero
 Tensor.normal_ = normal_
 Tensor.permute = permute
@@ -2694,6 +2901,10 @@ Tensor.round = round
 Tensor.round_ = round_
 Tensor.rsqrt = rsqrt
 Tensor.rsqrt_ = rsqrt_
+Tensor.scatter = scatter
+Tensor.scatter_ = scatter_
+Tensor.scatter_add = scatter_add
+Tensor.scatter_add_ = scatter_add_
 Tensor.sign = sign
 Tensor.sign_ = sign_
 Tensor.sin = sin

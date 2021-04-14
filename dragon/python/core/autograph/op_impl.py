@@ -97,7 +97,7 @@ class OpLib(object):
         grad_tape = tape.get_tape()
 
         # Add inputs.
-        enable_grad = False  #
+        enable_grad = False
         inputs = nest.flatten(inputs)
         for input in inputs:
             op_tape.add_source(input)

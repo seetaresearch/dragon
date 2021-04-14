@@ -119,13 +119,16 @@ vm.torch
   : Compute the largest integer not greater than input.
 
   `from_numpy(...) <torch/from_numpy.html>`_
-  : Create a tensor from the given numpy array.
+  : Create a tensor converting from the given numpy array.
 
   `full(...) <torch/full.html>`_
   : Return a tensor filled with a scalar.
 
   `full_like(...) <torch/full_like.html>`_
   : Return a tensor filled with a scalar with size as input.
+
+  `gather(...) <torch/gather.html>`_
+  : Gather elements along the given dimension of index.
 
   `ge(...) <torch/ge.html>`_
   : Compute the element-wise greater-equal comparison.
@@ -134,7 +137,7 @@ vm.torch
   : Compute the element-wise greater comparison.
 
   `index_select(...) <torch/index_select.html>`_
-  : Select the elements along the given dim using index.
+  : Select elements along the given dimension using index.
 
   `isinf(...) <torch/isinf.html>`_
   : Check if the elements of input are infinite.
@@ -247,6 +250,12 @@ vm.torch
   `rsqrt(...) <torch/rsqrt.html>`_
   : Compute the reciprocal square root of input.
 
+  `scatter(...) <torch/scatter.html>`_
+  : Update elements along the given dimension of index.
+
+  `scatter_add(...) <torch/scatter_add.html>`_
+  : Add elements along the given dimension of index.
+
   `sign(...) <torch/sign.html>`_
   : Compute the sign indication of input.
 
@@ -275,7 +284,7 @@ vm.torch
   : Compute the sum value of elements along the given dimension.
 
   `tensor(...) <torch/tensor.html>`_
-  : Create a tensor initializing the content from data.
+  : Create a tensor initializing from the given data.
 
   `tile(...) <torch/tile.html>`_
   : Repeat elements along each dimension of input.
@@ -347,6 +356,7 @@ vm.torch
   torch/from_numpy
   torch/full
   torch/full_like
+  torch/gather
   torch/ge
   torch/gt
   torch/index_select
@@ -388,6 +398,8 @@ vm.torch
   torch/reshape
   torch/round
   torch/rsqrt
+  torch/scatter
+  torch/scatter_add
   torch/set_grad_enabled
   torch/sign
   torch/sin

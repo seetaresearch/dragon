@@ -213,7 +213,7 @@ class TFRecordReader(object):
 
         Returns
         -------
-        nvidia.dali.ops.TFRecordReader
+        nvidia.dali.ops.readers.TFRecord
             The reader instance.
 
         """

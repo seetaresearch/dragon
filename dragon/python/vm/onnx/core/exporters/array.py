@@ -142,6 +142,19 @@ def eye_exporter(op_def, context):
     return node, const_tensors
 
 
+@export_util.register('Fill')
+def fill_exporter(op_def, context):
+    node, const_tensors = export_util.translate(**locals())
+    node.op_type = 'Constant'
+    shape = list(context.blob_shapes[op_def.output[0]])
+    value = helper.from_array(
+        numpy.array(shape, 'int64'),
+        context.unique_name(op_def.output[0] + '/constant/value'))
+    helper.add_attribute(node, 'value', value)
+    node.ClearField('input')
+    return node, [value]
+
+
 @export_util.register('Flatten')
 def flatten_exporter(op_def, context):
     node, const_tensors = export_util.translate(**locals())
@@ -171,6 +184,20 @@ def gather_exporter(op_def, context):
                 end_axis += len(input_shape)
     if end_axis is not None and axis != end_axis:
         raise ValueError('Reshape to avoid multiple axes.')
+    return node, const_tensors
+
+
+@export_util.register('GatherElements')
+def gather_elements_exporter(op_def, context):
+    raise RuntimeError('<GatherElements> is supported since opset 11.')
+
+
+@export_util.register('GatherElements-11')
+def gather_elements_exporter_v11(op_def, context):
+    node, const_tensors = export_util.translate(**locals())
+    for arg in op_def.arg:
+        if arg.name == 'axis':
+            helper.add_attribute(node, 'axis', arg.i)
     return node, const_tensors
 
 
@@ -322,6 +349,27 @@ def reshape_exporter(op_def, context):
     )
     node.input.extend([shape.name])
     return node, [shape]
+
+
+@export_util.register('ScatterElements')
+def scatter_elements_exporter_v8(op_def, context):
+    raise RuntimeError('<Scatter> is supported since opset 9.')
+
+
+@export_util.register('ScatterElements-9')
+def scatter_elements_exporter_v9(op_def, context):
+    node, const_tensors = scatter_elements_exporter_v11(**locals())
+    node.op_type = 'Scatter'
+    return node, const_tensors
+
+
+@export_util.register('ScatterElements-11')
+def scatter_elements_exporter_v11(op_def, context):
+    node, const_tensors = export_util.translate(**locals())
+    for arg in op_def.arg:
+        if arg.name == 'axis':
+            helper.add_attribute(node, 'axis', arg.i)
+    return node, const_tensors
 
 
 def slice_exporter(op_def, context):

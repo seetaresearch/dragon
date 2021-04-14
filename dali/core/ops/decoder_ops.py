@@ -57,7 +57,7 @@ class ImageDecoder(object):
 
         Returns
         -------
-        nvidia.dali.ops.ImageDecoder
+        nvidia.dali.ops.decoders.Image
             The operator.
 
         """
@@ -118,7 +118,7 @@ class ImageDecoderRandomCrop(object):
 
         Returns
         -------
-        nvidia.dali.ops.ImageDecoderRandomCrop
+        nvidia.dali.ops.decoders.ImageRandomCrop
             The operator.
 
         """

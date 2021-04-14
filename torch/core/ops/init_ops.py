@@ -17,6 +17,7 @@ from __future__ import print_function
 from dragon.core.util import nest
 
 from dragon.vm.torch.core import cpp
+from dragon.vm.torch.core.tensor import Tensor
 from dragon.vm.torch.core.autograd.function_impl import FunctionLib
 
 
@@ -82,6 +83,34 @@ def arange(
         dtype=dtype, num_args=len(slice_args), slice=slice_args)
     out._requires_grad = requires_grad
     return out
+
+
+def empty(*size, dtype=None, device=None, requires_grad=False):
+    """Return a tensor filled with uninitialized data.
+
+    Parameters
+    ----------
+    size : int...
+        The sizes of output tensor.
+    dtype : str, optional
+        The optional data type.
+    device : dragon.vm.torch.device, optional
+        The optional device option.
+    requires_grad : bool, optional, default=False
+        Whether to compute the gradient if necessary.
+
+    Returns
+    -------
+    dragon.vm.torch.Tensor
+        The output tensor.
+
+    """
+    return Tensor(
+        *size,
+        dtype=dtype if dtype else 'float32',
+        device=cpp.device() if device is None else device,
+        requires_grad=requires_grad,
+    )
 
 
 def eye(

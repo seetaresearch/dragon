@@ -46,6 +46,24 @@ struct AtomicIntegerFunctor<T, MathFunctor, 1> {
 };
 
 template <typename T, class MathFunctor>
+struct AtomicIntegerFunctor<T, MathFunctor, 8> {
+#if defined(__CUDACC__)
+  inline __device__ void operator()(T* address, T val) {
+    unsigned long long* address_as_ui = (unsigned long long*)address;
+    unsigned long long old = *address_as_ui;
+    unsigned long long newval;
+    unsigned long long assumed;
+    do {
+      assumed = old;
+      newval = static_cast<unsigned long long>(math_functor_(val, old));
+      old = atomicCAS(address_as_ui, assumed, newval);
+    } while (assumed != old);
+  }
+#endif
+  MathFunctor math_functor_;
+};
+
+template <typename T, class MathFunctor>
 struct AtomicFloat16Functor {
 #if defined(__CUDACC__)
   inline __device__ void operator()(T* address, T val) {
@@ -101,6 +119,21 @@ inline __device__ void AtomicAnd(uint8_t* address, uint8_t val) {
 template <typename T>
 inline __device__ void AtomicAdd(T* address, T val) {
   atomicAdd(address, val);
+}
+
+inline __device__ void AtomicAdd(uint8_t* address, uint8_t val) {
+  AtomicIntegerFunctor<uint8_t, PlusFunctor<uint8_t>, sizeof(uint8_t)>()(
+      address, val);
+}
+
+inline __device__ void AtomicAdd(int8_t* address, int8_t val) {
+  AtomicIntegerFunctor<int8_t, PlusFunctor<uint8_t>, sizeof(int8_t)>()(
+      address, val);
+}
+
+inline __device__ void AtomicAdd(int64_t* address, int64_t val) {
+  AtomicIntegerFunctor<int64_t, PlusFunctor<int64_t>, sizeof(int64_t)>()(
+      address, val);
 }
 
 #if __CUDA_ARCH__ < 700

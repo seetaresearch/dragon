@@ -283,21 +283,18 @@ def local_response_norm(
         The output tensor.
 
     """
-    args = OpSchema.parse_args(locals())
     if data_format not in ('NCHW', 'NHWC'):
         raise ValueError('Unsupported data format: %s' % data_format)
-    args['alpha'] = float(alpha)
-    args['beta'] = float(beta)
-    args['bias'] = float(bias)
+    alpha, beta, bias = float(alpha), float(beta), float(bias)
     if context.executing_eagerly():
-        op = op_lib.create(
-            'LRN', size=size, alpha=args['alpha'], beta=args['beta'],
-            bias=args['bias'], data_format=data_format)
-        return op.execute([inputs])
-    return op_lib.symbolize('LRN', **args)
+        return OpLib.execute(
+            'LRN', inputs, size=size, alpha=alpha, beta=beta,
+            bias=bias, data_format=data_format)
+    return OpLib.add('LRN', inputs, size=size, alpha=alpha, beta=beta,
+                     bias=bias, data_format=data_format, **kwargs)
 
 
-@OpSchema.num_inputs(min_num=5, max_num=5)
+@OpSchema.num_inputs(5)
 @OpSchema.convert_arg('momentum', as_target=False)
 def sync_batch_norm(
     inputs,
@@ -350,9 +347,10 @@ def sync_batch_norm(
     if process_group is None:
         raise ValueError('<process_group> is required.')
     if context.executing_eagerly():
-        op = op_lib.create(
-            'SyncBatchNorm', axis=axis, epsilon=args['epsilon'],
-            use_stats=use_stats, process_group=process_group)
-        return op.execute(inputs, momentum=args['momentum'])
+        return OpLib.execute(
+            'SyncBatchNorm', inputs, axis=axis, epsilon=args['epsilon'],
+            use_stats=use_stats, momentum=args['momentum'],
+            **process_group.arguments)
+    args.pop('process_group')
     args.update(process_group.arguments)
-    return op_lib.symbolize('SyncBatchNorm', **args)
+    return OpLib.add('SyncBatchNorm', **args)

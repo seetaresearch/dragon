@@ -14,8 +14,6 @@ from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
 
-import numpy
-
 from dragon.core.framework import context
 from dragon.core.framework import device_spec
 from dragon.core.framework import types
@@ -179,7 +177,7 @@ class Tensor(types.TensorBase):
         if self._shape is None:
             return 0
         if None in self._shape:
-            return numpy.inf
+            return float('inf')
         return math_util.prod(self._shape)
 
     def astype(self, dtype, copy=True):
@@ -434,6 +432,25 @@ class Tensor(types.TensorBase):
         if self._is_variable and self._deleter:
             self._deleter.release(self._impl.name)
 
+    def __eq__(self, other):
+        """Compute element-wise equal comparison.
+
+        Parameters
+        ----------
+        other : Union[dragon.Tensor, number]
+            The value to compare.
+
+        Returns
+        -------
+        dragon.Tensor
+            The output tensor.
+
+        See Also
+        --------
+        `dragon.math.equal(...)`_
+
+        """
+
     def __float__(self):
         """Return a float python scalar.
 
@@ -494,6 +511,7 @@ class Tensor(types.TensorBase):
         """
 
     def __hash__(self):
+        """Return the hashable identity."""
         return id(self)
 
     def __iadd__(self, other):
@@ -684,6 +702,25 @@ class Tensor(types.TensorBase):
         See Also
         --------
         `dragon.math.negative(...)`_
+
+        """
+
+    def __ne__(self, other):
+        """Compute element-wise not-equal comparison.
+
+        Parameters
+        ----------
+        other : Union[dragon.Tensor, number]
+            The value to compare.
+
+        Returns
+        -------
+        dragon.Tensor
+            The output tensor.
+
+        See Also
+        --------
+        `dragon.math.not_equal(...)`_
 
         """
 

@@ -8,6 +8,7 @@
 #     <https://opensource.org/licenses/BSD-2-Clause>
 #
 # ------------------------------------------------------------
+"""Tensor class."""
 
 from __future__ import absolute_import
 from __future__ import division
@@ -1113,6 +1114,27 @@ class Tensor(object):
 
         """
 
+    def gather(self, dim, index):
+        """Gather elements along the given dimension of index.
+
+        Parameters
+        ----------
+        dim : int
+            The dimension of index values.
+        index : dragon.vm.torch.Tensor
+            The index tensor.
+
+        Returns
+        -------
+        dragon.vm.torch.Tensor
+            The output tensor.
+
+        See Also
+        --------
+        `torch.gather(...)`_
+
+        """
+
     def ge(self, other):
         r"""Compute the element-wise greater-equal comparison.
 
@@ -1783,13 +1805,7 @@ class Tensor(object):
 
         """
 
-    def new_empty(
-        self,
-        *size,
-        dtype=None,
-        device=None,
-        requires_grad=False,
-    ):
+    def new_empty(self, *size, dtype=None, device=None, requires_grad=False):
         """Return a tensor filled with uninitialized data.
 
         Refer this tensor if ``dtype`` and ``device`` not provided.
@@ -1815,12 +1831,6 @@ class Tensor(object):
         `torch.empty(...)`_
 
         """
-        return empty(
-            *nest.flatten(size),
-            dtype=self.dtype if dtype is None else dtype,
-            device=self.device if device is None else device,
-            requires_grad=requires_grad,
-        )
 
     def new_full(
         self,
@@ -1858,13 +1868,7 @@ class Tensor(object):
 
         """
 
-    def new_ones(
-        self,
-        *size,
-        dtype=None,
-        device=None,
-        requires_grad=False,
-    ):
+    def new_ones(self, *size, dtype=None, device=None, requires_grad=False):
         """Return a tensor filled with with ones.
 
         Refer this tensor if ``dtype`` and ``device`` not provided.
@@ -1891,20 +1895,37 @@ class Tensor(object):
 
         """
         return self.new_full(
-            nest.flatten(size),
-            fill_value=1,
-            dtype=dtype,
-            device=device,
-            requires_grad=requires_grad,
-        )
+            nest.flatten(size), fill_value=1, dtype=dtype, device=device,
+            requires_grad=requires_grad)
 
-    def new_zeros(
-        self,
-        *size,
-        dtype=None,
-        device=None,
-        requires_grad=False,
-    ):
+    def new_tensor(self, data, dtype=None, device=None, requires_grad=False):
+        """Return a tensor initializing from the given data.
+
+        Refer this tensor if ``dtype`` and ``device`` not provided.
+
+        Parameters
+        ----------
+        data : array_like
+            The data to initialize from.
+        dtype : str, optional
+            The optional data type.
+        device : dragon.vm.torch.device, optional
+            The optional device of returned tensor.
+        requires_grad : bool, optional, default=False
+            ``True`` to record gradient for returned tensor.
+
+        Returns
+        -------
+        dragon.vm.torch.Tensor
+            The output tensor.
+
+        See Also
+        --------
+        `torch.tensor(...)`_
+
+        """
+
+    def new_zeros(self, *size, dtype=None, device=None, requires_grad=False):
         """Return a tensor filled with with zeros.
 
         Refer this tensor if ``dtype`` and ``device`` not provided.
@@ -1931,12 +1952,8 @@ class Tensor(object):
 
         """
         return self.new_full(
-            nest.flatten(size),
-            fill_value=0,
-            dtype=dtype,
-            device=device,
-            requires_grad=requires_grad,
-        )
+            nest.flatten(size), fill_value=0, dtype=dtype, device=device,
+            requires_grad=requires_grad)
 
     def nonzero(self):
         r"""Return the index of non-zero elements.
@@ -2194,6 +2211,100 @@ class Tensor(object):
         See Also
         --------
         `torch.rsqrt(...)`_
+
+        """
+
+    def scatter(self, dim, index, src):
+        """Return a tensor with elements updated from the source.
+
+        Parameters
+        ----------
+        dim : int
+            The dimension of index values.
+        index : dragon.vm.torch.Tensor
+            The index tensor.
+        src : Union[dragon.vm.torch.Tensor, number]
+            The tensor to update from.
+
+        Returns
+        -------
+        dragon.vm.torch.Tensor
+            The output tensor.
+
+        See Also
+        --------
+        `torch.scatter(...)`_
+
+        """
+
+    def scatter_(self, dim, index, src, reduce=None):
+        """Update elements from the source.
+
+        Parameters
+        ----------
+        dim : int
+            The dimension of index values.
+        index : dragon.vm.torch.Tensor
+            The index tensor.
+        src : Union[dragon.vm.torch.Tensor, number]
+            The tensor to update from.
+        reduce : str, optional
+            ``'add'`` or ``'multiply'``.
+
+        Returns
+        -------
+        dragon.vm.torch.Tensor
+            The output tensor.
+
+        See Also
+        --------
+        `torch.scatter(...)`_
+
+        """
+
+    def scatter_add(self, dim, index, src):
+        """Return a tensor with elements added from the source.
+
+        Parameters
+        ----------
+        dim : int
+            The dimension of index values.
+        index : dragon.vm.torch.Tensor
+            The index tensor.
+        src : Union[dragon.vm.torch.Tensor, number]
+            The tensor to add from.
+
+        Returns
+        -------
+        dragon.vm.torch.Tensor
+            The output tensor.
+
+        See Also
+        --------
+        `torch.scatter_add(...)`_
+
+        """
+
+    def scatter_add_(self, dim, index, src):
+        """Add elements from the source.
+
+        Parameters
+        ----------
+        dim : int
+            The dimension of index values.
+        index : dragon.vm.torch.Tensor
+            The index tensor.
+        src : Union[dragon.vm.torch.Tensor, number]
+            The tensor to add from.
+
+        Returns
+        -------
+        dragon.vm.torch.Tensor
+            The output tensor.
+
+        See Also
+        --------
+        `torch.scatter_add(...)`_
 
         """
 
@@ -2894,6 +3005,22 @@ class Tensor(object):
         if self._deleter:
             self._deleter.release(self._impl.name)
 
+    def __eq__(self, other):
+        r"""Compute the element-wise equal comparison.
+
+        Parameters
+        ----------
+        other : Union[dragon.vm.torch.Tensor, number]
+            The value to compare.
+
+        Returns
+        -------
+        dragon.vm.torch.Tensor
+            The output tensor.
+
+        """
+        return self.eq(other)
+
     def __float__(self):
         """Return a float python scalar.
 
@@ -2948,6 +3075,7 @@ class Tensor(object):
         return self.gt(other)
 
     def __hash__(self):
+        """Return the hashable identity."""
         return id(self)
 
     def __iadd__(self, other):
@@ -3131,6 +3259,22 @@ class Tensor(object):
 
         """
         return self.mul(other)
+
+    def __ne__(self, other):
+        """Compute the element-wise not-equal comparison.
+
+        Parameters
+        ----------
+        other : Union[dragon.vm.torch.Tensor, number]
+            The value to compare.
+
+        Returns
+        -------
+        dragon.vm.torch.Tensor
+            The output tensor.
+
+        """
+        return self.ne(other)
 
     def __neg__(self):
         """Compute the element-wise negative.
@@ -3344,64 +3488,3 @@ class LongTensor(object):
     def __new__(cls, *args, **kwargs):
         kwargs['dtype'] = 'int64'
         return Tensor(*args, **kwargs)
-
-
-def empty(*size, dtype=None, device=None, requires_grad=False):
-    """Return a tensor filled with uninitialized data.
-
-    Parameters
-    ----------
-    size : int...
-        The sizes of output tensor.
-    dtype : str, optional
-        The optional data type.
-    device : dragon.vm.torch.device, optional
-        The optional device option.
-    requires_grad : bool, optional, default=False
-        Whether to compute the gradient if necessary.
-
-    Returns
-    -------
-    dragon.vm.torch.Tensor
-        The output tensor.
-
-    """
-    return Tensor(
-        *size,
-        dtype=dtype if dtype else 'float32',
-        device=cpp.device() if device is None else device,
-        requires_grad=requires_grad,
-    )
-
-
-def tensor(data, dtype=None, device=None, requires_grad=False):
-    """Create a tensor initializing the content from data.
-
-    Parameters
-    ----------
-    data : array_like
-        The data to initialize.
-    dtype : str, optional
-        The optional data type.
-    device : dragon.vm.torch.device, optional
-        The optional device of returned tensor.
-    requires_grad : bool, optional, default=False
-        ``True`` to record gradient for returned tensor.
-
-    Returns
-    -------
-    dragon.vm.torch.Tensor
-        The output tensor.
-
-    """
-    array_data = numpy.array(data, copy=True)
-    if dtype is None:
-        dtype = str(array_data.dtype)
-    else:
-        array_data = array_data.astype(dtype)
-    return Tensor(
-        array_data,
-        dtype=dtype,
-        device=cpp.device() if device is None else device,
-        requires_grad=requires_grad,
-    )

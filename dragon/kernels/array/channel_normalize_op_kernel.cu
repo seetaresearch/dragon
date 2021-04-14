@@ -66,12 +66,12 @@ __global__ void _ChannelNormalize(
         N, axis, num_dims, X_strides, Y_dims, x, mean, std, y);    \
   }
 
-DEFINE_KERNEL_LAUNCHER(int8_t, float16);
-DEFINE_KERNEL_LAUNCHER(int8_t, float);
-DEFINE_KERNEL_LAUNCHER(int8_t, double);
 DEFINE_KERNEL_LAUNCHER(uint8_t, float16);
 DEFINE_KERNEL_LAUNCHER(uint8_t, float);
 DEFINE_KERNEL_LAUNCHER(uint8_t, double);
+DEFINE_KERNEL_LAUNCHER(int8_t, float16);
+DEFINE_KERNEL_LAUNCHER(int8_t, float);
+DEFINE_KERNEL_LAUNCHER(int8_t, double);
 DEFINE_KERNEL_LAUNCHER(int, float16);
 DEFINE_KERNEL_LAUNCHER(int, float);
 DEFINE_KERNEL_LAUNCHER(int, double);

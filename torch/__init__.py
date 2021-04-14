@@ -44,7 +44,6 @@ from dragon.vm.torch.core.tensor import LongTensor
 from dragon.vm.torch.core.tensor import Tensor
 
 # Functions
-from dragon.vm.torch.core.cpp import from_numpy
 from dragon.vm.torch.core.ops import tensor_ops as _
 from dragon.vm.torch.core.ops.array_ops import argmax
 from dragon.vm.torch.core.ops.array_ops import argmin
@@ -57,6 +56,7 @@ from dragon.vm.torch.core.ops.array_ops import channel_shuffle
 from dragon.vm.torch.core.ops.array_ops import chunk
 from dragon.vm.torch.core.ops.array_ops import cumsum
 from dragon.vm.torch.core.ops.array_ops import flatten
+from dragon.vm.torch.core.ops.array_ops import gather
 from dragon.vm.torch.core.ops.array_ops import index_select
 from dragon.vm.torch.core.ops.array_ops import masked_select
 from dragon.vm.torch.core.ops.array_ops import masked_fill
@@ -69,6 +69,8 @@ from dragon.vm.torch.core.ops.array_ops import nonzero
 from dragon.vm.torch.core.ops.array_ops import one_hot
 from dragon.vm.torch.core.ops.array_ops import permute
 from dragon.vm.torch.core.ops.array_ops import reshape
+from dragon.vm.torch.core.ops.array_ops import scatter
+from dragon.vm.torch.core.ops.array_ops import scatter_add
 from dragon.vm.torch.core.ops.array_ops import sort
 from dragon.vm.torch.core.ops.array_ops import split
 from dragon.vm.torch.core.ops.array_ops import squeeze
@@ -82,7 +84,10 @@ from dragon.vm.torch.core.ops.array_ops import triu
 from dragon.vm.torch.core.ops.array_ops import unique
 from dragon.vm.torch.core.ops.array_ops import unsqueeze
 from dragon.vm.torch.core.ops.array_ops import where
+from dragon.vm.torch.core.ops.constant_ops import from_numpy
+from dragon.vm.torch.core.ops.constant_ops import tensor
 from dragon.vm.torch.core.ops.init_ops import arange
+from dragon.vm.torch.core.ops.init_ops import empty
 from dragon.vm.torch.core.ops.init_ops import eye
 from dragon.vm.torch.core.ops.init_ops import full
 from dragon.vm.torch.core.ops.init_ops import full_like
@@ -140,8 +145,6 @@ from dragon.vm.torch.core.ops.math_ops import sqrt
 from dragon.vm.torch.core.ops.math_ops import sub
 from dragon.vm.torch.core.serialization import load
 from dragon.vm.torch.core.serialization import save
-from dragon.vm.torch.core.tensor import empty
-from dragon.vm.torch.core.tensor import tensor
 
 # Aliases
 bool = dtype('bool')

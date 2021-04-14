@@ -498,6 +498,11 @@ def roi_pool_args(**kwargs):
     }
 
 
+@register(['ScatterElements', 'ScatterAdd', 'GatherElements'])
+def scatter_gather_elements_args(**kwargs):
+    return {'axis': kwargs.get('axis', 0)}
+
+
 @register('Selu')
 def selu_args(**kwargs):
     return {
@@ -554,6 +559,16 @@ def squeeze_args(**kwargs):
 @register('Stack')
 def stack_args(**kwargs):
     return {'axis': kwargs.get('axis', 0)}
+
+
+@register('SyncBatchNorm')
+def sync_batch_norm_args(**kwargs):
+    return {**batch_norm_args(**kwargs), **{
+        'comm': kwargs.get('comm', 0),
+        'group': kwargs.get('group', 0),
+        'backend': kwargs.get('backend', 'MPI'),
+        'ranks': kwargs.get('ranks', None),
+    }}
 
 
 @register('Tile')

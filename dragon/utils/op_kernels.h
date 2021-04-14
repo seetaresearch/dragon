@@ -387,6 +387,17 @@ void GatherGrad(
     Context* ctx);
 
 template <typename T, class Context>
+void GatherElements(
+    const int axis,
+    const int num_dims,
+    const int64_t* x_strides,
+    const int64_t* y_dims,
+    const int64_t* index,
+    const T* x,
+    T* y,
+    Context* ctx);
+
+template <typename T, class Context>
 void LinSpace(
     const int N,
     const int C,
@@ -476,6 +487,41 @@ void RepeatGrad(
     const int repeats,
     const T* dy,
     T* dx,
+    Context* ctx);
+
+template <typename T, class Context>
+void ScatterElements(
+    const int axis,
+    const int num_dims,
+    const T value,
+    const int64_t* dims,
+    const int64_t* y_strides,
+    const int64_t* index,
+    T* y,
+    Context* ctx);
+
+template <typename T, class Context>
+void ScatterElements(
+    const int axis,
+    const int num_dims,
+    const int64_t* dims,
+    const int64_t* x_strides,
+    const int64_t* y_strides,
+    const int64_t* index,
+    const T* x,
+    T* y,
+    Context* ctx);
+
+template <typename T, typename AccT, class Context>
+void ScatterAdd(
+    const int axis,
+    const int num_dims,
+    const int64_t* dims,
+    const int64_t* x_strides,
+    const int64_t* y_strides,
+    const int64_t* index,
+    const T* x,
+    AccT* y,
     Context* ctx);
 
 template <typename T, class Context>
@@ -875,9 +921,9 @@ void GroupNormGrad(
 
 template <typename T, class Context>
 void L1Normalize(
-    const int outer_dim,
-    const int inner_dim,
-    const int reduce_dim,
+    const int N,
+    const int S,
+    const int C,
     const float normalizer,
     const float epsilon,
     const T* x,
@@ -886,9 +932,9 @@ void L1Normalize(
 
 template <typename T, class Context>
 void L1NormalizeGrad(
-    const int outer_dim,
-    const int inner_dim,
-    const int reduce_dim,
+    const int N,
+    const int S,
+    const int C,
     const float normalizer,
     const float epsilon,
     const T* dy,
@@ -898,9 +944,9 @@ void L1NormalizeGrad(
 
 template <typename T, class Context>
 void L2Normalize(
-    const int outer_dim,
-    const int inner_dim,
-    const int reduce_dim,
+    const int N,
+    const int S,
+    const int C,
     const float normalizer,
     const float epsilon,
     const T* x,
@@ -909,9 +955,9 @@ void L2Normalize(
 
 template <typename T, class Context>
 void L2NormalizeGrad(
-    const int outer_dim,
-    const int inner_dim,
-    const int reduce_dim,
+    const int N,
+    const int S,
+    const int C,
     const float normalizer,
     const float epsilon,
     const T* dy,

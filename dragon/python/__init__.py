@@ -67,6 +67,7 @@ from dragon.core.ops.array_ops import concat
 from dragon.core.ops.array_ops import expand_dims
 from dragon.core.ops.array_ops import flatten
 from dragon.core.ops.array_ops import gather
+from dragon.core.ops.array_ops import gather_elements
 from dragon.core.ops.array_ops import identity
 from dragon.core.ops.array_ops import linspace
 from dragon.core.ops.array_ops import nonzero
@@ -75,6 +76,8 @@ from dragon.core.ops.array_ops import pad
 from dragon.core.ops.array_ops import range
 from dragon.core.ops.array_ops import repeat
 from dragon.core.ops.array_ops import reshape
+from dragon.core.ops.array_ops import scatter_add
+from dragon.core.ops.array_ops import scatter_elements
 from dragon.core.ops.array_ops import shape
 from dragon.core.ops.array_ops import slice
 from dragon.core.ops.array_ops import sort

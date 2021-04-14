@@ -53,7 +53,7 @@ Name                     Supported Reference
 `Compress`_
 `Concat`_                |v|       :func:`dragon.concat`
 `ConcatFromSequence`_
-`Constant`_
+`Constant`_              |v|       :func:`dragon.fill`
 `ConstantOfShape`_
 `Conv`_                  |v|       :func:`dragon.nn.conv`
 `ConvInteger`_
@@ -77,7 +77,7 @@ Name                     Supported Reference
 `Floor`_                 |v|       :func:`dragon.math.floor`
 `GRU`_                   |v|       :func:`dragon.nn.GRU`
 `Gather`_                |v|       :func:`dragon.gather`
-`GatherElements`_
+`GatherElements`_        |v|       :func:`dragon.gather_elements`
 `GatherND`_
 `Gemm`_                  |v|       :func:`dragon.math.gemm`
 `GlobalAveragePool`_     |v|       :func:`dragon.nn.pool`
@@ -146,8 +146,8 @@ Name                     Supported Reference
 `RoiAlign`_              |v|       :func:`dragon.vision.roi_align`
 `Round`_                 |v|       :func:`dragon.math.round`
 `Scan`_
-`Scatter`_
-`ScatterElements`_
+`Scatter`_               |v|       :func:`dragon.scatter_elements`
+`ScatterElements`_       |v|       :func:`dragon.scatter_elements`
 `ScatterND`_
 `Selu`_                  |v|       :func:`dragon.nn.selu`
 `SequenceAt`_

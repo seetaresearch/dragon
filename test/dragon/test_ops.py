@@ -14,6 +14,7 @@ from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
 
+import itertools
 import math
 import os
 import unittest
@@ -724,6 +725,34 @@ class TestArrayOps(OpTestCase):
     def test_gather_cuda(self):
         with dragon.device('cuda'):
             self.test_gather()
+
+    def test_gather_elements(self):
+        for execution in ('EAGER_MODE', 'GRAPH_MODE'):
+            with execution_context().mode(execution):
+                for axis in range(0, 1):
+                    data1 = arange((2, 4))
+                    data2 = np.array([[0, 1, 1, 0], [1, 1, 0, 0]])
+                    x, index = new_tensor(data1), new_tensor(data2)
+                    with dragon.GradientTape() as tape:
+                        tape.watch(x)
+                        y = dragon.gather_elements([x, index], axis=axis)
+                    data3 = arange(y.shape, 100)
+                    dy = new_tensor(data3)
+                    dx, = tape.gradient(y, [x], output_gradients=[dy])
+                    result, grad = np.zeros_like(data2), np.zeros_like(data1)
+                    for i, j in itertools.product(*[range(d) for d in data2.shape]):
+                        if axis == 0:
+                            result[i, j] = data1[data2[i, j], j]
+                            grad[data2[i, j], j] += data3[i, j]
+                        else:
+                            result[i, j] = data1[i, data2[i, j]]
+                            grad[i, data2[i, j]] = data3[i, j]
+                    self.assertEqual([y, dx], [result, grad])
+
+    @unittest.skipIf(not TEST_CUDA, 'CUDA unavailable')
+    def test_gather_elements_cuda(self):
+        with dragon.device('cuda'):
+            self.test_gather_elements()
 
     def test_identity(self):
         for execution in ('EAGER_MODE', 'GRAPH_MODE'):
@@ -2261,6 +2290,68 @@ class TestMathOps(OpTestCase):
         with dragon.device('cuda'):
             self.test_rsqrt()
 
+    def test_scatter_add(self):
+        for execution in ('EAGER_MODE', 'GRAPH_MODE'):
+            with execution_context().mode(execution):
+                for axis in range(0, 1):
+                    data1 = arange((4, 4))
+                    data2 = np.array([[0, 0, 2, 3], [0, 0, 3, 0],
+                                      [2, 3, 0, 1], [3, 0, 1, 2]])
+                    data3 = arange((4, 4), 100)
+                    x, index = new_tensor(data1), new_tensor(data2)
+                    v = new_tensor(data3)
+                    with dragon.GradientTape() as tape:
+                        tape.watch([x, v])
+                        y = dragon.scatter_add([x, index, v], axis=axis)
+                    dx, dv = tape.gradient(y, [x, v], output_gradients=[x])
+                    result, grad1 = data1.copy(), data1.copy()
+                    grad2 = np.zeros_like(data3)
+                    for i, j in itertools.product(*[range(d) for d in data2.shape]):
+                        if axis == 0:
+                            result[data2[i, j], j] += data3[i, j]
+                            grad2[i, j] = data1[data2[i, j], j]
+                        else:
+                            result[i, data2[i, j]] += data3[i, j]
+                            grad2[i, j] = data1[i, data2[i, j]]
+                    self.assertEqual([y, dx, dv], [result, grad1, grad2])
+
+    @unittest.skipIf(not TEST_CUDA, 'CUDA unavailable')
+    def test_scatter_add_cuda(self):
+        with dragon.device('cuda'):
+            self.test_scatter_add()
+
+    def test_scatter_elements(self):
+        for execution in ('EAGER_MODE', 'GRAPH_MODE'):
+            with execution_context().mode(execution):
+                for axis in range(0, 1):
+                    data1 = arange((4, 4))
+                    data2 = np.array([[0, 1, 2, 3], [1, 2, 3, 0],
+                                      [2, 3, 0, 1], [3, 0, 1, 2]])
+                    data3 = arange((4, 4), 100)
+                    x, index = new_tensor(data1), new_tensor(data2)
+                    v = new_tensor(data3)
+                    with dragon.GradientTape() as tape:
+                        tape.watch([x, v])
+                        y = dragon.scatter_elements([x, index, v], axis=axis)
+                    dx, dv = tape.gradient(y, [x, v], output_gradients=[x])
+                    result, grad1 = data1.copy(), data1.copy()
+                    grad2 = np.zeros_like(data3)
+                    for i, j in itertools.product(*[range(d) for d in data2.shape]):
+                        if axis == 0:
+                            result[data2[i, j], j] = data3[i, j]
+                            grad1[data2[i, j], j] = 0
+                            grad2[i, j] = data1[data2[i, j], j]
+                        else:
+                            result[i, data2[i, j]] = data3[i, j]
+                            grad1[i, data2[i, j]] = 0
+                            grad2[i, j] = data1[i, data2[i, j]]
+                    self.assertEqual([y, dx, dv], [result, grad1, grad2])
+
+    @unittest.skipIf(not TEST_CUDA, 'CUDA unavailable')
+    def test_scatter_elements_cuda(self):
+        with dragon.device('cuda'):
+            self.test_scatter_elements()
+
     def test_sign(self):
         for execution in ('EAGER_MODE', 'GRAPH_MODE'):
             with execution_context().mode(execution):
@@ -2832,6 +2923,14 @@ class TestTensorOps(OpTestCase):
                         a /= b
                         self.assertEqual(a, data1 / data2)
 
+    def test_eq(self):
+        for execution in ('EAGER_MODE', 'GRAPH_MODE'):
+            with execution_context().mode(execution):
+                for a_shape, b_shape in self.binary_test_shapes:
+                    data1, data2 = uniform(a_shape), uniform(b_shape)
+                    a, b = new_tensor(data1), new_tensor(data2)
+                    self.assertEqual(a == b, data1 == data2)
+
     def test_ge(self):
         for execution in ('EAGER_MODE', 'GRAPH_MODE'):
             with execution_context().mode(execution):
@@ -2921,6 +3020,14 @@ class TestTensorOps(OpTestCase):
                     if execution == 'EAGER_MODE':
                         a *= b
                         self.assertEqual(a, data1 * data2)
+
+    def test_ne(self):
+        for execution in ('EAGER_MODE', 'GRAPH_MODE'):
+            with execution_context().mode(execution):
+                for a_shape, b_shape in self.binary_test_shapes:
+                    data1, data2 = uniform(a_shape), uniform(b_shape)
+                    a, b = new_tensor(data1), new_tensor(data2)
+                    self.assertEqual(a != b, data1 != data2)
 
     def test_neg(self):
         for execution in ('EAGER_MODE', 'GRAPH_MODE'):

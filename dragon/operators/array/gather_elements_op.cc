@@ -7,43 +7,37 @@ namespace dragon {
 
 template <class Context>
 template <typename T>
-void GatherOp<Context>::DoRunWithType() {
+void GatherElementsOp<Context>::DoRunWithType() {
+  SET_INPUT_SPEC(0);
   auto &X = Input(0), &X_index = Input(1), *Y = Output(0);
   GET_OP_AXIS_ARG(axis, X.ndim(), 0);
-  GET_OP_AXIS_ARG(end_axis, X.ndim(), axis);
-  SET_INPUT_SPEC(0);
 
   CHECK_GT(X_index.count(), 0) << "\nLength of index must > 0.";
-  vec64_t X_dims(X.dims());
-  vec64_t Y_dims(X_dims.begin(), X_dims.begin() + axis);
-  Y_dims.insert(Y_dims.end(), X_index.dims().begin(), X_index.dims().end());
-  Y_dims.insert(Y_dims.end(), X_dims.begin() + end_axis + 1, X_dims.end());
+  CHECK_EQ(X.ndim(), X_index.ndim())
+      << "\nMismatched number of dimensions between input and index.";
+  for (int i = 0; i < X.ndim(); ++i) {
+    if (i != axis) CHECK_EQ(X_index.dim(i), X.dim(i));
+  }
 
-  kernels::Gather(
-      X.count(0, axis),
-      X.count(end_axis + 1),
-      X.count(axis, end_axis + 1),
-      X_index.count(),
+  kernels::GatherElements(
+      axis,
+      X.ndim(),
+      X.strides().data(),
+      X_index.dims().data(),
       X_index.template data<int64_t, Context>(),
       X.template data<T, Context>(),
-      Y->Reshape(Y_dims)->template mutable_data<T, Context>(),
+      Y->ReshapeLike(X_index)->template mutable_data<T, Context>(),
       ctx());
 }
 
 template <class Context>
-void GatherOp<Context>::RunOnDevice() {
-  DispatchHelper<dtypes::Generic>::Call(this, Input(0));
-}
-
-template <class Context>
 template <typename T>
-void GatherGradientOp<Context>::DoRunWithType() {
-  auto &X_index = Input(0), &dY = Input(1), *dX = Output(0);
-  dX->ReshapeLike(INPUT_SPEC(0));
-  GET_OP_AXIS_ARG(axis, dX->ndim(), 0);
-  GET_OP_AXIS_ARG(end_axis, dX->ndim(), axis);
+void GatherElementsGradientOp<Context>::DoRunWithType() {
+  auto &X_index = Input(0), &dY = Input(1);
+  auto &X_ref = INPUT_SPEC(0), *dX = Output(0);
+  GET_OP_AXIS_ARG(axis, X_ref.ndim(), 0);
 
-  auto* dx = dX->template mutable_data<T, Context>();
+  auto* dx = dX->ReshapeLike(X_ref)->template mutable_data<T, Context>();
   auto* dx_acc = (TypeMeta::Id<T>() == TypeMeta::Id<float>())
       ? (float*)nullptr
       : ctx()->workspace()->template data<float, Context>({dX->count()})[0];
@@ -55,12 +49,13 @@ void GatherGradientOp<Context>::DoRunWithType() {
       dx_acc != nullptr ? dx_acc : reinterpret_cast<float*>(dx),
       ctx());
 
-  // Accumulate to dX
-  kernels::GatherGrad(
-      dX->count(0, axis),
-      dX->count(end_axis + 1),
-      dX->count(axis, end_axis + 1),
-      X_index.count(),
+  // Scatter and accumulate to dX
+  kernels::ScatterAdd(
+      axis,
+      X_ref.ndim(),
+      X_index.dims().data(),
+      X_index.strides().data(),
+      X_ref.strides().data(),
       X_index.template data<int64_t, Context>(),
       dY.template data<T, Context>(),
       dx_acc != nullptr ? dx_acc : reinterpret_cast<float*>(dx),
@@ -72,28 +67,23 @@ void GatherGradientOp<Context>::DoRunWithType() {
   }
 }
 
-template <class Context>
-void GatherGradientOp<Context>::RunOnDevice() {
-  DispatchHelper<dtypes::Floating>::Call(this, Input(1));
-}
-
-DEPLOY_CPU_OPERATOR(Gather);
+DEPLOY_CPU_OPERATOR(GatherElements);
 #ifdef USE_CUDA
-DEPLOY_CUDA_OPERATOR(Gather);
+DEPLOY_CUDA_OPERATOR(GatherElements);
 #endif
 
-DEPLOY_CPU_OPERATOR(GatherGradient);
+DEPLOY_CPU_OPERATOR(GatherElementsGradient);
 #ifdef USE_CUDA
-DEPLOY_CUDA_OPERATOR(GatherGradient);
+DEPLOY_CUDA_OPERATOR(GatherElementsGradient);
 #endif
 
-OPERATOR_SCHEMA(Gather)
+OPERATOR_SCHEMA(GatherElements)
     /* X, X_index */
     .NumInputs(2)
     /* Y */
     .NumOutputs(1);
 
-OPERATOR_SCHEMA(GatherGradient)
+OPERATOR_SCHEMA(GatherElementsGradient)
     /* X_index, dY */
     .NumInputs(2)
     /* dX */
@@ -115,6 +105,6 @@ class GradientMaker final : public GradientMakerBase {
 
 } // namespace
 
-REGISTER_GRADIENT(Gather, GradientMaker);
+REGISTER_GRADIENT(GatherElements, GradientMaker);
 
 } // namespace dragon

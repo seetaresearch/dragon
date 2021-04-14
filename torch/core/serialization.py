@@ -12,6 +12,7 @@
 #     <https://github.com/pytorch/pytorch/blob/master/torch/serialization.py>
 #
 # ------------------------------------------------------------
+"""Serialization utilities."""
 
 from __future__ import absolute_import
 from __future__ import division

@@ -96,6 +96,10 @@ __and__
 #######
 .. automethod:: dragon.Tensor.__and__
 
+__eq__
+######
+.. automethod:: dragon.Tensor.__eq__
+
 __float__
 #########
 .. automethod:: dragon.Tensor.__float__
@@ -160,6 +164,10 @@ __mul__
 #######
 .. automethod:: dragon.Tensor.__mul__
 
+__ne__
+######
+.. automethod:: dragon.Tensor.__ne__
+
 __neg__
 #######
 .. automethod:: dragon.Tensor.__neg__
@@ -222,12 +230,14 @@ __xor__
 .. _dragon.identity(...): identity.html
 .. _dragon.math.add(...): math/add.html
 .. _dragon.math.div(...): math/div.html
+.. _dragon.math.equal(...): math/equal.html
 .. _dragon.math.greater(...): math/greater.html
 .. _dragon.math.greater_equal(...): math/greater_equal.html
 .. _dragon.math.less(...): math/less.html
 .. _dragon.math.less_equal(...): math/less_equal.html
 .. _dragon.math.mul(...): math/mul.html
 .. _dragon.math.negative(...): math/negative.html
+.. _dragon.math.not_equal(...): math/not_equal.html
 .. _dragon.math.sub(...): math/sub.html
 .. _dragon.random.glorot_normal(...): random/glorot_normal.html
 .. _dragon.random.glorot_uniform(...): random/glorot_uniform.html

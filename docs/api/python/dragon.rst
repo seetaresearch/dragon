@@ -80,7 +80,10 @@ dragon
   : Compile a function and return an executable.
 
   `gather(...) <dragon/gather.html>`_
-  : Gather the elements along the given axis using index.
+  : Gather elements along the given axis using index.
+
+  `gather_elements(...) <dragon/gather_elements.html>`_
+  : Gather elements along the given axis of index.
 
   `get_num_threads(...) <dragon/get_num_threads.html>`_
   : Return the number of threads for cpu parallelism.
@@ -132,6 +135,12 @@ dragon
 
   `reshape(...) <dragon/reshape.html>`_
   : Change the dimensions of input.
+
+  `scatter_add(...) <dragon/scatter_add.html>`_
+  : Add elements along the given axis of index.
+
+  `scatter_elements(...) <dragon/scatter_elements.html>`_
+  : Update elements along the given axis of index.
 
   `set_num_threads(...) <dragon/set_num_threads.html>`_
   : Set the number of threads for cpu parallelism.
@@ -207,6 +216,7 @@ dragon
   dragon/flatten
   dragon/function
   dragon/gather
+  dragon/gather_elements
   dragon/get_num_threads
   dragon/get_workspace
   dragon/graph_mode
@@ -224,6 +234,8 @@ dragon
   dragon/repeat
   dragon/reset_workspace
   dragon/reshape
+  dragon/scatter_add
+  dragon/scatter_elements
   dragon/set_num_threads
   dragon/shape
   dragon/slice

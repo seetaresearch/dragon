@@ -558,7 +558,7 @@ def flatten(inputs, axis=0, end_axis=-1, copy=True, **kwargs):
 
 @OpSchema.num_inputs(2)
 def gather(inputs, axis=0, end_axis=None, **kwargs):
-    """Gather the elements along the given axis using index.
+    """Gather elements along the given axis using index.
 
     Index should be a ``int64`` tensor:
 
@@ -593,6 +593,46 @@ def gather(inputs, axis=0, end_axis=None, **kwargs):
     if context.executing_eagerly():
         return OpLib.execute('Gather', inputs, axis=axis, end_axis=end_axis)
     return OpLib.add('Gather', inputs, axis=axis, end_axis=end_axis, **kwargs)
+
+
+@OpSchema.num_inputs(2)
+def gather_elements(inputs, axis=0, **kwargs):
+    """Gather elements along the given axis of index.
+
+    Number of dimensions of input and index should be same.
+    For 3-d input, output is gathered as:
+
+    ```python
+    out[i, j, k] = input[index[i, j, k], j, k]
+    out[i, j, k] = input[i, index[i, j, k], k]
+    out[i, j, k] = input[i, j, index[i, j, k]]
+    ```
+
+    Examples:
+
+    ```python
+    x = dragon.constant([[1, 2], [3, 4]])
+    index = dragon.constant([[0, 0], [0, 1]])
+    print(dragon.gather_elements([x, index], axis=0))  # [[1, 2], [1, 4]]
+    print(dragon.gather_elements([x, index], axis=1))  # [[1, 1], [3, 4]]
+    ```
+
+    Parameters
+    ----------
+    inputs : Sequence[dragon.Tensor]
+        The input and index tensor.
+    axis : int, optional, default=0
+        The axis of index values.
+
+    Returns
+    -------
+    dragon.Tensor
+        The output tensor.
+
+    """
+    if context.executing_eagerly():
+        return OpLib.execute('GatherElements', inputs, axis=axis)
+    return OpLib.add('GatherElements', inputs, axis=axis, **kwargs)
 
 
 @OpSchema.num_inputs(1)
@@ -1185,6 +1225,96 @@ def reshape(inputs, shape, copy=True, **kwargs):
             ndim=len(args['dims']), dims=args['dims'])
     args.pop('copy')
     return OpLib.add('Reshape', **args)
+
+
+@OpSchema.num_inputs(3)
+def scatter_add(inputs, axis=0, copy=True, **kwargs):
+    """Add elements along the given axis of index.
+
+    Number of dimensions of input and index should be same.
+    For 3-d input, output is updated as:
+
+    ```python
+    out[index[i, j, k], j, k] += updates[i, j, k]  # ``axis`` is 0
+    out[i, index[i, j, k], k] += updates[i, j, k]  # ``axis`` is 1
+    out[i, j, index[i, j, k]] += updates[i, j, k]  # ``axis`` is 2
+    ```
+
+    Examples:
+
+    ```python
+    y = dragon.constant([[1, 2], [3, 4]])
+    x = dragon.constant([[5, 6], [7, 8]])
+    index = dragon.constant([[0, 0], [0, 0]])
+    print(dragon.scatter_add([y, index, x], axis=0))  # [[13, 16], [3, 4]]
+    print(dragon.scatter_add([y, index, x], axis=1))  # [[12, 2], [18, 4]]
+    ```
+
+    Parameters
+    ----------
+    inputs : Sequence[dragon.Tensor]
+        The input, index and updates tensor.
+    axis : int, optional, default=0
+        The axis of index values.
+    copy : bool, optional, default=True
+        Return a new tensor or call in-place.
+
+    Returns
+    -------
+    dragon.Tensor
+        The output tensor.
+
+    """
+    if context.executing_eagerly():
+        return OpLib.execute(
+            'ScatterAdd', inputs,
+            outputs=[None] if copy else [inputs[0]], axis=axis)
+    return OpLib.add('ScatterAdd', inputs, axis=axis, **kwargs)
+
+
+@OpSchema.num_inputs(3)
+def scatter_elements(inputs, axis=0, copy=True, **kwargs):
+    """Update elements along the given axis of index.
+
+    Number of dimensions of input and index should be same.
+    For 3-d input, output is updated as:
+
+    ```python
+    out[index[i, j, k], j, k] = updates[i, j, k]  # ``axis`` is 0
+    out[i, index[i, j, k], k] = updates[i, j, k]  # ``axis`` is 1
+    out[i, j, index[i, j, k]] = updates[i, j, k]  # ``axis`` is 2
+    ```
+
+    Examples:
+
+    ```python
+    y = dragon.constant([[1, 2], [3, 4]])
+    x = dragon.constant([[5, 6], [7, 8]])
+    index = dragon.constant([[0, 0], [0, 1]])
+    print(dragon.scatter_elements([y, index, x], axis=0))  # [[7, 6], [3, 8]]
+    print(dragon.scatter_elements([y, index, x], axis=1))  # [[6, 2], [7, 8]]
+    ```
+
+    Parameters
+    ----------
+    inputs : Sequence[dragon.Tensor]
+        The input, index and updates tensor.
+    axis : int, optional, default=0
+        The axis of index values.
+    copy : bool, optional, default=True
+        Return a new tensor or call in-place.
+
+    Returns
+    -------
+    dragon.Tensor
+        The output tensor.
+
+    """
+    if context.executing_eagerly():
+        return OpLib.execute(
+            'ScatterElements', inputs,
+            outputs=[None] if copy else [inputs[0]], axis=axis)
+    return OpLib.add('ScatterElements', inputs, axis=axis, **kwargs)
 
 
 @OpSchema.num_inputs(1)

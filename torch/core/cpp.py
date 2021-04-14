@@ -13,11 +13,8 @@ from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
 
-import numpy
-
 from dragon.core.framework import proto_util
 from dragon.core.util import math_util
-from dragon.vm.torch.core import tensor as tensor_module
 
 
 class Size(tuple):
@@ -177,22 +174,3 @@ class dtype(str):
 
         """
         super(dtype, self).__init__()
-
-
-def from_numpy(array):
-    """Create a tensor from the given numpy array.
-
-    Parameters
-    ----------
-    array : numpy.ndarray
-        The numpy array data.
-
-    Return
-    ------
-    dragon.vm.torch.Tensor
-        The torch tensor.
-
-    """
-    if not isinstance(array, numpy.ndarray):
-        raise TypeError('The <array> should be a numpy ndarray.')
-    return tensor_module.Tensor(array, copy=False)

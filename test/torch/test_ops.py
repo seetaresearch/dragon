@@ -14,6 +14,7 @@ from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
 
+import itertools
 import math
 import os
 import unittest
@@ -236,7 +237,7 @@ class TestTensorOps(OpTestCase):
             data1 = uniform(a_shape)
             data2 = dropout(data1, drop_ratio=0.5)
             a, b = new_tensor(data1, False), new_tensor(data2, False)
-            self.assertEqual(a.eq(b), np.equal(data1, data2))
+            self.assertEqual(a == b, np.equal(data1, data2))
 
     def test_exp(self):
         data = np.array([0., 1., 2.], 'float32')
@@ -293,6 +294,20 @@ class TestTensorOps(OpTestCase):
         self.assertEqual(x.floor(), np.floor(data))
         x.floor_()
         self.assertEqual(x, np.floor(data))
+
+    def test_gather(self):
+        for axis in range(0, 1):
+            data1 = arange((2, 4))
+            data2 = np.array([[0, 1, 1, 0], [1, 1, 0, 0]])
+            x, index = new_tensor(data1), new_tensor(data2)
+            y = x.gather(axis, index)
+            result = np.zeros_like(data2)
+            for i, j in itertools.product(*[range(d) for d in data2.shape]):
+                if axis == 0:
+                    result[i, j] = data1[data2[i, j], j]
+                else:
+                    result[i, j] = data1[i, data2[i, j]]
+            self.assertEqual([y], [result])
 
     def test_getitem(self):
         data1, data2 = arange((2, 3)), arange((2,), dtype='int64')
@@ -518,7 +533,7 @@ class TestTensorOps(OpTestCase):
             data1 = uniform(a_shape)
             data2 = dropout(data1, drop_ratio=0.5)
             a, b = new_tensor(data1, False), new_tensor(data2, False)
-            self.assertEqual(a.ne(b), np.not_equal(data1, data2))
+            self.assertEqual(a != b, np.not_equal(data1, data2))
 
     def test_neg(self):
         data = np.array([-1., 0., 1.], 'float32')
@@ -604,6 +619,58 @@ class TestTensorOps(OpTestCase):
         self.assertEqual(x.rsqrt(), result)
         x.rsqrt_()
         self.assertEqual(x, result)
+
+    def test_scatter(self):
+        for axis in range(0, 1):
+            data1 = arange((4, 4))
+            data2 = np.array([[0, 1, 2, 3], [1, 2, 3, 0],
+                              [2, 3, 0, 1], [3, 0, 1, 2]])
+            data3 = arange((4, 4), 100)
+            x, index = new_tensor(data1), new_tensor(data2)
+            v = new_tensor(data3)
+            y = x.scatter(axis, index, v)
+            result = data1.copy()
+            for i, j in itertools.product(*[range(d) for d in data2.shape]):
+                if axis == 0:
+                    result[data2[i, j], j] = data3[i, j]
+                else:
+                    result[i, data2[i, j]] = data3[i, j]
+            self.assertEqual(y, result)
+            x.scatter_(axis, index, v)
+            self.assertEqual(x, result)
+
+    def test_scatter_add(self):
+        for axis in range(0, 1):
+            data1 = arange((4, 4))
+            data2 = np.array([[0, 0], [0, 0]])
+            data3 = arange((4, 4), 100)
+            x, index = new_tensor(data1), new_tensor(data2)
+            v = new_tensor(data3)
+            y = x.scatter_add(axis, index, v)
+            result = data1.copy()
+            for i, j in itertools.product(*[range(d) for d in data2.shape]):
+                if axis == 0:
+                    result[data2[i, j], j] += data3[i, j]
+                else:
+                    result[i, data2[i, j]] += data3[i, j]
+            self.assertEqual(y, result)
+            x.scatter_(axis, index, v, reduce='add')
+            self.assertEqual(x, result)
+
+    def test_scatter_mul(self):
+        for axis in range(0, 1):
+            data1 = arange((4, 4))
+            data2 = np.array([[0, 1, 2, 3], [1, 2, 3, 0],
+                              [2, 3, 0, 1], [3, 0, 1, 2]])
+            x, index = new_tensor(data1), new_tensor(data2)
+            result = data1.copy()
+            for i, j in itertools.product(*[range(d) for d in data2.shape]):
+                if axis == 0:
+                    result[data2[i, j], j] *= 2.33
+                else:
+                    result[i, data2[i, j]] *= 2.33
+            x.scatter_(axis, index, 2.33, reduce='multiply')
+            self.assertEqual(x, result)
 
     def test_setitem(self):
         data = arange((2, 3))

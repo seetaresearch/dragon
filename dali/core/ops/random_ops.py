@@ -43,7 +43,7 @@ class CoinFlip(object):
 
         Returns
         -------
-        nvidia.dali.ops.CoinFlip
+        nvidia.dali.ops.random.CoinFlip
             The operator.
 
         """
@@ -72,7 +72,7 @@ class Uniform(object):
 
         Returns
         -------
-        nvidia.dali.ops.Uniform
+        nvidia.dali.ops.random.Uniform
             The operator.
 
         """

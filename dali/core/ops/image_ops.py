@@ -368,7 +368,7 @@ class RandomResizedCrop(object):
         num_attempts=10,
         **kwargs
     ):
-        """Create a ``ImageDecoderRandomCrop`` operator.
+        """Create a ``RandomResizedCrop`` operator.
 
         Parameters
         ----------
@@ -389,7 +389,7 @@ class RandomResizedCrop(object):
 
         Returns
         -------
-        nvidia.dali.ops.ImageDecoderRandomCrop
+        nvidia.dali.ops.RandomResizedCrop
             The operator.
 
         """
@@ -462,6 +462,11 @@ class Resize(object):
             The interpolation for up sampling.
         min_filter : str, optional, default='TRIANGULAR'
             The interpolation for down sampling.
+
+        Returns
+        ------
+        nvidia.dali.ops.Resize
+            The operator.
 
         """
         if isinstance(interp_type, six.string_types):

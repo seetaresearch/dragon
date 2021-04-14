@@ -10,41 +10,17 @@
  * ------------------------------------------------------------
  */
 
-#ifndef DRAGON_OPERATORS_ARRAY_GATHER_OPS_H_
-#define DRAGON_OPERATORS_ARRAY_GATHER_OPS_H_
+#ifndef DRAGON_OPERATORS_ARRAY_SCATTER_OPS_H_
+#define DRAGON_OPERATORS_ARRAY_SCATTER_OPS_H_
 
 #include "dragon/core/operator.h"
 
 namespace dragon {
 
 template <class Context>
-class GatherOp final : public Operator<Context> {
+class ScatterElementsOp final : public Operator<Context> {
  public:
-  SIMPLE_CTOR_DTOR(GatherOp);
-  USE_OPERATOR_FUNCTIONS;
-
-  void RunOnDevice() override;
-
-  template <typename T>
-  void DoRunWithType();
-};
-
-template <class Context>
-class GatherGradientOp final : public Operator<Context> {
- public:
-  SIMPLE_CTOR_DTOR(GatherGradientOp);
-  USE_OPERATOR_FUNCTIONS;
-
-  void RunOnDevice() override;
-
-  template <typename T>
-  void DoRunWithType();
-};
-
-template <class Context>
-class GatherElementsOp final : public Operator<Context> {
- public:
-  SIMPLE_CTOR_DTOR(GatherElementsOp);
+  SIMPLE_CTOR_DTOR(ScatterElementsOp);
   USE_OPERATOR_FUNCTIONS;
 
   void RunOnDevice() override {
@@ -56,9 +32,38 @@ class GatherElementsOp final : public Operator<Context> {
 };
 
 template <class Context>
-class GatherElementsGradientOp final : public Operator<Context> {
+class ScatterElementsGradientOp final : public Operator<Context> {
  public:
-  SIMPLE_CTOR_DTOR(GatherElementsGradientOp);
+  SIMPLE_CTOR_DTOR(ScatterElementsGradientOp);
+  USE_OPERATOR_FUNCTIONS;
+
+  void RunOnDevice() override {
+    DispatchHelper<dtypes::Floating>::Call(this, Input(1));
+  }
+
+  template <typename T>
+  void DoRunWithType();
+};
+
+template <class Context>
+class ScatterAddOp final : public Operator<Context> {
+ public:
+  SIMPLE_CTOR_DTOR(ScatterAddOp);
+  USE_OPERATOR_FUNCTIONS;
+
+  void RunOnDevice() override;
+
+  template <typename T>
+  void DoRunWithType();
+
+  template <typename T>
+  void DoRunWithTypeAndCast();
+};
+
+template <class Context>
+class ScatterAddGradientOp final : public Operator<Context> {
+ public:
+  SIMPLE_CTOR_DTOR(ScatterAddGradientOp);
   USE_OPERATOR_FUNCTIONS;
 
   void RunOnDevice() override {
@@ -71,4 +76,4 @@ class GatherElementsGradientOp final : public Operator<Context> {
 
 } // namespace dragon
 
-#endif // DRAGON_OPERATORS_ARRAY_GATHER_OPS_H_
+#endif // DRAGON_OPERATORS_ARRAY_SCATTER_OPS_H_

@@ -249,6 +249,10 @@ floor\_
 #######
 .. automethod:: dragon.vm.torch.Tensor.floor_
 
+gather
+######
+.. automethod:: dragon.vm.torch.Tensor.gather
+
 ge
 ###
 .. automethod:: dragon.vm.torch.Tensor.ge
@@ -397,10 +401,6 @@ neg\_
 #####
 .. automethod:: dragon.vm.torch.Tensor.neg_
 
-new_ones
-########
-.. automethod:: dragon.vm.torch.Tensor.new_ones
-
 new_empty
 #########
 .. automethod:: dragon.vm.torch.Tensor.new_empty
@@ -408,6 +408,14 @@ new_empty
 new_full
 ########
 .. automethod:: dragon.vm.torch.Tensor.new_full
+
+new_ones
+########
+.. automethod:: dragon.vm.torch.Tensor.new_ones
+
+new_tensor
+##########
+.. automethod:: dragon.vm.torch.Tensor.new_tensor
 
 new_zeros
 #########
@@ -480,6 +488,22 @@ rsqrt
 rsqrt\_
 #######
 .. automethod:: dragon.vm.torch.Tensor.rsqrt_
+
+scatter
+#######
+.. automethod:: dragon.vm.torch.Tensor.scatter
+
+scatter\_
+#########
+.. automethod:: dragon.vm.torch.Tensor.scatter_
+
+scatter_add
+###########
+.. automethod:: dragon.vm.torch.Tensor.scatter_add
+
+scatter_add\_
+#############
+.. automethod:: dragon.vm.torch.Tensor.scatter_add_
 
 sign
 ####
@@ -624,6 +648,7 @@ zero\_
 .. _torch.flatten(...): flatten.html
 .. _torch.floor(...): floor.html
 .. _torch.full(...): full.html
+.. _torch.gather(...): gather.html
 .. _torch.ge(...): ge.html
 .. _torch.gt(...): gt.html
 .. _torch.isinf(...): isinf.html
@@ -652,6 +677,8 @@ zero\_
 .. _torch.reshape(...): reshape.html
 .. _torch.round(...): round.html
 .. _torch.rsqrt(...): rsqrt.html
+.. _torch.scatter(...): scatter.html
+.. _torch.scatter_add(...): scatter_add.html
 .. _torch.sign(...): sign.html
 .. _torch.sin(...): sin.html
 .. _torch.sort(...): sort.html
@@ -660,6 +687,7 @@ zero\_
 .. _torch.squeeze(...): squeeze.html
 .. _torch.sub(...): sub.html
 .. _torch.sum(...): sum.html
+.. _torch.tensor(...): tensor.html
 .. _torch.topk(...): topk.html
 .. _torch.transpose(...): transpose.html
 .. _torch.tril(...): tril.html

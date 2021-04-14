@@ -249,6 +249,15 @@ class TestOpSpec(unittest.TestCase):
             self.assertEqual(dragon.gather(
                 [self.sym3, self.sym2], axis=1).shape, (1, 1))
 
+    def test_gather_elements(self):
+        with dragon.graph_mode():
+            self.assertEqual(dragon.gather_elements(
+                [self.sym1, self.sym1]).shape, None)
+            self.assertEqual(dragon.gather_elements(
+                [self.sym1, self.sym2], axis=0).shape, self.sym2.shape)
+            self.assertEqual(dragon.gather_elements(
+                [self.sym1, self.sym3], axis=1).shape, self.sym3.shape)
+
     def test_gemm(self):
         w = dragon.Tensor((3, 2), symbolic=True)
         with dragon.graph_mode():

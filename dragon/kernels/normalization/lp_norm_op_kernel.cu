@@ -13,67 +13,67 @@ namespace {
 
 template <typename T, typename AccT>
 __global__ void _L1Normalize(
-    const int kBlocks,
-    const int inner_dim,
-    const int reduce_dim,
+    const int NxS,
+    const int S,
+    const int C,
     const AccT normalizer,
     const AccT epsilon,
     const T* x,
     T* y) {
   __shared__ AccT norm;
   __shared__ typename BlockReduce<AccT>::TempStorage storage;
-  CUDA_2D_KERNEL_LOOP1(i, kBlocks) {
-    auto offset = (i / inner_dim) * reduce_dim * inner_dim + (i % inner_dim);
+  CUDA_2D_KERNEL_LOOP1(i, NxS) {
+    auto offset = i / S * C * S + i % S;
     AccT sum = AccT(0);
-    CUDA_2D_KERNEL_LOOP2(j, reduce_dim) {
-      sum += abs(convert::To<AccT>(x[offset + j * inner_dim]));
+    CUDA_2D_KERNEL_LOOP2(j, C) {
+      sum += abs(convert::To<AccT>(x[offset + j * S]));
     }
     sum = BlockReduce<AccT>(storage).Sum(sum);
     if (threadIdx.x == 0) {
       norm = max(sum / normalizer, epsilon);
     }
     __syncthreads();
-    CUDA_2D_KERNEL_LOOP2(j, reduce_dim) {
-      auto idx = offset + j * inner_dim;
-      y[idx] = convert::To<T>(convert::To<AccT>(x[idx]) / norm);
+    CUDA_2D_KERNEL_LOOP2(j, C) {
+      auto index = offset + j * S;
+      y[index] = convert::To<T>(convert::To<AccT>(x[index]) / norm);
     }
   }
 }
 
 template <typename T, typename AccT>
 __global__ void _L2Normalize(
-    const int kBlocks,
-    const int inner_dim,
-    const int reduce_dim,
+    const int NxS,
+    const int S,
+    const int C,
     const AccT normalizer,
     const AccT epsilon,
     const T* x,
     T* y) {
   __shared__ AccT norm;
   __shared__ typename BlockReduce<AccT>::TempStorage storage;
-  CUDA_2D_KERNEL_LOOP1(i, kBlocks) {
-    auto offset = (i / inner_dim) * reduce_dim * inner_dim + (i % inner_dim);
+  CUDA_2D_KERNEL_LOOP1(i, NxS) {
+    auto offset = i / S * C * S + i % S;
     AccT sum = AccT(0);
-    CUDA_2D_KERNEL_LOOP2(j, reduce_dim) {
-      sum += math::utils::Square(convert::To<AccT>(x[offset + j * inner_dim]));
+    CUDA_2D_KERNEL_LOOP2(j, C) {
+      sum += math::utils::Square(convert::To<AccT>(x[offset + j * S]));
     }
     sum = BlockReduce<AccT>(storage).Sum(sum);
     if (threadIdx.x == 0) {
       norm = max(sqrt(sum / normalizer), epsilon);
     }
     __syncthreads();
-    CUDA_2D_KERNEL_LOOP2(j, reduce_dim) {
-      auto idx = offset + j * inner_dim;
-      y[idx] = convert::To<T>(convert::To<AccT>(x[idx]) / norm);
+    CUDA_2D_KERNEL_LOOP2(j, C) {
+      auto index = offset + j * S;
+      y[index] = convert::To<T>(convert::To<AccT>(x[index]) / norm);
     }
   }
 }
 
 template <typename T, typename AccT>
 __global__ void _L1NormalizeGrad(
-    const int kBlocks,
-    const int inner_dim,
-    const int reduce_dim,
+    const int NxS,
+    const int S,
+    const int C,
     const AccT normalizer,
     const AccT epsilon,
     const T* dy,
@@ -81,13 +81,13 @@ __global__ void _L1NormalizeGrad(
     T* dx) {
   __shared__ AccT norm, norm2, sum;
   __shared__ typename BlockReduce<AccT>::TempStorage storage;
-  CUDA_2D_KERNEL_LOOP1(i, kBlocks) {
-    auto offset = (i / inner_dim) * reduce_dim * inner_dim + (i % inner_dim);
+  CUDA_2D_KERNEL_LOOP1(i, NxS) {
+    auto offset = i / S * C * S + i % S;
     AccT val1 = AccT(0), val2 = AccT(0);
-    CUDA_2D_KERNEL_LOOP2(j, reduce_dim) {
-      auto idx = offset + j * inner_dim;
-      val1 += abs(convert::To<AccT>(x[idx]));
-      val2 += convert::To<AccT>(dy[idx]) * convert::To<AccT>(x[idx]);
+    CUDA_2D_KERNEL_LOOP2(j, C) {
+      auto index = offset + j * S;
+      val1 += abs(convert::To<AccT>(x[index]));
+      val2 += convert::To<AccT>(dy[index]) * convert::To<AccT>(x[index]);
     }
     val1 = BlockReduce<AccT>(storage).Sum(val1);
     val2 = BlockReduce<AccT>(storage).Sum(val2);
@@ -97,20 +97,20 @@ __global__ void _L1NormalizeGrad(
       sum = val2 / normalizer;
     }
     __syncthreads();
-    CUDA_2D_KERNEL_LOOP2(j, reduce_dim) {
-      auto idx = offset + j * inner_dim;
-      dx[idx] = convert::To<T>(
-          (convert::To<AccT>(dy[idx]) / norm) -
-          ((math::utils::Sign(convert::To<AccT>(x[idx])) / norm2) * sum));
+    CUDA_2D_KERNEL_LOOP2(j, C) {
+      auto index = offset + j * S;
+      dx[index] = convert::To<T>(
+          (convert::To<AccT>(dy[index]) / norm) -
+          ((math::utils::Sign(convert::To<AccT>(x[index])) / norm2) * sum));
     }
   }
 }
 
 template <typename T, typename AccT>
 __global__ void _L2NormalizeGrad(
-    const int kBlocks,
-    const int inner_dim,
-    const int reduce_dim,
+    const int NxS,
+    const int S,
+    const int C,
     const AccT normalizer,
     const AccT epsilon,
     const T* dy,
@@ -118,13 +118,13 @@ __global__ void _L2NormalizeGrad(
     T* dx) {
   __shared__ AccT norm, norm3, sum;
   __shared__ typename BlockReduce<AccT>::TempStorage storage;
-  CUDA_2D_KERNEL_LOOP1(i, kBlocks) {
-    auto offset = (i / inner_dim) * reduce_dim * inner_dim + (i % inner_dim);
+  CUDA_2D_KERNEL_LOOP1(i, NxS) {
+    auto offset = i / S * C * S + i % S;
     AccT val1 = AccT(0), val2 = AccT(0);
-    CUDA_2D_KERNEL_LOOP2(j, reduce_dim) {
-      auto idx = offset + j * inner_dim;
-      val1 += math::utils::Square(convert::To<AccT>(x[idx]));
-      val2 += convert::To<AccT>(dy[idx]) * convert::To<AccT>(x[idx]);
+    CUDA_2D_KERNEL_LOOP2(j, C) {
+      auto index = offset + j * S;
+      val1 += math::utils::Square(convert::To<AccT>(x[index]));
+      val2 += convert::To<AccT>(dy[index]) * convert::To<AccT>(x[index]);
     }
     val1 = BlockReduce<AccT>(storage).Sum(val1);
     val2 = BlockReduce<AccT>(storage).Sum(val2);
@@ -134,11 +134,11 @@ __global__ void _L2NormalizeGrad(
       sum = val2 / normalizer;
     }
     __syncthreads();
-    CUDA_2D_KERNEL_LOOP2(j, reduce_dim) {
-      auto idx = offset + j * inner_dim;
-      dx[idx] = convert::To<T>(
-          (convert::To<AccT>(dy[idx]) / norm) -
-          ((convert::To<AccT>(x[idx]) / norm3) * sum));
+    CUDA_2D_KERNEL_LOOP2(j, C) {
+      auto index = offset + j * S;
+      dx[index] = convert::To<T>(
+          (convert::To<AccT>(dy[index]) / norm) -
+          ((convert::To<AccT>(x[index]) / norm3) * sum));
     }
   }
 }
@@ -147,52 +147,52 @@ __global__ void _L2NormalizeGrad(
 
 /* ------------------- Launcher Separator ------------------- */
 
-#define DEFINE_KERNEL_LAUNCHER(name, T, AccT)                               \
-  template <>                                                               \
-  void name<T, CUDAContext>(                                                \
-      const int outer_dim,                                                  \
-      const int inner_dim,                                                  \
-      const int reduce_dim,                                                 \
-      const float normalizer,                                               \
-      const float epsilon,                                                  \
-      const T* x,                                                           \
-      T* y,                                                                 \
-      CUDAContext* ctx) {                                                   \
-    const auto kBlocks = outer_dim * inner_dim;                             \
-    _##name<math::ScalarType<T>::type, AccT>                                \
-        <<<CUDA_2D_BLOCKS(kBlocks), CUDA_THREADS, 0, ctx->cuda_stream()>>>( \
-            kBlocks,                                                        \
-            inner_dim,                                                      \
-            reduce_dim,                                                     \
-            AccT(normalizer),                                               \
-            AccT(epsilon),                                                  \
-            reinterpret_cast<const math::ScalarType<T>::type*>(x),          \
-            reinterpret_cast<math::ScalarType<T>::type*>(y));               \
+#define DEFINE_KERNEL_LAUNCHER(name, T, AccT)                           \
+  template <>                                                           \
+  void name<T, CUDAContext>(                                            \
+      const int N,                                                      \
+      const int S,                                                      \
+      const int C,                                                      \
+      const float normalizer,                                           \
+      const float epsilon,                                              \
+      const T* x,                                                       \
+      T* y,                                                             \
+      CUDAContext* ctx) {                                               \
+    const auto NxS = N * S;                                             \
+    _##name<math::ScalarType<T>::type, AccT>                            \
+        <<<CUDA_2D_BLOCKS(NxS), CUDA_THREADS, 0, ctx->cuda_stream()>>>( \
+            NxS,                                                        \
+            S,                                                          \
+            C,                                                          \
+            AccT(normalizer),                                           \
+            AccT(epsilon),                                              \
+            reinterpret_cast<const math::ScalarType<T>::type*>(x),      \
+            reinterpret_cast<math::ScalarType<T>::type*>(y));           \
   }
 
-#define DEFINE_GRAD_KERNEL_LAUNCHER(name, T, AccT)                          \
-  template <>                                                               \
-  void name<T, CUDAContext>(                                                \
-      const int outer_dim,                                                  \
-      const int inner_dim,                                                  \
-      const int reduce_dim,                                                 \
-      const float normalizer,                                               \
-      const float epsilon,                                                  \
-      const T* dy,                                                          \
-      const T* x,                                                           \
-      T* dx,                                                                \
-      CUDAContext* ctx) {                                                   \
-    const auto kBlocks = outer_dim * inner_dim;                             \
-    _##name<math::ScalarType<T>::type, AccT>                                \
-        <<<CUDA_2D_BLOCKS(kBlocks), CUDA_THREADS, 0, ctx->cuda_stream()>>>( \
-            kBlocks,                                                        \
-            inner_dim,                                                      \
-            reduce_dim,                                                     \
-            AccT(normalizer),                                               \
-            AccT(epsilon),                                                  \
-            reinterpret_cast<const math::ScalarType<T>::type*>(dy),         \
-            reinterpret_cast<const math::ScalarType<T>::type*>(x),          \
-            reinterpret_cast<math::ScalarType<T>::type*>(dx));              \
+#define DEFINE_GRAD_KERNEL_LAUNCHER(name, T, AccT)                      \
+  template <>                                                           \
+  void name<T, CUDAContext>(                                            \
+      const int N,                                                      \
+      const int S,                                                      \
+      const int C,                                                      \
+      const float normalizer,                                           \
+      const float epsilon,                                              \
+      const T* dy,                                                      \
+      const T* x,                                                       \
+      T* dx,                                                            \
+      CUDAContext* ctx) {                                               \
+    const auto NxS = N * S;                                             \
+    _##name<math::ScalarType<T>::type, AccT>                            \
+        <<<CUDA_2D_BLOCKS(NxS), CUDA_THREADS, 0, ctx->cuda_stream()>>>( \
+            NxS,                                                        \
+            S,                                                          \
+            C,                                                          \
+            AccT(normalizer),                                           \
+            AccT(epsilon),                                              \
+            reinterpret_cast<const math::ScalarType<T>::type*>(dy),     \
+            reinterpret_cast<const math::ScalarType<T>::type*>(x),      \
+            reinterpret_cast<math::ScalarType<T>::type*>(dx));          \
   }
 
 DEFINE_KERNEL_LAUNCHER(L1Normalize, float16, float);
