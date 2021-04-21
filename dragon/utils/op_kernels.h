@@ -85,6 +85,18 @@ void EluGrad(
     Context* ctx);
 
 template <typename T, class Context>
+void Gelu(const int N, const T* x, T* y, Context* ctx);
+
+template <typename T, class Context>
+void GeluGrad(const int N, const T* dy, const T* x, T* dx, Context* ctx);
+
+template <typename T, class Context>
+void ApproxGelu(const int N, const T* x, T* y, Context* ctx);
+
+template <typename T, class Context>
+void ApproxGeluGrad(const int N, const T* dy, const T* x, T* dx, Context* ctx);
+
+template <typename T, class Context>
 void HardSigmoid(
     const int N,
     const float alpha,
@@ -487,6 +499,16 @@ void RepeatGrad(
     const int repeats,
     const T* dy,
     T* dx,
+    Context* ctx);
+
+template <typename T, class Context>
+void Roll(
+    const int num_dims,
+    const int64_t* x_shifts,
+    const int64_t* x_strides,
+    const int64_t* y_dims,
+    const T* x,
+    T* y,
     Context* ctx);
 
 template <typename T, class Context>

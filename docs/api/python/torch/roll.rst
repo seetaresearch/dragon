@@ -1,7 +1,7 @@
-channel_shuffle
-===============
+roll
+====
 
-.. autofunction:: dragon.vm.torch.channel_shuffle
+.. autofunction:: dragon.vm.torch.roll
 
 .. raw:: html
 

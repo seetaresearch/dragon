@@ -250,39 +250,6 @@ def channel_normalize(input, mean, std, dim=-1, dtype='float32', dims=None):
         ndim=len(dims) if dims is not None else 0, perm=dims)
 
 
-def channel_shuffle(input, dim=0, groups=1, out=None):
-    """Apply group shuffle to each channel of input.
-    `[Zhang et.al, 2017] <https://arxiv.org/abs/1707.01083>`_.
-
-    Examples:
-
-    ```python
-    x = torch.tensor([1, 2, 3, 4])
-    print(torch.channel_shuffle(x, groups=2))  # [1, 3, 2, 4]
-    ```
-
-    Parameters
-    ----------
-    input : dragon.vm.torch.Tensor
-        The input tensor.
-    dim : int, optional, default=0
-        The channel dimension.
-    groups : int, optional, default=1
-        The number of shuffle groups.
-    out : dragon.vm.torch.Tensor, optional
-        The output tensor.
-
-    Returns
-    -------
-    dragon.vm.torch.Tensor
-        The output tensor.
-
-    """
-    return FunctionLib.apply(
-        'ChannelShuffle', input.device, [input], outputs=[out],
-        axis=dim, group=groups)
-
-
 def chunk(tensor, chunks, dim=0):
     """Split input into a specific number of chunks.
 
@@ -896,6 +863,48 @@ def reshape(input, shape, out=None):
     return FunctionLib.apply(
         'Reshape', input.device, [input], outputs=[out],
         ndim=len(shape), dims=shape)
+
+
+def roll(input, shifts, dims=None):
+    """Roll elements along the given dimension.
+
+    :attr:`dims` could be negative or ``None``:
+
+    ```python
+    x = torch.tensor([[1, 2, 3], [4, 5, 6]])
+
+    # A negative dimension is the last-k dimension
+    print(torch.roll(x, shifts=1, dims=1))  # [[3, 1, 2], [6, 4, 5]]
+    print(torch.roll(x, shifts=1, dims=-1))  # Equivalent
+
+    # If dimension is None, roll input as a vector
+    print(torch.roll(x, shifts=1))  # [[6, 1, 2], [3, 4, 5]]
+
+    # Also, dimension could be a sequence of integers
+    print(torch.roll(x, shifts=(1, 1), dims=(0, 1)))  # [[6, 4, 5], [3, 1, 2]]
+    print(torch.roll(x, shifts=(1, -1), dims=(0, 1)))  # [[5, 6, 4], [2, 3, 1]]
+    ```
+
+    Parameters
+    ----------
+    input : dragon.vm.torch.Tensor
+        The input tensor.
+    shifts : Union[int, Sequence[int]]
+        The rolling offset of each dimension.
+    dims : Union[int, Sequence[int]], optional
+        The dimension to roll.
+
+    Returns
+    -------
+    dragon.vm.torch.Tensor
+        The output tensor.
+
+    """
+    shifts = nest.flatten(shifts)
+    dims = nest.flatten(dims) if dims is not None else dims
+    return FunctionLib.apply(
+        'Roll', input.device, [input],
+        num_shifts=len(shifts), shifts=shifts, axes=dims)
 
 
 def scatter(input, dim, index, src, out=None):

@@ -35,7 +35,7 @@ class UpdateOpBase : public Operator<Context> {
 
   void RunOnDevice() override;
 
-  virtual void ComputeUpdate(Tensor* dX) = 0;
+  virtual void ComputeUpdate(Tensor* dX, Tensor* X) = 0;
 
   template <typename T>
   void AdjustGradient(Tensor* dX, Tensor* X);
@@ -75,7 +75,7 @@ class SGDUpdateOp final : public UpdateOpBase<Context> {
     UpdateOpBase<Context>::GetArguments();
   }
 
-  void ComputeUpdate(Tensor* dX) override;
+  void ComputeUpdate(Tensor* dX, Tensor* /* X */) override;
 
  protected:
   float lr_, last_lr_;
@@ -96,7 +96,7 @@ class NesterovUpdateOp final : public UpdateOpBase<Context> {
     UpdateOpBase<Context>::GetArguments();
   }
 
-  void ComputeUpdate(Tensor* dX) override;
+  void ComputeUpdate(Tensor* dX, Tensor* /* X */) override;
 
  protected:
   float lr_, momentum_;
@@ -118,14 +118,14 @@ class RMSpropUpdateOp final : public UpdateOpBase<Context> {
     UpdateOpBase<Context>::GetArguments();
   }
 
-  void ComputeUpdate(Tensor* dX) override;
+  void ComputeUpdate(Tensor* dX, Tensor* /* X */) override;
 
  protected:
   float lr_, momentum_, decay_, eps_;
 };
 
 template <class Context>
-class AdamUpdateOp final : public UpdateOpBase<Context> {
+class AdamUpdateOp : public UpdateOpBase<Context> {
  public:
   AdamUpdateOp(const OperatorDef& def, Workspace* ws)
       : UpdateOpBase<Context>(def, ws), t_(0) {}
@@ -133,19 +133,40 @@ class AdamUpdateOp final : public UpdateOpBase<Context> {
   USE_UPDATE_FUNCTIONS;
 
   void GetArguments() override {
-    t_++;
+    lr_ = Hyper("lr");
     beta1_ = Hyper("beta1");
     beta2_ = Hyper("beta2");
-    auto correction = sqrt(1.f - pow(beta2_, t_)) / (1.f - pow(beta1_, t_));
-    lr_ = Hyper("lr") * correction;
     eps_ = Hyper("eps");
+    t_++;
+    correction_ = sqrt(1.f - pow(beta2_, t_)) / (1.f - pow(beta1_, t_));
     UpdateOpBase<Context>::GetArguments();
   }
 
-  void ComputeUpdate(Tensor* dX) override;
+  void ComputeUpdate(Tensor* dX, Tensor* /* X */) override;
 
  protected:
-  float lr_, beta1_, beta2_, eps_, t_;
+  int64_t t_;
+  float lr_, beta1_, beta2_, eps_, correction_;
+};
+
+template <class Context>
+class AdamWUpdateOp final : public AdamUpdateOp<Context> {
+ public:
+  AdamWUpdateOp(const OperatorDef& def, Workspace* ws)
+      : AdamUpdateOp<Context>(def, ws) {}
+  USE_OPERATOR_FUNCTIONS;
+  USE_UPDATE_FUNCTIONS;
+
+  void GetArguments() override {
+    AdamUpdateOp<Context>::GetArguments();
+    lambda_ = this->weight_decay_;
+    this->weight_decay_ = 0.f;
+  }
+
+  void ComputeUpdate(Tensor* dX, Tensor* X) override;
+
+ protected:
+  float lambda_;
 };
 
 #undef USE_UPDATE_FUNCTIONS

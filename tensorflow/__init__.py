@@ -80,6 +80,7 @@ from dragon.vm.tensorflow.core.ops.array_ops import one_hot
 from dragon.vm.tensorflow.core.ops.array_ops import pad
 from dragon.vm.tensorflow.core.ops.array_ops import placeholder
 from dragon.vm.tensorflow.core.ops.array_ops import reshape
+from dragon.vm.tensorflow.core.ops.array_ops import roll
 from dragon.vm.tensorflow.core.ops.array_ops import shape
 from dragon.vm.tensorflow.core.ops.array_ops import slice
 from dragon.vm.tensorflow.core.ops.array_ops import split

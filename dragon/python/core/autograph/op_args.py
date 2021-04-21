@@ -234,6 +234,11 @@ def gather_args(**kwargs):
     }
 
 
+@register('Gelu')
+def gelu_args(**kwargs):
+    return {'approximate': kwargs.get('approximate', False)}
+
+
 @register('Gemm')
 def gemm_args(**kwargs):
     return {
@@ -498,6 +503,14 @@ def roi_pool_args(**kwargs):
     }
 
 
+@register('Roll')
+def roll_args(**kwargs):
+    return {
+        'axes': kwargs.get('axes', None),
+        'shifts_desc': 'int64',
+    }
+
+
 @register(['ScatterElements', 'ScatterAdd', 'GatherElements'])
 def scatter_gather_elements_args(**kwargs):
     return {'axis': kwargs.get('axis', 0)}
@@ -609,6 +622,10 @@ def unsqueeze_args(**kwargs):
     return {'axes': kwargs.get('axes', [0])}
 
 
-@register(['AdamUpdate', 'RMSpropUpdate', 'SGDUpdate', 'NesterovUpdate'])
+@register(['AdamUpdate',
+           'AdamWUpdate',
+           'RMSpropUpdate',
+           'SGDUpdate',
+           'NesterovUpdate'])
 def update_args(**kwargs):
     return {'no_grad': True, 'weight_decay': kwargs.get('weight_decay', None)}

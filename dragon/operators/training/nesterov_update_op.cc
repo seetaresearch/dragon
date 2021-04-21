@@ -5,7 +5,7 @@
 namespace dragon {
 
 template <class Context>
-void NesterovUpdateOp<Context>::ComputeUpdate(Tensor* dX) {
+void NesterovUpdateOp<Context>::ComputeUpdate(Tensor* dX, Tensor* /* X */) {
   kernels::NesterovUpdate(
       dX->count(),
       lr_,

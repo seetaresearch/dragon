@@ -23,6 +23,7 @@ from dragon.core.ops.activation_ops import dropout
 from dragon.core.ops.activation_ops import drop_block
 from dragon.core.ops.activation_ops import drop_path
 from dragon.core.ops.activation_ops import elu
+from dragon.core.ops.activation_ops import gelu
 from dragon.core.ops.activation_ops import hardsigmoid
 from dragon.core.ops.activation_ops import hardswish
 from dragon.core.ops.activation_ops import leaky_relu
@@ -31,8 +32,8 @@ from dragon.core.ops.activation_ops import prelu
 from dragon.core.ops.activation_ops import relu
 from dragon.core.ops.activation_ops import relu6
 from dragon.core.ops.activation_ops import selu
+from dragon.core.ops.activation_ops import silu
 from dragon.core.ops.activation_ops import softmax
-from dragon.core.ops.activation_ops import swish
 from dragon.core.ops.array_ops import moments
 from dragon.core.ops.normalization_ops import batch_norm
 from dragon.core.ops.normalization_ops import group_norm

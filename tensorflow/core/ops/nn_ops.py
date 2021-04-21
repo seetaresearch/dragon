@@ -958,6 +958,13 @@ def elu(features, alpha=1., name=None, **kwargs):
                 \alpha * (\exp(x) - 1), & \text{ otherwise }
             \end{cases}
 
+    Examples:
+
+    ```python
+    x = tf.constant([-1., 0., 1.])
+    print(tf.nn.elu(x))
+    ```
+
     Parameters
     ----------
     features : dragon.Tensor
@@ -974,6 +981,39 @@ def elu(features, alpha=1., name=None, **kwargs):
 
     """
     return activation_ops.elu(features, alpha=alpha, name=name, **kwargs)
+
+
+def gelu(features, approximate=False, name=None):
+    r"""Apply the gaussian error linear unit.
+    `[Hendrycks & Gimpel, 2016] <https://arxiv.org/abs/1606.08415>`_.
+
+    The **GELU** function is defined as:
+
+    .. math:: \text{GELU}(x) = 0.5x(1 + \tanh[\sqrt{2/\pi}(x + 0.044715x^{3})])
+
+    Examples:
+
+    ```python
+    x = tf.constant([-1., 0., 1.])
+    print(tf.nn.gelu(x))
+    ```
+
+    Parameters
+    ----------
+    features : dragon.Tensor
+        The input tensor.
+    approximate : bool, optional, default=False
+        Whether to approximate the computation.
+    name : str, optional
+        The operation name.
+
+    Returns
+    -------
+    dragon.Tensor
+        The output tensor.
+
+    """
+    return activation_ops.gelu(features, approximate=approximate, name=name)
 
 
 def l2_loss(t, name=None):
@@ -1550,6 +1590,35 @@ def sparse_softmax_cross_entropy_with_logits(labels, logits, name=None):
         reduction='none',
         name=name,
     )
+
+
+def silu(features):
+    r"""Apply the sigmoid linear unit.
+    `[Hendrycks & Gimpel, 2016] <https://arxiv.org/abs/1606.08415>`_.
+
+    The **SiLU** function is defined as:
+
+    .. math:: \text{SiLU}(x) = x \cdot \frac{1}{1 + \exp(-x)}
+
+    Examples:
+
+    ```python
+    x = tf.constant([-2.5, -1.0, 0.0, 1.0, 2.5])
+    print(tf.nn.silu(x))
+    ```
+
+    Parameters
+    ----------
+    features : dragon.Tensor
+        The input tensor.
+
+    Returns
+    -------
+    dragon.Tensor
+        The output tensor.
+
+    """
+    return activation_ops.silu(features)
 
 
 def top_k(input, k=1, sorted=True, name=None):

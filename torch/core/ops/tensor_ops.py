@@ -1997,6 +1997,29 @@ def reshape_(self, shape):
     return array_ops.reshape(self, shape, self)
 
 
+def roll(self, shifts, dims=None):
+    """Return a tensor of rolled elements.
+
+    Parameters
+    ----------
+    shifts : Union[int, Sequence[int]]
+        The rolling offset of each dimension.
+    dims : Union[int, Sequence[int]], optional
+        The dimension to roll.
+
+    Returns
+    -------
+    dragon.vm.torch.Tensor
+        The output tensor.
+
+    See Also
+    --------
+    `torch.roll(...)`_
+
+    """
+    return array_ops.roll(self, shifts, dims)
+
+
 def round(self):
     r"""Return a tensor taken the round of elements.
 
@@ -2897,6 +2920,7 @@ Tensor.reciprocal_ = reciprocal_
 Tensor.repeat = repeat
 Tensor.reshape = reshape
 Tensor.reshape_ = reshape_
+Tensor.roll = roll
 Tensor.round = round
 Tensor.round_ = round_
 Tensor.rsqrt = rsqrt

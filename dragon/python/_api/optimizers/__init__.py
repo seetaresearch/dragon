@@ -14,6 +14,7 @@ from __future__ import division as _division
 from __future__ import print_function as _print_function
 
 from dragon.core.training.adam import Adam
+from dragon.core.training.adam import AdamW
 from dragon.core.training.optimizer import Optimizer
 from dragon.core.training.rmsprop import RMSprop
 from dragon.core.training.sgd import Nesterov

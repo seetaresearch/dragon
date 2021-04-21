@@ -5,7 +5,7 @@
 namespace dragon {
 
 template <class Context>
-void RMSpropUpdateOp<Context>::ComputeUpdate(Tensor* dX) {
+void RMSpropUpdateOp<Context>::ComputeUpdate(Tensor* dX, Tensor* /* X */) {
   kernels::RMSPropUpdate(
       dX->count(),
       lr_,

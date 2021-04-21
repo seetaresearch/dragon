@@ -20,6 +20,7 @@ from dragon.vm.torch._api.nn import init
 
 # Classes
 from dragon.vm.torch.core.nn.modules.activation import ELU
+from dragon.vm.torch.core.nn.modules.activation import GELU
 from dragon.vm.torch.core.nn.modules.activation import GumbelSoftmax
 from dragon.vm.torch.core.nn.modules.activation import Hardsigmoid
 from dragon.vm.torch.core.nn.modules.activation import Hardswish
@@ -31,13 +32,14 @@ from dragon.vm.torch.core.nn.modules.activation import ReLU
 from dragon.vm.torch.core.nn.modules.activation import ReLU6
 from dragon.vm.torch.core.nn.modules.activation import SELU
 from dragon.vm.torch.core.nn.modules.activation import Sigmoid
+from dragon.vm.torch.core.nn.modules.activation import SiLU
 from dragon.vm.torch.core.nn.modules.activation import Softmax
-from dragon.vm.torch.core.nn.modules.activation import Swish
 from dragon.vm.torch.core.nn.modules.activation import Tanh
 from dragon.vm.torch.core.nn.modules.batchnorm import BatchNorm1d
 from dragon.vm.torch.core.nn.modules.batchnorm import BatchNorm2d
 from dragon.vm.torch.core.nn.modules.batchnorm import BatchNorm3d
 from dragon.vm.torch.core.nn.modules.batchnorm import SyncBatchNorm
+from dragon.vm.torch.core.nn.modules.channelshuffle import ChannelShuffle
 from dragon.vm.torch.core.nn.modules.container import Container
 from dragon.vm.torch.core.nn.modules.container import ModuleList
 from dragon.vm.torch.core.nn.modules.container import Sequential

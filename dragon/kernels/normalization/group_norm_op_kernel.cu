@@ -16,8 +16,8 @@ namespace {
 
 template <typename T>
 __global__ void _GroupNormFusedParams(
-    const int N,
-    const int G,
+    const int NxC,
+    const int C,
     const int D,
     const T* mu,
     const T* rsig,
@@ -25,58 +25,29 @@ __global__ void _GroupNormFusedParams(
     const T* beta,
     T* scale,
     T* bias) {
-  const int NxG = N * G;
-  CUDA_2D_KERNEL_LOOP1(i, NxG) {
-    const int g = i % G;
-    const T mu_val = LDG(mu, i);
-    const T rsig_val = LDG(rsig, i);
-    CUDA_2D_KERNEL_LOOP2(j, D) {
-      const int c = g * D + j;
-      const int nc = i * D + j;
-      const T scale_val = LDG(gamma, c) * rsig_val;
-      scale[nc] = scale_val;
-      bias[nc] = fma(-scale_val, mu_val, LDG(beta, c));
-    }
+  CUDA_1D_KERNEL_LOOP(i, NxC) {
+    const int c = i % C;
+    const int ng = i / D;
+    const T scale_val = LDG(gamma, c) * LDG(rsig, ng);
+    scale[i] = scale_val;
+    bias[i] = fma(-scale_val, LDG(mu, ng), LDG(beta, c));
   }
 }
 
-template <typename T, typename AccT>
-__global__ void _GroupNormAffineNCHW(
-    const int N,
+template <typename T, typename AccT, StorageOrder kOrder>
+__global__ void _GroupNormAffine(
+    const int NxCxS,
     const int C,
     const int S,
     const T* x,
     const AccT* scale,
     const AccT* bias,
     T* y) {
-  const int NxC = N * C;
-  CUDA_2D_KERNEL_LOOP1(i, NxC) {
-    const AccT w = LDG(scale, i);
-    const AccT b = LDG(bias, i);
-    CUDA_2D_KERNEL_LOOP2(j, S) {
-      const int idx = i * S + j;
-      y[idx] = convert::To<AccT>(fma(LDG2(x, idx), w, b));
-    }
-  }
-}
-
-template <typename T, typename AccT>
-__global__ void _GroupNormAffineNHWC(
-    const int N,
-    const int C,
-    const int S,
-    const T* x,
-    const AccT* scale,
-    const AccT* bias,
-    T* y) {
-  const int NxS = N * S;
-  CUDA_2D_KERNEL_LOOP1(i, NxS) {
-    const int n = i / S;
-    CUDA_2D_KERNEL_LOOP2(j, C) {
-      const int nc = n * C + j;
-      const int idx = i * C + j;
-      y[idx] = convert::To<T>(fma(LDG2(x, idx), LDG(scale, nc), LDG(bias, nc)));
-    }
+  CUDA_1D_KERNEL_LOOP(i, NxCxS) {
+    const int nc =
+        kOrder == StorageOrder::NCHW ? i / S : i / (C * S) * C + i % C;
+    y[i] = convert::To<T>(
+        fma(convert::To<AccT>(x[i]), LDG(scale, nc), LDG(bias, nc)));
   }
 }
 
@@ -195,56 +166,44 @@ __global__ void _GroupNormGrad(
     LOG(FATAL) << "Unknown DataFormat: " << data_format;                 \
   }
 
-#define DEFINE_KERNEL_LAUNCHER(T, AccT)                                     \
-  template <>                                                               \
-  void GroupNorm<T, AccT, CUDAContext>(                                     \
-      const int N,                                                          \
-      const int G,                                                          \
-      const int D,                                                          \
-      const int S,                                                          \
-      const string& data_format,                                            \
-      const T* x,                                                           \
-      const AccT* mu,                                                       \
-      const AccT* rsig,                                                     \
-      const AccT* gamma,                                                    \
-      const AccT* beta,                                                     \
-      AccT* scale,                                                          \
-      AccT* bias,                                                           \
-      T* y,                                                                 \
-      CUDAContext* ctx) {                                                   \
-    const auto C = G * D;                                                   \
-    _GroupNormFusedParams<<<                                                \
-        CUDA_2D_BLOCKS(N* G),                                               \
-        CUDA_THREADS,                                                       \
-        0,                                                                  \
-        ctx->cuda_stream()>>>(N, G, D, mu, rsig, gamma, beta, scale, bias); \
-    if (data_format == "NCHW") {                                            \
-      _GroupNormAffineNCHW<<<                                               \
-          CUDA_2D_BLOCKS(N* C),                                             \
-          CUDA_THREADS,                                                     \
-          0,                                                                \
-          ctx->cuda_stream()>>>(                                            \
-          N,                                                                \
-          C,                                                                \
-          S,                                                                \
-          reinterpret_cast<const math::ScalarType<T>::type*>(x),            \
-          scale,                                                            \
-          bias,                                                             \
-          reinterpret_cast<math::ScalarType<T>::type*>(y));                 \
-    } else if (data_format == "NHWC") {                                     \
-      _GroupNormAffineNHWC<<<                                               \
-          CUDA_2D_BLOCKS(N* S),                                             \
-          CUDA_THREADS,                                                     \
-          0,                                                                \
-          ctx->cuda_stream()>>>(                                            \
-          N,                                                                \
-          C,                                                                \
-          S,                                                                \
-          reinterpret_cast<const math::ScalarType<T>::type*>(x),            \
-          scale,                                                            \
-          bias,                                                             \
-          reinterpret_cast<math::ScalarType<T>::type*>(y));                 \
-    }                                                                       \
+#define DEFINE_KERNEL_LAUNCHER(T, AccT)                                       \
+  template <>                                                                 \
+  void GroupNorm<T, AccT, CUDAContext>(                                       \
+      const int N,                                                            \
+      const int G,                                                            \
+      const int D,                                                            \
+      const int S,                                                            \
+      const string& data_format,                                              \
+      const T* x,                                                             \
+      const AccT* mu,                                                         \
+      const AccT* rsig,                                                       \
+      const AccT* gamma,                                                      \
+      const AccT* beta,                                                       \
+      AccT* scale,                                                            \
+      AccT* bias,                                                             \
+      T* y,                                                                   \
+      CUDAContext* ctx) {                                                     \
+    const auto C = G * D;                                                     \
+    const auto NxC = N * C;                                                   \
+    const auto NxCxS = NxC * S;                                               \
+    _GroupNormFusedParams<<<                                                  \
+        CUDA_BLOCKS(NxC),                                                     \
+        CUDA_THREADS,                                                         \
+        0,                                                                    \
+        ctx->cuda_stream()>>>(NxC, C, D, mu, rsig, gamma, beta, scale, bias); \
+    DISPATCH_GROUPNORM_KERNEL(                                                \
+        _GroupNormAffine,                                                     \
+        math::ScalarType<T>::type,                                            \
+        AccT,                                                                 \
+        CUDA_BLOCKS(NxCxS),                                                   \
+        CUDA_THREADS,                                                         \
+        NxCxS,                                                                \
+        C,                                                                    \
+        S,                                                                    \
+        reinterpret_cast<const math::ScalarType<T>::type*>(x),                \
+        scale,                                                                \
+        bias,                                                                 \
+        reinterpret_cast<math::ScalarType<T>::type*>(y));                     \
   }
 
 #define DEFINE_GRAD_KERNEL_LAUNCHER(T, AccT)                    \
@@ -266,7 +225,7 @@ __global__ void _GroupNormGrad(
       AccT* dbeta,                                              \
       T* dx,                                                    \
       CUDAContext* ctx) {                                       \
-    auto NxCxS = N * G * D * S;                                 \
+    const auto NxCxS = N * G * D * S;                           \
     DISPATCH_GROUPNORM_KERNEL(                                  \
         _GroupNormWGrad,                                        \
         math::ScalarType<T>::type,                              \

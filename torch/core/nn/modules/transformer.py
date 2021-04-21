@@ -308,4 +308,6 @@ def _get_activation_fn(activation):
     """Return the activation function."""
     if activation == 'relu':
         return F.relu
+    elif activation == 'gelu':
+        return F.gelu
     raise RuntimeError('Unknown activation: {}'.format(activation))

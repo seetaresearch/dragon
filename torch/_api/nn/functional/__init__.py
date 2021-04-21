@@ -25,6 +25,7 @@ from dragon.vm.torch.core.nn.functional import avg_pool2d
 from dragon.vm.torch.core.nn.functional import avg_pool3d
 from dragon.vm.torch.core.nn.functional import batch_norm
 from dragon.vm.torch.core.nn.functional import binary_cross_entropy_with_logits
+from dragon.vm.torch.core.nn.functional import channel_shuffle
 from dragon.vm.torch.core.nn.functional import conv1d
 from dragon.vm.torch.core.nn.functional import conv2d
 from dragon.vm.torch.core.nn.functional import conv3d
@@ -39,6 +40,7 @@ from dragon.vm.torch.core.nn.functional import drop_path
 from dragon.vm.torch.core.nn.functional import dropout
 from dragon.vm.torch.core.nn.functional import elu
 from dragon.vm.torch.core.nn.functional import embedding
+from dragon.vm.torch.core.nn.functional import gelu
 from dragon.vm.torch.core.nn.functional import group_norm
 from dragon.vm.torch.core.nn.functional import hardsigmoid
 from dragon.vm.torch.core.nn.functional import hardswish
@@ -64,9 +66,9 @@ from dragon.vm.torch.core.nn.functional import relu6
 from dragon.vm.torch.core.nn.functional import selu
 from dragon.vm.torch.core.nn.functional import sigmoid
 from dragon.vm.torch.core.nn.functional import sigmoid_focal_loss
+from dragon.vm.torch.core.nn.functional import silu
 from dragon.vm.torch.core.nn.functional import smooth_l1_loss
 from dragon.vm.torch.core.nn.functional import softmax
-from dragon.vm.torch.core.nn.functional import swish
 from dragon.vm.torch.core.nn.functional import sync_batch_norm
 from dragon.vm.torch.core.nn.functional import tanh
 from dragon.vm.torch.core.nn.functional import upsample

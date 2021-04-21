@@ -74,6 +74,10 @@ dragon.nn
   : Apply the exponential linear unit.
   `[Clevert et.al, 2015] <https://arxiv.org/abs/1511.07289>`_.
 
+  `gelu(...) <nn/gelu.html>`_
+  : Apply the gaussian error linear unit.
+  `[Hendrycks & Gimpel, 2016] <https://arxiv.org/abs/1606.08415>`_.
+
   `group_norm(...) <nn/group_norm.html>`_
   : Apply the group normalization.
   `[Wu & He, 2018] <https://arxiv.org/abs/1803.08494>`_.
@@ -131,15 +135,15 @@ dragon.nn
   : Apply the scaled exponential linear unit.
   `[Klambauer et.al, 2017] <https://arxiv.org/abs/1706.02515>`_.
 
+  `silu(...) <nn/silu.html>`_
+  : Apply the sigmoid linear unit.
+  `[Hendrycks & Gimpel, 2016] <https://arxiv.org/abs/1606.08415>`_.
+
   `softmax(...) <nn/softmax.html>`_
   : Compute the softmax result.
 
   `space_to_depth(...) <nn/space_to_depth.html>`_
   : Rearrange blocks of spatial data into depth.
-
-  `swish(...) <nn/swish.html>`_
-  : Apply the swish function.
-  `[Ramachandran et.al, 2017] <https://arxiv.org/abs/1710.05941>`_.
    
   `sync_batch_norm(...) <nn/sync_batch_norm.html>`_
   : Apply the batch normalization with synced statistics.
@@ -167,6 +171,7 @@ dragon.nn
   nn/drop_block
   nn/drop_path
   nn/elu
+  nn/gelu
   nn/group_norm
   nn/hardsigmoid
   nn/hardswish
@@ -184,9 +189,9 @@ dragon.nn
   nn/relu
   nn/relu6
   nn/selu
+  nn/silu
   nn/softmax
   nn/space_to_depth
-  nn/swish
   nn/sync_batch_norm
 
 .. raw:: html

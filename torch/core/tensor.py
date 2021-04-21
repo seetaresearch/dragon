@@ -2150,6 +2150,27 @@ class Tensor(object):
             raise RuntimeError('Retain grad for a tensor that does not require.')
         self._retains_grad = True
 
+    def roll(self, shifts, dims=None):
+        """Return a tensor of rolled elements.
+
+        Parameters
+        ----------
+        shifts : Union[int, Sequence[int]]
+            The rolling offset of each dimension.
+        dims : Union[int, Sequence[int]], optional
+            The dimension to roll.
+
+        Returns
+        -------
+        dragon.vm.torch.Tensor
+            The output tensor.
+
+        See Also
+        --------
+        `torch.roll(...)`_
+
+        """
+
     def round(self):
         r"""Return a tensor taken the round of elements.
 

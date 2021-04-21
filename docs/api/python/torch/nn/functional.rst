@@ -40,6 +40,10 @@ vm.torch.nn.functional
   `binary_cross_entropy_with_logits(...) <functional/binary_cross_entropy_with_logits.html>`_
   : Compute the sigmoid cross entropy with contiguous target.
 
+  `channel_shuffle(...) <functional/channel_shuffle.html>`_
+  : Apply group shuffle to each channel of input.
+  `[Zhang et.al, 2017] <https://arxiv.org/abs/1707.01083>`_.
+
   `conv1d(...) <functional/conv1d.html>`_
   : Apply the 1d convolution to input.
 
@@ -84,6 +88,10 @@ vm.torch.nn.functional
   `elu(...) <functional/elu.html>`_
   : Apply the exponential linear unit to input.
   `[Clevert et.al, 2015] <https://arxiv.org/abs/1511.07289>`_.
+
+  `gelu(...) <functional/gelu.html>`_
+  : Apply the gaussian error linear unit to input.
+  `[Hendrycks & Gimpel, 2016] <https://arxiv.org/abs/1606.08415>`_.
 
   `group_norm(...) <functional/group_norm.html>`_
   : Apply the group normalization to input.
@@ -163,16 +171,23 @@ vm.torch.nn.functional
   : Compute the sigmoid focal loss with sparse labels.
   `[Lin et.al, 2017] <https://arxiv.org/abs/1708.02002>`__.
 
+  `sigmoid(...) <functional/sigmoid.html>`_
+  : Apply the sigmoid function to input.
+
+  `sigmoid_focal_loss(...) <functional/sigmoid_focal_loss.html>`_
+  : Compute the sigmoid focal loss with sparse labels.
+  `[Lin et.al, 2017] <https://arxiv.org/abs/1708.02002>`__.
+
+  `silu(...) <functional/silu.html>`_
+  : Apply the sigmoid linear unit to input.
+  `[Hendrycks & Gimpel, 2016] <https://arxiv.org/abs/1606.08415>`_.
+
   `smooth_l1_loss(...) <functional/smooth_l1_loss.html>`_
   : Compute the element-wise error transited from L1 and L2.
   `[Girshick, 2015] <https://arxiv.org/abs/1504.08083>`_.
 
   `softmax(...) <functional/softmax.html>`_
   : Apply the softmax function to input.
-
-  `swish(...) <functional/swish.html>`_
-  : Apply the swish function to input.
-  `[Ramachandran et.al, 2017] <https://arxiv.org/abs/1710.05941>`_.
 
   `sync_batch_norm(...) <functional/sync_batch_norm.html>`_
   : Apply the sync batch normalization to input.
@@ -204,6 +219,7 @@ vm.torch.nn.functional
   functional/avg_pool3d
   functional/batch_norm
   functional/binary_cross_entropy_with_logits
+  functional/channel_shuffle
   functional/conv1d
   functional/conv2d
   functional/conv3d
@@ -217,6 +233,7 @@ vm.torch.nn.functional
   functional/drop_path
   functional/dropout
   functional/elu
+  functional/gelu
   functional/group_norm
   functional/hardsigmoid
   functional/hardswish
@@ -242,9 +259,9 @@ vm.torch.nn.functional
   functional/selu
   functional/sigmoid
   functional/sigmoid_focal_loss
+  functional/silu
   functional/smooth_l1_loss
   functional/softmax
-  functional/swish
   functional/sync_batch_norm
   functional/tanh
   functional/upsample

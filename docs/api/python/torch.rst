@@ -81,10 +81,6 @@ vm.torch
   `channel_normalize(...) <torch/channel_normalize.html>`_
   : Apply normalization to each channel of input.
 
-  `channel_shuffle(...) <torch/channel_shuffle.html>`_
-  : Apply group shuffle to each channel of input.
-  `[Zhang et.al, 2017] <https://arxiv.org/abs/1707.01083>`_.
-
   `chunk(...) <torch/chunk.html>`_
   : Split input into a specific number of chunks.
 
@@ -244,6 +240,9 @@ vm.torch
   `reshape(...) <torch/reshape.html>`_
   : Change the shape of input.
 
+  `roll(...) <torch/roll.html>`_
+  : Roll elements along the given dimension.
+
   `round(...) <torch/round.html>`_
   : Compute the nearest integer of input.
 
@@ -338,7 +337,6 @@ vm.torch
   torch/ceil
   torch/channel_affine
   torch/channel_normalize
-  torch/channel_shuffle
   torch/chunk
   torch/clamp
   torch/cos
@@ -396,6 +394,7 @@ vm.torch
   torch/randperm
   torch/reciprocal
   torch/reshape
+  torch/roll
   torch/round
   torch/rsqrt
   torch/scatter

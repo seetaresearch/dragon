@@ -605,6 +605,14 @@ class TestTensorOps(OpTestCase):
             self.assertEqual(x, data)
             self.assertEqual(x.view_as(x), data)
 
+    def test_roll(self):
+        entries = [(0, 0), ((0, 0), (0, 1)), ((-1, 1), (0, 1)), (1, None)]
+        for shift, axis in entries:
+            data = arange((2, 3))
+            x = new_tensor(data)
+            y = x.roll(shift, axis)
+            self.assertEqual(y, np.roll(data, shift, axis))
+
     def test_round(self):
         data = np.array([0.9, 1.4, 1.9], 'float32')
         x = new_tensor(data)
@@ -888,17 +896,6 @@ class TestTorchOps(OpTestCase):
             x = torch.ones(shape, dtype='uint8')
             y = torch.channel_normalize(x, *args, **kwargs)
             self.assertEqual(y, (data - mean) / std)
-
-    def test_channel_shuffle(self):
-        entries = [(0, 2), (1, 4)]
-        for axis, group in entries:
-            data = arange((2, 8))
-            g, k = group, data.shape[axis] // group
-            shape = data.shape[:axis] + (g, k) + data.shape[axis + 1:]
-            perm = list(range(0, axis)) + [axis + 1, axis] + list(range(axis + 2, len(shape)))
-            x = new_tensor(data)
-            y = torch.channel_shuffle(x, axis, group)
-            self.assertEqual(y, data.reshape(shape).transpose(perm).reshape(data.shape))
 
     def test_linspace(self):
         entries = [([[0., 5.], [10., 40.], 5], {'dim': 0, 'dtype': 'float32'}),

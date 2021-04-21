@@ -1,7 +1,7 @@
-swish
-=====
+silu
+====
 
-.. autofunction:: dragon.nn.swish
+.. autofunction:: dragon.nn.silu
 
 .. raw:: html
 

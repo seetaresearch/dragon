@@ -5,7 +5,7 @@
 namespace dragon {
 
 template <class Context>
-void SGDUpdateOp<Context>::ComputeUpdate(Tensor* dX) {
+void SGDUpdateOp<Context>::ComputeUpdate(Tensor* dX, Tensor* /* X */) {
   kernels::SGDUpdate(
       dX->count(),
       lr_,

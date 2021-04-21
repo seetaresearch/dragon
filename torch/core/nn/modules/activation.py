@@ -73,6 +73,36 @@ class ELU(Module):
         return F.elu(input, self.alpha, self.inplace)
 
 
+class GELU(Module):
+    r"""Apply the gaussian error linear unit.
+    `[Hendrycks & Gimpel, 2016] <https://arxiv.org/abs/1606.08415>`_.
+
+    The **GELU** function is defined as:
+
+    .. math:: \text{GELU}(x) = x\cdot\frac{1}{2}[1 + \text{erf}(x / \sqrt{2})]
+
+    Examples:
+
+    ```python
+    m = torch.nn.GELU()
+    x = torch.randn(2, 3)
+    y = m(x)
+    ```
+
+    See Also
+    --------
+    `torch.nn.functional.gelu(...)`_
+
+    """
+
+    def __init__(self):
+        """Create a ``GELU`` module."""
+        super(GELU, self).__init__()
+
+    def forward(self, input):
+        return F.gelu(input)
+
+
 class GumbelSoftmax(Module):
     r"""Apply the gumbel softmax function.
     `[Jang et.al, 2016] <https://arxiv.org/abs/1611.01144>`_.
@@ -637,6 +667,36 @@ class Sigmoid(Module):
         return F.sigmoid(input, self.inplace)
 
 
+class SiLU(Module):
+    r"""Apply the sigmoid linear unit.
+    `[Hendrycks & Gimpel, 2016] <https://arxiv.org/abs/1606.08415>`_.
+
+    The **SiLU** function is defined as:
+
+    .. math:: \text{SiLU}(x) = x \cdot \frac{1}{1 + \exp(-x)}
+
+    Examples:
+
+    ```python
+    m = torch.nn.So()
+    x = torch.randn(2, 3)
+    y = m(x)
+    ```
+
+    See Also
+    --------
+    `torch.nn.functional.silu(...)`_
+
+    """
+
+    def __init__(self):
+        """Create a ``SiLU`` module."""
+        super(SiLU, self).__init__()
+
+    def forward(self, input):
+        return F.silu(input)
+
+
 class Softmax(Module):
     r"""Apply the softmax function.
 
@@ -679,36 +739,6 @@ class Softmax(Module):
 
     def forward(self, input):
         return F.softmax(input, self.dim, self.inplace)
-
-
-class Swish(Module):
-    r"""Apply the swish function.
-    `[Ramachandran et.al, 2017] <https://arxiv.org/abs/1710.05941>`_.
-
-    The **Swish** function is defined as:
-
-    .. math:: \text{Swish}(x) = x \cdot \frac{1}{1 + \exp(-x)}
-
-    Examples:
-
-    ```python
-    m = torch.nn.Swish()
-    x = torch.randn(2, 3)
-    y = m(x)
-    ```
-
-    See Also
-    --------
-    `torch.nn.functional.swish(...)`_
-
-    """
-
-    def __init__(self):
-        """Create a ``Swish`` module."""
-        super(Swish, self).__init__()
-
-    def forward(self, input):
-        return F.swish(input)
 
 
 class Tanh(Module):

@@ -15,6 +15,7 @@ from __future__ import division as _division
 from __future__ import print_function as _print_function
 
 from dragon.vm.torch.core.optim.adam import Adam
+from dragon.vm.torch.core.optim.adam import AdamW
 from dragon.vm.torch.core.optim.optimizer import Optimizer
 from dragon.vm.torch.core.optim.rmsprop import RMSprop
 from dragon.vm.torch.core.optim.sgd import SGD

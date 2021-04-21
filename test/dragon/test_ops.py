@@ -190,6 +190,30 @@ class TestActivationOps(OpTestCase):
         with dragon.device('cuda'), self.cudnn_ws.as_default():
             self.test_elu()
 
+    def test_gelu(self):
+        for execution in ('EAGER_MODE', 'GRAPH_MODE'):
+            with execution_context().mode(execution):
+                data = np.array([-1., 0., 1.], 'float32')
+                cdf = data.copy()
+                pdf = 0.3989422804014327 * np.exp(-0.5 * np.square(data))
+                for i in range(data.size):
+                    cdf[i] = 0.5 * (1 + math.erf(data[i] * 0.7071067811865475))
+                for approximate in (False, True):
+                    x = new_tensor(data)
+                    with dragon.GradientTape() as tape:
+                        tape.watch(x)
+                        y = dragon.nn.gelu(x, approximate=approximate)
+                    dx = tape.gradient(y, [x], output_gradients=[x])[0]
+                    self.assertEqual(
+                        [y, dx], [data * cdf, data * (cdf + data * pdf)],
+                        prec=0.001 if approximate else None)
+
+    @unittest.skipIf(not TEST_CUDA, 'CUDA unavailable')
+    def test_gelu_cuda(self):
+        dragon.cuda.enable_cudnn(False)
+        with dragon.device('cuda'):
+            self.test_gelu()
+
     def test_hardsigmoid(self):
         alpha, beta = 0.2, 0.5
         for execution in ('EAGER_MODE', 'GRAPH_MODE'):
@@ -390,6 +414,24 @@ class TestActivationOps(OpTestCase):
         with dragon.device('cuda'), self.cudnn_ws.as_default():
             self.test_sigmoid()
 
+    def test_silu(self):
+        for execution in ('EAGER_MODE', 'GRAPH_MODE'):
+            with execution_context().mode(execution):
+                data = np.array([-3.0, -2.0, -1.0, 0.0, 1.0, 2.0, 3.0], 'float32')
+                x = new_tensor(data)
+                with dragon.GradientTape() as tape:
+                    tape.watch(x)
+                    y = dragon.nn.silu(x)
+                dx = tape.gradient(y, [x], output_gradients=[x])[0]
+                result = data * (1. / (1. + np.exp(-data)))
+                result2 = data * (result + (1. / (1. + np.exp(-data))) * (1. - result))
+                self.assertEqual([y, dx], [result, result2])
+
+    @unittest.skipIf(not TEST_CUDA, 'CUDA unavailable')
+    def test_silu_cuda(self):
+        with dragon.device('cuda'):
+            self.test_silu()
+
     def test_softmax(self):
         grad = np.array([[-0.11596, -0.0523, 0.16825],
                          [-0.15008, 0.3116, -0.16152]], dtype='float32')
@@ -414,24 +456,6 @@ class TestActivationOps(OpTestCase):
         dragon.cuda.enable_cudnn(True)
         with dragon.device('cuda'), self.cudnn_ws.as_default():
             self.test_softmax()
-
-    def test_swish(self):
-        for execution in ('EAGER_MODE', 'GRAPH_MODE'):
-            with execution_context().mode(execution):
-                data = np.array([-3.0, -2.0, -1.0, 0.0, 1.0, 2.0, 3.0], 'float32')
-                x = new_tensor(data)
-                with dragon.GradientTape() as tape:
-                    tape.watch(x)
-                    y = dragon.nn.swish(x)
-                dx = tape.gradient(y, [x], output_gradients=[x])[0]
-                result = data * (1. / (1. + np.exp(-data)))
-                result2 = data * (result + (1. / (1. + np.exp(-data))) * (1. - result))
-                self.assertEqual([y, dx], [result, result2])
-
-    @unittest.skipIf(not TEST_CUDA, 'CUDA unavailable')
-    def test_swish_cuda(self):
-        with dragon.device('cuda'):
-            self.test_swish()
 
     def test_tanh(self):
         for execution in ('EAGER_MODE', 'GRAPH_MODE'):
@@ -2260,6 +2284,26 @@ class TestMathOps(OpTestCase):
         with dragon.device('cuda'):
             self.test_reciprocal()
 
+    def test_roll(self):
+        entries = [(0, 0), ((0, 0), (0, 1)), ((-1, 1), (0, 1)), (1, None)]
+        for execution in ('EAGER_MODE', 'GRAPH_MODE'):
+            with execution_context().mode(execution):
+                for shift, axis in entries:
+                    data = arange((2, 3))
+                    x = new_tensor(data)
+                    with dragon.GradientTape() as tape:
+                        tape.watch(x)
+                        y = dragon.roll(x, shift, axis)
+                    dx = tape.gradient(y, [x], output_gradients=[x])[0]
+                    self.assertEqual(
+                        [y, dx], [np.roll(data, shift, axis),
+                                  np.roll(data, [-v for v in nest.flatten(shift)], axis)])
+
+    @unittest.skipIf(not TEST_CUDA, 'CUDA unavailable')
+    def test_roll_cuda(self):
+        with dragon.device('cuda'):
+            self.test_roll()
+
     def test_round(self):
         for execution in ('EAGER_MODE', 'GRAPH_MODE'):
             with execution_context().mode(execution):
@@ -2762,6 +2806,7 @@ class TestTrainingOps(OpTestCase):
     def __init__(self, method_name='runTest'):
         super(TestTrainingOps, self).__init__(method_name)
         self.adam = dragon.optimizers.Adam()
+        self.adam_w = dragon.optimizers.AdamW()
         self.nesterov = dragon.optimizers.Nesterov()
         self.rmsprop = dragon.optimizers.RMSprop()
         self.sgd = dragon.optimizers.SGD()
@@ -2789,6 +2834,30 @@ class TestTrainingOps(OpTestCase):
     def test_adam_update_cuda(self):
         with dragon.device('cuda'):
             self.test_adam_update()
+
+    def test_adam_w_update(self):
+        with execution_context().mode('EAGER_MODE'):
+            lr, eps = self.adam_w.lr, self.adam_w.eps
+            beta1, beta2 = self.adam_w.beta1, self.adam_w.beta2
+            wd = self.adam_w.weight_decay
+            data1 = uniform((2, 3))
+            data2, data3 = np.zeros((2, 3), 'float32'), np.zeros((2, 3), 'float32')
+            param = new_tensor(data1)
+            for i in range(2):
+                t = i + 1
+                coef = math.sqrt(1 - math.pow(beta2, t)) / (1 - math.pow(beta1, t))
+                data4 = uniform((2, 3))
+                grad = new_tensor(data4)
+                self.adam_w.apply_gradients([[grad, param]])
+                data2 = beta1 * data2 + (1 - beta1) * data4
+                data3 = beta2 * data3 + (1 - beta2) * np.square(data4)
+                data1 -= lr * (coef * data2 / (np.sqrt(data3) + eps) + wd * data1)
+                self.assertEqual(param, data1)
+
+    @unittest.skipIf(not TEST_CUDA, 'CUDA unavailable')
+    def test_adam_w_update_cuda(self):
+        with dragon.device('cuda'):
+            self.test_adam_w_update()
 
     def test_nesterov_update(self):
         with execution_context().mode('EAGER_MODE'):

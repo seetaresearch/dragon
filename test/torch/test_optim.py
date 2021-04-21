@@ -64,6 +64,7 @@ class TestOptimizer(unittest.TestCase):
         for lr, betas, eps, amsgrad in entries:
             try:
                 _ = torch.optim.Adam([weight], lr=lr, betas=betas, eps=eps, amsgrad=amsgrad)
+                _ = torch.optim.AdamW([weight], lr=lr, betas=betas, eps=eps, amsgrad=amsgrad)
             except (ValueError, NotImplementedError):
                 pass
 

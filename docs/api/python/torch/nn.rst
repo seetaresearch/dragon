@@ -51,6 +51,10 @@ vm.torch.nn
   `class BCEWithLogitsLoss <nn/BCEWithLogitsLoss.html>`_
   : Compute the sigmoid cross entropy with contiguous targets.
 
+  `class ChannelShuffle <nn/ChannelShuffle.html>`_
+  : Apply group shuffle to each channel.
+  `[Zhang et.al, 2017] <https://arxiv.org/abs/1707.01083>`_.
+
   `class ConstantPad1d <nn/ConstantPad1d.html>`_
   : Pad input according to the last dimension with a constant.
 
@@ -107,6 +111,10 @@ vm.torch.nn
 
   `class Flatten <nn/Flatten.html>`_
   : Flatten the dimensions of input.
+
+  `class GELU <nn/GELU.html>`_
+  : Apply the gaussian error linear unit.
+  `[Hendrycks & Gimpel, 2016] <https://arxiv.org/abs/1606.08415>`_.
 
   `class GroupNorm <nn/GroupNorm.html>`_
   : Apply the group normalization.
@@ -237,16 +245,16 @@ vm.torch.nn
   : Compute the sigmoid focal loss with sparse labels.
   `[Lin et.al, 2017] <https://arxiv.org/abs/1708.02002>`__.
 
+  `class SiLU <nn/SiLU.html>`_
+  : Apply the sigmoid linear unit.
+  `[Hendrycks & Gimpel, 2016] <https://arxiv.org/abs/1606.08415>`_.
+
   `class SmoothL1Loss <nn/SmoothL1Loss.html>`_
   : Compute the element-wise error transited from L1 and L2.
   `[Girshick, 2015] <https://arxiv.org/abs/1504.08083>`_.
 
   `class Softmax <nn/Softmax.html>`_
   : Apply the softmax function.
-
-  `class Swish <nn/Swish.html>`_
-  : Apply the swish function.
-  `[Ramachandran et.al, 2017] <https://arxiv.org/abs/1710.05941>`_.
 
   `class Tanh <nn/Tanh.html>`_
   : Apply the tanh function.
@@ -300,6 +308,7 @@ vm.torch.nn
   nn/BatchNorm2d
   nn/BatchNorm3d
   nn/BCEWithLogitsLoss
+  nn/ChannelShuffle
   nn/ConstantPad1d
   nn/ConstantPad2d
   nn/ConstantPad3d
@@ -317,6 +326,7 @@ vm.torch.nn
   nn/DropPath
   nn/ELU
   nn/Flatten
+  nn/GELU
   nn/GroupNorm
   nn/GRU
   nn/GumbelSoftmax
@@ -355,9 +365,9 @@ vm.torch.nn
   nn/Sequential
   nn/Sigmoid
   nn/SigmoidFocalLoss
+  nn/SiLU
   nn/SmoothL1Loss
   nn/Softmax
-  nn/Swish
   nn/Tanh
   nn/TransformerDecoder
   nn/TransformerDecoderLayer

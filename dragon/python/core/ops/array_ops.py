@@ -20,6 +20,7 @@ from dragon.core.autograph.op_impl import OpSchema
 from dragon.core.framework import types
 from dragon.core.ops import constant_ops
 from dragon.core.util import nest
+from dragon.core.util import six
 
 
 @OpSchema.num_inputs(1)
@@ -1225,6 +1226,55 @@ def reshape(inputs, shape, copy=True, **kwargs):
             ndim=len(args['dims']), dims=args['dims'])
     args.pop('copy')
     return OpLib.add('Reshape', **args)
+
+
+@OpSchema.num_inputs(1)
+@OpSchema.convert_arg('shift', name_v2='shifts')
+def roll(inputs, shift, axis=None, **kwargs):
+    """Roll elements along the given axis.
+
+    :attr:`axis` could be negative or ``None``:
+
+    ```python
+    x = dragon.constant([[1, 2, 3], [4, 5, 6]])
+
+    # A negative axis is the last-k axis
+    print(dragon.roll(x, shift=1, axis=1))  # [[3, 1, 2], [6, 4, 5]]
+    print(dragon.roll(x, shift=1, axis=-1))  # Equivalent
+
+    # If axis is None, roll input as a vector
+    print(dragon.roll(x, shift=1))  # [[6, 1, 2], [3, 4, 5]]
+
+    # Also, axis could be a sequence of integers
+    print(dragon.roll(x, shift=(1, 1), axis=(0, 1)))  # [[6, 4, 5], [3, 1, 2]]
+    print(dragon.roll(x, shift=(1, -1), axis=(0, 1)))  # [[5, 6, 4], [2, 3, 1]]
+    ```
+
+    Parameters
+    ----------
+    inputs : dragon.Tensor
+        The input tensor.
+    shift : Union[int, Sequence[int], dragon.Tensor]
+        The rolling offset of each axis.
+    axis : Union[int, Sequence[int]], optional
+        The axis to roll.
+
+    Returns
+    -------
+    dragon.Tensor
+        The output tensor.
+
+    """
+    args = OpSchema.parse_args(locals())
+    axes = nest.flatten(axis) if axis is not None else axis
+    if isinstance(shift, six.integer_types):
+        args['shifts'] = nest.flatten(shift)
+    if context.executing_eagerly():
+        return OpLib.execute(
+            'Roll', inputs, num_shifts=len(args['shifts']),
+            shifts=args['shifts'], axes=axes)
+    args.pop('axis')
+    return OpLib.add('Roll', axes=axes, **args)
 
 
 @OpSchema.num_inputs(3)

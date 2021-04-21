@@ -52,7 +52,6 @@ from dragon.vm.torch.core.ops.array_ops import broadcast_to
 from dragon.vm.torch.core.ops.array_ops import cat
 from dragon.vm.torch.core.ops.array_ops import channel_affine
 from dragon.vm.torch.core.ops.array_ops import channel_normalize
-from dragon.vm.torch.core.ops.array_ops import channel_shuffle
 from dragon.vm.torch.core.ops.array_ops import chunk
 from dragon.vm.torch.core.ops.array_ops import cumsum
 from dragon.vm.torch.core.ops.array_ops import flatten
@@ -69,6 +68,7 @@ from dragon.vm.torch.core.ops.array_ops import nonzero
 from dragon.vm.torch.core.ops.array_ops import one_hot
 from dragon.vm.torch.core.ops.array_ops import permute
 from dragon.vm.torch.core.ops.array_ops import reshape
+from dragon.vm.torch.core.ops.array_ops import roll
 from dragon.vm.torch.core.ops.array_ops import scatter
 from dragon.vm.torch.core.ops.array_ops import scatter_add
 from dragon.vm.torch.core.ops.array_ops import sort

@@ -64,6 +64,10 @@ vm.tensorflow.nn
   : Apply the exponential exponential linear unit to input.
   `[Clevert et.al, 2015] <https://arxiv.org/abs/1511.07289>`_.
 
+  `gelu(...) <nn/gelu.html>`_
+  : Apply the gaussian error linear unit.
+  `[Hendrycks & Gimpel, 2016] <https://arxiv.org/abs/1606.08415>`_.
+
   `leaky_relu(...) <nn/leaky_relu.html>`_
   : Apply the leaky rectified linear unit.
 
@@ -100,6 +104,10 @@ vm.tensorflow.nn
   `selu(...) <nn/selu.html>`_
   : Apply the scaled exponential linear unit.
   `[Klambauer et.al, 2017] <https://arxiv.org/abs/1706.02515>`_.
+
+  `silu(...) <nn/silu.html>`_
+  : Apply the sigmoid linear unit.
+  `[Hendrycks & Gimpel, 2016] <https://arxiv.org/abs/1606.08415>`_.
 
   `softmax(...) <nn/softmax.html>`_
   : Apply the softmax function.
@@ -138,6 +146,7 @@ vm.tensorflow.nn
   nn/depth_to_space
   nn/dropout
   nn/elu
+  nn/gelu
   nn/leaky_relu
   nn/local_response_normalization
   nn/log_softmax
@@ -149,6 +158,7 @@ vm.tensorflow.nn
   nn/relu
   nn/relu6
   nn/selu
+  nn/silu
   nn/softmax
   nn/softmax_cross_entropy_with_logits
   nn/space_to_depth

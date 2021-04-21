@@ -353,6 +353,31 @@ def binary_cross_entropy_with_logits(
         [input, target], reduction=reduction.upper())
 
 
+def channel_shuffle(input, groups):
+    """Apply group shuffle to each channel of input.
+    `[Zhang et.al, 2017] <https://arxiv.org/abs/1707.01083>`_.
+
+    Parameters
+    ----------
+    input : dragon.vm.torch.Tensor
+        The input tensor.
+    groups : int
+        The number of shuffle groups.
+
+    Returns
+    -------
+    dragon.vm.torch.Tensor
+        The output tensor.
+
+    See Also
+    --------
+    `torch.nn.ChannelShuffle(...)`_
+
+    """
+    return FunctionLib.apply(
+        'ChannelShuffle', input.device, [input], axis=1, group=groups)
+
+
 def conv1d(
     input,
     weight,
@@ -879,8 +904,34 @@ def embedding(input, weight, padding_idx=None):
     return weight.index_select(0, input)
 
 
+def gelu(input):
+    r"""Apply the gaussian error linear unit to input.
+    `[Clevert et.al, 2015] <https://arxiv.org/abs/1511.07289>`_.
+
+    The **GELU** function is defined as:
+
+    .. math:: \text{GELU}(x) = x\cdot\frac{1}{2}[1 + \text{erf}(x / \sqrt{2})]
+
+    Parameters
+    ----------
+    input : dragon.vm.torch.Tensor
+        The input tensor.
+
+    Returns
+    -------
+    dragon.vm.torch.Tensor
+        The output tensor.
+
+    See Also
+    --------
+    `torch.nn.GELU(...)`_
+
+    """
+    return FunctionLib.apply('Gelu', input.device, [input], approximate=False)
+
+
 def group_norm(input, num_groups, weight, bias, eps=1e-5):
-    r"""Apply the group normalization to input.
+    """Apply the group normalization to input.
     `[Wu & He, 2018] <https://arxiv.org/abs/1803.08494>`_.
 
     Parameters
@@ -1920,6 +1971,32 @@ def sigmoid_focal_loss(
         start_index=start_index, reduction=reduction.upper())
 
 
+def silu(input):
+    r"""Apply the sigmoid linear unit to input.
+    `[Hendrycks & Gimpel, 2016] <https://arxiv.org/abs/1606.08415>`_.
+
+    The **SiLU** function is defined as:
+
+    .. math:: \text{SiLU}(x) = x \cdot \frac{1}{1 + \exp(-x)}
+
+    Parameters
+    ----------
+    input : dragon.vm.torch.Tensor
+        The input tensor.
+
+    Returns
+    -------
+    dragon.vm.torch.Tensor
+        The output tensor.
+
+    See Also
+    --------
+    `torch.nn.SiLU(...)`_
+
+    """
+    return FunctionLib.apply('Swish', input.device, [input])
+
+
 def smooth_l1_loss(
     input,
     target,
@@ -2003,32 +2080,6 @@ def softmax(input, dim, inplace=False):
     return FunctionLib.apply(
         'Softmax', input.device, [input],
         outputs=[input if inplace else None], axis=dim)
-
-
-def swish(input):
-    r"""Apply the swish function to input.
-    `[Ramachandran et.al, 2017] <https://arxiv.org/abs/1710.05941>`_.
-
-    The **Swish** function is defined as:
-
-    .. math:: \text{Swish}(x) = x \cdot \frac{1}{1 + \exp(-x)}
-
-    Parameters
-    ----------
-    input : dragon.vm.torch.Tensor
-        The input tensor.
-
-    Returns
-    -------
-    dragon.vm.torch.Tensor
-        The output tensor.
-
-    See Also
-    --------
-    `torch.nn.Swish(...)`_
-
-    """
-    return FunctionLib.apply('Swish', input.device, [input])
 
 
 def sync_batch_norm(

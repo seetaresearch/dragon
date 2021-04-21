@@ -503,6 +503,46 @@ def reshape(tensor, shape, name=None):
     return array_ops.reshape(tensor, shape=shape, name=name)
 
 
+def roll(input, shift, axis, name=None):
+    """Roll elements along the given axis.
+
+    :attr:`axis` could be negative or ``None``:
+
+    ```python
+    x = tf.constant([[1, 2, 3], [4, 5, 6]])
+
+    # A negative axis is the last-k axis
+    print(tf.roll(x, shift=1, axis=1))  # [[3, 1, 2], [6, 4, 5]]
+    print(tf.roll(x, shift=1, axis=-1))  # Equivalent
+
+    # If axis is None, roll input as a vector
+    print(tf.roll(x, shift=1))  # [[6, 1, 2], [3, 4, 5]]
+
+    # Also, axis could be a sequence of integers
+    print(tf.roll(x, shift=(1, 1), axis=(0, 1)))  # [[6, 4, 5], [3, 1, 2]]
+    print(tf.roll(x, shift=(1, -1), axis=(0, 1)))  # [[5, 6, 4], [2, 3, 1]]
+    ```
+
+    Parameters
+    ----------
+    input : dragon.Tensor
+        The input tensor.
+    shift : Union[int, Sequence[int], dragon.Tensor]
+        The rolling offset of each axis.
+    axis : Union[int, Sequence[int]], optional
+        The axis to roll.
+    name : str, optional
+        The operation name.
+
+    Returns
+    -------
+    dragon.Tensor
+        The output tensor.
+
+    """
+    return array_ops.roll(input, shift=shift, axis=axis, name=name)
+
+
 def shape(input, name=None):
     """Return the shape of input.
 

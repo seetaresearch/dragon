@@ -15,6 +15,7 @@ from __future__ import division
 from __future__ import print_function
 
 import collections
+import math
 import os
 import unittest
 
@@ -251,6 +252,18 @@ class TestModules(OpTestCase):
                 y, _ = m(x), repr(m)
                 self.assertEqual(y, result)
 
+    def test_channel_shuffle(self):
+        entries = [(1, 4)]
+        for axis, group in entries:
+            data = arange((2, 8))
+            g, k = group, data.shape[axis] // group
+            shape = data.shape[:axis] + (g, k) + data.shape[axis + 1:]
+            perm = list(range(0, axis)) + [axis + 1, axis] + list(range(axis + 2, len(shape)))
+            x = new_tensor(data)
+            m = torch.nn.ChannelShuffle(group)
+            y, _ = m(x), repr(m)
+            self.assertEqual(y, data.reshape(shape).transpose(perm).reshape(data.shape))
+
     def test_conv1d(self):
         entries = [((2, 2, 2), (3, 2, 1), (3,), 1, 1, 0, 1, 1),
                    ((2, 2, 2), (3, 2, 3), (3,), 3, 1, 1, 1, 1)]
@@ -466,6 +479,16 @@ class TestModules(OpTestCase):
             new_shape += (int(np.prod(data.shape[start_dim:end_dim + 1])),)
             new_shape += data.shape[end_dim + 1:]
             self.assertEqual(y, data.reshape(new_shape))
+
+    def test_gelu(self):
+        data = np.array([-1., 0., 1.], 'float32')
+        cdf = data.copy()
+        for i in range(data.size):
+            cdf[i] = 0.5 * (1 + math.erf(data[i] * 0.7071067811865475))
+        x = new_tensor(data)
+        m = torch.nn.GELU()
+        y, _ = m(x), repr(m)
+        self.assertEqual(y, data * cdf)
 
     def test_group_norm(self):
         eps = 1e-5
@@ -783,20 +806,20 @@ class TestModules(OpTestCase):
             result = reduce(pos_term + neg_term, reduction=reduction)
             self.assertEqual(y, result)
 
+    def test_silu(self):
+        data = np.array([-3., -2., -1., 0., 1., 2., 3], 'float32')
+        x = new_tensor(data)
+        m = torch.nn.SiLU()
+        y, _ = m(x), repr(m)
+        result = data * (1. / (1. + np.exp(-data)))
+        self.assertEqual(y, result)
+
     def test_softmax(self):
         data = np.array([[0.2, 0.3, 0.5], [0.1, 0.7, 0.2]], 'float32')
         x = new_tensor(np.log(data))
         m = torch.nn.Softmax(dim=1, inplace=True)
         y, _ = m(x), repr(m)
         self.assertEqual(y, data)
-
-    def test_swish(self):
-        data = np.array([-3., -2., -1., 0., 1., 2., 3], 'float32')
-        x = new_tensor(data)
-        m = torch.nn.Swish()
-        y, _ = m(x), repr(m)
-        result = data * (1. / (1. + np.exp(-data)))
-        self.assertEqual(y, result)
 
     def test_tanh(self):
         data = np.array([0.2, 0.4, 0.6, 0.8, 1.], 'float32')

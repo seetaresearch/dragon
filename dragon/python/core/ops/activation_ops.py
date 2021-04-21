@@ -178,8 +178,8 @@ def elu(inputs, alpha=1.0, inplace=False, **kwargs):
     Examples:
 
     ```python
-    x = dragon.constant([-1, 0, 1], 'float32')
-    print(dragon.nn.elu(x, inplace=False))
+    x = dragon.constant([-1., 0., 1.])
+    print(dragon.nn.elu(x))
     ```
 
     Parameters
@@ -205,6 +205,40 @@ def elu(inputs, alpha=1.0, inplace=False, **kwargs):
 
 
 @OpSchema.num_inputs(1)
+def gelu(inputs, approximate=False, **kwargs):
+    r"""Apply the gaussian error linear unit.
+    `[Hendrycks & Gimpel, 2016] <https://arxiv.org/abs/1606.08415>`_.
+
+    The **GELU** function is defined as:
+
+    .. math:: \text{GELU}(x) = x\cdot\frac{1}{2}[1 + \text{erf}(x / \sqrt{2})]
+
+    Examples:
+
+    ```python
+    x = dragon.constant([-1., 0., 1.])
+    print(dragon.nn.gelu(x))
+    ```
+
+    Parameters
+    ----------
+    inputs : dragon.Tensor
+        The input tensor.
+    approximate : bool, optional, default=False
+        Whether to approximate the computation.
+
+    Returns
+    -------
+    dragon.Tensor
+        The output tensor.
+
+    """
+    if context.executing_eagerly():
+        return OpLib.execute('Gelu', inputs)
+    return OpLib.add('Gelu', inputs, approximate=approximate, **kwargs)
+
+
+@OpSchema.num_inputs(1)
 def hardsigmoid(inputs, alpha=0.2, beta=0.5, inplace=False, **kwargs):
     r"""Apply the hard sigmoid function.
 
@@ -216,7 +250,7 @@ def hardsigmoid(inputs, alpha=0.2, beta=0.5, inplace=False, **kwargs):
 
     ```python
     x = dragon.constant([-2.5, -1.0, 0.0, 1.0, 2.5])
-    print(dragon.nn.hardsigmoid(x, inplace=False))
+    print(dragon.nn.hardsigmoid(x))
     ```
 
     Parameters
@@ -297,8 +331,8 @@ def leaky_relu(inputs, alpha=0.2, inplace=False, **kwargs):
     Examples:
 
     ```python
-    x = dragon.constant([-1, 0, 1], 'float32')
-    print(dragon.nn.leaky_relu(x, inplace=False))
+    x = dragon.constant([-1., 0., 1.])
+    print(dragon.nn.leaky_relu(x))
     ```
 
     Parameters
@@ -376,8 +410,8 @@ def prelu(inputs, data_format='NCHW', **kwargs):
     Examples:
 
     ```python
-    x = dragon.constant([[-1, 0, 1]], 'float32')
-    w = dragon.fill([3], value=0.25, dtype='float32')
+    x = dragon.constant([[-1., 0., 1.]])
+    w = dragon.fill((3,), value=0.25, dtype=x.dtype)
     print(dragon.nn.prelu([x, w]))
     ```
 
@@ -456,7 +490,7 @@ def relu6(inputs, inplace=False, **kwargs):
     Examples:
 
     ```python
-    x = dragon.constant([-1, 0, 7], 'float32')
+    x = dragon.constant([-1., 0., 7.])
     print(dragon.nn.relu6(x))
     ```
 
@@ -561,6 +595,38 @@ def sigmoid(inputs, inplace=False, **kwargs):
 
 
 @OpSchema.num_inputs(1)
+def silu(inputs, **kwargs):
+    r"""Apply the sigmoid linear unit.
+    `[Hendrycks & Gimpel, 2016] <https://arxiv.org/abs/1606.08415>`_.
+
+    The **SiLU** function is defined as:
+
+    .. math:: \text{SiLU}(x) = x \cdot \frac{1}{1 + \exp(-x)}
+
+    Examples:
+
+    ```python
+    x = dragon.constant([-2.5, -1.0, 0.0, 1.0, 2.5])
+    print(dragon.nn.silu(x))
+    ```
+
+    Parameters
+    ----------
+    inputs : dragon.Tensor
+        The input tensor.
+
+    Returns
+    -------
+    dragon.Tensor
+        The output tensor.
+
+    """
+    if context.executing_eagerly():
+        return OpLib.execute('Swish', inputs)
+    return OpLib.add('Swish', inputs, **kwargs)
+
+
+@OpSchema.num_inputs(1)
 def softmax(inputs, axis=-1, inplace=False, **kwargs):
     r"""Compute the softmax result.
 
@@ -608,7 +674,7 @@ def tanh(inputs, inplace=False, **kwargs):
     Examples:
 
     ```python
-    x = dragon.constant([0.2, 0.4, 0.6, 0.8, 1.0], 'float32')
+    x = dragon.constant([0.2, 0.4, 0.6, 0.8, 1.0])
     print(dragon.math.tanh(x))
     ```
 
@@ -629,35 +695,3 @@ def tanh(inputs, inplace=False, **kwargs):
         return OpLib.execute(
             'Tanh', inputs, outputs=inputs if inplace else [None])
     return OpLib.add('Tanh', inputs, **kwargs)
-
-
-@OpSchema.num_inputs(1)
-def swish(inputs, **kwargs):
-    r"""Apply the swish function.
-    `[Ramachandran et.al, 2017] <https://arxiv.org/abs/1710.05941>`_.
-
-    The **Swish** function is defined as:
-
-    .. math:: \text{Swish}(x) = x \cdot \frac{1}{1 + \exp(-x)}
-
-    Examples:
-
-    ```python
-    x = dragon.constant([-2.5, -1.0, 0.0, 1.0, 2.5])
-    print(dragon.nn.swish(x))
-    ```
-
-    Parameters
-    ----------
-    inputs : dragon.Tensor
-        The input tensor.
-
-    Returns
-    -------
-    dragon.Tensor
-        The output tensor.
-
-    """
-    if context.executing_eagerly():
-        return OpLib.execute('Swish', inputs)
-    return OpLib.add('Swish', inputs, **kwargs)

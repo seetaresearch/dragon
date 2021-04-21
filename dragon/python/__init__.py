@@ -76,6 +76,7 @@ from dragon.core.ops.array_ops import pad
 from dragon.core.ops.array_ops import range
 from dragon.core.ops.array_ops import repeat
 from dragon.core.ops.array_ops import reshape
+from dragon.core.ops.array_ops import roll
 from dragon.core.ops.array_ops import scatter_add
 from dragon.core.ops.array_ops import scatter_elements
 from dragon.core.ops.array_ops import shape

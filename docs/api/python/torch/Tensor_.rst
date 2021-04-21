@@ -473,6 +473,10 @@ retain_grad
 ###########
 .. automethod:: dragon.vm.torch.Tensor.retain_grad
 
+roll
+####
+.. automethod:: dragon.vm.torch.Tensor.roll
+
 round
 #####
 .. automethod:: dragon.vm.torch.Tensor.round
@@ -675,6 +679,7 @@ zero\_
 .. _torch.pow(...): pow.html
 .. _torch.reciprocal(...): reciprocal.html
 .. _torch.reshape(...): reshape.html
+.. _torch.roll(...): roll.html
 .. _torch.round(...): round.html
 .. _torch.rsqrt(...): rsqrt.html
 .. _torch.scatter(...): scatter.html

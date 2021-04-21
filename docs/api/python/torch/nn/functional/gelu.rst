@@ -1,9 +1,9 @@
-swish
-=====
+gelu
+====
 
-.. autofunction:: dragon.vm.torch.nn.functional.swish
+.. autofunction:: dragon.vm.torch.nn.functional.gelu
 
-.. _torch.nn.Swish(...): ../Swish.html
+.. _torch.nn.GELU(...): ../GELU.html
 
 .. raw:: html
 

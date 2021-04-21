@@ -67,10 +67,10 @@ void UpdateOpBase<Context>::RunOnDevice() {
     input_index_ = i;
     if (dX.template IsType<float>()) {
       AdjustGradient<float>(&dX, X);
-      ComputeUpdate(&dX);
+      ComputeUpdate(&dX, X);
       ApplyUpdate<float>(&dX, X);
     } else if (dX.template IsType<float16>()) {
-      auto* X_master = workspace()->CreateTensor(X->name() + "/float32");
+      auto* X_master = workspace()->CreateTensor(X->name() + "_master");
       auto* dX_copy = ctx()->workspace()->CreateTensor("shared/buffer/data:0");
       if (X_master->count() != X->count()) {
         math::Cast(
@@ -85,7 +85,7 @@ void UpdateOpBase<Context>::RunOnDevice() {
           dX_copy->ReshapeLike(dX)->template mutable_data<float, Context>(),
           ctx());
       AdjustGradient<float>(dX_copy, X_master);
-      ComputeUpdate(dX_copy);
+      ComputeUpdate(dX_copy, X_master);
       ApplyUpdate<float>(dX_copy, X_master);
       math::Cast(
           X->count(),

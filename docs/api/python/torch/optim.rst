@@ -8,6 +8,11 @@ vm.torch.optim
 
   `class Adam <optim/Adam.html>`_
   : The optimizer to apply Adam algorithm.
+  `[Kingma & Ba, 2014] <https://arxiv.org/abs/1412.6980>`_.
+
+  `class AdamW <optim/AdamW.html>`_
+  : The optimizer to apply AdamW algorithm.
+  `[Loshchilov & Hutter, 2017] <https://arxiv.org/abs/1711.05101>`_.
 
   `class Optimizer <optim/Optimizer.html>`_
   : The base class of optimizers.
@@ -23,6 +28,7 @@ vm.torch.optim
   :hidden:
 
   optim/Adam
+  optim/AdamW
   optim/Optimizer
   optim/RMSprop
   optim/SGD

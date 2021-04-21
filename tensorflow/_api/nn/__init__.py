@@ -32,6 +32,7 @@ from dragon.vm.tensorflow.core.ops.nn import conv_transpose
 from dragon.vm.tensorflow.core.ops.nn import depthwise_conv2d
 from dragon.vm.tensorflow.core.ops.nn import dropout
 from dragon.vm.tensorflow.core.ops.nn import elu
+from dragon.vm.tensorflow.core.ops.nn import gelu
 from dragon.vm.tensorflow.core.ops.nn import l2_loss
 from dragon.vm.tensorflow.core.ops.nn import l2_normalize
 from dragon.vm.tensorflow.core.ops.nn import leaky_relu
@@ -45,6 +46,7 @@ from dragon.vm.tensorflow.core.ops.nn import moments
 from dragon.vm.tensorflow.core.ops.nn import relu
 from dragon.vm.tensorflow.core.ops.nn import relu6
 from dragon.vm.tensorflow.core.ops.nn import selu
+from dragon.vm.tensorflow.core.ops.nn import silu
 from dragon.vm.tensorflow.core.ops.nn import sigmoid_cross_entropy_with_logits
 from dragon.vm.tensorflow.core.ops.nn import softmax
 from dragon.vm.tensorflow.core.ops.nn import softmax_cross_entropy_with_logits
