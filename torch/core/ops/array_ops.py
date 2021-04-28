@@ -392,6 +392,88 @@ def flatten(input, start_dim=0, end_dim=-1, out=None):
         axis=start_dim, end_axis=end_dim)
 
 
+def flip(input, dims):
+    """Reverse elements along the given dimension.
+
+    :attr:`dims` could be negative:
+
+    ```python
+    x = torch.tensor([[1, 2, 3], [4, 5, 6]])
+
+    # A negative dimension is the last-k dimension
+    print(torch.flip(x, dims=1))  # [[3, 2, 1], [6, 5, 4]]
+    print(torch.flip(x, dims=-1))  # Equivalent
+
+    # Also, dimension could be a sequence of integers
+    print(torch.flip(x, dims=(0, 1)))  # [[6, 5, 4], [3, 2, 1]]
+    ```
+
+    Parameters
+    ----------
+    input : dragon.vm.torch.Tensor
+        The input tensor.
+    dims : Union[int, Sequence[int]]
+        The dimension to reverse.
+
+    Returns
+    -------
+    dragon.vm.torch.Tensor
+        The output tensor.
+
+    """
+    return FunctionLib.apply(
+        'Reverse', input.device, [input],
+        axes=nest.flatten(dims) if dims is not None else dims)
+
+
+def fliplr(input):
+    """Reverse elements along the second dimension.
+
+    Examples:
+
+    ```python
+    x = torch.tensor([[1, 2, 3], [4, 5, 6]])
+    print(torch.fliplr(x))  # [[3, 2, 1], [6, 5, 4]]
+    ```
+
+    Parameters
+    ----------
+    input : dragon.vm.torch.Tensor
+        The input tensor.
+
+    Returns
+    -------
+    dragon.vm.torch.Tensor
+        The output tensor.
+
+    """
+    return flip(input, 1)
+
+
+def flipud(input):
+    """Reverse elements along the first dimension.
+
+    Examples:
+
+    ```python
+    x = torch.tensor([[1, 2, 3], [4, 5, 6]])
+    print(torch.flipud(x))  # [4, 5, 6], [1, 2, 3]]
+    ```
+
+    Parameters
+    ----------
+    input : dragon.vm.torch.Tensor
+        The input tensor.
+
+    Returns
+    -------
+    dragon.vm.torch.Tensor
+        The output tensor.
+
+    """
+    return flip(input, 0)
+
+
 def gather(input, dim, index, out=None):
     """Gather elements along the given dimension of index.
 
@@ -559,10 +641,8 @@ def max(input, dim=None, keepdim=False, out=None):
         The output tensor.
 
     """
-    if dim is None:
-        keepdim = False
-    else:
-        dim = nest.flatten(dim)
+    keepdim = keepdim if dim is not None else False
+    dim = nest.flatten(dim) if dim is not None else dim
     return FunctionLib.apply(
         'ReduceMax', input.device, [input], outputs=[out],
         axes=dim, keepdims=keepdim)
@@ -605,10 +685,8 @@ def mean(input, dim=None, keepdim=False, out=None):
         The output tensor.
 
     """
-    if dim is None:
-        keepdim = False
-    else:
-        dim = nest.flatten(dim)
+    keepdim = keepdim if dim is not None else False
+    dim = nest.flatten(dim) if dim is not None else dim
     return FunctionLib.apply(
         'ReduceMean', input.device, [input], outputs=[out],
         axes=dim, keepdims=keepdim)
@@ -651,10 +729,8 @@ def min(input, dim=None, keepdim=False, out=None):
         The output tensor.
 
     """
-    if dim is None:
-        keepdim = False
-    else:
-        dim = nest.flatten(dim)
+    keepdim = keepdim if dim is not None else False
+    dim = nest.flatten(dim) if dim is not None else dim
     return FunctionLib.apply(
         'ReduceMin', input.device, [input], outputs=[out],
         axes=dim, keepdims=keepdim)
@@ -1208,10 +1284,8 @@ def sum(input, dim=None, keepdim=False, out=None):
         The output tensor.
 
     """
-    if dim is None:
-        keepdim = False
-    else:
-        dim = nest.flatten(dim)
+    keepdim = keepdim if dim is not None else False
+    dim = nest.flatten(dim) if dim is not None else dim
     return FunctionLib.apply(
         'ReduceSum', input.device, [input], outputs=[out],
         axes=dim, keepdims=keepdim)

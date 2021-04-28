@@ -1557,22 +1557,29 @@ def multi_head_attention_forward(
     assert embed_dim == embed_dim_to_check
     assert src_len == value.size(0) and key.size(1) == value.size(1)
     head_dim = embed_dim // num_heads
-    scaling = float(head_dim) ** -0.5
+
+    def to_qkv(input, weight, bias, num_proj=1):
+        """Compute input projections via a single matmul."""
+        qkv_size = (tgt_len, bsz, num_proj * num_heads, head_dim)
+        outputs = linear(input, weight, bias).reshape_(qkv_size)
+        outputs = outputs.permute(1, 2, 0, 3)
+        return outputs if num_proj == 1 else outputs.chunk(num_proj, 1)
+
     q, k, v = None, None, None
     if not use_separate_proj_weight:
         if (query is key) and (key is value):
-            # Parallelism for self attention
-            q, k, v = linear(query, in_proj_weight, in_proj_bias).chunk(3, dim=-1)
+            # Parallelism for self attention.
+            q, k, v = to_qkv(query, in_proj_weight, in_proj_bias, 3)
         elif key is value:
-            # Parallelism for encode-decoder attention
+            # Parallelism for encode-decoder attention.
             q_proj_weight = in_proj_weight[:embed_dim, :]
             kv_proj_weight = in_proj_weight[embed_dim:, :]
             q_proj_bias = kv_proj_bias = in_proj_bias
             if in_proj_bias is not None:
                 q_proj_bias = in_proj_bias[:embed_dim]
                 kv_proj_bias = in_proj_bias[embed_dim:]
-            q = linear(query, q_proj_weight, q_proj_bias)
-            k, v = linear(key, kv_proj_weight, kv_proj_bias).chunk(2, dim=-1)
+            q = to_qkv(query, q_proj_weight, q_proj_bias)
+            k, v = to_qkv(key, kv_proj_weight, kv_proj_bias, 2)
     if q is None:
         q_proj_bias = k_proj_bias = v_proj_bias = in_proj_bias
         if use_separate_proj_weight and q_proj_weight is None:
@@ -1583,37 +1590,28 @@ def multi_head_attention_forward(
             q_proj_bias = in_proj_bias[:embed_dim]
             k_proj_bias = in_proj_bias[embed_dim:embed_dim * 2]
             v_proj_bias = in_proj_bias[embed_dim * 2:]
-        q = linear(query, q_proj_weight, q_proj_bias)
-        k = linear(key, k_proj_weight, k_proj_bias)
-        v = linear(value, v_proj_weight, v_proj_bias)
-    q *= scaling
-    q = q.reshape_((-1, bsz * num_heads, head_dim)).transpose(0, 1)
-    k = k.reshape_((-1, bsz * num_heads, head_dim)).transpose(0, 1)
-    v = v.reshape_((-1, bsz * num_heads, head_dim)).transpose(0, 1)
-    attn_weights = q.bmm(k.transpose(1, 2))
-    assert attn_weights.size() == (bsz * num_heads, tgt_len, src_len)
+        q = to_qkv(query, q_proj_weight, q_proj_bias)
+        k = to_qkv(key, k_proj_weight, k_proj_bias)
+        v = to_qkv(value, v_proj_weight, v_proj_bias)
+    q *= float(head_dim) ** -0.5
+    attn = q.bmm(k.transpose(-2, -1))
+    assert attn.size() == (bsz, num_heads, tgt_len, src_len)
     if attn_mask is not None:
         if attn_mask.dtype == 'bool' or attn_mask.dtype == 'uint8':
-            attn_weights.masked_fill_(attn_mask, float('-inf'))
+            attn.masked_fill_(attn_mask, float('-inf'))
         else:
-            attn_weights += attn_mask
+            attn += attn_mask
     if key_padding_mask is not None:
-        attn_weights.reshape_((bsz, num_heads, tgt_len, src_len))
-        if key_padding_mask.size() != attn_weights.size():
+        if key_padding_mask.size() != attn.size():
             key_padding_mask.reshape_((bsz, 1, 1, src_len))
-        attn_weights.masked_fill_(key_padding_mask, float('-inf'))
-        attn_weights.reshape_((bsz * num_heads, tgt_len, src_len))
-    attn_weights = softmax(attn_weights, dim=-1, inplace=True)
-    attn_weights = dropout(attn_weights, p=dropout_p, training=training)
-    attn_output = attn_weights.bmm(v)
-    assert list(attn_output.size()) == [bsz * num_heads, tgt_len, head_dim]
-    attn_output = attn_output.transpose(0, 1).reshape_((tgt_len, bsz, embed_dim))
-    attn_output = linear(attn_output, out_proj_weight, out_proj_bias)
-    if need_weights:
-        weights = attn_weights.reshape((bsz, num_heads, tgt_len, src_len))
-        return attn_output, weights.mean(dim=1)
-    else:
-        return attn_output, None
+        attn.masked_fill_(key_padding_mask, float('-inf'))
+    attn = softmax(attn, dim=-1, inplace=True)
+    attn = dropout(attn, p=dropout_p, training=training)
+    output = attn.bmm(v).permute(2, 0, 1, 3)
+    output = output.reshape_((tgt_len, bsz, embed_dim))
+    output = linear(output, out_proj_weight, out_proj_bias)
+    weights = attn.mean(dim=1) if need_weights else None
+    return output, weights
 
 
 def nll_loss(

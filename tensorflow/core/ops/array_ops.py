@@ -503,6 +503,40 @@ def reshape(tensor, shape, name=None):
     return array_ops.reshape(tensor, shape=shape, name=name)
 
 
+def reverse(tensor, axis, name=None):
+    """Reverse elements along the given axis.
+
+    :attr:`axis` could be negative:
+
+    ```python
+    x = tf.constant([[1, 2, 3], [4, 5, 6]])
+
+    # A negative axis is the last-k axis
+    print(tf.reverse(x, axis=1))  # [[3, 2, 1], [6, 5, 4]]
+    print(tf.reverse(x, axis=-1))  # Equivalent
+
+    # Also, axis could be a sequence of integers
+    print(tf.reverse(x, axis=(0, 1)))  # [[6, 5, 4], [3, 2, 1]]
+    ```
+
+    Parameters
+    ----------
+    tensor : dragon.Tensor
+        The input tensor.
+    axis : Union[int, Sequence[int]]
+        The axis to reverse.
+    name : str, optional
+        The operation name.
+
+    Returns
+    -------
+    dragon.Tensor
+        The output tensor.
+
+    """
+    return array_ops.reverse(tensor, axis=axis, name=name)
+
+
 def roll(input, shift, axis, name=None):
     """Roll elements along the given axis.
 

@@ -111,6 +111,15 @@ vm.torch
   `flatten(...) <torch/flatten.html>`_
   : Return a tensor with dimensions flattened.
 
+  `flip(...) <torch/flip.html>`_
+  : Reverse elements along the given dimension.
+
+  `fliplr(...) <torch/fliplr.html>`_
+  : Reverse elements along the second dimension.
+
+  `flipud(...) <torch/flipud.html>`_
+  : Reverse elements along the first dimension.
+
   `floor(...) <torch/floor.html>`_
   : Compute the largest integer not greater than input.
 
@@ -350,6 +359,9 @@ vm.torch
   torch/exp
   torch/eye
   torch/flatten
+  torch/flip
+  torch/fliplr
+  torch/flipud
   torch/floor
   torch/from_numpy
   torch/full

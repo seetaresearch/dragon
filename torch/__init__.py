@@ -55,6 +55,9 @@ from dragon.vm.torch.core.ops.array_ops import channel_normalize
 from dragon.vm.torch.core.ops.array_ops import chunk
 from dragon.vm.torch.core.ops.array_ops import cumsum
 from dragon.vm.torch.core.ops.array_ops import flatten
+from dragon.vm.torch.core.ops.array_ops import flip
+from dragon.vm.torch.core.ops.array_ops import fliplr
+from dragon.vm.torch.core.ops.array_ops import flipud
 from dragon.vm.torch.core.ops.array_ops import gather
 from dragon.vm.torch.core.ops.array_ops import index_select
 from dragon.vm.torch.core.ops.array_ops import masked_select

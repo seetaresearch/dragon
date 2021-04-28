@@ -288,6 +288,13 @@ class TestTensorOps(OpTestCase):
         x.flatten_(-3, -2)
         self.assertEqual(x, data.reshape((2, 3)))
 
+    def test_flip(self):
+        data = arange((2, 3, 4))
+        x = new_tensor(data)
+        self.assertEqual(x.flip((1, 2)), np.flip(data, (1, 2)))
+        self.assertEqual(x.fliplr(), np.fliplr(data))
+        self.assertEqual(x.flipud(), np.flipud(data))
+
     def test_floor(self):
         data = np.array([0.9, 1.4, 1.9])
         x = new_tensor(data)

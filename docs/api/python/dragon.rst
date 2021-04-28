@@ -136,6 +136,9 @@ dragon
   `reshape(...) <dragon/reshape.html>`_
   : Change the dimensions of input.
 
+  `reverse(...) <dragon/reverse.html>`_
+  : Reverse elements along the given axis.
+ 
   `roll(...) <dragon/roll.html>`_
   : Roll elements along the given axis.
 
@@ -237,6 +240,7 @@ dragon
   dragon/repeat
   dragon/reset_workspace
   dragon/reshape
+  dragon/reverse
   dragon/roll
   dragon/scatter_add
   dragon/scatter_elements

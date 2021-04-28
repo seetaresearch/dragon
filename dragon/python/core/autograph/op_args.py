@@ -456,6 +456,11 @@ def resize_args(**kwargs):
     }
 
 
+@register('Reverse')
+def reverse_args(**kwargs):
+    return {'axes': kwargs.get('axes', None)}
+
+
 @register('Recurrent')
 def rnn_args(**kwargs):
     return {

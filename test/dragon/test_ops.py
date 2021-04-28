@@ -938,6 +938,24 @@ class TestArrayOps(OpTestCase):
         with dragon.device('cuda'):
             self.test_reshape()
 
+    def test_reverse(self):
+        entries = [0, 1, (1, 2)]
+        for execution in ('EAGER_MODE', 'GRAPH_MODE'):
+            with execution_context().mode(execution):
+                for axis in entries:
+                    data = arange((2, 3, 4))
+                    x = new_tensor(data)
+                    with dragon.GradientTape() as tape:
+                        tape.watch(x)
+                        y = dragon.reverse(x, axis)
+                    dx = tape.gradient(y, [x], output_gradients=[x])[0]
+                    self.assertEqual([y, dx], [np.flip(data, axis), np.flip(data, axis)])
+
+    @unittest.skipIf(not TEST_CUDA, 'CUDA unavailable')
+    def test_reverse_cuda(self):
+        with dragon.device('cuda'):
+            self.test_reverse()
+
     def test_shape(self):
         entries = [(2, 3), (2, 3, 3)]
         for execution in ('EAGER_MODE', 'GRAPH_MODE'):

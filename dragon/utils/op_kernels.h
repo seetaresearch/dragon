@@ -502,6 +502,16 @@ void RepeatGrad(
     Context* ctx);
 
 template <typename T, class Context>
+void Reverse(
+    const int num_dims,
+    const uint8_t* x_flips,
+    const int64_t* x_strides,
+    const int64_t* y_dims,
+    const T* x,
+    T* y,
+    Context* ctx);
+
+template <typename T, class Context>
 void Roll(
     const int num_dims,
     const int64_t* x_shifts,

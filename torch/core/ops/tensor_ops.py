@@ -828,7 +828,7 @@ def fill_(self, value):
 
 
 def flatten(self, start_dim=0, end_dim=-1):
-    """Return a new tensor with dimensions flattened.
+    """Return a tensor with dimensions flattened.
 
     Parameters
     ----------
@@ -871,6 +871,59 @@ def flatten_(self, start_dim=0, end_dim=-1):
 
     """
     return array_ops.flatten(self, start_dim, end_dim, self)
+
+
+def flip(self, dims):
+    """Return a tensor with elements reversed along the given dimension.
+
+    Parameters
+    ----------
+    dims : Union[int, Sequence[int]]
+        The dimension to reverse.
+
+    Returns
+    -------
+    dragon.vm.torch.Tensor
+        The output tensor.
+
+    See Also
+    --------
+    `torch.flip(...)`_
+
+    """
+    return array_ops.flip(self, dims)
+
+
+def fliplr(self):
+    """Return a tensor with elements reversed along the second dimension.
+
+    Returns
+    -------
+    dragon.vm.torch.Tensor
+        The output tensor.
+
+    See Also
+    --------
+    `torch.fliplr(...)`_
+
+    """
+    return array_ops.fliplr(self)
+
+
+def flipud(self):
+    """Return a tensor with elements reversed along the first dimension.
+
+    Returns
+    -------
+    dragon.vm.torch.Tensor
+        The output tensor.
+
+    See Also
+    --------
+    `torch.flipud(...)`_
+
+    """
+    return array_ops.flipud(self)
 
 
 def _float(self):
@@ -1630,7 +1683,7 @@ def multinomial(self, num_samples):
 
 
 def narrow(self, dimension, start, length):
-    """Return a new tensor that is a narrowed version of input tensor.
+    """Return a narrowed tensor.
 
     Parameters
     ----------
@@ -2512,7 +2565,7 @@ def topk(self, k, dim=-1, largest=True, sorted=True):
 
 
 def transpose(self, dim0, dim1):
-    """Return a new tensor with two dimensions swapped.
+    """Return a tensor with two dimensions swapped.
 
     Parameters
     ----------
@@ -2867,6 +2920,9 @@ Tensor.expand = expand
 Tensor.fill_ = fill_
 Tensor.flatten = flatten
 Tensor.flatten_ = flatten_
+Tensor.flip = flip
+Tensor.fliplr = fliplr
+Tensor.flipud = flipud
 Tensor.float = _float
 Tensor.float_ = _float_
 Tensor.floor = floor

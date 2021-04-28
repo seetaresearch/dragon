@@ -11,11 +11,8 @@ void GroupNormOp<Context>::DoRunWithType() {
   using ParamT = typename math::AccmulatorType<T>::type;
   INITIALIZE_TENSOR_VIA_SPEC(Input(1), vec64_t({C_}), ParamT);
   INITIALIZE_TENSOR_VIA_SPEC(Input(2), vec64_t({C_}), ParamT);
-
   auto* X_mu = Buffer("X_mu")->Reshape({N_, G_});
   auto* X_rsig = Buffer("X_rsig")->Reshape({N_, G_});
-  auto* X_scale = Buffer("X_scale")->Reshape({N_, C_});
-  auto* X_bias = Buffer("X_bias")->Reshape({N_, C_});
 
   auto* x = Input(0).template data<T, Context>();
   auto* mu = X_mu->template mutable_data<ParamT, Context>();
@@ -36,6 +33,8 @@ void GroupNormOp<Context>::DoRunWithType() {
   math::InvStd(N_ * G_, epsilon_, rsig, rsig, ctx());
 
   // Fuse parameters to compute affine transformation
+  auto* scratch =
+      ctx()->workspace()->template data<ParamT, Context>({2 * N_ * C_})[0];
   kernels::GroupNorm(
       N_,
       G_,
@@ -47,8 +46,8 @@ void GroupNormOp<Context>::DoRunWithType() {
       rsig,
       Input(1).template data<ParamT, Context>(), // gamma
       Input(2).template data<ParamT, Context>(), // beta
-      X_scale->template mutable_data<ParamT, Context>(),
-      X_bias->template mutable_data<ParamT, Context>(),
+      scratch,
+      scratch + N_ * C_,
       Output(0)->template mutable_data<T, Context>(),
       ctx());
 }
@@ -65,12 +64,11 @@ template <typename T>
 void GroupNormGradientOp<Context>::DoRunWithType() {
   using ParamT = typename math::AccmulatorType<T>::type;
   auto *dX = Output(0), *dW = Output(1), *dB = Output(2);
-
   auto *X_mu = Buffer("X_mu"), *X_rsig = Buffer("X_rsig");
-  auto* X_scale = Buffer("X_scale")->Reshape({N_, G_});
-  auto* X_bias = Buffer("X_bias")->Reshape({N_, G_});
 
   // Gradient w.r.t. gamma, beta and input
+  auto* scratch =
+      ctx()->workspace()->template data<ParamT, Context>({2 * N_ * G_})[0];
   kernels::GroupNormGrad(
       N_,
       G_,
@@ -82,8 +80,8 @@ void GroupNormGradientOp<Context>::DoRunWithType() {
       X_rsig->template data<ParamT, Context>(),
       Input(1).template data<ParamT, Context>(), // gamma
       Input(2).template data<T, Context>(), // dy
-      X_scale->template mutable_data<ParamT, Context>(),
-      X_bias->template mutable_data<ParamT, Context>(),
+      scratch,
+      scratch + N_ * G_,
       dW->Reshape({C_})->template mutable_data<ParamT, Context>(),
       dB->Reshape({C_})->template mutable_data<ParamT, Context>(),
       dX->template mutable_data<T, Context>(),
@@ -120,7 +118,6 @@ OPERATOR_SCHEMA(GroupNormGradient)
     .NumOutputs(3);
 
 namespace {
-
 class GradientMaker final : public GradientMakerBase {
  public:
   GRADIENT_MAKER_CTOR(GradientMaker);

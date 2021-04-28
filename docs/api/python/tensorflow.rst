@@ -87,6 +87,9 @@ vm.tensorflow
   `reshape(...) <tensorflow/reshape.html>`_
   : Change the dimensions of input.
 
+  `reverse(...) <tensorflow/reverse.html>`_
+  : Reverse elements along the given axis.
+
   `roll(...) <tensorflow/roll.html>`_
   : Roll elements along the given axis.
 
@@ -152,6 +155,7 @@ vm.tensorflow
   tensorflow/pad
   tensorflow/range
   tensorflow/reshape
+  tensorflow/reverse
   tensorflow/roll
   tensorflow/shape
   tensorflow/slice

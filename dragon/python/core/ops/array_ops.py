@@ -1229,6 +1229,42 @@ def reshape(inputs, shape, copy=True, **kwargs):
 
 
 @OpSchema.num_inputs(1)
+def reverse(inputs, axis, **kwargs):
+    """Reverse elements along the given axis.
+
+    :attr:`axis` could be negative:
+
+    ```python
+    x = dragon.constant([[1, 2, 3], [4, 5, 6]])
+
+    # A negative axis is the last-k axis
+    print(dragon.reverse(x, axis=1))  # [[3, 2, 1], [6, 5, 4]]
+    print(dragon.reverse(x, axis=-1))  # Equivalent
+
+    # Also, axis could be a sequence of integers
+    print(dragon.reverse(x, axis=(0, 1)))  # [[6, 5, 4], [3, 2, 1]]
+    ```
+
+    Parameters
+    ----------
+    inputs : dragon.Tensor
+        The input tensor.
+    axis : Union[int, Sequence[int]]
+        The axis to reverse.
+
+    Returns
+    -------
+    dragon.Tensor
+        The output tensor.
+
+    """
+    axes = nest.flatten(axis) if axis is not None else axis
+    if context.executing_eagerly():
+        return OpLib.execute('Reverse', inputs, axes=axes)
+    return OpLib.add('Reverse', inputs, axes=axes, **kwargs)
+
+
+@OpSchema.num_inputs(1)
 @OpSchema.convert_arg('shift', name_v2='shifts')
 def roll(inputs, shift, axis=None, **kwargs):
     """Roll elements along the given axis.

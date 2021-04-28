@@ -1021,7 +1021,7 @@ class Tensor(object):
         """
 
     def flatten(self, start_dim=0, end_dim=-1):
-        """Return a new tensor with dimensions flattened.
+        """Return a tensor with dimensions flattened.
 
         Parameters
         ----------
@@ -1059,6 +1059,53 @@ class Tensor(object):
         See Also
         --------
         `torch.flatten(...)`_
+
+        """
+
+    def flip(self, dims):
+        """Return a tensor with elements reversed along the given dimension.
+
+        Parameters
+        ----------
+        dims : Union[int, Sequence[int]]
+            The dimension to reverse.
+
+        Returns
+        -------
+        dragon.vm.torch.Tensor
+            The output tensor.
+
+        See Also
+        --------
+        `torch.flip(...)`_
+
+        """
+
+    def fliplr(self):
+        """Return a tensor with elements reversed along the second dimension.
+
+        Returns
+        -------
+        dragon.vm.torch.Tensor
+            The output tensor.
+
+        See Also
+        --------
+        `torch.fliplr(...)`_
+
+        """
+
+    def flipud(self):
+        """Return a tensor with elements reversed along the first dimension.
+
+        Returns
+        -------
+        dragon.vm.torch.Tensor
+            The output tensor.
+
+        See Also
+        --------
+        `torch.flipud(...)`_
 
         """
 
@@ -1723,7 +1770,7 @@ class Tensor(object):
         """
 
     def narrow(self, dimension, start, length):
-        """Return a new tensor that is a narrowed version of input tensor.
+        """Return a narrowed tensor.
 
         Parameters
         ----------
@@ -2026,7 +2073,7 @@ class Tensor(object):
         return self.fill_(1)
 
     def permute(self, *dims):
-        """Return a new tensor with the specific order of dimensions.
+        """Return a tensor with the specific order of dimensions.
 
         Parameters
         ----------
@@ -2655,7 +2702,7 @@ class Tensor(object):
         """
 
     def transpose(self, dim0, dim1):
-        """Return a new tensor with two dimensions swapped.
+        """Return a tensor with two dimensions swapped.
 
         Parameters
         ----------
@@ -2897,7 +2944,7 @@ class Tensor(object):
         return self.reshape(shape)
 
     def view_(self, *shape):
-        """Change into a new shape with the same data.
+        """Change into a new size with the same data.
 
         Parameters
         ----------
@@ -2917,8 +2964,7 @@ class Tensor(object):
         return self.reshape_(shape)
 
     def view_as(self, other):
-        """Return a new tensor with the same data
-         but a different size as the given tensor.
+        """Return a tensor with the same data but a different size.
 
         Parameters
         ----------

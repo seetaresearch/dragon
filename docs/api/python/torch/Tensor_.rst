@@ -233,6 +233,18 @@ flatten\_
 #########
 .. automethod:: dragon.vm.torch.Tensor.flatten_
 
+flip
+####
+.. automethod:: dragon.vm.torch.Tensor.flip
+
+fliplr
+######
+.. automethod:: dragon.vm.torch.Tensor.fliplr
+
+flipud
+######
+.. automethod:: dragon.vm.torch.Tensor.flipud
+
 float
 #####
 .. automethod:: dragon.vm.torch.Tensor.float
@@ -650,6 +662,9 @@ zero\_
 .. _torch.eq(...): eq.html
 .. _torch.exp(...): exp.html
 .. _torch.flatten(...): flatten.html
+.. _torch.flip(...): flip.html
+.. _torch.fliplr(...): fliplr.html
+.. _torch.flipud(...): flipud.html
 .. _torch.floor(...): floor.html
 .. _torch.full(...): full.html
 .. _torch.gather(...): gather.html
