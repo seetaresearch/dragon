@@ -51,6 +51,8 @@ void _HardSigmoidGrad<float16>(
 
 } // namespace
 
+/* ------------------- Launcher Separator ------------------- */
+
 #define DEFINE_KERNEL_LAUNCHER(T)                                       \
   template <>                                                           \
   void HardSigmoid<T, CPUContext>(                                      \

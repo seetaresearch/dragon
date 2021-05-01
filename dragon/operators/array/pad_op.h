@@ -28,7 +28,9 @@ class PadOp final : public Operator<Context> {
   }
   USE_OPERATOR_FUNCTIONS;
 
-  void RunOnDevice() override;
+  void RunOnDevice() override {
+    DispatchHelper<dtypes::Generic>::Call(this, Input(0));
+  }
 
   template <typename T>
   void DoRunWithType();
@@ -44,26 +46,18 @@ class PadGradientOp final : public Operator<Context> {
  public:
   PadGradientOp(const OperatorDef& def, Workspace* ws)
       : Operator<Context>(def, ws),
-        pad_l_(OP_REPEATED_ARG(int64_t, "pad_l")),
-        pad_r_(OP_REPEATED_ARG(int64_t, "pad_r")),
-        mode_(OP_SINGLE_ARG(string, "mode", "CONSTANT")) {
-    if (pad_r_.empty()) {
-      pad_r_ = pad_l_;
-    } else {
-      CHECK_EQ(pad_l_.size(), pad_r_.size())
-          << "\nThe <pad_l> and <pad_r> should have the same length.";
-    }
-  }
+        mode_(OP_SINGLE_ARG(string, "mode", "CONSTANT")) {}
   USE_OPERATOR_FUNCTIONS;
 
-  void RunOnDevice() override;
+  void RunOnDevice() override {
+    DispatchHelper<dtypes::Floating>::Call(this, Input(0));
+  }
 
   template <typename T>
   void DoRunWithType();
 
  protected:
   string mode_;
-  vec64_t pad_l_, pad_r_;
 };
 
 DEFINE_OP_REPEATED_ARG(int64_t, PadOp, pads);

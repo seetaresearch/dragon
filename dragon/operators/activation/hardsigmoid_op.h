@@ -26,7 +26,9 @@ class HardSigmoidOp : public Operator<Context> {
         beta_(OP_SINGLE_ARG(float, "beta", 0.5f)) {}
   USE_OPERATOR_FUNCTIONS;
 
-  void RunOnDevice() override;
+  void RunOnDevice() override {
+    DispatchHelper<dtypes::Floating>::Call(this, Input(0));
+  }
 
   template <typename T>
   void DoRunWithType();
@@ -43,7 +45,9 @@ class HardSigmoidGradientOp : public Operator<Context> {
         alpha_(OP_SINGLE_ARG(float, "alpha", 0.2f)) {}
   USE_OPERATOR_FUNCTIONS;
 
-  void RunOnDevice() override;
+  void RunOnDevice() override {
+    DispatchHelper<dtypes::Floating>::Call(this, Input(0));
+  }
 
   template <typename T>
   void DoRunWithType();

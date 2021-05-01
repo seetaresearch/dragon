@@ -249,7 +249,7 @@ def hardsigmoid(inputs, alpha=0.2, beta=0.5, inplace=False, **kwargs):
     Examples:
 
     ```python
-    x = dragon.constant([-2.5, -1.0, 0.0, 1.0, 2.5])
+    x = dragon.constant([-2.5, -1., 0., 1., 2.5])
     print(dragon.nn.hardsigmoid(x))
     ```
 
@@ -279,18 +279,18 @@ def hardsigmoid(inputs, alpha=0.2, beta=0.5, inplace=False, **kwargs):
 
 
 @OpSchema.num_inputs(1)
-def hardswish(inputs, alpha=0.2, beta=0.5, **kwargs):
+def hardswish(inputs, **kwargs):
     r"""Apply the hard swish function.
     `[Howard et.al, 2019] <https://arxiv.org/abs/1905.02244>`_.
 
     The **HardSwish** function is defined as:
 
-    .. math:: \text{HardSwish}(x) = x \cdot \max(0, \min(1, \alpha * x + \beta))
+    .. math:: \text{HardSwish}(x) = x \cdot \max(0, \min(1, \frac{x}{6} + 0.5))
 
     Examples:
 
     ```python
-    x = dragon.constant([-2.5, -1.0, 0.0, 1.0, 2.5])
+    x = dragon.constant([-3., -1., 0., 1., 3.])
     print(dragon.nn.hardswish(x))
     ```
 
@@ -298,10 +298,6 @@ def hardswish(inputs, alpha=0.2, beta=0.5, **kwargs):
     ----------
     inputs : dragon.Tensor
         The input tensor.
-    alpha : float, optional, default=0.2
-        The value to :math:`\alpha`.
-    beta : float, optional, default=0.5
-        The value to :math:`\beta`.
 
     Returns
     -------
@@ -309,10 +305,9 @@ def hardswish(inputs, alpha=0.2, beta=0.5, **kwargs):
         The output tensor.
 
     """
-    alpha, beta = float(alpha), float(beta)
     if context.executing_eagerly():
-        return OpLib.execute('HardSwish', inputs, alpha=alpha, beta=beta)
-    return OpLib.add('HardSwish', inputs, alpha=alpha, beta=beta, **kwargs)
+        return OpLib.execute('HardSwish', inputs)
+    return OpLib.add('HardSwish', inputs, **kwargs)
 
 
 @OpSchema.num_inputs(1)
@@ -622,8 +617,8 @@ def silu(inputs, **kwargs):
 
     """
     if context.executing_eagerly():
-        return OpLib.execute('Swish', inputs)
-    return OpLib.add('Swish', inputs, **kwargs)
+        return OpLib.execute('Silu', inputs)
+    return OpLib.add('Silu', inputs, **kwargs)
 
 
 @OpSchema.num_inputs(1)

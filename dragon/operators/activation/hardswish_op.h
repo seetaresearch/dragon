@@ -20,37 +20,29 @@ namespace dragon {
 template <class Context>
 class HardSwishOp : public Operator<Context> {
  public:
-  HardSwishOp(const OperatorDef& def, Workspace* ws)
-      : Operator<Context>(def, ws),
-        alpha_(OP_SINGLE_ARG(float, "alpha", 0.2f)),
-        beta_(OP_SINGLE_ARG(float, "beta", 0.5f)) {}
+  SIMPLE_CTOR_DTOR(HardSwishOp);
   USE_OPERATOR_FUNCTIONS;
 
-  void RunOnDevice() override;
+  void RunOnDevice() override {
+    DispatchHelper<dtypes::Floating>::Call(this, Input(0));
+  }
 
   template <typename T>
   void DoRunWithType();
-
- protected:
-  float alpha_, beta_;
 };
 
 template <class Context>
 class HardSwishGradientOp : public Operator<Context> {
  public:
-  HardSwishGradientOp(const OperatorDef& def, Workspace* ws)
-      : Operator<Context>(def, ws),
-        alpha_(OP_SINGLE_ARG(float, "alpha", 0.2f)),
-        beta_(OP_SINGLE_ARG(float, "beta", 0.5f)) {}
+  SIMPLE_CTOR_DTOR(HardSwishGradientOp);
   USE_OPERATOR_FUNCTIONS;
 
-  void RunOnDevice() override;
+  void RunOnDevice() override {
+    DispatchHelper<dtypes::Floating>::Call(this, Input(0));
+  }
 
   template <typename T>
   void DoRunWithType();
-
- protected:
-  float alpha_, beta_;
 };
 
 } // namespace dragon

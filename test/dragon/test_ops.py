@@ -218,7 +218,7 @@ class TestActivationOps(OpTestCase):
         alpha, beta = 0.2, 0.5
         for execution in ('EAGER_MODE', 'GRAPH_MODE'):
             with execution_context().mode(execution):
-                data = np.array([-3.0, -2.0, -1.0, 0.0, 1.0, 2.0, 3.0], 'float32')
+                data = np.array([-3., -2., -1., 0., 1., 2., 3.], 'float32')
                 x = new_tensor(data)
                 with dragon.GradientTape() as tape:
                     tape.watch(x)
@@ -234,21 +234,20 @@ class TestActivationOps(OpTestCase):
             self.test_hardsigmoid()
 
     def test_hardswish(self):
-        alpha, beta = 0.2, 0.5
+        alpha, beta = 1. / 6., 0.5
         bound = beta / alpha
-        alpha2x = alpha * 2.
         for execution in ('EAGER_MODE', 'GRAPH_MODE'):
             with execution_context().mode(execution):
-                data = np.array([-3.0, -2.0, -1.0, 0.0, 1.0, 2.0, 3.0], 'float32')
+                data = np.array([-3., -2., -1., 0., 1., 2., 3.], 'float32')
                 x = new_tensor(data)
                 with dragon.GradientTape() as tape:
                     tape.watch(x)
-                    y = dragon.nn.hardswish(x, alpha=alpha, beta=beta)
+                    y = dragon.nn.hardswish(x)
                 dx = tape.gradient(y, [x], output_gradients=[x])[0]
                 result = data * np.clip(alpha * data + beta, 0, 1)
                 result2 = data.copy()
                 inds = np.where(data < bound)[0]
-                result2[inds] = data[inds] * (data[inds] * alpha2x + beta)
+                result2[inds] = data[inds] * (data[inds] * alpha * 2 + beta)
                 result2[np.where(data < -bound)[0]] = 0
                 self.assertEqual([y, dx], [result, result2])
 
@@ -417,15 +416,15 @@ class TestActivationOps(OpTestCase):
     def test_silu(self):
         for execution in ('EAGER_MODE', 'GRAPH_MODE'):
             with execution_context().mode(execution):
-                data = np.array([-3.0, -2.0, -1.0, 0.0, 1.0, 2.0, 3.0], 'float32')
+                data = np.array([-3., -2., -1., 0., 1., 2., 3.], 'float32')
                 x = new_tensor(data)
                 with dragon.GradientTape() as tape:
                     tape.watch(x)
                     y = dragon.nn.silu(x)
                 dx = tape.gradient(y, [x], output_gradients=[x])[0]
                 result = data * (1. / (1. + np.exp(-data)))
-                result2 = data * (result + (1. / (1. + np.exp(-data))) * (1. - result))
-                self.assertEqual([y, dx], [result, result2])
+                grad = data * (result + (1. / (1. + np.exp(-data))) * (1. - result))
+                self.assertEqual([y, dx], [result, grad])
 
     @unittest.skipIf(not TEST_CUDA, 'CUDA unavailable')
     def test_silu_cuda(self):

@@ -79,11 +79,6 @@ void PadOp<Context>::DoRunWithType() {
 }
 
 template <class Context>
-void PadOp<Context>::RunOnDevice() {
-  DispatchHelper<dtypes::Generic>::Call(this, Input(0));
-}
-
-template <class Context>
 template <typename T>
 void PadGradientOp<Context>::DoRunWithType() {
   auto &dY = Input(0), *dX = Output(0);
@@ -117,11 +112,6 @@ void PadGradientOp<Context>::DoRunWithType() {
   } else {
     LOG(FATAL) << "Unknown PadMode: " << mode_ << ".";
   }
-}
-
-template <class Context>
-void PadGradientOp<Context>::RunOnDevice() {
-  DispatchHelper<dtypes::Floating>::Call(this, Input(0));
 }
 
 DEPLOY_CPU_OPERATOR(Pad);

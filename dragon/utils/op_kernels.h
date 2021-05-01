@@ -115,23 +115,10 @@ void HardSigmoidGrad(
     Context* ctx);
 
 template <typename T, class Context>
-void HardSwish(
-    const int N,
-    const float alpha,
-    const float beta,
-    const T* x,
-    T* y,
-    Context* ctx);
+void HardSwish(const int N, const T* x, T* y, Context* ctx);
 
 template <typename T, class Context>
-void HardSwishGrad(
-    const int N,
-    const float alpha,
-    const float beta,
-    const T* dy,
-    const T* x,
-    T* dx,
-    Context* ctx);
+void HardSwishGrad(const int N, const T* dy, const T* x, T* dx, Context* ctx);
 
 template <typename T, class Context>
 void PRelu(
@@ -217,6 +204,12 @@ template <typename T, class Context>
 void SigmoidGrad(const int N, const T* dy, const T* y, T* dx, Context* ctx);
 
 template <typename T, class Context>
+void Silu(const int N, const T* x, T* y, Context* ctx);
+
+template <typename T, class Context>
+void SiluGrad(const int N, const T* dy, const T* x, T* dx, Context* ctx);
+
+template <typename T, class Context>
 void Softmax(
     const int N,
     const int S,
@@ -231,18 +224,6 @@ void SoftmaxGrad(
     const int S,
     const int C,
     const T* dy,
-    const T* y,
-    T* dx,
-    Context* ctx);
-
-template <typename T, class Context>
-void Swish(const int N, const T* x, T* y, Context* ctx);
-
-template <typename T, class Context>
-void SwishGrad(
-    const int N,
-    const T* dy,
-    const T* x,
     const T* y,
     T* dx,
     Context* ctx);

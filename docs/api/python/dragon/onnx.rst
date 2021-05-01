@@ -85,6 +85,7 @@ Name                     Supported Reference
 `GlobalMaxPool`_         |v|       :func:`dragon.nn.pool`
 `Greater`_               |v|       :func:`dragon.math.greater`
 `HardSigmoid`_           |v|       :func:`dragon.nn.hardsigmoid`
+`HardSwish`_             |v|       :func:`dragon.nn.hardswish`
 `Hardmax`_
 `Identity`_              |v|       :func:`dragon.identity`
 `If`_
@@ -251,6 +252,7 @@ Name                     Supported Reference
 .. _GlobalMaxPool: https://github.com/onnx/onnx/blob/master/docs/Operators.md#GlobalMaxPool
 .. _Greater: https://github.com/onnx/onnx/blob/master/docs/Operators.md#Greater
 .. _HardSigmoid: https://github.com/onnx/onnx/blob/master/docs/Operators.md#HardSigmoid
+.. _HardSwish: https://github.com/onnx/onnx/blob/master/docs/Operators.md#HardSwish
 .. _Hardmax: https://github.com/onnx/onnx/blob/master/docs/Operators.md#Hardmax
 .. _Identity: https://github.com/onnx/onnx/blob/master/docs/Operators.md#Identity
 .. _If: https://github.com/onnx/onnx/blob/master/docs/Operators.md#If

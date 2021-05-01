@@ -280,7 +280,7 @@ def group_norm_args(**kwargs):
     }
 
 
-@register(['HardSigmoid', 'HardSwish'])
+@register('HardSigmoid')
 def hard_sigmoid_args(**kwargs):
     return {
         'alpha': kwargs.get('alpha', 0.2),

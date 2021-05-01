@@ -1,6 +1,7 @@
 #ifdef USE_CUDA
 
 #include "dragon/core/context_cuda.h"
+#include "dragon/utils/math_functions.h"
 #include "dragon/utils/op_kernels.h"
 
 namespace dragon {
@@ -9,51 +10,29 @@ namespace kernels {
 
 namespace {
 
-template <typename T>
+template <typename T, typename AccT>
 __global__ void
-_HardSigmoid(const int N, const T alpha, const T beta, const T* x, T* y) {
+_HardSigmoid(const int N, const AccT alpha, const AccT beta, const T* x, T* y) {
   CUDA_1D_KERNEL_LOOP(i, N) {
-    y[i] = max(T(0), min(T(1), fma(x[i], alpha, beta)));
+    const AccT s_val = fma(convert::To<AccT>(x[i]), alpha, beta);
+    y[i] = convert::To<T>(max(AccT(0), min(AccT(1), s_val)));
   }
 }
 
-__global__ void _HardSigmoid(
-    const int N,
-    const float alpha,
-    const float beta,
-    const half* x,
-    half* y) {
-  CUDA_1D_KERNEL_LOOP(i, N) {
-    y[i] =
-        __float2half(max(0.f, min(1.f, fma(__half2float(x[i]), alpha, beta))));
-  }
-}
-
-template <typename T>
+template <typename T, typename AccT>
 __global__ void _HardSigmoidGrad(
     const int N,
-    const float alpha,
+    const AccT alpha,
     const T* dy,
     const T* y,
     T* dx) {
   CUDA_1D_KERNEL_LOOP(i, N) {
-    dx[i] = (y[i] > T(0) && y[i] < T(1)) ? dy[i] * alpha : T(0);
+    const AccT val = convert::To<AccT>(y[i]);
+    dx[i] = convert::To<T>(
+        (val > AccT(0) && val < AccT(1)) ? convert::To<AccT>(dy[i]) * alpha
+                                         : AccT(0));
   }
 }
-
-template <>
-__global__ void _HardSigmoidGrad<half>(
-    const int N,
-    const float alpha,
-    const half* dy,
-    const half* y,
-    half* dx) {
-  CUDA_1D_KERNEL_LOOP(i, N) {
-    const float val = __half2float(y[i]);
-    dx[i] = __half2float(
-        (val > 0.f && val < 1.f) ? __half2float(dy[i]) * alpha : 0.f);
-  }
-} // HardSigmoidGrad
 
 } // namespace
 

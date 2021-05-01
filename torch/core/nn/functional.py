@@ -1006,8 +1006,7 @@ def hardswish(input):
     `torch.nn.Hardswish(...)`_
 
     """
-    return FunctionLib.apply(
-        'HardSwish', input.device, [input], alpha=1. / 6., beta=0.5)
+    return FunctionLib.apply('HardSwish', input.device, [input])
 
 
 def interpolate(
@@ -1992,7 +1991,7 @@ def silu(input):
     `torch.nn.SiLU(...)`_
 
     """
-    return FunctionLib.apply('Swish', input.device, [input])
+    return FunctionLib.apply('Silu', input.device, [input])
 
 
 def smooth_l1_loss(

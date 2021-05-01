@@ -10,32 +10,36 @@
  * ------------------------------------------------------------
  */
 
-#ifndef DRAGON_OPERATORS_ACTIVATION_SWISH_OP_H_
-#define DRAGON_OPERATORS_ACTIVATION_SWISH_OP_H_
+#ifndef DRAGON_OPERATORS_ACTIVATION_SILU_OP_H_
+#define DRAGON_OPERATORS_ACTIVATION_SILU_OP_H_
 
 #include "dragon/core/operator.h"
 
 namespace dragon {
 
 template <class Context>
-class SwishOp : public Operator<Context> {
+class SiluOp : public Operator<Context> {
  public:
-  SIMPLE_CTOR_DTOR(SwishOp);
+  SIMPLE_CTOR_DTOR(SiluOp);
   USE_OPERATOR_FUNCTIONS;
 
-  void RunOnDevice() override;
+  void RunOnDevice() override {
+    DispatchHelper<dtypes::Floating>::Call(this, Input(0));
+  }
 
   template <typename T>
   void DoRunWithType();
 };
 
 template <class Context>
-class SwishGradientOp : public Operator<Context> {
+class SiluGradientOp : public Operator<Context> {
  public:
-  SIMPLE_CTOR_DTOR(SwishGradientOp);
+  SIMPLE_CTOR_DTOR(SiluGradientOp);
   USE_OPERATOR_FUNCTIONS;
 
-  void RunOnDevice() override;
+  void RunOnDevice() override {
+    DispatchHelper<dtypes::Floating>::Call(this, Input(0));
+  }
 
   template <typename T>
   void DoRunWithType();
@@ -43,4 +47,4 @@ class SwishGradientOp : public Operator<Context> {
 
 } // namespace dragon
 
-#endif // DRAGON_OPERATORS_ACTIVATION_SWISH_OP_H_
+#endif // DRAGON_OPERATORS_ACTIVATION_SILU_OP_H_

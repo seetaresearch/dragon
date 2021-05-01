@@ -528,7 +528,7 @@ class TestModules(OpTestCase):
         self.assertEqual(y, result)
 
     def test_hardswish(self):
-        alpha, beta = 1.0 / 6.0, 0.5
+        alpha, beta = 1. / 6., 0.5
         data = np.array([-3., -2., -1., 0., 1., 2., 3], 'float32')
         x = new_tensor(data)
         m = torch.nn.Hardswish()

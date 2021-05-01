@@ -17,11 +17,6 @@ void HardSigmoidOp<Context>::DoRunWithType() {
 }
 
 template <class Context>
-void HardSigmoidOp<Context>::RunOnDevice() {
-  DispatchHelper<dtypes::Floating>::Call(this, Input(0));
-}
-
-template <class Context>
 template <typename T>
 void HardSigmoidGradientOp<Context>::DoRunWithType() {
   auto &Y = Input(0), &dY = Input(1), *dX = Output(0);
@@ -32,11 +27,6 @@ void HardSigmoidGradientOp<Context>::DoRunWithType() {
       Y.template data<T, Context>(),
       dX->ReshapeLike(Y)->template mutable_data<T, Context>(),
       ctx());
-}
-
-template <class Context>
-void HardSigmoidGradientOp<Context>::RunOnDevice() {
-  DispatchHelper<dtypes::Floating>::Call(this, Input(0));
 }
 
 DEPLOY_CPU_OPERATOR(HardSigmoid);

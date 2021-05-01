@@ -989,7 +989,7 @@ def gelu(features, approximate=False, name=None):
 
     The **GELU** function is defined as:
 
-    .. math:: \text{GELU}(x) = 0.5x(1 + \tanh[\sqrt{2/\pi}(x + 0.044715x^{3})])
+    .. math:: \text{GELU}(x) = x\cdot\frac{1}{2}[1 + \text{erf}(x / \sqrt{2})]
 
     Examples:
 
