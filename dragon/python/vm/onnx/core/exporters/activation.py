@@ -77,8 +77,17 @@ def softmax_exporter(op_def, context):
         if arg.name == 'axis':
             axis = arg.i + (ndim if arg.i < 0 else 0)
             if axis != (ndim - 1):
-                raise ValueError(
-                    'Softmax axis could only be the last one.\n'
-                    'Use Exp(LogSoftmax) to compute the softmax instead.')
+                raise ValueError('Axis could only be the last if opset < 13.')
+            helper.add_attribute(node, 'axis', arg.i)
+    return node, const_tensors
+
+
+@export_util.register('Softmax-13')
+def softmax_exporter_v13(op_def, context):
+    node, const_tensors = export_util.translate(**locals())
+    ndim = len(context.blob_shapes[op_def.input[0]])
+    for arg in op_def.arg:
+        if arg.name == 'axis':
+            axis = arg.i + (ndim if arg.i < 0 else 0)
             helper.add_attribute(node, 'axis', arg.i)
     return node, const_tensors

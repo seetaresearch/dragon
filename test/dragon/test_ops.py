@@ -1129,8 +1129,11 @@ class TestArrayOps(OpTestCase):
                     data = arange(shape, 1)
                     x = new_tensor(data)
                     for k in range(-max(shape), max(shape) + 1):
-                        y = dragon.tril(x, k=k)
-                        self.assertEqual(y, np.tril(data, k))
+                        with dragon.GradientTape() as tape:
+                            tape.watch(x)
+                            y = dragon.tril(x, k=k)
+                        dx = tape.gradient(y, [x], output_gradients=[x])[0]
+                        self.assertEqual([y, dx], [np.tril(data, k), np.tril(data, k)])
 
     @unittest.skipIf(not TEST_CUDA, 'CUDA unavailable')
     def test_tril_cuda(self):
@@ -1145,8 +1148,11 @@ class TestArrayOps(OpTestCase):
                     data = arange(shape, 1)
                     x = new_tensor(data)
                     for k in range(-max(shape), max(shape) + 1):
-                        y = dragon.triu(x, k=k)
-                        self.assertEqual(y, np.triu(data, k))
+                        with dragon.GradientTape() as tape:
+                            tape.watch(x)
+                            y = dragon.triu(x, k=k)
+                        dx = tape.gradient(y, [x], output_gradients=[x])[0]
+                        self.assertEqual([y, dx], [np.triu(data, k), np.triu(data, k)])
 
     @unittest.skipIf(not TEST_CUDA, 'CUDA unavailable')
     def test_triu_cuda(self):

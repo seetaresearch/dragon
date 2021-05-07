@@ -11,12 +11,8 @@ namespace kernels {
 namespace {
 
 template <typename T, bool kUpper>
-__global__ void _SetTriangular(
-    const int nthreads,
-    const int M,
-    const int N,
-    const int k,
-    T* y) {
+__global__ void
+_SetTrilu(const int nthreads, const int M, const int N, const int k, T* y) {
   CUDA_1D_KERNEL_LOOP(index, nthreads) {
     const int j = index % N;
     const int i = (index / N) % M;
@@ -34,7 +30,7 @@ __global__ void _SetTriangular(
 
 #define DEFINE_KERNEL_LAUNCHER(T)                                           \
   template <>                                                               \
-  void SetTriangular<T, CUDAContext>(                                       \
+  void SetTrilu<T, CUDAContext>(                                            \
       const int batch_size,                                                 \
       const int M,                                                          \
       const int N,                                                          \
@@ -46,11 +42,11 @@ __global__ void _SetTriangular(
     const auto nthreads = batch_size * M * N;                               \
     math::Copy(nthreads, x, y, ctx);                                        \
     if (upper > 0) {                                                        \
-      _SetTriangular<T, true>                                               \
+      _SetTrilu<T, true>                                                    \
           <<<CUDA_BLOCKS(nthreads), CUDA_THREADS, 0, ctx->cuda_stream()>>>( \
               nthreads, M, N, k, y);                                        \
     } else {                                                                \
-      _SetTriangular<T, false>                                              \
+      _SetTrilu<T, false>                                                   \
           <<<CUDA_BLOCKS(nthreads), CUDA_THREADS, 0, ctx->cuda_stream()>>>( \
               nthreads, M, N, k, y);                                        \
     }                                                                       \

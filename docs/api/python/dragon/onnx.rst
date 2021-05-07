@@ -183,6 +183,7 @@ Name                     Supported Reference
 `Tile`_                  |v|       :func:`dragon.tile`
 `TopK`_                  |v|       :func:`dragon.math.top_k`
 `Transpose`_             |v|       :func:`dragon.transpose`
+`Trilu`_                 |v|       :func:`dragon.tril`
 `Unique`_                |v|       :func:`dragon.unique`
 `Unsqueeze`_             |v|       :func:`dragon.expand_dims`
 `Upsample`_              |v|       :func:`dragon.vision.resize`
@@ -350,6 +351,7 @@ Name                     Supported Reference
 .. _Tile: https://github.com/onnx/onnx/blob/master/docs/Operators.md#Tile
 .. _TopK: https://github.com/onnx/onnx/blob/master/docs/Operators.md#TopK
 .. _Transpose: https://github.com/onnx/onnx/blob/master/docs/Operators.md#Transpose
+.. _Trilu: https://github.com/onnx/onnx/blob/master/docs/Operators.md#Trilu
 .. _Unique: https://github.com/onnx/onnx/blob/master/docs/Operators.md#Unique
 .. _Unsqueeze: https://github.com/onnx/onnx/blob/master/docs/Operators.md#Unsqueeze
 .. _Upsample: https://github.com/onnx/onnx/blob/master/docs/Operators.md#Upsample

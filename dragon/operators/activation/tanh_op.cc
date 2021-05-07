@@ -15,11 +15,6 @@ void TanhOp<Context>::DoRunWithType() {
 }
 
 template <class Context>
-void TanhOp<Context>::RunOnDevice() {
-  DispatchHelper<dtypes::Floating>::Call(this, Input(0));
-}
-
-template <class Context>
 template <typename T>
 void TanhGradientOp<Context>::DoRunWithType() {
   auto &Y = Input(0), &dY = Input(1), *dX = Output(0);
@@ -29,11 +24,6 @@ void TanhGradientOp<Context>::DoRunWithType() {
       Y.template data<T, Context>(),
       dX->ReshapeLike(Y)->template mutable_data<T, Context>(),
       ctx());
-}
-
-template <class Context>
-void TanhGradientOp<Context>::RunOnDevice() {
-  DispatchHelper<dtypes::Floating>::Call(this, Input(0));
 }
 
 DEPLOY_CPU_OPERATOR(Tanh);

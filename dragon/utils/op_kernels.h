@@ -419,7 +419,7 @@ void SetOneHot(
     Context* ctx);
 
 template <typename T, class Context>
-void SetTriangular(
+void SetTrilu(
     const int batch_size,
     const int M,
     const int N,

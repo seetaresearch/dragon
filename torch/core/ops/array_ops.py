@@ -1402,7 +1402,7 @@ def tril(input, diagonal=0, out=None):
 
     """
     return FunctionLib.apply(
-        'Triangular', input.device, [input], outputs=[out],
+        'Trilu', input.device, [input], outputs=[out],
         k=diagonal, upper=False)
 
 
@@ -1439,7 +1439,7 @@ def triu(input, diagonal=0, out=None):
 
     """
     return FunctionLib.apply(
-        'Triangular', input.device, [input], outputs=[out],
+        'Trilu', input.device, [input], outputs=[out],
         k=diagonal, upper=True)
 
 

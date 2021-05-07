@@ -529,6 +529,23 @@ def top_k_exporter_v11(op_def, context):
     return node, [k]
 
 
+@export_util.register('Trilu')
+def trilu_exporter(op_def, context):
+    node, const_tensors = export_util.translate(**locals())
+    k = 0
+    for arg in op_def.arg:
+        if arg.name == 'upper':
+            helper.add_attribute(node, 'upper', arg.i)
+        elif arg.name == 'k':
+            k = arg.i
+    k = helper.from_array(
+        numpy.array(k, 'int64'),
+        context.unique_name(op_def.input[0] + '/trilu/k'),
+    )
+    node.input.extend([k.name])
+    return node, [k]
+
+
 @export_util.register('Unique')
 def unique_exporter(op_def, context):
     node, const_tensors = export_util.translate(**locals())

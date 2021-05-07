@@ -609,7 +609,7 @@ def transpose_args(**kwargs):
     return {'perm_desc': 'int64' if kwargs.get('ndim', 0) else None}
 
 
-@register('Triangular')
+@register('Trilu')
 def triangular_args(**kwargs):
     return {'k': kwargs.get('k', 0), 'upper': kwargs.get('upper', False)}
 

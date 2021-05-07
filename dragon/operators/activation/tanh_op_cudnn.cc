@@ -21,11 +21,6 @@ void CuDNNTanhOp<Context>::DoRunWithType() {
 }
 
 template <class Context>
-void CuDNNTanhOp<Context>::RunOnDevice() {
-  DispatchHelper<dtypes::Floating>::Call(this, Input(0));
-}
-
-template <class Context>
 template <typename T>
 void CuDNNTanhGradientOp<Context>::DoRunWithType() {
   auto &Y = Input(0), &dY = Input(1), *dX = Output(0);
@@ -43,11 +38,6 @@ void CuDNNTanhGradientOp<Context>::DoRunWithType() {
       CuDNNType<T>::zero,
       input_desc_,
       dX->ReshapeLike(Y)->template mutable_data<T, Context>()));
-}
-
-template <class Context>
-void CuDNNTanhGradientOp<Context>::RunOnDevice() {
-  DispatchHelper<dtypes::Floating>::Call(this, Input(0));
 }
 
 DEPLOY_CUDNN_OPERATOR(Tanh);

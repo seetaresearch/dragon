@@ -18,24 +18,28 @@
 namespace dragon {
 
 template <class Context>
-class TanhOp : public Operator<Context> {
+class TanhOp final : public Operator<Context> {
  public:
   SIMPLE_CTOR_DTOR(TanhOp);
   USE_OPERATOR_FUNCTIONS;
 
-  void RunOnDevice() override;
+  void RunOnDevice() override {
+    DispatchHelper<dtypes::Floating>::Call(this, Input(0));
+  }
 
   template <typename T>
   void DoRunWithType();
 };
 
 template <class Context>
-class TanhGradientOp : public Operator<Context> {
+class TanhGradientOp final : public Operator<Context> {
  public:
   SIMPLE_CTOR_DTOR(TanhGradientOp);
   USE_OPERATOR_FUNCTIONS;
 
-  void RunOnDevice() override;
+  void RunOnDevice() override {
+    DispatchHelper<dtypes::Floating>::Call(this, Input(0));
+  }
 
   template <typename T>
   void DoRunWithType();
@@ -44,10 +48,10 @@ class TanhGradientOp : public Operator<Context> {
 #ifdef USE_CUDNN
 
 template <class Context>
-class CuDNNTanhOp final : public TanhOp<Context> {
+class CuDNNTanhOp final : public Operator<Context> {
  public:
   CuDNNTanhOp(const OperatorDef& def, Workspace* ws)
-      : TanhOp<Context>(def, ws) {
+      : Operator<Context>(def, ws) {
     CuDNNCreateTensorDesc(&input_desc_);
     CUDNN_CHECK(cudnnCreateActivationDescriptor(&act_desc_));
     CUDNN_CHECK(cudnnSetActivationDescriptor(
@@ -60,7 +64,9 @@ class CuDNNTanhOp final : public TanhOp<Context> {
     CUDNN_CHECK(cudnnDestroyActivationDescriptor(act_desc_));
   }
 
-  void RunOnDevice() override;
+  void RunOnDevice() override {
+    DispatchHelper<dtypes::Floating>::Call(this, Input(0));
+  }
 
   template <typename T>
   void DoRunWithType();
@@ -71,10 +77,10 @@ class CuDNNTanhOp final : public TanhOp<Context> {
 };
 
 template <class Context>
-class CuDNNTanhGradientOp final : public TanhGradientOp<Context> {
+class CuDNNTanhGradientOp final : public Operator<Context> {
  public:
   CuDNNTanhGradientOp(const OperatorDef& def, Workspace* ws)
-      : TanhGradientOp<Context>(def, ws) {
+      : Operator<Context>(def, ws) {
     CuDNNCreateTensorDesc(&input_desc_);
     CUDNN_CHECK(cudnnCreateActivationDescriptor(&act_desc_));
     CUDNN_CHECK(cudnnSetActivationDescriptor(
@@ -87,7 +93,9 @@ class CuDNNTanhGradientOp final : public TanhGradientOp<Context> {
     CUDNN_CHECK(cudnnDestroyActivationDescriptor(act_desc_));
   }
 
-  void RunOnDevice() override;
+  void RunOnDevice() override {
+    DispatchHelper<dtypes::Floating>::Call(this, Input(0));
+  }
 
   template <typename T>
   void DoRunWithType();

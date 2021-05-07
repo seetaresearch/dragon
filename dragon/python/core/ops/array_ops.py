@@ -1825,9 +1825,9 @@ def tril(inputs, k=0, copy=True, **kwargs):
     """
     if context.executing_eagerly():
         return OpLib.execute(
-            'Triangular', inputs, outputs=[None] if copy else inputs,
+            'Trilu', inputs, outputs=[None] if copy else inputs,
             k=k, upper=False)
-    return OpLib.add('Triangular', inputs, k=k, upper=False, **kwargs)
+    return OpLib.add('Trilu', inputs, k=k, upper=False, **kwargs)
 
 
 @OpSchema.num_inputs(1)
@@ -1865,9 +1865,9 @@ def triu(inputs, k=0, copy=True, **kwargs):
     """
     if context.executing_eagerly():
         return OpLib.execute(
-            'Triangular', inputs, outputs=[None] if copy else inputs,
+            'Trilu', inputs, outputs=[None] if copy else inputs,
             k=k, upper=True)
-    return OpLib.add('Triangular', inputs, k=k, upper=True, **kwargs)
+    return OpLib.add('Trilu', inputs, k=k, upper=True, **kwargs)
 
 
 @OpSchema.num_inputs(1)

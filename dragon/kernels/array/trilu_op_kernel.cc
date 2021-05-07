@@ -8,7 +8,7 @@ namespace kernels {
 namespace {
 
 template <typename T>
-void _SetTriangular(
+void _SetTrilu(
     const int batch_size,
     const int M,
     const int N,
@@ -42,19 +42,19 @@ void _SetTriangular(
 
 /* ------------------- Launcher Separator ------------------- */
 
-#define DEFINE_KERNEL_LAUNCHER(T)                  \
-  template <>                                      \
-  void SetTriangular<T, CPUContext>(               \
-      const int batch_size,                        \
-      const int M,                                 \
-      const int N,                                 \
-      const int k,                                 \
-      const int upper,                             \
-      const T* x,                                  \
-      T* y,                                        \
-      CPUContext* ctx) {                           \
-    math::Copy(batch_size* M* N, x, y, ctx);       \
-    _SetTriangular(batch_size, M, N, k, upper, y); \
+#define DEFINE_KERNEL_LAUNCHER(T)             \
+  template <>                                 \
+  void SetTrilu<T, CPUContext>(               \
+      const int batch_size,                   \
+      const int M,                            \
+      const int N,                            \
+      const int k,                            \
+      const int upper,                        \
+      const T* x,                             \
+      T* y,                                   \
+      CPUContext* ctx) {                      \
+    math::Copy(batch_size* M* N, x, y, ctx);  \
+    _SetTrilu(batch_size, M, N, k, upper, y); \
   }
 
 DEFINE_KERNEL_LAUNCHER(bool);
