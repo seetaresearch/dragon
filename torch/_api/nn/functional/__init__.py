@@ -71,6 +71,7 @@ from dragon.vm.torch.core.nn.functional import smooth_l1_loss
 from dragon.vm.torch.core.nn.functional import softmax
 from dragon.vm.torch.core.nn.functional import sync_batch_norm
 from dragon.vm.torch.core.nn.functional import tanh
+from dragon.vm.torch.core.nn.functional import unfold
 from dragon.vm.torch.core.nn.functional import upsample
 from dragon.vm.torch.core.nn.functional import upsample_bilinear
 from dragon.vm.torch.core.nn.functional import upsample_nearest

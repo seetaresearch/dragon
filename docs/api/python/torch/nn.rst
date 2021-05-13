@@ -279,6 +279,9 @@ vm.torch.nn
   : Apply the sync batch normalization over input.
   `[Ioffe & Szegedy, 2015] <https://arxiv.org/abs/1502.03167>`_.
 
+  `class Unfold <nn/Unfold.html>`_
+  : Extract the sliding blocks.
+
   `class Upsample <nn/Upsample.html>`_
   : Upsample input via interpolating neighborhoods.
 
@@ -374,6 +377,7 @@ vm.torch.nn
   nn/TransformerEncoder
   nn/TransformerEncoderLayer
   nn/SyncBatchNorm
+  nn/Unfold
   nn/Upsample
   nn/UpsamplingBilinear2d
   nn/UpsamplingNearest2d

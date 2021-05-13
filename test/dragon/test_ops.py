@@ -3894,6 +3894,51 @@ class TestVisionOps(OpTestCase):
         with dragon.device('cuda'):
             self.test_depth_to_space()
 
+    def test_extract_patches(self):
+        entries = [((2, 1, 2, 2), (2, 2), 1, 1, 1, 'NCHW'),
+                   ((2, 2, 2, 1), (2, 2), 1, 1, 1, 'NHWC')]
+        results = [[[[[0., 0., 0.], [0., 0., 0.1], [0., 0.2, 0.3]],
+                     [[0., 0., 0.], [0., 0.1, 0.], [0.2, 0.3, 0.]],
+                     [[0., 0., 0.1], [0., 0.2, 0.3], [0., 0., 0.]],
+                     [[0., 0.1, 0.], [0.2, 0.3, 0.], [0., 0., 0.]]],
+                    [[[0., 0., 0.], [0., 0.4, 0.5], [0., 0.6, 0.7]],
+                     [[0., 0., 0.], [0.4, 0.5, 0.], [0.6, 0.7, 0.]],
+                     [[0., 0.4, 0.5], [0., 0.6, 0.7], [0., 0., 0.]],
+                     [[0.4, 0.5, 0.], [0.6, 0.7, 0.], [0., 0., 0.]]]],
+                   [[[[0., 0., 0., 0.], [0., 0., 0., 0.1], [0., 0., 0.1, 0.]],
+                     [[0., 0., 0., 0.2], [0., 0.1, 0.2, 0.3], [0.1, 0., 0.3, 0.]],
+                     [[0., 0.2, 0., 0.], [0.2, 0.3, 0., 0.], [0.3, 0., 0., 0.]]],
+                    [[[0., 0., 0., 0.4], [0., 0., 0.4, 0.5], [0., 0., 0.5, 0.]],
+                     [[0., 0.4, 0., 0.6], [0.4, 0.5, 0.6, 0.7], [0.5, 0., 0.7, 0.]],
+                     [[0., 0.6, 0., 0.], [0.6, 0.7, 0., 0.], [0.7, 0., 0., 0.]]]]]
+        grads = [[[[[6.2, 6.6], [7.4, 7.8]]], [[[20.6, 21.], [21.8, 22.2]]]],
+                 [[[[3.8], [5.4]], [[8.6], [10.2]]], [[[18.2], [19.8]], [[23.], [24.6]]]]]
+        for execution in ('EAGER_MODE', 'GRAPH_MODE'):
+            with execution_context().mode(execution):
+                for (x_shape, kernel_shape, strides, pads, dilations, data_format), \
+                        result, grad in zip(entries, results, grads):
+                    data = arange(x_shape) * .1
+                    x = new_tensor(data)
+                    with dragon.GradientTape() as tape:
+                        tape.watch(x)
+                        y = dragon.vision.extract_patches(
+                            x,
+                            kernel_shape=kernel_shape,
+                            strides=strides,
+                            pads=pads,
+                            dilations=dilations,
+                            data_format=data_format,
+                        )
+                    data2 = arange(y.shape) * .1
+                    dy = new_tensor(data2)
+                    dx = tape.gradient(y, x, output_gradients=[dy])
+                    self.assertEqual([y, dx], [np.array(result), np.array(grad)])
+
+    @unittest.skipIf(not TEST_CUDA, 'CUDA unavailable')
+    def test_extract_patches_cuda(self):
+        with dragon.device('cuda'):
+            self.test_extract_patches()
+
     def test_pool1d(self):
         entries = [((2, 2, 2), (2,), 2, 1, 'max', 'NCHW'),
                    ((2, 2, 2), (2,), 2, 1, 'avg', 'NCHW'),

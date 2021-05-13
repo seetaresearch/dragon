@@ -871,6 +871,89 @@ def depth_to_space(inputs, block_size, data_format='NCHW', **kwargs):
 
 
 @OpSchema.num_inputs(1)
+def extract_patches(
+    inputs,
+    kernel_shape=(3, 3),
+    strides=1,
+    pads=0,
+    dilations=1,
+    padding='VALID',
+    data_format='NCHW',
+    **kwargs
+):
+    r"""Extract the sliding patches from input.
+
+    * If :attr:`data_format` is ``'NCHW'``, excepts input shape
+      :math:`(N, C, D1, D2, ...)`, and output shape is
+      :math:`(N, C \times \prod(\text{kernel\_shape}), D1_{\text{out}}, D2_{\text{out}}, ...)`.
+
+    * If :attr:`data_format` is ``'NHWC'``, excepts input shape
+      :math:`(N, D1, D2, ..., C)`, and output shape is
+      :math:`(N, D1_{\text{out}}, D2_{\text{out}}, ..., \prod(\text{kernel\_shape}) \times C)`.
+
+    * If :attr:`padding` is ``'VALID'``, :attr:`pads` controls the explicit padding size.
+      Otherwise, size are computed automatically use the given method.
+
+    Examples:
+
+    ```python
+    for i in range(3):
+        ndim = i + 1
+        x = dragon.ones((1, 2) + (2,) * ndim)
+        y = dragon.vision.extract_patches(x, kernel_shape=(2,) * ndim)
+        assert y.shape == (1, 2 * (2 ** ndim)) + (1,) * ndim
+    ```
+
+    Parameters
+    ----------
+    inputs : dragon.Tensor
+        The input tensor.
+    kernel_shape : Sequence[int], optional, default=(3, 3)
+        The shape of sliding window.
+    strides : Union[int, Sequence[int]], optional, default=1
+        The stride of sliding window.
+    pads : Union[int, Sequence[int]], optional, default=0
+        The zero padding size.
+    dilations : Union[int, Sequence[int]], optional, default=1
+        The dilated rate of sliding window.
+    padding : str, optional, default='VALID'
+        ``'VALID'``, ``'SAME'``, ``'SAME_UPPER'`` or ``'SAME_LOWER'``.
+    data_format : str, optional, default='NCHW'
+        ``'NCHW'`` or ``'NHWC'``.
+
+    Returns
+    -------
+    dragon.Tensor
+        The output tensor.
+
+    """
+    if padding not in ('VALID', 'SAME', 'SAME_UPPER', 'SAME_LOWER'):
+        raise ValueError('Unsupported padding algorithm: %s' % padding)
+    if data_format not in ('NCHW', 'NHWC'):
+        raise ValueError('Unsupported data format: %s' % data_format)
+    kernel_shape = nest.flatten(kernel_shape)
+    if context.executing_eagerly():
+        return OpLib.execute(
+            'Im2Col',
+            inputs,
+            kernel_shape=kernel_shape,
+            strides=_normalize_tuple(strides, len(kernel_shape)),
+            pads=_normalize_pads(pads, len(kernel_shape)),
+            dilations=_normalize_tuple(dilations, len(kernel_shape)),
+            padding=padding,
+            data_format=data_format,
+        )
+    return OpLib.add('Im2Col', inputs,
+                     kernel_shape=kernel_shape,
+                     strides=_normalize_tuple(strides, len(kernel_shape)),
+                     pads=_normalize_pads(pads, len(kernel_shape)),
+                     dilations=_normalize_tuple(dilations, len(kernel_shape)),
+                     padding=padding,
+                     data_format=data_format,
+                     **kwargs)
+
+
+@OpSchema.num_inputs(1)
 def pool(
     inputs,
     kernel_shape,

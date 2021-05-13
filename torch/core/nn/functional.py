@@ -2164,6 +2164,44 @@ def tanh(input, inplace=False):
         outputs=[input if inplace else None])
 
 
+def unfold(input, kernel_size, dilation=1, padding=0, stride=1):
+    """Extract the sliding blocks from input.
+
+    Parameters
+    ----------
+    input : dragon.vm.torch.Tensor
+        The input tensor.
+    kernel_size : Union[int, Sequence[int]]
+        The size of sliding window.
+    dilation : Union[int, Sequence[int]], optional, default=1
+        The dilated rate of sliding window.
+    padding : Union[int, Sequence[int]], optional, default=0
+        The zero padding size.
+    stride : Union[int, Sequence[int]], optional, default=1
+        The stride of sliding window.
+
+    Returns
+    -------
+    dragon.vm.torch.Tensor
+        The output tensor.
+
+    See Also
+    --------
+    `torch.nn.Unfold(...)`_
+
+    """
+    nd_util = utils._ntuple(input.ndimension() - 2)
+    out = FunctionLib.apply(
+        'Im2Col',
+        input.device,
+        [input],
+        kernel_shape=nd_util(kernel_size),
+        strides=nd_util(stride),
+        pads=nd_util(padding),
+        dilations=nd_util(dilation))
+    return out.flatten_(2)
+
+
 def upsample(
     input,
     size=None,

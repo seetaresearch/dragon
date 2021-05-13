@@ -36,8 +36,9 @@ void _Im2Col2dNCHW(
           } else {
             int w = -pad_w + w_k * dilation_w;
             for (int w_out = 0; w_out < out_w; ++w_out) {
-              *(col++) =
-                  !math::utils::IsAGeZeroAndALtB(w, W) ? T(0) : im[h * W + w];
+              *(col++) = !math::utils::IsAGeZeroAndALtB(w, W)
+                  ? convert::To<T>(0.f)
+                  : im[h * W + w];
               w += stride_w;
             }
           }
@@ -278,48 +279,71 @@ void _Im2ColNdNHWC(
     LOG(FATAL) << "Unknown DataFormat: " << data_format; \
   }
 
-#define DEFINE_KERNEL_LAUNCHER(name, kTransposed, T) \
-  template <>                                        \
-  void name<T, CPUContext>(                          \
-      const int C,                                   \
-      const int H,                                   \
-      const int W,                                   \
-      const int out_h,                               \
-      const int out_w,                               \
-      const int kernel_h,                            \
-      const int kernel_w,                            \
-      const int stride_h,                            \
-      const int stride_w,                            \
-      const int pad_h,                               \
-      const int pad_w,                               \
-      const int dilation_h,                          \
-      const int dilation_w,                          \
-      const string& data_format,                     \
-      const T* x,                                    \
-      T* y,                                          \
-      CPUContext* ctx) {                             \
-    if (kTransposed) {                               \
-      math::Set(C* H* W, T(0), y, ctx);              \
-    }                                                \
-    DISPATCH_CONV_KERNEL(                            \
-        _##name,                                     \
-        C,                                           \
-        H,                                           \
-        W,                                           \
-        out_h,                                       \
-        out_w,                                       \
-        kernel_h,                                    \
-        kernel_w,                                    \
-        stride_h,                                    \
-        stride_w,                                    \
-        pad_h,                                       \
-        pad_w,                                       \
-        dilation_h,                                  \
-        dilation_w,                                  \
-        x,                                           \
-        y);                                          \
+#define DEFINE_KERNEL_LAUNCHER(name, kTransposed, T)   \
+  template <>                                          \
+  void name<T, CPUContext>(                            \
+      const int C,                                     \
+      const int H,                                     \
+      const int W,                                     \
+      const int out_h,                                 \
+      const int out_w,                                 \
+      const int kernel_h,                              \
+      const int kernel_w,                              \
+      const int stride_h,                              \
+      const int stride_w,                              \
+      const int pad_h,                                 \
+      const int pad_w,                                 \
+      const int dilation_h,                            \
+      const int dilation_w,                            \
+      const string& data_format,                       \
+      const T* x,                                      \
+      T* y,                                            \
+      CPUContext* ctx) {                               \
+    if (kTransposed) {                                 \
+      math::Set(C* H* W, convert::To<T>(0.f), y, ctx); \
+    }                                                  \
+    DISPATCH_CONV_KERNEL(                              \
+        _##name,                                       \
+        C,                                             \
+        H,                                             \
+        W,                                             \
+        out_h,                                         \
+        out_w,                                         \
+        kernel_h,                                      \
+        kernel_w,                                      \
+        stride_h,                                      \
+        stride_w,                                      \
+        pad_h,                                         \
+        pad_w,                                         \
+        dilation_h,                                    \
+        dilation_w,                                    \
+        x,                                             \
+        y);                                            \
   }
 
+template <>
+void Col2Im2d<float16, CPUContext>(
+    const int C,
+    const int H,
+    const int W,
+    const int out_h,
+    const int out_w,
+    const int kernel_h,
+    const int kernel_w,
+    const int stride_h,
+    const int stride_w,
+    const int pad_h,
+    const int pad_w,
+    const int dilation_h,
+    const int dilation_w,
+    const string& data_format,
+    const float16* x,
+    float16* y,
+    CPUContext* ctx) {
+  CPU_FP16_NOT_SUPPORTED;
+}
+
+DEFINE_KERNEL_LAUNCHER(Im2Col2d, false, float16);
 DEFINE_KERNEL_LAUNCHER(Im2Col2d, false, float);
 DEFINE_KERNEL_LAUNCHER(Im2Col2d, false, double);
 DEFINE_KERNEL_LAUNCHER(Col2Im2d, true, float);
@@ -378,6 +402,28 @@ DEFINE_KERNEL_LAUNCHER(Col2ImNd, true, float);
 DEFINE_KERNEL_LAUNCHER(Col2ImNd, true, double);
 #undef DEFINE_KERNEL_LAUNCHER
 #undef DISPATCH_CONV_KERNEL
+
+#define DEFINE_KERNEL_LAUNCHER(name, kTransposed, T) \
+  template <>                                        \
+  void name<T, CPUContext>(                          \
+      const int num_dims,                            \
+      const int channels,                            \
+      const int* in_shape,                           \
+      const int* out_shape,                          \
+      const int* kshape,                             \
+      const int* strides,                            \
+      const int* pads,                               \
+      const int* dilations,                          \
+      const string& data_format,                     \
+      const T* x,                                    \
+      T* y,                                          \
+      CPUContext* ctx) {                             \
+    CPU_FP16_NOT_SUPPORTED;                          \
+  }
+
+DEFINE_KERNEL_LAUNCHER(Im2ColNd, false, float16);
+DEFINE_KERNEL_LAUNCHER(Col2ImNd, true, float16);
+#undef DEFINE_KERNEL_LAUNCHER
 
 } // namespace kernels
 

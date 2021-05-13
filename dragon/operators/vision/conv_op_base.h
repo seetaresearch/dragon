@@ -39,7 +39,9 @@ class ConvOpBase : public Operator<Context> {
   USE_OPERATOR_FUNCTIONS;
 
  protected:
-  virtual bool HasBias() = 0;
+  virtual bool HasBias() {
+    return false;
+  }
 
   virtual bool Transposed() {
     return false;
@@ -47,7 +49,15 @@ class ConvOpBase : public Operator<Context> {
 
   void GetBaseArguments();
 
+  void ComputeOutShape();
+
   void Reshape(bool backward = false);
+
+  template <typename T>
+  void Im2Col(const T* im, T* col);
+
+  template <typename T>
+  void Col2Im(const T* col, T* im);
 
   template <typename T>
   void WeightedX(const T* x, const T* w, T* y);
@@ -74,22 +84,14 @@ class ConvOpBase : public Operator<Context> {
   int64_t axis_, num_axes_;
   int64_t in_channels_, out_channels_;
   int64_t conv_in_channels_, conv_out_channels_;
+  int64_t kernel_dim_;
   int64_t X_stride_, W_stride_, Y_stride_;
 
   DECLARE_OP_REPEATED_ARG(int64_t, output_shape);
   DECLARE_OP_REPEATED_ARG(int64_t, output_padding);
 
  private:
-  void ComputeOutShape();
-
-  template <typename T>
-  void Im2Col(const T* im, T* col);
-
-  template <typename T>
-  void Col2Im(const T* col, T* im);
-
   int64_t skip_im2col_;
-  int64_t kernel_dim_;
   int64_t col_dim_, col_stride_;
   int64_t out_dim_, conv_out_dim_;
   int64_t Y_stride1_;

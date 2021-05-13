@@ -12,6 +12,9 @@ dragon.vision
   Functions
   ---------
 
+  `extract_patches(...) <vision/extract_patches.html>`_
+  : Extract the sliding patches from input.
+
   `resize(...) <vision/resize.html>`_
   : Resize input via interpolating neighborhoods.
 
@@ -27,6 +30,7 @@ dragon.vision
   :hidden:
 
   vision/DataIterator
+  vision/extract_patches
   vision/resize
   vision/roi_align
   vision/roi_pool

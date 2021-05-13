@@ -118,6 +118,7 @@ OPERATOR_SCHEMA(GroupNormGradient)
     .NumOutputs(3);
 
 namespace {
+
 class GradientMaker final : public GradientMakerBase {
  public:
   GRADIENT_MAKER_CTOR(GradientMaker);

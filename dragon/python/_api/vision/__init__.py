@@ -17,6 +17,7 @@ from __future__ import print_function as _print_function
 from dragon.utils.vision import DataIterator
 
 # Functions
+from dragon.core.ops.vision_ops import extract_patches
 from dragon.core.ops.vision_ops import resize
 from dragon.core.ops.vision_ops import roi_align
 from dragon.core.ops.vision_ops import roi_pool

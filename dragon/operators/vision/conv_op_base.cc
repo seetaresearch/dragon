@@ -24,7 +24,7 @@ void ConvOpBase<Context>::GetBaseArguments() {
   num_axes_ = (int64_t)kshape.size();
   CHECK_GT(num_axes_, 0) << "\nInvalid size of <kernel_shape>.";
 
-  for (int i = 0; i < num_axes_; i++) {
+  for (int i = 0; i < num_axes_; ++i) {
     kshape_.push_back(i < kshape.size() ? kshape[i] : kshape[0]);
     dilations_.push_back(i < dilations.size() ? dilations[i] : dilations[0]);
     strides_.push_back(i < strides.size() ? strides[i] : strides[0]);
@@ -32,7 +32,7 @@ void ConvOpBase<Context>::GetBaseArguments() {
   }
 
   if ((int64_t)pads.size() == (num_axes_ * 2)) {
-    for (int i = 0; i < num_axes_; i++) {
+    for (int i = 0; i < num_axes_; ++i) {
       pads_end_.push_back(pads[num_axes_ + i]);
     }
   } else {
@@ -40,7 +40,7 @@ void ConvOpBase<Context>::GetBaseArguments() {
   }
 
   bool skip_flag = true;
-  for (int i = 0; i < num_axes_; i++) {
+  for (int i = 0; i < num_axes_; ++i) {
     skip_flag &= (kshape_[i] == 1 && strides_[i] == 1);
     skip_flag &= (pads_begin_[i] == 0 && pads_end_[i] == 0);
     if (!skip_flag) break;
@@ -54,7 +54,7 @@ void ConvOpBase<Context>::ComputeOutShape() {
   vec64_t X_dims = Input(0).dims();
   int64_t in_size, out_size, k_size, pad_size;
   if (!Transposed()) {
-    for (int i = 0; i < num_axes_; i++) {
+    for (int i = 0; i < num_axes_; ++i) {
       in_size = X_dims[axis_ + i];
       k_size = dilations_[i] * (kshape_[i] - 1) + 1;
       if (!str::find(padding_, "SAME")) { // Explicit pads
@@ -74,7 +74,7 @@ void ConvOpBase<Context>::ComputeOutShape() {
     CHECK(num_output_padding == 0 || num_output_padding == num_axes_)
         << "\nExcepted 0 or " << num_axes_ << " ints for <output_padding>.";
     if (!str::find(padding_, "SAME")) { // Explicit pads
-      for (int i = 0; i < num_axes_; i++) {
+      for (int i = 0; i < num_axes_; ++i) {
         in_size = X_dims[axis_ + i];
         k_size = dilations_[i] * (kshape_[i] - 1) + 1;
         pad_size = pads_begin_[i] + pads_end_[i];
@@ -88,7 +88,7 @@ void ConvOpBase<Context>::ComputeOutShape() {
       output_shape(0, &num_output_shape);
       CHECK(num_output_shape == num_axes_)
           << "\nExcepted " << num_axes_ << " ints for <output_shape>.";
-      for (int i = 0; i < num_axes_; i++) {
+      for (int i = 0; i < num_axes_; ++i) {
         in_size = X_dims[axis_ + i];
         k_size = dilations_[i] * (kshape_[i] - 1) + 1;
         out_size = output_shape(i);
@@ -118,7 +118,7 @@ void ConvOpBase<Context>::Reshape(bool backward) {
   if (out_channels_ <= 0) {
     // Infer the output channels from the weights shape
     out_channels_ = W.count() / (in_channels_ / group_);
-    for (int i = 0; i < num_axes_; i++) {
+    for (int i = 0; i < num_axes_; ++i) {
       out_channels_ /= kshape_[i];
     }
     CHECK_GT(out_channels_, 0) << "\nFailed to infer the out channels "
@@ -136,7 +136,7 @@ void ConvOpBase<Context>::Reshape(bool backward) {
   // Weight shape is assumed as NCHW format
   // whatever to compute the fans correctly
   w_shape_ = {conv_out_channels_, conv_in_channels_ / group_};
-  for (int i = 0; i < num_axes_; i++) {
+  for (int i = 0; i < num_axes_; ++i) {
     w_shape_.push_back(kshape_[i]);
   }
   b_shape_ = {out_channels_};
@@ -151,11 +151,11 @@ void ConvOpBase<Context>::Reshape(bool backward) {
     vec64_t Y_dims{X.dim(0)};
     if (data_format() == "NCHW") {
       Y_dims.push_back(out_channels_);
-      for (int i = 0; i < num_axes_; i++) {
+      for (int i = 0; i < num_axes_; ++i) {
         Y_dims.push_back(out_shape_[i]);
       }
     } else if (data_format() == "NHWC") {
-      for (int i = 0; i < num_axes_; i++) {
+      for (int i = 0; i < num_axes_; ++i) {
         Y_dims.push_back(out_shape_[i]);
       }
       Y_dims.push_back(out_channels_);
@@ -185,7 +185,7 @@ void ConvOpBase<Context>::Reshape(bool backward) {
   X_stride_ = X.stride(0);
   Y_stride_ = Y_ref->stride(0);
   kernel_dim_ = conv_in_channels_ / group_;
-  for (int i = 0; i < num_axes_; i++) {
+  for (int i = 0; i < num_axes_; ++i) {
     kernel_dim_ *= kshape_[i];
   }
   col_stride_ = kernel_dim_ * conv_out_dim_;
@@ -194,7 +194,7 @@ void ConvOpBase<Context>::Reshape(bool backward) {
 
   // Compute im2col arguments
   in_shape_.clear();
-  for (int i = 0; i < num_axes_; i++) {
+  for (int i = 0; i < num_axes_; ++i) {
     if (Transposed()) {
       in_shape_.push_back(Y_ref->dim(axis_ + i));
       out_shape_[i] = X.dim(axis_ + i);
@@ -203,7 +203,7 @@ void ConvOpBase<Context>::Reshape(bool backward) {
     }
   }
   col_dim_ = kernel_dim_ * group_;
-  for (int i = 0; i < num_axes_; i++) {
+  for (int i = 0; i < num_axes_; ++i) {
     col_dim_ *= out_shape_[i];
   }
 }

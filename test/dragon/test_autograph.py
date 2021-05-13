@@ -217,6 +217,12 @@ class TestOpSpec(unittest.TestCase):
             self.assertEqual(dragon.expand_dims(
                 self.sym3, axis=(0, 3, 5)).shape, (1, 1, None, 1))
 
+    def test_extract_patches(self):
+        with dragon.graph_mode():
+            self.assertEqual(dragon.vision.extract_patches(self.sym1).shape, None)
+            self.assertEqual(dragon.vision.extract_patches(self.sym4).shape,
+                             (self.sym4.shape[0], None, None, None))
+
     def test_init_ops(self):
         init_funcs_v1 = [dragon.fill,
                          dragon.ones,

@@ -31,7 +31,7 @@ void ConvTransposeOp<Context>::RunOnDevice() {
     // You really need the CuDNN to help you -:)
     LOG(FATAL) << "GroupConv(NHWC) is not supported.";
   }
-  DispatchHelper<dtypes::TypesBase<float, double>>::Call(this, Input(0));
+  DispatchHelper<dtypes::Floating>::Call(this, Input(0));
 }
 
 template <class Context>
@@ -72,7 +72,7 @@ void ConvTransposeGradientOp<Context>::RunOnDevice() {
     // You really need the CuDNN to help you -:)
     LOG(FATAL) << "GroupConv(NHWC) is not supported.";
   }
-  DispatchHelper<dtypes::TypesBase<float, double>>::Call(this, Input(0));
+  DispatchHelper<dtypes::Floating>::Call(this, Input(0));
 }
 
 DEPLOY_CPU_OPERATOR(ConvTranspose);

@@ -37,32 +37,31 @@ __global__ void _ClipGrad(
 
 /* ------------------- Launcher Separator ------------------- */
 
-#define DEFINE_KERNEL_LAUNCHER(T, AccT)                                      \
-  template <>                                                                \
-  void Clip<T, CUDAContext>(                                                 \
-      const int N,                                                           \
-      const float low,                                                       \
-      const float high,                                                      \
-      const T* x,                                                            \
-      T* y,                                                                  \
-      CUDAContext* ctx) {                                                    \
-    _Clip<T, AccT><<<CUDA_BLOCKS(N), CUDA_THREADS, 0, ctx->cuda_stream()>>>( \
-        N, low, high, x, y);                                                 \
+#define DEFINE_KERNEL_LAUNCHER(T, AccT)                             \
+  template <>                                                       \
+  void Clip<T, CUDAContext>(                                        \
+      const int N,                                                  \
+      const float low,                                              \
+      const float high,                                             \
+      const T* x,                                                   \
+      T* y,                                                         \
+      CUDAContext* ctx) {                                           \
+    _Clip<<<CUDA_BLOCKS(N), CUDA_THREADS, 0, ctx->cuda_stream()>>>( \
+        N, low, high, x, y);                                        \
   }
 
-#define DEFINE_GRAD_KERNEL_LAUNCHER(T, AccT)                       \
-  template <>                                                      \
-  void ClipGrad<T, CUDAContext>(                                   \
-      const int N,                                                 \
-      const float low,                                             \
-      const float high,                                            \
-      const T* dy,                                                 \
-      const T* x,                                                  \
-      T* dx,                                                       \
-      CUDAContext* ctx) {                                          \
-    _ClipGrad<T, AccT>                                             \
-        <<<CUDA_BLOCKS(N), CUDA_THREADS, 0, ctx->cuda_stream()>>>( \
-            N, low, high, dy, x, dx);                              \
+#define DEFINE_GRAD_KERNEL_LAUNCHER(T, AccT)                            \
+  template <>                                                           \
+  void ClipGrad<T, CUDAContext>(                                        \
+      const int N,                                                      \
+      const float low,                                                  \
+      const float high,                                                 \
+      const T* dy,                                                      \
+      const T* x,                                                       \
+      T* dx,                                                            \
+      CUDAContext* ctx) {                                               \
+    _ClipGrad<<<CUDA_BLOCKS(N), CUDA_THREADS, 0, ctx->cuda_stream()>>>( \
+        N, low, high, dy, x, dx);                                       \
   }
 
 DEFINE_KERNEL_LAUNCHER(uint8_t, uint8_t);

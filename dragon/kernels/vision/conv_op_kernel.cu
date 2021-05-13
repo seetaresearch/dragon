@@ -283,7 +283,7 @@ __global__ void _Im2ColNdNHWC(
       }
       im_idx = im_idx * channel_dim + i % channel_dim;
       if (!Transposed) {
-        y[col_idx] = is_padding ? T(0) : __ldg(x + im_idx);
+        y[col_idx] = is_padding ? convert::To<T>(0.f) : __ldg(x + im_idx);
       } else if (!is_padding) {
         math::utils::AtomicAdd(y + im_idx, x[col_idx]);
       }
@@ -343,12 +343,14 @@ __global__ void _Im2ColNdNHWC(
         pad_w,                                                         \
         dilation_h,                                                    \
         dilation_w,                                                    \
-        x,                                                             \
-        y);                                                            \
+        reinterpret_cast<const math::ScalarType<T>::type*>(x),         \
+        reinterpret_cast<math::ScalarType<T>::type*>(y));              \
   }
 
+DEFINE_KERNEL_LAUNCHER(Im2Col2d, false, float16);
 DEFINE_KERNEL_LAUNCHER(Im2Col2d, false, float);
 DEFINE_KERNEL_LAUNCHER(Im2Col2d, false, double);
+DEFINE_KERNEL_LAUNCHER(Col2Im2d, true, float16);
 DEFINE_KERNEL_LAUNCHER(Col2Im2d, true, float);
 DEFINE_KERNEL_LAUNCHER(Col2Im2d, true, double);
 #undef DEFINE_KERNEL_LAUNCHER
@@ -407,12 +409,12 @@ DEFINE_KERNEL_LAUNCHER(Col2Im2d, true, double);
     if (kTransposed) {                                                         \
       const auto in_dim = std::accumulate(                                     \
           in_shape, in_shape + num_dims, 1, std::multiplies<int>());           \
-      math::Set(channels* in_dim, T(0), y, ctx);                               \
+      math::Set(channels* in_dim, convert::To<T>(0.f), y, ctx);                \
     }                                                                          \
     DISPATCH_CONV_KERNEL(                                                      \
         _Im2ColNd,                                                             \
         kTransposed,                                                           \
-        T,                                                                     \
+        math::ScalarType<T>::type,                                             \
         CUDA_2D_BLOCKS(outer_dim),                                             \
         CUDA_THREADS,                                                          \
         channels,                                                              \
@@ -426,12 +428,14 @@ DEFINE_KERNEL_LAUNCHER(Col2Im2d, true, double);
         strides_arr,                                                           \
         pads_arr,                                                              \
         dilations_arr,                                                         \
-        x,                                                                     \
-        y);                                                                    \
+        reinterpret_cast<const math::ScalarType<T>::type*>(x),                 \
+        reinterpret_cast<math::ScalarType<T>::type*>(y));                      \
   }
 
+DEFINE_KERNEL_LAUNCHER(Im2ColNd, false, float16);
 DEFINE_KERNEL_LAUNCHER(Im2ColNd, false, float);
 DEFINE_KERNEL_LAUNCHER(Im2ColNd, false, double);
+DEFINE_KERNEL_LAUNCHER(Col2ImNd, true, float16);
 DEFINE_KERNEL_LAUNCHER(Col2ImNd, true, float);
 DEFINE_KERNEL_LAUNCHER(Col2ImNd, true, double);
 #undef DEFINE_KERNEL_LAUNCHER

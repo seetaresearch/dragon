@@ -828,6 +828,24 @@ class TestModules(OpTestCase):
         y, _ = m(x), repr(m)
         self.assertEqual(y, np.tanh(data))
 
+    def test_unfold(self):
+        entries = [((2, 1, 2, 2), 2, 1, 1, 1)]
+        results = [[[[0., 0., 0., 0., 0., 0.1, 0., 0.2, 0.3],
+                     [0., 0., 0., 0., 0.1, 0., 0.2, 0.3, 0.],
+                     [0., 0., 0.1, 0., 0.2, 0.3, 0., 0., 0.],
+                     [0., 0.1, 0., 0.2, 0.3, 0., 0., 0., 0.]],
+                    [[0., 0., 0., 0., 0.4, 0.5, 0., 0.6, 0.7],
+                     [0., 0., 0., 0.4, 0.5, 0., 0.6, 0.7, 0.],
+                     [0., 0.4, 0.5, 0., 0.6, 0.7, 0., 0., 0.],
+                     [0.4, 0.5, 0., 0.6, 0.7, 0., 0., 0., 0.]]]]
+        for (x_shape, kernel_shape, strides, pads, dilations), \
+                result in zip(entries, results):
+            data = arange(x_shape) * .1
+            x = new_tensor(data)
+            m = torch.nn.Unfold(kernel_shape, dilations, pads, strides)
+            y, _ = m(x), repr(m)
+            self.assertEqual(y, np.array(result))
+
     def test_upsample(self):
         entries = [((2, 2, 1, 1), (2, 2), 'nearest'),
                    ((2, 2, 1, 1), (2, 2), 'bilinear'),

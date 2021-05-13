@@ -309,6 +309,37 @@ def expand_spec(args, inputs, outputs):
     return outputs
 
 
+@register('Im2Col')
+def im2col_spec(args, inputs, outputs):
+    outputs[0]._dtype = inputs[0].dtype
+    try:
+        out_shape = list(inputs[0].shape[:])
+        num_axes = len(out_shape) - 2
+        channel_axis = 1 if args['data_format'] == 'NCHW' else -1
+        spatial_axis = 2 if args['data_format'] == 'NCHW' else 1
+        for i in range(num_axes):
+            try:
+                k = args['kernel_shape'][i]
+                s = args['strides'][i]
+                d = args['dilations'][i]
+                in_size = out_shape[i + spatial_axis]
+                k_size = d * (k - 1) + 1
+                if 'SAME' not in args['padding']:
+                    pad_size = args['pads'][i] + args['pads'][i + num_axes]
+                    out_size = (in_size + pad_size - k_size) // s + 1
+                else:
+                    out_size = (in_size + s - 1) // s
+                if out_shape[channel_axis] is not None:
+                    out_shape[channel_axis] *= k
+            except (IndexError, TypeError):
+                out_size = None
+            out_shape[i + spatial_axis] = out_size
+        outputs[0]._shape = tuple(out_shape)
+    except (TypeError, IndexError):
+        outputs[0]._shape = None
+    return outputs
+
+
 @register([
     'Eye',
     'Fill',

@@ -196,6 +196,9 @@ vm.torch.nn.functional
   `tanh(...) <functional/tanh.html>`_
   : Apply the tanh function to input.
 
+  `unfold(...) <functional/unfold.html>`_
+  : Extract the sliding blocks from input.
+
   `upsample(...) <functional/upsample.html>`_
   : Upsample input via interpolating neighborhoods.
 
@@ -264,6 +267,7 @@ vm.torch.nn.functional
   functional/softmax
   functional/sync_batch_norm
   functional/tanh
+  functional/unfold
   functional/upsample
   functional/upsample_bilinear
   functional/upsample_nearest

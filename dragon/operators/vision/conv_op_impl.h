@@ -62,6 +62,9 @@ template <class Context>
 template <typename T>
 void ConvOpBase<Context>::Col2Im(const T* col, T* im) {
   if (num_axes_ == 1 || num_axes_ == 2) {
+    // std::cout << conv_in_channels_ << std::endl;
+    // std::cout << in_shape_[0] << " " << in_shape_[1] << std::endl;
+    // std::cout << out_shape_[0] << " " << out_shape_[1] << std::endl;
     kernels::Col2Im2d(
         conv_in_channels_,
         in_shape_[0],
