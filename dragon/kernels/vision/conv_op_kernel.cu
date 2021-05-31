@@ -415,7 +415,7 @@ DEFINE_KERNEL_LAUNCHER(Col2Im2d, true, double);
         _Im2ColNd,                                                             \
         kTransposed,                                                           \
         math::ScalarType<T>::type,                                             \
-        CUDA_2D_BLOCKS(outer_dim),                                             \
+        outer_dim,                                                             \
         CUDA_THREADS,                                                          \
         channels,                                                              \
         kernel_dim,                                                            \

@@ -64,7 +64,9 @@ class GroupNormOp : public GroupNormOpBase<Context> {
   USE_OPERATOR_FUNCTIONS;
   USE_GROUPNORM_FUNCTIONS;
 
-  void RunOnDevice() override;
+  void RunOnDevice() override {
+    DispatchHelper<dtypes::Floating>::Call(this, Input(0));
+  }
 
   template <typename T>
   void DoRunWithType();
@@ -78,7 +80,9 @@ class GroupNormGradientOp : public GroupNormOpBase<Context> {
   USE_OPERATOR_FUNCTIONS;
   USE_GROUPNORM_FUNCTIONS;
 
-  void RunOnDevice() override;
+  void RunOnDevice() override {
+    DispatchHelper<dtypes::Floating>::Call(this, Input(0));
+  }
 
   template <typename T>
   void DoRunWithType();

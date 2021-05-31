@@ -14,34 +14,30 @@ void RepeatOp<Context>::DoRunWithType() {
   // Determine the repeat scheme
   // 1) Repeat to a flatten vector if axis is not specified
   // 2) Repeat along the specified axis
-  int64_t outer_dim, axis_dim, inner_dim;
+  int64_t N, C, S;
+  int64_t reps = repeats();
   if (axis == INT_MAX) {
-    outer_dim = inner_dim = 1;
-    axis_dim = X.count();
-    Y->Reshape({axis_dim * repeats()});
+    N = S = 1;
+    C = X.count();
+    Y->Reshape({C * reps});
   } else {
-    axis_dim = X.dim(axis);
-    outer_dim = X.count(0, axis);
-    inner_dim = X.count(axis + 1);
+    C = X.dim(axis);
+    N = X.count(0, axis);
+    S = X.count(axis + 1);
     auto Y_dims = X.dims();
-    Y_dims[axis] *= repeats();
+    Y_dims[axis] *= reps;
     Y->Reshape(Y_dims);
   }
 
   // Dispatch the repeat kenrel
   kernels::Repeat(
-      outer_dim,
-      inner_dim,
-      axis_dim,
-      repeats(),
+      N,
+      S,
+      C,
+      reps,
       X.template data<T, Context>(),
       Y->template mutable_data<T, Context>(),
       ctx());
-}
-
-template <class Context>
-void RepeatOp<Context>::RunOnDevice() {
-  DispatchHelper<dtypes::Generic>::Call(this, Input(0));
 }
 
 template <class Context>
@@ -51,30 +47,25 @@ void RepeatGradientOp<Context>::DoRunWithType() {
   GET_OP_AXIS_ARG(axis, X.ndim(), INT_MAX);
 
   // Determine the repeat scheme
-  int64_t outer_dim, axis_dim, inner_dim;
+  int64_t N, C, S;
   if (axis == INT_MAX) {
-    outer_dim = inner_dim = 1;
-    axis_dim = X.count();
+    N = S = 1;
+    C = X.count();
   } else {
-    outer_dim = X.count(0, axis);
-    axis_dim = X.dim(axis);
-    inner_dim = X.count(axis + 1);
+    N = X.count(0, axis);
+    C = X.dim(axis);
+    S = X.count(axis + 1);
   }
 
   // Reduce the gradient along the axis
   kernels::RepeatGrad(
-      outer_dim,
-      inner_dim,
-      axis_dim,
+      N,
+      S,
+      C,
       repeats(),
       dY.template data<T, Context>(),
       dX->ReshapeLike(X)->template mutable_data<T, Context>(),
       ctx());
-}
-
-template <class Context>
-void RepeatGradientOp<Context>::RunOnDevice() {
-  DispatchHelper<dtypes::Floating>::Call(this, Input(0));
 }
 
 DEPLOY_CPU_OPERATOR(Repeat);

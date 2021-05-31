@@ -3,36 +3,35 @@
 namespace dragon {
 
 template <class Context>
-template <typename LogitT, typename TargetT>
+template <typename InputT, typename TargetT>
 void AccuracyOp<Context>::DoRunWithType() {
-  auto &X = Input(0), *Y = Output(0);
+  auto &X = Input(0), &Y = Input(1), *R = Output(0);
   GET_OP_AXIS_ARG(axis, X.ndim(), -1);
 
-  auto outer_dim = X.count(0, axis);
-  auto axis_dim = X.dim(axis);
-  auto inner_dim = X.count(axis + 1);
+  const auto C = X.dim(axis);
+  const auto N = X.count(0, axis);
+  const auto S = X.count(axis + 1);
+  const auto NxS = N * S;
+  const auto CxS = C * S;
+  CHECK_EQ(Y.count(), NxS) << "\nNumel of X and Y must be matched.";
 
-  CHECK_EQ(outer_dim * inner_dim, Input(1).count())
-      << "\nNumber of preds must match the number of targets.";
+  auto* input = X.template data<InputT, CPUContext>();
+  auto* target = Y.template data<TargetT, CPUContext>();
 
   int64_t acc = 0, count = 0;
-  int64_t cols = X.count() / outer_dim;
-
-  auto* logit = X.template data<LogitT, CPUContext>();
-  auto* target = Input(1).template data<TargetT, CPUContext>();
-
-  for (int i = 0; i < outer_dim; ++i) {
-    for (int j = 0; j < inner_dim; ++j) {
-      const int label = target[i * inner_dim + j];
+  for (int i = 0; i < N; ++i) {
+    for (int j = 0; j < S; ++j) {
+      const int label = target[i * S + j];
       if (label == ignore_index_) continue;
-      vector<pair<LogitT, int>> vec;
-      for (int k = 0; k < axis_dim; k++)
-        vec.push_back(std::make_pair(logit[i * cols + k * inner_dim + j], k));
+      vector<pair<InputT, int>> vec;
+      for (int k = 0; k < C; ++k) {
+        vec.push_back(std::make_pair(input[i * CxS + k * S + j], k));
+      }
       std::partial_sort(
           vec.begin(),
           vec.begin() + top_k_,
           vec.end(),
-          std::greater<pair<LogitT, int>>());
+          std::greater<pair<InputT, int>>());
       for (int k = 0; k < top_k_; k++) {
         if (vec[k].second == label) {
           acc++;
@@ -40,10 +39,10 @@ void AccuracyOp<Context>::DoRunWithType() {
         }
       }
       count++;
-    } // End inner_dim
-  } // End outer_dim
+    }
+  }
 
-  Y->Reshape({})->template mutable_data<float, CPUContext>()[0] =
+  R->Reshape({})->template mutable_data<float, CPUContext>()[0] =
       (float)acc / (float)count;
 }
 
@@ -79,9 +78,9 @@ DEPLOY_CUDA_OPERATOR(Accuracy);
 #endif
 
 OPERATOR_SCHEMA(Accuracy)
-    /* X, T */
+    /* X, Y */
     .NumInputs(2)
-    /* Y */
+    /* R */
     .NumOutputs(1);
 
 NO_GRADIENT(Accuracy);

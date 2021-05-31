@@ -10,13 +10,13 @@ __init__
 Properties
 ----------
 
-batch_size
-##########
-.. autoattribute:: dragon.vm.dali.Pipeline.batch_size
-
 device_id
 #########
 .. autoattribute:: dragon.vm.dali.Pipeline.device_id
+
+max_batch_size
+##############
+.. autoattribute:: dragon.vm.dali.Pipeline.max_batch_size
 
 num_threads
 ###########

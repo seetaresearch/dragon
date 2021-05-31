@@ -11,9 +11,6 @@ namespace kernels {
 
 namespace {
 
-#define LDG(x, i) __ldg(x + i)
-#define LDG2(x, i) convert::To<AccT>(__ldg(x + i))
-
 template <typename T, typename AccT>
 __global__ void _RowwiseMoments(
     const int rows,
@@ -27,16 +24,15 @@ __global__ void _RowwiseMoments(
   CUDA_2D_KERNEL_LOOP1(i, cols) {
     AccT m_val = AccT(0), v_val = AccT(0);
     CUDA_2D_KERNEL_LOOP2(j, rows) {
-      const int xi = j * cols + i;
-      m_val += LDG2(x, xi);
-      v_val += math::utils::Square(LDG2(x, xi));
+      const AccT val = convert::To<AccT>(x[j * cols + i]);
+      m_val += val;
+      v_val += val * val;
     }
     m_val = BlockReduce<AccT>(m_storage).Sum(m_val);
     v_val = BlockReduce<AccT>(v_storage).Sum(v_val);
     if (threadIdx.x == 0) {
-      const AccT mu = m_val * scale;
-      mean[i] = mu;
-      var[i] = v_val * scale - mu * mu;
+      mean[i] = m_val = m_val * scale;
+      var[i] = v_val * scale - m_val * m_val;
     }
   }
 }
@@ -54,16 +50,15 @@ __global__ void _ColwiseMoments(
   CUDA_2D_KERNEL_LOOP1(i, rows) {
     AccT m_val = AccT(0), v_val = AccT(0);
     CUDA_2D_KERNEL_LOOP2(j, cols) {
-      const int xi = i * cols + j;
-      m_val += LDG2(x, xi);
-      v_val += math::utils::Square(LDG2(x, xi));
+      const AccT val = convert::To<AccT>(x[i * cols + j]);
+      m_val += val;
+      v_val += val * val;
     }
     m_val = BlockReduce<AccT>(m_storage).Sum(m_val);
     v_val = BlockReduce<AccT>(v_storage).Sum(v_val);
     if (threadIdx.x == 0) {
-      const AccT mu = m_val * scale;
-      mean[i] = mu;
-      var[i] = v_val * scale - mu * mu;
+      mean[i] = m_val = m_val * scale;
+      var[i] = v_val * scale - m_val * m_val;
     }
   }
 }
@@ -90,15 +85,15 @@ __global__ void _GenericMoments(
         FIXED_DIVISOR_DIV_MOD(X_dims.data[d], c, &c, &r);
         xi += r * X_strides.data[d];
       }
-      m_val += LDG2(x, xi);
-      v_val += math::utils::Square(LDG2(x, xi));
+      const AccT val = convert::To<AccT>(x[xi]);
+      m_val += val;
+      v_val += val * val;
     }
     m_val = BlockReduce<AccT>(m_storage).Sum(m_val);
     v_val = BlockReduce<AccT>(v_storage).Sum(v_val);
     if (threadIdx.x == 0) {
-      const AccT mu = m_val * scale;
-      mean[i] = mu;
-      var[i] = v_val * scale - mu * mu;
+      mean[i] = m_val = m_val * scale;
+      var[i] = v_val * scale - m_val * m_val;
     }
   }
 }
@@ -120,20 +115,14 @@ void _Moments(
   }
   if (math::utils::IsRowwiseReduce(
           num_dims, dims, out_dims.data(), &rows, &cols)) {
-    _RowwiseMoments<<<
-        CUDA_2D_BLOCKS(cols),
-        CUDA_THREADS,
-        0,
-        ctx->cuda_stream()>>>(rows, cols, x, mean, var);
+    _RowwiseMoments<<<cols, CUDA_THREADS, 0, ctx->cuda_stream()>>>(
+        rows, cols, x, mean, var);
     return;
   }
   if (math::utils::IsColwiseReduce(
           num_dims, dims, out_dims.data(), &rows, &cols)) {
-    _ColwiseMoments<<<
-        CUDA_2D_BLOCKS(rows),
-        CUDA_THREADS,
-        0,
-        ctx->cuda_stream()>>>(rows, cols, x, mean, var);
+    _ColwiseMoments<<<rows, CUDA_THREADS, 0, ctx->cuda_stream()>>>(
+        rows, cols, x, mean, var);
     return;
   }
   CUDA_TENSOR_DIMS_CHECK(num_dims);
@@ -155,16 +144,9 @@ void _Moments(
   for (int i = 0; i < num_dims; ++i) {
     transpose_dims.data[i] = dims[transpose_axes.data[i]];
   }
-  _GenericMoments<<<
-      CUDA_2D_BLOCKS(rows),
-      CUDA_THREADS,
-      0,
-      ctx->cuda_stream()>>>(
+  _GenericMoments<<<rows, CUDA_THREADS, 0, ctx->cuda_stream()>>>(
       rows, cols, num_dims, transpose_dims, transpose_strides, x, mean, var);
 }
-
-#undef LDG
-#undef LDG2
 
 } // namespace
 

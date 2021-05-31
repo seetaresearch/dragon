@@ -52,6 +52,8 @@ class TestTensor(unittest.TestCase):
         self.assertEqual(int(a.detach()), 0)
         self.assertEqual(torch.Tensor([0]).dim(), 1)
         self.assertEqual(float(torch.Tensor(1).one_()), 1.)
+        self.assertEqual(torch.tensor(2.333).item(), 2.333)
+        self.assertEqual(torch.tensor([2, 3]).tolist(), [2, 3])
         self.assertEqual(torch.empty(2, 3).ndimension(), 2)
         self.assertEqual(torch.empty(3).new_empty(2, 3).ndimension(), 2)
         self.assertEqual(repr(torch.tensor(1)), '1')

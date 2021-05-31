@@ -142,18 +142,17 @@ class GumbelSoftmax(Module):
         self.tau = tau
         self.dim = dim
         self.inplace = inplace
-        if dim is None:
-            raise ValueError('Excepted a valid dim, got None.')
 
-    def forward(self, logits=None, probs=None):
-        if probs is not None:
-            input = probs.log()
-        else:
-            input = logits - logits.logsumexp(dim=self.dim, keepdim=True)
-        u_dist = init_ops.rand(input.shape, dtype=input.dtype, device=input.device)
-        gumbels = -((-(u_dist.log())).log())
-        scores = (input + gumbels) / self.tau
-        return F.softmax(scores, self.dim, self.inplace)
+    def extra_repr(self):
+        inplace_str = ', inplace' if self.inplace else ''
+        return 'dim={}{}'.format(self.dim, inplace_str)
+
+    def forward(self, input):
+        u_dist = init_ops.rand(input.shape, dtype=input.dtype,
+                               device=input.device)
+        gumbel = -((-(u_dist.log())).log())
+        gumbel = (input + gumbel) / self.tau
+        return F.softmax(gumbel, self.dim, self.inplace)
 
 
 class Hardsigmoid(Module):
@@ -307,23 +306,27 @@ class LogSoftmax(Module):
 
     """
 
-    def __init__(self, dim):
+    def __init__(self, dim, inplace=False):
         """Create a ``LogSoftmax`` module.
 
         Parameters
         ----------
         dim : int
             The dimension to reduce.
+        inplace : bool, optional, default=False
+            Whether to do the operation in-place.
 
         """
         super(LogSoftmax, self).__init__()
         self.dim = dim
+        self.inplace = inplace
 
     def extra_repr(self):
-        return 'dim={dim}'.format(dim=self.dim)
+        inplace_str = ', inplace' if self.inplace else ''
+        return 'dim={}{}'.format(self.dim, inplace_str)
 
     def forward(self, input):
-        return F.log_softmax(input, self.dim)
+        return F.log_softmax(input, self.dim, self.inplace)
 
 
 class MultiheadAttention(Module):

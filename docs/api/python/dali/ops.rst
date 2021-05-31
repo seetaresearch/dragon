@@ -30,6 +30,9 @@ vm.dali.ops
   `class CropMirrorNormalize <ops/CropMirrorNormalize.html>`_
   : Crop and normalize image with the horizontal flip.
 
+  `class Erase <ops/Erase.html>`_
+  : Erase regions from the input.
+
   `class ExternalSource <ops/Cast.html>`_
   : Create a placeholder providing data from feeding.
 
@@ -60,6 +63,9 @@ vm.dali.ops
   `class Resize <ops/Resize.html>`_
   : Resize the image.
 
+  `class Rotate <ops/Rotate.html>`_
+  : Rotate the image.
+
   `class Slice <ops/Slice.html>`_
   : Select an interval of elements from input.
 
@@ -72,6 +78,9 @@ vm.dali.ops
   `class Uniform <ops/Uniform.html>`_
   : Sample values from an uniform distribution.
 
+  `class WarpAffine <ops/WarpAffine.html>`_
+  : Apply an affine transformation to the image.
+
 .. toctree::
   :hidden:
 
@@ -83,6 +92,7 @@ vm.dali.ops
   ops/CoinFlip
   ops/Contrast
   ops/CropMirrorNormalize
+  ops/Erase
   ops/ExternalSource
   ops/Hsv
   ops/ImageDecoder
@@ -93,10 +103,12 @@ vm.dali.ops
   ops/RandomResizedCrop
   ops/Reshape
   ops/Resize
+  ops/Rotate
   ops/Slice
   ops/KPLRecordReader
   ops/TFRecordReader
   ops/Uniform
+  ops/WarpAffine
 
 .. raw:: html
 

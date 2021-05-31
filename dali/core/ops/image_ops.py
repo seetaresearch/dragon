@@ -487,3 +487,88 @@ class Resize(object):
             device=context.get_device_type(),
             **kwargs
         )
+
+
+class Rotate(object):
+    """Rotate the image.
+
+    Examples:
+
+    ```python
+    rotate = dali.ops.Rotate()
+    y = rotate(inputs['x'], angle=30)
+    ```
+
+    """
+
+    def __new__(
+        cls,
+        fill_value=0,
+        interp_type='linear',
+        keep_size=True,
+        **kwargs
+    ):
+        """Create a ``Rotate`` operator.
+
+        Parameters
+        ----------
+        fill_value : number, optional
+            The value to fill the empty regions.
+        interp_type : str, optional, default='linear'
+            The interpolation method.
+        keep_size : bool, optional, default=True
+            Whether to keep the original image size.
+
+        Returns
+        ------
+        nvidia.dali.ops.Rotate
+            The operator.
+
+        """
+        if isinstance(interp_type, six.string_types):
+            interp_type = getattr(types, 'INTERP_' + interp_type.upper())
+        return ops.Rotate(
+            fill_value=fill_value,
+            interp_type=interp_type,
+            keep_size=keep_size,
+            device=context.get_device_type(),
+            **kwargs
+        )
+
+
+class WarpAffine(object):
+    """Apply an affine transformation to the image.
+
+    Examples:
+
+    ```python
+    warp_affine = dali.ops.WarpAffine()
+    y = warp_affine(inputs['x'], matrix=[1, 0, 0, 0, 1, 0])
+    ```
+
+    """
+
+    def __new__(cls, fill_value=0, interp_type='linear', **kwargs):
+        """Create a ``WarpAffine`` operator.
+
+        Parameters
+        ----------
+        fill_value : number, optional
+            The value to fill the empty regions.
+        interp_type : str, optional, default='linear'
+            The interpolation method.
+
+        Returns
+        ------
+        nvidia.dali.ops.WarpAffine
+            The operator.
+
+        """
+        if isinstance(interp_type, six.string_types):
+            interp_type = getattr(types, 'INTERP_' + interp_type.upper())
+        return ops.WarpAffine(
+            fill_value=fill_value,
+            interp_type=interp_type,
+            device=context.get_device_type(),
+            **kwargs
+        )

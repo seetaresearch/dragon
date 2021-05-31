@@ -788,6 +788,24 @@ def exp(self):
     return math_ops.exp(self)
 
 
+def exp_(self):
+    r"""Set to the exponential of elements.
+
+    .. math:: \text{self} = \exp(\text{self})
+
+    Returns
+    -------
+    dragon.vm.torch.Tensor
+        The output tensor.
+
+    See Also
+    --------
+    `torch.exp(...)`_
+
+    """
+    return math_ops.exp(self, self)
+
+
 def expand(self, *sizes):
     """Return a tensor with elements broadcast.
 
@@ -1232,6 +1250,24 @@ def log(self):
 
     """
     return math_ops.log(self)
+
+
+def log_(self):
+    r"""Set to the natural logarithm of elements.
+
+    .. math:: \text{self} = \log(\text{self})
+
+    Returns
+    -------
+    dragon.vm.torch.Tensor
+        The output tensor.
+
+    See Also
+    --------
+    `torch.log(...)`_
+
+    """
+    return math_ops.log(self, self)
 
 
 def logical_and(self, other):
@@ -2916,6 +2952,7 @@ Tensor.double = double
 Tensor.double_ = double_
 Tensor.eq = eq
 Tensor.exp = exp
+Tensor.exp_ = exp_
 Tensor.expand = expand
 Tensor.fill_ = fill_
 Tensor.flatten = flatten
@@ -2941,6 +2978,7 @@ Tensor.le = le
 Tensor.long = long
 Tensor.long_ = long_
 Tensor.log = log
+Tensor.log_ = log_
 Tensor.logical_and = logical_and
 Tensor.logical_not = logical_not
 Tensor.logical_or = logical_or

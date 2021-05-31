@@ -134,17 +134,17 @@ __global__ void _GetTopK(
 
 /* ------------------- Launcher Separator ------------------- */
 
-#define DISPATCH_BLOCKSORT_KERNEL(T, kItemsPerThread)                 \
-  _BlockSort<T, kItemsPerThread>                                      \
-      <<<CUDA_2D_BLOCKS(NxS), CUDA_THREADS, 0, ctx->cuda_stream()>>>( \
-          NxS,                                                        \
-          S,                                                          \
-          C,                                                          \
-          K,                                                          \
-          largest > 0,                                                \
-          init,                                                       \
-          reinterpret_cast<const T*>(x),                              \
-          reinterpret_cast<T*>(value),                                \
+#define DISPATCH_BLOCKSORT_KERNEL(T, kItemsPerThread) \
+  _BlockSort<T, kItemsPerThread>                      \
+      <<<NxS, CUDA_THREADS, 0, ctx->cuda_stream()>>>( \
+          NxS,                                        \
+          S,                                          \
+          C,                                          \
+          K,                                          \
+          largest > 0,                                \
+          init,                                       \
+          reinterpret_cast<const T*>(x),              \
+          reinterpret_cast<T*>(value),                \
           index)
 
 #define DEFINE_KERNEL_LAUNCHER(T, kLowest, kMax)                               \

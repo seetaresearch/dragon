@@ -305,8 +305,12 @@ is_floating_point
 #################
 .. automethod:: dragon.vm.torch.Tensor.is_floating_point
 
+item
+####
+.. automethod:: dragon.vm.torch.Tensor.item
+
 le
-###
+##
 .. automethod:: dragon.vm.torch.Tensor.le
 
 log
@@ -576,6 +580,10 @@ sub\_
 to
 ##
 .. automethod:: dragon.vm.torch.Tensor.to
+
+tolist
+######
+.. automethod:: dragon.vm.torch.Tensor.tolist
 
 topk
 ####

@@ -129,7 +129,7 @@ class DataReader(multiprocessing.Process):
         self._init_dataset()
         # Persist a loop to read examples.
         while True:
-            # Pop the depleted part if necessary
+            # Pop the depleted part if necessary.
             if self._parts[0].start == self._parts[0].end:
                 self._parts.pop(0)
             offset = 0
@@ -145,10 +145,10 @@ class DataReader(multiprocessing.Process):
             # Load and push back a new example into the buffer.
             k = self._parts[-1].end % len(self._example_buffer)
             self._example_buffer[k] = self.next_example()
-            # Increase the part boundaries
+            # Increase the part boundaries.
             self._parts[-1].end += 1
             self._parts[0].start += 1
-            # Reset the cursor if necessary
+            # Reset the cursor if necessary.
             if self._cursor >= self._last:
                 self.reset()
 

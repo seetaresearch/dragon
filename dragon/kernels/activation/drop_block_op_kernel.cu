@@ -74,64 +74,56 @@ __global__ void _MaskBlock2dNHWC(
 
 /* ------------------- Launcher Separator ------------------- */
 
-#define DEFINE_KERNEL_LAUNCHER(T)                          \
-  template <>                                              \
-  void DropBlock2d<T, CUDAContext>(                        \
-      const int N,                                         \
-      const int C,                                         \
-      const int H,                                         \
-      const int W,                                         \
-      const int block_size,                                \
-      const float ratio,                                   \
-      const float scale,                                   \
-      const string& data_format,                           \
-      const T* x,                                          \
-      T* y,                                                \
-      uint8_t* mask,                                       \
-      uint32_t* r,                                         \
-      CUDAContext* ctx) {                                  \
-    const auto seed_h = H - block_size + 1;                \
-    const auto seed_w = W - block_size + 1;                \
-    const auto num_seeds = N * seed_h * seed_w;            \
-    const auto NxCxHxW = N * C * H * W;                    \
-    math::Set(NxCxHxW, uint8_t(1), mask, ctx);             \
-    math::Random(num_seeds, r, ctx);                       \
-    if (data_format == "NCHW") {                           \
-      _MaskBlock2dNCHW<<<                                  \
-          CUDA_2D_BLOCKS(num_seeds),                       \
-          CUDA_THREADS,                                    \
-          0,                                               \
-          ctx->cuda_stream()>>>(                           \
-          C,                                               \
-          H,                                               \
-          W,                                               \
-          seed_h,                                          \
-          seed_w,                                          \
-          num_seeds,                                       \
-          block_size,                                      \
-          uint32_t(UINT_MAX * ratio),                      \
-          r,                                               \
-          mask);                                           \
-    } else if (data_format == "NHWC") {                    \
-      _MaskBlock2dNHWC<<<                                  \
-          CUDA_2D_BLOCKS(num_seeds),                       \
-          CUDA_THREADS,                                    \
-          0,                                               \
-          ctx->cuda_stream()>>>(                           \
-          C,                                               \
-          H,                                               \
-          W,                                               \
-          seed_h,                                          \
-          seed_w,                                          \
-          num_seeds,                                       \
-          block_size,                                      \
-          uint32_t(UINT_MAX * ratio),                      \
-          r,                                               \
-          mask);                                           \
-    } else {                                               \
-      LOG(FATAL) << "Unknown DataFormat: " << data_format; \
-    }                                                      \
-    math::ApplyMask(NxCxHxW, scale, mask, x, y, ctx);      \
+#define DEFINE_KERNEL_LAUNCHER(T)                                           \
+  template <>                                                               \
+  void DropBlock2d<T, CUDAContext>(                                         \
+      const int N,                                                          \
+      const int C,                                                          \
+      const int H,                                                          \
+      const int W,                                                          \
+      const int block_size,                                                 \
+      const float ratio,                                                    \
+      const float scale,                                                    \
+      const string& data_format,                                            \
+      const T* x,                                                           \
+      T* y,                                                                 \
+      uint8_t* mask,                                                        \
+      uint32_t* r,                                                          \
+      CUDAContext* ctx) {                                                   \
+    const auto seed_h = H - block_size + 1;                                 \
+    const auto seed_w = W - block_size + 1;                                 \
+    const auto num_seeds = N * seed_h * seed_w;                             \
+    const auto NxCxHxW = N * C * H * W;                                     \
+    math::Set(NxCxHxW, uint8_t(1), mask, ctx);                              \
+    math::Random(num_seeds, r, ctx);                                        \
+    if (data_format == "NCHW") {                                            \
+      _MaskBlock2dNCHW<<<num_seeds, CUDA_THREADS, 0, ctx->cuda_stream()>>>( \
+          C,                                                                \
+          H,                                                                \
+          W,                                                                \
+          seed_h,                                                           \
+          seed_w,                                                           \
+          num_seeds,                                                        \
+          block_size,                                                       \
+          uint32_t(UINT_MAX * ratio),                                       \
+          r,                                                                \
+          mask);                                                            \
+    } else if (data_format == "NHWC") {                                     \
+      _MaskBlock2dNHWC<<<num_seeds, CUDA_THREADS, 0, ctx->cuda_stream()>>>( \
+          C,                                                                \
+          H,                                                                \
+          W,                                                                \
+          seed_h,                                                           \
+          seed_w,                                                           \
+          num_seeds,                                                        \
+          block_size,                                                       \
+          uint32_t(UINT_MAX * ratio),                                       \
+          r,                                                                \
+          mask);                                                            \
+    } else {                                                                \
+      LOG(FATAL) << "Unknown DataFormat: " << data_format;                  \
+    }                                                                       \
+    math::ApplyMask(NxCxHxW, scale, mask, x, y, ctx);                       \
   }
 
 DEFINE_KERNEL_LAUNCHER(float16);

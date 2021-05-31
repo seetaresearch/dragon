@@ -115,6 +115,8 @@ class TestTensor(unittest.TestCase):
         self.assertEqual(a.__repr__(), b.__repr__())
         self.assertNotEqual(a.__repr__(), dragon.Tensor((), symbolic=True).__repr__())
         self.assertEqual(float(int(a)), float(b))
+        self.assertEqual(dragon.constant([2]).item(), 2)
+        self.assertEqual(dragon.constant([2, 3]).tolist(), [2, 3])
         try:
             _ = dragon.Tensor(None)
         except ValueError:

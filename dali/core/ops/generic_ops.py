@@ -60,6 +60,60 @@ class Cast(object):
         )
 
 
+class Erase(object):
+    """Erase regions from the input.
+
+    Examples:
+
+    ```python
+    erase = dali.ops.Erase(
+        # The axes to erase
+        axes=[0, 1],
+        # The value fill
+        fill_value=0.,
+    )
+    y = erase(inputs['x'], anchor=(0, 0), shape=(100, 100))
+    ```
+
+    """
+
+    def __new__(
+        cls,
+        axes=(0, 1),
+        fill_value=0,
+        normalized_anchor=True,
+        normalized_shape=True,
+        **kwargs
+    ):
+        """Create an ``Erase`` operator.
+
+        Parameters
+        ----------
+        axes : Sequence[int], optional
+            The padding axes.
+        fill_value : Union[number, Sequence[float]], optional
+            The value to fill the erased regions.
+        normalized_anchor : bool, optional, default=True
+            Provided anchor is normalized or not.
+        normalized_shape : bool, optional, default=True
+            Provided shape is normalized or not.
+
+        Returns
+        -------
+        nvidia.dali.ops.Erase
+            The operator.
+
+        """
+        return ops.Erase(
+            axes=axes,
+            fill_value=fill_value,
+            normalized_anchor=normalized_anchor,
+            normalized_shape=normalized_shape,
+            device=context.get_device_type(),
+            **kwargs
+        )
+
+
 class Pad(object):
     """Pad input to have the same dimensions.
 
@@ -77,14 +131,14 @@ class Pad(object):
 
     """
 
-    def __new__(cls, axes=(0, 1), fill_value=0., align=None, **kwargs):
+    def __new__(cls, axes=(0, 1), fill_value=0, align=None, **kwargs):
         """Create a ``Pad`` operator.
 
         Parameters
         ----------
         axes : Sequence[int], optional
             The padding axes.
-        fill_value : number, optional, default=0.
+        fill_value : number, optional, default=0
             The constant padding value.
         align : Union[int, Sequence[int]], optional
             The size to align the padding shape.

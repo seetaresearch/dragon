@@ -228,12 +228,11 @@ DEFINE_BROADCAST_1ST_FUNC(Div, double, /);
       const int rows, const int cols, const T* a, const T* b, T* y) { \
     if (a == y) {                                                     \
       EigenArrayMap<T>(y, cols, rows).rowwise() Expr## =              \
-          ConstEigenVectorArrayMap<T>(b, rows).transpose();           \
+          ConstEigenVectorArrayMap2<T>(b, rows);                      \
     } else {                                                          \
       EigenArrayMap<T>(y, cols, rows) =                               \
           ConstEigenArrayMap<T>(a, cols, rows)                        \
-              .rowwise() Expr ConstEigenVectorArrayMap<T>(b, rows)    \
-              .transpose();                                           \
+              .rowwise() Expr ConstEigenVectorArrayMap2<T>(b, rows);  \
     }                                                                 \
   }
 

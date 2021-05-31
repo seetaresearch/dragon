@@ -20,12 +20,15 @@ namespace dragon {
 template <class Context>
 class RepeatOp final : public Operator<Context> {
  public:
-  RepeatOp(const OperatorDef& def, Workspace* ws) : Operator<Context>(def, ws) {
+  explicit RepeatOp(const OperatorDef& def, Workspace* ws)
+      : Operator<Context>(def, ws) {
     INITIALIZE_OP_SINGLE_ARG(int64_t, repeats, 1);
   }
   USE_OPERATOR_FUNCTIONS;
 
-  void RunOnDevice() override;
+  void RunOnDevice() override {
+    DispatchHelper<dtypes::Generic>::Call(this, Input(0));
+  }
 
   template <typename T>
   void DoRunWithType();
@@ -43,7 +46,9 @@ class RepeatGradientOp final : public Operator<Context> {
   }
   USE_OPERATOR_FUNCTIONS;
 
-  void RunOnDevice() override;
+  void RunOnDevice() override {
+    DispatchHelper<dtypes::Floating>::Call(this, Input(0));
+  }
 
   template <typename T>
   void DoRunWithType();

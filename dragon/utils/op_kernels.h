@@ -229,6 +229,25 @@ void SoftmaxGrad(
     Context* ctx);
 
 template <typename T, class Context>
+void LogSoftmax(
+    const int N,
+    const int S,
+    const int C,
+    const T* x,
+    T* y,
+    Context* ctx);
+
+template <typename T, class Context>
+void LogSoftmaxGrad(
+    const int N,
+    const int S,
+    const int C,
+    const T* dy,
+    const T* y,
+    T* dx,
+    Context* ctx);
+
+template <typename T, class Context>
 void Tanh(const int N, const T* x, T* y, Context* ctx);
 
 template <typename T, class Context>
@@ -583,15 +602,6 @@ void Transpose(
     const int64_t* y_dims,
     const T* x,
     T* y,
-    Context* ctx);
-
-template <typename T, class Context>
-void TransposeGrad(
-    const int num_dims,
-    const int64_t* x_strides,
-    const int64_t* y_dims,
-    const T* dy,
-    T* dx,
     Context* ctx);
 
 template <typename T, class Context>
@@ -976,6 +986,19 @@ void L2NormalizeGrad(
     const T* dy,
     const T* x,
     T* dx,
+    Context* ctx);
+
+template <typename T, typename AccT, class Context>
+void LayerNorm(
+    const int N,
+    const int C,
+    const float epsilon,
+    const T* x,
+    const AccT* gamma,
+    const AccT* beta,
+    AccT* mu,
+    AccT* rsig,
+    T* y,
     Context* ctx);
 
 /*

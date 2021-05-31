@@ -59,7 +59,7 @@ class OpTestCase(unittest.TestCase):
         second = inputs[num_first:len(inputs)] if num_second > 1 else inputs[num_first]
         if isinstance(first, np.ndarray) and isinstance(second, np.ndarray):
             super(OpTestCase, self).assertEqual(first.shape, second.shape)
-            if first.dtype == np.bool and second.dtype == np.bool:
+            if first.dtype == bool and second.dtype == bool:
                 diff = first ^ second
                 num_unique = len(np.unique(diff))
                 self.assertLessEqual(num_unique, 1, msg)
@@ -243,6 +243,8 @@ class TestTensorOps(OpTestCase):
         data = np.array([0., 1., 2.], 'float32')
         x = new_tensor(data)
         self.assertEqual(x.exp(), np.exp(data))
+        x.exp_()
+        self.assertEqual(x, np.exp(data))
 
     def test_expand(self):
         entries = [(2, 2, 3, 1),
@@ -403,6 +405,8 @@ class TestTensorOps(OpTestCase):
         data = np.array([1., 2., 3.], 'float32')
         x = new_tensor(data)
         self.assertEqual(x.log(), np.log(data))
+        x.log_()
+        self.assertEqual(x, np.log(data))
 
     def test_logical_and(self):
         for a_shape, b_shape in self.binary_test_shapes:

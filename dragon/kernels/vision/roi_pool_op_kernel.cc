@@ -19,21 +19,21 @@ void _RoiPool(
     const float* rois,
     int* mask,
     T* y) {
-  auto x_inner_dim = H * W;
-  auto y_inner_dim = out_h * out_w;
-  auto x_cols = C * x_inner_dim;
-  auto y_cols = C * y_inner_dim;
+  const auto HxW = H * W;
+  const auto HoxWo = out_h * out_w;
+  const auto CxHxW = C * HxW;
+  const auto CxHoxWo = C * HoxWo;
 
   for (int n = 0; n < num_rois; ++n) {
     auto* roi = rois + n * 5;
-    auto* offset_y = y + n * y_cols;
-    auto* offset_mask = mask + n * y_cols;
+    auto* offset_y = y + n * CxHoxWo;
+    auto* offset_mask = mask + n * CxHoxWo;
 
     const int batch_ind = (int)roi[0];
 
     if (batch_ind < 0) {
-      memset(offset_y, 0, sizeof(T) * y_cols);
-      memset(offset_mask, -1, sizeof(int) * y_cols);
+      memset(offset_y, 0, sizeof(T) * CxHoxWo);
+      memset(offset_mask, -1, sizeof(int) * CxHoxWo);
       continue;
     }
 
@@ -44,14 +44,14 @@ void _RoiPool(
 
     const int roi_w = std::max(roi_wend - roi_wstart + 1, 1);
     const int roi_h = std::max(roi_hend - roi_hstart + 1, 1);
-    const float bin_h = (float)roi_h / (float)out_h;
-    const float bin_w = (float)roi_w / (float)out_w;
+    const float bin_h = float(roi_h) / float(out_h);
+    const float bin_w = float(roi_w) / float(out_w);
 
     T val;
     bool empty;
     int xi, yi, mask_val;
     int hstart, wstart, hend, wend;
-    const T* offset_x = x + batch_ind * x_cols;
+    const T* offset_x = x + batch_ind * CxHxW;
 
     for (int c = 0; c < C; ++c) {
       yi = 0;
@@ -82,9 +82,9 @@ void _RoiPool(
           offset_mask[yi++] = mask_val;
         }
       } // End h_out && w_out
-      offset_x += x_inner_dim;
-      offset_y += y_inner_dim;
-      offset_mask += y_inner_dim;
+      offset_x += HxW;
+      offset_y += HoxWo;
+      offset_mask += HoxWo;
     } // End c
   } // End n
 }

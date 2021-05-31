@@ -972,6 +972,22 @@ class Tensor(object):
 
         """
 
+    def exp_(self):
+        r"""Set to the exponential of elements.
+
+        .. math:: \text{self} = \exp(\text{self})
+
+        Returns
+        -------
+        dragon.vm.torch.Tensor
+            The output tensor.
+
+        See Also
+        --------
+        `torch.exp(...)`_
+
+        """
+
     def expand(self, *sizes):
         """Return a tensor with elements broadcast.
 
@@ -1326,6 +1342,17 @@ class Tensor(object):
         """
         return 'float' in self.dtype
 
+    def item(self):
+        """Return the value as a python number.
+
+        Returns
+        -------
+        number
+            The value.
+
+        """
+        return float(self) if self.is_floating_point() else int(self)
+
     def le(self, other):
         r"""Compute the element-wise less-equal comparison.
 
@@ -1351,6 +1378,22 @@ class Tensor(object):
         r"""Compute the natural logarithm.
 
         .. math:: \text{out} = \log(\text{self})
+
+        Returns
+        -------
+        dragon.vm.torch.Tensor
+            The output tensor.
+
+        See Also
+        --------
+        `torch.log(...)`_
+
+        """
+
+    def log_(self):
+        r"""Set to the natural logarithm of elements.
+
+        .. math:: \text{self} = \log(\text{self})
 
         Returns
         -------
@@ -2676,6 +2719,17 @@ class Tensor(object):
             return self.type(dtype)
         return self
 
+    def tolist(self):
+        """Return the value as a python list.
+
+        Returns
+        -------
+        list
+            The value.
+
+        """
+        return self.numpy().tolist()
+
     def topk(self, k, dim=-1, largest=True, sorted=True):
         """Return the top-K largest or smallest elements.
 
@@ -3089,7 +3143,7 @@ class Tensor(object):
         return self.eq(other)
 
     def __float__(self):
-        """Return a float python scalar.
+        """Return the value as a python number.
 
         Returns
         -------
@@ -3194,7 +3248,7 @@ class Tensor(object):
         return self.mul_(other)
 
     def __int__(self):
-        """Return an integer python scalar.
+        """Return the value as a python number.
 
         Returns
         -------
@@ -3202,7 +3256,7 @@ class Tensor(object):
             The integer value.
 
         """
-        return int(self.__float__())
+        return int(self.numpy())
 
     def __invert__(self):
         """Compute the element-wise NOT bitwise operation.

@@ -26,25 +26,15 @@ class TransposeOp final : public Operator<Context> {
   }
   USE_OPERATOR_FUNCTIONS;
 
-  void RunOnDevice() override;
+  void RunOnDevice() override {
+    DispatchHelper<dtypes::Generic>::Call(this, Input(0));
+  }
 
   template <typename T>
   void DoRunWithType();
 
  protected:
   DECLARE_OP_REPEATED_ARG(int64_t, perm);
-};
-
-template <class Context>
-class TransposeGradientOp : public Operator<Context> {
- public:
-  SIMPLE_CTOR_DTOR(TransposeGradientOp);
-  USE_OPERATOR_FUNCTIONS;
-
-  void RunOnDevice() override;
-
-  template <typename T>
-  void DoRunWithType();
 };
 
 DEFINE_OP_REPEATED_ARG(int64_t, TransposeOp, perm);

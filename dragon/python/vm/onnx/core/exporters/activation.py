@@ -69,7 +69,7 @@ def selu_exporter(op_def, context):
     return node, const_tensors
 
 
-@export_util.register('Softmax')
+@export_util.register(['Softmax', 'LogSoftmax'])
 def softmax_exporter(op_def, context):
     node, const_tensors = export_util.translate(**locals())
     ndim = len(context.blob_shapes[op_def.input[0]])
@@ -82,7 +82,7 @@ def softmax_exporter(op_def, context):
     return node, const_tensors
 
 
-@export_util.register('Softmax-13')
+@export_util.register(['Softmax-13', 'LogSoftmax-13'])
 def softmax_exporter_v13(op_def, context):
     node, const_tensors = export_util.translate(**locals())
     ndim = len(context.blob_shapes[op_def.input[0]])

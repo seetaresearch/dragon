@@ -56,18 +56,18 @@ void _RoiAlign(
     const T* x,
     const float* rois,
     T* y) {
-  auto x_inner_dim = H * W;
-  auto y_inner_dim = out_h * out_w;
-  auto x_cols = C * x_inner_dim;
-  auto y_cols = C * y_inner_dim;
+  const auto HxW = H * W;
+  const auto HoxWo = out_h * out_w;
+  const auto CxHxW = C * HxW;
+  const auto CxHoxWo = C * HoxWo;
 
   for (int n = 0; n < num_rois; ++n) {
     auto* roi = rois + n * 5;
     int batch_ind = (int)roi[0];
-    auto* offset_y = y + n * y_cols;
+    auto* offset_y = y + n * CxHoxWo;
 
     if (batch_ind < 0) {
-      memset(offset_y, 0, sizeof(T) * y_cols);
+      memset(offset_y, 0, sizeof(T) * CxHoxWo);
       continue;
     }
 
@@ -78,19 +78,21 @@ void _RoiAlign(
 
     const float roi_w = std::max(roi_wend - roi_wstart, 1.f);
     const float roi_h = std::max(roi_hend - roi_hstart, 1.f);
-    const float bin_h = roi_h / (float)out_h;
-    const float bin_w = roi_w / (float)out_w;
+    const float bin_h = roi_h / float(out_h);
+    const float bin_w = roi_w / float(out_w);
 
-    const int grid_h =
-        sampling_ratio > 0 ? sampling_ratio : (int)std::ceil(roi_h / out_h);
-    const int grid_w =
-        sampling_ratio > 0 ? sampling_ratio : (int)std::ceil(roi_w / out_w);
+    const int grid_h = sampling_ratio > 0
+        ? sampling_ratio
+        : int(std::ceil(roi_h / float(out_h)));
+    const int grid_w = sampling_ratio > 0
+        ? sampling_ratio
+        : int(std::ceil(roi_w / float(out_w)));
     const T num_grids = T(grid_h * grid_w);
 
     int yi;
     T val;
     float hstart, wstart, h, w;
-    const T* offset_x = x + batch_ind * x_cols;
+    const T* offset_x = x + batch_ind * CxHxW;
 
     for (int c = 0; c < C; ++c) {
       yi = 0;
@@ -109,8 +111,8 @@ void _RoiAlign(
           offset_y[yi++] = val / num_grids;
         }
       } // End h_out && w_out
-      offset_x += x_inner_dim;
-      offset_y += y_inner_dim;
+      offset_x += HxW;
+      offset_y += HoxWo;
     } // End c
   } // End n
 }

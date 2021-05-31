@@ -147,52 +147,52 @@ __global__ void _L2NormalizeGrad(
 
 /* ------------------- Launcher Separator ------------------- */
 
-#define DEFINE_KERNEL_LAUNCHER(name, T, AccT)                           \
-  template <>                                                           \
-  void name<T, CUDAContext>(                                            \
-      const int N,                                                      \
-      const int S,                                                      \
-      const int C,                                                      \
-      const float normalizer,                                           \
-      const float epsilon,                                              \
-      const T* x,                                                       \
-      T* y,                                                             \
-      CUDAContext* ctx) {                                               \
-    const auto NxS = N * S;                                             \
-    _##name<math::ScalarType<T>::type, AccT>                            \
-        <<<CUDA_2D_BLOCKS(NxS), CUDA_THREADS, 0, ctx->cuda_stream()>>>( \
-            NxS,                                                        \
-            S,                                                          \
-            C,                                                          \
-            AccT(normalizer),                                           \
-            AccT(epsilon),                                              \
-            reinterpret_cast<const math::ScalarType<T>::type*>(x),      \
-            reinterpret_cast<math::ScalarType<T>::type*>(y));           \
+#define DEFINE_KERNEL_LAUNCHER(name, T, AccT)                      \
+  template <>                                                      \
+  void name<T, CUDAContext>(                                       \
+      const int N,                                                 \
+      const int S,                                                 \
+      const int C,                                                 \
+      const float normalizer,                                      \
+      const float epsilon,                                         \
+      const T* x,                                                  \
+      T* y,                                                        \
+      CUDAContext* ctx) {                                          \
+    const auto NxS = N * S;                                        \
+    _##name<math::ScalarType<T>::type, AccT>                       \
+        <<<NxS, CUDA_THREADS, 0, ctx->cuda_stream()>>>(            \
+            NxS,                                                   \
+            S,                                                     \
+            C,                                                     \
+            AccT(normalizer),                                      \
+            AccT(epsilon),                                         \
+            reinterpret_cast<const math::ScalarType<T>::type*>(x), \
+            reinterpret_cast<math::ScalarType<T>::type*>(y));      \
   }
 
-#define DEFINE_GRAD_KERNEL_LAUNCHER(name, T, AccT)                      \
-  template <>                                                           \
-  void name<T, CUDAContext>(                                            \
-      const int N,                                                      \
-      const int S,                                                      \
-      const int C,                                                      \
-      const float normalizer,                                           \
-      const float epsilon,                                              \
-      const T* dy,                                                      \
-      const T* x,                                                       \
-      T* dx,                                                            \
-      CUDAContext* ctx) {                                               \
-    const auto NxS = N * S;                                             \
-    _##name<math::ScalarType<T>::type, AccT>                            \
-        <<<CUDA_2D_BLOCKS(NxS), CUDA_THREADS, 0, ctx->cuda_stream()>>>( \
-            NxS,                                                        \
-            S,                                                          \
-            C,                                                          \
-            AccT(normalizer),                                           \
-            AccT(epsilon),                                              \
-            reinterpret_cast<const math::ScalarType<T>::type*>(dy),     \
-            reinterpret_cast<const math::ScalarType<T>::type*>(x),      \
-            reinterpret_cast<math::ScalarType<T>::type*>(dx));          \
+#define DEFINE_GRAD_KERNEL_LAUNCHER(name, T, AccT)                  \
+  template <>                                                       \
+  void name<T, CUDAContext>(                                        \
+      const int N,                                                  \
+      const int S,                                                  \
+      const int C,                                                  \
+      const float normalizer,                                       \
+      const float epsilon,                                          \
+      const T* dy,                                                  \
+      const T* x,                                                   \
+      T* dx,                                                        \
+      CUDAContext* ctx) {                                           \
+    const auto NxS = N * S;                                         \
+    _##name<math::ScalarType<T>::type, AccT>                        \
+        <<<NxS, CUDA_THREADS, 0, ctx->cuda_stream()>>>(             \
+            NxS,                                                    \
+            S,                                                      \
+            C,                                                      \
+            AccT(normalizer),                                       \
+            AccT(epsilon),                                          \
+            reinterpret_cast<const math::ScalarType<T>::type*>(dy), \
+            reinterpret_cast<const math::ScalarType<T>::type*>(x),  \
+            reinterpret_cast<math::ScalarType<T>::type*>(dx));      \
   }
 
 DEFINE_KERNEL_LAUNCHER(L1Normalize, float16, float);

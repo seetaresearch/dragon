@@ -19,6 +19,7 @@ from dragon.vm.dali.core.ops.builtin_ops import ExternalSource
 from dragon.vm.dali.core.ops.decoder_ops import ImageDecoder
 from dragon.vm.dali.core.ops.decoder_ops import ImageDecoderRandomCrop
 from dragon.vm.dali.core.ops.generic_ops import Cast
+from dragon.vm.dali.core.ops.generic_ops import Erase
 from dragon.vm.dali.core.ops.generic_ops import Pad
 from dragon.vm.dali.core.ops.generic_ops import Reshape
 from dragon.vm.dali.core.ops.generic_ops import Slice
@@ -31,6 +32,8 @@ from dragon.vm.dali.core.ops.image_ops import Paste
 from dragon.vm.dali.core.ops.image_ops import RandomBBoxCrop
 from dragon.vm.dali.core.ops.image_ops import RandomResizedCrop
 from dragon.vm.dali.core.ops.image_ops import Resize
+from dragon.vm.dali.core.ops.image_ops import Rotate
+from dragon.vm.dali.core.ops.image_ops import WarpAffine
 from dragon.vm.dali.core.ops.random_ops import CoinFlip
 from dragon.vm.dali.core.ops.random_ops import Uniform
 from dragon.vm.dali.core.ops.reader_ops import KPLRecordReader

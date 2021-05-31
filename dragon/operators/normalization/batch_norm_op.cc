@@ -284,13 +284,13 @@ DEPLOY_CUDA_OPERATOR(BatchNormGradient);
 #endif
 
 OPERATOR_SCHEMA(BatchNorm)
-    /* X, W, B, RunningMean, RunningVar */
+    /* X, W, B, RM, RV */
     .NumInputs(5)
     /* Y */
     .NumOutputs(1);
 
 OPERATOR_SCHEMA(BatchNormGradient)
-    /* X, W, RunningMean, RunningVar, dY */
+    /* X, W, RM, RV, dY */
     .NumInputs(5)
     /* dX, dW, dB */
     .NumOutputs(3);

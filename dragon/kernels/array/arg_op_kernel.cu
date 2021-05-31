@@ -53,25 +53,25 @@ __global__ void _ArgReduce(
 
 /* ------------------- Launcher Separator ------------------- */
 
-#define DEFINE_KERNEL_LAUNCHER(name, T, CompareFunctor, kInit)                \
-  template <>                                                                 \
-  void name<T, CUDAContext>(                                                  \
-      const int N,                                                            \
-      const int S,                                                            \
-      const int C,                                                            \
-      const T* x,                                                             \
-      int64_t* y,                                                             \
-      CUDAContext* ctx) {                                                     \
-    using ScalarT = math::ScalarType<T>::type;                                \
-    const auto NxS = N * S;                                                   \
-    _ArgReduce<<<CUDA_2D_BLOCKS(NxS), CUDA_THREADS, 0, ctx->cuda_stream()>>>( \
-        NxS,                                                                  \
-        S,                                                                    \
-        C,                                                                    \
-        ArgFunctor<ScalarT, CompareFunctor<ScalarT>>(),                       \
-        kInit,                                                                \
-        reinterpret_cast<const ScalarT*>(x),                                  \
-        y);                                                                   \
+#define DEFINE_KERNEL_LAUNCHER(name, T, CompareFunctor, kInit) \
+  template <>                                                  \
+  void name<T, CUDAContext>(                                   \
+      const int N,                                             \
+      const int S,                                             \
+      const int C,                                             \
+      const T* x,                                              \
+      int64_t* y,                                              \
+      CUDAContext* ctx) {                                      \
+    using ScalarT = math::ScalarType<T>::type;                 \
+    const auto NxS = N * S;                                    \
+    _ArgReduce<<<NxS, CUDA_THREADS, 0, ctx->cuda_stream()>>>(  \
+        NxS,                                                   \
+        S,                                                     \
+        C,                                                     \
+        ArgFunctor<ScalarT, CompareFunctor<ScalarT>>(),        \
+        kInit,                                                 \
+        reinterpret_cast<const ScalarT*>(x),                   \
+        y);                                                    \
   }
 
 DEFINE_KERNEL_LAUNCHER(

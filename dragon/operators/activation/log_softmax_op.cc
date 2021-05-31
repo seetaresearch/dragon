@@ -1,14 +1,14 @@
-#include "dragon/operators/activation/softmax_op.h"
+#include "dragon/operators/activation/log_softmax_op.h"
 #include "dragon/utils/op_kernels.h"
 
 namespace dragon {
 
 template <class Context>
 template <typename T>
-void SoftmaxOp<Context>::DoRunWithType() {
+void LogSoftmaxOp<Context>::DoRunWithType() {
   auto &X = Input(0), *Y = Output(0, {0});
   GET_OP_AXIS_ARG(axis, X.ndim(), -1);
-  kernels::Softmax(
+  kernels::LogSoftmax(
       X.count(0, axis),
       X.count(axis + 1),
       X.dim(axis),
@@ -19,10 +19,10 @@ void SoftmaxOp<Context>::DoRunWithType() {
 
 template <class Context>
 template <typename T>
-void SoftmaxGradientOp<Context>::DoRunWithType() {
+void LogSoftmaxGradientOp<Context>::DoRunWithType() {
   auto &Y = Input(0), &dY = Input(1), *dX = Output(0);
   GET_OP_AXIS_ARG(axis, Y.ndim(), -1);
-  kernels::SoftmaxGrad(
+  kernels::LogSoftmaxGrad(
       Y.count(0, axis),
       Y.count(axis + 1),
       Y.dim(axis),
@@ -32,17 +32,17 @@ void SoftmaxGradientOp<Context>::DoRunWithType() {
       ctx());
 }
 
-DEPLOY_CPU_OPERATOR(Softmax);
+DEPLOY_CPU_OPERATOR(LogSoftmax);
 #ifdef USE_CUDA
-DEPLOY_CUDA_OPERATOR(Softmax);
+DEPLOY_CUDA_OPERATOR(LogSoftmax);
 #endif
 
-DEPLOY_CPU_OPERATOR(SoftmaxGradient);
+DEPLOY_CPU_OPERATOR(LogSoftmaxGradient);
 #ifdef USE_CUDA
-DEPLOY_CUDA_OPERATOR(SoftmaxGradient);
+DEPLOY_CUDA_OPERATOR(LogSoftmaxGradient);
 #endif
 
-OPERATOR_SCHEMA(Softmax)
+OPERATOR_SCHEMA(LogSoftmax)
     /* X */
     .NumInputs(1)
     /* Y */
@@ -50,7 +50,7 @@ OPERATOR_SCHEMA(Softmax)
     /* X => Y */
     .AllowInplace({{0, 0}});
 
-OPERATOR_SCHEMA(SoftmaxGradient)
+OPERATOR_SCHEMA(LogSoftmaxGradient)
     /* Y, dY */
     .NumInputs(2)
     /* dX */
@@ -58,6 +58,6 @@ OPERATOR_SCHEMA(SoftmaxGradient)
     /* dY => dX */
     .AllowInplace({{1, 0}});
 
-REGISTER_GRADIENT(Softmax, InplaceGradientMaker);
+REGISTER_GRADIENT(LogSoftmax, InplaceGradientMaker);
 
 } // namespace dragon

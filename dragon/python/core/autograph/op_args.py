@@ -547,7 +547,7 @@ def smooth_l1_loss_args(**kwargs):
     }
 
 
-@register('Softmax')
+@register(['Softmax', 'LogSoftmax'])
 def softmax_args(**kwargs):
     return {'axis': kwargs.get('axis', -1)}
 

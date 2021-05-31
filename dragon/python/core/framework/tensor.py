@@ -283,6 +283,17 @@ class Tensor(types.TensorBase):
 
         """
 
+    def item(self):
+        """Return the value as a python number.
+
+        Returns
+        -------
+        number
+            The value.
+
+        """
+        return float(self) if 'float' in self.dtype else int(self)
+
     def normal(self, mean=0, std=1):
         r"""Fill self from a normal distribution.
 
@@ -342,6 +353,17 @@ class Tensor(types.TensorBase):
         `dragon.reshape(...)`_
 
         """
+
+    def tolist(self):
+        """Return the value as a python list.
+
+        Returns
+        -------
+        list
+            The value.
+
+        """
+        return self.numpy().tolist()
 
     def truncated_normal(self, mean=0, std=1):
         r"""Fill self from a truncated normal distribution.
@@ -452,7 +474,7 @@ class Tensor(types.TensorBase):
         """
 
     def __float__(self):
-        """Return a float python scalar.
+        """Return the value as a python number.
 
         Returns
         -------
@@ -591,7 +613,7 @@ class Tensor(types.TensorBase):
         """
 
     def __int__(self):
-        """Return an integer python scalar.
+        """Return the value as a python number.
 
         Returns
         -------

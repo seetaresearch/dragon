@@ -18,22 +18,22 @@
 namespace dragon {
 
 template <class Context>
-class LayerNormOp final : public GroupNormOp<Context> {
+class LayerNormOp final : public Operator<Context> {
  public:
   LayerNormOp(const OperatorDef& def, Workspace* ws)
-      : GroupNormOp<Context>(def, ws) {}
+      : Operator<Context>(def, ws),
+        epsilon_(OP_SINGLE_ARG(double, "epsilon", 1e-5)) {}
   USE_OPERATOR_FUNCTIONS;
 
-  void GetBaseArguments() override {
-    auto& X = Input(0);
-    GET_OP_AXIS_ARG(axis, X.ndim(), -1);
-    // Set dimensions
-    this->N_ = X.count(0, axis);
-    this->C_ = this->D_ = X.count(axis);
-    this->G_ = this->S_ = 1;
-    // Set data format
-    this->data_format_ = "NHWC";
+  void RunOnDevice() override {
+    DispatchHelper<dtypes::Floating>::Call(this, Input(0));
   }
+
+  template <typename T>
+  void DoRunWithType();
+
+ protected:
+  double epsilon_;
 };
 
 template <class Context>

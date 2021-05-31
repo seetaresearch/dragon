@@ -9,12 +9,16 @@ template <class Context>
 template <typename T>
 void GroupNormOp<Context>::DoRunWithType() {
   using ParamT = typename math::AccmulatorType<T>::type;
-  INITIALIZE_TENSOR_VIA_SPEC(Input(1), vec64_t({C_}), ParamT);
-  INITIALIZE_TENSOR_VIA_SPEC(Input(2), vec64_t({C_}), ParamT);
+  auto &X = Input(0), *Y = Output(0);
+  auto &W = Input(1), &B = Input(2);
+  GetBaseArguments();
+
+  INITIALIZE_TENSOR_VIA_SPEC(W, vec64_t({C_}), ParamT);
+  INITIALIZE_TENSOR_VIA_SPEC(B, vec64_t({C_}), ParamT);
   auto* X_mu = Buffer("X_mu")->Reshape({N_, G_});
   auto* X_rsig = Buffer("X_rsig")->Reshape({N_, G_});
 
-  auto* x = Input(0).template data<T, Context>();
+  auto* x = X.template data<T, Context>();
   auto* mu = X_mu->template mutable_data<ParamT, Context>();
   auto* rsig = X_rsig->template mutable_data<ParamT, Context>();
 
@@ -29,10 +33,10 @@ void GroupNormOp<Context>::DoRunWithType() {
     kernels::Moments(4, dims.data(), 2, axes.data(), x, mu, rsig, ctx());
   }
 
-  // Inverse stddev from variance
+  // Inverse stddev from variance.
   math::InvStd(N_ * G_, epsilon_, rsig, rsig, ctx());
 
-  // Fuse parameters to compute affine transformation
+  // Fuse parameters to compute affine transformation.
   auto* scratch =
       ctx()->workspace()->template data<ParamT, Context>({2 * N_ * C_})[0];
   kernels::GroupNorm(
@@ -44,29 +48,24 @@ void GroupNormOp<Context>::DoRunWithType() {
       x,
       mu,
       rsig,
-      Input(1).template data<ParamT, Context>(), // gamma
-      Input(2).template data<ParamT, Context>(), // beta
+      W.template data<ParamT, Context>(),
+      B.template data<ParamT, Context>(),
       scratch,
       scratch + N_ * C_,
-      Output(0)->template mutable_data<T, Context>(),
+      Y->ReshapeLike(X)->template mutable_data<T, Context>(),
       ctx());
-}
-
-template <class Context>
-void GroupNormOp<Context>::RunOnDevice() {
-  GetBaseArguments();
-  Output(0)->ReshapeLike(Input(0));
-  DispatchHelper<dtypes::Floating>::Call(this, Input(0));
 }
 
 template <class Context>
 template <typename T>
 void GroupNormGradientOp<Context>::DoRunWithType() {
   using ParamT = typename math::AccmulatorType<T>::type;
-  auto *dX = Output(0), *dW = Output(1), *dB = Output(2);
+  auto &X = Input(0), &W = Input(1), &dY = Input(2);
   auto *X_mu = Buffer("X_mu"), *X_rsig = Buffer("X_rsig");
+  auto *dX = Output(0), *dW = Output(1), *dB = Output(2);
+  GetBaseArguments();
 
-  // Gradient w.r.t. gamma, beta and input
+  // Gradient w.r.t. gamma, beta and input.
   auto* scratch =
       ctx()->workspace()->template data<ParamT, Context>({2 * N_ * G_})[0];
   kernels::GroupNormGrad(
@@ -75,24 +74,17 @@ void GroupNormGradientOp<Context>::DoRunWithType() {
       D_,
       S_,
       data_format(),
-      Input(0).template data<T, Context>(), // x
+      X.template data<T, Context>(),
       X_mu->template data<ParamT, Context>(),
       X_rsig->template data<ParamT, Context>(),
-      Input(1).template data<ParamT, Context>(), // gamma
-      Input(2).template data<T, Context>(), // dy
+      W.template data<ParamT, Context>(),
+      dY.template data<T, Context>(),
       scratch,
       scratch + N_ * G_,
       dW->Reshape({C_})->template mutable_data<ParamT, Context>(),
       dB->Reshape({C_})->template mutable_data<ParamT, Context>(),
-      dX->template mutable_data<T, Context>(),
+      dX->ReshapeLike(X)->template mutable_data<T, Context>(),
       ctx());
-}
-
-template <class Context>
-void GroupNormGradientOp<Context>::RunOnDevice() {
-  GetBaseArguments();
-  Output(0)->ReshapeLike(Input(0));
-  DispatchHelper<dtypes::Floating>::Call(this, Input(0));
 }
 
 DEPLOY_CPU_OPERATOR(GroupNorm);

@@ -61,9 +61,13 @@ glorot_normal
 #############
 .. automethod:: dragon.Tensor.glorot_normal
 
-glorot_uniform 
+glorot_uniform
 ##############
 .. automethod:: dragon.Tensor.glorot_uniform
+
+item
+####
+.. automethod:: dragon.Tensor.item
 
 normal
 ######
@@ -76,6 +80,10 @@ numpy
 reshape
 #######
 .. automethod:: dragon.Tensor.reshape
+
+tolist
+######
+.. automethod:: dragon.Tensor.tolist
 
 truncated_normal
 ################

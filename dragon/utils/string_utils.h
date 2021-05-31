@@ -10,8 +10,8 @@
  * ------------------------------------------------------------
  */
 
-#ifndef DRAGON_UTILS_STRING_H_
-#define DRAGON_UTILS_STRING_H_
+#ifndef DRAGON_UTILS_STRING_UTILS_H_
+#define DRAGON_UTILS_STRING_UTILS_H_
 
 #include <algorithm>
 #include <cstdlib>
@@ -100,4 +100,4 @@ inline std::string replace_all(
 
 } // namespace dragon
 
-#endif // DRAGON_UTILS_STRING_H_
+#endif // DRAGON_UTILS_STRING_UTILS_H_

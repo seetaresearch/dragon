@@ -1,4 +1,3 @@
-#include "dragon/utils/device/common_openmp.h"
 #include "dragon/utils/math_functions.h"
 #include "dragon/utils/op_kernels.h"
 
@@ -16,18 +15,14 @@ void _RowwiseMoments(
     AccT* mean,
     AccT* var) {
   const AccT scale = AccT(1) / AccT(rows);
-#ifdef USE_OPENMP
-#pragma omp parallel for num_threads(OMP_THREADS(cols))
-#endif
   for (int i = 0; i < cols; ++i) {
-    AccT x_val, m_val = AccT(0), v_val = AccT(0);
+    AccT m_val = AccT(0), v_val = AccT(0);
     for (int j = 0; j < rows; ++j) {
-      x_val = convert::To<AccT>(x[j * cols + i]);
-      m_val += x_val;
-      v_val += x_val * x_val;
+      const AccT val = convert::To<AccT>(x[j * cols + i]);
+      m_val += val;
+      v_val += val * val;
     }
-    m_val *= scale;
-    mean[i] = m_val;
+    mean[i] = m_val = m_val * scale;
     var[i] = v_val * scale - m_val * m_val;
   }
 }
@@ -40,18 +35,15 @@ void _ColwiseMoments(
     AccT* mean,
     AccT* var) {
   const AccT scale = AccT(1) / AccT(cols);
-#ifdef USE_OPENMP
-#pragma omp parallel for num_threads(OMP_THREADS(rows))
-#endif
   for (int i = 0; i < rows; ++i) {
-    AccT x_val, m_val = AccT(0), v_val = AccT(0);
+    const int offset = i * cols;
+    AccT m_val = AccT(0), v_val = AccT(0);
     for (int j = 0; j < cols; ++j) {
-      x_val = convert::To<AccT>(x[i * cols + j]);
-      m_val += x_val;
-      v_val += x_val * x_val;
+      const AccT val = convert::To<AccT>(x[offset + j]);
+      m_val += val;
+      v_val += val * val;
     }
-    m_val *= scale;
-    mean[i] = m_val;
+    mean[i] = m_val = m_val * scale;
     var[i] = v_val * scale - m_val * m_val;
   }
 }
@@ -67,25 +59,20 @@ void _GenericMoments(
     AccT* mean,
     AccT* var) {
   const AccT scale = AccT(1) / AccT(cols);
-#ifdef USE_OPENMP
-#pragma omp parallel for num_threads(OMP_THREADS(rows))
-#endif
   for (int i = 0; i < rows; ++i) {
-    AccT x_val, m_val = AccT(0), v_val = AccT(0);
-    int xi, c, r;
+    const int offset = i * cols;
+    AccT m_val = AccT(0), v_val = AccT(0);
     for (int j = 0; j < cols; ++j) {
-      xi = 0;
-      c = i * cols + j;
+      int xi = 0, c = offset + j, r;
       for (int d = num_dims - 1; d >= 0; --d) {
         FIXED_DIVISOR_DIV_MOD(x_dims[d], c, &c, &r);
         xi += r * x_strides[d];
       }
-      x_val = convert::To<AccT>(x[xi]);
-      m_val += x_val;
-      v_val += x_val * x_val;
+      const AccT val = convert::To<AccT>(x[xi]);
+      m_val += val;
+      v_val += val * val;
     }
-    m_val *= scale;
-    mean[i] = m_val;
+    mean[i] = m_val = m_val * scale;
     var[i] = v_val * scale - m_val * m_val;
   }
 }

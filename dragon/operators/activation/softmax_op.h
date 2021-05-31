@@ -23,7 +23,9 @@ class SoftmaxOp : public Operator<Context> {
   SIMPLE_CTOR_DTOR(SoftmaxOp);
   USE_OPERATOR_FUNCTIONS;
 
-  void RunOnDevice() override;
+  void RunOnDevice() override {
+    DispatchHelper<dtypes::Floating>::Call(this, Input(0));
+  }
 
   template <typename T>
   void DoRunWithType();
@@ -35,10 +37,12 @@ class SoftmaxGradientOp : public Operator<Context> {
   SIMPLE_CTOR_DTOR(SoftmaxGradientOp);
   USE_OPERATOR_FUNCTIONS;
 
+  void RunOnDevice() override {
+    DispatchHelper<dtypes::Floating>::Call(this, Input(0));
+  }
+
   template <typename T>
   void DoRunWithType();
-
-  void RunOnDevice() override;
 };
 
 #ifdef USE_CUDNN

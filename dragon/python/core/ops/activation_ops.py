@@ -17,8 +17,6 @@ from __future__ import print_function
 from dragon.core.autograph import context
 from dragon.core.autograph.op_impl import OpLib
 from dragon.core.autograph.op_impl import OpSchema
-from dragon.core.ops import math_ops
-from dragon.core.ops import array_ops
 
 
 @OpSchema.num_inputs(1)
@@ -353,7 +351,7 @@ def leaky_relu(inputs, alpha=0.2, inplace=False, **kwargs):
 
 
 @OpSchema.num_inputs(1)
-def log_softmax(inputs, axis=-1, **kwargs):
+def log_softmax(inputs, axis=-1, inplace=False, **kwargs):
     r"""Compute the composite of logarithm and softmax.
 
     The **LogSoftmax** function is defined as:
@@ -374,6 +372,8 @@ def log_softmax(inputs, axis=-1, **kwargs):
         The input tensor.
     axis : int, optional, default=-1
         The axis to reduce.
+    inplace : bool, optional, default=False
+        Call in-place or return a new tensor.
 
     Returns
     -------
@@ -381,11 +381,11 @@ def log_softmax(inputs, axis=-1, **kwargs):
         The output tensor.
 
     """
-    return math_ops.sub(
-        [inputs, math_ops.log(
-            array_ops.sum(math_ops.exp(inputs, **kwargs),
-                          axis=[axis], keepdims=True, **kwargs),
-            **kwargs)], **kwargs)
+    if context.executing_eagerly():
+        return OpLib.execute(
+            'LogSoftmax', inputs,
+            outputs=inputs if inplace else [None], axis=axis)
+    return OpLib.add('LogSoftmax', inputs, axis=axis, **kwargs)
 
 
 @OpSchema.num_inputs(2)

@@ -123,16 +123,16 @@ __global__ void _RoiAlign(
 
     const float roi_w = max(roi_wend - roi_wstart, 1.f);
     const float roi_h = max(roi_hend - roi_hstart, 1.f);
-    const float bin_h = roi_h / (float)out_h;
-    const float bin_w = roi_w / (float)out_w;
+    const float bin_h = roi_h / float(out_h);
+    const float bin_w = roi_w / float(out_w);
 
     const float hstart = roi_hstart + h_out * bin_h;
     const float wstart = roi_wstart + w_out * bin_w;
 
     const int grid_h =
-        sampling_ratio > 0 ? sampling_ratio : ceil(roi_h / out_h);
+        sampling_ratio > 0 ? sampling_ratio : int(ceil(roi_h / float(out_h)));
     const int grid_w =
-        sampling_ratio > 0 ? sampling_ratio : ceil(roi_w / out_w);
+        sampling_ratio > 0 ? sampling_ratio : int(ceil(roi_w / float(out_w)));
 
     const T* offset_x = x + (batch_ind * C + c) * H * W;
     AccT val = AccT(0);
@@ -178,16 +178,16 @@ __global__ void _RoiAlignGrad(
 
     const float roi_w = max(roi_wend - roi_wstart, 1.f);
     const float roi_h = max(roi_hend - roi_hstart, 1.f);
-    const float bin_h = roi_h / (float)out_h;
-    const float bin_w = roi_w / (float)out_w;
+    const float bin_h = roi_h / float(out_h);
+    const float bin_w = roi_w / float(out_w);
 
     const float hstart = roi_hstart + h_out * bin_h;
     const float wstart = roi_wstart + w_out * bin_w;
 
     const int grid_h =
-        sampling_ratio > 0 ? sampling_ratio : ceil(roi_h / out_h);
+        sampling_ratio > 0 ? sampling_ratio : int(ceil(roi_h / float(out_h)));
     const int grid_w =
-        sampling_ratio > 0 ? sampling_ratio : ceil(roi_w / out_w);
+        sampling_ratio > 0 ? sampling_ratio : int(ceil(roi_w / float(out_w)));
     const float dyi = convert::To<float>(dy[yi]) / float(grid_h * grid_w);
     float* offset_dx = dx + (batch_ind * C + c) * H * W;
 

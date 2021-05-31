@@ -218,7 +218,7 @@ __global__ void _BatchNormInferenceGrad(
         _BatchNormExpectation,                                    \
         math::ScalarType<T>::type,                                \
         AccT,                                                     \
-        CUDA_2D_BLOCKS(C),                                        \
+        C,                                                        \
         CUDA_THREADS,                                             \
         N,                                                        \
         C,                                                        \
@@ -245,7 +245,7 @@ __global__ void _BatchNormInferenceGrad(
         _BatchNormWGrad,                                          \
         math::ScalarType<T>::type,                                \
         AccT,                                                     \
-        CUDA_2D_BLOCKS(C),                                        \
+        C,                                                        \
         CUDA_THREADS,                                             \
         N,                                                        \
         C,                                                        \
@@ -314,7 +314,7 @@ __global__ void _BatchNormInferenceGrad(
           _BatchNormWGrad,                                        \
           math::ScalarType<T>::type,                              \
           AccT,                                                   \
-          CUDA_2D_BLOCKS(C),                                      \
+          C,                                                      \
           CUDA_THREADS,                                           \
           N,                                                      \
           C,                                                      \

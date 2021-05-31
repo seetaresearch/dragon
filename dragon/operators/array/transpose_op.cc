@@ -17,16 +17,22 @@ void TransposeOp<Context>::DoRunWithType() {
       << "\nProviding " << num_axes << " dimensions to permute, "
       << "while Tensor(" << X.name() << ")'s dims are " << X.DimString();
 
+  vec64_t new_axes(num_dims);
   for (int i = 0; i < num_dims; ++i) {
-    auto axis = num_axes > 0 ? perm(i) : num_dims - i - 1;
-    X_strides[i] = X.stride(axis);
-    Y_dims[i] = X.dim(axis);
+    new_axes[i] = num_axes > 0 ? perm(i) : num_dims - i - 1;
   }
 
-  // Store for the gradient calculation
-  SET_INPUT_SPEC(0);
-  Buffer("X_strides")->template CopyFrom<int64_t>(X_strides);
-  Buffer("Y_dims")->template CopyFrom<int64_t>(Y_dims);
+  if (def().type() == "TransposeGradient") {
+    auto old_axes(new_axes);
+    for (int i = 0; i < num_dims; ++i) {
+      new_axes[old_axes[i]] = i;
+    }
+  }
+
+  for (int i = 0; i < num_dims; ++i) {
+    X_strides[i] = X.stride(new_axes[i]);
+    Y_dims[i] = X.dim(new_axes[i]);
+  }
 
   kernels::Transpose(
       num_dims,
@@ -37,43 +43,11 @@ void TransposeOp<Context>::DoRunWithType() {
       ctx());
 }
 
-template <class Context>
-void TransposeOp<Context>::RunOnDevice() {
-  DispatchHelper<dtypes::Generic>::Call(this, Input(0));
-}
-
-template <class Context>
-template <typename T>
-void TransposeGradientOp<Context>::DoRunWithType() {
-  auto &dY = Input(0), *dX = Output(0);
-  dX->ReshapeLike(INPUT_SPEC(0));
-
-  vec64_t X_strides, Y_dims;
-  Buffer("X_strides")->template CopyTo<int64_t>(X_strides);
-  Buffer("Y_dims")->template CopyTo<int64_t>(Y_dims);
-
-  kernels::TransposeGrad(
-      X_strides.size(),
-      X_strides.data(),
-      Y_dims.data(),
-      dY.template data<T, Context>(),
-      dX->template mutable_data<T, Context>(),
-      ctx());
-}
-
-template <class Context>
-void TransposeGradientOp<Context>::RunOnDevice() {
-  DispatchHelper<dtypes::Floating>::Call(this, Input(0));
-}
-
 DEPLOY_CPU_OPERATOR(Transpose);
+REGISTER_CPU_OPERATOR(TransposeGradient, TransposeOp<CPUContext>);
 #ifdef USE_CUDA
 DEPLOY_CUDA_OPERATOR(Transpose);
-#endif
-
-DEPLOY_CPU_OPERATOR(TransposeGradient);
-#ifdef USE_CUDA
-DEPLOY_CUDA_OPERATOR(TransposeGradient);
+REGISTER_CUDA_OPERATOR(TransposeGradient, TransposeOp<CUDAContext>);
 #endif
 
 OPERATOR_SCHEMA(Transpose)

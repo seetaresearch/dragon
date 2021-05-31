@@ -230,7 +230,7 @@ __global__ void _GroupNormGrad(
         _GroupNormWGrad,                                        \
         math::ScalarType<T>::type,                              \
         AccT,                                                   \
-        CUDA_2D_BLOCKS(G* D),                                   \
+        G* D,                                                   \
         CUDA_THREADS,                                           \
         N,                                                      \
         G,                                                      \
@@ -246,7 +246,7 @@ __global__ void _GroupNormGrad(
         _GroupNormInternalGrad,                                 \
         math::ScalarType<T>::type,                              \
         AccT,                                                   \
-        CUDA_2D_BLOCKS(N* G),                                   \
+        N* G,                                                   \
         CUDA_THREADS,                                           \
         N,                                                      \
         G,                                                      \

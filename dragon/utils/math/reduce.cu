@@ -89,76 +89,66 @@ __global__ void _GenericReduce(
   }
 }
 
-#define DEFINE_REDUCE_DISPATCHER(name)                                   \
-  template <typename T, typename AccT, typename Reducer>                 \
-  void _Reduce##name(                                                    \
-      const int num_dims,                                                \
-      const int* dims,                                                   \
-      const int num_axes,                                                \
-      const int* axes,                                                   \
-      const Reducer reducer,                                             \
-      const AccT init,                                                   \
-      const AccT scale,                                                  \
-      const T* x,                                                        \
-      T* y,                                                              \
-      CUDAContext* ctx) {                                                \
-    int rows, cols;                                                      \
-    vec32_t out_dims(dims, dims + num_dims);                             \
-    for (int i = 0; i < num_axes; ++i) {                                 \
-      out_dims[axes[i]] = 1;                                             \
-    }                                                                    \
-    if (math::utils::IsRowwiseReduce(                                    \
-            num_dims, dims, out_dims.data(), &rows, &cols)) {            \
-      _RowwiseReduce<<<                                                  \
-          CUDA_2D_BLOCKS(cols),                                          \
-          CUDA_THREADS,                                                  \
-          0,                                                             \
-          ctx->cuda_stream()>>>(rows, cols, reducer, init, scale, x, y); \
-      return;                                                            \
-    }                                                                    \
-    if (math::utils::IsColwiseReduce(                                    \
-            num_dims, dims, out_dims.data(), &rows, &cols)) {            \
-      _ColwiseReduce<<<                                                  \
-          CUDA_2D_BLOCKS(rows),                                          \
-          CUDA_THREADS,                                                  \
-          0,                                                             \
-          ctx->cuda_stream()>>>(rows, cols, reducer, init, scale, x, y); \
-      return;                                                            \
-    }                                                                    \
-    CUDA_TENSOR_DIMS_CHECK(num_dims);                                    \
-    SimpleArray<int, CUDA_TENSOR_MAX_DIMS> transpose_axes;               \
-    SimpleArray<int, CUDA_TENSOR_MAX_DIMS> transpose_strides;            \
-    SimpleArray<int, CUDA_TENSOR_MAX_DIMS> transpose_dims;               \
-    math::utils::TransposeAxesForReduce(                                 \
-        num_dims, num_axes, axes, transpose_axes.data);                  \
-    math::utils::ComputeTransposeStrides(                                \
-        num_dims, dims, transpose_axes.data, transpose_strides.data);    \
-    rows = cols = 1;                                                     \
-    const int pivot = num_dims - num_axes;                               \
-    for (int i = 0; i < pivot; ++i) {                                    \
-      rows *= dims[transpose_axes.data[i]];                              \
-    }                                                                    \
-    for (int i = pivot; i < num_dims; ++i) {                             \
-      cols *= dims[transpose_axes.data[i]];                              \
-    }                                                                    \
-    for (int i = 0; i < num_dims; ++i) {                                 \
-      transpose_dims.data[i] = dims[transpose_axes.data[i]];             \
-    }                                                                    \
-    _GenericReduce<<<                                                    \
-        CUDA_2D_BLOCKS(rows),                                            \
-        CUDA_THREADS,                                                    \
-        0,                                                               \
-        ctx->cuda_stream()>>>(                                           \
-        rows,                                                            \
-        cols,                                                            \
-        num_dims,                                                        \
-        transpose_dims,                                                  \
-        transpose_strides,                                               \
-        reducer,                                                         \
-        init,                                                            \
-        scale,                                                           \
-        x,                                                               \
-        y);                                                              \
+#define DEFINE_REDUCE_DISPATCHER(name)                                \
+  template <typename T, typename AccT, typename Reducer>              \
+  void _Reduce##name(                                                 \
+      const int num_dims,                                             \
+      const int* dims,                                                \
+      const int num_axes,                                             \
+      const int* axes,                                                \
+      const Reducer reducer,                                          \
+      const AccT init,                                                \
+      const AccT scale,                                               \
+      const T* x,                                                     \
+      T* y,                                                           \
+      CUDAContext* ctx) {                                             \
+    int rows, cols;                                                   \
+    vec32_t out_dims(dims, dims + num_dims);                          \
+    for (int i = 0; i < num_axes; ++i) {                              \
+      out_dims[axes[i]] = 1;                                          \
+    }                                                                 \
+    if (math::utils::IsRowwiseReduce(                                 \
+            num_dims, dims, out_dims.data(), &rows, &cols)) {         \
+      _RowwiseReduce<<<cols, CUDA_THREADS, 0, ctx->cuda_stream()>>>(  \
+          rows, cols, reducer, init, scale, x, y);                    \
+      return;                                                         \
+    }                                                                 \
+    if (math::utils::IsColwiseReduce(                                 \
+            num_dims, dims, out_dims.data(), &rows, &cols)) {         \
+      _ColwiseReduce<<<rows, CUDA_THREADS, 0, ctx->cuda_stream()>>>(  \
+          rows, cols, reducer, init, scale, x, y);                    \
+      return;                                                         \
+    }                                                                 \
+    CUDA_TENSOR_DIMS_CHECK(num_dims);                                 \
+    SimpleArray<int, CUDA_TENSOR_MAX_DIMS> transpose_axes;            \
+    SimpleArray<int, CUDA_TENSOR_MAX_DIMS> transpose_strides;         \
+    SimpleArray<int, CUDA_TENSOR_MAX_DIMS> transpose_dims;            \
+    math::utils::TransposeAxesForReduce(                              \
+        num_dims, num_axes, axes, transpose_axes.data);               \
+    math::utils::ComputeTransposeStrides(                             \
+        num_dims, dims, transpose_axes.data, transpose_strides.data); \
+    rows = cols = 1;                                                  \
+    const int pivot = num_dims - num_axes;                            \
+    for (int i = 0; i < pivot; ++i) {                                 \
+      rows *= dims[transpose_axes.data[i]];                           \
+    }                                                                 \
+    for (int i = pivot; i < num_dims; ++i) {                          \
+      cols *= dims[transpose_axes.data[i]];                           \
+    }                                                                 \
+    for (int i = 0; i < num_dims; ++i) {                              \
+      transpose_dims.data[i] = dims[transpose_axes.data[i]];          \
+    }                                                                 \
+    _GenericReduce<<<rows, CUDA_THREADS, 0, ctx->cuda_stream()>>>(    \
+        rows,                                                         \
+        cols,                                                         \
+        num_dims,                                                     \
+        transpose_dims,                                               \
+        transpose_strides,                                            \
+        reducer,                                                      \
+        init,                                                         \
+        scale,                                                        \
+        x,                                                            \
+        y);                                                           \
   }
 
 DEFINE_REDUCE_DISPATCHER(Max);

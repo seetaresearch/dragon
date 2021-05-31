@@ -211,7 +211,7 @@ __global__ void _PReluWGrad(
           _PReluWGrad,                                                      \
           math::ScalarType<T>::type,                                        \
           math::AccmulatorType<T>::type,                                    \
-          CUDA_2D_BLOCKS(C),                                                \
+          C,                                                                \
           CUDA_THREADS,                                                     \
           NxS,                                                              \
           S,                                                                \

@@ -56,7 +56,13 @@ class CUDAObjects {
       auto& handle = handles[stream_id];
       CUBLAS_CHECK(cublasSetPointerMode(handle, CUBLAS_POINTER_MODE_HOST));
       CUBLAS_CHECK(cublasSetStream(handle, stream(device_id, stream_id)));
-#if CUDA_VERSION >= 9000
+#if CUDA_VERSION >= 11000
+      if (cudnn_allow_tf32_) {
+        CUBLAS_CHECK(cublasSetMathMode(handle, CUBLAS_TF32_TENSOR_OP_MATH));
+      } else {
+        CUBLAS_CHECK(cublasSetMathMode(handle, CUBLAS_DEFAULT_MATH));
+      }
+#elif CUDA_VERSION >= 9000
       if (TENSOR_CORE_AVAILABLE()) {
         CUBLAS_CHECK(cublasSetMathMode(handle, CUBLAS_TENSOR_OP_MATH));
       }

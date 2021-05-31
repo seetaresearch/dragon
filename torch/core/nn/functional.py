@@ -1303,7 +1303,7 @@ def local_response_norm(input, size, alpha=1e-4, beta=0.75, k=1.):
         size=size, alpha=float(alpha), beta=float(beta), bias=float(k))
 
 
-def log_softmax(input, dim):
+def log_softmax(input, dim, inplace=False):
     r"""Apply the composite of logarithm and softmax to input.
 
     The **LogSoftmax** function is defined as:
@@ -1316,6 +1316,8 @@ def log_softmax(input, dim):
         The input.
     dim : int
         The dimension to reduce.
+    inplace : bool, optional, default=False
+        Whether to do the operation in-place.
 
     Returns
     -------
@@ -1327,7 +1329,9 @@ def log_softmax(input, dim):
     `torch.nn.LogSoftmax(...)`_
 
     """
-    return input - input.logsumexp(dim, keepdim=True)
+    return FunctionLib.apply(
+        'LogSoftmax', input.device, [input],
+        outputs=[input if inplace else None], axis=dim)
 
 
 def lstm_cell(input, cx):

@@ -48,7 +48,7 @@ class Iterator(object):
         with self._api_scope():
             self._pipe.build()
             # Enforce the correct device of current process
-            # to initialize cuda handles instead of device:0
+            # to initialize cuda handles instead of device 0.
             cuda.set_device(self._pipe.device_id)
             self._pipe.schedule_run()
             self._copies = None
@@ -91,12 +91,9 @@ class Iterator(object):
                         shape=tensor.shape(),
                         dtype=str(types.np_dtype(tensor.dtype())),
                         device=self.new_device(
-                            device_type='cuda' if isinstance(
-                                tensor, TensorGPU) else 'cpu',
-                            device_index=self._pipe.device_id,
-                        )
-                    )
-                )
+                            device_type=('cuda' if isinstance(tensor, TensorGPU)
+                                         else 'cpu'),
+                            device_index=self._pipe.device_id)))
         # Transfer the data: DALI => Storage
         for i, tensor in enumerate(tensors):
             self._transfer_tensor(tensor, self._copies[i])
@@ -160,7 +157,7 @@ class Iterator(object):
 
     def __next__(self):
         """Return the next batch of data."""
-        # Return and reset the first batch if necessary
+        # Return and reset the first batch if necessary.
         if self._first_batch is not None:
             outputs = self._first_batch
             self._first_batch = None
