@@ -180,6 +180,18 @@ class Tensor(types.TensorBase):
             return float('inf')
         return math_util.prod(self._shape)
 
+    @property
+    def T(self):
+        """Return a tensor with axes reversed.
+
+        Returns
+        -------
+        dragon.Tensor
+            The output tensor.
+
+        """
+        return self.transpose()
+
     def astype(self, dtype, copy=True):
         """Convert the data type to a specific one.
 
@@ -364,6 +376,27 @@ class Tensor(types.TensorBase):
 
         """
         return self.numpy().tolist()
+
+    def transpose(self, perm=None, copy=True):
+        """Return a tensor with permuted axes.
+
+        Parameters
+        ----------
+        perm : Union[Sequence[int], dragon.Tensor]], optional
+            The output permutation.
+        copy : bool, optional, default=True
+            Return a new tensor or transpose in-place.
+
+        Returns
+        -------
+        dragon.Tensor
+            The output tensor.
+
+        See Also
+        --------
+        `dragon.transpose(...)`_
+
+        """
 
     def truncated_normal(self, mean=0, std=1):
         r"""Fill self from a truncated normal distribution.
@@ -691,6 +724,25 @@ class Tensor(types.TensorBase):
         See Also
         --------
         `dragon.math.less(...)`_
+
+        """
+
+    def __matmul__(self, other):
+        """Compute the matrix multiplication.
+
+        Parameters
+        ----------
+        other : dragon.Tensor
+            The value to multiply.
+
+        Returns
+        -------
+        dragon.Tensor
+            The output tensor.
+
+        See Also
+        --------
+        `dragon.math.matmul(...)`_
 
         """
 

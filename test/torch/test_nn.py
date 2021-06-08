@@ -666,6 +666,14 @@ class TestModules(OpTestCase):
             if m4 is not None:
                 self.assertEqual(m4(x), np.pad(data, pads, 'constant'))
 
+    def test_pixel_shuffle(self):
+        data = np.ones((2, 12, 4, 4), dtype='float32')
+        x = new_tensor(data)
+        m1 = torch.nn.PixelShuffle(2)
+        m2 = torch.nn.PixelUnshuffle(2)
+        _, _, = repr(m1), repr(m2)
+        self.assertEqual(m2(m1(x)), data)
+
     def test_pool1d(self):
         entries = [((2, 2, 2,), (2,), 2, 1, 'MaxPool1d'),
                    ((2, 2, 2,), (2,), 2, 1, 'AvgPool1d'),

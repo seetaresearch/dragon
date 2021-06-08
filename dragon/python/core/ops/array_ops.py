@@ -1754,7 +1754,7 @@ def tile(inputs, repeats, **kwargs):
 
 @OpSchema.num_inputs(1)
 @OpSchema.convert_arg('perm')
-def transpose(inputs, perm=None, **kwargs):
+def transpose(inputs, perm=None, copy=True, **kwargs):
     r"""Permute the dimensions of input.
 
     Examples:
@@ -1774,6 +1774,8 @@ def transpose(inputs, perm=None, **kwargs):
         The input tensor.
     perm : Union[Sequence[int], dragon.Tensor]], optional
         The output permutation.
+    copy : bool, optional, default=True
+        Return a new tensor or call in-place.
 
     Returns
     -------
@@ -1785,6 +1787,7 @@ def transpose(inputs, perm=None, **kwargs):
     if context.executing_eagerly():
         return OpLib.execute(
             'Transpose', inputs,
+            outputs=[None] if copy else inputs,
             ndim=len(args['perm']) if perm is not None else 0,
             perm=args['perm'])
     return OpLib.add('Transpose', **args)

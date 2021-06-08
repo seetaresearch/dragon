@@ -197,6 +197,12 @@ vm.torch.nn
   `class Parameter <nn/Parameter.html>`_
   : A wrapped tensor considered to be a module parameter.
 
+  `class PixelShuffle <nn/PixelShuffle.html>`_
+  : Rearrange depth elements into pixels.
+
+  `class PixelUnshuffle <nn/PixelUnshuffle.html>`_
+  : Rearrange pixels into depth elements.
+
   `class PReLU <nn/PReLU.html>`_
   : Apply the parametric rectified linear unit.
   `[He et.al, 2015] <https://arxiv.org/abs/1502.01852>`_.
@@ -354,6 +360,8 @@ vm.torch.nn
   nn/MultiheadAttention
   nn/NLLLoss
   nn/Parameter
+  nn/PixelShuffle
+  nn/PixelUnshuffle
   nn/PReLU
   nn/ReflectionPad1d
   nn/ReflectionPad2d

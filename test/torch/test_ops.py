@@ -463,7 +463,7 @@ class TestTensorOps(OpTestCase):
         for a_shape, b_shape in test_shapes:
             data1, data2 = arange(a_shape), arange(b_shape, 1)
             a, b = new_tensor(data1, False), new_tensor(data2, False)
-            self.assertEqual(a.matmul(b), np.matmul(data1, data2))
+            self.assertEqual(a.__matmul__(b), np.matmul(data1, data2))
 
     def test_max(self):
         entries = [(0, True), (0, False),
@@ -570,8 +570,13 @@ class TestTensorOps(OpTestCase):
             x = new_tensor(data)
             if perm is None:
                 self.assertEqual(x.permute(), np.transpose(data))
+                self.assertEqual(x.T, data.T)
+                x.permute_()
+                self.assertEqual(x, np.transpose(data))
             else:
                 self.assertEqual(x.permute(*perm), np.transpose(data, perm))
+                x.permute_(*perm)
+                self.assertEqual(x, np.transpose(data, perm))
         entries = [(0, 1), (0, 2), (1, 2)]
         for dim0, dim1 in entries:
             data = arange((2, 3, 4))
@@ -579,6 +584,8 @@ class TestTensorOps(OpTestCase):
             perm = list(range(len(data.shape)))
             perm[dim0], perm[dim1] = perm[dim1], perm[dim0]
             self.assertEqual(x.transpose(dim0, dim1), np.transpose(data, perm))
+            x.transpose_(dim0, dim1)
+            self.assertEqual(x, np.transpose(data, perm))
 
     def test_pow(self):
         for a_shape, b_shape in self.binary_test_shapes:

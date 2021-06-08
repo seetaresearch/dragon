@@ -39,8 +39,12 @@ shape
 .. autoattribute:: dragon.Tensor.shape
 
 size
-#####
+####
 .. autoattribute:: dragon.Tensor.size
+
+T
+#
+.. autoattribute:: dragon.Tensor.T
 
 Methods
 -------
@@ -84,6 +88,10 @@ reshape
 tolist
 ######
 .. automethod:: dragon.Tensor.tolist
+
+transpose
+#########
+.. automethod:: dragon.Tensor.transpose
 
 truncated_normal
 ################
@@ -168,6 +176,10 @@ __lt__
 ######
 .. automethod:: dragon.Tensor.__lt__
 
+__matmul__
+##########
+.. automethod:: dragon.Tensor.__matmul__
+
 __mul__
 #######
 .. automethod:: dragon.Tensor.__mul__
@@ -243,6 +255,7 @@ __xor__
 .. _dragon.math.greater_equal(...): math/greater_equal.html
 .. _dragon.math.less(...): math/less.html
 .. _dragon.math.less_equal(...): math/less_equal.html
+.. _dragon.math.matmul(...): math/matmul.html
 .. _dragon.math.mul(...): math/mul.html
 .. _dragon.math.negative(...): math/negative.html
 .. _dragon.math.not_equal(...): math/not_equal.html
@@ -253,6 +266,7 @@ __xor__
 .. _dragon.random.truncated_normal(...): random/truncated_normal.html
 .. _dragon.random.uniform(...): random/uniform.html
 .. _dragon.reshape(...): reshape.html
+.. _dragon.transpose(...): transpose.html
 
 .. raw:: html
 

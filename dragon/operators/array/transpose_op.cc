@@ -1,5 +1,6 @@
 #include "dragon/operators/array/transpose_op.h"
 #include "dragon/core/workspace.h"
+#include "dragon/utils/math_functions.h"
 #include "dragon/utils/op_kernels.h"
 
 namespace dragon {
@@ -7,7 +8,7 @@ namespace dragon {
 template <class Context>
 template <typename T>
 void TransposeOp<Context>::DoRunWithType() {
-  auto &X = Input(0), *Y = Output(0);
+  auto &X = Input(0), *Y = Output(0, {0});
 
   int num_axes, num_dims = X.ndim();
   vec64_t X_strides(num_dims), Y_dims(num_dims);
@@ -34,13 +35,25 @@ void TransposeOp<Context>::DoRunWithType() {
     Y_dims[i] = X.dim(new_axes[i]);
   }
 
+  auto* scratch = ((void*)&X == (void*)Y)
+      ? ctx()->workspace()->template data<T, Context>({X.count()})[0]
+      : Y->Reshape(Y_dims)->template mutable_data<T, Context>();
+
   kernels::Transpose(
       num_dims,
       X_strides.data(),
       Y_dims.data(),
       X.template data<T, Context>(),
-      Y->Reshape(Y_dims)->template mutable_data<T, Context>(),
+      scratch,
       ctx());
+
+  if ((void*)&X == (void*)Y) {
+    math::Copy(
+        X.count(),
+        scratch,
+        Y->Reshape(Y_dims)->template mutable_data<T, Context>(),
+        ctx());
+  }
 }
 
 DEPLOY_CPU_OPERATOR(Transpose);
@@ -54,13 +67,17 @@ OPERATOR_SCHEMA(Transpose)
     /* X */
     .NumInputs(1)
     /* Y */
-    .NumOutputs(1);
+    .NumOutputs(1)
+    /* X => Y */
+    .AllowInplace({{0, 0}});
 
 OPERATOR_SCHEMA(TransposeGradient)
     /* dY */
     .NumInputs(1)
     /* dX */
-    .NumOutputs(1);
+    .NumOutputs(1)
+    /* dY => dX */
+    .AllowInplace({{0, 0}});
 
 REGISTER_GRADIENT(Transpose, SimpleGradientMaker);
 

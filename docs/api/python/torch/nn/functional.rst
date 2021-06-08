@@ -155,6 +155,12 @@ vm.torch.nn.functional
   `pad(...) <functional/pad.html>`_
   : Pad the input according to the given sizes.
 
+  `pixel_shuffle(...) <functional/pixel_shuffle.html>`_
+  : Rearrange depth elements of input into pixels.
+
+  `pixel_unshuffle(...) <functional/pixel_unshuffle.html>`_
+  : Rearrange pixels of input into depth elements.
+
   `prelu(...) <functional/prelu.html>`_
   : Apply the parametric rectified linear unit to input.
   `[He et.al, 2015] <https://arxiv.org/abs/1502.01852>`_.
@@ -256,6 +262,8 @@ vm.torch.nn.functional
   functional/nll_loss
   functional/normalize
   functional/pad
+  functional/pixel_shuffle
+  functional/pixel_unshuffle
   functional/prelu
   functional/relu
   functional/relu6

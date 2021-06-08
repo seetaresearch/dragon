@@ -38,6 +38,10 @@ shape
 #####
 .. autoattribute:: dragon.vm.torch.Tensor.shape
 
+T
+#
+.. autoattribute:: dragon.vm.torch.Tensor.T
+
 Methods
 -------
 
@@ -213,6 +217,10 @@ exp
 ###
 .. automethod:: dragon.vm.torch.Tensor.exp
 
+exp\_
+#####
+.. automethod:: dragon.vm.torch.Tensor.exp_
+
 expand
 ######
 .. automethod:: dragon.vm.torch.Tensor.expand
@@ -316,6 +324,10 @@ le
 log
 ###
 .. automethod:: dragon.vm.torch.Tensor.log
+
+log\_
+#####
+.. automethod:: dragon.vm.torch.Tensor.log_
 
 logical_and
 ###########
@@ -461,6 +473,10 @@ permute
 #######
 .. automethod:: dragon.vm.torch.Tensor.permute
 
+permute\_
+#########
+.. automethod:: dragon.vm.torch.Tensor.permute_
+
 pow
 ###
 .. automethod:: dragon.vm.torch.Tensor.pow
@@ -592,6 +608,10 @@ topk
 transpose
 #########
 .. automethod:: dragon.vm.torch.Tensor.transpose
+
+transpose\_
+###########
+.. automethod:: dragon.vm.torch.Tensor.transpose_
 
 tril
 ####

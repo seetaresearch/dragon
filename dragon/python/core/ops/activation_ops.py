@@ -633,7 +633,7 @@ def softmax(inputs, axis=-1, inplace=False, **kwargs):
 
     ```python
     x = dragon.ones((1, 4), dtype='float32')
-    print(dragon.nn.softmax(x, 1))   # [[0.25 0.25 0.25 0.25]]
+    print(dragon.nn.softmax(x, 1))  # [[0.25 0.25 0.25 0.25]]
     print(dragon.nn.softmax(x, -1))  # Equivalent
     ```
 

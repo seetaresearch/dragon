@@ -1970,6 +1970,23 @@ def permute(self, *dims):
     return array_ops.permute(self, nest.flatten(dims))
 
 
+def permute_(self, *dims):
+    """Reorder the dimensions.
+
+    Parameters
+    ----------
+    dims : Union[Sequence[int], int...]
+        The new order of dimensions.
+
+    Returns
+    -------
+    dragon.vm.torch.Tensor
+        The output tensor.
+
+    """
+    return array_ops.permute(self, nest.flatten(dims), self)
+
+
 def pow(self, exponent):
     r"""Compute the power.
 
@@ -2623,6 +2640,29 @@ def transpose(self, dim0, dim1):
     return array_ops.transpose(self, dim0, dim1)
 
 
+def transpose_(self, dim0, dim1):
+    """Swap two dimensions.
+
+    Parameters
+    ----------
+    dim0 : int
+        The first dimension to be transposed.
+    dim1 : int
+        The second dimension to be transposed.
+
+    Returns
+    -------
+    dragon.vm.torch.Tensor
+        The output tensor.
+
+    See Also
+    --------
+    `torch.transpose(...)`_
+
+    """
+    return array_ops.transpose(self, dim0, dim1, self)
+
+
 def tril(self, k=0):
     r"""Return the lower triangular part.
 
@@ -2738,12 +2778,12 @@ def triu_(self, k=0):
 def _type(self, dtype=None):
     """Return the data type.
 
-    If attr:`dtype` is not ``None``, converts to a new tensor.
+    If ``dtype`` is not ``None``, converts to a new tensor.
 
     Parameters
     ----------
     dtype : str, optional
-        The specified type.
+        The data type to convert to.
 
     Returns
     -------
@@ -3008,6 +3048,7 @@ Tensor.new_tensor = new_tensor
 Tensor.nonzero = nonzero
 Tensor.normal_ = normal_
 Tensor.permute = permute
+Tensor.permute_ = permute_
 Tensor.pow = pow
 Tensor.reciprocal = reciprocal
 Tensor.reciprocal_ = reciprocal_
@@ -3037,6 +3078,7 @@ Tensor.sub = sub
 Tensor.sub_ = sub_
 Tensor.topk = topk
 Tensor.transpose = transpose
+Tensor.transpose_ = transpose_
 Tensor.tril = tril
 Tensor.tril_ = tril_
 Tensor.triu = triu

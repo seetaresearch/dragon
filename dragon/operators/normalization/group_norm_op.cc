@@ -37,8 +37,6 @@ void GroupNormOp<Context>::DoRunWithType() {
   math::InvStd(N_ * G_, epsilon_, rsig, rsig, ctx());
 
   // Fuse parameters to compute affine transformation.
-  auto* scratch =
-      ctx()->workspace()->template data<ParamT, Context>({2 * N_ * C_})[0];
   kernels::GroupNorm(
       N_,
       G_,
@@ -50,8 +48,6 @@ void GroupNormOp<Context>::DoRunWithType() {
       rsig,
       W.template data<ParamT, Context>(),
       B.template data<ParamT, Context>(),
-      scratch,
-      scratch + N_ * C_,
       Y->ReshapeLike(X)->template mutable_data<T, Context>(),
       ctx());
 }

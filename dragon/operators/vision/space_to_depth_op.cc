@@ -1,4 +1,6 @@
 #include "dragon/operators/vision/space_to_depth_op.h"
+#include "dragon/core/workspace.h"
+#include "dragon/utils/math_functions.h"
 #include "dragon/utils/op_kernels.h"
 
 namespace dragon {
@@ -6,7 +8,7 @@ namespace dragon {
 template <class Context>
 template <typename T>
 void SpaceToDepthOp<Context>::DoRunWithType() {
-  auto &X = Input(0), *Y = Output(0);
+  auto &X = Input(0), *Y = Output(0, {0});
 
   int start_axis, end_axis, perm_count = 0;
   int num_dims = X.ndim(), num_axes = X.ndim() - 2;
@@ -48,8 +50,8 @@ void SpaceToDepthOp<Context>::DoRunWithType() {
 
   if (data_format() == "NCHW") {
     for (int i = 0; i < num_axes; i++) {
-      perm.insert(perm.begin() + 1, perm.back());
-      perm.pop_back(); // DCR mode
+      perm.insert(perm.begin() + (mode_ == "DCR" ? 1 : 2), perm.back());
+      perm.pop_back();
     }
   }
 
@@ -66,19 +68,31 @@ void SpaceToDepthOp<Context>::DoRunWithType() {
     Y_dims[i] = X_reshape.dim(perm[i]);
   }
 
+  auto* scratch = ((void*)&X == (void*)Y)
+      ? ctx()->workspace()->template data<T, Context>({X.count()})[0]
+      : Y->Reshape(out_shape)->template mutable_data<T, Context>();
+
   kernels::Transpose(
       X_strides.size(),
       X_strides.data(),
       Y_dims.data(),
       X.template data<T, Context>(),
-      Y->Reshape(out_shape)->template mutable_data<T, Context>(),
+      scratch,
       ctx());
+
+  if ((void*)&X == (void*)Y) {
+    math::Copy(
+        X.count(),
+        scratch,
+        Y->Reshape(out_shape)->template mutable_data<T, Context>(),
+        ctx());
+  }
 }
 
 template <class Context>
 template <typename T>
 void DepthToSpaceOp<Context>::DoRunWithType() {
-  auto &X = Input(0), *Y = Output(0);
+  auto &X = Input(0), *Y = Output(0, {0});
 
   int start_axis, end_axis;
   int num_dims = X.ndim(), num_axes = X.ndim() - 2;
@@ -94,11 +108,11 @@ void DepthToSpaceOp<Context>::DoRunWithType() {
     start_axis = 2, end_axis = num_dims;
     out_shape[1] /= std::pow(block_size_, num_axes);
     in_dims = out_shape;
-    perm[1] = num_axes + 1;
+    perm[1] = (mode_ == "DCR" ? num_axes + 1 : 1);
     for (int i = 0; i < num_axes; i++) {
       perm[i * 2 + 2] = num_axes + i + 2;
-      perm[i * 2 + 3] = i + 1;
-      in_dims.insert(in_dims.begin() + 1, block_size_);
+      perm[i * 2 + 3] = i + (mode_ == "DCR" ? 1 : 2);
+      in_dims.insert(in_dims.begin() + (mode_ == "DCR" ? 1 : 2), block_size_);
       out_shape[start_axis + i] *= block_size_;
     }
   } else if (data_format() == "NHWC") {
@@ -129,13 +143,25 @@ void DepthToSpaceOp<Context>::DoRunWithType() {
     Y_dims[i] = X_reshape.dim(perm[i]);
   }
 
+  auto* scratch = ((void*)&X == (void*)Y)
+      ? ctx()->workspace()->template data<T, Context>({X.count()})[0]
+      : Y->Reshape(out_shape)->template mutable_data<T, Context>();
+
   kernels::Transpose(
       X_strides.size(),
       X_strides.data(),
       Y_dims.data(),
       X.template data<T, Context>(),
-      Y->Reshape(out_shape)->template mutable_data<T, Context>(),
+      scratch,
       ctx());
+
+  if ((void*)&X == (void*)Y) {
+    math::Copy(
+        X.count(),
+        scratch,
+        Y->Reshape(out_shape)->template mutable_data<T, Context>(),
+        ctx());
+  }
 }
 
 DEPLOY_CPU_OPERATOR(SpaceToDepth);
@@ -152,10 +178,16 @@ DEPLOY_CUDA_OPERATOR(DepthToSpace);
 REGISTER_CUDA_OPERATOR(DepthToSpaceGradient, SpaceToDepthOp<CUDAContext>);
 #endif
 
-OPERATOR_SCHEMA(SpaceToDepth).NumInputs(1).NumOutputs(1);
-OPERATOR_SCHEMA(SpaceToDepthGradient).NumInputs(1).NumOutputs(1);
-OPERATOR_SCHEMA(DepthToSpace).NumInputs(1).NumOutputs(1);
-OPERATOR_SCHEMA(DepthToSpaceGradient).NumInputs(1).NumOutputs(1);
+OPERATOR_SCHEMA(SpaceToDepth).NumInputs(1).NumOutputs(1).AllowInplace({{0, 0}});
+OPERATOR_SCHEMA(SpaceToDepthGradient)
+    .NumInputs(1)
+    .NumOutputs(1)
+    .AllowInplace({{0, 0}});
+OPERATOR_SCHEMA(DepthToSpace).NumInputs(1).NumOutputs(1).AllowInplace({{0, 0}});
+OPERATOR_SCHEMA(DepthToSpaceGradient)
+    .NumInputs(1)
+    .NumOutputs(1)
+    .AllowInplace({{0, 0}});
 
 REGISTER_GRADIENT(SpaceToDepth, SimpleGradientMaker);
 REGISTER_GRADIENT(DepthToSpace, SimpleGradientMaker);

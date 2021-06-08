@@ -918,8 +918,6 @@ void GroupNorm(
     const AccT* rsig,
     const AccT* gamma,
     const AccT* beta,
-    AccT* scale,
-    AccT* bias,
     T* y,
     Context* ctx);
 

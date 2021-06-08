@@ -159,6 +159,7 @@ def cum_reduce_args(**kwargs):
 def depth_space_args(**kwargs):
     return {
         'block_size': kwargs.get('block_size', '2'),
+        'mode': kwargs.get('mode', 'DCR'),
         'data_format': kwargs.get('data_format', 'NCHW'),
     }
 

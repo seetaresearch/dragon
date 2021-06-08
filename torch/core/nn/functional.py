@@ -1746,6 +1746,54 @@ def pad(input, pad, mode='constant', value=0):
         ndim=ndim, pads=pads_begin + pads_end)
 
 
+def pixel_shuffle(input, upscale_factor, inplace=False):
+    """Rearrange depth elements of input into pixels.
+
+    Parameters
+    ----------
+    input : dragon.vm.torch.Tensor
+        The input tensor.
+    upscale_factor : int
+        The factor to upscale pixels.
+    inplace : bool, optional, default=False
+        Whether to do the operation in-place.
+
+    Returns
+    -------
+    dragon.vm.torch.Tensor
+        The output tensor.
+
+    """
+    return FunctionLib.apply(
+        'DepthToSpace', input.device, [input],
+        outputs=[input if inplace else None],
+        block_size=int(upscale_factor), mode='CRD', data_format='NCHW')
+
+
+def pixel_unshuffle(input, downscale_factor, inplace=False):
+    """Rearrange pixels of input into depth elements.
+
+    Parameters
+    ----------
+    input : dragon.vm.torch.Tensor
+        The input tensor.
+    downscale_factor : int
+        The factor to downscale pixels.
+    inplace : bool, optional, default=False
+        Whether to do the operation in-place.
+
+    Returns
+    -------
+    dragon.vm.torch.Tensor
+        The output tensor.
+
+    """
+    return FunctionLib.apply(
+        'SpaceToDepth', input.device, [input],
+        outputs=[input if inplace else None],
+        block_size=int(downscale_factor), mode='CRD', data_format='NCHW')
+
+
 def prelu(input, weight):
     r"""Apply parametric rectified linear unit to input.
     `[He et.al, 2015] <https://arxiv.org/abs/1502.01852>`_.

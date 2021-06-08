@@ -60,6 +60,8 @@ from dragon.vm.torch.core.nn.functional import multi_head_attention_forward
 from dragon.vm.torch.core.nn.functional import nll_loss
 from dragon.vm.torch.core.nn.functional import normalize
 from dragon.vm.torch.core.nn.functional import pad
+from dragon.vm.torch.core.nn.functional import pixel_shuffle
+from dragon.vm.torch.core.nn.functional import pixel_unshuffle
 from dragon.vm.torch.core.nn.functional import prelu
 from dragon.vm.torch.core.nn.functional import relu
 from dragon.vm.torch.core.nn.functional import relu6

@@ -201,6 +201,18 @@ class Tensor(object):
         return self.size()
 
     @property
+    def T(self):
+        """Return a tensor with dimensions reversed.
+
+        Returns
+        -------
+        dragon.vm.torch.Tensor
+            The output tensor.
+
+        """
+        return self.permute()
+
+    @property
     def volatile(self):
         """Return whether this tensor is volatile.
 
@@ -2130,6 +2142,21 @@ class Tensor(object):
 
         """
 
+    def permute_(self, *dims):
+        """Reorder the dimensions.
+
+        Parameters
+        ----------
+        dims : Union[Sequence[int], int...]
+            The new order of dimensions.
+
+        Returns
+        -------
+        dragon.vm.torch.Tensor
+            The output tensor.
+
+        """
+
     def pow(self, exponent):
         """Compute the power.
 
@@ -2776,6 +2803,27 @@ class Tensor(object):
 
         """
 
+    def transpose_(self, dim0, dim1):
+        """Swap two dimensions.
+
+        Parameters
+        ----------
+        dim0 : int
+            The first dimension to be transposed.
+        dim1 : int
+            The second dimension to be transposed.
+
+        Returns
+        -------
+        dragon.vm.torch.Tensor
+            The output tensor.
+
+        See Also
+        --------
+        `torch.transpose(...)`_
+
+        """
+
     def tril(self, k=0):
         r"""Return the lower triangular part.
 
@@ -2881,17 +2929,19 @@ class Tensor(object):
         """
 
     def type(self, dtype=None):
-        """Return the data type or copied tensor with specified type.
+        """Return the data type.
+
+        If ``dtype`` is not ``None``, converts to a new tensor.
 
         Parameters
         ----------
         dtype : str, optional
-            The specified type to convert to.
+            The data type to convert to.
 
         Returns
         -------
         Union[str, dragon.vm.torch.Tensor]
-            The data type or copied tensor.
+            The data type or new tensor.
 
         """
 
@@ -3364,6 +3414,28 @@ class Tensor(object):
 
         """
         return self.lt(other)
+
+    def __matmul__(self, other):
+        r"""Compute the matrix multiplication.
+
+        .. math:: \text{out} = \text{self} \times \text{tensor2}
+
+        Parameters
+        ----------
+        other : dragon.vm.torch.Tensor
+            The tensor to multiply.
+
+        Returns
+        -------
+        dragon.vm.torch.Tensor
+            The output tensor.
+
+        See Also
+        --------
+        `torch.matmul(...)`_
+
+        """
+        return self.matmul(other)
 
     def __mul__(self, other):
         """Compute the element-wise multiplication.

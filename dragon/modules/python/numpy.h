@@ -25,21 +25,22 @@ class NumpyWrapper {
 
   py::object To(bool copy) {
     const auto& meta = tensor_->meta();
-    const auto& typestr = ::dragon::dtypes::to_string(meta);
+    const auto& dtype = ::dragon::dtypes::to_string(meta);
     CHECK_GT(tensor_->count(), 0) << "\nConvert an empty tensor.";
-    CHECK(typestr != "unknown") << "\nConvert an empty tensor.";
-    if (typestr == "string") {
+    CHECK(dtype != "unknown") << "\nConvert an empty tensor.";
+    if (dtype == "string") {
       CHECK_EQ(tensor_->count(), 1);
       return py::bytes(tensor_->data<string, CPUContext>()[0]);
     }
-    auto typenum = dtypes::to_npy(meta);
     vector<npy_intp> dims({tensor_->dims().begin(), tensor_->dims().end()});
     if (copy) {
       auto* memory = tensor_->memory();
       CHECK(memory) << "\nConvert an empty tensor.";
       auto device_type = memory ? memory->info()["device_type"] : "cpu";
-      auto* array = PyArray_SimpleNew(tensor_->ndim(), dims.data(), typenum);
+      auto* array =
+          PyArray_SimpleNew(dims.size(), dims.data(), dtypes::to_npy(meta));
       if (device_type == "cuda") {
+        CUDADeviceGuard guard(memory->device());
         CUDAContext::Memcpy<CPUContext, CUDAContext>(
             tensor_->nbytes(),
             PyArray_DATA(reinterpret_cast<PyArrayObject*>(array)),
@@ -53,9 +54,11 @@ class NumpyWrapper {
       }
       return py::reinterpret_steal<py::object>(array);
     }
-    auto* data = const_cast<void*>(tensor_->raw_data<CPUContext>());
     auto* array = PyArray_SimpleNewFromData(
-        tensor_->ndim(), dims.data(), dtypes::to_npy(meta), data);
+        dims.size(),
+        dims.data(),
+        dtypes::to_npy(meta),
+        const_cast<void*>(tensor_->raw_data<CPUContext>()));
     return py::reinterpret_steal<py::object>(array);
   }
 
@@ -71,6 +74,7 @@ class NumpyWrapper {
     if (copy) {
       auto device_type = memory ? memory->info()["device_type"] : "cpu";
       if (device_type == "cuda") {
+        CUDADeviceGuard guard(memory->device());
         CUDAContext::Memcpy<CUDAContext, CPUContext>(
             tensor_->nbytes(),
             tensor_->raw_mutable_data<CUDAContext>(),

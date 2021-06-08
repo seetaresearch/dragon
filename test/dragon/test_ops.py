@@ -3101,6 +3101,14 @@ class TestTensorOps(OpTestCase):
                 x = new_tensor(data)
                 self.assertEqual(~x, ~data)
 
+    def test_matmul(self):
+        for execution in ('EAGER_MODE', 'GRAPH_MODE'):
+            with execution_context().mode(execution):
+                for a_shape, b_shape in self.binary_test_shapes:
+                    data1, data2 = arange((2, 3)), arange((3, 4), 1)
+                    a, b = new_tensor(data1), new_tensor(data2)
+                    self.assertEqual(a.__matmul__(b), data1.__matmul__(data2))
+
     def test_mul(self):
         for execution in ('EAGER_MODE', 'GRAPH_MODE'):
             with execution_context().mode(execution):
@@ -3194,6 +3202,17 @@ class TestTensorOps(OpTestCase):
                     if execution == 'EAGER_MODE':
                         a -= b
                         self.assertEqual(a, data1 - data2)
+
+    def test_transpose(self):
+        entries = [(0, 2, 1), None]
+        for execution in ('EAGER_MODE', 'GRAPH_MODE'):
+            with execution_context().mode(execution):
+                for perm in entries:
+                    data = arange((2, 3, 4))
+                    x = new_tensor(data)
+                    self.assertEqual(x.transpose(perm), data.transpose(perm))
+                    if perm is None:
+                        self.assertEqual(x.T, data.T)
 
     def test_truncated_normal(self):
         for execution in ('EAGER_MODE', 'GRAPH_MODE'):

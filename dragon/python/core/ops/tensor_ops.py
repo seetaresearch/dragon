@@ -516,6 +516,27 @@ def lt(self, other):
     return _apply_binary_op([self, other], 'Less')
 
 
+def matmul(self, other):
+    """Compute the matrix multiplication.
+
+    Parameters
+    ----------
+    other : dragon.Tensor
+        The value to multiply.
+
+    Returns
+    -------
+    dragon.Tensor
+        The output tensor.
+
+    See Also
+    --------
+    `dragon.math.matmul(...)`_
+
+    """
+    return _apply_binary_op([self, other], 'MatMul')
+
+
 def mul(self, other):
     """Compute the element-wise multiplication.
 
@@ -844,6 +865,29 @@ def sub(self, other):
     return _apply_binary_op([self, other], 'Sub')
 
 
+def transpose(self, perm=None, copy=True):
+    """Return a tensor with permuted axes.
+
+    Parameters
+    ----------
+    perm : Union[Sequence[int], dragon.Tensor]], optional
+        The output permutation.
+    copy : bool, optional, default=True
+        Return a new tensor or transpose in-place.
+
+    Returns
+    -------
+    dragon.Tensor
+        The output tensor.
+
+    See Also
+    --------
+    `dragon.transpose(...)`_
+
+    """
+    return array_ops.transpose(self, perm=perm, copy=copy)
+
+
 def truncated_normal(self, mean=0, std=1):
     r"""Fill self from a truncated normal distribution.
 
@@ -984,6 +1028,7 @@ Tensor.glorot_normal = glorot_normal
 Tensor.glorot_uniform = glorot_uniform
 Tensor.normal = normal
 Tensor.reshape = reshape
+Tensor.transpose = transpose
 Tensor.truncated_normal = truncated_normal
 Tensor.uniform = uniform
 Tensor.__add__ = add
@@ -1003,6 +1048,7 @@ Tensor.__itruediv__ = idiv
 Tensor.__ixor__ = ixor
 Tensor.__le__ = le
 Tensor.__lt__ = lt
+Tensor.__matmul__ = matmul
 Tensor.__mul__ = mul
 Tensor.__ne__ = ne
 Tensor.__neg__ = neg

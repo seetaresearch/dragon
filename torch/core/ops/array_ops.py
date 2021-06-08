@@ -861,7 +861,7 @@ def one_hot(input, depth, on_value=1, off_value=0):
         on_value=float(on_value), off_value=float(off_value))
 
 
-def permute(input, dims):
+def permute(input, dims, out=None):
     """Return a tensor with the new order of dimensions.
 
     Parameters
@@ -870,6 +870,8 @@ def permute(input, dims):
         The input tensor.
     dims : Sequence[int]
         The output of dimensions.
+    out : dragon.vm.torch.Tensor, optional
+        The output tensor.
 
     Returns
     -------
@@ -878,7 +880,8 @@ def permute(input, dims):
 
     """
     return FunctionLib.apply(
-        'Transpose', input.device, [input], ndim=len(dims), perm=dims)
+        'Transpose', input.device, [input], outputs=[out],
+        ndim=len(dims), perm=dims)
 
 
 def tile(input, reps):
@@ -1338,7 +1341,7 @@ def topk(input, k, dim=-1, largest=True, sorted=True, out=None):
         k=k, axis=dim, largest=largest, sorted=sorted)
 
 
-def transpose(input, dim0, dim1):
+def transpose(input, dim0, dim1, out=None):
     """Return a new tensor with two dimensions swapped.
 
     Examples:
@@ -1356,6 +1359,8 @@ def transpose(input, dim0, dim1):
         The first dimension to be transposed.
     dim1 : int
         The second dimension to be transposed.
+    out : dragon.vm.torch.Tensor, optional
+        The output tensor.
 
     Returns
     -------
@@ -1366,7 +1371,8 @@ def transpose(input, dim0, dim1):
     dims = list(range(input.ndimension()))
     dims[dim0], dims[dim1] = dims[dim1], dims[dim0]
     return FunctionLib.apply(
-        'Transpose', input.device, [input], ndim=len(dims), perm=dims)
+        'Transpose', input.device, [input], outputs=[out],
+        ndim=len(dims), perm=dims)
 
 
 def tril(input, diagonal=0, out=None):

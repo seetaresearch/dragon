@@ -22,7 +22,8 @@ class SpaceToDepthOp final : public Operator<Context> {
  public:
   SpaceToDepthOp(const OperatorDef& def, Workspace* ws)
       : Operator<Context>(def, ws),
-        block_size_(OP_SINGLE_ARG(int, "block_size", 2)) {}
+        block_size_(OP_SINGLE_ARG(int, "block_size", 2)),
+        mode_(OP_SINGLE_ARG(string, "mode", "DCR")) {}
   USE_OPERATOR_FUNCTIONS;
 
   void RunOnDevice() override {
@@ -33,6 +34,7 @@ class SpaceToDepthOp final : public Operator<Context> {
   void DoRunWithType();
 
  protected:
+  string mode_;
   int64_t block_size_;
 };
 
@@ -41,7 +43,8 @@ class DepthToSpaceOp final : public Operator<Context> {
  public:
   DepthToSpaceOp(const OperatorDef& def, Workspace* ws)
       : Operator<Context>(def, ws),
-        block_size_(OP_SINGLE_ARG(int, "block_size", 2)) {}
+        block_size_(OP_SINGLE_ARG(int, "block_size", 2)),
+        mode_(OP_SINGLE_ARG(string, "mode", "DCR")) {}
   USE_OPERATOR_FUNCTIONS;
 
   void RunOnDevice() override {
@@ -52,6 +55,7 @@ class DepthToSpaceOp final : public Operator<Context> {
   void DoRunWithType();
 
  protected:
+  string mode_;
   int64_t block_size_;
 };
 

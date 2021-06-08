@@ -81,6 +81,8 @@ from dragon.vm.torch.core.nn.modules.padding import ReplicationPad1d
 from dragon.vm.torch.core.nn.modules.padding import ReplicationPad2d
 from dragon.vm.torch.core.nn.modules.padding import ReplicationPad3d
 from dragon.vm.torch.core.nn.modules.padding import ZeroPad2d
+from dragon.vm.torch.core.nn.modules.pixelshuffle import PixelShuffle
+from dragon.vm.torch.core.nn.modules.pixelshuffle import PixelUnshuffle
 from dragon.vm.torch.core.nn.modules.pooling import AdaptiveAvgPool1d
 from dragon.vm.torch.core.nn.modules.pooling import AdaptiveAvgPool2d
 from dragon.vm.torch.core.nn.modules.pooling import AdaptiveAvgPool3d

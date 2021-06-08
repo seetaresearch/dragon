@@ -68,6 +68,9 @@ def depth_space_exporter(op_def, context):
         _assert_data_format(arg)
         if arg.name == 'block_size':
             helper.add_attribute(node, 'blocksize', arg.i)
+        elif arg.name == 'mode':
+            if node.op_type != 'SpaceToDepth':
+                helper.add_attribute(node, 'mode', arg.s)
     return node, const_tensors
 
 

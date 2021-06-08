@@ -831,7 +831,14 @@ def depthwise_conv2d(
 
 
 @OpSchema.num_inputs(1)
-def depth_to_space(inputs, block_size, data_format='NCHW', **kwargs):
+def depth_to_space(
+    inputs,
+    block_size,
+    mode='DCR',
+    data_format='NCHW',
+    copy=True,
+    **kwargs
+):
     """Rearrange depth data into spatial blocks.
 
     Examples:
@@ -851,8 +858,12 @@ def depth_to_space(inputs, block_size, data_format='NCHW', **kwargs):
         The input tensor.
     block_size : int, required
         The size of spatial block.
+    mode : str, optional, default='DCR'
+        Rearrangement order for ``'NCHW'`` format.
     data_format : str, optional, default='NCHW'
         ``'NCHW'`` or ``'NHWC'``.
+    copy : bool, optional, default=True
+        Return a new tensor or call in-place.
 
     Returns
     -------
@@ -865,9 +876,10 @@ def depth_to_space(inputs, block_size, data_format='NCHW', **kwargs):
     if context.executing_eagerly():
         return OpLib.execute(
             'DepthToSpace', inputs,
-            block_size=block_size, data_format=data_format)
+            outputs=[None] if copy else inputs,
+            block_size=block_size, mode=mode.upper(), data_format=data_format)
     return OpLib.add('DepthToSpace', inputs, block_size=block_size,
-                     data_format=data_format, **kwargs)
+                     mode=mode.upper(), data_format=data_format, **kwargs)
 
 
 @OpSchema.num_inputs(1)
@@ -1482,7 +1494,14 @@ def roi_pool(
 
 
 @OpSchema.num_inputs(1)
-def space_to_depth(inputs, block_size, data_format='NCHW', **kwargs):
+def space_to_depth(
+    inputs,
+    block_size,
+    mode='DCR',
+    data_format='NCHW',
+    copy=True,
+    **kwargs
+):
     """Rearrange blocks of spatial data into depth.
 
     Examples:
@@ -1492,7 +1511,7 @@ def space_to_depth(inputs, block_size, data_format='NCHW', **kwargs):
     x = dragon.range(n * c * h * w).reshape((n, c, h, w))
     y = dragon.reshape(x, (n, c, h // bs, bs, w // bs, bs))
     y = dragon.transpose(y, (0, 3, 5, 1, 2, 4))
-    y = dragon.reshape(y, (n, c * (bs ** 2), h // bs, w // bs))
+    y = dragon.reshape(y, (n, (bs ** 2) * c, h // bs, w // bs))
     z = dragon.nn.space_to_depth(x, 2)  # Equivalent
     ```
 
@@ -1502,8 +1521,12 @@ def space_to_depth(inputs, block_size, data_format='NCHW', **kwargs):
         The input tensor.
     block_size : int, required
         The size of spatial block.
+    mode : str, optional, default='DCR'
+        Rearrangement order for ``'NCHW'`` format.
     data_format : str, optional, default='NCHW'
         ``'NCHW'`` or ``'NHWC'``.
+    copy : bool, optional, default=True
+        Return a new tensor or call in-place.
 
     Returns
     -------
@@ -1516,9 +1539,10 @@ def space_to_depth(inputs, block_size, data_format='NCHW', **kwargs):
     if context.executing_eagerly():
         return OpLib.execute(
             'SpaceToDepth', inputs,
-            block_size=block_size, data_format=data_format)
+            outputs=[None] if copy else inputs,
+            block_size=block_size, mode=mode.upper(), data_format=data_format)
     return OpLib.add('SpaceToDepth', inputs, block_size=block_size,
-                     data_format=data_format, **kwargs)
+                     mode=mode.upper(), data_format=data_format, **kwargs)
 
 
 def _normalize_tuple(value, rank):
