@@ -85,7 +85,7 @@ __global__ void _RoiPoolGrad(
     const int W,
     const int out_h,
     const int out_w,
-    const float spatial_scale,
+    const float /* spatial_scale */,
     const T* dy,
     const float* rois,
     const int* mask,

@@ -62,10 +62,6 @@ class CUDAObjects {
       } else {
         CUBLAS_CHECK(cublasSetMathMode(handle, CUBLAS_DEFAULT_MATH));
       }
-#elif CUDA_VERSION >= 9000
-      if (TENSOR_CORE_AVAILABLE()) {
-        CUBLAS_CHECK(cublasSetMathMode(handle, CUBLAS_TENSOR_OP_MATH));
-      }
 #endif
     }
     return handles[stream_id];
@@ -437,7 +433,8 @@ class DRAGON_API CUDAContext {
     CUDA_NOT_COMPILED;
   }
 
-  /*! \brief Switch to the device and select given stream in current thread */
+  /*! \brief Switch to the device and select given stream in current
+   * thread */
   void SwitchToDevice(int stream_id) {
     CUDA_NOT_COMPILED;
   }

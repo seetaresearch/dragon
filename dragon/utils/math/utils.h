@@ -311,14 +311,41 @@ inline void ComputeTransposeStrides(
   }
 }
 
+template <typename DimT, typename AxisT>
+inline void CollapseTransposeAxes(
+    const int num_dims,
+    const DimT* dims,
+    const AxisT* axes,
+    vector<DimT>& new_dims,
+    vector<AxisT>& new_axes) {
+  new_dims = vector<DimT>(dims, dims + num_dims);
+  new_axes = vector<AxisT>({axes[0]});
+  vector<AxisT> collapse_axes;
+  for (int i = 1; i < num_dims; ++i) {
+    if (axes[i] - 1 == axes[i - 1]) {
+      collapse_axes.push_back(axes[i]);
+      new_dims[axes[i]] *= new_dims[axes[i] - 1];
+      new_dims[axes[i] - 1] = -1;
+    } else {
+      new_axes.push_back(axes[i]);
+    }
+  }
+  const auto& erase_iter = std::remove_if(
+      new_dims.begin(), new_dims.end(), [](int x) { return x == -1; });
+  new_dims.erase(erase_iter, new_dims.end());
+  for (int i = 0; i < new_axes.size(); ++i) {
+    for (auto collapse_axis : collapse_axes) {
+      if (new_axes[i] > collapse_axis) new_axes[i]--;
+    }
+  }
+}
+
 template <typename DimT, typename IndexT>
 inline IndexT
 GetIndexFromDims(const int num_dims, const DimT* dims, IndexT* index) {
   IndexT ret = 0;
   for (int i = 0; i < num_dims; ++i) {
-    if (dims[i] > 1) {
-      ret = ret * dims[i] + index[i];
-    }
+    if (dims[i] > 1) ret = ret * dims[i] + index[i];
   }
   return ret;
 }

@@ -7,7 +7,7 @@ namespace kernels {
 
 namespace {
 
-template <typename T>
+template <typename T, typename AccT>
 void _AvgPool2dNCHW(
     const int N,
     const int C,
@@ -28,31 +28,30 @@ void _AvgPool2dNCHW(
   const auto NxCxHoxWo = N * C * out_h * out_w;
   std::array<int, 4> index = {0, 0, 0, 0};
   std::array<int, 4> dims = {N, C, out_h, out_w};
-  T val, area;
   int hstart, hend, wstart, wend;
   for (int i = 0; i < NxCxHoxWo; ++i) {
     hstart = index[2] * stride_h - pad_h;
     wstart = index[3] * stride_w - pad_w;
     hend = std::min(hstart + kernel_h, H + pad_h);
     wend = std::min(wstart + kernel_w, W + pad_w);
-    area = (hend - hstart) * (wend - wstart);
+    const AccT area = (hend - hstart) * (wend - wstart);
     hend = std::min(hend, H);
     wend = std::min(wend, W);
     hstart = std::max(hstart, 0);
     wstart = std::max(wstart, 0);
-    val = T(0);
+    AccT val = AccT(0);
     const T* offset_x = x + index[0] * CxHxW + index[1] * HxW;
     for (int h = hstart; h < hend; ++h) {
       for (int w = wstart; w < wend; ++w) {
-        val += offset_x[h * W + w];
+        val += convert::To<AccT>(offset_x[h * W + w]);
       }
     }
-    y[i] = val / area;
+    y[i] = convert::To<T>(val / area);
     math::utils::IncreaseIndexInDims(4, dims.data(), index.data());
   }
 }
 
-template <typename T>
+template <typename T, typename AccT>
 void _AvgPool2dNHWC(
     const int N,
     const int C,
@@ -72,29 +71,30 @@ void _AvgPool2dNHWC(
   const auto NxHoxWoxC = N * C * out_h * out_w;
   std::array<int, 4> index = {0, 0, 0, 0};
   std::array<int, 4> dims = {N, out_h, out_w, C};
-  T val, area;
   int hstart, hend, wstart, wend;
   for (int i = 0; i < NxHoxWoxC; ++i) {
     hstart = index[1] * stride_h - pad_h;
     wstart = index[2] * stride_w - pad_w;
     hend = std::min(hstart + kernel_h, H + pad_h);
     wend = std::min(wstart + kernel_w, W + pad_w);
-    area = (hend - hstart) * (wend - wstart);
+    const AccT area = (hend - hstart) * (wend - wstart);
     hend = std::min(hend, H);
     wend = std::min(wend, W);
     hstart = std::max(hstart, 0);
     wstart = std::max(wstart, 0);
     const T* offset_x = x + index[0] * HxWxC + index[3];
-    val = T(0);
-    for (int h = hstart; h < hend; ++h)
-      for (int w = wstart; w < wend; ++w)
-        val += offset_x[(h * W + w) * C];
-    y[i] = val / area;
+    AccT val = AccT(0);
+    for (int h = hstart; h < hend; ++h) {
+      for (int w = wstart; w < wend; ++w) {
+        val += convert::To<AccT>(offset_x[(h * W + w) * C]);
+      }
+    }
+    y[i] = convert::To<T>(val / area);
     math::utils::IncreaseIndexInDims(4, dims.data(), index.data());
   }
 }
 
-template <typename T>
+template <typename T, typename AccT>
 void _AvgPool2dGradNCHW(
     const int N,
     const int C,
@@ -115,7 +115,6 @@ void _AvgPool2dGradNCHW(
   const auto NxCxHoxWo = N * C * out_h * out_w;
   std::array<int, 4> index = {0, 0, 0, 0};
   std::array<int, 4> dims = {N, C, out_h, out_w};
-  T area;
   int hstart, hend, wstart, wend, xi;
   memset(dx, 0, sizeof(T) * N * CxHxW);
   for (int i = 0; i < NxCxHoxWo; ++i) {
@@ -123,22 +122,24 @@ void _AvgPool2dGradNCHW(
     wstart = index[3] * stride_w - pad_w;
     hend = std::min(hstart + kernel_h, H + pad_h);
     wend = std::min(wstart + kernel_w, W + pad_w);
-    area = (hend - hstart) * (wend - wstart);
+    const AccT area = (hend - hstart) * (wend - wstart);
     hend = std::min(hend, H);
     wend = std::min(wend, W);
     hstart = std::max(hstart, 0);
     wstart = std::max(wstart, 0);
+    const AccT val = convert::To<AccT>(dy[i]) / area;
     T* offset_dx = dx + index[0] * CxHxW + index[1] * HxW;
     for (int h = hstart; h < hend; ++h) {
       for (int w = wstart; w < wend; ++w) {
-        offset_dx[h * W + w] += dy[i] / area;
+        const auto xi = h * W + w;
+        offset_dx[xi] = convert::To<T>(val + convert::To<AccT>(offset_dx[xi]));
       }
     }
     math::utils::IncreaseIndexInDims(4, dims.data(), index.data());
   }
 }
 
-template <typename T>
+template <typename T, typename AccT>
 void _AvgPool2dGradNHWC(
     const int N,
     const int C,
@@ -158,7 +159,6 @@ void _AvgPool2dGradNHWC(
   const auto NxHoxWoxC = N * C * out_h * out_w;
   std::array<int, 4> index = {0, 0, 0, 0};
   std::array<int, 4> dims = {N, out_h, out_w, C};
-  T area;
   int hstart, hend, wstart, wend, xi;
   memset(dx, 0, sizeof(T) * N * HxWxC);
   for (int i = 0; i < NxHoxWoxC; ++i) {
@@ -166,20 +166,24 @@ void _AvgPool2dGradNHWC(
     wstart = index[2] * stride_w - pad_w;
     hend = std::min(hstart + kernel_h, H + pad_h);
     wend = std::min(wstart + kernel_w, W + pad_w);
-    area = (hend - hstart) * (wend - wstart);
+    const AccT area = (hend - hstart) * (wend - wstart);
     hend = std::min(hend, H);
     wend = std::min(wend, W);
     hstart = std::max(hstart, 0);
     wstart = std::max(wstart, 0);
+    const AccT val = convert::To<AccT>(dy[i]) / area;
     T* offset_dx = dx + index[0] * HxWxC + index[3];
-    for (int h = hstart; h < hend; ++h)
-      for (int w = wstart; w < wend; ++w)
-        offset_dx[(h * W + w) * C] += dy[i] / area;
+    for (int h = hstart; h < hend; ++h) {
+      for (int w = wstart; w < wend; ++w) {
+        const auto xi = (h * W + w) * C;
+        offset_dx[xi] = convert::To<T>(val + convert::To<AccT>(offset_dx[xi]));
+      }
+    }
     math::utils::IncreaseIndexInDims(4, dims.data(), index.data());
   }
 }
 
-template <typename T>
+template <typename T, typename AccT>
 void _AvgPool3dNCHW(
     const int N,
     const int C,
@@ -205,7 +209,6 @@ void _AvgPool3dNCHW(
   const auto NxCxDoxHoxWo = N * C * out_d * out_h * out_w;
   std::array<int, 5> index = {0, 0, 0, 0, 0};
   std::array<int, 5> dims = {N, C, out_d, out_h, out_w};
-  T val, area;
   int dstart, dend, hstart, hend, wstart, wend;
   for (int i = 0; i < NxCxDoxHoxWo; ++i) {
     dstart = index[2] * stride_d - pad_d;
@@ -214,28 +217,28 @@ void _AvgPool3dNCHW(
     dend = std::min(dstart + kernel_d, D + pad_d);
     hend = std::min(hstart + kernel_h, H + pad_h);
     wend = std::min(wstart + kernel_w, W + pad_w);
-    area = (dend - dstart) * (hend - hstart) * (wend - wstart);
+    const AccT area = (dend - dstart) * (hend - hstart) * (wend - wstart);
     dend = std::min(dend, D);
     hend = std::min(hend, H);
     wend = std::min(wend, W);
     dstart = std::max(dstart, 0);
     hstart = std::max(hstart, 0);
     wstart = std::max(wstart, 0);
-    val = T(0);
+    AccT val = AccT(0);
     const T* offset_x = x + index[0] * CxDxHxW + index[1] * DxHxW;
     for (int d = dstart; d < dend; ++d) {
       for (int h = hstart; h < hend; ++h) {
         for (int w = wstart; w < wend; ++w) {
-          val += offset_x[(d * H + h) * W + w];
+          val += convert::To<AccT>(offset_x[(d * H + h) * W + w]);
         }
       }
     }
-    y[i] = val / area;
+    y[i] = convert::To<T>(val / area);
     math::utils::IncreaseIndexInDims(5, dims.data(), index.data());
   }
 }
 
-template <typename T>
+template <typename T, typename AccT>
 void _AvgPool3dNHWC(
     const int N,
     const int C,
@@ -260,7 +263,6 @@ void _AvgPool3dNHWC(
   const auto NxDoxHoxWoxC = N * C * out_d * out_h * out_w;
   std::array<int, 5> index = {0, 0, 0, 0, 0};
   std::array<int, 5> dims = {N, out_d, out_h, out_w, C};
-  T val, area;
   int dstart, dend, hstart, hend, wstart, wend;
   for (int i = 0; i < NxDoxHoxWoxC; ++i) {
     dstart = index[1] * stride_d - pad_d;
@@ -269,7 +271,7 @@ void _AvgPool3dNHWC(
     dend = std::min(dstart + kernel_d, D + pad_d);
     hend = std::min(hstart + kernel_h, H + pad_h);
     wend = std::min(wstart + kernel_w, W + pad_w);
-    area = (dend - dstart) * (hend - hstart) * (wend - wstart);
+    const AccT area = (dend - dstart) * (hend - hstart) * (wend - wstart);
     dend = std::min(dend, D);
     hend = std::min(hend, H);
     wend = std::min(wend, W);
@@ -277,20 +279,20 @@ void _AvgPool3dNHWC(
     hstart = std::max(hstart, 0);
     wstart = std::max(wstart, 0);
     const T* offset_x = x + index[0] * DxHxWxC + index[4];
-    val = T(0);
+    AccT val = AccT(0);
     for (int d = dstart; d < dend; ++d) {
       for (int h = hstart; h < hend; ++h) {
         for (int w = wstart; w < wend; ++w) {
-          val += offset_x[((d * H + h) * W + w) * C];
+          val += convert::To<AccT>(offset_x[((d * H + h) * W + w) * C]);
         }
       }
     }
-    y[i] = val / area;
+    y[i] = convert::To<T>(val / area);
     math::utils::IncreaseIndexInDims(5, dims.data(), index.data());
   }
 }
 
-template <typename T>
+template <typename T, typename AccT>
 void _AvgPool3dGradNCHW(
     const int N,
     const int C,
@@ -316,7 +318,6 @@ void _AvgPool3dGradNCHW(
   const auto NxCxDoxHoxWo = N * C * out_d * out_h * out_w;
   std::array<int, 5> index = {0, 0, 0, 0, 0};
   std::array<int, 5> dims = {N, C, out_d, out_h, out_w};
-  T area;
   int dstart, dend, hstart, hend, wstart, wend, xi;
   memset(dx, 0, sizeof(T) * N * CxDxHxW);
   for (int i = 0; i < NxCxDoxHoxWo; ++i) {
@@ -326,18 +327,21 @@ void _AvgPool3dGradNCHW(
     dend = std::min(dstart + kernel_d, D + pad_d);
     hend = std::min(hstart + kernel_h, H + pad_h);
     wend = std::min(wstart + kernel_w, W + pad_w);
-    area = (dend - dstart) * (hend - hstart) * (wend - wstart);
+    const AccT area = (dend - dstart) * (hend - hstart) * (wend - wstart);
     dend = std::min(dend, D);
     hend = std::min(hend, H);
     wend = std::min(wend, W);
     dstart = std::max(dstart, 0);
     hstart = std::max(hstart, 0);
     wstart = std::max(wstart, 0);
+    const AccT val = convert::To<AccT>(dy[i]) / area;
     T* offset_dx = dx + index[0] * CxDxHxW + index[1] * DxHxW;
     for (int d = dstart; d < dend; ++d) {
       for (int h = hstart; h < hend; ++h) {
         for (int w = wstart; w < wend; ++w) {
-          offset_dx[((d * H) + h) * W + w] += dy[i] / area;
+          const auto xi = ((d * H) + h) * W + w;
+          offset_dx[xi] =
+              convert::To<T>(val + convert::To<AccT>(offset_dx[xi]));
         }
       }
     }
@@ -345,7 +349,7 @@ void _AvgPool3dGradNCHW(
   }
 }
 
-template <typename T>
+template <typename T, typename AccT>
 void _AvgPool3dGradNHWC(
     const int N,
     const int C,
@@ -370,7 +374,6 @@ void _AvgPool3dGradNHWC(
   const auto NxDoxHoxWoxC = N * C * out_d * out_h * out_w;
   std::array<int, 5> index = {0, 0, 0, 0, 0};
   std::array<int, 5> dims = {N, out_d, out_h, out_w, C};
-  T area;
   int dstart, dend, hstart, hend, wstart, wend, xi;
   memset(dx, 0, sizeof(T) * N * DxHxWxC);
   for (int i = 0; i < NxDoxHoxWoxC; ++i) {
@@ -380,18 +383,21 @@ void _AvgPool3dGradNHWC(
     dend = std::min(dstart + kernel_d, D + pad_d);
     hend = std::min(hstart + kernel_h, H + pad_h);
     wend = std::min(wstart + kernel_w, W + pad_w);
-    area = (dend - dstart) * (hend - hstart) * (wend - wstart);
+    const AccT area = (dend - dstart) * (hend - hstart) * (wend - wstart);
     dend = std::min(dend, D);
     hend = std::min(hend, H);
     wend = std::min(wend, W);
     dstart = std::max(dstart, 0);
     hstart = std::max(hstart, 0);
     wstart = std::max(wstart, 0);
+    const AccT val = convert::To<AccT>(dy[i]) / area;
     T* offset_dx = dx + index[0] * DxHxWxC + index[4];
     for (int d = dstart; d < dend; ++d) {
       for (int h = hstart; h < hend; ++h) {
         for (int w = wstart; w < wend; ++w) {
-          offset_dx[((d * H + h) * W + w) * C] += dy[i] / area;
+          const auto xi = ((d * H + h) * W + w) * C;
+          offset_dx[xi] =
+              convert::To<T>(val + convert::To<AccT>(offset_dx[xi]));
         }
       }
     }
@@ -403,11 +409,11 @@ void _AvgPool3dGradNHWC(
 
 /* ------------------- Launcher Separator ------------------- */
 
-#define DISPATCH_POOL_KERNEL(name, ...)                  \
+#define DISPATCH_POOL_KERNEL(name, T, AccT, ...)         \
   if (data_format == "NCHW") {                           \
-    name##NCHW(__VA_ARGS__);                             \
+    name##NCHW<T, AccT>(__VA_ARGS__);                    \
   } else if (data_format == "NHWC") {                    \
-    name##NHWC(__VA_ARGS__);                             \
+    name##NHWC<T, AccT>(__VA_ARGS__);                    \
   } else {                                               \
     LOG(FATAL) << "Unknown DataFormat: " << data_format; \
   }
@@ -433,6 +439,8 @@ void _AvgPool3dGradNHWC(
       CPUContext* ctx) {                \
     DISPATCH_POOL_KERNEL(               \
         _##name,                        \
+        math::ScalarType<T>::type,      \
+        math::AccmulatorType<T>::type,  \
         N,                              \
         C,                              \
         H,                              \
@@ -449,8 +457,10 @@ void _AvgPool3dGradNHWC(
         y);                             \
   }
 
+DEFINE_KERNEL_LAUNCHER(AvgPool2d, float16);
 DEFINE_KERNEL_LAUNCHER(AvgPool2d, float);
 DEFINE_KERNEL_LAUNCHER(AvgPool2d, double);
+DEFINE_KERNEL_LAUNCHER(AvgPool2dGrad, float16); // AvgPool2dGrad
 DEFINE_KERNEL_LAUNCHER(AvgPool2dGrad, float); // AvgPool2dGrad
 DEFINE_KERNEL_LAUNCHER(AvgPool2dGrad, double); // AvgPool2dGrad
 #undef DEFINE_KERNEL_LAUNCHER
@@ -481,6 +491,8 @@ DEFINE_KERNEL_LAUNCHER(AvgPool2dGrad, double); // AvgPool2dGrad
       CPUContext* ctx) {                \
     DISPATCH_POOL_KERNEL(               \
         _##name,                        \
+        math::ScalarType<T>::type,      \
+        math::AccmulatorType<T>::type,  \
         N,                              \
         C,                              \
         D,                              \
@@ -502,8 +514,10 @@ DEFINE_KERNEL_LAUNCHER(AvgPool2dGrad, double); // AvgPool2dGrad
         y);                             \
   }
 
+DEFINE_KERNEL_LAUNCHER(AvgPool3d, float16);
 DEFINE_KERNEL_LAUNCHER(AvgPool3d, float);
 DEFINE_KERNEL_LAUNCHER(AvgPool3d, double);
+DEFINE_KERNEL_LAUNCHER(AvgPool3dGrad, float16); // AvgPool3dGrad
 DEFINE_KERNEL_LAUNCHER(AvgPool3dGrad, float); // AvgPool3dGrad
 DEFINE_KERNEL_LAUNCHER(AvgPool3dGrad, double); // AvgPool3dGrad
 #undef DEFINE_KERNEL_LAUNCHER

@@ -11,14 +11,13 @@ void TransposeOp<Context>::DoRunWithType() {
   auto &X = Input(0), *Y = Output(0, {0});
 
   int num_axes, num_dims = X.ndim();
-  vec64_t X_strides(num_dims), Y_dims(num_dims);
   perm(0, &num_axes);
 
   CHECK(num_axes == 0 || num_axes == num_dims)
       << "\nProviding " << num_axes << " dimensions to permute, "
       << "while Tensor(" << X.name() << ")'s dims are " << X.DimString();
 
-  vec64_t new_axes(num_dims);
+  vec64_t new_axes(num_dims), new_dims(num_dims);
   for (int i = 0; i < num_dims; ++i) {
     new_axes[i] = num_axes > 0 ? perm(i) : num_dims - i - 1;
   }
@@ -31,13 +30,27 @@ void TransposeOp<Context>::DoRunWithType() {
   }
 
   for (int i = 0; i < num_dims; ++i) {
-    X_strides[i] = X.stride(new_axes[i]);
-    Y_dims[i] = X.dim(new_axes[i]);
+    new_dims[i] = X.dim(new_axes[i]);
+  }
+
+  vec64_t transpose_dims, transpose_axes;
+  math::utils::CollapseTransposeAxes(
+      num_dims,
+      X.dims().data(),
+      new_axes.data(),
+      transpose_dims,
+      transpose_axes);
+  Tensor X_collapse(transpose_dims);
+  num_dims = X_collapse.ndim();
+  vec64_t X_strides(num_dims), Y_dims(num_dims);
+  for (int i = 0; i < num_dims; ++i) {
+    X_strides[i] = X_collapse.stride(transpose_axes[i]);
+    Y_dims[i] = X_collapse.dim(transpose_axes[i]);
   }
 
   auto* scratch = ((void*)&X == (void*)Y)
       ? ctx()->workspace()->template data<T, Context>({X.count()})[0]
-      : Y->Reshape(Y_dims)->template mutable_data<T, Context>();
+      : Y->Reshape(new_dims)->template mutable_data<T, Context>();
 
   kernels::Transpose(
       num_dims,
@@ -51,7 +64,7 @@ void TransposeOp<Context>::DoRunWithType() {
     math::Copy(
         X.count(),
         scratch,
-        Y->Reshape(Y_dims)->template mutable_data<T, Context>(),
+        Y->Reshape(new_dims)->template mutable_data<T, Context>(),
         ctx());
   }
 }

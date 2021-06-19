@@ -13,7 +13,6 @@ namespace {
 template <typename T, int D>
 __global__ void _ConstPad(
     const int N,
-    const int num_dims,
     const SimpleArray<int, D> X_dims,
     const SimpleArray<int, D> X_strides,
     const SimpleArray<int, D> Y_dims,
@@ -23,7 +22,8 @@ __global__ void _ConstPad(
     T* y) {
   CUDA_1D_KERNEL_LOOP(yi, N) {
     int xi = 0, tmp = yi, d;
-    for (d = num_dims - 1; d >= 0; --d) {
+#pragma unroll
+    for (d = D - 1; d >= 0; --d) {
       int r;
       FIXED_DIVISOR_DIV_MOD(Y_dims.data[d], tmp, &tmp, &r);
       r -= X_pads.data[d];
@@ -37,7 +37,6 @@ __global__ void _ConstPad(
 template <typename T, int D>
 __global__ void _ReflectPad(
     const int N,
-    const int num_dims,
     const SimpleArray<int, D> X_dims,
     const SimpleArray<int, D> X_strides,
     const SimpleArray<int, D> Y_dims,
@@ -46,7 +45,8 @@ __global__ void _ReflectPad(
     T* y) {
   CUDA_1D_KERNEL_LOOP(yi, N) {
     int xi = 0, tmp = yi;
-    for (int d = num_dims - 1; d >= 0; --d) {
+#pragma unroll
+    for (int d = D - 1; d >= 0; --d) {
       int r;
       FIXED_DIVISOR_DIV_MOD(Y_dims.data[d], tmp, &tmp, &r);
       r -= X_pads.data[d];
@@ -61,7 +61,6 @@ __global__ void _ReflectPad(
 template <typename T, int D>
 __global__ void _EdgePad(
     const int N,
-    const int num_dims,
     const SimpleArray<int, D> X_dims,
     const SimpleArray<int, D> X_strides,
     const SimpleArray<int, D> Y_dims,
@@ -70,7 +69,8 @@ __global__ void _EdgePad(
     T* y) {
   CUDA_1D_KERNEL_LOOP(yi, N) {
     int xi = 0, tmp = yi;
-    for (int d = num_dims - 1; d >= 0; --d) {
+#pragma unroll
+    for (int d = D - 1; d >= 0; --d) {
       int r;
       FIXED_DIVISOR_DIV_MOD(Y_dims.data[d], tmp, &tmp, &r);
       r = min(X_dims.data[d] - 1, max(r - X_pads.data[d], 0));
@@ -80,77 +80,109 @@ __global__ void _EdgePad(
   }
 }
 
+template <typename T, int D>
+void _PadImpl(
+    const int64_t* x_dims,
+    const int64_t* x_strides,
+    const int64_t* y_dims,
+    const int64_t* pads,
+    const float value,
+    const string& mode,
+    const T* x,
+    T* y,
+    CUDAContext* ctx) {
+  SimpleArray<int, D> X_dims, X_strides, Y_dims, X_pads;
+  const auto N =
+      std::accumulate(y_dims, y_dims + D, 1, std::multiplies<int64_t>());
+  for (int i = 0; i < D; ++i) {
+    X_dims.data[i] = x_dims[i];
+    X_strides.data[i] = x_strides[i];
+    Y_dims.data[i] = y_dims[i];
+    X_pads.data[i] = pads[i];
+  }
+  if (mode == "ConstPad") {
+    _ConstPad<<<CUDA_BLOCKS(N), CUDA_THREADS, 0, ctx->cuda_stream()>>>(
+        N, X_dims, X_strides, Y_dims, X_pads, convert::To<T>(value), x, y);
+  } else if (mode == "ReflectPad") {
+    _ReflectPad<<<CUDA_BLOCKS(N), CUDA_THREADS, 0, ctx->cuda_stream()>>>(
+        N, X_dims, X_strides, Y_dims, X_pads, x, y);
+  } else if (mode == "EdgePad") {
+    _EdgePad<<<CUDA_BLOCKS(N), CUDA_THREADS, 0, ctx->cuda_stream()>>>(
+        N, X_dims, X_strides, Y_dims, X_pads, x, y);
+  } else {
+    LOG(FATAL) << "Unknown Pad: " << mode << ".";
+  }
+}
+
 } // namespace
 
 /* ------------------- Launcher Separator ------------------- */
 
-#define DEFINE_CONST_KERNEL_LAUNCHER(T)                                       \
-  template <>                                                                 \
-  void ConstPad<T, CUDAContext>(                                              \
-      const int num_dims,                                                     \
-      const int64_t* x_dims,                                                  \
-      const int64_t* x_strides,                                               \
-      const int64_t* y_dims,                                                  \
-      const int64_t* pads,                                                    \
-      const float value,                                                      \
-      const T* x,                                                             \
-      T* y,                                                                   \
-      CUDAContext* ctx) {                                                     \
-    CUDA_TENSOR_DIMS_CHECK(num_dims);                                         \
-    SimpleArray<int, CUDA_TENSOR_MAX_DIMS> X_dims, X_strides, Y_dims, X_pads; \
-    const auto N = std::accumulate(                                           \
-        y_dims, y_dims + num_dims, 1, std::multiplies<int64_t>());            \
-    for (int i = 0; i < num_dims; ++i) {                                      \
-      X_dims.data[i] = x_dims[i];                                             \
-      X_strides.data[i] = x_strides[i];                                       \
-      Y_dims.data[i] = y_dims[i];                                             \
-      X_pads.data[i] = pads[i];                                               \
-    }                                                                         \
-    _ConstPad<<<CUDA_BLOCKS(N), CUDA_THREADS, 0, ctx->cuda_stream()>>>(       \
-        N,                                                                    \
-        num_dims,                                                             \
-        X_dims,                                                               \
-        X_strides,                                                            \
-        Y_dims,                                                               \
-        X_pads,                                                               \
-        convert::To<T>(value),                                                \
-        x,                                                                    \
-        y);                                                                   \
+#define DEFINE_KERNEL_LAUNCHER(name, T) \
+  template <>                           \
+  void name<T, CUDAContext>(            \
+      const int num_dims,               \
+      const int64_t* x_dims,            \
+      const int64_t* x_strides,         \
+      const int64_t* y_dims,            \
+      const int64_t* pads,              \
+      const float value,                \
+      const T* x,                       \
+      T* y,                             \
+      CUDAContext* ctx) {               \
+    CUDA_TENSOR_DIMS_CHECK(num_dims);   \
+    DISPATCH_FUNC_BY_VALUE_WITH_TYPE_1( \
+        _PadImpl,                       \
+        T,                              \
+        num_dims,                       \
+        x_dims,                         \
+        x_strides,                      \
+        y_dims,                         \
+        pads,                           \
+        value,                          \
+        #name,                          \
+        x,                              \
+        y,                              \
+        ctx);                           \
   }
 
-#define DEFINE_KERNEL_LAUNCHER(name, T)                                       \
-  template <>                                                                 \
-  void name<T, CUDAContext>(                                                  \
-      const int num_dims,                                                     \
-      const int64_t* x_dims,                                                  \
-      const int64_t* x_strides,                                               \
-      const int64_t* y_dims,                                                  \
-      const int64_t* pads,                                                    \
-      const T* x,                                                             \
-      T* y,                                                                   \
-      CUDAContext* ctx) {                                                     \
-    CUDA_TENSOR_DIMS_CHECK(num_dims);                                         \
-    SimpleArray<int, CUDA_TENSOR_MAX_DIMS> X_dims, X_strides, Y_dims, X_pads; \
-    const auto N = std::accumulate(                                           \
-        y_dims, y_dims + num_dims, 1, std::multiplies<int64_t>());            \
-    for (int i = 0; i < num_dims; ++i) {                                      \
-      X_dims.data[i] = x_dims[i];                                             \
-      X_strides.data[i] = x_strides[i];                                       \
-      Y_dims.data[i] = y_dims[i];                                             \
-      X_pads.data[i] = pads[i];                                               \
-    }                                                                         \
-    _##name<<<CUDA_BLOCKS(N), CUDA_THREADS, 0, ctx->cuda_stream()>>>(         \
-        N, num_dims, X_dims, X_strides, Y_dims, X_pads, x, y);                \
+DEFINE_KERNEL_LAUNCHER(ConstPad, bool);
+DEFINE_KERNEL_LAUNCHER(ConstPad, uint8_t);
+DEFINE_KERNEL_LAUNCHER(ConstPad, int8_t);
+DEFINE_KERNEL_LAUNCHER(ConstPad, int);
+DEFINE_KERNEL_LAUNCHER(ConstPad, int64_t);
+DEFINE_KERNEL_LAUNCHER(ConstPad, float16);
+DEFINE_KERNEL_LAUNCHER(ConstPad, float);
+DEFINE_KERNEL_LAUNCHER(ConstPad, double);
+#undef DEFINE_KERNEL_LAUNCHER
+
+#define DEFINE_KERNEL_LAUNCHER(name, T) \
+  template <>                           \
+  void name<T, CUDAContext>(            \
+      const int num_dims,               \
+      const int64_t* x_dims,            \
+      const int64_t* x_strides,         \
+      const int64_t* y_dims,            \
+      const int64_t* pads,              \
+      const T* x,                       \
+      T* y,                             \
+      CUDAContext* ctx) {               \
+    CUDA_TENSOR_DIMS_CHECK(num_dims);   \
+    DISPATCH_FUNC_BY_VALUE_WITH_TYPE_1( \
+        _PadImpl,                       \
+        T,                              \
+        num_dims,                       \
+        x_dims,                         \
+        x_strides,                      \
+        y_dims,                         \
+        pads,                           \
+        0.f,                            \
+        #name,                          \
+        x,                              \
+        y,                              \
+        ctx);                           \
   }
 
-DEFINE_CONST_KERNEL_LAUNCHER(bool);
-DEFINE_CONST_KERNEL_LAUNCHER(uint8_t);
-DEFINE_CONST_KERNEL_LAUNCHER(int8_t);
-DEFINE_CONST_KERNEL_LAUNCHER(int);
-DEFINE_CONST_KERNEL_LAUNCHER(int64_t);
-DEFINE_CONST_KERNEL_LAUNCHER(float16);
-DEFINE_CONST_KERNEL_LAUNCHER(float);
-DEFINE_CONST_KERNEL_LAUNCHER(double);
 DEFINE_KERNEL_LAUNCHER(ReflectPad, bool);
 DEFINE_KERNEL_LAUNCHER(ReflectPad, uint8_t);
 DEFINE_KERNEL_LAUNCHER(ReflectPad, int8_t);
@@ -167,7 +199,6 @@ DEFINE_KERNEL_LAUNCHER(EdgePad, int64_t);
 DEFINE_KERNEL_LAUNCHER(EdgePad, float16);
 DEFINE_KERNEL_LAUNCHER(EdgePad, float);
 DEFINE_KERNEL_LAUNCHER(EdgePad, double);
-#undef DEFINE_CONST_KERNEL_LAUNCHER
 #undef DEFINE_KERNEL_LAUNCHER
 
 } // namespace kernels

@@ -107,11 +107,6 @@ void PoolOp<Context>::DoRunWithType() {
 }
 
 template <class Context>
-void PoolOp<Context>::RunOnDevice() {
-  DispatchHelper<dtypes::TypesBase<float, double>>::Call(this, Input(0));
-}
-
-template <class Context>
 template <typename T>
 void PoolGradientOp<Context>::DoRunWithType() {
   ComputeOutShape();
@@ -210,11 +205,6 @@ void PoolGradientOp<Context>::DoRunWithType() {
       LOG(FATAL) << "AvgPool" << num_axes_ << "d is not supported.";
     }
   }
-}
-
-template <class Context>
-void PoolGradientOp<Context>::RunOnDevice() {
-  DispatchHelper<dtypes::TypesBase<float, double>>::Call(this, Input(0));
 }
 
 DEPLOY_CPU_OPERATOR(Pool);

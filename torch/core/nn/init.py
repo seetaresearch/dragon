@@ -267,7 +267,7 @@ def uniform_(tensor, a=0, b=1):
     ----------
     tensor : dragon.vm.torch.Tensor
         The input tensor.
-    a : number, optional, default=-1
+    a : number, optional, default=0
         The value to :math:`\alpha`.
     b : number, optional, default=1
         The value to :math:`\beta`.

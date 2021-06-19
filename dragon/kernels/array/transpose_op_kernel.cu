@@ -31,12 +31,13 @@ __global__ void _Transpose(
 
 template <typename T, int D>
 void _TransposeImpl(
-    const int N,
     const int64_t* x_strides,
     const int64_t* y_dims,
     const T* x,
     T* y,
     CUDAContext* ctx) {
+  const auto N =
+      std::accumulate(y_dims, y_dims + D, 1, std::multiplies<int64_t>());
   SimpleArray<int, D> X_strides, Y_dims;
   for (int i = 0; i < D; ++i) {
     X_strides.data[i] = x_strides[i];
@@ -50,46 +51,18 @@ void _TransposeImpl(
 
 /* ------------------- Launcher Separator ------------------- */
 
-#define DEFINE_KERNEL_LAUNCHER(T)                                  \
-  template <>                                                      \
-  void Transpose<T, CUDAContext>(                                  \
-      const int num_dims,                                          \
-      const int64_t* x_strides,                                    \
-      const int64_t* y_dims,                                       \
-      const T* x,                                                  \
-      T* y,                                                        \
-      CUDAContext* ctx) {                                          \
-    CUDA_TENSOR_DIMS_CHECK(num_dims);                              \
-    const auto N = std::accumulate(                                \
-        y_dims, y_dims + num_dims, 1, std::multiplies<int64_t>()); \
-    switch (num_dims) {                                            \
-      case 1:                                                      \
-        _TransposeImpl<T, 1>(N, x_strides, y_dims, x, y, ctx);     \
-        break;                                                     \
-      case 2:                                                      \
-        _TransposeImpl<T, 2>(N, x_strides, y_dims, x, y, ctx);     \
-        break;                                                     \
-      case 3:                                                      \
-        _TransposeImpl<T, 3>(N, x_strides, y_dims, x, y, ctx);     \
-        break;                                                     \
-      case 4:                                                      \
-        _TransposeImpl<T, 4>(N, x_strides, y_dims, x, y, ctx);     \
-        break;                                                     \
-      case 5:                                                      \
-        _TransposeImpl<T, 5>(N, x_strides, y_dims, x, y, ctx);     \
-        break;                                                     \
-      case 6:                                                      \
-        _TransposeImpl<T, 6>(N, x_strides, y_dims, x, y, ctx);     \
-        break;                                                     \
-      case 7:                                                      \
-        _TransposeImpl<T, 7>(N, x_strides, y_dims, x, y, ctx);     \
-        break;                                                     \
-      case 8:                                                      \
-        _TransposeImpl<T, 8>(N, x_strides, y_dims, x, y, ctx);     \
-        break;                                                     \
-      default:                                                     \
-        break;                                                     \
-    }                                                              \
+#define DEFINE_KERNEL_LAUNCHER(T)                                   \
+  template <>                                                       \
+  void Transpose<T, CUDAContext>(                                   \
+      const int num_dims,                                           \
+      const int64_t* x_strides,                                     \
+      const int64_t* y_dims,                                        \
+      const T* x,                                                   \
+      T* y,                                                         \
+      CUDAContext* ctx) {                                           \
+    CUDA_TENSOR_DIMS_CHECK(num_dims);                               \
+    DISPATCH_FUNC_BY_VALUE_WITH_TYPE_1(                             \
+        _TransposeImpl, T, num_dims, x_strides, y_dims, x, y, ctx); \
   }
 
 DEFINE_KERNEL_LAUNCHER(bool);

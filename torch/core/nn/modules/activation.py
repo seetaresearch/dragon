@@ -390,7 +390,7 @@ class MultiheadAttention(Module):
             self.in_proj_bias = Parameter(Tensor(3 * embed_dim))
         else:
             self.register_parameter('in_proj_bias', None)
-        self.out_proj = Linear(embed_dim, embed_dim, bias=True)
+        self.out_proj = Linear(embed_dim, embed_dim, bias=bias)
         self.reset_parameters()
 
     def reset_parameters(self):

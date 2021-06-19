@@ -38,7 +38,7 @@ __global__ void _NLLLossGrad(
     const int S,
     const int C,
     const int ignore_index,
-    const InputT* input,
+    const InputT* /* input */,
     const TargetT* target,
     InputT* dx,
     InputT* mask) {

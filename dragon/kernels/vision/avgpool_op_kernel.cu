@@ -1,6 +1,7 @@
 #ifdef USE_CUDA
 
 #include "dragon/core/context_cuda.h"
+#include "dragon/utils/math_functions.h"
 #include "dragon/utils/op_kernels.h"
 
 namespace dragon {
@@ -9,7 +10,9 @@ namespace kernels {
 
 namespace {
 
-template <typename T>
+#define LDG(x, i) convert::To<AccT>(__ldg(x + i))
+
+template <typename T, typename AccT>
 __global__ void _AvgPool2dNCHW(
     const int nthreads,
     const int C,
@@ -35,24 +38,24 @@ __global__ void _AvgPool2dNCHW(
     int wstart = w_out * stride_w - pad_w;
     int hend = min(hstart + kernel_h, H + pad_h);
     int wend = min(wstart + kernel_w, W + pad_w);
-    const T area = (hend - hstart) * (wend - wstart);
+    const AccT area = (hend - hstart) * (wend - wstart);
     hstart = max(hstart, 0);
     wstart = max(wstart, 0);
     hend = min(hend, H);
     wend = min(wend, W);
 
     const T* offset_x = x + (n * C + c) * H * W;
-    T val = T(0);
+    AccT val = AccT(0);
     for (int h = hstart; h < hend; ++h) {
       for (int w = wstart; w < wend; ++w) {
-        val += offset_x[h * W + w];
+        val += LDG(offset_x, h * W + w);
       }
     }
-    y[yi] = val / area;
+    y[yi] = convert::To<T>(val / area);
   }
 }
 
-template <typename T>
+template <typename T, typename AccT>
 __global__ void _AvgPool2dNHWC(
     const int nthreads,
     const int C,
@@ -78,24 +81,24 @@ __global__ void _AvgPool2dNHWC(
     int wstart = w_out * stride_w - pad_w;
     int hend = min(hstart + kernel_h, H + pad_h);
     int wend = min(wstart + kernel_w, W + pad_w);
-    const T area = (hend - hstart) * (wend - wstart);
+    const AccT area = (hend - hstart) * (wend - wstart);
     hstart = max(hstart, 0);
     wstart = max(wstart, 0);
     hend = min(hend, H);
     wend = min(wend, W);
 
     const T* offset_x = x + n * H * W * C + c;
-    T val = T(0);
+    AccT val = AccT(0);
     for (int h = hstart; h < hend; ++h) {
       for (int w = wstart; w < wend; ++w) {
-        val += offset_x[(h * W + w) * C];
+        val += LDG(offset_x, (h * W + w) * C);
       }
     }
-    y[yi] = val / area;
+    y[yi] = convert::To<T>(val / area);
   }
 }
 
-template <typename T>
+template <typename T, typename AccT>
 __global__ void _AvgPool2dGradNCHW(
     const int nthreads,
     const int C,
@@ -123,22 +126,22 @@ __global__ void _AvgPool2dGradNCHW(
     const int out_wend = min(w / stride_w + 1, out_w);
 
     const T* offset_dy = dy + (n * C + c) * out_h * out_w;
-    T val = T(0);
+    AccT val = AccT(0);
     for (int h_out = out_hstart; h_out < out_hend; ++h_out) {
       const int hstart = h_out * stride_h - pad_h;
       const int hend = min(hstart + kernel_h, H + pad_h);
       for (int w_out = out_wstart; w_out < out_wend; ++w_out) {
         const int wstart = w_out * stride_w - pad_w;
         const int wend = min(wstart + kernel_w, W + pad_w);
-        const T area = (hend - hstart) * (wend - wstart);
-        val += offset_dy[h_out * out_w + w_out] / area;
+        const AccT area = (hend - hstart) * (wend - wstart);
+        val += LDG(offset_dy, h_out * out_w + w_out) / area;
       }
     }
-    dx[xi] = val;
+    dx[xi] = convert::To<T>(val);
   }
 }
 
-template <typename T>
+template <typename T, typename AccT>
 __global__ void _AvgPool2dGradNHWC(
     const int nthreads,
     const int C,
@@ -166,22 +169,22 @@ __global__ void _AvgPool2dGradNHWC(
     const int out_wend = min(w / stride_w + 1, out_w);
 
     const T* offset_dy = dy + n * out_h * out_w * C + c;
-    T val = T(0);
+    AccT val = AccT(0);
     for (int h_out = out_hstart; h_out < out_hend; ++h_out) {
       const int hstart = h_out * stride_h - pad_h;
       const int hend = min(hstart + kernel_h, H + pad_h);
       for (int w_out = out_wstart; w_out < out_wend; ++w_out) {
         const int wstart = w_out * stride_w - pad_w;
         const int wend = min(wstart + kernel_w, W + pad_w);
-        const T area = (hend - hstart) * (wend - wstart);
-        val += offset_dy[(h_out * out_w + w_out) * C] / area;
+        const AccT area = (hend - hstart) * (wend - wstart);
+        val += LDG(offset_dy, (h_out * out_w + w_out) * C) / area;
       }
     }
-    dx[xi] = val;
+    dx[xi] = convert::To<T>(val);
   }
 }
 
-template <typename T>
+template <typename T, typename AccT>
 __global__ void _AvgPool3dNCHW(
     const int nthreads,
     const int C,
@@ -218,7 +221,7 @@ __global__ void _AvgPool3dNCHW(
     int dend = min(dstart + kernel_d, D + pad_d);
     int hend = min(hstart + kernel_h, H + pad_h);
     int wend = min(wstart + kernel_w, W + pad_w);
-    const T area = (dend - dstart) * (hend - hstart) * (wend - wstart);
+    const AccT area = (dend - dstart) * (hend - hstart) * (wend - wstart);
     dstart = max(dstart, 0);
     hstart = max(hstart, 0);
     wstart = max(wstart, 0);
@@ -227,19 +230,19 @@ __global__ void _AvgPool3dNCHW(
     wend = min(wend, W);
 
     const T* offset_x = x + (n * C + c) * D * H * W;
-    T val = T(0);
+    AccT val = AccT(0);
     for (int d = dstart; d < dend; ++d) {
       for (int h = hstart; h < hend; ++h) {
         for (int w = wstart; w < wend; ++w) {
-          val += offset_x[(d * H + h) * W + w];
+          val += LDG(offset_x, (d * H + h) * W + w);
         }
       }
     }
-    y[yi] = val / area;
+    y[yi] = convert::To<T>(val / area);
   }
 }
 
-template <typename T>
+template <typename T, typename AccT>
 __global__ void _AvgPool3dNHWC(
     const int nthreads,
     const int C,
@@ -276,7 +279,7 @@ __global__ void _AvgPool3dNHWC(
     int dend = min(dstart + kernel_d, D + pad_d);
     int hend = min(hstart + kernel_h, H + pad_h);
     int wend = min(wstart + kernel_w, W + pad_w);
-    const T area = (dend - dstart) * (hend - hstart) * (wend - wstart);
+    const AccT area = (dend - dstart) * (hend - hstart) * (wend - wstart);
     dstart = max(dstart, 0);
     hstart = max(hstart, 0);
     wstart = max(wstart, 0);
@@ -285,19 +288,19 @@ __global__ void _AvgPool3dNHWC(
     wend = min(wend, W);
 
     const T* offset_x = x + n * D * H * W * C + c;
-    T val = T(0);
+    AccT val = AccT(0);
     for (int d = dstart; d < dend; ++d) {
       for (int h = hstart; h < hend; ++h) {
         for (int w = wstart; w < wend; ++w) {
-          val += offset_x[((d * H + h) * W + w) * C];
+          val += LDG(offset_x, ((d * H + h) * W + w) * C);
         }
       }
     }
-    y[yi] = val / area;
+    y[yi] = convert::To<T>(val / area);
   }
 }
 
-template <typename T>
+template <typename T, typename AccT>
 __global__ void _AvgPool3dGradNCHW(
     const int nthreads,
     const int C,
@@ -336,7 +339,7 @@ __global__ void _AvgPool3dGradNCHW(
     const int out_wend = min(w / stride_w + 1, out_w);
 
     const T* offset_dy = dy + (n * C + c) * out_d * out_h * out_w;
-    T val = T(0);
+    AccT val = AccT(0);
     for (int d_out = out_dstart; d_out < out_dend; ++d_out) {
       const int dstart = d_out * stride_d - pad_d;
       const int dend = min(dstart + kernel_d, D + pad_d);
@@ -346,16 +349,16 @@ __global__ void _AvgPool3dGradNCHW(
         for (int w_out = out_wstart; w_out < out_wend; ++w_out) {
           const int wstart = w_out * stride_w - pad_w;
           const int wend = min(wstart + kernel_w, W + pad_w);
-          const T area = (dend - dstart) * (hend - hstart) * (wend - wstart);
-          val += offset_dy[(d_out * out_h + h_out) * out_w + w_out] / area;
+          const AccT area = (dend - dstart) * (hend - hstart) * (wend - wstart);
+          val += LDG(offset_dy, (d_out * out_h + h_out) * out_w + w_out) / area;
         }
       }
     }
-    dx[xi] = val;
+    dx[xi] = convert::To<T>(val);
   }
 }
 
-template <typename T>
+template <typename T, typename AccT>
 __global__ void _AvgPool3dGradNHWC(
     const int nthreads,
     const int C,
@@ -394,7 +397,7 @@ __global__ void _AvgPool3dGradNHWC(
     const int out_wend = min(w / stride_w + 1, out_w);
 
     const T* offset_dy = dy + n * out_d * out_h * out_w * C + c;
-    T val = T(0);
+    AccT val = AccT(0);
     for (int d_out = out_dstart; d_out < out_dend; ++d_out) {
       const int dstart = d_out * stride_d - pad_d;
       const int dend = min(dstart + kernel_d, D + pad_d);
@@ -404,129 +407,144 @@ __global__ void _AvgPool3dGradNHWC(
         for (int w_out = out_wstart; w_out < out_wend; ++w_out) {
           const int wstart = w_out * stride_w - pad_w;
           const int wend = min(wstart + kernel_w, W + pad_w);
-          const T area = (dend - dstart) * (hend - hstart) * (wend - wstart);
-          val +=
-              offset_dy[((d_out * out_h + h_out) * out_w + w_out) * C] / area;
+          const AccT area = (dend - dstart) * (hend - hstart) * (wend - wstart);
+          val += LDG(offset_dy, ((d_out * out_h + h_out) * out_w + w_out) * C) /
+              area;
         }
       }
     }
-    dx[xi] = val;
+    dx[xi] = convert::To<T>(val);
   }
 }
+
+#undef LDG
 
 } // namespace
 
 /* ------------------- Launcher Separator ------------------- */
 
-#define DISPATCH_POOL_KERNEL(name, kBlocks, kThreads, ...)                 \
-  if (data_format == "NCHW") {                                             \
-    name##NCHW<<<kBlocks, kThreads, 0, ctx->cuda_stream()>>>(__VA_ARGS__); \
-  } else if (data_format == "NHWC") {                                      \
-    name##NHWC<<<kBlocks, kThreads, 0, ctx->cuda_stream()>>>(__VA_ARGS__); \
-  } else {                                                                 \
-    LOG(FATAL) << "Unknown DataFormat: " << data_format;                   \
+#define DISPATCH_POOL_KERNEL(name, T, AccT, kBlocks, kThreads, ...)  \
+  if (data_format == "NCHW") {                                       \
+    name##NCHW<T, AccT>                                              \
+        <<<kBlocks, kThreads, 0, ctx->cuda_stream()>>>(__VA_ARGS__); \
+  } else if (data_format == "NHWC") {                                \
+    name##NHWC<T, AccT>                                              \
+        <<<kBlocks, kThreads, 0, ctx->cuda_stream()>>>(__VA_ARGS__); \
+  } else {                                                           \
+    LOG(FATAL) << "Unknown DataFormat: " << data_format;             \
   }
 
-#define DEFINE_KERNEL_LAUNCHER(name, T, out_dim) \
-  template <>                                    \
-  void name<T, CUDAContext>(                     \
-      const int N,                               \
-      const int C,                               \
-      const int H,                               \
-      const int W,                               \
-      const int out_h,                           \
-      const int out_w,                           \
-      const int kernel_h,                        \
-      const int kernel_w,                        \
-      const int stride_h,                        \
-      const int stride_w,                        \
-      const int pad_h,                           \
-      const int pad_w,                           \
-      const string& data_format,                 \
-      const T* x,                                \
-      T* y,                                      \
-      CUDAContext* ctx) {                        \
-    const int nthreads = N * C * out_dim;        \
-    DISPATCH_POOL_KERNEL(                        \
-        _##name,                                 \
-        CUDA_BLOCKS(nthreads),                   \
-        CUDA_THREADS,                            \
-        nthreads,                                \
-        C,                                       \
-        H,                                       \
-        W,                                       \
-        out_h,                                   \
-        out_w,                                   \
-        kernel_h,                                \
-        kernel_w,                                \
-        stride_h,                                \
-        stride_w,                                \
-        pad_h,                                   \
-        pad_w,                                   \
-        x,                                       \
-        y);                                      \
+#define DEFINE_KERNEL_LAUNCHER(name, T, out_dim)               \
+  template <>                                                  \
+  void name<T, CUDAContext>(                                   \
+      const int N,                                             \
+      const int C,                                             \
+      const int H,                                             \
+      const int W,                                             \
+      const int out_h,                                         \
+      const int out_w,                                         \
+      const int kernel_h,                                      \
+      const int kernel_w,                                      \
+      const int stride_h,                                      \
+      const int stride_w,                                      \
+      const int pad_h,                                         \
+      const int pad_w,                                         \
+      const string& data_format,                               \
+      const T* x,                                              \
+      T* y,                                                    \
+      CUDAContext* ctx) {                                      \
+    const int nthreads = N * C * out_dim;                      \
+    DISPATCH_POOL_KERNEL(                                      \
+        _##name,                                               \
+        math::ScalarType<T>::type,                             \
+        math::AccmulatorType<T>::type,                         \
+        CUDA_BLOCKS(nthreads),                                 \
+        CUDA_THREADS,                                          \
+        nthreads,                                              \
+        C,                                                     \
+        H,                                                     \
+        W,                                                     \
+        out_h,                                                 \
+        out_w,                                                 \
+        kernel_h,                                              \
+        kernel_w,                                              \
+        stride_h,                                              \
+        stride_w,                                              \
+        pad_h,                                                 \
+        pad_w,                                                 \
+        reinterpret_cast<const math::ScalarType<T>::type*>(x), \
+        reinterpret_cast<math::ScalarType<T>::type*>(y));      \
   }
 
+DEFINE_KERNEL_LAUNCHER(AvgPool2d, float16, (out_h * out_w));
 DEFINE_KERNEL_LAUNCHER(AvgPool2d, float, (out_h * out_w));
 DEFINE_KERNEL_LAUNCHER(AvgPool2d, double, (out_h * out_w));
+DEFINE_KERNEL_LAUNCHER(AvgPool2dGrad, float16, (H * W)); // AvgPool2dGrad
 DEFINE_KERNEL_LAUNCHER(AvgPool2dGrad, float, (H * W)); // AvgPool2dGrad
 DEFINE_KERNEL_LAUNCHER(AvgPool2dGrad, double, (H * W)); // AvgPool2dGrad
 #undef DEFINE_KERNEL_LAUNCHER
 
-#define DEFINE_KERNEL_LAUNCHER(name, T, out_dim) \
-  template <>                                    \
-  void name<T, CUDAContext>(                     \
-      const int N,                               \
-      const int C,                               \
-      const int D,                               \
-      const int H,                               \
-      const int W,                               \
-      const int out_d,                           \
-      const int out_h,                           \
-      const int out_w,                           \
-      const int kernel_d,                        \
-      const int kernel_h,                        \
-      const int kernel_w,                        \
-      const int stride_d,                        \
-      const int stride_h,                        \
-      const int stride_w,                        \
-      const int pad_d,                           \
-      const int pad_h,                           \
-      const int pad_w,                           \
-      const string& data_format,                 \
-      const T* x,                                \
-      T* y,                                      \
-      CUDAContext* ctx) {                        \
-    const int nthreads = N * C * out_dim;        \
-    DISPATCH_POOL_KERNEL(                        \
-        _##name,                                 \
-        CUDA_BLOCKS(nthreads),                   \
-        CUDA_THREADS,                            \
-        nthreads,                                \
-        C,                                       \
-        D,                                       \
-        H,                                       \
-        W,                                       \
-        out_d,                                   \
-        out_h,                                   \
-        out_w,                                   \
-        kernel_d,                                \
-        kernel_h,                                \
-        kernel_w,                                \
-        stride_d,                                \
-        stride_h,                                \
-        stride_w,                                \
-        pad_d,                                   \
-        pad_h,                                   \
-        pad_w,                                   \
-        x,                                       \
-        y);                                      \
+#define DEFINE_KERNEL_LAUNCHER(name, T, out_dim)               \
+  template <>                                                  \
+  void name<T, CUDAContext>(                                   \
+      const int N,                                             \
+      const int C,                                             \
+      const int D,                                             \
+      const int H,                                             \
+      const int W,                                             \
+      const int out_d,                                         \
+      const int out_h,                                         \
+      const int out_w,                                         \
+      const int kernel_d,                                      \
+      const int kernel_h,                                      \
+      const int kernel_w,                                      \
+      const int stride_d,                                      \
+      const int stride_h,                                      \
+      const int stride_w,                                      \
+      const int pad_d,                                         \
+      const int pad_h,                                         \
+      const int pad_w,                                         \
+      const string& data_format,                               \
+      const T* x,                                              \
+      T* y,                                                    \
+      CUDAContext* ctx) {                                      \
+    const int nthreads = N * C * out_dim;                      \
+    DISPATCH_POOL_KERNEL(                                      \
+        _##name,                                               \
+        math::ScalarType<T>::type,                             \
+        math::AccmulatorType<T>::type,                         \
+        CUDA_BLOCKS(nthreads),                                 \
+        CUDA_THREADS,                                          \
+        nthreads,                                              \
+        C,                                                     \
+        D,                                                     \
+        H,                                                     \
+        W,                                                     \
+        out_d,                                                 \
+        out_h,                                                 \
+        out_w,                                                 \
+        kernel_d,                                              \
+        kernel_h,                                              \
+        kernel_w,                                              \
+        stride_d,                                              \
+        stride_h,                                              \
+        stride_w,                                              \
+        pad_d,                                                 \
+        pad_h,                                                 \
+        pad_w,                                                 \
+        reinterpret_cast<const math::ScalarType<T>::type*>(x), \
+        reinterpret_cast<math::ScalarType<T>::type*>(y));      \
   }
 
+DEFINE_KERNEL_LAUNCHER(AvgPool3d, float16, (out_d * out_h * out_w));
 DEFINE_KERNEL_LAUNCHER(AvgPool3d, float, (out_d * out_h * out_w));
 DEFINE_KERNEL_LAUNCHER(AvgPool3d, double, (out_d * out_h * out_w));
-DEFINE_KERNEL_LAUNCHER(AvgPool3dGrad, float, (D * H * W)); // AvgPool3dGrad
-DEFINE_KERNEL_LAUNCHER(AvgPool3dGrad, double, (D * H * W)); // AvgPool3dGrad
+DEFINE_KERNEL_LAUNCHER(AvgPool3dGrad, float16,
+                       (D * H * W)); // AvgPool3dGrad
+DEFINE_KERNEL_LAUNCHER(AvgPool3dGrad, float,
+                       (D * H * W)); // AvgPool3dGrad
+DEFINE_KERNEL_LAUNCHER(AvgPool3dGrad, double,
+                       (D * H * W)); // AvgPool3dGrad
 #undef DEFINE_KERNEL_LAUNCHER
 #undef DISPATCH_POOL_KERNEL
 

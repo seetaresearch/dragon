@@ -10,60 +10,76 @@ namespace kernels {
 
 namespace {
 
-template <typename T, int D>
+template <typename T, typename AccT, int D>
 __global__ void _ReduceSumGrad(
     const int N,
-    const int num_dims,
     const SimpleArray<int, D> X_dims,
     const SimpleArray<int, D> Y_dims,
     const SimpleArray<int, D> Y_strides,
-    const float scale,
+    const AccT scale,
     const T* dy,
     T* dx) {
   CUDA_1D_KERNEL_LOOP(xi, N) {
     int yi = 0, tmp = xi;
-    for (int d = num_dims - 1; d >= 0; --d) {
+#pragma unroll
+    for (int d = D - 1; d >= 0; --d) {
       int r;
       FIXED_DIVISOR_DIV_MOD(X_dims.data[d], tmp, &tmp, &r);
       yi += (r % Y_dims.data[d]) * Y_strides.data[d];
     }
-    dx[xi] = convert::To<T>(convert::To<float>(__ldg(dy + yi)) * scale);
+    dx[xi] = convert::To<T>(convert::To<AccT>(__ldg(dy + yi)) * scale);
   }
+}
+
+template <typename T, typename AccT, int D>
+void _ReduceSumGradImpl(
+    const int64_t* x_dims,
+    const int64_t* y_dims,
+    const int64_t* y_strides,
+    const AccT scale,
+    const T* dy,
+    T* dx,
+    CUDAContext* ctx) {
+  SimpleArray<int, D> X_dims, Y_dims, Y_strides;
+  const auto N =
+      std::accumulate(x_dims, x_dims + D, 1, std::multiplies<int64_t>());
+  for (int i = 0; i < D; ++i) {
+    X_dims.data[i] = x_dims[i];
+    Y_dims.data[i] = y_dims[i];
+    Y_strides.data[i] = y_strides[i];
+  }
+  _ReduceSumGrad<<<CUDA_BLOCKS(N), CUDA_THREADS, 0, ctx->cuda_stream()>>>(
+      N, X_dims, Y_dims, Y_strides, scale, dy, dx);
 }
 
 } // namespace
 
 /* ------------------- Launcher Separator ------------------- */
 
-#define DEFINE_GRAD_KERNEL_LAUNCHER(T)                                       \
-  template <>                                                                \
-  void ReduceSumGrad<T, CUDAContext>(                                        \
-      const int num_dims,                                                    \
-      const int64_t* x_dims,                                                 \
-      const int64_t* y_dims,                                                 \
-      const int64_t* y_strides,                                              \
-      const float scale,                                                     \
-      const T* dy,                                                           \
-      T* dx,                                                                 \
-      CUDAContext* ctx) {                                                    \
-    CUDA_TENSOR_DIMS_CHECK(num_dims);                                        \
-    SimpleArray<int, CUDA_TENSOR_MAX_DIMS> X_dims, Y_dims, Y_strides;        \
-    const auto N = std::accumulate(                                          \
-        x_dims, x_dims + num_dims, 1, std::multiplies<int64_t>());           \
-    for (int i = 0; i < num_dims; ++i) {                                     \
-      X_dims.data[i] = x_dims[i];                                            \
-      Y_dims.data[i] = y_dims[i];                                            \
-      Y_strides.data[i] = y_strides[i];                                      \
-    }                                                                        \
-    _ReduceSumGrad<<<CUDA_BLOCKS(N), CUDA_THREADS, 0, ctx->cuda_stream()>>>( \
-        N,                                                                   \
-        num_dims,                                                            \
-        X_dims,                                                              \
-        Y_dims,                                                              \
-        Y_strides,                                                           \
-        scale,                                                               \
-        reinterpret_cast<const math::ScalarType<T>::type*>(dy),              \
-        reinterpret_cast<math::ScalarType<T>::type*>(dx));                   \
+#define DEFINE_GRAD_KERNEL_LAUNCHER(T)                          \
+  template <>                                                   \
+  void ReduceSumGrad<T, CUDAContext>(                           \
+      const int num_dims,                                       \
+      const int64_t* x_dims,                                    \
+      const int64_t* y_dims,                                    \
+      const int64_t* y_strides,                                 \
+      const float scale,                                        \
+      const T* dy,                                              \
+      T* dx,                                                    \
+      CUDAContext* ctx) {                                       \
+    CUDA_TENSOR_DIMS_CHECK(num_dims);                           \
+    DISPATCH_FUNC_BY_VALUE_WITH_TYPE_2(                         \
+        _ReduceSumGradImpl,                                     \
+        math::ScalarType<T>::type,                              \
+        math::AccmulatorType<T>::type,                          \
+        num_dims,                                               \
+        x_dims,                                                 \
+        y_dims,                                                 \
+        y_strides,                                              \
+        convert::To<math::AccmulatorType<T>::type>(scale),      \
+        reinterpret_cast<const math::ScalarType<T>::type*>(dy), \
+        reinterpret_cast<math::ScalarType<T>::type*>(dx),       \
+        ctx);                                                   \
   }
 
 DEFINE_GRAD_KERNEL_LAUNCHER(float16);

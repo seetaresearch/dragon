@@ -13,7 +13,7 @@ namespace {
 template <typename T>
 __global__ void _Im2Col2dNCHW(
     const int nthreads,
-    const int C,
+    const int /* C */,
     const int H,
     const int W,
     const int out_h,
@@ -59,7 +59,7 @@ __global__ void _Im2Col2dNHWC(
     const int C,
     const int H,
     const int W,
-    const int out_h,
+    const int /* out_h */,
     const int out_w,
     const int kernel_h,
     const int kernel_w,
@@ -97,7 +97,7 @@ __global__ void _Im2Col2dNHWC(
 template <typename T>
 __global__ void _Col2Im2dNCHW(
     const int nthreads,
-    const int C,
+    const int /* C */,
     const int H,
     const int W,
     const int out_h,
@@ -147,7 +147,7 @@ template <typename T>
 __global__ void _Col2Im2dNHWC(
     const int nthreads,
     const int C,
-    const int H,
+    const int /* H */,
     const int W,
     const int out_h,
     const int out_w,

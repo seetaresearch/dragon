@@ -60,12 +60,19 @@ void SpaceToDepthOp<Context>::DoRunWithType() {
   CHECK_EQ(X_reshape.count(), X.count())
       << "\nCould not rearrange " << X.DimString() << " to "
       << X_reshape.DimString() << " with block size " << block_size_ << ".";
-
-  vec64_t X_strides(in_dims.size());
-  vec64_t Y_dims(in_dims.size());
-  for (int i = 0; i < X_reshape.ndim(); i++) {
-    X_strides[i] = X_reshape.stride(perm[i]);
-    Y_dims[i] = X_reshape.dim(perm[i]);
+  vec64_t transpose_dims, transpose_axes;
+  math::utils::CollapseTransposeAxes(
+      X_reshape.ndim(),
+      X_reshape.dims().data(),
+      perm.data(),
+      transpose_dims,
+      transpose_axes);
+  Tensor X_collapse(transpose_dims);
+  num_dims = X_collapse.ndim();
+  vec64_t X_strides(num_dims), Y_dims(num_dims);
+  for (int i = 0; i < num_dims; ++i) {
+    X_strides[i] = X_collapse.stride(transpose_axes[i]);
+    Y_dims[i] = X_collapse.dim(transpose_axes[i]);
   }
 
   auto* scratch = ((void*)&X == (void*)Y)
@@ -73,7 +80,7 @@ void SpaceToDepthOp<Context>::DoRunWithType() {
       : Y->Reshape(out_shape)->template mutable_data<T, Context>();
 
   kernels::Transpose(
-      X_strides.size(),
+      num_dims,
       X_strides.data(),
       Y_dims.data(),
       X.template data<T, Context>(),
@@ -135,12 +142,19 @@ void DepthToSpaceOp<Context>::DoRunWithType() {
   CHECK_EQ(X_reshape.count(), X.count())
       << "\nCould not rearrange " << X.DimString() << " to "
       << X_reshape.DimString() << " with block size " << block_size_ << ".";
-
-  vec64_t X_strides(in_dims.size());
-  vec64_t Y_dims(in_dims.size());
-  for (int i = 0; i < in_dims.size(); i++) {
-    X_strides[i] = X_reshape.stride(perm[i]);
-    Y_dims[i] = X_reshape.dim(perm[i]);
+  vec64_t transpose_dims, transpose_axes;
+  math::utils::CollapseTransposeAxes(
+      X_reshape.ndim(),
+      X_reshape.dims().data(),
+      perm.data(),
+      transpose_dims,
+      transpose_axes);
+  Tensor X_collapse(transpose_dims);
+  num_dims = X_collapse.ndim();
+  vec64_t X_strides(num_dims), Y_dims(num_dims);
+  for (int i = 0; i < num_dims; ++i) {
+    X_strides[i] = X_collapse.stride(transpose_axes[i]);
+    Y_dims[i] = X_collapse.dim(transpose_axes[i]);
   }
 
   auto* scratch = ((void*)&X == (void*)Y)
@@ -148,7 +162,7 @@ void DepthToSpaceOp<Context>::DoRunWithType() {
       : Y->Reshape(out_shape)->template mutable_data<T, Context>();
 
   kernels::Transpose(
-      X_strides.size(),
+      num_dims,
       X_strides.data(),
       Y_dims.data(),
       X.template data<T, Context>(),

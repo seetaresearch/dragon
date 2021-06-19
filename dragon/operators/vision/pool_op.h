@@ -27,7 +27,9 @@ class PoolOp final : public PoolOpBase<Context> {
   USE_OPERATOR_FUNCTIONS;
   USE_POOL_FUNCTIONS;
 
-  void RunOnDevice() override;
+  void RunOnDevice() override {
+    DispatchHelper<dtypes::Floating>::Call(this, Input(0));
+  }
 
   template <typename T>
   void DoRunWithType();
@@ -43,7 +45,9 @@ class PoolGradientOp final : public PoolOpBase<Context> {
   USE_OPERATOR_FUNCTIONS;
   USE_POOL_FUNCTIONS;
 
-  void RunOnDevice() override;
+  void RunOnDevice() override {
+    DispatchHelper<dtypes::Floating>::Call(this, Input(0));
+  }
 
   template <typename T>
   void DoRunWithType();
@@ -70,7 +74,9 @@ class CuDNNPoolOp final : public CuDNNPoolOpBase<Context> {
     CUDNN_CHECK(cudnnDestroyPoolingDescriptor(pool_desc_));
   }
 
-  void RunOnDevice() override;
+  void RunOnDevice() override {
+    DispatchHelper<dtypes::Floating>::Call(this, Input(0));
+  }
 
   template <typename T>
   void DoRunWithType();
@@ -99,7 +105,9 @@ class CuDNNPoolGradientOp final : public CuDNNPoolOpBase<Context> {
     CUDNN_CHECK(cudnnDestroyPoolingDescriptor(pool_desc_));
   }
 
-  void RunOnDevice() override;
+  void RunOnDevice() override {
+    DispatchHelper<dtypes::Floating>::Call(this, Input(0));
+  }
 
   template <typename T>
   void DoRunWithType();

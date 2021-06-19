@@ -1,4 +1,4 @@
-FROM nvidia/cuda:10.0-cudnn7-devel-ubuntu16.04
+FROM nvidia/cuda:10.2-cudnn8-devel-ubuntu18.04
 
 RUN \
   rm /etc/apt/sources.list.d/cuda.list && \
@@ -48,8 +48,8 @@ RUN \
   -DPYTHON_EXECUTABLE=/usr/bin/python3 \
   -DUSE_MPI=ON \
   -DUSE_NCCL=ON \
-  -DUSE_AVX2=OFF \
-  -DUSE_FMA=OFF && \
+  -DUSE_AVX2=ON \
+  -DUSE_FMA=ON && \
   make install -j $(nproc) && \
   cd .. && rm -rf build && \
   python3 setup.py install

@@ -158,6 +158,129 @@ class CUDADeviceGuard {
   int prev_id_;
 };
 
+#define DISPATCH_FUNC_BY_VALUE_WITH_TYPE_1(Func, T, val, ...) \
+  do {                                                        \
+    switch (val) {                                            \
+      case 1: {                                               \
+        Func<T, 1>(__VA_ARGS__);                              \
+        break;                                                \
+      }                                                       \
+      case 2: {                                               \
+        Func<T, 2>(__VA_ARGS__);                              \
+        break;                                                \
+      }                                                       \
+      case 3: {                                               \
+        Func<T, 3>(__VA_ARGS__);                              \
+        break;                                                \
+      }                                                       \
+      case 4: {                                               \
+        Func<T, 4>(__VA_ARGS__);                              \
+        break;                                                \
+      }                                                       \
+      case 5: {                                               \
+        Func<T, 5>(__VA_ARGS__);                              \
+        break;                                                \
+      }                                                       \
+      case 6: {                                               \
+        Func<T, 6>(__VA_ARGS__);                              \
+        break;                                                \
+      }                                                       \
+      case 7: {                                               \
+        Func<T, 7>(__VA_ARGS__);                              \
+        break;                                                \
+      }                                                       \
+      case 8: {                                               \
+        Func<T, 8>(__VA_ARGS__);                              \
+        break;                                                \
+      }                                                       \
+      default: {                                              \
+        break;                                                \
+      }                                                       \
+    }                                                         \
+  } while (false)
+
+#define DISPATCH_FUNC_BY_VALUE_WITH_TYPE_2(Func, T1, T2, val, ...) \
+  do {                                                             \
+    switch (val) {                                                 \
+      case 1: {                                                    \
+        Func<T1, T2, 1>(__VA_ARGS__);                              \
+        break;                                                     \
+      }                                                            \
+      case 2: {                                                    \
+        Func<T1, T2, 2>(__VA_ARGS__);                              \
+        break;                                                     \
+      }                                                            \
+      case 3: {                                                    \
+        Func<T1, T2, 3>(__VA_ARGS__);                              \
+        break;                                                     \
+      }                                                            \
+      case 4: {                                                    \
+        Func<T1, T2, 4>(__VA_ARGS__);                              \
+        break;                                                     \
+      }                                                            \
+      case 5: {                                                    \
+        Func<T1, T2, 5>(__VA_ARGS__);                              \
+        break;                                                     \
+      }                                                            \
+      case 6: {                                                    \
+        Func<T1, T2, 6>(__VA_ARGS__);                              \
+        break;                                                     \
+      }                                                            \
+      case 7: {                                                    \
+        Func<T1, T2, 7>(__VA_ARGS__);                              \
+        break;                                                     \
+      }                                                            \
+      case 8: {                                                    \
+        Func<T1, T2, 8>(__VA_ARGS__);                              \
+        break;                                                     \
+      }                                                            \
+      default: {                                                   \
+        break;                                                     \
+      }                                                            \
+    }                                                              \
+  } while (false)
+
+#define DISPATCH_FUNC_BY_VALUE_WITH_TYPE_3(Func, T1, T2, T3, val, ...) \
+  do {                                                                 \
+    switch (val) {                                                     \
+      case 1: {                                                        \
+        Func<T1, T2, T3, 1>(__VA_ARGS__);                              \
+        break;                                                         \
+      }                                                                \
+      case 2: {                                                        \
+        Func<T1, T2, T3, 2>(__VA_ARGS__);                              \
+        break;                                                         \
+      }                                                                \
+      case 3: {                                                        \
+        Func<T1, T2, T3, 3>(__VA_ARGS__);                              \
+        break;                                                         \
+      }                                                                \
+      case 4: {                                                        \
+        Func<T1, T2, T3, 4>(__VA_ARGS__);                              \
+        break;                                                         \
+      }                                                                \
+      case 5: {                                                        \
+        Func<T1, T2, T3, 5>(__VA_ARGS__);                              \
+        break;                                                         \
+      }                                                                \
+      case 6: {                                                        \
+        Func<T1, T2, T3, 6>(__VA_ARGS__);                              \
+        break;                                                         \
+      }                                                                \
+      case 7: {                                                        \
+        Func<T1, T2, T3, 7>(__VA_ARGS__);                              \
+        break;                                                         \
+      }                                                                \
+      case 8: {                                                        \
+        Func<T1, T2, T3, 8>(__VA_ARGS__);                              \
+        break;                                                         \
+      }                                                                \
+      default: {                                                       \
+        break;                                                         \
+      }                                                                \
+    }                                                                  \
+  } while (false)
+
 #else
 
 #define CUDA_NOT_COMPILED LOG(FATAL) << "CUDA library is not compiled with."

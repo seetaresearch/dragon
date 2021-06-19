@@ -7,7 +7,7 @@ namespace kernels {
 
 namespace {
 
-template <typename T>
+template <typename T, typename AccT>
 void _MaxPool2dNCHW(
     const int N,
     const int C,
@@ -29,8 +29,7 @@ void _MaxPool2dNCHW(
   const auto NxCxHoxWo = N * C * out_h * out_w;
   std::array<int, 4> index = {0, 0, 0, 0};
   std::array<int, 4> dims = {N, C, out_h, out_w};
-  T val;
-  int hstart, hend, wstart, wend, xi, mask_val;
+  int hstart, hend, wstart, wend;
   for (int i = 0; i < NxCxHoxWo; ++i) {
     hstart = index[2] * stride_h - pad_h;
     wstart = index[3] * stride_w - pad_w;
@@ -39,23 +38,24 @@ void _MaxPool2dNCHW(
     hstart = std::max(hstart, 0);
     wstart = std::max(wstart, 0);
     const T* offset_x = x + index[0] * CxHxW + index[1] * HxW;
-    mask_val = -1;
-    val = T(-FLT_MAX);
+    int mask_val = -1;
+    AccT val = AccT(-FLT_MAX);
     for (int h = hstart; h < hend; ++h) {
       for (int w = wstart; w < wend; ++w) {
-        xi = h * W + w;
-        if (offset_x[xi] > val) {
-          val = offset_x[mask_val = xi];
+        const auto xi = h * W + w;
+        if (convert::To<AccT>(offset_x[xi]) > val) {
+          mask_val = xi;
+          val = convert::To<AccT>(offset_x[xi]);
         }
       }
     }
-    y[i] = val;
+    y[i] = convert::To<T>(val);
     mask[i] = mask_val;
     math::utils::IncreaseIndexInDims(4, dims.data(), index.data());
   }
 }
 
-template <typename T>
+template <typename T, typename AccT>
 void _MaxPool2dNHWC(
     const int N,
     const int C,
@@ -76,8 +76,7 @@ void _MaxPool2dNHWC(
   const auto NxHoxWoxC = N * C * out_h * out_w;
   std::array<int, 4> index = {0, 0, 0, 0};
   std::array<int, 4> dims = {N, out_h, out_w, C};
-  T val;
-  int hstart, hend, wstart, wend, xi, mask_val;
+  int hstart, hend, wstart, wend;
   for (int i = 0; i < NxHoxWoxC; ++i) {
     hstart = index[1] * stride_h - pad_h;
     wstart = index[2] * stride_w - pad_w;
@@ -86,23 +85,24 @@ void _MaxPool2dNHWC(
     hstart = std::max(hstart, 0);
     wstart = std::max(wstart, 0);
     const T* offset_x = x + index[0] * HxWxC;
-    mask_val = -1;
-    val = T(-FLT_MAX);
+    int mask_val = -1;
+    AccT val = AccT(-FLT_MAX);
     for (int h = hstart; h < hend; ++h) {
       for (int w = wstart; w < wend; ++w) {
-        xi = (h * W + w) * C + index[3];
-        if (offset_x[xi] > val) {
-          val = offset_x[mask_val = xi];
+        const auto xi = (h * W + w) * C + index[3];
+        if (convert::To<AccT>(offset_x[xi]) > val) {
+          mask_val = xi;
+          val = convert::To<AccT>(offset_x[xi]);
         }
       }
     }
-    y[i] = val;
+    y[i] = convert::To<T>(val);
     mask[i] = mask_val;
     math::utils::IncreaseIndexInDims(4, dims.data(), index.data());
   }
 }
 
-template <typename T>
+template <typename T, typename AccT>
 void _MaxPool2dGradNCHW(
     const int N,
     const int C,
@@ -127,13 +127,15 @@ void _MaxPool2dGradNCHW(
   memset(dx, 0, sizeof(T) * N * CxHxW);
   for (int i = 0; i < NxCxHoxWo; ++i) {
     if (mask[i] != -1) {
-      dx[index[0] * CxHxW + index[1] * HxW + mask[i]] += dy[i];
+      const auto xi = index[0] * CxHxW + index[1] * HxW + mask[i];
+      dx[xi] =
+          convert::To<T>(convert::To<AccT>(dx[xi]) + convert::To<AccT>(dy[i]));
     }
     math::utils::IncreaseIndexInDims(3, dims.data(), index.data());
   }
 }
 
-template <typename T>
+template <typename T, typename AccT>
 void _MaxPool2dGradNHWC(
     const int N,
     const int C,
@@ -157,13 +159,15 @@ void _MaxPool2dGradNHWC(
   memset(dx, 0, sizeof(T) * N * HxWxC);
   for (int i = 0; i < NxHoxWoxC; ++i) {
     if (mask[i] != -1) {
-      dx[index[0] * HxWxC + mask[i]] += dy[i];
+      const auto xi = index[0] * HxWxC + mask[i];
+      dx[xi] =
+          convert::To<T>(convert::To<AccT>(dx[xi]) + convert::To<AccT>(dy[i]));
     }
     math::utils::IncreaseIndexInDims(2, dims.data(), index.data());
   }
 }
 
-template <typename T>
+template <typename T, typename AccT>
 void _MaxPool3dNCHW(
     const int N,
     const int C,
@@ -190,8 +194,7 @@ void _MaxPool3dNCHW(
   const auto NxCxDoxHoxWo = N * C * out_d * out_h * out_w;
   std::array<int, 5> index = {0, 0, 0, 0, 0};
   std::array<int, 5> dims = {N, C, out_d, out_h, out_w};
-  T val;
-  int dstart, dend, hstart, hend, wstart, wend, xi, mask_val;
+  int dstart, dend, hstart, hend, wstart, wend;
   for (int i = 0; i < NxCxDoxHoxWo; ++i) {
     dstart = index[2] * stride_d - pad_d;
     hstart = index[3] * stride_h - pad_h;
@@ -203,25 +206,26 @@ void _MaxPool3dNCHW(
     hstart = std::max(hstart, 0);
     wstart = std::max(wstart, 0);
     const T* offset_x = x + index[0] * CxDxHxW + index[1] * DxHxW;
-    mask_val = -1;
-    val = T(-FLT_MAX);
+    int mask_val = -1;
+    AccT val = AccT(-FLT_MAX);
     for (int d = dstart; d < dend; ++d) {
       for (int h = hstart; h < hend; ++h) {
         for (int w = wstart; w < wend; ++w) {
-          xi = (d * H + h) * W + w;
-          if (offset_x[xi] > val) {
-            val = offset_x[mask_val = xi];
+          const auto xi = (d * H + h) * W + w;
+          if (convert::To<AccT>(offset_x[xi]) > val) {
+            mask_val = xi;
+            val = convert::To<AccT>(offset_x[xi]);
           }
         }
       }
     }
-    y[i] = val;
+    y[i] = convert::To<T>(val);
     mask[i] = mask_val;
     math::utils::IncreaseIndexInDims(5, dims.data(), index.data());
   }
 }
 
-template <typename T>
+template <typename T, typename AccT>
 void _MaxPool3dNHWC(
     const int N,
     const int C,
@@ -247,8 +251,7 @@ void _MaxPool3dNHWC(
   const auto NxDoxHoxWoxC = N * C * out_d * out_h * out_w;
   std::array<int, 5> index = {0, 0, 0, 0, 0};
   std::array<int, 5> dims = {N, out_d, out_h, out_w, C};
-  T val;
-  int dstart, dend, hstart, hend, wstart, wend, xi, mask_val;
+  int dstart, dend, hstart, hend, wstart, wend;
   for (int i = 0; i < NxDoxHoxWoxC; ++i) {
     dstart = index[1] * stride_d - pad_d;
     hstart = index[2] * stride_h - pad_h;
@@ -260,25 +263,26 @@ void _MaxPool3dNHWC(
     hstart = std::max(hstart, 0);
     wstart = std::max(wstart, 0);
     const T* offset_x = x + index[0] * DxHxWxC;
-    mask_val = -1;
-    val = T(-FLT_MAX);
+    int mask_val = -1;
+    AccT val = AccT(-FLT_MAX);
     for (int d = dstart; d < dend; ++d) {
       for (int h = hstart; h < hend; ++h) {
         for (int w = wstart; w < wend; ++w) {
-          xi = ((d * H + h) * W + w) * C + index[4];
-          if (offset_x[xi] > val) {
-            val = offset_x[mask_val = xi];
+          const auto xi = ((d * H + h) * W + w) * C + index[4];
+          if (convert::To<AccT>(offset_x[xi]) > val) {
+            mask_val = xi;
+            val = convert::To<AccT>(offset_x[xi]);
           }
         }
       }
     }
-    y[i] = val;
+    y[i] = convert::To<T>(val);
     mask[i] = mask_val;
     math::utils::IncreaseIndexInDims(5, dims.data(), index.data());
   }
 }
 
-template <typename T>
+template <typename T, typename AccT>
 void _MaxPool3dGradNCHW(
     const int N,
     const int C,
@@ -308,13 +312,15 @@ void _MaxPool3dGradNCHW(
   memset(dx, 0, sizeof(T) * N * CxDxHxW);
   for (int i = 0; i < NxCxDoxHoxWo; ++i) {
     if (mask[i] != -1) {
-      dx[index[0] * CxDxHxW + index[1] * DxHxW + mask[i]] += dy[i];
+      const auto xi = index[0] * CxDxHxW + index[1] * DxHxW + mask[i];
+      dx[xi] =
+          convert::To<T>(convert::To<AccT>(dx[xi]) + convert::To<AccT>(dy[i]));
     }
     math::utils::IncreaseIndexInDims(3, dims.data(), index.data());
   }
 }
 
-template <typename T>
+template <typename T, typename AccT>
 void _MaxPool3dGradNHWC(
     const int N,
     const int C,
@@ -343,7 +349,9 @@ void _MaxPool3dGradNHWC(
   memset(dx, 0, sizeof(T) * N * DxHxWxC);
   for (int i = 0; i < NxDoxHoxWoxC; ++i) {
     if (mask[i] != -1) {
-      dx[index[0] * DxHxWxC + mask[i]] += dy[i];
+      const auto xi = index[0] * DxHxWxC + mask[i];
+      dx[xi] =
+          convert::To<T>(convert::To<AccT>(dx[xi]) + convert::To<AccT>(dy[i]));
     }
     math::utils::IncreaseIndexInDims(2, dims.data(), index.data());
   }
@@ -353,11 +361,11 @@ void _MaxPool3dGradNHWC(
 
 /* ------------------- Launcher Separator ------------------- */
 
-#define DISPATCH_POOL_KERNEL(name, ...)                  \
+#define DISPATCH_POOL_KERNEL(name, T, AccT, ...)         \
   if (data_format == "NCHW") {                           \
-    name##NCHW(__VA_ARGS__);                             \
+    name##NCHW<T, AccT>(__VA_ARGS__);                    \
   } else if (data_format == "NHWC") {                    \
-    name##NHWC(__VA_ARGS__);                             \
+    name##NHWC<T, AccT>(__VA_ARGS__);                    \
   } else {                                               \
     LOG(FATAL) << "Unknown DataFormat: " << data_format; \
   }
@@ -384,6 +392,8 @@ void _MaxPool3dGradNHWC(
       CPUContext* ctx) {                \
     DISPATCH_POOL_KERNEL(               \
         _##name,                        \
+        math::ScalarType<T>::type,      \
+        math::AccmulatorType<T>::type,  \
         N,                              \
         C,                              \
         H,                              \
@@ -401,8 +411,10 @@ void _MaxPool3dGradNHWC(
         y);                             \
   }
 
+DEFINE_KERNEL_LAUNCHER(MaxPool2d, float16);
 DEFINE_KERNEL_LAUNCHER(MaxPool2d, float);
 DEFINE_KERNEL_LAUNCHER(MaxPool2d, double);
+DEFINE_KERNEL_LAUNCHER(MaxPool2dGrad, float16); // MaxPool2dGrad
 DEFINE_KERNEL_LAUNCHER(MaxPool2dGrad, float); // MaxPool2dGrad
 DEFINE_KERNEL_LAUNCHER(MaxPool2dGrad, double); // MaxPool2dGrad
 #undef DEFINE_KERNEL_LAUNCHER
@@ -434,6 +446,8 @@ DEFINE_KERNEL_LAUNCHER(MaxPool2dGrad, double); // MaxPool2dGrad
       CPUContext* ctx) {                \
     DISPATCH_POOL_KERNEL(               \
         _##name,                        \
+        math::ScalarType<T>::type,      \
+        math::AccmulatorType<T>::type,  \
         N,                              \
         C,                              \
         D,                              \
@@ -456,8 +470,10 @@ DEFINE_KERNEL_LAUNCHER(MaxPool2dGrad, double); // MaxPool2dGrad
         y);                             \
   }
 
+DEFINE_KERNEL_LAUNCHER(MaxPool3d, float16);
 DEFINE_KERNEL_LAUNCHER(MaxPool3d, float);
 DEFINE_KERNEL_LAUNCHER(MaxPool3d, double);
+DEFINE_KERNEL_LAUNCHER(MaxPool3dGrad, float16); // MaxPool3dGrad
 DEFINE_KERNEL_LAUNCHER(MaxPool3dGrad, float); // MaxPool3dGrad
 DEFINE_KERNEL_LAUNCHER(MaxPool3dGrad, double); // MaxPool3dGrad
 #undef DEFINE_KERNEL_LAUNCHER

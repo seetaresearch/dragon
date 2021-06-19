@@ -1,4 +1,4 @@
-FROM ubuntu:16.04
+FROM ubuntu:18.04
 
 RUN \
   apt-get update && apt-get install -y \
@@ -43,8 +43,8 @@ RUN \
   -DPYTHON_EXECUTABLE=/usr/bin/python3 \
   -DUSE_CUDA=OFF \
   -DUSE_CUDNN=OFF \
-  -DUSE_AVX2=OFF \
-  -DUSE_FMA=OFF && \
+  -DUSE_AVX2=ON \
+  -DUSE_FMA=ON && \
   make install -j $(nproc) && \
   cd .. && rm -rf build && \
   python3 setup.py install
