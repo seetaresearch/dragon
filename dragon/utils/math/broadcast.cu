@@ -133,7 +133,7 @@ void _BroadcastSetImpl(
     const T* x,
     T* y,
     CUDAContext* ctx) {
-  SimpleArray<int, CUDA_TENSOR_MAX_DIMS> X_strides, Y_dims;
+  SimpleArray<int, D> X_strides, Y_dims;
   const auto N =
       std::accumulate(y_dims, y_dims + D, 1, std::multiplies<int64_t>());
   for (int i = 0; i < D; ++i) {

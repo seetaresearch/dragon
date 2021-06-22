@@ -16,9 +16,6 @@ void CuDNNConvTransposeOp<Context>::ResetDesc() {
       input_dims_ = X.dims();
       CuDNNSetTensorDesc<T>(&input_desc_, X.dims(), data_format());
       CuDNNSetTensorDesc<T>(&output_desc_, Y->dims(), data_format());
-      if (HasBias()) {
-        CuDNNSetTensorDesc<T>(&output_desc_for_bias_, Y->dims(), data_format());
-      }
     }
     if (filter_changed) {
       filter_dims_ = W.dims();
@@ -153,14 +150,13 @@ void CuDNNConvTransposeOp<Context>::DoRunWithType() {
       y));
 
   if (HasBias()) {
-    auto* b = Input(2).template data<T, Context>();
     CUDNN_CHECK(cudnnAddTensor(
         ctx()->cudnn_handle(),
         CuDNNType<T>::one,
         bias_desc_,
-        b,
+        Input(2).template data<T, Context>(),
         CuDNNType<T>::one,
-        output_desc_for_bias_,
+        output_desc_,
         y));
   }
 }
@@ -182,9 +178,6 @@ void CuDNNConvTransposeGradientOp<Context>::ResetDesc() {
       input_dims_ = X.dims();
       CuDNNSetTensorDesc<T>(&input_desc_, dY.dims(), data_format());
       CuDNNSetTensorDesc<T>(&output_desc_, X.dims(), data_format());
-      if (HasBias()) {
-        CuDNNSetTensorDesc<T>(&input_desc_for_bias_, dY.dims(), data_format());
-      }
     }
     if (filter_changed) {
       filter_dims_ = W.dims();
@@ -383,15 +376,14 @@ void CuDNNConvTransposeGradientOp<Context>::DoRunWithType() {
   }
 
   if (Output(2)->has_name()) {
-    auto* db = Output(2)->template mutable_data<T, Context>();
     CUDNN_CHECK(cudnnConvolutionBackwardBias(
         ctx()->cudnn_handle(),
         CuDNNType<T>::one,
-        input_desc_for_bias_,
+        input_desc_,
         dy,
         CuDNNType<T>::zero,
         bias_desc_,
-        db));
+        Output(2)->template mutable_data<T, Context>()));
   }
 
   if (dW->has_name()) {

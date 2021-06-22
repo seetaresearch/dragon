@@ -596,15 +596,6 @@ void TileGrad(
     Context* ctx);
 
 template <typename T, class Context>
-void Transpose(
-    const int num_dims,
-    const int64_t* x_strides,
-    const int64_t* y_dims,
-    const T* x,
-    T* y,
-    Context* ctx);
-
-template <typename T, class Context>
 void TopK(
     const int N,
     const int S,

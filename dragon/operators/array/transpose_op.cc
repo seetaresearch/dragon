@@ -1,7 +1,6 @@
 #include "dragon/operators/array/transpose_op.h"
 #include "dragon/core/workspace.h"
 #include "dragon/utils/math_functions.h"
-#include "dragon/utils/op_kernels.h"
 
 namespace dragon {
 
@@ -17,45 +16,30 @@ void TransposeOp<Context>::DoRunWithType() {
       << "\nProviding " << num_axes << " dimensions to permute, "
       << "while Tensor(" << X.name() << ")'s dims are " << X.DimString();
 
-  vec64_t new_axes(num_dims), new_dims(num_dims);
+  vec64_t Y_axes(num_dims), Y_dims(num_dims);
   for (int i = 0; i < num_dims; ++i) {
-    new_axes[i] = num_axes > 0 ? perm(i) : num_dims - i - 1;
+    Y_axes[i] = num_axes > 0 ? perm(i) : num_dims - i - 1;
   }
 
   if (def().type() == "TransposeGradient") {
-    auto old_axes(new_axes);
+    const auto X_axes(Y_axes);
     for (int i = 0; i < num_dims; ++i) {
-      new_axes[old_axes[i]] = i;
+      Y_axes[X_axes[i]] = i;
     }
   }
 
   for (int i = 0; i < num_dims; ++i) {
-    new_dims[i] = X.dim(new_axes[i]);
-  }
-
-  vec64_t transpose_dims, transpose_axes;
-  math::utils::CollapseTransposeAxes(
-      num_dims,
-      X.dims().data(),
-      new_axes.data(),
-      transpose_dims,
-      transpose_axes);
-  Tensor X_collapse(transpose_dims);
-  num_dims = X_collapse.ndim();
-  vec64_t X_strides(num_dims), Y_dims(num_dims);
-  for (int i = 0; i < num_dims; ++i) {
-    X_strides[i] = X_collapse.stride(transpose_axes[i]);
-    Y_dims[i] = X_collapse.dim(transpose_axes[i]);
+    Y_dims[i] = X.dim(Y_axes[i]);
   }
 
   auto* scratch = ((void*)&X == (void*)Y)
       ? ctx()->workspace()->template data<T, Context>({X.count()})[0]
-      : Y->Reshape(new_dims)->template mutable_data<T, Context>();
+      : Y->Reshape(Y_dims)->template mutable_data<T, Context>();
 
-  kernels::Transpose(
+  math::Transpose(
       num_dims,
-      X_strides.data(),
-      Y_dims.data(),
+      X.dims().data(),
+      Y_axes.data(),
       X.template data<T, Context>(),
       scratch,
       ctx());
@@ -64,7 +48,7 @@ void TransposeOp<Context>::DoRunWithType() {
     math::Copy(
         X.count(),
         scratch,
-        Y->Reshape(new_dims)->template mutable_data<T, Context>(),
+        Y->Reshape(Y_dims)->template mutable_data<T, Context>(),
         ctx());
   }
 }

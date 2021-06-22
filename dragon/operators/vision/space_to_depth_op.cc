@@ -1,7 +1,6 @@
 #include "dragon/operators/vision/space_to_depth_op.h"
 #include "dragon/core/workspace.h"
 #include "dragon/utils/math_functions.h"
-#include "dragon/utils/op_kernels.h"
 
 namespace dragon {
 
@@ -60,29 +59,15 @@ void SpaceToDepthOp<Context>::DoRunWithType() {
   CHECK_EQ(X_reshape.count(), X.count())
       << "\nCould not rearrange " << X.DimString() << " to "
       << X_reshape.DimString() << " with block size " << block_size_ << ".";
-  vec64_t transpose_dims, transpose_axes;
-  math::utils::CollapseTransposeAxes(
-      X_reshape.ndim(),
-      X_reshape.dims().data(),
-      perm.data(),
-      transpose_dims,
-      transpose_axes);
-  Tensor X_collapse(transpose_dims);
-  num_dims = X_collapse.ndim();
-  vec64_t X_strides(num_dims), Y_dims(num_dims);
-  for (int i = 0; i < num_dims; ++i) {
-    X_strides[i] = X_collapse.stride(transpose_axes[i]);
-    Y_dims[i] = X_collapse.dim(transpose_axes[i]);
-  }
 
   auto* scratch = ((void*)&X == (void*)Y)
       ? ctx()->workspace()->template data<T, Context>({X.count()})[0]
       : Y->Reshape(out_shape)->template mutable_data<T, Context>();
 
-  kernels::Transpose(
-      num_dims,
-      X_strides.data(),
-      Y_dims.data(),
+  math::Transpose(
+      X_reshape.ndim(),
+      X_reshape.dims().data(),
+      perm.data(),
       X.template data<T, Context>(),
       scratch,
       ctx());
@@ -142,29 +127,15 @@ void DepthToSpaceOp<Context>::DoRunWithType() {
   CHECK_EQ(X_reshape.count(), X.count())
       << "\nCould not rearrange " << X.DimString() << " to "
       << X_reshape.DimString() << " with block size " << block_size_ << ".";
-  vec64_t transpose_dims, transpose_axes;
-  math::utils::CollapseTransposeAxes(
-      X_reshape.ndim(),
-      X_reshape.dims().data(),
-      perm.data(),
-      transpose_dims,
-      transpose_axes);
-  Tensor X_collapse(transpose_dims);
-  num_dims = X_collapse.ndim();
-  vec64_t X_strides(num_dims), Y_dims(num_dims);
-  for (int i = 0; i < num_dims; ++i) {
-    X_strides[i] = X_collapse.stride(transpose_axes[i]);
-    Y_dims[i] = X_collapse.dim(transpose_axes[i]);
-  }
 
   auto* scratch = ((void*)&X == (void*)Y)
       ? ctx()->workspace()->template data<T, Context>({X.count()})[0]
       : Y->Reshape(out_shape)->template mutable_data<T, Context>();
 
-  kernels::Transpose(
-      num_dims,
-      X_strides.data(),
-      Y_dims.data(),
+  math::Transpose(
+      X_reshape.ndim(),
+      X_reshape.dims().data(),
+      perm.data(),
       X.template data<T, Context>(),
       scratch,
       ctx());

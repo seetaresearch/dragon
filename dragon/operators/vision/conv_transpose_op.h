@@ -76,9 +76,8 @@ class CuDNNConvTransposeOp final : public CuDNNConvOpBase<Context> {
   CuDNNConvTransposeOp(const OperatorDef& def, Workspace* ws)
       : CuDNNConvOpBase<Context>(def, ws) {
     CuDNNCreateTensorDesc(&input_desc_);
-    CuDNNCreateTensorDesc(&bias_desc_);
     CuDNNCreateTensorDesc(&output_desc_);
-    CuDNNCreateTensorDesc(&output_desc_for_bias_);
+    CuDNNCreateTensorDesc(&bias_desc_);
     CUDNN_CHECK(cudnnCreateFilterDescriptor(&filter_desc_));
     CUDNN_CHECK(cudnnCreateConvolutionDescriptor(&conv_desc_));
   }
@@ -88,9 +87,8 @@ class CuDNNConvTransposeOp final : public CuDNNConvOpBase<Context> {
 
   ~CuDNNConvTransposeOp() {
     CuDNNDestroyTensorDesc(&input_desc_);
-    CuDNNDestroyTensorDesc(&bias_desc_);
     CuDNNDestroyTensorDesc(&output_desc_);
-    CuDNNDestroyTensorDesc(&output_desc_for_bias_);
+    CuDNNDestroyTensorDesc(&bias_desc_);
     CUDNN_CHECK(cudnnDestroyFilterDescriptor(filter_desc_));
     CUDNN_CHECK(cudnnDestroyConvolutionDescriptor(conv_desc_));
   }
@@ -117,8 +115,7 @@ class CuDNNConvTransposeOp final : public CuDNNConvOpBase<Context> {
   bool exhaustive_search_ = false;
   bool algo_deterministic_ = false;
   cudnnConvolutionBwdDataAlgo_t fwd_algo_;
-  cudnnTensorDescriptor_t input_desc_, output_desc_;
-  cudnnTensorDescriptor_t bias_desc_, output_desc_for_bias_;
+  cudnnTensorDescriptor_t input_desc_, output_desc_, bias_desc_;
   using FwdAlgoWithCost = std::tuple<cudnnConvolutionBwdDataAlgo_t, float>;
   ConvAlgorithmCache<FwdAlgoWithCost> algo_cache_;
 };
@@ -129,9 +126,8 @@ class CuDNNConvTransposeGradientOp final : public CuDNNConvOpBase<Context> {
   CuDNNConvTransposeGradientOp(const OperatorDef& def, Workspace* ws)
       : CuDNNConvOpBase<Context>(def, ws) {
     CuDNNCreateTensorDesc(&input_desc_);
-    CuDNNCreateTensorDesc(&bias_desc_);
     CuDNNCreateTensorDesc(&output_desc_);
-    CuDNNCreateTensorDesc(&input_desc_for_bias_);
+    CuDNNCreateTensorDesc(&bias_desc_);
     CUDNN_CHECK(cudnnCreateFilterDescriptor(&filter_desc_));
     CUDNN_CHECK(cudnnCreateConvolutionDescriptor(&conv_desc_));
   }
@@ -141,9 +137,8 @@ class CuDNNConvTransposeGradientOp final : public CuDNNConvOpBase<Context> {
 
   ~CuDNNConvTransposeGradientOp() {
     CuDNNDestroyTensorDesc(&input_desc_);
-    CuDNNDestroyTensorDesc(&bias_desc_);
     CuDNNDestroyTensorDesc(&output_desc_);
-    CuDNNDestroyTensorDesc(&input_desc_for_bias_);
+    CuDNNDestroyTensorDesc(&bias_desc_);
     CUDNN_CHECK(cudnnDestroyFilterDescriptor(filter_desc_));
     CUDNN_CHECK(cudnnDestroyConvolutionDescriptor(conv_desc_));
   }
@@ -173,8 +168,7 @@ class CuDNNConvTransposeGradientOp final : public CuDNNConvOpBase<Context> {
   bool filter_algo_deterministic_ = false;
   cudnnConvolutionBwdFilterAlgo_t bwd_filter_algo_;
   cudnnConvolutionFwdAlgo_t bwd_data_algo_;
-  cudnnTensorDescriptor_t input_desc_, output_desc_;
-  cudnnTensorDescriptor_t bias_desc_, input_desc_for_bias_;
+  cudnnTensorDescriptor_t input_desc_, output_desc_, bias_desc_;
   using BwdDataAlgoWithCost = std::tuple<cudnnConvolutionFwdAlgo_t, float>;
   using BwdFilterAlgoWithCost =
       std::tuple<cudnnConvolutionBwdFilterAlgo_t, float>;

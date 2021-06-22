@@ -44,6 +44,8 @@ class TestTensor(unittest.TestCase):
         c.backward()
         self.assertEqual(a.is_leaf, True)
         self.assertEqual(a.is_floating_point(), True)
+        self.assertEqual(a.is_contiguous(), True)
+        self.assertEqual(a.contiguous().is_contiguous(), True)
         self.assertEqual(a.volatile, False)
         self.assertEqual(a.numel(), 1)
         self.assertEqual(a.grad_fn, None)

@@ -165,6 +165,10 @@ clamp\_
 #######
 .. automethod:: dragon.vm.torch.Tensor.clamp_
 
+contiguous
+##########
+.. automethod:: dragon.vm.torch.Tensor.contiguous
+
 copy\_
 ######
 .. automethod:: dragon.vm.torch.Tensor.copy_
@@ -308,6 +312,10 @@ isinf
 isnan
 #####
 .. automethod:: dragon.vm.torch.Tensor.isnan
+
+is_contiguous
+#############
+.. automethod:: dragon.vm.torch.Tensor.is_contiguous
 
 is_floating_point
 #################

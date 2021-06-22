@@ -201,6 +201,11 @@ inline __device__ half2 Cube(half2 x) {
  */
 
 template <typename T>
+inline T DivUp(const T a, const T b) {
+  return (a + b - T(1)) / b;
+}
+
+template <typename T>
 inline void ArgPartition(
     const int count,
     const int kth,

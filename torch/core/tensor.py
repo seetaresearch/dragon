@@ -772,6 +772,17 @@ class Tensor(object):
 
         """
 
+    def contiguous(self):
+        """Return a tensor with contiguous memory.
+
+        Returns
+        -------
+        dragon.vm.torch.Tensor
+            The output tensor.
+
+        """
+        return self
+
     def copy_(self, src):
         """Copy the elements into this tensor.
 
@@ -1340,6 +1351,17 @@ class Tensor(object):
         `torch.isnan(...)`_
 
         """
+
+    def is_contiguous(self):
+        """Return whether the memory is contiguous.
+
+        Returns
+        -------
+        bool
+            ``True`` if the memory is contiguous otherwise ``False``.
+
+        """
+        return True
 
     def is_floating_point(self):
         """Return whether the data type is floating.
