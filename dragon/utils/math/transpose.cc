@@ -29,11 +29,9 @@ void _Transpose(
 
 } // namespace
 
-/* ------------------- Launcher Separator ------------------- */
-
 #define DEFINE_TRANSPOSE_FUNC(T)                                            \
   template <>                                                               \
-  void Transpose<T, CPUContext>(                                            \
+  DRAGON_API void Transpose<T, CPUContext>(                                 \
       const int num_dims,                                                   \
       const int64_t* dims,                                                  \
       const int64_t* axes,                                                  \

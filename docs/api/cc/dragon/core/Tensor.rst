@@ -17,7 +17,7 @@ Public Functions
 
 CopyFrom
 ########
-.. doxygenfunction:: dragon::Tensor::CopyFrom(const Tensor &other, Context *ctx)
+.. doxygenfunction:: dragon::Tensor::CopyFrom(Tensor &other, Context *ctx)
 
 CopyFrom
 ########
@@ -39,6 +39,10 @@ IsType
 ######
 .. doxygenfunction:: dragon::Tensor::IsType
 
+MapFrom
+#######
+.. doxygenfunction:: dragon::Tensor::MapFrom
+
 Reset
 #####
 .. doxygenfunction:: dragon::Tensor::Reset
@@ -50,10 +54,6 @@ Reshape
 ReshapeLike
 ###########
 .. doxygenfunction:: dragon::Tensor::ReshapeLike
-
-Share
-#####
-.. doxygenfunction:: dragon::Tensor::Share
 
 axis
 ####
@@ -134,10 +134,6 @@ raw_data
 raw_mutable_data
 ################
 .. doxygenfunction:: dragon::Tensor::raw_mutable_data()
-
-raw_mutable_data
-################
-.. doxygenfunction:: dragon::Tensor::raw_mutable_data(const TypeMeta &meta)
 
 size
 ####

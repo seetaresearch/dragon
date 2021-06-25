@@ -143,6 +143,9 @@ class CUDAObjects {
 #ifdef USE_CUDNN
   /*! \brief The cached cuDNN handles of each device */
   vector<cudnnHandle_t> cudnn_handles_[CUDA_MAX_DEVICES];
+
+  /*! \brief The disabled cuDNN operators */
+  Set<string> cudnn_disabled_ops_;
 #endif
 
 #ifdef USE_NCCL

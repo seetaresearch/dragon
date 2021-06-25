@@ -79,7 +79,7 @@ class DRAGON_API Tensor {
     }
   }
 
-  /*! \brief Change the tensor dimensions */
+  /*! \brief Change the dimensions */
   Tensor* Reshape(const vec64_t& dims) {
     dims_ = dims;
     strides_.resize(dims.size());
@@ -91,31 +91,23 @@ class DRAGON_API Tensor {
       CHECK_GE(d, 0);
       if (d > 0) new_size *= d;
     }
-    if (capacity_ < new_size * meta_.itemsize()) {
-      if (own_memory_ptr_) {
-        memory_.reset();
-      } else {
-        mapped_memory_ = nullptr;
-        own_memory_ptr_ = true;
-      }
-      capacity_ = 0;
-    }
     size_ = new_size;
     return this;
   }
 
-  /*! \brief Change the tensor dimensions as the other */
+  /*! \brief Change the dimensions as the other */
   Tensor* ReshapeLike(const Tensor& other) {
     return Reshape(other.dims_);
   }
 
-  /*! \brief Copy memory from a tensor with context */
+  /*! \brief Copy memory from a tensor */
   template <class Context>
-  Tensor* CopyFrom(const Tensor& other, Context* ctx) {
+  Tensor* CopyFrom(Tensor& other, Context* ctx) {
     if ((void*)&other == (void*)this) return this;
     CHECK_EQ(size_, other.size_);
+    meta_ = other.meta_;
     auto* src = other.template raw_data<Context>();
-    auto* dst = raw_mutable_data<Context>(other.meta_);
+    auto* dst = raw_mutable_data<Context>();
     if (dst == src) return this;
     ctx->template MemcpyAsync<Context, Context>(nbytes(), dst, src);
     return this;
@@ -144,20 +136,22 @@ class DRAGON_API Tensor {
     }
   }
 
-  /*! \brief Share an external memory */
-  void Share(UnifiedMemory* memory) {
-    if (memory != nullptr) {
-      CHECK_LE(size_, memory->size())
-          << "\nShare an external memory with smaller capacity.";
-      memory_.reset();
-      capacity_ = memory->size();
+  /*! \brief Map memory from a tensor */
+  Tensor* MapFrom(Tensor* other) {
+    if (other == nullptr) {
+      mapped_memory_ = nullptr;
+      capacity_ = (memory_ != nullptr ? memory_->size() : 0);
     } else {
-      if (memory_) {
-        capacity_ = memory_->size();
+      auto* new_memory = other->memory();
+      if (new_memory != nullptr) {
+        CHECK_LE(size_, new_memory->size())
+            << "\nMap from a memory with smaller capacity.";
+        memory_.reset();
+        mapped_memory_ = new_memory;
+        capacity_ = new_memory->size();
       }
     }
-    mapped_memory_ = memory;
-    own_memory_ptr_ = (memory == nullptr);
+    return this;
   }
 
   /*! \brief Reset tensor to release all resources */
@@ -167,7 +161,6 @@ class DRAGON_API Tensor {
     memory_.reset();
     meta_ = TypeMeta();
     size_ = capacity_ = 0;
-    own_memory_ptr_ = true;
     mapped_memory_ = nullptr;
     if (ExternalDeleter != nullptr) {
       ExternalDeleter();
@@ -216,17 +209,17 @@ class DRAGON_API Tensor {
     return version_;
   }
 
-  /*! \brief Return the total number of elements */
+  /*! \brief Return the number of elements */
   size_t size() const {
     return size_;
   }
 
-  /*! \brief Return the memory capacity */
+  /*! \brief Return the byte length of memory */
   size_t capacity() const {
     return capacity_;
   }
 
-  /*! \brief Return the total number of data bytes */
+  /*! \brief Return the byte length of all elements */
   size_t nbytes() const {
     return size_ * meta_.itemsize();
   }
@@ -260,22 +253,22 @@ class DRAGON_API Tensor {
     return strides_[axis(i)];
   }
 
-  /*! \brief Return the tensor dimensions */
+  /*! \brief Return the dimensions */
   const vec64_t& dims() const {
     return dims_;
   }
 
-  /*! \brief Return the tensor strides */
+  /*! \brief Return the strides */
   const vec64_t& strides() const {
     return strides_;
   }
 
-  /*! \brief Return the total number of elements */
+  /*! \brief Return the number of elements counting along all axes */
   int64_t count() const {
     return (int64_t)size_;
   }
 
-  /*! \brief Return the number of elements counting along the given axes */
+  /*! \brief Return the number of elements counting along given axes */
   int64_t count(int64_t start, int64_t end) const {
     int64_t num = 1;
     for (int64_t i = start; i < end; i++) {
@@ -284,12 +277,12 @@ class DRAGON_API Tensor {
     return num;
   }
 
-  /*! \brief Return the number of elements counting from the given axis */
+  /*! \brief Return the number of elements counting from given axis */
   int64_t count(int64_t start) const {
     return count(start, ndim());
   }
 
-  /*! \brief Return whether the total number of elements is zero */
+  /*! \brief Return whether the number of elements is zero */
   bool empty() const {
     return size_ == 0;
   }
@@ -299,22 +292,30 @@ class DRAGON_API Tensor {
     return memory_ != nullptr || mapped_memory_ != nullptr;
   }
 
-  /*! \brief Return the memory pointer */
-  UnifiedMemory* memory(bool required = false, bool owned = false) const {
-    auto* ptr = own_memory_ptr_ || owned ? memory_.get() : mapped_memory_;
+  /*! \brief Return the memory */
+  UnifiedMemory* memory(bool required = false, bool owned = false) {
+    if (capacity_ < size_ * meta_.itemsize()) {
+      if (mapped_memory_ != nullptr) {
+        mapped_memory_ = nullptr;
+      } else {
+        memory_.reset();
+      }
+      capacity_ = 0;
+    }
+    auto* ptr = (owned || !mapped_memory_ ? memory_.get() : mapped_memory_);
     if (required) CHECK(ptr) << "\nAccess the empty memory.";
     return ptr;
   }
 
   /*! \brief Return the memory state */
-  UnifiedMemory::State memory_state() const {
+  UnifiedMemory::State memory_state() {
     return memory(true)->state();
   }
 
-  /*! \brief Try to return the raw const data pointer */
+  /*! \brief Return the raw data pointer */
   template <class Context>
-  const void* const_data_ptr() const {
-    auto context_type = TypeMeta::Id<Context>();
+  const void* raw_data() {
+    const auto context_type = TypeMeta::Id<Context>();
     if (context_type == TypeMeta::Id<CPUContext>()) {
       return memory(true)->cpu_data(nbytes());
     } else if (context_type == TypeMeta::Id<CUDAContext>()) {
@@ -325,14 +326,14 @@ class DRAGON_API Tensor {
     }
   }
 
-  /*! \brief Try to return the raw mutable data pointer */
+  /*! \brief Get the raw mutable data pointer */
   template <class Context>
-  void mutable_data_ptr(void** data_ptr) {
+  void raw_mutable_data(void** data_ptr) {
     auto* memory_ptr = memory();
     if (!memory_ptr) {
       *data_ptr = nullptr;
     } else {
-      auto context_type = TypeMeta::Id<Context>();
+      const auto context_type = TypeMeta::Id<Context>();
       if (context_type == TypeMeta::Id<CPUContext>()) {
         *data_ptr = memory_ptr->mutable_cpu_data(nbytes());
       } else if (context_type == TypeMeta::Id<CUDAContext>()) {
@@ -343,65 +344,36 @@ class DRAGON_API Tensor {
     }
   }
 
-  /*!
-   * \brief Return the raw mutable data pointer.
-   *
-   * If memory is not set, create to manage it with the given meta.
-   */
-  template <class Context>
-  void* raw_mutable_data(const TypeMeta& meta) {
-    void* data_ptr;
-    mutable_data_ptr<Context>(&data_ptr);
-    // Return the data pointer directly
-    if (meta_ == meta && data_ptr) return data_ptr;
-    // Create a new memory created with size and meta
-    CHECK_GT(size_, 0) << "\nInvalid tensor size.";
-    meta_ = meta;
-    capacity_ = size_ * meta.itemsize();
-    memory_.reset(new UnifiedMemory(meta_, capacity_));
-    mutable_data_ptr<Context>(&data_ptr);
-    if (meta_.ctor()) meta_.ctor()(data_ptr, size_);
-    return data_ptr;
-  }
-
   /*! \brief Return the raw mutable data pointer */
   template <class Context>
   void* raw_mutable_data() {
     CHECK_NE(meta_.id(), 0) << "\nTensor(" << name_ << "): unknown type, "
                             << "or does not have a type.";
-    return raw_mutable_data<Context>(meta_);
+    void* data_ptr;
+    raw_mutable_data<Context>(&data_ptr);
+    if (data_ptr) return data_ptr;
+    CHECK_GT(size_, 0) << "\nInvalid tensor size.";
+    capacity_ = size_ * meta_.itemsize();
+    memory_.reset(new UnifiedMemory(meta_, capacity_));
+    raw_mutable_data<Context>(&data_ptr);
+    if (meta_.ctor()) meta_.ctor()(data_ptr, size_);
+    return data_ptr;
   }
 
-  /*! \brief Return the raw const data pointer */
-  template <class Context>
-  const void* raw_data() const {
-    return const_data_ptr<Context>();
+  /*! \brief Return the typed data pointer */
+  template <typename T, class Context>
+  const T* data() {
+    CHECK(meta_.Match<T>()) << "\nThe type of Tensor(" << name() << ") is "
+                            << dtypes::to_string(meta_) << ", while requesting "
+                            << dtypes::to_string(TypeMeta::Make<T>()) << ".";
+    return static_cast<const T*>(raw_data<Context>());
   }
 
   /*! \brief Return the typed mutable data pointer */
   template <typename T, class Context>
   T* mutable_data() {
-    void* data_ptr;
-    mutable_data_ptr<Context>(&data_ptr);
-    if (data_ptr) {
-      auto meta = TypeMeta::Make<T>();
-      if (meta_ == meta) {
-        return static_cast<T*>(data_ptr);
-      } else if (capacity_ >= size_ * meta.itemsize()) {
-        meta_ = meta;
-        return static_cast<T*>(data_ptr);
-      }
-    }
-    return static_cast<T*>(raw_mutable_data<Context>(TypeMeta::Make<T>()));
-  }
-
-  /*! \brief Return the typed const data pointer */
-  template <typename T, class Context>
-  const T* data() const {
-    CHECK(meta_.Match<T>()) << "\nThe type of Tensor(" << name() << ") is "
-                            << dtypes::to_string(meta_) << ", while requesting "
-                            << dtypes::to_string(TypeMeta::Make<T>()) << ".";
-    return static_cast<const T*>(raw_data<Context>());
+    meta_ = TypeMeta::Make<T>();
+    return static_cast<T*>(raw_mutable_data<Context>());
   }
 
   /*! \brief Set the tensor version */
@@ -415,12 +387,14 @@ class DRAGON_API Tensor {
     return this;
   }
 
-  /*! \brief Set to manage the memory */
-  void set_memory(UnifiedMemory* memory_ptr) {
-    if (memory_ptr != memory_.get()) {
-      memory_.reset(memory_ptr);
+  /*! \brief Set the managed memory */
+  void set_memory(UnifiedMemory* memory) {
+    if (memory != nullptr) {
+      if (memory != memory_.get()) {
+        memory_.reset(memory);
+      }
+      capacity_ = memory->size();
     }
-    capacity_ = memory_ptr->size();
   }
 
  private:
@@ -430,23 +404,26 @@ class DRAGON_API Tensor {
   /*! \brief The type meta */
   TypeMeta meta_;
 
-  /*! \brief The size and capacity */
-  size_t size_ = 0, capacity_ = 0;
+  /*! \brief The number of elements */
+  size_t size_ = 0;
+
+  /*! \brief The byte length of memory */
+  size_t capacity_ = 0;
 
   /*! \brief The tensor version */
   int version_ = -1;
 
-  /*! \brief The dimensions and strides */
-  vec64_t dims_, strides_;
+  /*! \brief The dimensions */
+  vec64_t dims_;
+
+  /*! \brief The strides */
+  vec64_t strides_;
 
   /*! \brief The managed memory */
   unique_ptr<UnifiedMemory> memory_;
 
   /*! \brief The mapped memory */
   UnifiedMemory* mapped_memory_ = nullptr;
-
-  /*! \brief The ownership of memory pointer */
-  bool own_memory_ptr_ = true;
 
   DISABLE_COPY_AND_ASSIGN(Tensor);
 };

@@ -45,6 +45,9 @@ vm.dali.ops
   `class ImageDecoderRandomCrop <ops/ImageDecoderRandomCrop.html>`_
   : Decode image and return a random crop.
 
+  `class Normalize <ops/Normalize.html>`_
+  : Normalize input.
+
   `class Pad <ops/Pad.html>`_
   : Pad input to have the same dimensions.
 
@@ -97,6 +100,7 @@ vm.dali.ops
   ops/Hsv
   ops/ImageDecoder
   ops/ImageDecoderRandomCrop
+  ops/Normalize
   ops/Pad
   ops/Paste
   ops/RandomBBoxCrop

@@ -29,14 +29,21 @@ void RegisterModule_tensor(py::module& m) {
       /*! \brief Return the number of dimensions */
       .def_property_readonly("ndim", &Tensor::ndim)
 
-      /*! \brief Return all the dimensions */
+      /*! \brief Return the dimensions */
       .def_property_readonly("dims", &Tensor::dims)
 
-      /*! \brief Return the total number of elements */
+      /*! \brief Return the number of elements */
       .def_property_readonly("size", &Tensor::size)
 
-      /*! \brief Return the total number of bytes */
+      /*! \brief Return the byte length of one element */
+      .def_property_readonly(
+          "itemsize", [](Tensor* self) { return self->meta().itemsize(); })
+
+      /*! \brief Return the byte length of all elements */
       .def_property_readonly("nbytes", &Tensor::nbytes)
+
+      /*! \brief Return the byte length of allocated memory */
+      .def_property_readonly("capacity", &Tensor::capacity)
 
       /*! \brief Return the data type */
       .def_property_readonly(

@@ -60,7 +60,9 @@ class CuDNNSoftmaxOp final : public SoftmaxOp<Context> {
     CuDNNDestroyTensorDesc(&input_desc_);
   }
 
-  void RunOnDevice() override;
+  void RunOnDevice() override {
+    DispatchHelper<dtypes::Floating>::Call(this, Input(0));
+  }
 
   template <typename T>
   void DoRunWithType();
@@ -82,7 +84,9 @@ class CuDNNSoftmaxGradientOp final : public SoftmaxGradientOp<Context> {
     CuDNNDestroyTensorDesc(&input_desc_);
   }
 
-  void RunOnDevice() override;
+  void RunOnDevice() override {
+    DispatchHelper<dtypes::Floating>::Call(this, Input(0));
+  }
 
   template <typename T>
   void DoRunWithType();

@@ -27,10 +27,13 @@ namespace dragon {
 
 #ifdef USE_CUDA
 
-/*! \brief The number of cuda threads to use */
+/*! \brief The number of cuda threads in a warp */
+constexpr int CUDA_WARP_SIZE = 32;
+
+/*! \brief The number of cuda threads in a block */
 constexpr int CUDA_THREADS = 256;
 
-/*! \brief The maximum number of blocks to use in the default kernel call */
+/*! \brief The maximum number of blocks to use in a default kernel call */
 constexpr int CUDA_MAX_BLOCKS = 4096;
 
 /*! \brief The maximum number of devices in a single machine */

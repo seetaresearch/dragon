@@ -143,6 +143,11 @@ CONVERSIONS_DECL half To<half, half>(half val) {
 }
 
 template <>
+CONVERSIONS_DECL float To<float, half>(half val) {
+  return __half2float(val);
+}
+
+template <>
 CONVERSIONS_DECL half To<half, float>(float val) {
 #if CUDA_VERSION_MIN(9, 2)
   return __float2half(val);

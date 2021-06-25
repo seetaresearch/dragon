@@ -91,16 +91,24 @@ void RegisterModule_cuda(py::module& m) {
 #endif
   });
 
-  /*! \brief Activate the CuDNN engine */
+  /*! \brief Enable using the cuDNN library */
   m.def(
       "cudaEnableDNN",
-      [](bool enabled, bool deterministic, bool benchmark, bool allow_tf32) {
+      [](bool enabled,
+         bool deterministic,
+         bool benchmark,
+         bool allow_tf32,
+         const vector<string>& disabled_ops) {
 #ifdef USE_CUDA
         auto& cuda_objects = CUDAContext::objects();
         cuda_objects.cudnn_enabled_ = enabled;
         cuda_objects.cudnn_deterministic_ = deterministic;
         cuda_objects.cudnn_benchmark_ = benchmark;
         cuda_objects.cudnn_allow_tf32_ = allow_tf32;
+        cuda_objects.cudnn_disabled_ops_.clear();
+        for (const auto& op_type : disabled_ops) {
+          cuda_objects.cudnn_disabled_ops_.insert(op_type);
+        }
 #endif
       });
 

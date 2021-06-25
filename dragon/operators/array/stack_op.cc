@@ -28,7 +28,7 @@ void StackOp<Context>::DoRunWithType() {
   int64_t output_offset = 0;
 
   for (int i = 0; i < num_stacks; i++) {
-    const auto& Xi = Input(i);
+    auto& Xi = Input(i);
     math::CopyMatrix(
         Xi.count(0, axis),
         Xi.count(axis),

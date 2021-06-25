@@ -118,13 +118,13 @@ class CropMirrorNormalize(object):
         # (H, W) for 2d input
         # (D, H, W) for 3d input
         crop=(224, 224),
-        # Historical values to normalize input
-        mean=(102., 115., 122.),
-        std=(1., 1., 1.),
+        # Historical BGR values to normalize input
+        mean=(103.53, 116.28, 123.675),
+        std=(57.375, 57.12, 58.395),
         # Or ``float16`` for fp16 training
         dtype='float32',
-        # Or ``NHWC``
-        output_layout='NCHW'
+        # Or ``HWC``
+        output_layout='CHW',
     )
     y = cmn(inputs['x'], mirror=flip_rng())
     ```
@@ -138,7 +138,7 @@ class CropMirrorNormalize(object):
         mean=0.,
         std=1.,
         dtype='float32',
-        output_layout='NCHW',
+        output_layout='CHW',
         **kwargs
     ):
         """Create a ``CropMirrorNormalize`` operator.
@@ -153,10 +153,10 @@ class CropMirrorNormalize(object):
             The values to subtract.
         std : Union[float, Sequence[float]], optional
             The values to divide after subtraction.
-        dtype : {'float16', 'float32'}, optional
-            The data type of output.
-        output_layout : {'NCHW', 'NHWC'}, optional
-            The data format of output.
+        dtype : str, optional, default='float32'
+            The output data type.
+        output_layout : str, optional
+            The output data layout.
 
         Returns
         -------
@@ -167,7 +167,7 @@ class CropMirrorNormalize(object):
         if isinstance(dtype, six.string_types):
             dtype = getattr(types, dtype.upper())
         if isinstance(output_layout, six.string_types):
-            output_layout = getattr(types, output_layout.upper())
+            output_layout = output_layout.upper()
         return ops.CropMirrorNormalize(
             crop=crop,
             mirror=mirror,

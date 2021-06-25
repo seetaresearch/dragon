@@ -75,11 +75,6 @@ class DRAGON_API UnifiedMemory {
     return size_t(0);
   }
 
-  /*! \brief Return the number of batch chunks */
-  size_t num_chunks() const {
-    return num_chunks_;
-  }
-
   /*! \brief Return the storage order */
   StorageOrder order() const {
     return order_;
@@ -105,11 +100,6 @@ class DRAGON_API UnifiedMemory {
   /*! \brief Return the mutable cuda data */
   void* mutable_cuda_data(size_t size = 0);
 
-  /*! \brief Set the number of data chunks */
-  void set_num_chunks(size_t num_chunks) {
-    num_chunks_ = num_chunks;
-  }
-
   /*! \brief Set the storage order */
   void set_order(StorageOrder order) {
     order_ = order;
@@ -125,8 +115,8 @@ class DRAGON_API UnifiedMemory {
   /*! \brief The data state */
   State state_ = UNINITIALIZED;
 
-  /*! \brief The size and number of chunks */
-  size_t size_ = 0, num_chunks_ = 1;
+  /*! \brief The data size */
+  size_t size_ = 0;
 
   /*! \brief The type meta */
   TypeMeta meta_;
@@ -140,11 +130,11 @@ class DRAGON_API UnifiedMemory {
   /*! \brief The cpu data pointer */
   void* cpu_ptr_ = nullptr;
 
-  /*! \brief The ownership of cpu data pointer */
-  bool own_cpu_ptr_ = true;
-
   /*! \brief The cuda data pointer */
   void* cuda_ptr_ = nullptr;
+
+  /*! \brief The ownership of cpu data pointer */
+  bool own_cpu_ptr_ = true;
 
   /*! \brief The ownership of cuda data pointer */
   bool own_cuda_ptr_ = true;

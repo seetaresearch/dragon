@@ -60,15 +60,13 @@ Tensor* OperatorBase::Output(int i, const vec32_t& inputs) {
   auto* Y = Output(i);
   if (i < output_aliases_.size()) {
     for (auto j : inputs) {
-      const auto& X = Input(j);
+      auto& X = Input(j);
       if (output_aliases_[i].count(X.name())) {
-        Output(i)->ReshapeLike(X)->Share(X.memory());
-        return Y;
+        return Y->ReshapeLike(X)->MapFrom(&X);
       }
     }
   }
-  Y->Share(nullptr);
-  return Y;
+  return Y->MapFrom(nullptr);
 }
 
 Tensor* OperatorBase::Buffer(const string& name) {
@@ -85,7 +83,8 @@ OperatorBase* OperatorBase::New(const OperatorDef& def, Workspace* ws) {
     case PROTO_CUDA:
 #ifdef USE_CUDNN
       if (CUDNNOperatorRegistry()->Has(op_type) &&
-          CUDAContext::objects().cudnn_enabled_) {
+          CUDAContext::objects().cudnn_enabled_ &&
+          !CUDAContext::objects().cudnn_disabled_ops_.count(op_type)) {
         return CUDNNOperatorRegistry()->Create(op_type, def, ws);
       }
 #endif

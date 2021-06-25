@@ -67,6 +67,7 @@ def enable_cudnn(
     deterministic=False,
     benchmark=False,
     allow_tf32=False,
+    disabled_ops=None,
 ):
     """Enable backend to use the cuDNN library.
 
@@ -80,9 +81,12 @@ def enable_cudnn(
         Select fastest algorithms via benchmark or heuristics.
     allow_tf32 : bool, optional, default=False
         Allow TF32 tensor core operation or not.
+    disabled_ops : Sequence[str], optional
+        The operator types to disable using cuDNN.
 
     """
-    return backend.cudaEnableDNN(enabled, deterministic, benchmark, allow_tf32)
+    return backend.cudaEnableDNN(enabled, deterministic, benchmark,
+                                 allow_tf32, disabled_ops or [])
 
 
 def get_device_capability(device_index=None):

@@ -34,6 +34,7 @@ from dragon.vm.dali.core.ops.image_ops import RandomResizedCrop
 from dragon.vm.dali.core.ops.image_ops import Resize
 from dragon.vm.dali.core.ops.image_ops import Rotate
 from dragon.vm.dali.core.ops.image_ops import WarpAffine
+from dragon.vm.dali.core.ops.math_ops import Normalize
 from dragon.vm.dali.core.ops.random_ops import CoinFlip
 from dragon.vm.dali.core.ops.random_ops import Uniform
 from dragon.vm.dali.core.ops.reader_ops import KPLRecordReader
