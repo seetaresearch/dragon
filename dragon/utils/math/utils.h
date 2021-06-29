@@ -339,8 +339,9 @@ inline void CollapseTransposeAxes(
       new_dims.begin(), new_dims.end(), [](int x) { return x == -1; });
   new_dims.erase(erase_iter, new_dims.end());
   for (int i = 0; i < new_axes.size(); ++i) {
+    const auto axis = new_axes[i];
     for (auto collapse_axis : collapse_axes) {
-      if (new_axes[i] > collapse_axis) new_axes[i]--;
+      if (axis > collapse_axis) new_axes[i]--;
     }
   }
 }

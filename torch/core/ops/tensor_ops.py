@@ -573,7 +573,7 @@ def char_(self):
     return array_ops.cast(self, 'int8', self)
 
 
-def chunk(self, chunks, dim=0):
+def chunk(self, chunks, dim=0, copy=True):
     """Split self into several parts along the given dim.
 
     Parameters
@@ -582,6 +582,8 @@ def chunk(self, chunks, dim=0):
         The number of chunks to split.
     dim : int, optional, default=0
         The dimension to split.
+    copy : bool, optional, default=True
+        Copy or create the views of input.
 
     Returns
     -------
@@ -589,7 +591,7 @@ def chunk(self, chunks, dim=0):
         The output chunks.
 
     """
-    return array_ops.chunk(self, chunks, dim)
+    return array_ops.chunk(self, chunks, dim, copy)
 
 
 def clamp(self, min=None, max=None):
@@ -2420,7 +2422,7 @@ def sort(self, dim=-1, descending=False):
     return array_ops.sort(self, dim, descending)
 
 
-def split(self, split_size_or_sections, dim=0):
+def split(self, split_size_or_sections, dim=0, copy=True):
     """Return the split chunks along the given dimension.
 
     Parameters
@@ -2434,13 +2436,15 @@ def split(self, split_size_or_sections, dim=0):
     -------
     Sequence[dragon.vm.torch.Tensor]
         The output tensors.
+    copy : bool, optional, default=True
+        Copy or create the views of input.
 
     See Also
     --------
     `torch.split(...)`_
 
     """
-    return array_ops.split(self, split_size_or_sections, dim)
+    return array_ops.split(self, split_size_or_sections, dim, copy)
 
 
 def sqrt(self):

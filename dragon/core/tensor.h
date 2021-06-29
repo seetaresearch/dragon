@@ -137,18 +137,21 @@ class DRAGON_API Tensor {
   }
 
   /*! \brief Map memory from a tensor */
-  Tensor* MapFrom(Tensor* other) {
+  Tensor* MapFrom(Tensor* other, size_t offset = 0) {
     if (other == nullptr) {
-      mapped_memory_ = nullptr;
-      capacity_ = (memory_ != nullptr ? memory_->size() : 0);
+      if (mapped_memory_ != nullptr) {
+        mapped_memory_ = nullptr;
+        capacity_ = (memory_ != nullptr ? memory_->size() : 0);
+        offset_ = 0;
+      }
     } else {
       auto* new_memory = other->memory();
       if (new_memory != nullptr) {
         CHECK_LE(size_, new_memory->size())
             << "\nMap from a memory with smaller capacity.";
-        memory_.reset();
         mapped_memory_ = new_memory;
         capacity_ = new_memory->size();
+        offset_ = offset;
       }
     }
     return this;
@@ -158,10 +161,10 @@ class DRAGON_API Tensor {
   void Reset() {
     dims_.clear();
     strides_.clear();
-    memory_.reset();
     meta_ = TypeMeta();
-    size_ = capacity_ = 0;
+    memory_.reset();
     mapped_memory_ = nullptr;
+    size_ = capacity_ = offset_ = 0;
     if (ExternalDeleter != nullptr) {
       ExternalDeleter();
       ExternalDeleter = nullptr;
@@ -295,11 +298,8 @@ class DRAGON_API Tensor {
   /*! \brief Return the memory */
   UnifiedMemory* memory(bool required = false, bool owned = false) {
     if (capacity_ < size_ * meta_.itemsize()) {
-      if (mapped_memory_ != nullptr) {
-        mapped_memory_ = nullptr;
-      } else {
-        memory_.reset();
-      }
+      mapped_memory_ = nullptr;
+      memory_.reset();
       capacity_ = 0;
     }
     auto* ptr = (owned || !mapped_memory_ ? memory_.get() : mapped_memory_);
@@ -317,9 +317,9 @@ class DRAGON_API Tensor {
   const void* raw_data() {
     const auto context_type = TypeMeta::Id<Context>();
     if (context_type == TypeMeta::Id<CPUContext>()) {
-      return memory(true)->cpu_data(nbytes());
+      return memory(true)->cpu_data(nbytes(), offset_);
     } else if (context_type == TypeMeta::Id<CUDAContext>()) {
-      return memory(true)->cuda_data(nbytes());
+      return memory(true)->cuda_data(nbytes(), offset_);
     } else {
       LOG(FATAL) << "Unsupported context type.";
       return nullptr;
@@ -393,7 +393,9 @@ class DRAGON_API Tensor {
       if (memory != memory_.get()) {
         memory_.reset(memory);
       }
+      mapped_memory_ = nullptr;
       capacity_ = memory->size();
+      offset_ = 0;
     }
   }
 
@@ -409,6 +411,9 @@ class DRAGON_API Tensor {
 
   /*! \brief The byte length of memory */
   size_t capacity_ = 0;
+
+  /*! \brief The byte offset of memory */
+  size_t offset_ = 0;
 
   /*! \brief The tensor version */
   int version_ = -1;

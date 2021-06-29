@@ -47,15 +47,15 @@ void UnifiedMemory::ToCUDA(size_t size) {
   }
 }
 
-const void* UnifiedMemory::cpu_data(size_t size) {
+const void* UnifiedMemory::cpu_data(size_t size, size_t offset) {
   ToCPU(size);
-  return (const void*)cpu_ptr_;
+  return (const void*)((uint8_t*)cpu_ptr_ + offset);
 }
 
-const void* UnifiedMemory::cuda_data(size_t size) {
+const void* UnifiedMemory::cuda_data(size_t size, size_t offset) {
   SwitchToCUDADevice(CUDAContext::current_device());
   ToCUDA(size);
-  return (const void*)cuda_ptr_;
+  return (const void*)((uint8_t*)cuda_ptr_ + offset);
 }
 
 void* UnifiedMemory::mutable_cpu_data(size_t size) {

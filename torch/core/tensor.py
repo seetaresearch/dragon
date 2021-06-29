@@ -713,7 +713,7 @@ class Tensor(object):
 
         """
 
-    def chunk(self, chunks, dim=0):
+    def chunk(self, chunks, dim=0, copy=True):
         """Split self into several parts along the given dim.
 
         Parameters
@@ -722,6 +722,8 @@ class Tensor(object):
             The number of chunks to split.
         dim : int, optional, default=0
             The dimension to split.
+        copy : bool, optional, default=True
+            Copy or create the views of input.
 
         Returns
         -------
@@ -2566,7 +2568,7 @@ class Tensor(object):
 
         """
 
-    def split(self, split_size_or_sections, dim=0):
+    def split(self, split_size_or_sections, dim=0, copy=True):
         """Return the split chunks along the given dimension.
 
         Parameters
@@ -2575,6 +2577,8 @@ class Tensor(object):
             The number or size of chunks.
         dim : int, optional, default=0
             The dimension to split.
+        copy : bool, optional, default=True
+            Copy or create the views of input.
 
         Returns
         -------

@@ -89,10 +89,10 @@ class DRAGON_API UnifiedMemory {
   Map<string, string> info() const;
 
   /*! \brief Return the const cpu data */
-  const void* cpu_data(size_t size = 0);
+  const void* cpu_data(size_t size = 0, size_t offset = 0);
 
   /*! \brief Return the const cuda data */
-  const void* cuda_data(size_t size = 0);
+  const void* cuda_data(size_t size = 0, size_t offset = 0);
 
   /*! \brief Return the mutable cpu data */
   void* mutable_cpu_data(size_t size = 0);

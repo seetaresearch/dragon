@@ -52,8 +52,8 @@ Tensor& OperatorBase::Input(int i) {
 Tensor* OperatorBase::Output(int i) {
   CHECK_LT(i, (int)outputs_.size());
   CHECK_GE(i, -(int)outputs_.size());
-  if (i >= 0) return outputs_[i];
-  return outputs_[i + outputs_.size()];
+  if (i >= 0) return outputs_[i]->MapFrom(nullptr);
+  return outputs_[i + outputs_.size()]->MapFrom(nullptr);
 }
 
 Tensor* OperatorBase::Output(int i, const vec32_t& inputs) {
@@ -114,14 +114,15 @@ OperatorBase* OperatorBase::DeriveFrom(const OperatorDef& def) {
 
 template <class Context>
 void Operator<Context>::Prepare() {
-  for (int i = 0; i < InputSize(); i++) {
-    if (Input(i).version() >= 0) {
+  for (int i = 0; i < InputSize(); ++i) {
+    auto& X = *inputs_[i];
+    if (X.version() >= 0) {
       const auto& name = def().input(i);
       auto ver_pos = name.find("/ver:");
       auto version = std::atoi(name.substr(ver_pos + 5).c_str());
-      if (version == Input(i).version()) continue;
-      LOG(DEBUG) << "Excepted version of Tensor(" + Input(i).name() + ") "
-                 << "is " << version << ", got " << Input(i).version()
+      if (version == X.version()) continue;
+      LOG(DEBUG) << "Excepted version of Tensor(" + X.name() + ") "
+                 << "is " << version << ", got " << X.version()
                  << ". Recompute.";
       Tensor* flag = workspace()->GetTensor("flagged/recomp");
       flag->mutable_data<bool, CPUContext>()[0] = true;
@@ -136,12 +137,13 @@ void Operator<Context>::Prepare() {
 
 template <class Context>
 void Operator<Context>::Release() {
-  for (int i = 0; i < OutputSize(); i++) {
-    if (Output(i)->version() >= 0) {
+  for (int i = 0; i < OutputSize(); ++i) {
+    auto* Y = outputs_[i];
+    if (Y->version() >= 0) {
       const auto& name = def().output(i);
       auto ver_pos = name.find("/ver:");
       auto version = std::atoi(name.substr(ver_pos + 5).c_str());
-      Output(i)->set_version(version);
+      Y->set_version(version);
     }
   }
 }

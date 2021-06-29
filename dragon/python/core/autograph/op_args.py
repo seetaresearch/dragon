@@ -565,6 +565,7 @@ def sort_args(**kwargs):
 def split_args(**kwargs):
     return {
         'axis': kwargs.get('axis', 0),
+        'copy': kwargs.get('copy', True),
         'size_splits': kwargs.get('size_splits', None),
         'slice_points': kwargs.get('slice_points', None),
     }

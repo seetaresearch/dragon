@@ -40,14 +40,19 @@ void SplitOp<Context>::DoRunWithType() {
     auto* Y = Output(i);
     if (Y->has_name()) {
       Y_dims[axis] = size_splits[i];
-      math::CopyMatrix(
-          X.count(0, axis),
-          size_splits[i] * X.count(axis + 1),
-          X.count(axis),
-          size_splits[i] * X.count(axis + 1),
-          X.template data<T, Context>() + input_offset,
-          Y->Reshape(Y_dims)->template mutable_data<T, Context>(),
-          ctx());
+      if (!copy_chunks_ && axis == 0) {
+        Y->Reshape(Y_dims)->set_meta(X.meta())->MapFrom(
+            &X, sizeof(T) * input_offset);
+      } else {
+        math::CopyMatrix(
+            X.count(0, axis),
+            size_splits[i] * X.count(axis + 1),
+            X.count(axis),
+            size_splits[i] * X.count(axis + 1),
+            X.template data<T, Context>() + input_offset,
+            Y->Reshape(Y_dims)->template mutable_data<T, Context>(),
+            ctx());
+      }
     }
     input_offset += size_splits[i] * X.count(axis + 1);
   }

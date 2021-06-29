@@ -250,7 +250,7 @@ def channel_normalize(input, mean, std, dim=-1, dtype='float32', dims=None):
         ndim=len(dims) if dims is not None else 0, perm=dims)
 
 
-def chunk(tensor, chunks, dim=0):
+def chunk(tensor, chunks, dim=0, copy=True):
     """Split input into a specific number of chunks.
 
     Examples:
@@ -277,6 +277,8 @@ def chunk(tensor, chunks, dim=0):
         The number of chunks to split.
     dim : int, optional, default=0
         The dimension to split.
+    copy : bool, optional, default=True
+        Copy or create the views of input.
 
     Returns
     -------
@@ -286,7 +288,7 @@ def chunk(tensor, chunks, dim=0):
     """
     return FunctionLib.apply(
         'Split', tensor.device, [tensor], outputs=[None] * chunks,
-        axis=dim, size_split=None)
+        axis=dim, size_split=None, copy=copy)
 
 
 def cumsum(input, dim, out=None):
@@ -1117,7 +1119,7 @@ def sort(input, dim=-1, descending=False, out=None):
         outputs=out if out else [None, None], axis=dim, descending=descending)
 
 
-def split(tensor, split_size_or_sections, dim=0):
+def split(tensor, split_size_or_sections, dim=0, copy=True):
     """Split input into chunks along the given dimension.
 
     Either size of every chunk or each chunk will be accepted:
@@ -1146,6 +1148,8 @@ def split(tensor, split_size_or_sections, dim=0):
         The number or size of chunks.
     dim : int, optional, default=0
         The dimension to split.
+    copy : bool, optional, default=True
+        Copy or create the views of input.
 
     Returns
     -------
@@ -1167,7 +1171,7 @@ def split(tensor, split_size_or_sections, dim=0):
             size_splits[-1] = size - (split_size_or_sections * (num_splits - 1))
     return FunctionLib.apply(
         'Split', tensor.device, [tensor], outputs=[None] * num_splits,
-        axis=dim, size_splits=size_splits)
+        axis=dim, size_splits=size_splits, copy=copy)
 
 
 def squeeze(input, dim=None, out=None):

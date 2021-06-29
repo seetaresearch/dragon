@@ -20,13 +20,18 @@ namespace dragon {
 template <class Context>
 class SplitOp final : public Operator<Context> {
  public:
-  SIMPLE_CTOR_DTOR(SplitOp);
+  SplitOp(const OperatorDef& def, Workspace* ws)
+      : Operator<Context>(def, ws),
+        copy_chunks_(OP_SINGLE_ARG(int64_t, "copy", 1)) {}
   USE_OPERATOR_FUNCTIONS;
 
   void RunOnDevice() override;
 
   template <typename T>
   void DoRunWithType();
+
+ protected:
+  int64_t copy_chunks_;
 };
 
 template <class Context>

@@ -1528,6 +1528,7 @@ def split(
     num_or_size_splits,
     axis=0,
     slice_points=None,
+    copy=True,
     **kwargs
 ):
     r"""Split input into chunks along the given axis.
@@ -1568,6 +1569,8 @@ def split(
         The axis to split.
     slice_points : Sequence[int], optional
         The optional slice points.
+    copy : bool, optional, default=True
+        Copy or create the views of input.
 
     Returns
     -------
@@ -1588,10 +1591,11 @@ def split(
                 % len(slice_points))
     if context.executing_eagerly():
         return OpLib.execute(
-            'Split', inputs, outputs=[None] * num_splits,
-            axis=axis, size_splits=size_splits, slice_points=slice_points)
+            'Split', inputs, outputs=[None] * num_splits, axis=axis,
+            size_splits=size_splits, slice_points=slice_points, copy=copy)
     return OpLib.add('Split', inputs, num_outputs=num_splits, axis=axis,
-                     size_splits=size_splits, slice_points=slice_points, **kwargs)
+                     size_splits=size_splits, slice_points=slice_points,
+                     copy=copy, **kwargs)
 
 
 @OpSchema.num_inputs(1)
