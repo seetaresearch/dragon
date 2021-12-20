@@ -1,5 +1,5 @@
 #include "dragon/core/workspace.h"
-#include "dragon/operators/math/elementwise_ops.h"
+#include "dragon/operators/math/elementwise_op.h"
 #include "dragon/utils/math_functions.h"
 
 namespace dragon {
@@ -8,8 +8,8 @@ template <class Context>
 template <typename T>
 void MulOp<Context>::DoRunWithType() {
   auto &A = Input(0), &B = Input(1);
-  SET_INPUT_SPEC(0);
-  SET_INPUT_SPEC(1);
+  Output("A_spec")->ReshapeLike(A);
+  Output("B_spec")->ReshapeLike(B);
 
   vec64_t Y_dims(A.dims());
   if (A.dims() == B.dims()) {
@@ -45,46 +45,48 @@ template <class Context>
 template <typename T>
 void MulGradientOp<Context>::DoRunWithType() {
   auto &A = Input(0), &B = Input(1), &dY = Input(2);
-  auto &A_ref = INPUT_SPEC(0), &B_ref = INPUT_SPEC(1);
+  auto &A_spec = Input("A_spec"), &B_spec = Input("B_spec");
   auto *dA = Output(0), *dB = Output(1);
 
-  vec32_t A_broadcast_axes, B_broadcast_axes;
-  vec32_t Y_dims(dY.dims().begin(), dY.dims().end());
-  math::utils::ComputeBinaryBroadcastAxes(
-      A_ref.dims(),
-      B_ref.dims(),
+  vec64_t A_broadcast_axes, B_broadcast_axes;
+  math::utils::ComputeBroadcastAxes(
+      A_spec.dims(),
+      B_spec.dims(),
       dY.dims(),
       A_broadcast_axes,
       B_broadcast_axes);
 
-  // Temporal space to store the intermediate gradient
+  // Scratch to save the intermediates.
   T* scratch = nullptr;
+  if ((dA->has_name() && !A_broadcast_axes.empty()) ||
+      (dB->has_name() && !B_broadcast_axes.empty())) {
+    scratch = ctx()->workspace()->template data<T, Context>(dY.count());
+  }
 
   if (dA->has_name()) {
     if (A_broadcast_axes.empty()) {
       if (B_broadcast_axes.empty()) {
         math::Mul(
-            B_ref.count(),
+            B_spec.count(),
             dY.template data<T, Context>(),
             B.template data<T, Context>(),
-            dA->ReshapeLike(A_ref)->template mutable_data<T, Context>(),
+            dA->ReshapeLike(A_spec)->template mutable_data<T, Context>(),
             ctx());
       } else {
         math::Mul(
             dY.ndim(),
             dY.dims().data(),
-            B_ref.ndim(),
-            B_ref.dims().data(),
+            B_spec.ndim(),
+            B_spec.dims().data(),
             dY.template data<T, Context>(),
             B.template data<T, Context>(),
-            dA->ReshapeLike(A_ref)->template mutable_data<T, Context>(),
+            dA->ReshapeLike(A_spec)->template mutable_data<T, Context>(),
             ctx());
       }
     } else {
-      scratch = ctx()->workspace()->template data<T, Context>({dY.count()})[0];
       if (B_broadcast_axes.empty()) {
         math::Mul(
-            B_ref.count(),
+            B_spec.count(),
             dY.template data<T, Context>(),
             B.template data<T, Context>(),
             scratch,
@@ -93,21 +95,21 @@ void MulGradientOp<Context>::DoRunWithType() {
         math::Mul(
             dY.ndim(),
             dY.dims().data(),
-            B_ref.ndim(),
-            B_ref.dims().data(),
+            B_spec.ndim(),
+            B_spec.dims().data(),
             dY.template data<T, Context>(),
             B.template data<T, Context>(),
             scratch,
             ctx());
       }
       math::ReduceSum(
-          Y_dims.size(),
-          Y_dims.data(),
+          dY.ndim(),
+          dY.dims().data(),
           A_broadcast_axes.size(),
           A_broadcast_axes.data(),
           1.f,
           scratch,
-          dA->ReshapeLike(A_ref)->template mutable_data<T, Context>(),
+          dA->ReshapeLike(A_spec)->template mutable_data<T, Context>(),
           ctx());
     }
   }
@@ -116,30 +118,26 @@ void MulGradientOp<Context>::DoRunWithType() {
     if (B_broadcast_axes.empty()) {
       if (A_broadcast_axes.empty()) {
         math::Mul(
-            A_ref.count(),
+            A_spec.count(),
             dY.template data<T, Context>(),
             A.template data<T, Context>(),
-            dB->ReshapeLike(B_ref)->template mutable_data<T, Context>(),
+            dB->ReshapeLike(B_spec)->template mutable_data<T, Context>(),
             ctx());
       } else {
         math::Mul(
             dY.ndim(),
             dY.dims().data(),
-            A_ref.ndim(),
-            A_ref.dims().data(),
+            A_spec.ndim(),
+            A_spec.dims().data(),
             dY.template data<T, Context>(),
             A.template data<T, Context>(),
-            dB->ReshapeLike(B_ref)->template mutable_data<T, Context>(),
+            dB->ReshapeLike(B_spec)->template mutable_data<T, Context>(),
             ctx());
       }
     } else {
-      if (scratch == nullptr) {
-        scratch =
-            ctx()->workspace()->template data<T, Context>({dY.count()})[0];
-      }
       if (A_broadcast_axes.empty()) {
         math::Mul(
-            A_ref.count(),
+            A_spec.count(),
             dY.template data<T, Context>(),
             A.template data<T, Context>(),
             scratch,
@@ -148,21 +146,21 @@ void MulGradientOp<Context>::DoRunWithType() {
         math::Mul(
             dY.ndim(),
             dY.dims().data(),
-            A_ref.ndim(),
-            A_ref.dims().data(),
+            A_spec.ndim(),
+            A_spec.dims().data(),
             dY.template data<T, Context>(),
             A.template data<T, Context>(),
             scratch,
             ctx());
       }
       math::ReduceSum(
-          Y_dims.size(),
-          Y_dims.data(),
+          dY.ndim(),
+          dY.dims().data(),
           B_broadcast_axes.size(),
           B_broadcast_axes.data(),
           1.f,
           scratch,
-          dB->ReshapeLike(B_ref)->template mutable_data<T, Context>(),
+          dB->ReshapeLike(B_spec)->template mutable_data<T, Context>(),
           ctx());
     }
   }

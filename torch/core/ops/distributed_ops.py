@@ -15,19 +15,18 @@ from __future__ import division
 from __future__ import print_function
 
 from dragon.core import distributed
-from dragon.core.util import nest
-from dragon.vm.torch.core.autograd.function_impl import FunctionLib
+from dragon.vm.torch.core.autograd.function import Function
 
 
-def all_reduce(tensor, op='SUM', group=None):
-    """Reduce the tensor across all nodes in a group.
+def all_gather(tensor_list, tensor, group=None):
+    """Gather the tensor across all nodes in a group.
 
     Parameters
     ----------
-    tensor : Sequence[dragon.vm.torch.Tensor]
-        The tensor(s) to reduce.
-    op : {'SUM', 'MEAN'}, optional
-        The reduce operation.
+    tensor_list : Sequence[dragon.vm.torch.Tensor]
+        The output tensor list.
+    tensor : dragon.vm.torch.Tensor
+        The tensor to be sent.
     group : ProcessGroup, optional
         The group for communication.
 
@@ -37,16 +36,47 @@ def all_reduce(tensor, op='SUM', group=None):
         The output tensor.
 
     """
+    group = group or distributed.get_group()
     if group is None:
-        group = distributed.get_group()
+        return tensor
+    output_tensor = Function.apply(
+        'Collective', tensor.device, [tensor],
+        operation='ALLGATHER', **group.arguments)
+    if len(tensor_list) > 0:
+        return Function.apply(
+            'Split', output_tensor.device, [output_tensor],
+            outputs=[None] * len(tensor_list),
+            axis=0, size_split=None, copy=True)
+    return output_tensor
+
+
+def all_reduce(tensor, op='sum', group=None):
+    """Reduce the tensor across all nodes in a group.
+
+    Parameters
+    ----------
+    tensor : dragon.vm.torch.Tensor
+        The tensor to reduce.
+    op : str, optional
+        The reduction op.
+    group : ProcessGroup, optional
+        The group for communication.
+
+    Returns
+    -------
+    dragon.vm.torch.Tensor
+        The output tensor.
+
+    """
+    group = group or distributed.get_group()
     if group is None:
-        raise ValueError('<group> is required.')
+        return tensor
+    op = op.upper()
     if op not in ('MEAN', 'SUM'):
-        raise ValueError('Unsupported reduce op: ' + op)
-    tensors = nest.flatten(tensor)
-    return FunctionLib.apply(
-        'Collective', tensors[0].device, tensors, outputs=tensors,
-        communication='ALLREDUCE', operation=op, **group.arguments)
+        raise ValueError('Unsupported reduction: ' + op)
+    return Function.apply(
+        'Collective', tensor.device, [tensor], outputs=[tensor],
+        operation='ALLREDUCE', reduction=op, **group.arguments)
 
 
 def broadcast(tensor, src=0, group=None):
@@ -54,8 +84,8 @@ def broadcast(tensor, src=0, group=None):
 
     Parameters
     ----------
-    tensor : Sequence[dragon.vm.torch.Tensor]
-        The tensor(s) to reduce.
+    tensor : dragon.vm.torch.Tensor
+        The tensor to be sent.
     src : int
         The rank of the source node.
     group : ProcessGroup, optional
@@ -67,11 +97,9 @@ def broadcast(tensor, src=0, group=None):
         The output tensor.
 
     """
+    group = group or distributed.get_group()
     if group is None:
-        group = distributed.get_group()
-    if group is None:
-        raise ValueError('<group> is required.')
-    tensors = nest.flatten(tensor)
-    return FunctionLib.apply(
-        'Collective', tensors[0].device, tensors, outputs=tensors,
-        communication='BROADCAST', root=src, **group.arguments)
+        return tensor
+    return Function.apply(
+        'Collective', tensor.device, [tensor], outputs=[tensor],
+        operation='BROADCAST', root=src, **group.arguments)

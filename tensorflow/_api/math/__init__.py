@@ -28,6 +28,7 @@ from dragon.vm.tensorflow.core.ops.math_ops import exp
 from dragon.vm.tensorflow.core.ops.math_ops import floor
 from dragon.vm.tensorflow.core.ops.math_ops import greater
 from dragon.vm.tensorflow.core.ops.math_ops import greater_equal
+from dragon.vm.tensorflow.core.ops.math_ops import is_finite
 from dragon.vm.tensorflow.core.ops.math_ops import is_inf
 from dragon.vm.tensorflow.core.ops.math_ops import is_nan
 from dragon.vm.tensorflow.core.ops.math_ops import less

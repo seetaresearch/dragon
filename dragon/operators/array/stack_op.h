@@ -23,7 +23,9 @@ class StackOp final : public Operator<Context> {
   SIMPLE_CTOR_DTOR(StackOp);
   USE_OPERATOR_FUNCTIONS;
 
-  void RunOnDevice() override;
+  void RunOnDevice() override {
+    DispatchHelper<dtypes::Generic>::Call(this, Input(0));
+  }
 
   template <typename T>
   void DoRunWithType();
@@ -35,7 +37,9 @@ class StackGradientOp final : public Operator<Context> {
   SIMPLE_CTOR_DTOR(StackGradientOp);
   USE_OPERATOR_FUNCTIONS;
 
-  void RunOnDevice() override;
+  void RunOnDevice() override {
+    DispatchHelper<dtypes::Generic>::Call(this, Input(0));
+  }
 
   template <typename T>
   void DoRunWithType();

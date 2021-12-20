@@ -38,6 +38,7 @@ from dragon.vm.tensorflow.core.keras.layers.convolutional import UpSampling3D
 from dragon.vm.tensorflow.core.keras.layers.convolutional import ZeroPadding1D
 from dragon.vm.tensorflow.core.keras.layers.convolutional import ZeroPadding2D
 from dragon.vm.tensorflow.core.keras.layers.convolutional import ZeroPadding3D
+from dragon.vm.tensorflow.core.keras.layers.core import Activation
 from dragon.vm.tensorflow.core.keras.layers.core import Dense
 from dragon.vm.tensorflow.core.keras.layers.core import Dropout
 from dragon.vm.tensorflow.core.keras.layers.core import Flatten
@@ -50,6 +51,7 @@ from dragon.vm.tensorflow.core.keras.layers.merge import Minimum
 from dragon.vm.tensorflow.core.keras.layers.merge import Multiply
 from dragon.vm.tensorflow.core.keras.layers.merge import Subtract
 from dragon.vm.tensorflow.core.keras.layers.normalization import BatchNormalization
+from dragon.vm.tensorflow.core.keras.layers.normalization import LayerNormalization
 from dragon.vm.tensorflow.core.keras.layers.pooling import AveragePooling1D
 from dragon.vm.tensorflow.core.keras.layers.pooling import AveragePooling1D as AvgPool1D
 from dragon.vm.tensorflow.core.keras.layers.pooling import AveragePooling2D

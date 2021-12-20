@@ -102,7 +102,7 @@ template <typename T>
 void ConvOpBase<Context>::WeightedX(const T* x, const T* w, T* y) {
   auto* col = const_cast<T*>(x);
   if (skip_im2col_ == 0) {
-    col = ctx()->workspace()->template data<T, Context>({col_dim_})[0];
+    col = ctx()->workspace()->template data<T, Context>(col_dim_);
     Im2Col(x, col);
   }
   for (int g = 0; g < group_; g++) {
@@ -152,7 +152,7 @@ template <class Context>
 template <typename T>
 void ConvOpBase<Context>::GradX(const T* dy, const T* w, T* dx) {
   auto* col = (skip_im2col_ == 0)
-      ? ctx()->workspace()->template data<T, Context>({col_dim_})[0]
+      ? ctx()->workspace()->template data<T, Context>(col_dim_)
       : dx;
   for (int g = 0; g < group_; g++) {
     if (data_format() == "NCHW") {
@@ -193,7 +193,7 @@ template <typename T>
 void ConvOpBase<Context>::GradW(const T* dy, const T* x, T* dw, bool accum) {
   auto* col = const_cast<T*>(x);
   if (skip_im2col_ == 0) {
-    col = ctx()->workspace()->template data<T, Context>({col_dim_})[0];
+    col = ctx()->workspace()->template data<T, Context>(col_dim_);
     Im2Col(x, col);
   }
   for (int g = 0; g < group_; g++) {
@@ -230,12 +230,12 @@ void ConvOpBase<Context>::GradW(const T* dy, const T* x, T* dw, bool accum) {
 template <class Context>
 template <typename T>
 void ConvOpBase<Context>::GradBias(const T* dy, T* db) {
-  vec32_t dims, axes;
+  vec64_t dims, axes;
   if (data_format() == "NCHW") {
-    dims = {(int)Input(0).dim(0), (int)out_channels_, (int)out_dim_};
+    dims = {Input(0).dim(0), out_channels_, out_dim_};
     axes = {0, 2};
   } else if (data_format() == "NHWC") {
-    dims = {(int)Input(0).dim(0), (int)out_dim_, (int)out_channels_};
+    dims = {Input(0).dim(0), out_dim_, out_channels_};
     axes = {0, 1};
   }
   math::ReduceSum(3, dims.data(), 2, axes.data(), 1.f, dy, db, ctx());

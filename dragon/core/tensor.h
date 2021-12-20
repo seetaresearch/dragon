@@ -154,6 +154,7 @@ class DRAGON_API Tensor {
         offset_ = offset;
       }
     }
+    version_ = -1;
     return this;
   }
 
@@ -208,7 +209,7 @@ class DRAGON_API Tensor {
   }
 
   /*! \brief Return the tensor version */
-  int version() const {
+  int64_t version() const {
     return version_;
   }
 
@@ -330,7 +331,7 @@ class DRAGON_API Tensor {
   template <class Context>
   void raw_mutable_data(void** data_ptr) {
     auto* memory_ptr = memory();
-    if (!memory_ptr) {
+    if (memory_ptr == nullptr) {
       *data_ptr = nullptr;
     } else {
       const auto context_type = TypeMeta::Id<Context>();
@@ -349,11 +350,18 @@ class DRAGON_API Tensor {
   void* raw_mutable_data() {
     CHECK_NE(meta_.id(), 0) << "\nTensor(" << name_ << "): unknown type, "
                             << "or does not have a type.";
+    if (mapped_memory_ != nullptr) {
+      if (version_ == 0) {
+        MapFrom(nullptr);
+      } else {
+        version_ = 0;
+      }
+    }
     void* data_ptr;
     raw_mutable_data<Context>(&data_ptr);
     if (data_ptr) return data_ptr;
     CHECK_GT(size_, 0) << "\nInvalid tensor size.";
-    capacity_ = size_ * meta_.itemsize();
+    capacity_ = ((size_ * meta_.itemsize() + 511) / 512) * 512;
     memory_.reset(new UnifiedMemory(meta_, capacity_));
     raw_mutable_data<Context>(&data_ptr);
     if (meta_.ctor()) meta_.ctor()(data_ptr, size_);
@@ -377,7 +385,7 @@ class DRAGON_API Tensor {
   }
 
   /*! \brief Set the tensor version */
-  void set_version(int version) {
+  void set_version(int64_t version) {
     version_ = version;
   }
 
@@ -416,7 +424,7 @@ class DRAGON_API Tensor {
   size_t offset_ = 0;
 
   /*! \brief The tensor version */
-  int version_ = -1;
+  int64_t version_ = -1;
 
   /*! \brief The dimensions */
   vec64_t dims_;

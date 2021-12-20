@@ -18,7 +18,8 @@ from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
 
-from dragon.core.ops import init_ops
+from dragon.core.ops import constant_ops
+from dragon.core.ops import random_ops
 
 
 class Initializer(object):
@@ -79,7 +80,7 @@ class Constant(Initializer):
 
         """
         dtype = str(self.dtype) if dtype is None else dtype
-        return init_ops.fill(shape, value=self.value, dtype=dtype)
+        return constant_ops.fill(shape, value=self.value, dtype=dtype)
 
 
 class RandomNormal(Initializer):
@@ -120,7 +121,7 @@ class RandomNormal(Initializer):
             The output tensor.
 
         """
-        return init_ops.random_normal(
+        return random_ops.random_normal(
             shape=shape,
             mean=self.mean,
             std=self.stddev,
@@ -167,7 +168,7 @@ class RandomUniform(Initializer):
 
         """
         dtype = str(self.dtype) if dtype is None else dtype
-        return init_ops.random_uniform(
+        return random_ops.random_uniform(
             shape=shape,
             low=self.minval,
             high=self.maxval,
@@ -213,7 +214,7 @@ class TruncatedNormal(Initializer):
             The output tensor.
 
         """
-        return init_ops.truncated_normal(
+        return random_ops.truncated_normal(
             shape=shape,
             mean=self.mean,
             std=self.stddev,
@@ -275,19 +276,17 @@ class VarianceScaling(Initializer):
 
         """
         if self.distribution == 'normal':
-            return init_ops.glorot_normal(
+            return random_ops.glorot_normal(
                 shape=shape,
                 mode=self.mode,
                 scale=self.scale * 2.0,
-                dtype=str(self.dtype) if dtype is None else dtype
-            )
+                dtype=str(self.dtype) if dtype is None else dtype)
         else:
-            return init_ops.glorot_uniform(
+            return random_ops.glorot_uniform(
                 shape=shape,
                 mode=self.mode,
                 scale=self.scale * 3.0,
-                dtype=str(self.dtype) if dtype is None else dtype
-            )
+                dtype=str(self.dtype) if dtype is None else dtype)
 
 
 class GlorotNormal(VarianceScaling):
@@ -374,7 +373,7 @@ class Ones(Initializer):
 
         """
         dtype = str(self.dtype) if dtype is None else dtype
-        return init_ops.fill(shape, value=1, dtype=dtype)
+        return constant_ops.fill(shape, value=1, dtype=dtype)
 
 
 class Zeros(Initializer):
@@ -412,7 +411,7 @@ class Zeros(Initializer):
 
         """
         dtype = str(self.dtype) if dtype is None else dtype
-        return init_ops.fill(shape, value=0, dtype=dtype)
+        return constant_ops.fill(shape, value=0, dtype=dtype)
 
 
 def glorot_uniform_initializer(dtype='float32'):

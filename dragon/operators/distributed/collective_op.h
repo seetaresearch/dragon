@@ -24,12 +24,18 @@ class CollectiveOp final : public CollectiveOpBase<Context> {
  public:
   CollectiveOp(const OperatorDef& def, Workspace* ws)
       : CollectiveOpBase<Context>(def, ws),
-        communication_(OP_SINGLE_ARG(string, "communication", "")),
-        operation_(OP_SINGLE_ARG(string, "operation", "MEAN")) {}
+        operation_(OP_SINGLE_ARG(string, "operation", "")),
+        reduction_(OP_SINGLE_ARG(string, "reduction", "MEAN")) {}
   USE_OPERATOR_FUNCTIONS;
   USE_COLLECTIVE_FUNCTIONS;
 
   void RunOnDevice() override;
+
+  template <typename T>
+  void AllGatherMPI();
+
+  template <typename T>
+  void AllGatherNCCL();
 
   template <typename T>
   void AllReduceMPI();
@@ -47,7 +53,7 @@ class CollectiveOp final : public CollectiveOpBase<Context> {
   void DoRunWithType();
 
  protected:
-  string communication_, operation_;
+  string operation_, reduction_;
   Tensor *src_tensor_, *dest_tensor_;
 };
 

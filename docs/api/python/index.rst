@@ -111,6 +111,8 @@ PyTorch
 
   * `torch <torch.html>`_
   * `torch.autograd <torch/autograd.html>`_
+  * `torch.backends <torch/backends.html>`_
+  * `torch.cuda <torch/cuda.html>`_
   * `torch.distributed <torch/distributed.html>`_
   * `torch.jit <torch/jit.html>`_
   * `torch.nn <torch/nn.html>`_
@@ -118,6 +120,7 @@ PyTorch
   * `torch.nn.init <torch/nn/init.html>`_
   * `torch.onnx <torch/onnx.html>`_
   * `torch.optim <torch/optim.html>`_
+  * `torch.utils.checkpoint <torch/utils/checkpoint.html>`_
   * `torch.utils.dlpack <torch/utils/dlpack.html>`_
   * `torchvision.ops <torchvision/ops.html>`_
 
@@ -274,6 +277,12 @@ Modules
   `Module vm.torch.autograd <torch/autograd.html>`_
   : Virtual API for ``torch.autograd`` namespace.
 
+  `Module vm.torch.backends <torch/backends.html>`_
+  : Virtual API for ``torch.backends`` namespace.
+
+  `Module vm.torch.cuda <torch/cuda.html>`_
+  : Virtual API for ``torch.cuda`` namespace.
+
   `Module vm.torch.distributed <torch/distributed.html>`_
   : Virtual API for ``torch.distributed`` namespace.
 
@@ -294,6 +303,9 @@ Modules
 
   `Module vm.torch.optim <torch/optim.html>`_
   : Virtual API for ``torch.optim`` namespace.
+
+  `Module vm.torch.utils.checkpoint <torch/utils/checkpoint.html>`_
+  : Virtual API for ``torch.utils.checkpoint`` namespace.
 
   `Module vm.torch.utils.dlpack <torch/utils/dlpack.html>`_
   : Virtual API for ``torch.utils.dlpack`` namespace.
@@ -340,6 +352,8 @@ Modules
   tensorrt/onnx
   torch
   torch/autograd
+  torch/backends
+  torch/cuda
   torch/distributed
   torch/jit
   torch/nn
@@ -347,5 +361,6 @@ Modules
   torch/nn/init
   torch/onnx
   torch/optim
+  torch/utils/checkpoint
   torch/utils/dlpack
   torchvision/ops

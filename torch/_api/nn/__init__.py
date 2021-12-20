@@ -50,6 +50,7 @@ from dragon.vm.torch.core.nn.modules.conv import ConvTranspose1d
 from dragon.vm.torch.core.nn.modules.conv import ConvTranspose2d
 from dragon.vm.torch.core.nn.modules.conv import ConvTranspose3d
 from dragon.vm.torch.core.nn.modules.conv import DepthwiseConv2d
+from dragon.vm.torch.core.nn.modules.distance import CosineSimilarity
 from dragon.vm.torch.core.nn.modules.dropout import DropBlock2d
 from dragon.vm.torch.core.nn.modules.dropout import Dropout
 from dragon.vm.torch.core.nn.modules.dropout import DropPath

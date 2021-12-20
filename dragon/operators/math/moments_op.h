@@ -26,7 +26,9 @@ class MomentsOp final : public Operator<Context> {
         keep_dims_(OP_SINGLE_ARG(int64_t, "keepdims", 0)) {}
   USE_OPERATOR_FUNCTIONS;
 
-  void RunOnDevice() override;
+  void RunOnDevice() override {
+    DispatchHelper<dtypes::Accumulated>::Call(this, Input(0));
+  }
 
   template <typename T>
   void DoRunWithType();

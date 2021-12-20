@@ -5,72 +5,65 @@ namespace dragon {
 
 OperatorBase::OperatorBase(const OperatorDef& def, Workspace* ws)
     : def_(def),
-      ws_(ws),
+      workspace_(ws),
       phase_("TRAIN"),
-      handle_(def.name()),
-      dtype_("float32"),
+      name_(def.name()),
+      data_type_("float32"),
       data_format_("NCHW") {
-  // Scan the defined arguments
+  // Set arguments.
   for (auto& arg : def_.arg()) {
     CHECK_GT(arg.name().size(), 0);
     CHECK_EQ(args_.count(arg.name()), 0);
     args_[arg.name()] = &arg;
-    if (arg.name() == "handle") {
-      handle_ = arg.s();
+    if (arg.name() == "name") {
+      name_ = arg.s();
     } else if (arg.name() == "dtype") {
-      dtype_ = arg.s();
+      data_type_ = arg.s();
     } else if (arg.name() == "data_format") {
       data_format_ = arg.s();
     }
   }
-
-  // Set the inputs and outputs
-  size_t version_pos;
+  // Set inputs and outputs.
   for (const auto& input : def.input()) {
-    string name = input;
-    if ((version_pos = input.find("/ver:")) != string::npos) {
-      name = input.substr(0, version_pos);
-    }
-    inputs_.push_back(ws->GetTensor(name));
+    inputs_.push_back(ws->GetTensor(input));
   }
   for (const auto& output : def.output()) {
-    string name = output;
-    if ((version_pos = output.find("/ver:")) != string::npos) {
-      name = output.substr(0, version_pos);
-    }
-    outputs_.push_back(ws->CreateTensor(name));
+    outputs_.push_back(ws->CreateTensor(output));
   }
 }
 
-Tensor& OperatorBase::Input(int i) {
-  CHECK_LT(i, (int)inputs_.size());
-  CHECK_GE(i, -(int)inputs_.size());
-  if (i >= 0) return *inputs_[i];
-  return *inputs_[i + inputs_.size()];
+Tensor& OperatorBase::Input(int index) {
+  CHECK_LT(index, InputSize());
+  CHECK_GE(index, -InputSize());
+  if (index >= 0) return *inputs_[index];
+  return *inputs_[index + inputs_.size()];
 }
 
-Tensor* OperatorBase::Output(int i) {
-  CHECK_LT(i, (int)outputs_.size());
-  CHECK_GE(i, -(int)outputs_.size());
-  if (i >= 0) return outputs_[i]->MapFrom(nullptr);
-  return outputs_[i + outputs_.size()]->MapFrom(nullptr);
+Tensor& OperatorBase::Input(const string& name) {
+  return *workspace_->GetTensor(name_ + "/" + name);
 }
 
-Tensor* OperatorBase::Output(int i, const vec32_t& inputs) {
-  auto* Y = Output(i);
-  if (i < output_aliases_.size()) {
-    for (auto j : inputs) {
-      auto& X = Input(j);
-      if (output_aliases_[i].count(X.name())) {
-        return Y->ReshapeLike(X)->MapFrom(&X);
-      }
+Tensor* OperatorBase::Output(int index) {
+  CHECK_LT(index, OutputSize());
+  CHECK_GE(index, -OutputSize());
+  if (index >= 0) return outputs_[index];
+  return outputs_[index + outputs_.size()];
+}
+
+Tensor* OperatorBase::Output(int index, const vec32_t& inputs_at) {
+  auto* output = Output(index);
+  if (index >= outputs_from_.size()) return output;
+  for (auto input_index : inputs_at) {
+    auto& input = Input(input_index);
+    if (outputs_from_[index].count(input.name())) {
+      return output->ReshapeLike(input)->MapFrom(&input);
     }
   }
-  return Y->MapFrom(nullptr);
+  return output;
 }
 
-Tensor* OperatorBase::Buffer(const string& name) {
-  return workspace()->CreateTensor(handle_ + "/" + name);
+Tensor* OperatorBase::Output(const string& name) {
+  return workspace_->CreateTensor(name_ + "/" + name);
 }
 
 OperatorBase* OperatorBase::New(const OperatorDef& def, Workspace* ws) {
@@ -83,8 +76,7 @@ OperatorBase* OperatorBase::New(const OperatorDef& def, Workspace* ws) {
     case PROTO_CUDA:
 #ifdef USE_CUDNN
       if (CUDNNOperatorRegistry()->Has(op_type) &&
-          CUDAContext::objects().cudnn_enabled_ &&
-          !CUDAContext::objects().cudnn_disabled_ops_.count(op_type)) {
+          CUDAContext::objects().cudnn_enabled_) {
         return CUDNNOperatorRegistry()->Create(op_type, def, ws);
       }
 #endif
@@ -96,56 +88,20 @@ OperatorBase* OperatorBase::New(const OperatorDef& def, Workspace* ws) {
 }
 
 OperatorBase* OperatorBase::DeriveFrom(const OperatorDef& def) {
-  handle_ = def.name();
+  name_ = def.name();
   if (def.arg().size() > 1) {
     const auto& arg = *(def.arg().end() - 2);
-    if (arg.name() == "handle") handle_ = arg.s();
+    if (arg.name() == "name") name_ = arg.s();
   }
   inputs_.resize(def.input_size());
   outputs_.resize(def.output_size());
   for (int i = 0; i < inputs_.size(); i++) {
-    inputs_[i] = workspace()->GetTensor(def.input(i));
+    inputs_[i] = workspace_->GetTensor(def.input(i));
   }
   for (int i = 0; i < outputs_.size(); i++) {
-    outputs_[i] = workspace()->CreateTensor(def.output(i));
+    outputs_[i] = workspace_->CreateTensor(def.output(i));
   }
   return this;
-}
-
-template <class Context>
-void Operator<Context>::Prepare() {
-  for (int i = 0; i < InputSize(); ++i) {
-    auto& X = *inputs_[i];
-    if (X.version() >= 0) {
-      const auto& name = def().input(i);
-      auto ver_pos = name.find("/ver:");
-      auto version = std::atoi(name.substr(ver_pos + 5).c_str());
-      if (version == X.version()) continue;
-      LOG(DEBUG) << "Excepted version of Tensor(" + X.name() + ") "
-                 << "is " << version << ", got " << X.version()
-                 << ". Recompute.";
-      Tensor* flag = workspace()->GetTensor("flagged/recomp");
-      flag->mutable_data<bool, CPUContext>()[0] = true;
-      vector<OperatorBase*>& chain = subgraph()[name];
-      for (auto* op : chain) {
-        op->Run(ctx()->stream());
-      }
-      flag->mutable_data<bool, CPUContext>()[0] = false;
-    }
-  }
-}
-
-template <class Context>
-void Operator<Context>::Release() {
-  for (int i = 0; i < OutputSize(); ++i) {
-    auto* Y = outputs_[i];
-    if (Y->version() >= 0) {
-      const auto& name = def().output(i);
-      auto ver_pos = name.find("/ver:");
-      auto version = std::atoi(name.substr(ver_pos + 5).c_str());
-      Y->set_version(version);
-    }
-  }
 }
 
 /* Operator Registry */

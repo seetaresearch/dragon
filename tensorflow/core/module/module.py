@@ -84,7 +84,7 @@ class Module(object):
             The submodules.
 
         """
-        return tuple(self.flatten(predicate=_is_module))
+        return tuple(self._flatten(predicate=_is_module))
 
     @property
     def trainable_variables(self):
@@ -96,7 +96,7 @@ class Module(object):
             The trainable variables.
 
         """
-        return tuple(self.flatten(predicate=_is_trainable_variable))
+        return tuple(self._flatten(predicate=_is_trainable_variable))
 
     @property
     def variables(self):
@@ -108,9 +108,9 @@ class Module(object):
             The variables.
 
         """
-        return tuple(self.flatten(predicate=_is_variable))
+        return tuple(self._flatten(predicate=_is_variable))
 
-    def flatten(
+    def _flatten(
         self,
         recursive=True,
         predicate=None,
@@ -150,8 +150,7 @@ class Module(object):
             self._name = workspace.get_workspace().unique_name(
                 name=camel_to_snake(self.__class__.__name__),
                 namespace='Object',
-                zero_based=zero_based,
-            )
+                zero_based=zero_based)
         else:
             if not valid_identifier(name):
                 raise ValueError('<name> should be a legal identifier.')
@@ -187,22 +186,18 @@ def flatten_module(
     for key in sorted(module_dict, key=attribute_traversal_key):
         if key in attributes_to_ignore:
             continue
-
         for leaf_path, leaf in nest.flatten_with_paths(module_dict[key]):
             leaf_path = (key,) + leaf_path
-
             if not with_path:
                 leaf_id = id(leaf)
                 if leaf_id in seen:
                     continue
                 seen.add(leaf_id)
-
             if predicate(leaf):
                 if with_path:
                     yield module_path + leaf_path, leaf
                 else:
                     yield leaf
-
             if recursive and _is_module(leaf):
                 submodules.append((module_path + leaf_path, leaf))
 
@@ -233,7 +228,7 @@ def _is_module(obj):
 
 def _is_variable(obj):
     """Return if the object is a variable."""
-    return isinstance(obj, variables.VariableMetaclass)
+    return isinstance(obj, variables.Variable)
 
 
 def _is_trainable_variable(obj):

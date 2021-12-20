@@ -188,11 +188,11 @@ class CuDNNConvOpBase : public ConvOpBase<Context> {
         math_type = CUDNN_TENSOR_OP_MATH;
       } else {
         math_type = CUDNN_DEFAULT_MATH;
-        if (!CUDAContext::objects().cudnn_allow_tf32_) {
 #if CUDNN_VERSION_MIN(8, 0, 0)
+        if (!CUDAContext::objects().cudnn_allow_tf32_) {
           math_type = CUDNN_FMA_MATH;
-#endif
         }
+#endif
       }
       CUDNN_CHECK(cudnnSetConvolutionMathType(conv_desc_, math_type));
     }
@@ -225,15 +225,18 @@ class CuDNNConvOpBase : public ConvOpBase<Context> {
   cudnnFilterDescriptor_t filter_desc_;
   cudnnDataType_t compute_type_;
   cudnnTensorFormat_t tensor_format_;
+  size_t scratch_size_, scratch_max_size_;
 };
 
-#define USE_CUDNN_CONV_FUNCTIONS                 \
-  using CuDNNConvOpBase<Context>::SetConvDesc;   \
-  using CuDNNConvOpBase<Context>::SetFilterDesc; \
-  using CuDNNConvOpBase<Context>::conv_desc_;    \
-  using CuDNNConvOpBase<Context>::filter_desc_;  \
-  using CuDNNConvOpBase<Context>::compute_type_; \
-  using CuDNNConvOpBase<Context>::tensor_format_
+#define USE_CUDNN_CONV_FUNCTIONS                  \
+  using CuDNNConvOpBase<Context>::SetConvDesc;    \
+  using CuDNNConvOpBase<Context>::SetFilterDesc;  \
+  using CuDNNConvOpBase<Context>::conv_desc_;     \
+  using CuDNNConvOpBase<Context>::filter_desc_;   \
+  using CuDNNConvOpBase<Context>::compute_type_;  \
+  using CuDNNConvOpBase<Context>::tensor_format_; \
+  using CuDNNConvOpBase<Context>::scratch_size_;  \
+  using CuDNNConvOpBase<Context>::scratch_max_size_
 
 #endif // USE_CUDNN
 

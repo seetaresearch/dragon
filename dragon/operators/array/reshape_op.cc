@@ -1,31 +1,32 @@
+#include "dragon/operators/array/reshape_op.h"
 #include "dragon/core/workspace.h"
-#include "dragon/operators/array/reshape_ops.h"
 
 namespace dragon {
 
 template <class Context>
 void ReshapeOp<Context>::RunOnDevice() {
   auto &X = Input(0), *Y = Output(0, {0});
-  SET_INPUT_SPEC(0);
+  Output("X_spec")->ReshapeLike(X);
 
   int num_dims;
   dims(0, &num_dims);
 
   vec64_t in_shape(X.dims()), out_shape(num_dims);
-  for (int i = 0; i < num_dims; ++i)
+  for (int i = 0; i < num_dims; ++i) {
     out_shape[i] = dims(i);
+  }
 
   int infer_axis = -1;
   int64_t total_count = 1;
   for (int i = 0; i < num_dims; ++i) {
     if (out_shape[i] == 0) {
-      // Unchanged axis
+      // Unchanged axis.
       CHECK_LT(i, (int)in_shape.size())
           << "\nUnchanged axis " << i << " is out of the "
           << "range: (0, " << in_shape.size() << ").";
       out_shape[i] = in_shape[i];
     } else if (out_shape[i] < 0) {
-      // Inferred axis
+      // Inferred axis.
       CHECK_EQ(infer_axis, -1) << "\nCould not infer axis " << infer_axis
                                << " and " << i << " both.";
       out_shape[i] = -1, infer_axis = i;
@@ -35,7 +36,7 @@ void ReshapeOp<Context>::RunOnDevice() {
     }
   }
 
-  // Determine the dimension for inferred axis
+  // Determine the dimension for inferred axis.
   if (infer_axis != -1) {
     CHECK_EQ(X.count() % total_count, 0)
         << "\nCan not change the total size: " << X.DimString() << " -> "
@@ -47,7 +48,6 @@ void ReshapeOp<Context>::RunOnDevice() {
         << Tensor::DimString(out_shape);
   }
 
-  // Maybe copy the contents
   Y->Reshape(out_shape)->CopyFrom(X, ctx());
 }
 

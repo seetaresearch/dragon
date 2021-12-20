@@ -17,10 +17,22 @@ from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
 
+from dragon.core.util import decorator
 from dragon.core.util import tls
 
 
-class enable_grad(object):
+def is_grad_enabled():
+    """Return if gradient calculation enabled."""
+    return _GLOBAL_GRAD_ENABLED.mode
+
+
+def _set_grad_enabled(mode=True):
+    """Set the enabling of gradient calculation."""
+    global _GLOBAL_GRAD_ENABLED
+    _GLOBAL_GRAD_ENABLED.mode = mode
+
+
+class enable_grad(decorator._DecoratorContextManager):
     """Context-manager to enable gradient calculation.
 
     Examples:
@@ -30,7 +42,7 @@ class enable_grad(object):
     with torch.no_grad():
         with torch.enable_grad():
             y = x + 1
-    y.backward()  # 0 error(s), 0 warning(s)
+    y.backward()
     ```
 
     """
@@ -47,19 +59,7 @@ class enable_grad(object):
         return False
 
 
-def is_grad_enabled():
-    """Is auto-grad enabled?
-
-    Returns
-    -------
-    bool
-        ``True`` if enabling auto-grad.
-
-    """
-    return _GLOBAL_GRAD_OPTION.enabled
-
-
-class no_grad(object):
+class no_grad(decorator._DecoratorContextManager):
     """Context-manager to disable gradient calculation.
 
     Examples:
@@ -119,10 +119,4 @@ class set_grad_enabled(object):
         return False
 
 
-def _set_grad_enabled(enabled=True):
-    """Set the status of grad option."""
-    global _GLOBAL_GRAD_OPTION
-    _GLOBAL_GRAD_OPTION.enabled = enabled
-
-
-_GLOBAL_GRAD_OPTION = tls.Constant(enabled=True)
+_GLOBAL_GRAD_ENABLED = tls.Constant(mode=True)

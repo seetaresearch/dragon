@@ -9,16 +9,16 @@ template <class Context>
 template <typename T>
 void SliceOp<Context>::DoRunWithType() {
   auto &X = Input(0), *Y = Output(0);
-  SET_INPUT_SPEC(0);
+  Output("X_spec")->ReshapeLike(X);
 
   int num_starts, num_sizes, num_dims = X.ndim();
   CHECK_GT(num_dims, 0) << "\nInvalid slice of a scalar.";
   vec64_t X_starts(num_dims), Y_dims(num_dims), Y_shape;
 
-  // Determine the interval of each dimension
+  // Compute the slice of each axis.
+  vec32_t axes;
   starts(0, &num_starts);
   sizes(0, &num_sizes);
-
   for (int i = 0; i < num_dims; i++) {
     auto dim_start = i < num_starts ? starts(i) : 0;
     auto dim_end = X.dim(i);
@@ -41,16 +41,31 @@ void SliceOp<Context>::DoRunWithType() {
     X_starts[i] = dim_start;
     Y_dims[i] = dim_end - dim_start;
     if (keep_dim) Y_shape.push_back(Y_dims[i]);
+    if (Y_dims[i] != X.dim(i)) axes.push_back(i);
   }
 
-  // Store for the gradient calculation
-  Buffer("X_starts")->template CopyFrom<int64_t>(X_starts);
-  Buffer("Y_dims")->template CopyFrom<int64_t>(Y_dims);
-
-  // Maybe just copy the contents
+  Output("X_starts")->template CopyFrom<int64_t>(X_starts);
+  Output("Y_dims")->template CopyFrom<int64_t>(Y_dims);
   Y->Reshape(Y_shape);
+
+  // No slicing.
   if (Y->count() == X.count()) {
     Y->CopyFrom(X, ctx());
+    return;
+  }
+
+  // Slice along a single axis.
+  if (axes.size() == 1) {
+    const auto axis = axes[0];
+    const auto copy_offset = X_starts[axis] * X.count(axis + 1);
+    math::CopyMatrix(
+        X.count(0, axis),
+        Y_dims[axis] * X.count(axis + 1),
+        X.count(axis),
+        Y_dims[axis] * X.count(axis + 1),
+        X.template data<T, Context>() + copy_offset,
+        Y->template mutable_data<T, Context>(),
+        ctx());
     return;
   }
 
@@ -65,44 +80,56 @@ void SliceOp<Context>::DoRunWithType() {
 }
 
 template <class Context>
-void SliceOp<Context>::RunOnDevice() {
-  DispatchHelper<dtypes::Generic>::Call(this, Input(0));
-}
-
-template <class Context>
 template <typename T>
 void SliceGradientOp<Context>::DoRunWithType() {
-  auto &dY = Input(0), *dX = Output(0);
+  auto &dY = Input(0), *dX = Output(0)->ReshapeLike(Input("X_spec"));
 
-  // Maybe just copy the contents
-  dX->ReshapeLike(INPUT_SPEC(0));
-  if (dX->count() == dY.count()) {
+  vec64_t X_starts, Y_dims;
+  Input("X_starts").template CopyTo<int64_t>(X_starts);
+  Input("Y_dims").template CopyTo<int64_t>(Y_dims);
+
+  vec32_t axes;
+  for (int i = 0; i < dX->ndim(); ++i) {
+    if (dX->dim(i) != Y_dims[i]) axes.push_back(i);
+  }
+
+  // No slicing.
+  if (axes.empty()) {
     dX->CopyFrom(dY, ctx());
     return;
   }
 
-  vec64_t X_starts, Y_dims;
-  Buffer("X_starts")->template CopyTo<int64_t>(X_starts);
-  Buffer("Y_dims")->template CopyTo<int64_t>(Y_dims);
+  // Zero gradient of all positions.
+  math::Set(
+      dX->count(),
+      convert::To<T>(0.f),
+      dX->template mutable_data<T, Context>(),
+      ctx());
 
-  // Zero the redundant gradients
-  auto* dx = dX->template mutable_data<T, Context>();
-  math::Set(dX->count(), convert::To<T>(0.f), dx, ctx());
+  // Copy dY along a single slicing axis.
+  if (axes.size() == 1) {
+    const auto axis = axes[0];
+    const auto copy_offset = X_starts[axis] * dX->count(axis + 1);
+    math::CopyMatrix(
+        dY.count(0, axis),
+        dY.count(axis),
+        dY.count(axis),
+        dX->count(axis),
+        dY.template data<T, Context>(),
+        dX->template mutable_data<T, Context>() + copy_offset,
+        ctx());
+    return;
+  }
 
-  // Copy the dY to the right positions
+  // Copy dY along all slicing axes.
   kernels::SliceGrad(
       dX->ndim(),
       dX->strides().data(),
       Y_dims.data(),
       X_starts.data(),
       dY.template data<T, Context>(),
-      dx,
+      dX->template mutable_data<T, Context>(),
       ctx());
-}
-
-template <class Context>
-void SliceGradientOp<Context>::RunOnDevice() {
-  DispatchHelper<dtypes::Floating>::Call(this, Input(0));
 }
 
 DEPLOY_CPU_OPERATOR(Slice);

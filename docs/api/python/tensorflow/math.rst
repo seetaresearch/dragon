@@ -48,6 +48,9 @@ vm.tensorflow.math
   `greater_equal(...) <math/greater_equal.html>`_
   : Compute the element-wise greater-equal comparison.
 
+  `is_finite(...) <math/is_finite.html>`_
+  : Check if the elements of input are finite.
+
   `is_inf(...) <math/is_inf.html>`_
   : Check if the elements of input are infinite.
 
@@ -140,6 +143,7 @@ vm.tensorflow.math
   math/floor
   math/greater
   math/greater_equal
+  math/is_finite
   math/is_inf
   math/is_nan
   math/l2_normalize

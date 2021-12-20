@@ -14,6 +14,8 @@ from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
 
+import functools
+
 from dragon.core.framework.tensor import Tensor
 from dragon.core.ops import activation_ops
 from dragon.core.ops import array_ops
@@ -86,7 +88,7 @@ class ArgMax(Layer):
         self.call_args = {'axis': param.axis, 'keepdims': True}
 
     def __call__(self, bottom):
-        return array_ops.argmax(bottom, **self.call_args)
+        return math_ops.argmax(bottom, **self.call_args)
 
 
 class BatchNorm(Layer):
@@ -514,7 +516,9 @@ class Reduction(Layer):
                 raise ValueError('The negative axis can only be -1.')
         self.scale = param.coeff
         self.call_args = {'axis': [param.axis]}
-        self.reduction = {1: array_ops.sum, 4: array_ops.mean}[param.operation]
+        self.reduction = {1: math_ops.sum,
+                          2: functools.partial(math_ops.norm, ord=1),
+                          4: math_ops.mean}[param.operation]
 
     def __call__(self, bottom):
         top = self.reduction(bottom, **self.call_args)
@@ -633,14 +637,16 @@ class Slice(Layer):
     def __init__(self, layer_param):
         super(Slice, self).__init__(layer_param)
         param = layer_param.slice_param
-        self.call_args = {
-            'axis': param.axis,
-            'num_or_size_splits': len(self.top),
-            'slice_point': [e for e in param.slice_point],
-        }
+        self.axis = param.axis
+        self.slice_points = param.slice_point
 
     def __call__(self, bottom):
-        return array_ops.split(bottom, **self.call_args)
+        stride, size_splits = 0, []
+        for point in self.slice_points:
+            size_splits.append(point - stride)
+            stride = point
+        size_splits.append(bottom.shape[self.axis] - stride)
+        return array_ops.split(bottom, size_splits, axis=self.axis)
 
 
 class Softmax(Layer):
@@ -667,28 +673,6 @@ class Softmax(Layer):
 
     def __call__(self, bottom):
         return activation_ops.softmax(bottom, **self.call_args)
-
-
-class StopGradient(Layer):
-    """Return the identity of input with truncated gradient-flow.
-
-    Examples:
-
-    ```python
-    layer {
-      type: "StopGradient"
-      bottom: "res2c"
-      top: "res2c/frozen"
-    }
-    ```
-
-    """
-
-    def __init__(self, layer_param):
-        super(StopGradient, self).__init__(layer_param)
-
-    def __call__(self, bottom):
-        return framework_ops.stop_gradient(bottom)
 
 
 class Tile(Layer):

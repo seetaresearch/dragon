@@ -34,11 +34,6 @@ namespace dragon {
                                            << cudnnGetErrorString(status); \
   } while (0)
 
-constexpr size_t CUDNN_CONV_WORKSPACE_LIMIT_BYTES = 64 * 1024 * 1024;
-constexpr size_t CUDNN_CONV_NUM_FWD_ALGOS = 7;
-constexpr size_t CUDNN_CONV_NUM_BWD_FILTER_ALGOS = 4;
-constexpr size_t CUDNN_CONV_NUM_BWD_DATA_ALGOS = 5;
-
 class Tensor;
 
 template <typename T>

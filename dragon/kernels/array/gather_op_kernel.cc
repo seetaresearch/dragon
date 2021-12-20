@@ -60,8 +60,7 @@ void _GatherElements(
     const int64_t* index,
     const T* x,
     T* y) {
-  const auto N =
-      std::accumulate(y_dims, y_dims + num_dims, 1, std::multiplies<int64_t>());
+  const auto N = math::utils::Prod(num_dims, y_dims);
   vec64_t dim_index(num_dims, 0);
   for (int yi = 0; yi < N; ++yi) {
     int64_t xi = 0;

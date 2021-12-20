@@ -62,31 +62,27 @@ def current_device():
     return backend.cudaGetDevice()
 
 
-def enable_cudnn(
+def set_cudnn_flags(
     enabled=True,
-    deterministic=False,
     benchmark=False,
+    deterministic=False,
     allow_tf32=False,
-    disabled_ops=None,
 ):
-    """Enable backend to use the cuDNN library.
+    """Set the flags of cuDNN library.
 
     Parameters
     ----------
     enabled : bool, optional, default=True
         Use cuDNN library or not.
-    deterministic : bool, optional, default=False
-        Select deterministic algorithms instead of fastest.
     benchmark : bool, optional, default=False
         Select fastest algorithms via benchmark or heuristics.
+    deterministic : bool, optional, default=False
+        Select deterministic algorithms instead of fastest.
     allow_tf32 : bool, optional, default=False
         Allow TF32 tensor core operation or not.
-    disabled_ops : Sequence[str], optional
-        The operator types to disable using cuDNN.
 
     """
-    return backend.cudaEnableDNN(enabled, deterministic, benchmark,
-                                 allow_tf32, disabled_ops or [])
+    backend.cudnnSetFlags(enabled, benchmark, deterministic, allow_tf32)
 
 
 def get_device_capability(device_index=None):
@@ -180,7 +176,7 @@ def set_device(device_index=0):
         The device index.
 
     """
-    return backend.cudaSetDevice(device_index)
+    backend.cudaSetDevice(device_index)
 
 
 def synchronize(device_index=None, stream_index=0):
@@ -196,5 +192,5 @@ def synchronize(device_index=None, stream_index=0):
         The stream index.
 
     """
-    device_index = device_index if device_index else -1
-    return backend.cudaStreamSynchronize(device_index, stream_index)
+    device_index = -1 if device_index is None else device_index
+    backend.cudaStreamSynchronize(device_index, stream_index)

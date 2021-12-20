@@ -33,17 +33,15 @@ class SGD(optimizer.Optimizer):
     `[Polyak, 1964] <https://doi.org/10.1016/0041-5553(64)90137-5>`_,
     whose update is defined as:
 
-    .. math:: \text{MomentumSGD}(g) =
-            -(\text{momentum} * m_{t-1} + \text{lr} * g)
+    .. math:: \text{MomentumSGD}(g) = \text{lr} * m_{t} \\
+        \quad \\ \text{where} \quad m_{t} = \text{momentum} * m_{t-1} + g
 
     **NesterovSGD**
     `[Sutskever et.al, 2013] <http://www.cs.toronto.edu/~hinton/absps/momentum.pdf>`_,
     whose update is defined as:
 
-    .. math:: \text{NesterovSGD}(g) =
-            -((1 + \text{momentum}) * m_{t} - \text{momentum} * m_{t-1}) \\
-        \quad \\ \text{where} \quad
-            m_{t} = \text{momentum} * m_{t-1} + \text{lr} * g
+    .. math:: \text{NesterovSGD}(g) = \text{lr} * (\text{momentum} * m_{t} + g) \\
+        \quad \\ \text{where} \quad m_{t} = \text{momentum} * m_{t-1} + g
 
     You can use one of them by setting the defaults:
 
@@ -85,5 +83,5 @@ class SGD(optimizer.Optimizer):
         super(SGD, self).__init__(name, **kwargs)
         self._set_hyper('lr', learning_rate)
         self._set_hyper('momentum', momentum)
-        self._op_type = ('Nesterov' if nesterov else 'SGD') + 'Update'
+        self._op_type = 'NesterovSGD' if nesterov else 'MomentumSGD'
         self._hyper_aliases['learning_rate'] = 'lr'

@@ -17,6 +17,10 @@ import numpy
 try:
     from nvidia.dali import types as dali_types
 
+    # ConstantWrapper
+    Constant = dali_types.Constant
+    ScalarConstant = dali_types.ScalarConstant
+
     # DALIDataType
     BOOL = dali_types.BOOL
     FLOAT = dali_types.FLOAT
@@ -58,6 +62,10 @@ except ImportError:
 
     dali_types = None
     NO_DALI = -1
+
+    # ConstantWrapper
+    Constant = NO_DALI
+    ScalarConstant = NO_DALI
 
     # DALIDataType
     BOOL = NO_DALI

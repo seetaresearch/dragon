@@ -47,10 +47,10 @@ void ChannelAffineGradientOp<Context>::DoRunWithType() {
   GET_OP_AXIS_ARG(axis, X.ndim(), -1);
   GET_OP_AXIS_ARG(end_axis, X.ndim(), axis);
 
-  vec32_t affine_dims = {(int)X.count(0, axis),
-                         (int)X.count(axis, end_axis + 1),
-                         (int)X.count(end_axis + 1)};
-  vec32_t affine_axes = {0, 2};
+  vec64_t affine_dims = {X.count(0, axis),
+                         X.count(axis, end_axis + 1),
+                         X.count(end_axis + 1)},
+          affine_axes = {0, 2};
 
   // dW = dY * X
   if (dW->has_name()) {
@@ -65,8 +65,7 @@ void ChannelAffineGradientOp<Context>::DoRunWithType() {
           dW->ReshapeLike(W)->template mutable_data<T, Context>(),
           ctx());
     } else {
-      T* scratch =
-          ctx()->workspace()->template data<T, Context>({X.count()})[0];
+      T* scratch = ctx()->workspace()->template data<T, Context>(X.count());
       math::Mul(
           X.count(),
           dY.template data<T, Context>(),

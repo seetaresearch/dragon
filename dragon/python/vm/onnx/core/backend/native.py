@@ -34,7 +34,7 @@ except ImportError:
     DeviceType = deprecation.NotInstalled('onnx')
     namedtupledict = collections.namedtuple
 
-from dragon.core.autograph.graph_impl import GraphLib
+from dragon.core.autograph.graph_lib import GraphLib
 from dragon.core.framework import context
 from dragon.core.framework import workspace
 from dragon.core.framework.tensor import Tensor

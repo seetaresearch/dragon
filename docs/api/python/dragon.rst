@@ -116,7 +116,7 @@ dragon
   : Return a tensor of ones with shape as the other.
 
   `one_hot(...) <dragon/one_hot.html>`_
-  : Return the one-hot representation for input.
+  : Return the one-hot representation of input.
 
   `pad(...) <dragon/pad.html>`_
   : Pad the input according to the given sizes.
@@ -183,6 +183,9 @@ dragon
 
   `triu(...) <dragon/triu.html>`_
   : Return the upper triangular part of input.
+
+  `unstack(...) <dragon/unstack.html>`_
+  : Unpack input into chunks along the given axis.
 
   `unique(...) <dragon/unique.html>`_
   : Return the unique elements of input.
@@ -257,6 +260,7 @@ dragon
   dragon/tril
   dragon/triu
   dragon/unique
+  dragon/unstack
   dragon/variable_scope
   dragon/where
   dragon/zeros

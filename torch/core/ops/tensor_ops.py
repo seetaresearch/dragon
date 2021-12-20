@@ -16,11 +16,11 @@ from __future__ import print_function
 
 from dragon.core.util import nest
 from dragon.vm.torch.core.autograd import grad_mode
-from dragon.vm.torch.core.autograd.function_impl import FunctionLib
+from dragon.vm.torch.core.autograd.function import Function
 from dragon.vm.torch.core.ops import array_ops
 from dragon.vm.torch.core.ops import constant_ops
 from dragon.vm.torch.core.ops import math_ops
-from dragon.vm.torch.core.ops import init_ops
+from dragon.vm.torch.core.ops import sort_ops
 from dragon.vm.torch.core.tensor import Tensor
 
 
@@ -137,7 +137,7 @@ def argmax(self, dim, keepdim=False):
     `torch.argmax(...)`_
 
     """
-    return array_ops.argmax(self, dim, keepdim)
+    return math_ops.argmax(self, dim, keepdim)
 
 
 def argmin(self, dim, keepdim=False):
@@ -160,7 +160,7 @@ def argmin(self, dim, keepdim=False):
     `torch.argmin(...)`_
 
     """
-    return array_ops.argmin(self, dim, keepdim)
+    return math_ops.argmin(self, dim, keepdim)
 
 
 def argsort(self, dim=-1, descending=False):
@@ -183,7 +183,7 @@ def argsort(self, dim=-1, descending=False):
     `torch.argsort(...)`_
 
     """
-    return array_ops.argsort(self, dim, descending)
+    return sort_ops.argsort(self, dim, descending)
 
 
 def baddbmm(self, batch1, batch2, beta=1, alpha=1):
@@ -265,7 +265,7 @@ def backward(self, gradient=None, retain_graph=False):
     if not self.requires_grad:
         raise ValueError('Backward from a tensor that does not requires grad.')
     grads = [] if gradient is None else [gradient]
-    return FunctionLib._backward([self], grads, retain_graph=retain_graph)
+    return Function.backward([self], grads, retain_graph=retain_graph)
 
 
 def bitwise_and(self, other):
@@ -474,7 +474,7 @@ def bool(self):
         The output tensor.
 
     """
-    return array_ops.cast(self, 'bool')
+    return math_ops.cast(self, 'bool')
 
 
 def bool_(self):
@@ -486,7 +486,7 @@ def bool_(self):
         The output tensor.
 
     """
-    return array_ops.cast(self, 'bool', self)
+    return math_ops.cast(self, 'bool', self)
 
 
 def byte(self):
@@ -498,7 +498,7 @@ def byte(self):
         The output tensor.
 
     """
-    return array_ops.cast(self, 'uint8')
+    return math_ops.cast(self, 'uint8')
 
 
 def byte_(self):
@@ -510,7 +510,7 @@ def byte_(self):
         The output tensor.
 
     """
-    return array_ops.cast(self, 'uint8', self)
+    return math_ops.cast(self, 'uint8', self)
 
 
 def ceil(self):
@@ -558,7 +558,7 @@ def char(self):
         The output tensor.
 
     """
-    return array_ops.cast(self, 'int8')
+    return math_ops.cast(self, 'int8')
 
 
 def char_(self):
@@ -570,7 +570,7 @@ def char_(self):
         The output tensor.
 
     """
-    return array_ops.cast(self, 'int8', self)
+    return math_ops.cast(self, 'int8', self)
 
 
 def chunk(self, chunks, dim=0, copy=True):
@@ -676,7 +676,7 @@ def cumsum(self, dim):
     `torch.cumsum(...)`_
 
     """
-    return array_ops.cumsum(self, dim)
+    return math_ops.cumsum(self, dim)
 
 
 def div(self, other):
@@ -734,7 +734,7 @@ def double(self):
         The output tensor.
 
     """
-    return array_ops.cast(self, 'float64')
+    return math_ops.cast(self, 'float64')
 
 
 def double_(self):
@@ -746,7 +746,7 @@ def double_(self):
         The output tensor.
 
     """
-    return array_ops.cast(self, 'float64', self)
+    return math_ops.cast(self, 'float64', self)
 
 
 def eq(self, other):
@@ -842,7 +842,7 @@ def fill_(self, value):
 
     """
     size = self.size()
-    return FunctionLib.apply(
+    return Function.apply(
         'Fill', self.device, [], outputs=[self],
         dtype=self.dtype, value=float(value), ndim=len(size), dims=size)
 
@@ -955,7 +955,7 @@ def _float(self):
         The output tensor.
 
     """
-    return array_ops.cast(self, 'float32')
+    return math_ops.cast(self, 'float32')
 
 
 def _float_(self):
@@ -967,7 +967,7 @@ def _float_(self):
         The output tensor.
 
     """
-    return array_ops.cast(self, 'float32', self)
+    return math_ops.cast(self, 'float32', self)
 
 
 def floor(self):
@@ -1086,7 +1086,7 @@ def getitem(self, item):
     elif len(gather_args) > 1:
         raise NotImplementedError
     starts, sizes = _process_index(item)
-    return FunctionLib.apply(
+    return Function.apply(
         'Slice', self.device, [self], ndim=len(starts),
         starts=starts, sizes=sizes)
 
@@ -1123,7 +1123,7 @@ def half(self):
         The output tensor.
 
     """
-    return array_ops.cast(self, 'float16')
+    return math_ops.cast(self, 'float16')
 
 
 def half_(self):
@@ -1135,7 +1135,7 @@ def half_(self):
         The output tensor.
 
     """
-    return array_ops.cast(self, 'float16', self)
+    return math_ops.cast(self, 'float16', self)
 
 
 def index_select(self, dim, index):
@@ -1166,7 +1166,7 @@ def _int(self):
         The output tensor.
 
     """
-    return array_ops.cast(self, 'int32')
+    return math_ops.cast(self, 'int32')
 
 
 def _int_(self):
@@ -1178,7 +1178,25 @@ def _int_(self):
         The output tensor.
 
     """
-    return array_ops.cast(self, 'int32', self)
+    return math_ops.cast(self, 'int32', self)
+
+
+def isfinite(self):
+    r"""Return if the elements are finite.
+
+    .. math:: \text{out} = \text{isfinite}(\text{self})
+
+    Returns
+    -------
+    dragon.vm.torch.Tensor
+        The output tensor.
+
+    See Also
+    --------
+    `torch.isfinite(...)`_
+
+    """
+    return math_ops.isfinite(self)
 
 
 def isinf(self):
@@ -1393,7 +1411,7 @@ def long(self):
         The output tensor.
 
     """
-    return array_ops.cast(self, 'int64')
+    return math_ops.cast(self, 'int64')
 
 
 def long_(self):
@@ -1405,7 +1423,7 @@ def long_(self):
         The output tensor.
 
     """
-    return array_ops.cast(self, 'int64', self)
+    return math_ops.cast(self, 'int64', self)
 
 
 def lt(self, other):
@@ -1543,7 +1561,7 @@ def max(self, dim=None, keepdim=False):
     `torch.max(...)`_
 
     """
-    return array_ops.max(self, dim, keepdim)
+    return math_ops.max(self, dim, keepdim)
 
 
 def maximum(self, other):
@@ -1585,7 +1603,7 @@ def mean(self, dim=None, keepdim=False):
         The output tensor.
 
     """
-    return array_ops.mean(self, dim, keepdim)
+    return math_ops.mean(self, dim, keepdim)
 
 
 def min(self, dim=None, keepdim=False):
@@ -1608,7 +1626,7 @@ def min(self, dim=None, keepdim=False):
     `torch.min(...)`_
 
     """
-    return array_ops.min(self, dim, keepdim)
+    return math_ops.min(self, dim, keepdim)
 
 
 def minimum(self, other):
@@ -1826,7 +1844,7 @@ def new_empty(self, *size, dtype=None, device=None, requires_grad=False):
     `torch.empty(...)`_
 
     """
-    return init_ops.empty(
+    return constant_ops.empty(
         *nest.flatten(size),
         dtype=self.dtype if dtype is None else dtype,
         device=self.device if device is None else device,
@@ -1869,7 +1887,7 @@ def new_full(
     `torch.full(...)`_
 
     """
-    return init_ops.full(
+    return constant_ops.full(
         size,
         fill_value,
         dtype=self.dtype if dtype is None else dtype,
@@ -1930,6 +1948,33 @@ def nonzero(self):
     return array_ops.nonzero(self)
 
 
+def norm(self, p='fro', dim=None, keepdim=False, out=None, dtype=None):
+    """Compute the norm value of elements along the given dimension.
+
+    Parameters
+    ----------
+    p : {'fro', 1, 2}, optional
+        The norm order.
+    dim : Union[int, Sequence[int]], optional
+        The dimension to reduce.
+    keepdim : bool, optional, default=False
+        Keep the reduced dimension or not.
+    dtype : str, optional
+        The data type to cast to.
+
+    Returns
+    -------
+    dragon.vm.torch.Tensor
+        The output tensor.
+
+    See Also
+    --------
+    `torch.norm(...)`_
+
+    """
+    return math_ops.norm(self, p, dim, keepdim, dtype=dtype)
+
+
 def normal_(self, mean=0, std=1):
     r"""Fill self from a normal distribution.
 
@@ -1949,7 +1994,7 @@ def normal_(self, mean=0, std=1):
 
     """
     size = self.size()
-    return FunctionLib.apply(
+    return Function.apply(
         'RandomNormal', self.device, [], outputs=[self],
         dtype=self.dtype, mean=float(mean), std=float(std),
         ndim=len(size), dims=size)
@@ -2063,12 +2108,12 @@ def repeat(self, *sizes):
     return array_ops.tile(self, nest.flatten(sizes))
 
 
-def reshape(self, shape):
+def reshape(self, *shape):
     """Return a tensor with the same data but a different shape.
 
     Parameters
     ----------
-    shape : Sequence[int]
+    shape : Union[Sequence[int], int...]
         The new shape.
 
     Returns
@@ -2081,15 +2126,15 @@ def reshape(self, shape):
     `torch.reshape(...)`_
 
     """
-    return array_ops.reshape(self, shape)
+    return array_ops.reshape(self, nest.flatten(shape))
 
 
-def reshape_(self, shape):
+def reshape_(self, *shape):
     """Change into a new shape with the same data.
 
     Parameters
     ----------
-    shape : Sequence[int]
+    shape : Union[Sequence[int], int...]
         The new shape.
 
     Returns
@@ -2102,7 +2147,7 @@ def reshape_(self, shape):
     `torch.reshape(...)`_
 
     """
-    return array_ops.reshape(self, shape, self)
+    return array_ops.reshape(self, nest.flatten(shape), self)
 
 
 def roll(self, shifts, dims=None):
@@ -2253,7 +2298,7 @@ def scatter_(self, dim, index, src, reduce=None):
         if reduce == 'add':
             return self.scatter_add_(dim, index, src)
         elif reduce == 'multiply':
-            to_mul = init_ops.ones_like(self, self.dtype, device=self.device)
+            to_mul = constant_ops.ones_like(self, self.dtype, device=self.device)
             with grad_mode.no_grad():
                 to_mul.scatter_(dim, index, src)
             return math_ops.mul(self, to_mul, self)
@@ -2328,7 +2373,7 @@ def setitem(self, key, value):
     else:
         _, value = constant_ops.remove_scalars(self, value)
         starts, sizes = _process_index(key)
-        return FunctionLib.apply(
+        return Function.apply(
             'Assign', self.device, [self, value], outputs=[self],
             ndim=len(starts), starts=starts, sizes=sizes)
 
@@ -2419,7 +2464,7 @@ def sort(self, dim=-1, descending=False):
     `torch.sort(...)`_
 
     """
-    return array_ops.sort(self, dim, descending)
+    return sort_ops.sort(self, dim, descending)
 
 
 def split(self, split_size_or_sections, dim=0, copy=True):
@@ -2431,13 +2476,13 @@ def split(self, split_size_or_sections, dim=0, copy=True):
         The number or size of chunks.
     dim : int, optional, default=0
         The dimension to split.
+    copy : bool, optional, default=True
+        Copy or create the views of input.
 
     Returns
     -------
     Sequence[dragon.vm.torch.Tensor]
         The output tensors.
-    copy : bool, optional, default=True
-        Copy or create the views of input.
 
     See Also
     --------
@@ -2481,6 +2526,24 @@ def sqrt_(self):
 
     """
     return math_ops.sqrt(self, self)
+
+
+def square(self):
+    r"""Compute the square of input.
+
+    .. math:: \text{out} = \text{self}^{2}
+
+    Returns
+    -------
+    dragon.vm.torch.Tensor
+        The output tensor.
+
+    See Also
+    --------
+    `torch.square(...)`_
+
+    """
+    return math_ops.square(self)
 
 
 def squeeze(self, dim=None):
@@ -2545,7 +2608,7 @@ def sum(self, dim=None, keepdim=False):
     `torch.sum(...)`_
 
     """
-    return array_ops.sum(self, dim, keepdim)
+    return math_ops.sum(self, dim, keepdim)
 
 
 def sub(self, other):
@@ -2618,7 +2681,7 @@ def topk(self, k, dim=-1, largest=True, sorted=True):
     `torch.topk(...)`_
 
     """
-    return array_ops.topk(self, k, dim, largest, sorted)
+    return sort_ops.topk(self, k, dim, largest, sorted)
 
 
 def transpose(self, dim0, dim1):
@@ -2797,7 +2860,30 @@ def _type(self, dtype=None):
     """
     if dtype is None:
         return self.dtype
-    return array_ops.cast(self, dtype)
+    return math_ops.cast(self, dtype)
+
+
+def unbind(self, dim=0, copy=True):
+    """Unpack to chunks along the given dimension.
+
+    Parameters
+    ----------
+    dim : int, optional, default=0
+        The dimension to unpack.
+    copy : bool, optional, default=True
+        Copy or create the views of input.
+
+    Returns
+    -------
+    Sequence[dragon.vm.torch.Tensor]
+        The output tensors.
+
+    See Also
+    --------
+    `torch.unbind(...)`_
+
+    """
+    return array_ops.unbind(self, dim, copy)
 
 
 def uniform_(self, low=0, high=1):
@@ -2819,7 +2905,7 @@ def uniform_(self, low=0, high=1):
 
     """
     size = self.size()
-    return FunctionLib.apply(
+    return Function.apply(
         'RandomUniform', self.device, [], outputs=[self],
         dtype=self.dtype, low=float(low), high=float(high),
         ndim=len(size), dims=size)
@@ -3016,6 +3102,7 @@ Tensor.half_ = half_
 Tensor.index_select = index_select
 Tensor.int = _int
 Tensor.int_ = _int_
+Tensor.isfinite = isfinite
 Tensor.isinf = isinf
 Tensor.isnan = isnan
 Tensor.le = le
@@ -3050,6 +3137,7 @@ Tensor.new_empty = new_empty
 Tensor.new_full = new_full
 Tensor.new_tensor = new_tensor
 Tensor.nonzero = nonzero
+Tensor.norm = norm
 Tensor.normal_ = normal_
 Tensor.permute = permute
 Tensor.permute_ = permute_
@@ -3075,6 +3163,7 @@ Tensor.sort = sort
 Tensor.sqrt = sqrt
 Tensor.sqrt_ = sqrt_
 Tensor.split = split
+Tensor.square = square
 Tensor.squeeze = squeeze
 Tensor.squeeze_ = squeeze_
 Tensor.sum = sum
@@ -3088,6 +3177,7 @@ Tensor.tril_ = tril_
 Tensor.triu = triu
 Tensor.triu_ = triu_
 Tensor.type = _type
+Tensor.unbind = unbind
 Tensor.uniform_ = uniform_
 Tensor.unique = unique
 Tensor.unsqueeze = unsqueeze

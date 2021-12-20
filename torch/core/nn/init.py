@@ -22,7 +22,7 @@ import math
 
 from dragon.core.util import math_util
 from dragon.vm.torch.core.autograd import grad_mode
-from dragon.vm.torch.core.ops import init_ops
+from dragon.vm.torch.core.ops import constant_ops
 
 
 def calculate_gain(nonlinearity, param=None):
@@ -145,7 +145,8 @@ def eye_(tensor):
     if tensor.ndimension() != 2:
         raise ValueError('Only tensors with 2 dimensions are supported.')
     with grad_mode.no_grad():
-        init_ops.eye(*tensor.shape, out=tensor, requires_grad=tensor.requires_grad)
+        constant_ops.eye(*tensor.shape, out=tensor,
+                         requires_grad=tensor.requires_grad)
     return tensor
 
 

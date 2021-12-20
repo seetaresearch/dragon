@@ -8,14 +8,15 @@ template <class Context>
 template <typename T>
 void ExpandOp<Context>::DoRunWithType() {
   auto &X = Input(0), *Y = Output(0);
-  SET_INPUT_SPEC(0);
+  Output("X_spec")->ReshapeLike(X);
 
   int num_dims;
   dims(0, &num_dims);
 
   vec64_t X_dims(num_dims), Y_dims;
-  for (int i = 0; i < num_dims; i++) {
-    X_dims[i] = dims(i);
+  for (int i = 0; i < num_dims; ++i) {
+    const auto new_dim = dims(i);
+    X_dims[i] = (new_dim < 0 ? X.dim(i - num_dims) : new_dim);
   }
 
   if (math::utils::IsBinaryBroadcast(X.dims(), X_dims, Y_dims)) {
@@ -41,21 +42,18 @@ void ExpandOp<Context>::RunOnDevice() {
 template <class Context>
 template <typename T>
 void ExpandGradientOp<Context>::DoRunWithType() {
-  auto &dY = Input(0), *dX = Output(0);
-  dX->ReshapeLike(INPUT_SPEC(0));
+  auto &dY = Input(0), *dX = Output(0)->ReshapeLike(Input("X_spec"));
 
-  vec32_t X_broadcast_axes, _;
-  vec32_t Y_dims(dY.dims().begin(), dY.dims().end());
-  math::utils::ComputeBinaryBroadcastAxes(
+  vec64_t X_broadcast_axes, _;
+  math::utils::ComputeBroadcastAxes(
       dX->dims(), dY.dims(), dY.dims(), X_broadcast_axes, _);
 
   if (X_broadcast_axes.empty()) {
     dX->CopyFrom(dY, ctx());
-    return; // Just copy the contents
   } else {
     math::ReduceSum(
-        Y_dims.size(),
-        Y_dims.data(),
+        dY.ndim(),
+        dY.dims().data(),
         X_broadcast_axes.size(),
         X_broadcast_axes.data(),
         1.f,

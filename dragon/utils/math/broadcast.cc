@@ -57,11 +57,10 @@ void _BroadcastBinaryFunc(
     const InputT* a,
     const InputT* b,
     OutputT* y) {
-  const auto count =
-      std::accumulate(y_dims, y_dims + num_dims, 1, std::multiplies<int64_t>());
+  const auto N = math::utils::Prod(num_dims, y_dims);
   vec64_t index(num_dims, 0);
   int64_t ai, bi;
-  for (int yi = 0; yi < count; ++yi) {
+  for (int yi = 0; yi < N; ++yi) {
     ai = bi = 0;
     for (int d = num_dims - 1; d >= 0; --d) {
       ai += index[d] * a_strides[d];
@@ -486,16 +485,15 @@ DEFINE_BROADCAST_BINARY_FUNC(Maximum, T, math::MaxFunctor);
       const T* x,                                                            \
       T* y,                                                                  \
       CPUContext* ctx) {                                                     \
-    int rows, cols, broadcast_1st;                                           \
+    int64_t rows, cols, broadcast_1st;                                       \
     vec64_t X_dims(x_dims, x_dims + x_ndim);                                 \
     vec64_t Y_dims(y_dims, y_dims + y_ndim);                                 \
     vec64_t X_broadcast_dims, Y_broadcast_dims;                              \
-    math::utils::ComputeBinaryBroadcastDims(                                 \
+    math::utils::ComputeBroadcastDims(                                       \
         X_dims, Y_dims, X_broadcast_dims, Y_broadcast_dims);                 \
     if (X_broadcast_dims == Y_broadcast_dims) {                              \
-      auto count = std::accumulate(                                          \
-          x_dims, x_dims + x_ndim, 1, std::multiplies<int64_t>());           \
-      Copy(count, x, y, ctx);                                                \
+      const auto N = math::utils::Prod(x_ndim, x_dims);                      \
+      Copy(N, x, y, ctx);                                                    \
       return;                                                                \
     }                                                                        \
     if (math::utils::IsRowwiseBroadcast(X_dims, Y_dims, &rows, &cols)) {     \
@@ -509,14 +507,13 @@ DEFINE_BROADCAST_BINARY_FUNC(Maximum, T, math::MaxFunctor);
       return;                                                                \
     }                                                                        \
     vec64_t X_broadcast_strides, _;                                          \
-    math::utils::ComputeBinaryBroadcastStrides(                              \
+    math::utils::ComputeBroadcastStrides(                                    \
         X_dims, Y_dims, X_broadcast_strides, _, _);                          \
     const int num_dims = Y_dims.size();                                      \
-    const auto count = std::accumulate(                                      \
-        Y_dims.begin(), Y_dims.end(), 1, std::multiplies<int64_t>());        \
+    const auto N = math::utils::Prod(Y_dims);                                \
     vec64_t idx(num_dims, 0);                                                \
     int64_t xi;                                                              \
-    for (int yi = 0; yi < count; ++yi) {                                     \
+    for (int yi = 0; yi < N; ++yi) {                                         \
       xi = 0;                                                                \
       for (int d = num_dims - 1; d >= 0; --d) {                              \
         xi += idx[d] * X_broadcast_strides[d];                               \
@@ -547,16 +544,15 @@ DEFINE_SET_FUNC(double);
       const InputT* b,                                                     \
       OutputT* y,                                                          \
       CPUContext* ctx) {                                                   \
-    int rows, cols, broadcast_1st;                                         \
+    int64_t rows, cols, broadcast_1st;                                     \
     vec64_t A_dims(a_dims, a_dims + a_ndim);                               \
     vec64_t B_dims(b_dims, b_dims + b_ndim);                               \
     vec64_t A_broadcast_dims, B_broadcast_dims;                            \
-    math::utils::ComputeBinaryBroadcastDims(                               \
+    math::utils::ComputeBroadcastDims(                                     \
         A_dims, B_dims, A_broadcast_dims, B_broadcast_dims);               \
     if (A_broadcast_dims == B_broadcast_dims) {                            \
-      auto count = std::accumulate(                                        \
-          a_dims, a_dims + a_ndim, 1, std::multiplies<int64_t>());         \
-      name(count, a, b, y, ctx);                                           \
+      const auto N = math::utils::Prod(a_ndim, a_dims);                    \
+      name(N, a, b, y, ctx);                                               \
       return;                                                              \
     }                                                                      \
     if (math::utils::IsRowwiseBroadcast(                                   \
@@ -578,7 +574,7 @@ DEFINE_SET_FUNC(double);
       return;                                                              \
     }                                                                      \
     vec64_t A_broadcast_strides, B_broadcast_strides, Y_dims;              \
-    math::utils::ComputeBinaryBroadcastStrides(                            \
+    math::utils::ComputeBroadcastStrides(                                  \
         A_dims, B_dims, A_broadcast_strides, B_broadcast_strides, Y_dims); \
     _Broadcast##name(                                                      \
         Y_dims.size(),                                                     \
@@ -760,33 +756,28 @@ DEFINE_BINARY_FUNC(GreaterEqual, bool);
     vec64_t A_broadcast_dims, B_broadcast_dims, C_broadcast_dims;            \
     vec64_t A_broadcast_strides, B_broadcast_strides, C_broadcast_strides;   \
     vec64_t Y_dims, _, __;                                                   \
-    math::utils::ComputeBinaryBroadcastStrides(A_dims, B_dims, _, _, __);    \
-    math::utils::ComputeBinaryBroadcastStrides(C_dims, __, _, _, Y_dims);    \
-    math::utils::ComputeBinaryBroadcastDims(                                 \
-        A_dims, Y_dims, A_broadcast_dims, _);                                \
-    math::utils::ComputeBinaryBroadcastDims(                                 \
-        B_dims, Y_dims, B_broadcast_dims, _);                                \
-    math::utils::ComputeBinaryBroadcastDims(                                 \
-        C_dims, Y_dims, C_broadcast_dims, _);                                \
+    math::utils::ComputeBroadcastStrides(A_dims, B_dims, _, _, __);          \
+    math::utils::ComputeBroadcastStrides(C_dims, __, _, _, Y_dims);          \
+    math::utils::ComputeBroadcastDims(A_dims, Y_dims, A_broadcast_dims, _);  \
+    math::utils::ComputeBroadcastDims(B_dims, Y_dims, B_broadcast_dims, _);  \
+    math::utils::ComputeBroadcastDims(C_dims, Y_dims, C_broadcast_dims, _);  \
     if (A_broadcast_dims == B_broadcast_dims &&                              \
         B_broadcast_dims == C_broadcast_dims) {                              \
-      auto count = std::accumulate(                                          \
-          a_dims, a_dims + a_ndim, 1, std::multiplies<int64_t>());           \
-      Where(count, a, b, c, y, ctx);                                         \
+      const auto N = math::utils::Prod(a_ndim, a_dims);                      \
+      Where(N, a, b, c, y, ctx);                                             \
       return;                                                                \
     }                                                                        \
-    math::utils::ComputeBinaryBroadcastStrides(                              \
+    math::utils::ComputeBroadcastStrides(                                    \
         A_dims, Y_dims, A_broadcast_strides, _, _);                          \
-    math::utils::ComputeBinaryBroadcastStrides(                              \
+    math::utils::ComputeBroadcastStrides(                                    \
         B_dims, Y_dims, B_broadcast_strides, _, _);                          \
-    math::utils::ComputeBinaryBroadcastStrides(                              \
+    math::utils::ComputeBroadcastStrides(                                    \
         C_dims, Y_dims, C_broadcast_strides, _, _);                          \
     const int num_dims = Y_dims.size();                                      \
-    const auto count = std::accumulate(                                      \
-        Y_dims.begin(), Y_dims.end(), 1, std::multiplies<int64_t>());        \
+    const auto N = math::utils::Prod(Y_dims);                                \
     vec64_t idx(num_dims, 0);                                                \
     int64_t ai, bi, ci;                                                      \
-    for (int yi = 0; yi < count; ++yi) {                                     \
+    for (int yi = 0; yi < N; ++yi) {                                         \
       ai = bi = ci = 0;                                                      \
       for (int d = num_dims - 1; d >= 0; --d) {                              \
         ai += idx[d] * A_broadcast_strides[d];                               \

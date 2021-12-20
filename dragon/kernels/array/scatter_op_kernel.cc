@@ -16,8 +16,7 @@ void _ScatterElements(
     const int64_t* y_strides,
     const int64_t* index,
     T* y) {
-  const auto N =
-      std::accumulate(dims, dims + num_dims, 1, std::multiplies<int64_t>());
+  const auto N = math::utils::Prod(num_dims, dims);
   vec64_t dim_index(num_dims, 0);
   for (int i = 0; i < N; ++i) {
     int64_t yi = 0;
@@ -39,8 +38,7 @@ void _ScatterElements(
     const int64_t* index,
     const T* x,
     T* y) {
-  const auto N =
-      std::accumulate(dims, dims + num_dims, 1, std::multiplies<int64_t>());
+  const auto N = math::utils::Prod(num_dims, dims);
   vec64_t dim_index(num_dims, 0);
   for (int i = 0; i < N; ++i) {
     int64_t xi = 0, yi = 0;
@@ -63,8 +61,7 @@ void _ScatterAdd(
     const int64_t* index,
     const T* x,
     AccT* y) {
-  const auto N =
-      std::accumulate(dims, dims + num_dims, 1, std::multiplies<int64_t>());
+  const auto N = math::utils::Prod(num_dims, dims);
   vec64_t dim_index(num_dims, 0);
   for (int i = 0; i < N; ++i) {
     int64_t xi = 0, yi = 0;

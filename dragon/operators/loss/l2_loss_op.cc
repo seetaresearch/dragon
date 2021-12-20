@@ -1,5 +1,5 @@
+#include "dragon/operators/loss/l2_loss_op.h"
 #include "dragon/core/workspace.h"
-#include "dragon/operators/loss/l2_loss_ops.h"
 #include "dragon/utils/math_functions.h"
 #include "dragon/utils/op_kernels.h"
 
@@ -8,113 +8,101 @@ namespace dragon {
 template <class Context>
 template <typename T>
 void L2LossOp<Context>::DoRunWithType() {
-  auto &X = Input(0), *Y = Output(0);
+  auto &X = Input(0), *L = Output(0);
 
+  const auto N = X.count();
   for (int i = 1; i < InputSize(); i++) {
-    CHECK_EQ(X.count(), Input(i).count())
+    CHECK_EQ(Input(i).count(), N)
         << "\nTensor(" << Input(i).name() << ") takes the "
         << "dimensions of " << Input(i).DimString() << ", "
         << "while " << X.DimString() << " is required.";
   }
 
-  // Allocate a temporal error buffer
-  auto* x_error = ctx()->workspace()->template data<T, Context>({X.count()})[0];
+  auto* scratch = ctx()->workspace()->template data<T, Context>(N);
 
-  // Compute the error of inputs
   if (InputSize() > 1) {
-    SET_INPUT_SPEC(1);
     math::Sub(
-        X.count(),
+        N,
         X.template data<T, Context>(),
         Input(1).template data<T, Context>(),
-        x_error,
+        scratch,
         ctx());
+    math::Square(N, scratch, scratch, ctx());
   } else {
-    math::Copy(X.count(), X.template data<T, Context>(), x_error, ctx());
+    math::Square(N, X.template data<T, Context>(), scratch, ctx());
   }
 
-  // Compute the square error
-  math::Square(X.count(), x_error, x_error, ctx());
-
-  // Reduction
+  // Reduction.
   if (reduction_ == "NONE") {
     math::Copy(
-        X.count(),
-        x_error,
-        Y->ReshapeLike(X)->template mutable_data<T, Context>(),
+        N,
+        scratch,
+        L->ReshapeLike(X)->template mutable_data<T, Context>(),
         ctx());
   } else {
     int64_t normalizer = 1;
     if (reduction_ == "BATCH_MEAN") {
       normalizer *= X.dim(0);
     } else if (reduction_ == "MEAN") {
-      normalizer *= X.count();
+      normalizer *= N;
     }
     kernels::ReduceLoss(
-        X.count(),
+        N,
         0,
         normalizer,
-        x_error,
+        scratch,
         (T*)nullptr,
-        Y->Reshape({})->template mutable_data<T, Context>(),
+        L->Reshape({})->template mutable_data<T, Context>(),
         ctx());
   }
-}
-
-template <class Context>
-void L2LossOp<Context>::RunOnDevice() {
-  DispatchHelper<dtypes::Floating>::Call(this, Input(0));
 }
 
 template <class Context>
 template <typename T>
 void L2LossGradientOp<Context>::DoRunWithType() {
-  auto &X = Input(0), &dY = Input(-1), *dX = Output(0);
+  auto &X = Input(0), &dL = Input(-1);
+  auto* dX = Output(0)->ReshapeLike(X);
 
-  auto* dy = dY.template data<T, Context>();
+  const auto N = X.count();
   auto* dx = dX->template mutable_data<T, Context>();
 
-  // Compute the error of inputs
   if (InputSize() > 2) {
     math::Sub(
-        dX->count(),
+        N,
         X.template data<T, Context>(),
         Input(1).template data<T, Context>(),
         dx,
         ctx());
   } else {
-    math::Copy(dX->count(), X.template data<T, Context>(), dx, ctx());
+    math::Copy(N, X.template data<T, Context>(), dx, ctx());
   }
 
-  // Gradient w.r.t. the first input
+  // Gradient w.r.t. the first input.
   if (reduction_ == "NONE") {
-    math::Mul(dX->count(), dy, dx, dx, ctx());
-    math::Scale(dX->count(), 2.f, dx, dx, ctx());
+    math::Mul(N, dL.template data<T, Context>(), dx, dx, ctx());
+    math::Scale(N, 2.f, dx, dx, ctx());
   } else {
     int64_t normalizer = 1;
     if (reduction_ == "BATCH_MEAN") {
-      normalizer *= dX->dim(0);
+      normalizer *= X.dim(0);
     } else if (reduction_ == "MEAN") {
-      normalizer *= dX->count();
+      normalizer *= N;
     }
     kernels::ReduceLossGrad(
-        dX->count(), 0, float(normalizer) * 0.5f, dy, (T*)nullptr, dx, ctx());
-  }
-
-  // Gradient w.r.t. the second input
-  if (OutputSize() > 1 && Output(1)->has_name()) {
-    math::Neg(
-        dX->count(),
+        N,
+        0,
+        float(normalizer) * 0.5f,
+        dL.template data<T, Context>(),
+        (T*)nullptr,
         dx,
-        Output(1)->ReshapeLike(Input(1))->template mutable_data<T, Context>(),
         ctx());
   }
-}
 
-template <class Context>
-void L2LossGradientOp<Context>::RunOnDevice() {
-  Output(0)->ReshapeLike(Input(0));
-  DispatchHelper<dtypes::Floating>::Call(this, Input(0));
+  // Gradient w.r.t. the second input.
+  if (OutputSize() > 1 && Output(1)->has_name()) {
+    auto* dY = Output(1)->ReshapeLike(Input(1));
+    math::Neg(N, dx, dY->template mutable_data<T, Context>(), ctx());
+  }
 }
 
 DEPLOY_CPU_OPERATOR(L2Loss);
@@ -128,15 +116,15 @@ DEPLOY_CUDA_OPERATOR(L2LossGradient);
 #endif
 
 OPERATOR_SCHEMA(L2Loss)
-    /* X, T */
+    /* X, Y */
     .NumInputs(1, 2)
-    /* Y */
+    /* L */
     .NumOutputs(1);
 
 OPERATOR_SCHEMA(L2LossGradient)
-    /* X, T, dY */
+    /* X, Y, dL */
     .NumInputs(2, 3)
-    /* dX, dT */
+    /* dX, dY */
     .NumOutputs(1, 2);
 
 REGISTER_GRADIENT(L2Loss, GenericGradientMaker);

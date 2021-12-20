@@ -76,7 +76,7 @@ vm.tensorflow
   : Return a tensor of ones with shape as the other.
 
   `one_hot(...) <tensorflow/one_hot.html>`_
-  : Return the one-hot representation for input.
+  : Return the one-hot representation of input.
 
   `pad(...) <tensorflow/pad.html>`_
   : Pad the input according to the given sizes.
@@ -119,6 +119,9 @@ vm.tensorflow
 
   `unique_with_counts(...) <tensorflow/unique_with_counts.html>`_
   : Return the unique elements of input with counts.
+
+  `unstack(...) <tensorflow/unstack.html>`_
+  : Unpack input into chunks along the given axis.
 
   `zeros(...) <tensorflow/zeros.html>`_
   : Return a tensor filled with zeros.
@@ -166,6 +169,7 @@ vm.tensorflow
   tensorflow/transpose
   tensorflow/unique
   tensorflow/unique_with_counts
+  tensorflow/unstack
   tensorflow/zeros
   tensorflow/zeros_like
 

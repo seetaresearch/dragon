@@ -110,8 +110,8 @@ def clip_args(**kwargs):
 @register('Collective')
 def collective_args(**kwargs):
     return {
-        'communication': kwargs.get('communication', ''),
-        'operation': kwargs.get('operation', 'MEAN'),
+        'operation': kwargs.get('operation', ''),
+        'reduction': kwargs.get('reduction', 'MEAN'),
         'root': kwargs.get('root', 0),
         'comm': kwargs.get('comm', 0),
         'group': kwargs.get('group', 0),
@@ -417,7 +417,8 @@ def range_args(**kwargs):
     return {'dtype': kwargs.get('dtype', 'int64'), 'slice_desc': 'float64'}
 
 
-@register(['ReduceMax', 'ReduceMin', 'ReduceMean', 'ReduceSum', 'Moments'])
+@register(['ReduceMax', 'ReduceMin', 'ReduceMean', 'ReduceSum',
+           'ReduceL1', 'ReduceL2', 'Moments'])
 def reduce_args(**kwargs):
     return {
         'axes': kwargs.get('axes', None),
@@ -566,8 +567,8 @@ def split_args(**kwargs):
     return {
         'axis': kwargs.get('axis', 0),
         'copy': kwargs.get('copy', True),
-        'size_splits': kwargs.get('size_splits', None),
-        'slice_points': kwargs.get('slice_points', None),
+        'keepdims': kwargs.get('keepdims', True),
+        'split_desc': 'int64' if kwargs.get('num_splits', 0) > 0 else None,
     }
 
 
@@ -629,10 +630,11 @@ def unsqueeze_args(**kwargs):
     return {'axes': kwargs.get('axes', [0])}
 
 
-@register(['AdamUpdate',
-           'AdamWUpdate',
-           'RMSpropUpdate',
-           'SGDUpdate',
-           'NesterovUpdate'])
+@register(['Adam',
+           'AdamW',
+           'RMSprop',
+           'MomentumSGD',
+           'NesterovSGD',
+           'LARS'])
 def update_args(**kwargs):
     return {'no_grad': True, 'weight_decay': kwargs.get('weight_decay', None)}

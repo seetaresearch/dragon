@@ -21,7 +21,7 @@ import numpy
 
 from dragon.core.autograph import backprop
 from dragon.core.autograph import context as eager_context
-from dragon.core.autograph import function_impl
+from dragon.core.autograph import function_lib
 from dragon.core.framework import context
 from dragon.core.util import nest
 from dragon.core.util import serialization
@@ -136,8 +136,6 @@ class Net(object):
                     blobs = []
                     for blob in layer.blobs:
                         blobs.append(Blob(blob['data'], blob['diff']))
-                        if 'decay_mult' in blob:
-                            blobs[-1].decay_mult = blob['decay_mult']
                     self._param_dict[layer.name] = blobs
         return self._param_dict
 
@@ -246,7 +244,7 @@ class Net(object):
         layer_param.phase = phase_dict[self._phase]
         return True
 
-    @function_impl.function
+    @function_lib.function
     def _compute_outputs(self, **kwargs):
         """Compute network outputs."""
         return [self.blobs[key].data for key in self.outputs]

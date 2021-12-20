@@ -73,7 +73,7 @@ def fetch_argument(op_def, arg, ws):
     desc = arg if isinstance(arg, bytes) else arg.s
     if sys.version_info >= (3, 0):
         desc = desc.decode('utf-8')
-    desc = desc.replace('$HANDLE', op_def.name)
+    desc = desc.replace('$NAME', op_def.name)
     value = ws.get_tensor(desc).ToNumpy()
     if value.size == 1:
         return value.flatten()[0]

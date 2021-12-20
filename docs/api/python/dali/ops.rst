@@ -24,6 +24,12 @@ vm.dali.ops
   `class CoinFlip <ops/CoinFlip.html>`_
   : Sample values from a bernoulli distribution.
 
+  `class ColorSpaceConversion <ops/ColorSpaceConversion.html>`_
+  : Convert the color space of image.
+
+  `class ColorTwist <ops/ColorTwist.html>`_
+  : Adjust the hue, saturation and brightness of image.
+
   `class Contrast <ops/Contrast.html>`_
   : Adjust the contrast of image.
 
@@ -35,6 +41,9 @@ vm.dali.ops
 
   `class ExternalSource <ops/Cast.html>`_
   : Create a placeholder providing data from feeding.
+
+  `class GaussianBlur <ops/GaussianBlur.html>`_
+  : Apply gaussian blur to image.
 
   `class Hsv <ops/Hsv.html>`_
   : Adjust the hue and saturation of image.
@@ -93,10 +102,13 @@ vm.dali.ops
   ops/BrightnessContrast
   ops/Cast
   ops/CoinFlip
+  ops/ColorSpaceConversion
+  ops/ColorTwist
   ops/Contrast
   ops/CropMirrorNormalize
   ops/Erase
   ops/ExternalSource
+  ops/GaussianBlur
   ops/Hsv
   ops/ImageDecoder
   ops/ImageDecoderRandomCrop

@@ -22,7 +22,7 @@ PROTOC_EXECUTABLE=${THRID_PARTY_DIR}/protobuf/x86_64/bin/protoc
 # Build protoc at the host architecture
 if [ ! -f ${PROTOC_EXECUTABLE} ]; then
   echo "Build protoc at the host arch."
-  cd ${THRID_PARTY_DIR}/protobuf/protobuf-3.9.1 && rm -rf build && mkdir build && cd build
+  cd ${THRID_PARTY_DIR}/protobuf/protobuf-3.9.2 && rm -rf build && mkdir build && cd build
   cmake -Dprotobuf_BUILD_TESTS=OFF                                \
         -DCMAKE_BUILD_TYPE=Release                                \
         -DCMAKE_POSITION_INDEPENDENT_CODE=ON                      \
@@ -34,7 +34,7 @@ fi
 # Build protobuf at the target architecture
 if [ ! -d ${PROTOBUF_DIR} ]; then
   echo "Build protobuf at the target arch."
-  cd ${THRID_PARTY_DIR}/protobuf/protobuf-3.9.1 && rm -rf build && mkdir build && cd build
+  cd ${THRID_PARTY_DIR}/protobuf/protobuf-3.9.2 && rm -rf build && mkdir build && cd build
   cmake -DANDROID_ABI="arm64-v8a"                \
         -DANDROID_CPP_FEATURES="rtti exceptions" \
         -DANDROID_LINKER_FLAGS="-landroid -llog" \

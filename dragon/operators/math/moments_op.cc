@@ -10,14 +10,14 @@ void MomentsOp<Context>::DoRunWithType() {
   using OutputT = typename math::AccmulatorType<T>::type;
   auto &X = Input(0), *Y1 = Output(0), *Y2 = Output(1);
 
-  // Determine the reduce axes
-  vec64_t Y_dims(X.dims()), Y_shape;
-  vec32_t X_dims(Y_dims.begin(), Y_dims.end());
-  vec32_t reduce_axes(axes_.begin(), axes_.end());
+  // Compute reduce axes.
+  vec64_t Y_dims(X.dims()), Y_shape(X.dims());
+  vec64_t reduce_axes(axes_.begin(), axes_.end());
   if (axes_.empty()) {
     reduce_axes.resize(X.ndim());
-    for (int i = 0; i < X.ndim(); ++i)
+    for (int i = 0; i < X.ndim(); ++i) {
       reduce_axes[i] = i;
+    }
   }
   for (int i = 0; i < reduce_axes.size(); ++i) {
     auto axis = reduce_axes[i];
@@ -26,12 +26,13 @@ void MomentsOp<Context>::DoRunWithType() {
         << "\nExcepted the axis in [-" << X.ndim() << ", " << X.ndim()
         << "), got " << axis << ".";
     Y_dims[axis] = 1;
+    Y_shape[axis] = keep_dims_ ? 1 : -1;
   }
 
-  // Squeeze the output shape if necessary
-  for (int i = 0; i < X.ndim(); ++i) {
-    if (keep_dims_ || Y_dims[i] != 1) Y_shape.push_back(Y_dims[i]);
-  }
+  // Squeeze output shape.
+  const auto& erase_iter = std::remove_if(
+      Y_shape.begin(), Y_shape.end(), [](int64_t x) { return x == -1; });
+  Y_shape.erase(erase_iter, Y_shape.end());
 
   if (X.count() == 1) {
     math::Cast(
@@ -46,8 +47,8 @@ void MomentsOp<Context>::DoRunWithType() {
         ctx());
   } else {
     kernels::Moments(
-        X_dims.size(),
-        X_dims.data(),
+        X.ndim(),
+        X.dims().data(),
         reduce_axes.size(),
         reduce_axes.data(),
         X.template data<T, Context>(),
@@ -55,11 +56,6 @@ void MomentsOp<Context>::DoRunWithType() {
         Y2->Reshape(Y_shape)->template mutable_data<OutputT, Context>(),
         ctx());
   }
-}
-
-template <class Context>
-void MomentsOp<Context>::RunOnDevice() {
-  DispatchHelper<dtypes::Numerical>::Call(this, Input(0));
 }
 
 DEPLOY_CPU_OPERATOR(Moments);

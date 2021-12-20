@@ -8,10 +8,10 @@ template <class Context>
 template <typename T>
 void RollOp<Context>::DoRunWithType() {
   auto &X = Input(0), *Y = Output(0);
-  auto* X_ref = Buffer("X_ref")->ReshapeLike(X);
-  if (axes_.empty()) X_ref->Reshape({X.count()});
+  auto& X_spec = *Output("X_spec")->ReshapeLike(X);
+  if (axes_.empty()) X_spec.Reshape({X.count()});
 
-  int num_shifts, num_dims = X_ref->ndim();
+  int num_shifts, num_dims = X_spec.ndim();
   vec64_t X_shifts(num_dims, 0);
   shifts(0, &num_shifts);
 
@@ -30,13 +30,14 @@ void RollOp<Context>::DoRunWithType() {
       X_shifts[axis] += shifts(i);
     }
   }
-  Buffer("X_shifts")->template CopyFrom<int64_t>(X_shifts);
+
+  Output("X_shifts")->template CopyFrom<int64_t>(X_shifts);
 
   kernels::Roll(
       num_dims,
       X_shifts.data(),
-      X_ref->strides().data(),
-      X_ref->dims().data(),
+      X_spec.strides().data(),
+      X_spec.dims().data(),
       X.template data<T, Context>(),
       Y->ReshapeLike(X)->template mutable_data<T, Context>(),
       ctx());
@@ -46,19 +47,19 @@ template <class Context>
 template <typename T>
 void RollGradientOp<Context>::DoRunWithType() {
   auto &dY = Input(0), *dX = Output(0);
-  auto* X_ref = Buffer("X_ref");
+  auto& X_spec = Input("X_spec");
 
   vec64_t Y_shifts;
-  Buffer("X_shifts")->template CopyTo<int64_t>(Y_shifts);
+  Input("X_shifts").template CopyTo<int64_t>(Y_shifts);
   for (int i = 0; i < Y_shifts.size(); ++i) {
     Y_shifts[i] *= -1; // Reverse the shifts.
   }
 
   kernels::Roll(
-      X_ref->ndim(),
+      X_spec.ndim(),
       Y_shifts.data(),
-      X_ref->strides().data(),
-      X_ref->dims().data(),
+      X_spec.strides().data(),
+      X_spec.dims().data(),
       dY.template data<T, Context>(),
       dX->ReshapeLike(dY)->template mutable_data<T, Context>(),
       ctx());

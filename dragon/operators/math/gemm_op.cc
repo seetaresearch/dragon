@@ -10,11 +10,11 @@ void GemmOp<Context>::DoRunWithType() {
   auto &A = Input(0), &B = Input(1), *Y = Output(0);
   const auto A_axis = A.axis(-1), B_axis = B.axis(-1);
 
-  // Check matrix A
+  // Check matrix A.
   auto M = transA_ ? A.count(A_axis) : A.count(0, A_axis);
   auto K = transA_ ? A.count(0, A_axis) : A.count(A_axis);
 
-  // Check matrix B
+  // Check matrix B.
   auto N = transB_ ? B.count(0, B_axis) : B.count(B_axis);
   auto K2 = transB_ ? B.count(B_axis) : B.count(0, B_axis);
   if (transB_) {
@@ -37,7 +37,7 @@ void GemmOp<Context>::DoRunWithType() {
     Y_dims.push_back(N);
   }
 
-  // Copy matrix C to Y if provided
+  // Copy matrix C to Y if provided.
   if (InputSize() > 2) {
     auto& C = Input(2);
     if (math::utils::IsBinaryBroadcast(Y_dims, C.dims(), Y_dims)) {
@@ -81,7 +81,7 @@ void GemmGradientOp<Context>::DoRunWithType() {
   auto *dA = Output(0), *dB = Output(1), *dC = Output(2);
   const auto A_axis = A.axis(-1), B_axis = B.axis(-1);
 
-  // Check matrix A/B
+  // Check matrix A/B.
   auto M = transA_ ? A.count(A_axis) : A.count(0, A_axis);
   auto K = transA_ ? A.count(0, A_axis) : A.count(A_axis);
   auto N = transB_ ? B.count(0, B_axis) : B.count(B_axis);
@@ -155,15 +155,34 @@ void GemmGradientOp<Context>::DoRunWithType() {
           dY.template data<T, Context>(),
           dC->ReshapeLike(C)->template mutable_data<T, Context>(),
           ctx());
+    } else if (C.ndim() == 1 && C.count() == N) {
+      auto* Z = ctx()->workspace()->CreateTensor("Ones");
+      if (Z->count() < M) {
+        math::Set(
+            M,
+            convert::To<T>(1.f),
+            Z->Reshape({M})->template mutable_data<T, Context>(),
+            ctx());
+      }
+      math::Gemv(
+          CblasTrans,
+          M,
+          N,
+          1.f,
+          dY.template data<T, Context>(),
+          Z->template mutable_data<T, Context>(),
+          0.f,
+          dC->ReshapeLike(C)->template mutable_data<T, Context>(),
+          ctx());
     } else {
       vec32_t Y_axes, C_axes;
-      math::utils::ComputeBinaryBroadcastAxes(
+      math::utils::ComputeBroadcastAxes(
           dY.dims(), C.dims(), dY.dims(), Y_axes, C_axes);
       math::ReduceSum(
           dY.ndim(),
-          vec32_t{dY.dims().begin(), dY.dims().end()}.data(),
+          dY.dims().data(),
           C_axes.size(),
-          C_axes.data(),
+          vec64_t({C_axes.begin(), C_axes.end()}).data(),
           beta_,
           dY.template data<T, Context>(),
           dC->ReshapeLike(C)->template mutable_data<T, Context>(),

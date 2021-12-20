@@ -15,138 +15,9 @@ from __future__ import division
 from __future__ import print_function
 
 from dragon.core.util import nest
-from dragon.vm.torch.core.autograd.function_impl import FunctionLib
+from dragon.vm.torch.core.autograd.function import Function
 from dragon.vm.torch.core.ops import constant_ops
-from dragon.vm.torch.core.ops import init_ops
 from dragon.vm.torch.core.tensor import Tensor
-
-
-def argmax(input, dim, keepdim=False, out=None):
-    """Return the index of maximum elements along the given dimension.
-
-    :attr:`dim` could be negative:
-
-    ```python
-    # A negative dimension is the last-k dimension
-    x = torch.tensor([[1, 2, 3], [4, 5, 6]])
-    print(torch.argmax(x, dim=1))
-    print(torch.argmax(x, dim=-1))  # Equivalent
-    ```
-
-    Parameters
-    ----------
-    input : dragon.vm.torch.Tensor
-        The input tensor.
-    dim : int
-        The dimension to reduce.
-    keepdim : bool, optional, default=False
-        Keep the reduced dimension or not.
-    out : dragon.vm.torch.Tensor, optional
-        The output tensor.
-
-    Returns
-    -------
-    dragon.vm.torch.Tensor
-        The index of maximum elements.
-
-    """
-    return FunctionLib.apply(
-        'ArgMax', input.device, [input], outputs=[out],
-        axis=dim, keepdims=keepdim)
-
-
-def argmin(input, dim, keepdim=False, out=None):
-    """Return the index of minimum elements along the given dimension.
-
-    :attr:`dim` could be negative:
-
-    ```python
-    # A negative dimension is the last-k dimension
-    x = torch.tensor([[1, 2, 3], [4, 5, 6]])
-    print(torch.argmin(x, dim=1))
-    print(torch.argmin(x, dim=-1))  # Equivalent
-    ```
-
-    Parameters
-    ----------
-    input : dragon.vm.torch.Tensor
-        The input tensor.
-    dim : int, optional
-        The dimension to reduce.
-    keepdim : bool, optional, default=False
-        Keep the reduced dimension or not.
-    out : dragon.vm.torch.Tensor, optional
-        The output tensor.
-
-    Returns
-    -------
-    dragon.vm.torch.Tensor
-        The index of minimum elements.
-
-    """
-    return FunctionLib.apply(
-        'ArgMin', input.device, [input], outputs=[out],
-        axis=dim, keepdims=keepdim)
-
-
-def argsort(input, dim=-1, descending=False):
-    """Return the index of sorted elements along the given dimension.
-
-    :attr:`dim` could be negative:
-
-    ```python
-    # A negative dimension is the last-k dimension
-    x = torch.tensor([[1, 2, 3], [3, 2, 1]])
-    index1 = torch.argsort(x, dim=1)
-    index2 = torch.argsort(x, dim=-1)  # Equivalent
-    ```
-
-    Use :attr:`descending` to sort in the descending order:
-
-    ```python
-    x = torch.tensor([1, 2, 3])
-    index1 = torch.argsort(-x, descending=False)
-    index2 = torch.argsort(x, descending=True)  # Equivalent
-    ```
-
-    Parameters
-    ----------
-    input : dragon.vm.torch.Tensor
-        The input tensor.
-    dim : int, optional, default=-1
-         The dimension to sort.
-    descending : bool, optional, default=False
-        Sort in the descending order or not.
-
-    Returns
-    -------
-    dragon.vm.torch.Tensor
-        The output tensor.
-
-    """
-    return sort(input, dim, descending)[1]
-
-
-def cast(input, dtype='float32', out=None):
-    """Cast the data type of input.
-
-    Parameters
-    ----------
-    input : dragon.vm.torch.Tensor
-        The input.
-    dtype : str, optional, default='float32'
-        The data type to cast to.
-    out : dragon.vm.torch.Tensor, optional
-        The output tensor.
-
-    Returns
-    -------
-    dragon.vm.torch.Tensor
-        The output tensor.
-
-    """
-    return FunctionLib.apply(
-        'Cast', input.device, [input], outputs=[out], dtype=dtype)
 
 
 def cat(tensors, dim=0, out=None):
@@ -167,7 +38,7 @@ def cat(tensors, dim=0, out=None):
         The output tensor.
 
     """
-    return FunctionLib.apply(
+    return Function.apply(
         'Concat', tensors[0].device, tensors, outputs=[out], axis=dim)
 
 
@@ -195,7 +66,7 @@ def channel_affine(input, weight, bias=None, dim=-1, end_dim=None, out=None):
         The output tensor.
 
     """
-    return FunctionLib.apply(
+    return Function.apply(
         'ChannelAffine', input.device,
         [input, weight] + ([bias] if bias else []), outputs=[out],
         axis=dim, end_axis=end_dim)
@@ -244,7 +115,7 @@ def channel_normalize(input, mean, std, dim=-1, dtype='float32', dims=None):
         The output tensor.
 
     """
-    return FunctionLib.apply(
+    return Function.apply(
         'ChannelNormalize', input.device, [input],
         axis=dim, mean=mean, std=std, dtype=dtype,
         ndim=len(dims) if dims is not None else 0, perm=dims)
@@ -286,40 +157,9 @@ def chunk(tensor, chunks, dim=0, copy=True):
         The output tensors.
 
     """
-    return FunctionLib.apply(
+    return Function.apply(
         'Split', tensor.device, [tensor], outputs=[None] * chunks,
-        axis=dim, size_split=None, copy=copy)
-
-
-def cumsum(input, dim, out=None):
-    """Compute the cumulative sum of elements along the given dimension.
-
-    :attr:`dim` could be negative:
-
-    ```python
-    # A negative dimension is the last-k dimension
-    x = torch.tensor([[1, 2, 3], [4, 5, 6]])
-    print(torch.cumsum(x, dim=1))  # [[1, 3, 6], [4, 9, 15]]
-    print(torch.cumsum(x, dim=-1))  # Equivalent
-    ```
-
-    Parameters
-    ----------
-    input : dragon.vm.torch.Tensor
-        The input tensor.
-    dim : int
-        The cumulative dimension.
-    out : dragon.vm.torch.Tensor, optional
-        The output tensor.
-
-    Returns
-    -------
-    dragon.vm.torch.Tensor
-        The output tensor.
-
-    """
-    return FunctionLib.apply(
-        'CumSum', input.device, [input], outputs=[out], axis=dim)
+        axis=dim, num_splits=0, copy=copy)
 
 
 def broadcast_to(input, shape):
@@ -356,7 +196,7 @@ def broadcast_to(input, shape):
         The output tensor.
 
     """
-    return FunctionLib.apply(
+    return Function.apply(
         'Expand', input.device, [input], ndim=len(shape), dims=shape)
 
 
@@ -389,7 +229,7 @@ def flatten(input, start_dim=0, end_dim=-1, out=None):
         The output tensor.
 
     """
-    return FunctionLib.apply(
+    return Function.apply(
         'Flatten', input.device, [input], outputs=[out],
         axis=start_dim, end_axis=end_dim)
 
@@ -423,7 +263,7 @@ def flip(input, dims):
         The output tensor.
 
     """
-    return FunctionLib.apply(
+    return Function.apply(
         'Reverse', input.device, [input],
         axes=nest.flatten(dims) if dims is not None else dims)
 
@@ -509,7 +349,7 @@ def gather(input, dim, index, out=None):
         The output tensor.
 
     """
-    return FunctionLib.apply(
+    return Function.apply(
         'GatherElements', input.device, [input, index],
         outputs=[out], axis=dim)
 
@@ -553,7 +393,7 @@ def index_select(input, dim, index, out=None):
     dims.sort()
     if dims[-1] != (dims[0] + len(dims) - 1):
         raise ValueError('<dim> should be a continuous sequence.')
-    return FunctionLib.apply(
+    return Function.apply(
         'Gather', input.device, [input, index], outputs=[out],
         axis=dims[0], end_axis=dims[-1])
 
@@ -579,8 +419,8 @@ def masked_fill(input, mask, value, out=None):
 
     """
     if not isinstance(value, Tensor):
-        value = constant_ops.get_scalar(value, input.dtype, input.device)
-    return FunctionLib.apply(
+        value = constant_ops.scalar(value, input.dtype, input.device)
+    return Function.apply(
         'Where', input.device, [mask, value, input], outputs=[out])
 
 
@@ -602,140 +442,8 @@ def masked_select(input, mask, out=None):
         The output tensor.
 
     """
-    return FunctionLib.apply(
+    return Function.apply(
         'BooleanMask', input.device, [input, mask], outputs=[out])
-
-
-def max(input, dim=None, keepdim=False, out=None):
-    """Compute the max value of elements along the given dimension.
-
-    :attr:`dim` could be negative or ``None``:
-
-    ```python
-    x = torch.tensor([[1, 2, 3], [4, 5, 6]])
-
-    # A negative dimension is the last-k dimension
-    print(torch.max(x, dim=1))
-    print(torch.max(x, dim=-1))  # Equivalent
-
-    # If dimension is None, reduce input as a vector
-    # and return a scalar result
-    print(torch.max(x))  # 6
-
-    # Also, dimension could be a sequence of integers
-    print(torch.max(x, (0, 1)))  # 6
-    ```
-
-    Parameters
-    ----------
-    input : dragon.vm.torch.Tensor
-        The input tensor.
-    dim : Union[int, Sequence[int]], optional
-        The dimension to reduce.
-    keepdim : bool, optional, default=False
-        Keep the reduced dimension or not.
-    out : dragon.vm.torch.Tensor, optional
-        The output tensor.
-
-    Returns
-    -------
-    dragon.vm.torch.Tensor
-        The output tensor.
-
-    """
-    keepdim = keepdim if dim is not None else False
-    dim = nest.flatten(dim) if dim is not None else dim
-    return FunctionLib.apply(
-        'ReduceMax', input.device, [input], outputs=[out],
-        axes=dim, keepdims=keepdim)
-
-
-def mean(input, dim=None, keepdim=False, out=None):
-    """Compute the mean value of elements along the given dimension.
-
-    :attr:`dim` could be negative or ``None``:
-
-    ```python
-    x = torch.tensor([[1., 2., 3.], [4., 5., 6.]])
-
-    # A negative dimension is the last-k dimension
-    print(torch.mean(x, dim=1))
-    print(torch.mean(x, dim=-1))  # Equivalent
-
-    # If dimension is None, reduce input as a vector
-    # and return a scalar result
-    print(torch.mean(x))  # 3.5
-
-    # Also, dimension could be a sequence of integers
-    print(torch.mean(x, dim=(0, 1)))  # 3.5
-    ```
-
-    Parameters
-    ----------
-    input : dragon.vm.torch.Tensor
-        The input tensor.
-    dim : Union[int, Sequence[int]], optional
-        The dimension to reduce.
-    keepdim : bool, optional, default=False
-        Keep the reduced dimension or not.
-    out : dragon.vm.torch.Tensor, optional
-        The output tensor.
-
-    Returns
-    -------
-    dragon.vm.torch.Tensor
-        The output tensor.
-
-    """
-    keepdim = keepdim if dim is not None else False
-    dim = nest.flatten(dim) if dim is not None else dim
-    return FunctionLib.apply(
-        'ReduceMean', input.device, [input], outputs=[out],
-        axes=dim, keepdims=keepdim)
-
-
-def min(input, dim=None, keepdim=False, out=None):
-    """Compute the min value of elements along the given dimension.
-
-    :attr:`dim` could be negative or ``None``:
-
-    ```python
-    x = torch.tensor([[1, 2, 3], [4, 5, 6]])
-
-    # A negative dimension is the last-k dimension
-    print(torch.min(x, dim=1))
-    print(torch.min(x, dim=-1))  # Equivalent
-
-    # If dimension is None, reduce input as a vector
-    # and return a scalar result
-    print(torch.min(x))  # 1
-
-    # Also, dimension could be a sequence of integers
-    print(torch.min(x, (0, 1)))  # 1
-    ```
-
-    Parameters
-    ----------
-    input : dragon.vm.torch.Tensor
-        The input tensor.
-    dim : Union[int, Sequence[int]], optional
-        The dimension to reduce.
-    keepdim : bool, optional, default=False
-        Keep the reduced dimension or not.
-    out : dragon.vm.torch.Tensor, optional
-        The output tensor.
-
-    Returns
-    -------
-    dragon.vm.torch.Tensor
-        The output tensor.
-
-    """
-    keepdim = keepdim if dim is not None else False
-    dim = nest.flatten(dim) if dim is not None else dim
-    return FunctionLib.apply(
-        'ReduceMin', input.device, [input], outputs=[out],
-        axes=dim, keepdims=keepdim)
 
 
 def multinomial(input, num_samples, out=None):
@@ -763,7 +471,7 @@ def multinomial(input, num_samples, out=None):
         The output tensor.
 
     """
-    return FunctionLib.apply(
+    return Function.apply(
         'Multinomial', input.device, [input], outputs=[out],
         sample_size=num_samples)
 
@@ -791,7 +499,7 @@ def narrow(input, dimension, start, length):
     sizes = list(input.shape[:])
     starts = [0] * len(sizes)
     starts[dimension], sizes[dimension] = start, length
-    return FunctionLib.apply(
+    return Function.apply(
         'Slice', input.device, [input], ndim=len(starts),
         starts=starts, sizes=sizes)
 
@@ -814,53 +522,7 @@ def nonzero(input, out=None):
         The output tensor.
 
     """
-    return FunctionLib.apply('NonZero', input.device, [input], outputs=[out])
-
-
-def one_hot(input, depth, on_value=1, off_value=0):
-    r"""Return the one-hot representation for input.
-
-    .. math::
-        \text{out}_{ij} =
-            \begin{cases}
-                0, & \text{ if } \text{input}_{i} \neq j \\
-                1, & \text{ otherwise }
-            \end{cases}
-
-    The max value of input, i.e., the :attr:`depth` should be specified:
-
-    ```python
-    index = torch.tensor([0, 1, 2, 3])
-    print(torch.one_hot(index, depth=5))  # depth >= 4 will be ok
-    ```
-
-    Use :attr:`on_value` or :attr:`off_value` custom filling:
-
-    ```python
-    index = torch.tensor([0, 1, 2, 3])
-    print(torch.one_hot(index, depth=4, on_value=2, off_value=3))
-    ```
-
-    Parameters
-    ----------
-    input : dragon.vm.torch.Tensor
-        The input tensor.
-    depth : int
-        The depth of channels.
-    on_value : number, optional, default=1
-        The value for equal branch.
-    off_value : number, optional, default=0
-        The value for not-equal branch.
-
-    Returns
-    -------
-    dragon.vm.torch.Tensor
-        The output tensor.
-
-    """
-    return FunctionLib.apply(
-        'OneHot', input.device, [input], depth=depth,
-        on_value=float(on_value), off_value=float(off_value))
+    return Function.apply('NonZero', input.device, [input], outputs=[out])
 
 
 def permute(input, dims, out=None):
@@ -881,7 +543,7 @@ def permute(input, dims, out=None):
         The output tensor.
 
     """
-    return FunctionLib.apply(
+    return Function.apply(
         'Transpose', input.device, [input], outputs=[out],
         ndim=len(dims), perm=dims)
 
@@ -902,7 +564,7 @@ def tile(input, reps):
         The output tensor.
 
     """
-    return FunctionLib.apply(
+    return Function.apply(
         'Tile', input.device, [input], ndim=len(reps), repeats=reps)
 
 
@@ -941,7 +603,7 @@ def reshape(input, shape, out=None):
         The output tensor.
 
     """
-    return FunctionLib.apply(
+    return Function.apply(
         'Reshape', input.device, [input], outputs=[out],
         ndim=len(shape), dims=shape)
 
@@ -983,7 +645,7 @@ def roll(input, shifts, dims=None):
     """
     shifts = nest.flatten(shifts)
     dims = nest.flatten(dims) if dims is not None else dims
-    return FunctionLib.apply(
+    return Function.apply(
         'Roll', input.device, [input],
         num_shifts=len(shifts), shifts=shifts, axes=dims)
 
@@ -1026,9 +688,9 @@ def scatter(input, dim, index, src, out=None):
 
     """
     if not isinstance(src, Tensor):
-        src = init_ops.full_like(
+        src = constant_ops.full_like(
             index, src, dtype=input.dtype, device=input.device)
-    return FunctionLib.apply(
+    return Function.apply(
         'ScatterElements', input.device, [input, index, src],
         outputs=[out], axis=dim)
 
@@ -1071,52 +733,11 @@ def scatter_add(input, dim, index, src, out=None):
 
     """
     if not isinstance(src, Tensor):
-        src = init_ops.full_like(
+        src = constant_ops.full_like(
             index, src, dtype=input.dtype, device=input.device)
-    return FunctionLib.apply(
+    return Function.apply(
         'ScatterAdd', input.device, [input, index, src],
         outputs=[out], axis=dim)
-
-
-def sort(input, dim=-1, descending=False, out=None):
-    """Return the sorted elements along the given dimension.
-
-    By default, the last dimension is chosen:
-
-    ```python
-    x = torch.tensor([[1, 2, 3], [3, 2, 1]])
-    value1, index1 = torch.sort(x)
-    value2, index2 = torch.sort(x, dim=1)  # Equivalent
-    ```
-
-    Sort in the descending order if ``descending`` is ``True``:
-
-    ```python
-    x = torch.tensor([1, 2, 3])
-    _, index1 = torch.sort(-x)
-    _, index2 = torch.sort(x, descending=True)  # Equivalent
-    ```
-
-    Parameters
-    ----------
-    input : dragon.vm.torch.Tensor
-        The input tensor.
-    dim : int, optional, default=-1
-         The dimension to sort elements.
-    descending : bool, optional, default=False
-        Sort in the descending order or not.
-    out : Sequence[dragon.vm.torch.Tensor], optional
-        The optional output value and index.
-
-    Returns
-    -------
-    Sequence[dragon.vm.torch.Tensor]
-        The value and index tensor.
-
-    """
-    return FunctionLib.apply(
-        'Sort', input.device, [input],
-        outputs=out if out else [None, None], axis=dim, descending=descending)
 
 
 def split(tensor, split_size_or_sections, dim=0, copy=True):
@@ -1135,7 +756,7 @@ def split(tensor, split_size_or_sections, dim=0, copy=True):
     :attr:`dim` can be negative:
 
     ```python
-    x = torch.tensor([[1, 2], [3, 4], [5, 6]])
+    x = torch.tensor([[1, 2, 3], [4, 5, 6]])
     print(torch.split(x, 2, dim=1))
     print(torch.split(x, 2, dim=-1))  # Equivalent
     ```
@@ -1158,8 +779,8 @@ def split(tensor, split_size_or_sections, dim=0, copy=True):
 
     """
     if nest.is_sequence(split_size_or_sections):
-        num_splits = len(split_size_or_sections)
         size_splits = split_size_or_sections
+        num_splits = len(split_size_or_sections)
     else:
         size = tensor.shape[dim]
         if size % split_size_or_sections == 0:
@@ -1169,9 +790,9 @@ def split(tensor, split_size_or_sections, dim=0, copy=True):
             num_splits = size // split_size_or_sections + 1
             size_splits = [split_size_or_sections] * num_splits
             size_splits[-1] = size - (split_size_or_sections * (num_splits - 1))
-    return FunctionLib.apply(
+    return Function.apply(
         'Split', tensor.device, [tensor], outputs=[None] * num_splits,
-        axis=dim, size_splits=size_splits, copy=copy)
+        axis=dim, num_splits=num_splits, split=size_splits, copy=copy)
 
 
 def squeeze(input, dim=None, out=None):
@@ -1210,7 +831,7 @@ def squeeze(input, dim=None, out=None):
         The new tensor.
 
     """
-    return FunctionLib.apply(
+    return Function.apply(
         'Squeeze', input.device, [input], outputs=[out],
         axes=None if dim is None else nest.flatten(dim))
 
@@ -1250,99 +871,8 @@ def stack(tensors, dim=0, out=None):
         The output tensor.
 
     """
-    return FunctionLib.apply(
+    return Function.apply(
         'Stack', tensors[0].device, tensors, outputs=[out], axis=dim)
-
-
-def sum(input, dim=None, keepdim=False, out=None):
-    """Compute the sum value of elements along the given dimension.
-
-    :attr:`dim` could be negative or ``None``:
-
-    ```python
-    x = torch.tensor([[1, 2, 3], [4, 5, 6]])
-
-    # A negative dimension is the last-k dimension
-    print(torch.sum(x, dim=1))
-    print(torch.sum(x, dim=-1))  # Equivalent
-
-    # If dimension is None, reduce input as a vector
-    # and return a scalar result
-    print(torch.sum(x))  # 21
-
-    # Also, dimension could be a sequence of integers
-    print(torch.sum(x, [0, 1]))  # 21
-    ```
-
-    Parameters
-    ----------
-    input : dragon.vm.torch.Tensor
-        The input tensor.
-    dim : Union[int, Sequence[int]], optional
-        The dimension to reduce.
-    keepdim : bool, optional, default=False
-        Keep the reduced dimension or not.
-    out : dragon.vm.torch.Tensor, optional
-        The output tensor.
-
-    Returns
-    -------
-    dragon.vm.torch.Tensor
-        The output tensor.
-
-    """
-    keepdim = keepdim if dim is not None else False
-    dim = nest.flatten(dim) if dim is not None else dim
-    return FunctionLib.apply(
-        'ReduceSum', input.device, [input], outputs=[out],
-        axes=dim, keepdims=keepdim)
-
-
-def topk(input, k, dim=-1, largest=True, sorted=True, out=None):
-    """Return the top-K largest or smallest elements along the given dimension.
-
-    :attr:`dim` could be negative:
-
-    ```python
-    # A negative dimension is the last-k dimension
-    x = torch.tensor([[1, 2, 3], [3, 2, 1]])
-    value1, index1 = torch.topk(x, k=2, dim=1)
-    value2, index2 = torch.topk(x, k=2, dim=-1)  # Equivalent
-    ```
-
-    If :attr:`largest` is ``False``, the k smallest elements are returned:
-
-    ```python
-    x = torch.tensor([1, 2, 3])
-    _, index1 = torch.topk(-x, 1, largest=True)
-    _, index2 = torch.topk(x, 1, largest=False)  # Equivalent
-    ```
-
-    Parameters
-    ----------
-    input : dragon.vm.torch.Tensor
-        The input tensor.
-    k : int
-        The number of top elements to select.
-    dim : int, optional, default=-1
-         The dimension to retrieve.
-    largest : bool, optional
-        Return largest or smallest elements.
-    sorted : bool, optional
-        Whether to return in the sorted order.
-    out : Sequence[dragon.vm.torch.Tensor], optional
-        The output value and index tensor.
-
-    Returns
-    -------
-    Sequence[dragon.vm.torch.Tensor]
-        The value and index tensor.
-
-    """
-    return FunctionLib.apply(
-        'TopK', input.device, [input],
-        outputs=out if out else (None, None),
-        k=k, axis=dim, largest=largest, sorted=sorted)
 
 
 def transpose(input, dim0, dim1, out=None):
@@ -1374,7 +904,7 @@ def transpose(input, dim0, dim1, out=None):
     """
     dims = list(range(input.ndimension()))
     dims[dim0], dims[dim1] = dims[dim1], dims[dim0]
-    return FunctionLib.apply(
+    return Function.apply(
         'Transpose', input.device, [input], outputs=[out],
         ndim=len(dims), perm=dims)
 
@@ -1411,7 +941,7 @@ def tril(input, diagonal=0, out=None):
         The output tensor.
 
     """
-    return FunctionLib.apply(
+    return Function.apply(
         'Trilu', input.device, [input], outputs=[out],
         k=diagonal, upper=False)
 
@@ -1448,9 +978,49 @@ def triu(input, diagonal=0, out=None):
         The output tensor.
 
     """
-    return FunctionLib.apply(
+    return Function.apply(
         'Trilu', input.device, [input], outputs=[out],
         k=diagonal, upper=True)
+
+
+def unbind(input, dim=0, copy=True):
+    """Unpack input into chunks along the given dimension.
+
+    The number of outputs is equal to the size of dimension:
+
+    ```python
+    x = torch.tensor([[1, 2, 3], [4, 5, 6]])
+    # Shape: (2, 3) -> (3,), (3,)
+    print(torch.unbind(x, dim=0))
+    ```
+
+    :attr:`dim` can be negative:
+
+    ```python
+    x = torch.tensor([[1, 2, 3], [4, 5, 6]])
+    # Shape: (2, 3) -> (2,), (2,), (2,)
+    print(torch.unbind(x, dim=-1))
+    ```
+
+    Parameters
+    ----------
+    input : dragon.vm.torch.Tensor
+        The input tensor.
+    dim : int, optional, default=0
+        The dimension to unpack.
+    copy : bool, optional, default=True
+        Copy or create the views of input.
+
+    Returns
+    -------
+    Sequence[dragon.vm.torch.Tensor]
+        The output tensors.
+
+    """
+    num_outputs = input.size(dim)
+    return Function.apply(
+        'Split', input.device, [input], outputs=[None] * num_outputs,
+        axis=dim, copy=copy, keepdims=False)
 
 
 def unique(input, return_inverse=False, return_counts=False, **kwargs):
@@ -1500,7 +1070,7 @@ def unique(input, return_inverse=False, return_counts=False, **kwargs):
         num_outputs += 1
     if return_counts:
         num_outputs += 1
-    return FunctionLib.apply(
+    return Function.apply(
         'Unique', input.device, [input], outputs=[None] * num_outputs,
         return_inverse=return_inverse, return_counts=return_counts)
 
@@ -1540,7 +1110,7 @@ def unsqueeze(input, dim, out=None):
         The new tensor.
 
     """
-    return FunctionLib.apply(
+    return Function.apply(
         'Unsqueeze', input.device, [input], outputs=[out],
         axes=None if dim is None else nest.flatten(dim))
 
@@ -1570,5 +1140,5 @@ def where(condition, x, y):
         The output tensor.
 
     """
-    return FunctionLib.apply(
+    return Function.apply(
         'Where', condition.device, [condition, x, y])

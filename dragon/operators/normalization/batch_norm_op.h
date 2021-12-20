@@ -41,14 +41,13 @@ class BatchNormOpBase : public GenericOpBase<Context> {
   void GetBaseArguments() {
     auto& X = Input(0);
     GET_OP_AXIS_ARG(axis, X.ndim(), -1);
-    // Set dimensions
-    N_ = X.dim(0);
-    C_ = X.dim(axis);
+    // Set dimensions.
+    N_ = X.dim(0), C_ = X.dim(axis);
     S_ = X.count() / N_ / C_;
-    // Set data format
+    // Set data format.
     this->data_format_ = "NCHW";
     if (axis + 1 == X.ndim()) this->data_format_ = "NHWC";
-    // Set training mode
+    // Set training mode.
     training_ = use_stats_ < 0 ? (phase() == "TRAIN" ? 1 : 0)
                                : (use_stats_ > 0 ? 0 : 1);
   }
@@ -57,7 +56,7 @@ class BatchNormOpBase : public GenericOpBase<Context> {
   double epsilon_;
   int64_t N_, C_, S_;
   int64_t use_stats_, sync_stats_;
-  int64_t training_, recomputing_;
+  int64_t training_;
 };
 
 #undef GenericOpBase
@@ -70,8 +69,7 @@ class BatchNormOpBase : public GenericOpBase<Context> {
   using BatchNormOpBase<Context>::N_;               \
   using BatchNormOpBase<Context>::C_;               \
   using BatchNormOpBase<Context>::S_;               \
-  using BatchNormOpBase<Context>::training_;        \
-  using BatchNormOpBase<Context>::recomputing_
+  using BatchNormOpBase<Context>::training_
 
 template <class Context>
 class BatchNormOp : public BatchNormOpBase<Context> {
@@ -86,20 +84,27 @@ class BatchNormOp : public BatchNormOpBase<Context> {
   USE_COLLECTIVE_FUNCTIONS;
 #endif
 
-  void RunOnDevice() override;
+  void Setup() override {
+    GetBaseArguments();
+    Output(0)->ReshapeLike(Input(0));
+  }
+
+  void RunOnDevice() override {
+    DispatchHelper<dtypes::Floating>::Call(this, Input(0));
+  }
 
   template <typename T>
-  void TrainingImpl();
+  void RunTraining();
 
   template <typename T>
-  void InferenceImpl();
+  void RunInference();
 
   template <typename T>
   void DoRunWithType() {
     if (training_) {
-      TrainingImpl<T>();
+      RunTraining<T>();
     } else {
-      InferenceImpl<T>();
+      RunInference<T>();
     }
   };
 
@@ -117,20 +122,27 @@ class BatchNormGradientOp : public BatchNormOpBase<Context> {
   USE_COLLECTIVE_FUNCTIONS;
 #endif
 
-  void RunOnDevice() override;
+  void Setup() override {
+    GetBaseArguments();
+    Output(0)->ReshapeLike(Input(0));
+  }
+
+  void RunOnDevice() override {
+    DispatchHelper<dtypes::Floating>::Call(this, Input(0));
+  }
 
   template <typename T>
-  void TrainingImpl();
+  void RunTraining();
 
   template <typename T>
-  void InferenceImpl();
+  void RunInference();
 
   template <typename T>
   void DoRunWithType() {
     if (training_) {
-      TrainingImpl<T>();
+      RunTraining<T>();
     } else {
-      InferenceImpl<T>();
+      RunInference<T>();
     }
   };
 };
@@ -157,7 +169,14 @@ class CuDNNBatchNormOp final : public BatchNormOpBase<Context> {
     CuDNNDestroyTensorDesc(&input_desc_);
   }
 
-  void RunOnDevice() override;
+  void Setup() override {
+    GetBaseArguments();
+    Output(0)->ReshapeLike(Input(0));
+  }
+
+  void RunOnDevice() override {
+    DispatchHelper<dtypes::Floating>::Call(this, Input(0));
+  }
 
   template <typename T>
   void DoRunWithType();
@@ -187,17 +206,24 @@ class CuDNNBatchNormGradientOp final : public BatchNormGradientOp<Context> {
     CuDNNDestroyTensorDesc(&input_desc_);
   }
 
-  void RunOnDevice() override;
+  void Setup() override {
+    GetBaseArguments();
+    Output(0)->ReshapeLike(Input(0));
+  }
+
+  void RunOnDevice() override {
+    DispatchHelper<dtypes::Floating>::Call(this, Input(0));
+  }
 
   template <typename T>
-  void TrainingImpl();
+  void RunTraining();
 
   template <typename T>
   void DoRunWithType() {
     if (training_) {
-      TrainingImpl<T>();
+      RunTraining<T>();
     } else {
-      this->template InferenceImpl<T>();
+      this->template RunInference<T>();
     }
   };
 

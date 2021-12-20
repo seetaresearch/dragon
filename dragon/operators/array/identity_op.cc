@@ -1,41 +1,18 @@
-#include "dragon/core/workspace.h"
-#include "dragon/operators/array/reshape_ops.h"
-#include "dragon/utils/math_functions.h"
+#include "dragon/operators/array/reshape_op.h"
 
 namespace dragon {
 
-template <class Context>
-void IdentityOp<Context>::RunOnDevice() {
-  auto &X = Input(0), *Y = Output(0, {0});
-  SET_INPUT_SPEC(0);
-  Y->ReshapeLike(X)->CopyFrom(X, ctx());
-}
-
 DEPLOY_CPU_OPERATOR(Identity);
+REGISTER_CPU_OPERATOR(IdentityGradient, IdentityOp<CPUContext>);
 #ifdef USE_CUDA
 DEPLOY_CUDA_OPERATOR(Identity);
+REGISTER_CUDA_OPERATOR(IdentityGradient, IdentityOp<CUDAContext>);
 #endif
 
-DEPLOY_CPU_OPERATOR(IdentityGradient);
-#ifdef USE_CUDA
-DEPLOY_CUDA_OPERATOR(IdentityGradient);
-#endif
-
-OPERATOR_SCHEMA(Identity)
-    /* X */
-    .NumInputs(1)
-    /* Y */
-    .NumOutputs(1)
-    /* X => Y */
-    .AllowInplace({{0, 0}});
-
-OPERATOR_SCHEMA(IdentityGradient)
-    /* dY */
-    .NumInputs(1)
-    /* dX */
-    .NumOutputs(1)
-    /* dY => dX */
-    .AllowInplace({{0, 0}});
+OPERATOR_SCHEMA(Identity).AllowInplace([](int, int) -> bool { return true; });
+OPERATOR_SCHEMA(IdentityGradient).AllowInplace([](int, int) -> bool {
+  return true;
+});
 
 REGISTER_GRADIENT(Identity, SimpleGradientMaker);
 

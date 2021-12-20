@@ -1,5 +1,5 @@
 #include "dragon/core/workspace.h"
-#include "dragon/operators/loss/cross_entropy_loss_ops.h"
+#include "dragon/operators/loss/cross_entropy_loss_op.h"
 #include "dragon/utils/math_functions.h"
 #include "dragon/utils/op_kernels.h"
 
@@ -13,8 +13,8 @@ void SigmoidCrossEntropyLossOp<Context>::DoRunWithType() {
   const auto N = X.count();
   CHECK_EQ(Y.count(), N) << "\nNumel of X and Y must be matched.";
 
-  auto scratches = ctx()->workspace()->template data<T, Context>({N, N + 1});
-  auto *loss = scratches[0], *mask = scratches[1];
+  auto* scratch = ctx()->workspace()->template data<T, Context>(N * 2 + 1);
+  auto *loss = scratch, *mask = scratch + N;
 
   kernels::SigmoidCrossEntropy(
       N,
@@ -56,7 +56,7 @@ void SigmoidCrossEntropyLossGradientOp<Context>::DoRunWithType() {
   const auto N = X.count();
   auto* dl = dL.template data<T, Context>();
   auto* dx = dX->template mutable_data<T, Context>();
-  auto* mask = ctx()->workspace()->template data<T, Context>({N + 1})[0];
+  auto* mask = ctx()->workspace()->template data<T, Context>(N + 1);
 
   kernels::SigmoidCrossEntropyGrad(
       N,

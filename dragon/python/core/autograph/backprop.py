@@ -20,9 +20,8 @@ from __future__ import print_function
 
 import contextlib
 
-from dragon.core.autograph import tape
 from dragon.core.autograph import context
-from dragon.core.framework import device_spec
+from dragon.core.framework import tapes
 from dragon.core.framework import workspace
 from dragon.core.framework.tensor import Tensor
 from dragon.core.util import nest
@@ -70,24 +69,24 @@ class GradientTape(object):
                 'once on non-persistent tapes.')
 
         # Stop recording if not persistent.
-        if self._recording:
-            if not self._persistent:
-                self._pop_tape()
+        if self._recording and not self._persistent:
+            self._pop_tape()
 
-        # Collect gradient info.
-        xs, ys, grad_ys = nest.flatten(sources), nest.flatten(target), []
+        # Check the gradient of outputs.
+        xs, ys = nest.flatten(sources), nest.flatten(target)
+        grad_ys = []
         if output_gradients is not None:
-            for tensor, grad_tensor in zip(ys, nest.flatten(output_gradients)):
-                if grad_tensor.shape != tensor.shape:
+            for y, grad_y in zip(ys, nest.flatten(output_gradients)):
+                if grad_y.shape != y.shape:
                     raise ValueError(
                         'Excepted the dimensions of output gradient is {}, '
-                        'got {}.'.format(tensor.shape, grad_tensor.shape))
-                grad_ys.append(grad_tensor)
+                        'got {}.'.format(y.shape, grad_y.shape))
+                grad_ys.append(grad_y)
 
-        # Record or execute the computation.
+        # Record or compute the gradient of inputs.
         execute_ws = workspace.get_workspace()
+        grad_xs = []
         if not context.executing_eagerly():
-            grad_xs = []
             for x in xs:
                 self._tape.add_source(x)
                 grad_xs.append(Tensor(
@@ -98,27 +97,26 @@ class GradientTape(object):
             for i, y in enumerate(ys):
                 y._grad_tape = self._tape
                 y._grad = grad_ys[i] if i < len(grad_ys) else None
-            if not self._persistent:
-                self._tape = None
-            return grad_xs
         else:
             execute_ws.run_backward(
+                op_defs=self._tape.get_elements(),
                 targets=[y.id for y in ys],
                 sources=[x.id for x in xs],
-                grad_targets=[dy.id for dy in grad_ys],
-                op_defs=self._tape.get_op_defs())
-            # Remove the tape.
-            if not self._persistent:
-                self._tape.release(execute_ws)
-                self._tape = None
-            # Pack the gradients.
-            return [self._get_grad(execute_ws, x) for x in xs]
+                grad_targets=[dy.id for dy in grad_ys])
+            for x in xs:
+                impl = execute_ws.get_tensor(x.id + '_grad')
+                grad_xs.append(Tensor(impl=impl) if impl else None)
+
+        # Remove tape if not persistent.
+        if not self._persistent:
+            self._release_tape(execute_ws)
+
+        return grad_xs
 
     def reset(self):
         """Destroy the tape and push a new one."""
         self._pop_tape()
-        self._tape.release()
-        self._tape = None
+        self._release_tape()
         self._push_tape()
 
     @contextlib.contextmanager
@@ -141,7 +139,6 @@ class GradientTape(object):
             The tensor to be traced.
 
         """
-        # Check the pushed tape.
         if self._tape is None:
             raise RuntimeError(
                 'GradientTape.gradient can only be called '
@@ -153,7 +150,7 @@ class GradientTape(object):
         """Pop the pushed tape."""
         if not self._recording:
             raise ValueError('Tape is not recording.')
-        tape.pop_tape()
+        tapes.pop_tape()
         self._recording = False
 
     def _push_tape(self):
@@ -161,22 +158,19 @@ class GradientTape(object):
         if self._recording:
             raise ValueError('Tape is already recording.')
         if self._tape is None:
-            self._tape = tape.Tape()
-        tape.push_new_tape(self._tape)
+            self._tape = tapes.Tape()
+        tapes.push_new_tape(self._tape)
         self._recording = True
 
-    @staticmethod
-    def _get_grad(execute_ws, source):
-        """Return the grad tensor of given source."""
-        impl = execute_ws.get_tensor(source.id + '_grad')
-        if impl is None:
-            return None
-        device = device_spec.DeviceSpec(*impl.device)
-        return Tensor(shape=None, impl=impl, device=device)
+    def _release_tape(self, execute_ws=None):
+        if self._tape is not None:
+            execute_ws = execute_ws or workspace.get_workspace()
+            for handle in self._tape.get_handles():
+                execute_ws.release_handle(handle)
+            self._tape = None
 
     def __del__(self):
-        if self._tape is not None:
-            self._tape.release()
+        self._release_tape()
 
     def __enter__(self):
         """Enter the tape into the stack."""

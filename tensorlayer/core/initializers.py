@@ -15,7 +15,8 @@ from __future__ import division
 from __future__ import print_function
 
 from dragon.core.autograph import context as eager_context
-from dragon.core.ops import init_ops
+from dragon.core.ops import constant_ops
+from dragon.core.ops import random_ops
 from dragon.core.util import six
 
 
@@ -65,7 +66,8 @@ class Constant(Initializer):
 
     def __call__(self, shape, dtype='float32', **kwargs):
         return self._apply(
-            init_ops.fill, value=self.value, shape=shape, dtype=dtype, **kwargs)
+            constant_ops.fill, value=self.value, shape=shape,
+            dtype=dtype, **kwargs)
 
 
 class GlorotNormal(Initializer):
@@ -86,7 +88,7 @@ class GlorotNormal(Initializer):
 
     def __call__(self, shape, dtype='float32', **kwargs):
         return self._apply(
-            init_ops.glorot_normal, mode=self.mode, scale=self.scale,
+            random_ops.glorot_normal, mode=self.mode, scale=self.scale,
             shape=shape, dtype=dtype, **kwargs)
 
 
@@ -109,7 +111,7 @@ class GlorotUniform(Initializer):
 
     def __call__(self, shape, dtype='float32', **kwargs):
         return self._apply(
-            init_ops.glorot_uniform, mode=self.mode, scale=self.scale,
+            random_ops.glorot_uniform, mode=self.mode, scale=self.scale,
             shape=shape, dtype=dtype, **kwargs)
 
 
@@ -122,7 +124,7 @@ class Ones(Initializer):
 
     def __call__(self, shape, dtype='float32', **kwargs):
         return self._apply(
-            init_ops.fill, value=1, shape=shape, dtype=dtype, **kwargs)
+            constant_ops.fill, value=1, shape=shape, dtype=dtype, **kwargs)
 
 
 class RandomNormal(Initializer):
@@ -143,7 +145,7 @@ class RandomNormal(Initializer):
 
     def __call__(self, shape, dtype='float32', **kwargs):
         return self._apply(
-            init_ops.random_normal, mean=self.mean, std=self.stddev,
+            random_ops.random_normal, mean=self.mean, std=self.stddev,
             shape=shape, dtype=dtype, **kwargs)
 
 
@@ -165,7 +167,7 @@ class RandomUniform(Initializer):
 
     def __call__(self, shape, dtype='float32', **kwargs):
         return self._apply(
-            init_ops.random_uniform, low=self.minval, high=self.maxval,
+            random_ops.random_uniform, low=self.minval, high=self.maxval,
             shape=shape, dtype=dtype, **kwargs)
 
 
@@ -187,7 +189,7 @@ class TruncatedNormal(Initializer):
 
     def __call__(self, shape, dtype='float32', **kwargs):
         return self._apply(
-            init_ops.truncated_normal, mean=self.mean, std=self.stddev,
+            random_ops.truncated_normal, mean=self.mean, std=self.stddev,
             shape=shape, dtype=dtype, **kwargs)
 
 
@@ -204,7 +206,7 @@ class Zeros(Initializer):
 
     def __call__(self, shape, dtype='float32', **kwargs):
         return self._apply(
-            init_ops.fill, value=0, shape=shape, dtype=dtype, **kwargs)
+            constant_ops.fill, value=0, shape=shape, dtype=dtype, **kwargs)
 
 
 def get(identifier):

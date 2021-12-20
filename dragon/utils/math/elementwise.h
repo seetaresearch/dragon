@@ -91,6 +91,9 @@ template <typename T, class Context>
 DRAGON_API void IsNaN(const int N, const T* x, bool* y, Context* ctx);
 
 template <typename T, class Context>
+DRAGON_API void IsFinite(const int N, const T* x, bool* y, Context* ctx);
+
+template <typename T, class Context>
 DRAGON_API void
 ReplaceNaN(const int N, const T value, const T* x, T* y, Context* ctx);
 

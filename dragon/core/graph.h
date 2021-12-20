@@ -25,7 +25,7 @@ class Workspace;
  */
 class DRAGON_API GraphBase {
  public:
-  /*! \brief Constructor with the def and workspace */
+  /*! \brief Constructor */
   GraphBase(const GraphDef& def, Workspace* ws);
 
   /*! \brief Destructor */
@@ -75,24 +75,27 @@ class DRAGON_API GraphBase {
 
   /*! \brief Return the parent workspace */
   Workspace* workspace() const {
-    return ws_;
+    return workspace_;
   }
 
  protected:
-  /*! \brief The name and executing phase */
-  string name_, phase_;
-
-  /*! \brief The defined arguments */
-  Map<string, const Argument*> args_;
-
-  /*! \brief The parent workspace */
-  Workspace* ws_;
-
-  /*! \brief The graph definition */
+  /*! \brief The graph def */
   GraphDef def_;
 
-  /*! \brief The optimized graph definition */
+  /*! \brief The optimized graph def */
   GraphDef optimized_def_;
+
+  /*! \brief The parent workspace */
+  Workspace* workspace_;
+
+  /*! \brief The graph name */
+  string name_;
+
+  /*! \brief The executing phase */
+  string phase_;
+
+  /*! \brief The arguments */
+  Map<string, const Argument*> args_;
 
   DISABLE_COPY_AND_ASSIGN(GraphBase);
 };
@@ -102,15 +105,8 @@ class DRAGON_API GraphBase {
  */
 class Graph : public GraphBase {
  public:
-  /*! \brief Constructor with the def and workspace */
+  /*! \brief Constructor */
   Graph(const GraphDef& def, Workspace* ws);
-
-  /*! \brief Destructor */
-  virtual ~Graph() {
-    for (auto* op : ops_) {
-      delete op;
-    }
-  }
 
   /*! \brief Create graph in the workspace */
   bool Create(const GraphDef& def) override;
@@ -122,11 +118,11 @@ class Graph : public GraphBase {
       const string& exclude = "") override;
 
  protected:
-  /*! \brief The created operators */
-  vector<OperatorBase*> ops_;
+  /*! \brief The operators */
+  vector<unique_ptr<OperatorBase>> operators_;
 
-  /*! \brief The output aliases */
-  Map<string, Set<string>> output_aliases_;
+  /*! \brief The output sourcing tensors */
+  Map<string, Set<string>> outputs_from_;
 };
 
 /* Macros */

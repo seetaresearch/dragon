@@ -1,35 +1,27 @@
-#include "dragon/core/workspace.h"
-#include "dragon/operators/array/reshape_ops.h"
+#include "dragon/operators/array/reshape_op.h"
 
 namespace dragon {
 
 template <class Context>
 void SqueezeOp<Context>::RunOnDevice() {
   auto &X = Input(0), *Y = Output(0, {0});
+  Output("X_spec")->ReshapeLike(X);
 
   vec64_t out_shape;
   for (int i = 0; i < X.ndim(); i++) {
-    bool removed = false;
     if (X.dim(i) == 1) {
-      removed = axes_.empty();
+      bool removed = axes_.empty();
       for (auto j : axes_) {
-        auto canonical_axis = j < 0 ? j + X.ndim() : j;
-        CHECK(canonical_axis >= 0) << "\nExcepted the axis in [-" << X.ndim()
-                                   << ", INT_MAX), got " << j << ".";
-        if (i == canonical_axis) {
-          removed = true;
-        }
+        auto axis = j < 0 ? j + X.ndim() : j;
+        CHECK(axis >= 0) << "\nExcepted the axis in [-" << X.ndim()
+                         << ", INT_MAX), got " << j << ".";
+        removed = (i == axis ? true : removed);
       }
+      if (removed) continue;
     }
-    if (!removed) {
-      out_shape.push_back(X.dim(i));
-    }
+    out_shape.push_back(X.dim(i));
   }
 
-  // Store for the gradient calculation
-  SET_INPUT_SPEC(0);
-
-  // Maybe copy the contents
   Y->Reshape(out_shape)->CopyFrom(X, ctx());
 }
 

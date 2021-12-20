@@ -1,5 +1,4 @@
 #include "dragon/operators/array/stack_op.h"
-#include "dragon/core/workspace.h"
 #include "dragon/utils/math_functions.h"
 
 namespace dragon {
@@ -7,71 +6,59 @@ namespace dragon {
 template <class Context>
 template <typename T>
 void StackOp<Context>::DoRunWithType() {
-  auto &X = Input(0), *Y = Output(0);
-  GET_OP_AXIS_ARG(axis, X.ndim() + 1, 0);
+  auto &X_ref = Input(0), *Y = Output(0);
+  GET_OP_AXIS_ARG(axis, X_ref.ndim() + 1, 0);
 
-  SET_INPUT_SPEC(0);
-  int num_stacks = InputSize();
-  vec64_t Y_dims(X.dims());
-  Y_dims.insert(Y_dims.begin() + axis, num_stacks);
-  for (int i = 1; i < num_stacks; ++i) {
-    CHECK_EQ(X.ndim(), Input(i).ndim())
+  vec64_t Y_dims(X_ref.dims());
+  Y_dims.insert(Y_dims.begin() + axis, InputSize());
+  for (int i = 1; i < InputSize(); ++i) {
+    auto& X = Input(i);
+    CHECK_EQ(X_ref.ndim(), X.ndim())
         << "\nAll inputs should have the same number of dimensions.";
     for (int j = 0; j < X.ndim(); ++j) {
-      CHECK_EQ(X.dim(j), Input(i).dim(j))
+      CHECK_EQ(X_ref.dim(j), X.dim(j))
           << "\nAll inputs should have the same dimensions.";
     }
-    SET_INPUT_SPEC(i);
   }
 
   Y->Reshape(Y_dims);
-  int64_t output_offset = 0;
-
-  for (int i = 0; i < num_stacks; i++) {
-    auto& Xi = Input(i);
+  int64_t copy_offset = 0;
+  for (int i = 0; i < InputSize(); ++i) {
+    auto& X = Input(i);
+    Output("X_spec:" + str::to(i))->ReshapeLike(X);
     math::CopyMatrix(
-        Xi.count(0, axis),
-        Xi.count(axis),
-        Xi.count(axis),
+        X.count(0, axis),
+        X.count(axis),
+        X.count(axis),
         Y->count(axis),
-        Xi.template data<T, Context>(),
-        Y->template mutable_data<T, Context>() + output_offset,
+        X.template data<T, Context>(),
+        Y->template mutable_data<T, Context>() + copy_offset,
         ctx());
-    output_offset += Xi.count(axis);
+    copy_offset += X.count(axis);
   }
-}
-
-template <class Context>
-void StackOp<Context>::RunOnDevice() {
-  DispatchHelper<dtypes::Generic>::Call(this, Input(0));
 }
 
 template <class Context>
 template <typename T>
 void StackGradientOp<Context>::DoRunWithType() {
-  auto &X_ref = INPUT_SPEC(0), &dY = Input(0);
+  auto &X_ref = Input("X_spec:0"), &dY = Input(0);
   GET_OP_AXIS_ARG(axis, X_ref.ndim() + 1, 0);
 
-  int64_t input_offset = 0;
+  int64_t copy_offset = 0;
   for (int i = 0; i < OutputSize(); ++i) {
-    auto &X = INPUT_SPEC(i), *dX = Output(i);
+    auto &X = Input("X_spec:" + str::to(i)), *dX = Output(i);
     if (dX->has_name()) {
       math::CopyMatrix(
           dY.count(0, axis),
           X.count(axis),
           dY.count(axis),
           X.count(axis),
-          dY.template data<T, Context>() + input_offset,
+          dY.template data<T, Context>() + copy_offset,
           dX->ReshapeLike(X)->template mutable_data<T, Context>(),
           ctx());
     }
-    input_offset += X.count(axis);
+    copy_offset += X.count(axis);
   }
-}
-
-template <class Context>
-void StackGradientOp<Context>::RunOnDevice() {
-  DispatchHelper<dtypes::Generic>::Call(this, Input(0));
 }
 
 DEPLOY_CPU_OPERATOR(Stack);

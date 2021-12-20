@@ -85,12 +85,8 @@ def normalize_paddings(value, rank):
     if isinstance(value, int):
         return ((value, value),) * rank
     elif nest.is_sequence(value):
-        if isinstance(value[0], int):
-            return normalize_tuple(value, rank)
-        elif nest.is_sequence(value[0]):
-            value = [normalize_tuple(v, 2) for v in value]
-            if len(value) > rank:
-                return (value[i] for i in range(rank))
-            else:
-                return tuple([value[i] for i in range(len(value))] +
-                             [value[-1] for _ in range(len(value), rank)])
+        value = [normalize_tuple(v, 2) for v in value]
+        if len(value) > rank:
+            return tuple(value[i] for i in range(rank))
+        return tuple([value[i] for i in range(len(value))] +
+                     [value[-1] for _ in range(len(value), rank)])

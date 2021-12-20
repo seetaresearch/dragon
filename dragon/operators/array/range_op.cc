@@ -1,5 +1,5 @@
 #include "dragon/core/workspace.h"
-#include "dragon/operators/array/initialize_ops.h"
+#include "dragon/operators/array/initialize_op.h"
 #include "dragon/utils/op_kernels.h"
 
 namespace dragon {

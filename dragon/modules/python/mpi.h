@@ -42,15 +42,14 @@ void RegisterModule_mpi(py::module& m) {
   /*! \brief Initialize the MPI environment */
   m.def("mpiInitialize", []() {
 #ifdef USE_MPI
-    // Enabling the multi-threads for Python is meaningless
-    // While we will still hold this interface here
+    // Enabling multi-threads for Python is meaningless.
     int thread_type;
     char* mt_is_required = nullptr;
-    mt_is_required = getenv("DRAGON_MPI_THREADS_ENABLE");
+    mt_is_required = getenv("DRAGON_MPI_THREAD_MULTIPLE");
     if (mt_is_required != nullptr && string(mt_is_required) == "1") {
       MPI_Init_thread(NULL, NULL, MPI_THREAD_MULTIPLE, &thread_type);
       CHECK_EQ(thread_type, MPI_THREAD_MULTIPLE)
-          << "\nRequire to enable <MPI_THREAD_MULTIPLE> support.";
+          << "\nFailed to initialize with <MPI_THREAD_MULTIPLE>.";
     } else {
       MPI_Init_thread(NULL, NULL, MPI_THREAD_SINGLE, &thread_type);
     }

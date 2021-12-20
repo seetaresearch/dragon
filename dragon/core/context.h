@@ -24,7 +24,7 @@ class Workspace;
  */
 class DRAGON_API CPUContext {
  public:
-  /*! \brief Default Constructor */
+  /*! \brief Constructor */
   CPUContext() : random_seed_(3) {}
 
   /*! \brief Constructor with the random seed */

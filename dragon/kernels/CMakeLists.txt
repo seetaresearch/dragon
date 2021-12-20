@@ -12,15 +12,19 @@ if (NOT BUILD_RUNTIME)
   add_subdirectory(training)
 endif()
 
-# ---[ Merge CUDA kernels to speed up compiling
+# ---[ Merge CUDA kernels
 if (USE_CUDA)
-  set(_gen_file ${CMAKE_CURRENT_BINARY_DIR}/../codegen/op_kernels.cu)
-  file(WRITE ${_gen_file} "")
-  foreach(_file ${KERNEL_CUDA_SOURCES})
-    file(STRINGS ${_file} tmp NEWLINE_CONSUME)
-    file(APPEND ${_gen_file} ${tmp} "\n")
-  endforeach()
-  set(MODULE_CUDA_SOURCES ${MODULE_CUDA_SOURCES} ${_gen_file})
+  if (MSVC)
+    set(_gen_file ${CMAKE_CURRENT_BINARY_DIR}/../kernels/op_kernels.cu)
+    file(WRITE ${_gen_file} "")
+    foreach(_file ${KERNEL_CUDA_SOURCES})
+      file(STRINGS ${_file} tmp NEWLINE_CONSUME)
+      file(APPEND ${_gen_file} ${tmp} "\n")
+    endforeach()
+    set(MODULE_CUDA_SOURCES ${MODULE_CUDA_SOURCES} ${_gen_file})
+  else()
+    set(MODULE_CUDA_SOURCES ${MODULE_CUDA_SOURCES} ${KERNEL_CUDA_SOURCES})
+  endif()
 endif()
 
 # ---[ Submit to the parent scope

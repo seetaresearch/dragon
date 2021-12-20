@@ -6,6 +6,9 @@ layers
   Classes
   -------
 
+  `class Activation <layers/Activation.html>`_
+  : Activation layer.
+
   `class Add <layers/Add.html>`_
   : Layer to add a sequence of inputs.
 
@@ -82,6 +85,10 @@ layers
   `class Layer <layers/Layer.html>`_
   : The base class of layers.
 
+  `class LayerNormalization <layers/LayerNormalization.html>`_
+  : Layer normalization layer.
+  `[Ba et.al, 2016] <https://arxiv.org/abs/1607.06450>`_
+
   `class LeakyReLU <layers/LeakyReLU.html>`_
   : Layer to apply the leaky rectified linear unit.
 
@@ -144,6 +151,7 @@ layers
 .. toctree::
   :hidden:
 
+  layers/Activation
   layers/Add
   layers/AveragePooling1D
   layers/AveragePooling2D
@@ -168,6 +176,7 @@ layers
   layers/GlobalMaxPool2D
   layers/GlobalMaxPool3D
   layers/Layer
+  layers/LayerNormalization
   layers/LeakyReLU
   layers/Maximum
   layers/MaxPool1D

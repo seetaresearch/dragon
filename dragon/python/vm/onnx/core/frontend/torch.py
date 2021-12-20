@@ -17,7 +17,7 @@ from __future__ import print_function
 import collections
 import numpy
 
-from dragon.core.autograph import tape
+from dragon.core.framework import tapes
 from dragon.core.framework import workspace
 from dragon.core.proto import dragon_pb2
 from dragon.core.util import nest
@@ -128,7 +128,8 @@ def export(
     execute_ws = workspace.Workspace()
     execute_ws.merge_from(workspace.get_workspace())
     with execute_ws.as_default():
-        with tape.GraphTape() as model_tape:
+        with tapes.Tape() as model_tape:
+            model_tape._exporting = True
             outputs = model(*args)
 
     # Process the outputs
@@ -158,7 +159,7 @@ def export(
             graph_def.output.extend([output_names[i]])
 
     # Add operators.
-    for op_def in model_tape.get_op_defs():
+    for op_def in model_tape.get_elements():
         ops_def.append(dragon_pb2.OperatorDef())
         ops_def[-1].ParseFromString(op_def.SerializeAs())
     graph_def.op.extend(ops_def)

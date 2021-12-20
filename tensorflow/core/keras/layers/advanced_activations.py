@@ -17,7 +17,7 @@ from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
 
-from dragon.vm.tensorflow.core.keras import activations
+from dragon.core.ops import activation_ops
 from dragon.vm.tensorflow.core.keras.engine.base_layer import Layer
 
 
@@ -57,11 +57,8 @@ class ELU(Layer):
         self.inplace = kwargs.get('inplace', False)
 
     def call(self, inputs):
-        return activations.elu(
-            inputs,
-            alpha=self.alpha,
-            inplace=self.inplace,
-        )
+        return activation_ops.elu(
+            inputs, alpha=self.alpha, inplace=self.inplace)
 
 
 class LeakyReLU(Layer):
@@ -100,11 +97,8 @@ class LeakyReLU(Layer):
         self.inplace = kwargs.get('inplace', False)
 
     def call(self, inputs):
-        return activations.relu(
-            inputs,
-            alpha=self.alpha,
-            inplace=self.inplace,
-        )
+        return activation_ops.leaky_relu(
+            inputs, alpha=self.alpha, inplace=self.inplace)
 
 
 class ReLU(Layer):
@@ -146,12 +140,8 @@ class ReLU(Layer):
         self.inplace = kwargs.get('inplace', False)
 
     def call(self, inputs):
-        return activations.relu(
-            inputs,
-            alpha=self.negative_slope,
-            max_value=self.max_value,
-            inplace=self.inplace,
-        )
+        return activation_ops.leaky_relu(
+            inputs, alpha=self.negative_slope, inplace=self.inplace)
 
 
 class SELU(Layer):
@@ -180,7 +170,7 @@ class SELU(Layer):
         self.inplace = kwargs.get('inplace', False)
 
     def call(self, inputs):
-        return activations.selu(inputs, inplace=self.inplace)
+        return activation_ops.selu(inputs, inplace=self.inplace)
 
 
 class Softmax(Layer):
@@ -213,8 +203,5 @@ class Softmax(Layer):
         self.inplace = kwargs.get('inplace', False)
 
     def call(self, inputs):
-        return activations.softmax(
-            inputs,
-            axis=self.axis,
-            inplace=self.inplace,
-        )
+        return activation_ops.softmax(
+            inputs, axis=self.axis, inplace=self.inplace)

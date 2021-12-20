@@ -20,7 +20,9 @@
 #include "dragon/utils/math/functional.h"
 #include "dragon/utils/math/random.h"
 #include "dragon/utils/math/reduce.h"
+#include "dragon/utils/math/sort.h"
 #include "dragon/utils/math/transpose.h"
+#include "dragon/utils/math/types.h"
 #include "dragon/utils/math/utils.h"
 
 #endif // DRAGON_UTILS_MATH_FUNCTIONS_H_

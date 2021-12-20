@@ -18,7 +18,7 @@ from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
 
-from dragon.core.ops import init_ops
+from dragon.core.ops import constant_ops
 
 
 def eye(num_rows, num_columns=None, dtype='float32', name=None):
@@ -50,4 +50,4 @@ def eye(num_rows, num_columns=None, dtype='float32', name=None):
         The output tensor.
 
     """
-    return init_ops.eye(num_rows, num_columns, dtype=dtype, name=name)
+    return constant_ops.eye(num_rows, num_columns, dtype=dtype, name=name)

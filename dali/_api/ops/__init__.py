@@ -20,13 +20,17 @@ from dragon.vm.dali.core.ops.decoder_ops import ImageDecoder
 from dragon.vm.dali.core.ops.decoder_ops import ImageDecoderRandomCrop
 from dragon.vm.dali.core.ops.generic_ops import Cast
 from dragon.vm.dali.core.ops.generic_ops import Erase
+from dragon.vm.dali.core.ops.generic_ops import Flip
 from dragon.vm.dali.core.ops.generic_ops import Pad
 from dragon.vm.dali.core.ops.generic_ops import Reshape
 from dragon.vm.dali.core.ops.generic_ops import Slice
 from dragon.vm.dali.core.ops.image_ops import Brightness
 from dragon.vm.dali.core.ops.image_ops import BrightnessContrast
 from dragon.vm.dali.core.ops.image_ops import Contrast
+from dragon.vm.dali.core.ops.image_ops import ColorSpaceConversion
+from dragon.vm.dali.core.ops.image_ops import ColorTwist
 from dragon.vm.dali.core.ops.image_ops import CropMirrorNormalize
+from dragon.vm.dali.core.ops.image_ops import GaussianBlur
 from dragon.vm.dali.core.ops.image_ops import Hsv
 from dragon.vm.dali.core.ops.image_ops import Paste
 from dragon.vm.dali.core.ops.image_ops import RandomBBoxCrop

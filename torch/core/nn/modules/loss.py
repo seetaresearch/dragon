@@ -20,6 +20,8 @@ from dragon.vm.torch.core.nn.modules.module import Module
 
 
 class _Loss(Module):
+    """Base loss module."""
+
     def __init__(
         self,
         size_average=None,
@@ -34,6 +36,8 @@ class _Loss(Module):
 
 
 class _WeightedLoss(_Loss):
+    """Base weighted loss module."""
+
     def __init__(
         self,
         weight=None,
@@ -94,7 +98,7 @@ class CTCLoss(_Loss):
 
 
 class NLLLoss(_WeightedLoss):
-    r"""Compute the negative likelihood loss with sparse labels.
+    r"""Compute the negative likelihood loss.
 
     The NLL loss function is defined as:
 
@@ -151,7 +155,7 @@ class NLLLoss(_WeightedLoss):
 
 
 class BCEWithLogitsLoss(_WeightedLoss):
-    r"""Compute the sigmoid cross entropy with contiguous targets.
+    r"""Compute the sigmoid cross entropy.
 
     Examples:
 
@@ -193,13 +197,11 @@ class BCEWithLogitsLoss(_WeightedLoss):
 
     def forward(self, input, target):
         return F.binary_cross_entropy_with_logits(
-            input, target,
-            reduction=self.reduction,
-        )
+            input, target, reduction=self.reduction)
 
 
 class CrossEntropyLoss(_WeightedLoss):
-    r"""Compute the softmax cross entropy with sparse labels.
+    r"""Compute the softmax cross entropy.
 
     The **CrossEntropy** function is defined as:
 
@@ -445,7 +447,7 @@ class SmoothL1Loss(_Loss):
 
 
 class SigmoidFocalLoss(_WeightedLoss):
-    r"""Compute the sigmoid focal loss with sparse labels.
+    r"""Compute the sigmoid focal loss.
     `[Lin et.al, 2017] <https://arxiv.org/abs/1708.02002>`__.
 
     The **FocalLoss** function is defined as:

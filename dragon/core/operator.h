@@ -26,10 +26,8 @@ class Workspace;
 
 class DRAGON_API OperatorBase {
  public:
-  typedef Map<string, vector<OperatorBase*>> SubGraph;
-
-  /*! \brief Constructor with the def and workspace */
-  OperatorBase(const OperatorDef&, Workspace*);
+  /*! \brief Constructor */
+  OperatorBase(const OperatorDef& def, Workspace* ws);
 
   /*! \brief Destructor */
   virtual ~OperatorBase() {}
@@ -55,26 +53,29 @@ class DRAGON_API OperatorBase {
     phase_ = phase;
   }
 
-  /*! \brief Return the input tensor */
-  Tensor& Input(int i);
+  /*! \brief Return the input tensor by index */
+  Tensor& Input(int index);
 
-  /*! \brief Return the output tensor */
-  Tensor* Output(int i);
+  /*! \brief Return the input tensor by name */
+  Tensor& Input(const string& name);
 
-  /*! \brief Return the output tensor with input aliases */
-  Tensor* Output(int i, const vec32_t& inputs);
+  /*! \brief Return the output tensor by index */
+  Tensor* Output(int index);
 
-  /*! \brief Return the buffer tensor */
-  Tensor* Buffer(const string& name);
+  /*! \brief Return the output tensor by index with input aliases */
+  Tensor* Output(int index, const vector<int>& inputs_at);
+
+  /*! \brief Return the output tensor by name */
+  Tensor* Output(const string& name);
 
   /*! \brief Return the number of inputs */
   int InputSize() {
-    return (int)inputs_.size();
+    return int(inputs_.size());
   }
 
   /*! \brief Return the number of outputs */
   int OutputSize() {
-    return (int)outputs_.size();
+    return int(outputs_.size());
   }
 
   /*! \brief Return the value of argument */
@@ -106,19 +107,19 @@ class DRAGON_API OperatorBase {
     return *(args_[name]);
   }
 
-  /*! \brief Return all the arguments */
+  /*! \brief Return all arguments */
   const Map<string, const Argument*>& args() {
     return args_;
-  }
-
-  /*! \brief Return the operator name */
-  const string& name() const {
-    return def_.name();
   }
 
   /*! \brief Return the operator type */
   const string& type() const {
     return def_.type();
+  }
+
+  /*! \brief Return the operator name */
+  const string& name() const {
+    return name_;
   }
 
   /*! \brief Return the running phase */
@@ -127,8 +128,8 @@ class DRAGON_API OperatorBase {
   }
 
   /*! \brief Return the data type */
-  const string& dtype() const {
-    return dtype_;
+  const string& data_type() const {
+    return data_type_;
   }
 
   /*! \brief Return the data format */
@@ -136,73 +137,58 @@ class DRAGON_API OperatorBase {
     return data_format_;
   }
 
-  /*! \brief Return the execution handle */
-  const string& handle() const {
-    return handle_;
-  }
-
   /*! \brief Return the operator def */
   const OperatorDef& def() const {
     return def_;
   }
 
-  /*! \brief Return the recomputing subgraph */
-  SubGraph& subgraph() {
-    return subgraph_;
-  }
-
   /*! \brief Return the parent workspace */
   Workspace* workspace() const {
-    return ws_;
+    return workspace_;
   }
 
-  /*! \brief Set the subgraph for recomputing */
-  void set_subgraph(SubGraph subgraph) {
-    subgraph_ = subgraph;
-  }
-
-  /*! \brief Set the output aliases for in-place */
-  void set_output_aliases(const Map<string, Set<string>>& alias_map) {
-    output_aliases_.resize(outputs_.size());
+  /*! \brief Set the sourcing inputs for outputs */
+  void set_outputs_from(const Map<string, Set<string>>& sources) {
+    outputs_from_.resize(outputs_.size());
     for (int i = 0; i < outputs_.size(); ++i) {
-      const auto& it = alias_map.find(outputs_[i]->name());
-      if (it != alias_map.end()) {
-        output_aliases_[i] = it->second;
+      const auto& iter = sources.find(outputs_[i]->name());
+      if (iter != sources.end()) {
+        outputs_from_[i] = iter->second;
       } else {
-        output_aliases_[i].clear();
+        outputs_from_[i].clear();
       }
     }
   }
 
  protected:
-  /*! \brief The parent workspace */
-  Workspace* ws_;
-
   /*! \brief The operator def */
   OperatorDef def_;
 
-  /*! \brief The recomputing subgraph */
-  SubGraph subgraph_;
+  /*! \brief The parent workspace */
+  Workspace* workspace_;
 
-  /*! \brief The execution phase */
+  /*! \brief The operator name */
+  string name_;
+
+  /*! \brief The executing phase */
   string phase_;
 
-  /*! \brief The execution handle */
-  string handle_;
-
   /*! \brief The data type */
-  string dtype_;
+  string data_type_;
 
   /*! \brief The data format */
   string data_format_;
 
-  /*! \brief The input and output tensors */
-  vector<Tensor*> inputs_, outputs_;
+  /*! \brief The input tensors */
+  vector<Tensor*> inputs_;
 
-  /*! \brief The candidate output aliases */
-  vector<Set<string>> output_aliases_;
+  /*! \brief The output tensors */
+  vector<Tensor*> outputs_;
 
-  /*! \brief The argument references */
+  /*! \brief The output sourcing tensors */
+  vector<Set<string>> outputs_from_;
+
+  /*! \brief The arguments */
   Map<string, const Argument*> args_;
 
   DISABLE_COPY_AND_ASSIGN(OperatorBase);
@@ -214,25 +200,21 @@ class DRAGON_API OperatorBase {
 template <class Context>
 class DRAGON_API Operator : public OperatorBase {
  public:
-  /*! \brief Constructor with the def and workspace */
+  /*! \brief Constructor */
   Operator(const OperatorDef& def, Workspace* ws)
       : OperatorBase(def, ws), ctx_(def.device_option()) {}
 
-  /*! \brief Prepare the content of inputs */
-  virtual void Prepare();
-
-  /*! \brief Release the ownership of inputs */
-  virtual void Release();
+  /*! \brief Setup for arguments and outputs */
+  virtual void Setup() {}
 
   /*! \brief The detailed execution on device */
   virtual void RunOnDevice() = 0;
 
   /*! \brief Run this operator */
   void Run(int stream = 0) final {
-    Prepare();
+    Setup();
     ctx()->SwitchToDevice(stream);
     RunOnDevice();
-    Release();
   }
 
   /*! \brief Return the context */
@@ -247,42 +229,26 @@ class DRAGON_API Operator : public OperatorBase {
 
 /* Macros */
 
-#define SIMPLE_CTOR_DTOR(name)                                                \
-  name(const OperatorDef& def, Workspace* ws) : Operator<Context>(def, ws) {} \
+#define SIMPLE_CTOR_DTOR(name)                         \
+  explicit name(const OperatorDef& def, Workspace* ws) \
+      : Operator<Context>(def, ws) {}                  \
   virtual ~name() {}
 
-#define USE_OPERATOR_BASE_FUNCTIONS          \
+#define USE_OPERATOR_FUNCTIONS               \
   using OperatorBase::SwitchToPhase;         \
   using OperatorBase::Input;                 \
   using OperatorBase::Output;                \
-  using OperatorBase::Buffer;                \
   using OperatorBase::InputSize;             \
   using OperatorBase::OutputSize;            \
   using OperatorBase::MessageForUnsupported; \
-  using OperatorBase::name;                  \
   using OperatorBase::type;                  \
+  using OperatorBase::name;                  \
   using OperatorBase::phase;                 \
-  using OperatorBase::dtype;                 \
+  using OperatorBase::data_type;             \
   using OperatorBase::data_format;           \
-  using OperatorBase::handle;                \
   using OperatorBase::def;                   \
-  using OperatorBase::workspace
-
-#define USE_OPERATOR_FUNCTIONS \
-  USE_OPERATOR_BASE_FUNCTIONS; \
+  using OperatorBase::workspace;             \
   using Operator<Context>::ctx
-
-#define SET_INPUT_SPEC(i)                                         \
-  do {                                                            \
-    auto& Xi = Input(i);                                          \
-    workspace()                                                   \
-        ->CreateTensor(handle() + "/X_spec:" + std::to_string(i)) \
-        ->ReshapeLike(Xi)                                         \
-        ->set_meta(Xi.meta());                                    \
-  } while (0);
-
-#define INPUT_SPEC(i) \
-  *(workspace()->GetTensor(handle() + "/X_spec:" + std::to_string(i)))
 
 /* Dispatchers */
 
@@ -302,7 +268,7 @@ struct DispatchHelper;
     template <typename Op>                                                  \
     static void Call(Op* op) {                                              \
       string types_str;                                                     \
-      return Call(op, dtypes::to_meta(op->dtype()), types_str);             \
+      return Call(op, dtypes::to_meta(op->data_type()), types_str);         \
     }                                                                       \
     template <typename Op>                                                  \
     static void Call(Op* op, const Tensor& tensor) {                        \
@@ -377,7 +343,7 @@ DEFINE_DTYPES_DISPATCHER(DoRunWithType);
   type classname<Context>::arg() {                                   \
     if (arg##_desc_.empty()) return arg##_;                          \
     auto* arg##_tensor = workspace()->GetTensor(                     \
-        str::replace_first(arg##_desc_, "$HANDLE", handle()));       \
+        str::replace_first(arg##_desc_, "$NAME", name()));           \
     CHECK_EQ(arg##_tensor->count(), 1)                               \
         << "\nArgument <" << #arg << "> should be a size-1 scalar."; \
     CHECK(arg##_tensor->template IsType<type>())                     \
@@ -386,24 +352,24 @@ DEFINE_DTYPES_DISPATCHER(DoRunWithType);
     return arg##_tensor->template data<type, CPUContext>()[0];       \
   }
 
-#define DEFINE_OP_REPEATED_ARG(type, classname, arg)             \
-  template <class Context>                                       \
-  type classname<Context>::arg(int i, int* num) {                \
-    const type* data;                                            \
-    int N;                                                       \
-    if (!arg##_desc_.empty()) {                                  \
-      auto* arg##_tensor = workspace()->GetTensor(               \
-          str::replace_first(arg##_desc_, "$HANDLE", handle())); \
-      CHECK(arg##_tensor->template IsType<type>())               \
-          << "\nType of argument <" << #arg << "> should be "    \
-          << dtypes::to_string<type>() << ".";                   \
-      data = arg##_tensor->template data<type, CPUContext>();    \
-      N = int(arg##_tensor->size());                             \
-    } else {                                                     \
-      data = arg##_.data(), N = int(arg##_.size());              \
-    }                                                            \
-    if (num != nullptr) *num = N;                                \
-    return i < N ? data[i] : type(0);                            \
+#define DEFINE_OP_REPEATED_ARG(type, classname, arg)          \
+  template <class Context>                                    \
+  type classname<Context>::arg(int i, int* num) {             \
+    const type* data;                                         \
+    int N;                                                    \
+    if (!arg##_desc_.empty()) {                               \
+      auto* arg##_tensor = workspace()->GetTensor(            \
+          str::replace_first(arg##_desc_, "$NAME", name()));  \
+      CHECK(arg##_tensor->template IsType<type>())            \
+          << "\nType of argument <" << #arg << "> should be " \
+          << dtypes::to_string<type>() << ".";                \
+      data = arg##_tensor->template data<type, CPUContext>(); \
+      N = int(arg##_tensor->size());                          \
+    } else {                                                  \
+      data = arg##_.data(), N = int(arg##_.size());           \
+    }                                                         \
+    if (num != nullptr) *num = N;                             \
+    return i < N ? data[i] : type(0);                         \
   }
 
 #define GET_OP_AXIS_ARG(arg, num_axes, default_value)                  \

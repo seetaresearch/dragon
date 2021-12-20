@@ -107,7 +107,7 @@ class CuDNNRecurrentOpBase : public Operator<Context> {
   }
 
   template <typename T>
-  void ResetDesc();
+  void SetDesc();
 
  public:
   float dropout_;

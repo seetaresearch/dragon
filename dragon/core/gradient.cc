@@ -6,11 +6,12 @@ void GradientTape::CreateGradientDefs(
     const vector<OperatorDef*>& op_defs,
     const vector<string>& targets,
     const vector<string>& grad_targets) {
-  def_.clear_op();
-  Set<string> split_grads;
   Map<string, string> sources_to_grads;
   Map<string, string> targets_to_grads;
-  Map<string, int> inputs_count, splits_count;
+  Map<string, int> inputs_count;
+  Map<string, int> splits_count;
+
+  def_.clear_op();
 
   // Function to check if grad op can be removed.
   auto IsNoGradient = [&](const OperatorDef& op,
@@ -54,54 +55,57 @@ void GradientTape::CreateGradientDefs(
     const auto& op = *op_iter;
     vector<pair<string, int>> init_grads;
     if (IsNoGradient(*op, init_grads)) continue;
+    CHECK(GradientRegistry()->Has(op->type()))
+        << "\nNo gradient maker registered for " << op->type() << ".";
+
+    // Create gradient defs.
     vector<string> grad_ys;
     for (const auto& y : op->output()) {
       const auto& iter = sources_to_grads.find(y);
       grad_ys.emplace_back(iter != sources_to_grads.end() ? iter->second : "");
     }
-    CHECK(GradientRegistry()->Has(op->type()))
-        << "\nMissing gradient maker for " << op->type() << ".";
     unique_ptr<GradientMakerBase> maker(
         GradientRegistry()->Create(op->type(), *op, grad_ys));
     maker->Make();
-    vector<OperatorDef> gather_defs;
-    for (auto& grad_def : maker->grad_defs()) {
-      for (int i = 0; i < grad_def.output_size(); ++i) {
-        const auto& grad_ys = grad_def.input();
-        const auto& grad_x = grad_def.output(i);
-        if (std::find(grad_ys.begin(), grad_ys.end(), grad_x) != grad_ys.end())
+
+    // Update input gradients.
+    for (int i = 0; i < op->input_size(); ++i) {
+      sources_to_grads[op->input(i)] = maker->grad_inputs()[i];
+    }
+
+    // Rewrite output gradients.
+    vector<OperatorDef> grad_defs;
+    for (auto& grad_op : maker->grad_defs()) {
+      for (int i = 0; i < grad_op.output_size(); ++i) {
+        if (grad_op.output(i).empty()) continue;
+        const auto grad_x = grad_op.output(i);
+        const auto& grad_ys = grad_op.input();
+        if (std::find(grad_ys.begin(), grad_ys.end(), grad_x) !=
+            grad_ys.end()) {
           continue;
+        }
         int x_index = -1;
         for (int j = 0; j < maker->grad_inputs().size(); ++j) {
           if (grad_x == maker->grad_inputs()[j]) x_index = j;
         }
         if (x_index == -1) continue;
-        const auto& x = op->input(x_index);
-        if (inputs_count[x] <= 1) continue;
+        const auto& count_iter = inputs_count.find(op->input(x_index));
+        if (count_iter->second <= 1) continue;
         auto split_prefix = grad_x + "_split_";
-        auto grad_x_split = split_prefix + str::to(splits_count[grad_x]++);
-        split_grads.insert(grad_x_split);
-        if (splits_count[grad_x] == inputs_count[x]) {
-          gather_defs.emplace_back(CreateOperatorDef(
-              "GradientGather",
-              "",
-              vector<string>({}),
-              vector<string>({grad_x}),
-              vector<Argument>(),
-              grad_def.device_option()));
-          for (int j = 0; j < splits_count[grad_x]; ++j) {
-            auto iter = split_grads.find(split_prefix + str::to(j));
-            if (iter != split_grads.end()) {
-              gather_defs.back().add_input(*iter);
-            }
-          }
+        auto split_index = splits_count[grad_x]++;
+        grad_op.set_output(i, split_prefix + str::to(split_index));
+        if (split_index + 1 != count_iter->second) continue;
+        grad_defs.emplace_back(CreateOperatorDef(
+            "GradientGather",
+            "",
+            vector<string>({}),
+            vector<string>({grad_x}),
+            vector<Argument>(),
+            grad_op.device_option()));
+        for (int j = 0; j < count_iter->second; ++j) {
+          grad_defs.back().add_input(split_prefix + str::to(j));
         }
-        grad_def.set_output(i, grad_x_split);
       }
-    }
-
-    for (int i = 0; i < op->input_size(); ++i) {
-      sources_to_grads[op->input(i)] = maker->grad_inputs()[i];
     }
 
     if (init_grads.size() > 0) {
@@ -123,117 +127,117 @@ void GradientTape::CreateGradientDefs(
           vector<Argument>({values}),
           op->device_option()));
     }
-    for (const auto& grad_def : maker->grad_defs()) {
-      def_.add_op()->CopyFrom(grad_def);
+    for (const auto& grad_op : maker->grad_defs()) {
+      def_.add_op()->CopyFrom(grad_op);
     }
-    for (const auto& gather_def : gather_defs) {
-      def_.add_op()->CopyFrom(gather_def);
+    for (const auto& grad_op : grad_defs) {
+      def_.add_op()->CopyFrom(grad_op);
     }
   }
 }
 
 void GradientTape::Optimize(const vector<string>& sources) {
-  Set<int> noop_indices;
-  Set<string> required_grads;
+  Set<size_t> noop_indices;
+  Set<string> retained_grads;
   Map<string, int> inputs_count;
-  Map<string, string> grads_to_buffers;
+  Map<string, int> outputs_count;
+  Map<string, string> outputs_to;
   Map<string, pair<int, string>> splits;
 
-  for (int op_index = 0; op_index < def_.op_size(); ++op_index) {
-    const auto& op = def_.op(op_index);
-    if (!str::find(op.type(), "Gradient")) continue;
-    // Count noops.
-    if (op.type() == "GradientGather") noop_indices.insert(op_index);
-    // Count inputs.
-    for (const auto& input : op.input()) {
-      inputs_count[input] += 1;
-    }
+  optimized_def_ = def_;
+  optimized_def_.clear_op();
+
+  // Initialize retained grads before optimization.
+  for (const auto& input : sources) {
+    retained_grads.insert(input + "_grad");
   }
 
-  // Initialize the required grads before optimization.
-  for (const auto& input : sources) {
-    required_grads.insert(input + "_grad");
+  for (size_t op_index = 0; op_index < def_.op_size(); ++op_index) {
+    const auto& op = def_.op(op_index);
+    if (!str::find(op.type(), "Gradient")) continue;
+    if (op.type() == "GradientGather") {
+      noop_indices.insert(op_index); // Count noops.
+    }
+    for (const auto& input : op.input()) {
+      inputs_count[input] += 1; // Count inputs.
+    }
   }
 
   for (auto op_index : noop_indices) {
     const auto& op = def_.op(op_index);
     if (op.type() == "GradientGather") {
       if (inputs_count.count(op.output(0)) == 0 &&
-          required_grads.count(op.output(0)) == 0) {
+          retained_grads.count(op.output(0)) == 0) {
         for (const auto& input : op.input()) {
           inputs_count.erase(input);
         }
       } else {
         string first_input;
         for (const auto& input : op.input()) {
-          if (!input.empty()) {
-            if (first_input.empty()) first_input = input;
-            splits[input] = {op_index, first_input};
-          }
+          if (input.empty()) continue;
+          if (first_input.empty()) first_input = input;
+          splits[input] = {op_index, first_input};
         }
       }
     }
   }
 
-  optimized_def_ = def_;
-  optimized_def_.clear_op();
-  for (int op_index = 0; op_index < def_.op_size(); ++op_index) {
+  for (size_t op_index = 0; op_index < def_.op_size(); ++op_index) {
     if (noop_indices.count(op_index)) continue;
     const auto& op = def_.op(op_index);
     optimized_def_.add_op()->CopyFrom(op);
     if (!str::find(op.type(), "Gradient")) continue;
     for (const auto& output : op.output()) {
-      // Decouple the gathering of split grads.
-      const auto& split_iter = splits.find(output);
-      if (split_iter != splits.end()) {
-        auto& gather_op = def_.op(split_iter->second.first);
-        auto* decouple_op = optimized_def_.add_op();
-        decouple_op->CopyFrom(gather_op);
+      const auto& iter = splits.find(output);
+      if (iter == splits.end()) continue;
+      if (output == iter->second.second) continue;
+      auto* gather_op = def_.mutable_op(iter->second.first);
+      auto* decouple_op = optimized_def_.add_op();
+      decouple_op->CopyFrom(*gather_op);
+      if (!gather_op->input().empty()) {
+        gather_op->clear_input();
         decouple_op->clear_input();
-        if (output != split_iter->second.second) {
-          decouple_op->set_type("GradientAdd");
-          decouple_op->add_input(gather_op.output(0));
-          const auto& count_iter = inputs_count.find(gather_op.output(0));
-          if (count_iter != inputs_count.end()) count_iter->second++;
-        }
-        decouple_op->add_input(output);
-        if (!op.arg().empty()) {
-          const auto& arg = *(op.arg().end() - 1);
-          if (arg.name() == "cache_key") {
-            auto* new_arg = decouple_op->add_arg();
-            const auto& dev = decouple_op->device_option();
-            new_arg->set_name("cache_key");
-            new_arg->set_s(
-                decouple_op->type() + "/" + str::to(dev.device_type()) + ":" +
-                str::to(dev.device_id()));
-          }
-        }
+        decouple_op->add_input(iter->second.second);
+      } else {
+        decouple_op->add_input(gather_op->output(0));
+        const auto& count_iter = inputs_count.find(gather_op->output(0));
+        if (count_iter != inputs_count.end()) count_iter->second++;
       }
+      decouple_op->add_input(output);
+      if (op.arg().empty()) continue;
+      const auto& arg = *(op.arg().end() - 1);
+      if (arg.name() != "cache_key") continue;
+      auto* cache_key = decouple_op->add_arg();
+      const auto& option = decouple_op->device_option();
+      cache_key->set_name("cache_key");
+      cache_key->set_s(
+          decouple_op->type() + "/" + str::to(option.device_type()) + ":" +
+          str::to(option.device_id()));
     }
   }
 
-  // Prepare the pool
+  // Initialize buffer pool.
   int buffer_index = 0;
-  std::deque<string> pool;
+  std::deque<string> buffer_pool;
   auto get_buffer = [&]() mutable {
-    if (pool.empty()) {
-      return "shared/buffer/grad:" + str::to(++buffer_index);
+    if (buffer_pool.empty()) {
+      return "BufferGrad_" + str::to(++buffer_index);
     } else {
-      auto buffer = pool.back();
-      pool.pop_back();
+      auto buffer = buffer_pool.back();
+      buffer_pool.pop_back();
       return buffer;
     }
   };
 
+  // Rewrite inputs and outputs.
   for (int op_index = 0; op_index < optimized_def_.op_size(); ++op_index) {
     auto* op = optimized_def_.mutable_op(op_index);
     if (!str::find(op->type(), "Gradient")) continue;
-    // Check output aliases.
-    vec32_t output_aliases(op->output_size(), -1);
+    vector<int> outputs_at(op->output_size(), -1);
     for (int i = 0; i < op->output_size(); ++i) {
       for (int j = 0; j < op->input_size(); ++j) {
         if (op->output(i) != op->input(j)) continue;
-        output_aliases[i] = j;
+        outputs_at[i] = j;
         break;
       }
     }
@@ -244,8 +248,8 @@ void GradientTape::Optimize(const vector<string>& sources) {
       const auto& count_iter = inputs_count.find(input);
       if (count_iter == inputs_count.end()) continue;
       count_iter->second--;
-      const auto& buffer_iter = grads_to_buffers.find(input);
-      if (buffer_iter == grads_to_buffers.end()) continue;
+      const auto& buffer_iter = outputs_to.find(input);
+      if (buffer_iter == outputs_to.end()) continue;
       if (count_iter->second == 0) {
         dead_buffers.emplace_back(buffer_iter->second);
       }
@@ -253,21 +257,21 @@ void GradientTape::Optimize(const vector<string>& sources) {
     }
     // Rewrite outputs.
     for (int i = 0; i < op->output_size(); ++i) {
-      const string& output = op->output(i);
-      if (output.empty() || required_grads.count(output) > 0) continue;
+      const auto& output = op->output(i);
+      if (output.empty() || retained_grads.count(output) > 0) continue;
       if (inputs_count.count(output) == 0) {
         op->mutable_output(i)->clear();
         continue;
       }
-      if (output_aliases[i] >= 0) {
-        op->set_output(i, op->input(output_aliases[i]));
+      if (outputs_at[i] >= 0) {
+        op->set_output(i, op->input(outputs_at[i]));
       } else {
-        *op->mutable_output(i) = grads_to_buffers[output] = get_buffer();
+        op->set_output(i, outputs_to[output] = get_buffer());
       }
     }
-    // Update pool.
+    // Update buffer pool.
     for (auto& buffer : dead_buffers) {
-      pool.emplace_back(buffer);
+      buffer_pool.emplace_back(buffer);
     }
   }
 }

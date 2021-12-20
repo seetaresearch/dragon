@@ -14,6 +14,7 @@ from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
 
+import collections
 import os
 
 from dragon.core.framework import backend
@@ -36,7 +37,7 @@ def get_build_info():
         The info dict.
 
     """
-    build_info = {}
+    build_info = collections.OrderedDict()
     build_info_str = backend.GetBuildInformation()
     for entry in build_info_str.split('\n'):
         k, v = entry.split(':')

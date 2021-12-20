@@ -13,11 +13,10 @@ from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
 
-from dragon.core.ops import activation_ops as _activation_ops
+from dragon.core.ops import activation_ops
+from dragon.core.ops import math_ops
 from dragon.core.util import six
 from dragon.vm.tensorflow.core.keras.utils import generic_utils
-from dragon.vm.tensorflow.core.ops import math_ops
-from dragon.vm.tensorflow.core.ops import nn
 
 
 def elu(x, alpha=1., **kwargs):
@@ -53,7 +52,7 @@ def elu(x, alpha=1., **kwargs):
         The output tensor.
 
     """
-    return nn.elu(x, alpha=alpha, **kwargs)
+    return activation_ops.elu(x, alpha=alpha, **kwargs)
 
 
 def exponential(x):
@@ -109,7 +108,7 @@ def hard_sigmoid(x, **kwargs):
         The output tensor.
 
     """
-    return _activation_ops.hardsigmoid(x, **kwargs)
+    return activation_ops.hardsigmoid(x, **kwargs)
 
 
 def linear(x):
@@ -175,8 +174,8 @@ def relu(x, alpha=0, max_value=None, **kwargs):
             raise ValueError('Set either <alpha> or <max_value>.')
         if max_value != 6:
             raise ValueError('<max_value> can only be set to 6.')
-        return nn.relu6(x, **kwargs)
-    return nn.leaky_relu(x, alpha=alpha, **kwargs)
+        return activation_ops.relu6(x, **kwargs)
+    return activation_ops.leaky_relu(x, alpha=alpha, **kwargs)
 
 
 def selu(x, **kwargs):
@@ -208,7 +207,7 @@ def selu(x, **kwargs):
         The output tensor.
 
     """
-    return nn.selu(x, **kwargs)
+    return activation_ops.selu(x, **kwargs)
 
 
 def sigmoid(x, **kwargs):
@@ -236,7 +235,7 @@ def sigmoid(x, **kwargs):
         The output tensor
 
     """
-    return math_ops.sigmoid(x, **kwargs)
+    return activation_ops.sigmoid(x, **kwargs)
 
 
 def softmax(x, axis=-1, **kwargs):
@@ -266,7 +265,7 @@ def softmax(x, axis=-1, **kwargs):
         The output tensor.
 
     """
-    return nn.softmax(x, axis=axis, **kwargs)
+    return activation_ops.softmax(x, axis=axis, **kwargs)
 
 
 def swish(x):
@@ -295,7 +294,7 @@ def swish(x):
         The output tensor.
 
     """
-    return nn.swish(x)
+    return activation_ops.silu(x)
 
 
 def tanh(x, **kwargs):
@@ -323,7 +322,7 @@ def tanh(x, **kwargs):
         The output tensor.
 
     """
-    return math_ops.tanh(x, **kwargs)
+    return activation_ops.tanh(x, **kwargs)
 
 
 def get(identifier):

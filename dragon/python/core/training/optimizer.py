@@ -21,34 +21,26 @@ import numpy
 
 from dragon.core import distributed
 from dragon.core.autograph import context
-from dragon.core.autograph.op_impl import OpLib
-from dragon.core.autograph.graph_impl import GraphLib
+from dragon.core.autograph.op_lib import OpLib
+from dragon.core.autograph.graph_lib import GraphLib
 from dragon.core.framework import workspace
 
 
 class Optimizer(object):
     """The base class of optimizers."""
 
-    def __init__(self, scale=1, clip_norm=0, weight_decay=0):
-        """Create a ``Optimizer``.
-
-        Parameters
-        ----------
-        scale : float, optional, default=1
-            The scaling factor to gradient.
-        clip_norm : float, optional, default=0
-            The maximum L2 norm to clip gradient.
-        weight_decay : float, optional, default=0
-            The L2 penalty factor to weight.
-
-        """
-        self._name = workspace.get_workspace()._handle_pool.create('Optimizer')
-        self._op_type = self.__class__.__name__ + 'Update'
+    def __init__(self, **kwargs):
+        """Create a ``Optimizer``."""
+        self._name = workspace.get_workspace().create_handle('Optimizer')
+        self._op_type = self.__class__.__name__
         self._process_group = distributed.get_group()
         self._hyper = {}
-        self._set_hyper('scale', scale)
-        self._set_hyper('clip_norm', clip_norm)
-        self._set_hyper('weight_decay', weight_decay)
+        self._set_hyper('grad_scale', kwargs.pop('grad_scale', 1))
+        self._set_hyper('weight_decay', kwargs.pop('weight_decay', 0))
+        self._set_hyper('clip_norm', kwargs.pop('clip_norm', 0))
+        self._set_hyper('clip_value', kwargs.pop('clip_value', 0))
+        if kwargs:
+            raise ValueError('Unexpected arguments: ' + ','.join(v for v in kwargs))
 
     def apply_gradients(self, grads_and_vars):
         """Apply the gradients on variables.
@@ -79,7 +71,7 @@ class Optimizer(object):
         if process_group is not None:
             grads = list(itertools.chain(*group_grads.values()))
             OpLib.execute('Collective', grads, outputs=grads,
-                          communication='ALLREDUCE', operation='MEAN',
+                          operation='ALLREDUCE', reduction='MEAN',
                           **process_group.arguments)
 
         # Apply updates.
@@ -89,7 +81,7 @@ class Optimizer(object):
             if len(grads) == 0:
                 continue
             OpLib.execute(self._op_type, grads, outputs=vars,
-                          handle=self._name, weight_decay=weight_decay)
+                          name=self._name, weight_decay=weight_decay)
 
     def _set_hyper(self, name, value):
         """Set value to a hyper parameter."""

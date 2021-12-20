@@ -1,14 +1,13 @@
-#include "dragon/core/workspace.h"
-#include "dragon/operators/array/reshape_ops.h"
+#include "dragon/operators/array/reshape_op.h"
 
 namespace dragon {
 
 template <class Context>
 void FlattenOp<Context>::RunOnDevice() {
   auto &X = Input(0), *Y = Output(0, {0});
+  Output("X_spec")->ReshapeLike(X);
   GET_OP_AXIS_ARG(axis, X.ndim(), 0);
   GET_OP_AXIS_ARG(end_axis, X.ndim(), -1);
-  SET_INPUT_SPEC(0);
 
   auto out_shape = X.dims();
   auto flatten_dim = std::accumulate(
@@ -19,7 +18,6 @@ void FlattenOp<Context>::RunOnDevice() {
   out_shape.erase(out_shape.begin() + axis, out_shape.begin() + end_axis + 1);
   out_shape.insert(out_shape.begin() + axis, flatten_dim);
 
-  // Maybe copy the contents
   Y->Reshape(out_shape)->CopyFrom(X, ctx());
 }
 

@@ -1,5 +1,5 @@
 #include "dragon/core/workspace.h"
-#include "dragon/operators/loss/focal_loss_ops.h"
+#include "dragon/operators/loss/focal_loss_op.h"
 #include "dragon/utils/math_functions.h"
 #include "dragon/utils/op_kernels.h"
 
@@ -18,12 +18,9 @@ void SigmoidFocalLossOp<Context>::DoRunWithType() {
   const auto NxCxS = X.count();
   CHECK_EQ(Y.count(), NxS) << "\nNumel of X and Y must be matched.";
 
-  auto scratches = ctx()->workspace()->template data<Context>({
-      size_t(NxCxS) * sizeof(InputT),
-      size_t(NxCxS) * sizeof(InputT) + sizeof(InputT),
-  });
-  auto* loss = static_cast<InputT*>(scratches[0]);
-  auto* mask = static_cast<InputT*>(scratches[1]);
+  auto* scratch =
+      ctx()->workspace()->template data<InputT, Context>(NxCxS * 2 + 1);
+  auto *loss = scratch, *mask = scratch + NxCxS;
 
   kernels::SigmoidFocalLoss(
       N,
@@ -106,8 +103,7 @@ void SigmoidFocalLossGradientOp<Context>::DoRunWithType() {
 
   auto* dl = dL.template data<InputT, Context>();
   auto* dx = dX->template mutable_data<InputT, Context>();
-  auto* mask =
-      ctx()->workspace()->template data<InputT, Context>({NxCxS + 1})[0];
+  auto* mask = ctx()->workspace()->template data<InputT, Context>(NxCxS + 1);
 
   kernels::SigmoidFocalLossGrad(
       N,

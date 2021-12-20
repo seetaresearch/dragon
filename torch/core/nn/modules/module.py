@@ -16,6 +16,7 @@ from __future__ import print_function
 
 import collections
 import itertools
+
 import numpy
 
 from dragon.core.framework import config
@@ -38,6 +39,16 @@ class Module(object):
     ```
 
     """
+
+    class _IncompatibleKeys(collections.namedtuple(
+            'IncompatibleKeys', ['missing_keys', 'unexpected_keys'])):
+
+        def __repr__(self):
+            if not self.missing_keys and not self.unexpected_keys:
+                return '<All keys matched successfully>'
+            return super(Module._IncompatibleKeys, self).__repr__()
+
+        __str__ = __repr__
 
     def __init__(self):
         """Create a ``Module``."""
@@ -169,10 +180,7 @@ class Module(object):
             The self.
 
         """
-        return self._apply(
-            lambda t: t.double_()
-            if t.is_floating_point() else t,
-        )
+        return self._apply(lambda t: t.double_() if t.is_floating_point() else t)
 
     def eval(self):
         """Set to the evaluation mode.
@@ -200,10 +208,7 @@ class Module(object):
             The self.
 
         """
-        return self._apply(
-            lambda t: t.float_()
-            if t.is_floating_point() else t,
-        )
+        return self._apply(lambda t: t.float_() if t.is_floating_point() else t)
 
     def forward(self, *inputs, **kwargs):
         """Define the computation performed at every call.
@@ -227,10 +232,7 @@ class Module(object):
             The self.
 
         """
-        return self._apply(
-            lambda t: t.half_()
-            if t.is_floating_point() else t,
-        )
+        return self._apply(lambda t: t.half_() if t.is_floating_point() else t)
 
     def load_state_dict(self, state_dict, strict=True):
         """Load the state dict from other module.
@@ -256,6 +258,11 @@ class Module(object):
             The state dict.
         strict : bool, optional, default=True
             ``True`` to verify the names strictly.
+
+        Returns
+        -------
+        namedtuple
+            The namedtuple with ``missing_keys`` and ``unexpected_keys``.
 
         """
         missing_keys = []
@@ -286,6 +293,8 @@ class Module(object):
             raise RuntimeError(
                 'Error(s) in loading state_dict for {}:\n\t{}'
                 .format(self.__class__.__name__, "\n\t".join(error_msgs)))
+
+        return self._IncompatibleKeys(missing_keys, unexpected_keys)
 
     def modules(self):
         """Return an iterator over all modules.
@@ -415,10 +424,8 @@ class Module(object):
         if hasattr(self, name) and name not in self._buffers:
             raise KeyError("Attribute '{}' already exists".format(name))
         elif tensor is not None and not isinstance(tensor, Tensor):
-            raise TypeError(
-                "Cannot assign '{}' object to buffer '{}' "
-                "(torch Tensor or None required)"
-                .format(type(tensor), name))
+            raise TypeError("Cannot assign '{}' object to buffer '{}'."
+                            .format(type(tensor), name))
         else:
             self._buffers[name] = tensor
 
@@ -461,16 +468,14 @@ class Module(object):
 
         """
         if '_parameters' not in self.__dict__:
-            raise AttributeError("Cannot assign parameter before Module.__init__() call")
+            raise AttributeError("Cannot assign parameter before init.")
         if hasattr(self, name) and name not in self._parameters:
-            raise KeyError("Attribute '{}' already exists".format(name))
+            raise KeyError("Attribute '{}' already exists.".format(name))
         if param is None:
             self._parameters[name] = None
         elif not isinstance(param, Parameter):
-            raise TypeError(
-                "Cannot assign '{}' object to parameter '{}' "
-                "(torch.nn.Parameter or None required)"
-                .format(type(param), name))
+            raise TypeError("Cannot assign '{}' object to parameter '{}'."
+                            .format(type(param), name))
         else:
             self._parameters[name] = param
 
@@ -659,30 +664,33 @@ class Module(object):
         params = self.__dict__.get('_parameters')
         if isinstance(value, Parameter):
             if params is None:
-                raise AttributeError('Cannot assign parameters before Module.__init__().')
-            self.register_parameter(key, value)
+                raise AttributeError('Cannot assign parameter before init.')
+            return self.register_parameter(key, value)
         elif params is not None and key in params:
             if value is not None:
-                raise TypeError(
-                    "Cannot assign '{}' as parameter '{}' "
-                    "(torch.nn.Parameter or None expected)"
-                    .format(type(value), key))
-            self.register_parameter(key, value)
-        else:
-            modules = self.__dict__.get('_modules')
-            if isinstance(value, Module):
-                if modules is None:
-                    raise AttributeError('Cannot assign module before Module.__init__().')
-                modules[key] = value
-            elif modules is not None and key in modules:
-                if value is not None:
-                    raise TypeError(
-                        "Cannot assign '{}' as child module '{}' "
-                        "(torch.nn.Module or None expected)"
-                        .format(type(value), key))
-                modules[key] = value
-            else:
-                object.__setattr__(self, key, value)
+                raise TypeError("Cannot assign '{}' as parameter '{}'."
+                                .format(type(value), key))
+            return self.register_parameter(key, value)
+        modules = self.__dict__.get('_modules')
+        if isinstance(value, Module):
+            if modules is None:
+                raise AttributeError('Cannot assign module before init.')
+            modules[key] = value
+            return
+        elif modules is not None and key in modules:
+            if value is not None:
+                raise TypeError("Cannot assign '{}' as child module '{}'."
+                                .format(type(value), key))
+            modules[key] = value
+            return
+        buffers = self.__dict__.get('_buffers')
+        if buffers is not None and key in buffers:
+            if value is not None and not isinstance(value, Tensor):
+                raise TypeError("Cannot assign '{}' as buffer '{}'."
+                                .format(type(value), key))
+            buffers[key] = value
+            return
+        object.__setattr__(self, key, value)
 
     def __setstate__(self, state):
         """Override to restore the module dict."""

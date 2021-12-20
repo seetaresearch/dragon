@@ -1,5 +1,5 @@
 #include "dragon/core/workspace.h"
-#include "dragon/operators/array/gather_ops.h"
+#include "dragon/operators/array/gather_op.h"
 #include "dragon/utils/math_functions.h"
 #include "dragon/utils/op_kernels.h"
 
@@ -8,8 +8,8 @@ namespace dragon {
 template <class Context>
 template <typename T>
 void GatherElementsOp<Context>::DoRunWithType() {
-  SET_INPUT_SPEC(0);
   auto &X = Input(0), &X_index = Input(1), *Y = Output(0);
+  Output("X_spec")->ReshapeLike(X);
   GET_OP_AXIS_ARG(axis, X.ndim(), 0);
 
   CHECK_GT(X_index.count(), 0) << "\nLength of index must > 0.";
@@ -34,34 +34,34 @@ template <class Context>
 template <typename T>
 void GatherElementsGradientOp<Context>::DoRunWithType() {
   auto &X_index = Input(0), &dY = Input(1);
-  auto &X_ref = INPUT_SPEC(0), *dX = Output(0);
-  GET_OP_AXIS_ARG(axis, X_ref.ndim(), 0);
+  auto &X_spec = Input("X_spec"), *dX = Output(0);
+  GET_OP_AXIS_ARG(axis, X_spec.ndim(), 0);
 
-  auto* dx = dX->ReshapeLike(X_ref)->template mutable_data<T, Context>();
+  auto* dx = dX->ReshapeLike(X_spec)->template mutable_data<T, Context>();
   auto* dx_acc = (TypeMeta::Id<T>() == TypeMeta::Id<float>())
       ? (float*)nullptr
-      : ctx()->workspace()->template data<float, Context>({dX->count()})[0];
+      : ctx()->workspace()->template data<float, Context>(dX->count());
 
-  // Empty gradient
+  // Empty gradient.
   math::Set(
       dX->count(),
       0.f,
       dx_acc != nullptr ? dx_acc : reinterpret_cast<float*>(dx),
       ctx());
 
-  // Scatter and accumulate to dX
+  // Scatter and accumulate to dX.
   kernels::ScatterAdd(
       axis,
-      X_ref.ndim(),
+      X_spec.ndim(),
       X_index.dims().data(),
       X_index.strides().data(),
-      X_ref.strides().data(),
+      X_spec.strides().data(),
       X_index.template data<int64_t, Context>(),
       dY.template data<T, Context>(),
       dx_acc != nullptr ? dx_acc : reinterpret_cast<float*>(dx),
       ctx());
 
-  // Convert to dX if necessary
+  // Convert to dX.
   if (dx_acc != nullptr) {
     math::Cast(dX->count(), dx_acc, dx, ctx());
   }

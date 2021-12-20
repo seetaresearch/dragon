@@ -363,14 +363,10 @@ def convolution(
         The output tensor.
 
     """
-    if filters.shape is not None:
-        num_total_dims = len(filters.shape)
-    elif input.shape is not None:
-        num_total_dims = len(input.shape)
-    else:
-        raise ValueError('Rank of <input> or <filters> must be known.')
+    num_total_dims = len(filters.shape)
     num_spatial_dims = num_total_dims - 2
     data_format = data_format if data_format else 'NHWC'
+    channel_axis = 1 if data_format.startswith('NC') else -1
     start_axis = 2 if data_format.startswith('NC') else 1
     normalize_spatial_args = functools.partial(
         _normalize_spatial_args,
@@ -383,11 +379,12 @@ def convolution(
     return getattr(vision_ops, '{}{}d'.format(
         kwargs.get('conv_type', 'conv'), num_spatial_dims))(
             [input, filters],
-            kernel_shape=filters.shape[start_axis:start_axis + num_spatial_dims],
+            kernel_shape=filters.shape[-num_spatial_dims:],
             strides=strides[start_axis:start_axis + num_spatial_dims],
             dilations=dilations[start_axis:start_axis + num_spatial_dims],
             padding=padding,
             pads=pads,
+            group=input.shape[channel_axis] // filters.shape[1],
             data_format='NCHW' if data_format.startswith('NC') else 'NHWC',
             name=name)
 

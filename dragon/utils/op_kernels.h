@@ -258,24 +258,6 @@ void TanhGrad(const int N, const T* dy, const T* y, T* dx, Context* ctx);
  */
 
 template <typename T, class Context>
-void ArgMax(
-    const int N,
-    const int S,
-    const int C,
-    const T* x,
-    int64_t* y,
-    Context* ctx);
-
-template <typename T, class Context>
-void ArgMin(
-    const int N,
-    const int S,
-    const int C,
-    const T* x,
-    int64_t* y,
-    Context* ctx);
-
-template <typename T, class Context>
 void Assign(
     const int num_dims,
     const int64_t* x_dims,
@@ -347,17 +329,6 @@ void ConstPad(
     Context* ctx);
 
 template <typename T, class Context>
-void CumSum(
-    const int N,
-    const int S,
-    const int C,
-    const bool exclusive,
-    const bool reverse,
-    const T* x,
-    T* y,
-    Context* ctx);
-
-template <typename T, class Context>
 void EdgePad(
     const int num_dims,
     const int64_t* x_dims,
@@ -366,14 +337,6 @@ void EdgePad(
     const int64_t* pads,
     const T* x,
     T* y,
-    Context* ctx);
-
-template <typename IndexT, class Context>
-void Flagged(
-    const int N,
-    const uint8_t* mask,
-    IndexT* index,
-    int* num_selected,
     Context* ctx);
 
 template <typename T, class Context>
@@ -457,17 +420,6 @@ void Range(
     const double start,
     const double delta,
     T* y,
-    Context* ctx);
-
-template <typename T, class Context>
-void ReduceSumGrad(
-    const int num_dims,
-    const int64_t* x_dims,
-    const int64_t* y_dims,
-    const int64_t* y_strides,
-    const float scale,
-    const T* dy,
-    T* dx,
     Context* ctx);
 
 template <typename T, class Context>
@@ -584,27 +536,6 @@ void Tile(
     const int64_t* y_dims,
     const T* x,
     T* y,
-    Context* ctx);
-
-template <typename T, class Context>
-void TileGrad(
-    const int N,
-    const int CxS,
-    const int repeats,
-    const T* dy,
-    T* dx,
-    Context* ctx);
-
-template <typename T, class Context>
-void TopK(
-    const int N,
-    const int S,
-    const int C,
-    const int K,
-    const int largest,
-    const T* x,
-    T* value,
-    int64_t* index,
     Context* ctx);
 
 template <typename T, class Context>
@@ -777,6 +708,24 @@ void SoftmaxCrossEntropyGrad(
  */
 
 template <typename T, class Context>
+void ArgMax(
+    const int N,
+    const int S,
+    const int C,
+    const T* x,
+    int64_t* y,
+    Context* ctx);
+
+template <typename T, class Context>
+void ArgMin(
+    const int N,
+    const int S,
+    const int C,
+    const T* x,
+    int64_t* y,
+    Context* ctx);
+
+template <typename T, class Context>
 void Clip(
     const int N,
     const float low,
@@ -798,12 +747,31 @@ void ClipGrad(
 template <typename T, class Context>
 void CosGrad(const int N, const T* dy, const T* x, T* dx, Context* ctx);
 
+template <typename T, class Context>
+void CumSum(
+    const int N,
+    const int S,
+    const int C,
+    const bool exclusive,
+    const bool reverse,
+    const T* x,
+    T* y,
+    Context* ctx);
+
+template <typename IndexT, class Context>
+void Flagged(
+    const int N,
+    const uint8_t* mask,
+    IndexT* index,
+    int* num_selected,
+    Context* ctx);
+
 template <typename T, typename AccT, class Context>
 void Moments(
     const int num_dims,
-    const int* dims,
+    const int64_t* dims,
     const int num_axes,
-    const int* axes,
+    const int64_t* axes,
     const T* x,
     AccT* mean,
     AccT* var,
@@ -813,10 +781,33 @@ template <typename T, class Context>
 void ReciprocalGrad(const int N, const T* dy, const T* y, T* dx, Context* ctx);
 
 template <typename T, class Context>
+void ReduceSumGrad(
+    const int num_dims,
+    const int64_t* x_dims,
+    const int64_t* y_dims,
+    const int64_t* y_strides,
+    const float scale,
+    const T* dy,
+    T* dx,
+    Context* ctx);
+
+template <typename T, class Context>
 void RsqrtGrad(const int N, const T* dy, const T* y, T* dx, Context* ctx);
 
 template <typename T, class Context>
 void SinGrad(const int N, const T* dy, const T* x, T* dx, Context* ctx);
+
+template <typename T, class Context>
+void TopK(
+    const int N,
+    const int S,
+    const int C,
+    const int K,
+    const int largest,
+    const T* x,
+    T* value,
+    int64_t* index,
+    Context* ctx);
 
 /*
  * NormalizationOp Kernels
@@ -1022,7 +1013,7 @@ void LSTMCellGrad(
  */
 
 template <typename T, class Context>
-void AdamUpdate(
+void Adam(
     const int N,
     const float lr,
     const float beta1,
@@ -1034,7 +1025,21 @@ void AdamUpdate(
     Context* ctx);
 
 template <typename T, class Context>
-void NesterovUpdate(
+void AdamW(
+    const int N,
+    const float lr,
+    const float beta1,
+    const float beta2,
+    const float eps,
+    const float wd,
+    const T* x,
+    T* g,
+    T* m,
+    T* v,
+    Context* ctx);
+
+template <typename T, class Context>
+void MomentumSGD(
     const int N,
     const float lr,
     const float momentum,
@@ -1043,7 +1048,16 @@ void NesterovUpdate(
     Context* ctx);
 
 template <typename T, class Context>
-void RMSPropUpdate(
+void NesterovSGD(
+    const int N,
+    const float lr,
+    const float momentum,
+    T* g,
+    T* m,
+    Context* ctx);
+
+template <typename T, class Context>
+void RMSprop(
     const int N,
     const float lr,
     const float momentum,
@@ -1052,15 +1066,6 @@ void RMSPropUpdate(
     T* g,
     T* m,
     T* v,
-    Context* ctx);
-
-template <typename T, class Context>
-void SGDUpdate(
-    const int N,
-    const float lr,
-    const float momentum,
-    T* g,
-    T* m,
     Context* ctx);
 
 /*

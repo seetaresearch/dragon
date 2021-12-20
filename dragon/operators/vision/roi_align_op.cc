@@ -9,10 +9,8 @@ template <class Context>
 template <typename T>
 void RoiAlignOp<Context>::DoRunWithType() {
   auto &X = Input(0), &RoI = Input(1), *Y = Output(0);
+  Output("X_spec")->ReshapeLike(X);
   Y->Reshape({RoI.dim(0), X.dim(1), out_h_, out_w_});
-
-  // Store for the gradient calculation
-  SET_INPUT_SPEC(0);
 
   kernels::RoiAlign(
       X.dim(1),
@@ -38,12 +36,12 @@ template <class Context>
 template <typename T>
 void RoiAlignGradientOp<Context>::DoRunWithType() {
   auto &RoI = Input(0), &dY = Input(1);
-  auto* dX = Output(0)->ReshapeLike(INPUT_SPEC(0));
+  auto* dX = Output(0)->ReshapeLike(Input("X_spec"));
 
   auto* dx = dX->template mutable_data<T, Context>();
   auto* dx_acc = (TypeMeta::Id<T>() == TypeMeta::Id<float>())
       ? (float*)nullptr
-      : ctx()->workspace()->template data<float, Context>({dX->count()})[0];
+      : ctx()->workspace()->template data<float, Context>(dX->count());
 
   // Empty gradient
   math::Set(

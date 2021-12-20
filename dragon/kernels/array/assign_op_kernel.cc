@@ -15,8 +15,7 @@ void _Assign(
     const int64_t* starts,
     const T* x,
     T* y) {
-  const auto N =
-      std::accumulate(x_dims, x_dims + num_dims, 1, std::multiplies<int64_t>());
+  const auto N = math::utils::Prod(num_dims, x_dims);
   vec64_t index(num_dims, 0);
   int yi;
   for (int xi = 0; xi < N; ++xi) {

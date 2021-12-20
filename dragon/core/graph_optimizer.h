@@ -29,29 +29,19 @@ class GraphOptimizer {
     OperatorDef op_def;
   };
 
-  /*! \brief Default constructor */
-  GraphOptimizer(Workspace* ws) : ws_(ws) {}
+  /*! \brief Constructor */
+  GraphOptimizer() {}
 
   /*! \brief Build the DAG */
   void BuildDAG(const GraphDef& graph);
 
-  /*! \brief Plan the inplace for inputs */
-  void PlanInplace(
-      const GraphDef& graph,
-      Map<string, Set<string>>& output_aliases);
-
-  /*! \brief Plan the checkpoint for inputs */
-  GraphDef PlanCheckpoint(
-      const GraphDef& graph,
-      Map<string, vec32_t>& subgraph_indices);
+  /*! \brief Plan the in-place for outputs */
+  void PlanInplace(const GraphDef& graph, Map<string, Set<string>>& sources);
 
   /*! \brief Eliminate the intermediate outputs */
   GraphDef EliminateIntermediates(const GraphDef& graph);
 
  protected:
-  /* \brief The graph workspace */
-  Workspace* ws_;
-
   /* \brief The graph nodes */
   Map<string, Node> nodes_;
 

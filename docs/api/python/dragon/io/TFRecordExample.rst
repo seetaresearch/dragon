@@ -22,6 +22,10 @@ add_strings
 ###########
 .. automethod:: dragon.io.TFRecordExample.add_strings
 
+parse_from
+##########
+.. automethod:: dragon.io.TFRecordExample.parse_from
+
 serialize_to
 ############
 .. automethod:: dragon.io.TFRecordExample.serialize_to

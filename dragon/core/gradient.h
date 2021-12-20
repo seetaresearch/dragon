@@ -31,9 +31,11 @@ class GradientMakerBase {
   virtual bool CopyArguments() const {
     return true;
   }
+
   virtual bool CopyDeviceOption() const {
     return true;
   }
+
   virtual bool CopyEngine() const {
     return true;
   }
@@ -46,7 +48,7 @@ class GradientMakerBase {
       if (arg.name() == "cache_key") cache_key = arg.s();
     }
     Argument new_arg;
-    new_arg.set_name("handle");
+    new_arg.set_name("name");
     new_arg.set_s(def_.name());
     for (auto& grad_def : grad_defs_) {
       if (CopyDeviceOption() && def_.has_device_option()) {

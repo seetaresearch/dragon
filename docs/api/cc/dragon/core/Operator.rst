@@ -11,10 +11,6 @@ Constructors
 Public Functions
 ----------------
 
-Buffer
-######
-.. doxygenfunction:: dragon::Operator::Buffer
-
 DeriveFrom
 ##########
 .. doxygenfunction:: dragon::Operator::DeriveFrom
@@ -33,15 +29,15 @@ GetArgument
 
 Input
 #####
-.. doxygenfunction:: dragon::Operator::Input
+.. doxygenfunction:: dragon::Operator::Input(int index)
+
+Input
+#####
+.. doxygenfunction:: dragon::Operator::Input(const string &name)
 
 InputSize
 #########
 .. doxygenfunction:: dragon::Operator::InputSize
-
-Output
-######
-.. doxygenfunction:: dragon::Operator::Output(int i)
 
 MessageForUnsupported
 #####################
@@ -49,7 +45,15 @@ MessageForUnsupported
 
 Output
 ######
-.. doxygenfunction:: dragon::Operator::Output(int i, const vec32_t &inputs)
+.. doxygenfunction:: dragon::Operator::Output(int index)
+
+Output
+######
+.. doxygenfunction:: dragon::Operator::Output(int index, const vector<int> &inputs_at)
+
+Output
+######
+.. doxygenfunction:: dragon::Operator::Output(const string &name)
 
 OutputSize
 ##########
@@ -59,10 +63,6 @@ Run
 ###
 .. doxygenfunction:: dragon::Operator::Run
 
-data_format
-###########
-.. doxygenfunction:: dragon::Operator::data_format
-
 arg
 ###
 .. doxygenfunction:: dragon::Operator::arg
@@ -71,17 +71,17 @@ args
 ####
 .. doxygenfunction:: dragon::Operator::args
 
+data_format
+###########
+.. doxygenfunction:: dragon::Operator::data_format
+
+data_type
+#########
+.. doxygenfunction:: dragon::Operator::data_type
+
 def
 ###
 .. doxygenfunction:: dragon::Operator::def
-
-dtype
-#####
-.. doxygenfunction:: dragon::Operator::dtype
-
-handle
-######
-.. doxygenfunction:: dragon::Operator::handle
 
 name
 ####

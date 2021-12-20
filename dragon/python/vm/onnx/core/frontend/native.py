@@ -24,8 +24,8 @@ except ImportError:
     onnx = None
 
 from dragon.core.autograph import context as eager_context
-from dragon.core.autograph import tape
-from dragon.core.autograph.graph_impl import GraphLib
+from dragon.core.autograph.graph_lib import GraphLib
+from dragon.core.framework import tapes
 from dragon.core.framework import types
 from dragon.core.framework import workspace as workspace_util
 from dragon.core.proto import dragon_pb2
@@ -317,7 +317,9 @@ def record():
     `dragon.onnx.export(...)`_
 
     """
-    return tape._GLOBAL_TAPE_STACK.get_controller(tape.GraphTape())
+    graph_tape = tapes.Tape()
+    graph_tape._exporting = True
+    return tapes._GLOBAL_TAPE_STACK.get_controller(graph_tape)
 
 
 def export(
@@ -386,10 +388,10 @@ def export(
 
     if eager_context.executing_eagerly():
         op_defs = []
-        graph_tape = tape.get_tape()
-        if not isinstance(graph_tape, tape.GraphTape):
+        graph_tape = tapes.get_tape()
+        if not hasattr(graph_tape, '_exporting'):
             raise RuntimeError('Please enter with ``onnx.frontend.record()``.')
-        for op_def in graph_tape.get_op_defs():
+        for op_def in graph_tape.get_elements():
             op_defs.append(dragon_pb2.OperatorDef())
             op_defs[-1].ParseFromString(op_def.SerializeAs())
         graph_def = dragon_pb2.GraphDef(op=op_defs)

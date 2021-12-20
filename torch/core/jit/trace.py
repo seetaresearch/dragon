@@ -13,13 +13,9 @@ from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
 
-import collections
-import weakref
-
-from dragon.core.autograph import tape
-from dragon.core.autograph.function_impl import FunctionSpec
-from dragon.core.autograph.function_impl import class_method_to_instance_method
+from dragon.core.autograph import function_lib
 from dragon.core.framework import context
+from dragon.core.framework import tapes
 from dragon.core.framework import workspace
 from dragon.core.util import decorator
 from dragon.core.util import nest
@@ -27,109 +23,52 @@ from dragon.vm.torch.core.nn.modules.module import Module
 from dragon.vm.torch.core.tensor import Tensor
 
 
-class FunctionGuard(object):
-    """Map the python function to workspace-local functions."""
+class FunctionGuard(function_lib.FunctionGuard):
+    """Map the run function to workspace-local functions."""
 
-    def __init__(self, python_function, input_signature=None):
-        self._python_function = python_function
-        self._spec = FunctionSpec.from_function_and_signature(
-            python_function, input_signature)
-        self._defs = collections.defaultdict(list)
-        self._inputs = collections.defaultdict(list)
-        self._outputs = collections.defaultdict(list)
-        self._descriptor_cache = weakref.WeakKeyDictionary()
-
-    @property
-    def defs(self):
-        """Return the recorded operator defs."""
-        return self._defs.get(id(workspace.get_workspace()), None)
-
-    @defs.setter
-    def defs(self, value):
-        """Set the recorded operator defs."""
-        self._defs[id(workspace.get_workspace())] = value
-
-    @property
-    def inputs(self):
-        """Return the input symbols."""
-        return self._inputs.get(id(workspace.get_workspace()), None)
-
-    @inputs.setter
-    def inputs(self, value):
-        """Set the input symbols."""
-        self._inputs[id(workspace.get_workspace())] = value
-
-    @property
-    def input_signature(self):
-        """Return the defined input signature."""
-        return self._spec.input_signature
-
-    @property
-    def outputs(self):
-        """Return the output symbols."""
-        return self._outputs.get(id(workspace.get_workspace()), None)
-
-    @outputs.setter
-    def outputs(self, value):
-        """Set the output symbols."""
-        self._outputs[id(workspace.get_workspace())] = value
-
-    @property
-    def python_function(self):
-        """Return the defined python function."""
-        return self._python_function
-
-    def separate_inputs(self, *args, **kwargs):
-        """Separate inputs from the call arguments."""
-        inputs, kwargs = self._spec.separate_inputs(*args, **kwargs)
-        execute_ws = workspace.get_workspace()
-        for input, value in zip(self.inputs, inputs):
-            if hasattr(value, 'id'):
-                execute_ws.set_alias(value.id, input.id)
-        return self.inputs, kwargs
+    def _trace_operators(self, *args, **kwargs):
+        attributes = self._attribute_cache[workspace.get_workspace()]
+        input_signature = self._spec.input_signature
+        args, kwargs = self._spec.separate_inputs(*args, **kwargs)
+        inputs = []
+        with context.variable_scope('%s/Variable' % id(self)):
+            for i in range(self._spec.num_inputs):
+                input, input_spec = args[i], None
+                if input_signature is not None:
+                    input_spec = input_signature[i]
+                if not isinstance(input, Tensor) and input_spec is None:
+                    inputs.append(input)
+                    continue
+                shape = getattr(input, 'shape', None)
+                dtype = getattr(input, 'dtype', None)
+                device = getattr(input, 'device', None)
+                if input_spec is not None:
+                    device = input_spec['device']
+                    shape, dtype = input_spec['shape'], input_spec['dtype']
+                inputs.append(Tensor(*shape, dtype=dtype, device=device))
+            with tapes.Tape() as function_tape:
+                function_tape._tracing = True
+                attributes['inputs'] = inputs
+                attributes['outputs'] = self._run_function(*inputs, **kwargs)
+                attributes['operators'] = function_tape.get_elements()
+        return attributes['operators']
 
     def __call__(self, *args, **kwargs):
         """Call the traced function."""
-        if self.defs is None:
-            inputs = []
-            input_signature = self.input_signature
-            with context.variable_scope('%s/Variable' % id(self)):
-                for i in range(self._spec.num_inputs):
-                    if input_signature is not None:
-                        if i >= len(input_signature):
-                            raise ValueError(
-                                'When <example_inputs> is provided, '
-                                'only define arguments covered by it.\n'
-                                'Got %d inputs(s) and %d argument(s).'
-                                % (len(input_signature), self._spec.num_inputs))
-                        if input_signature[i] is not None:
-                            inputs.append(Tensor(
-                                *input_signature[i]['shape'],
-                                dtype=input_signature[i]['dtype'],
-                                device=input_signature[i]['device']))
-                        else:
-                            inputs.append(Tensor(1))
-                    else:
-                        inputs.append(Tensor(1))
-                self.inputs = inputs
-                with tape.GraphTape() as function_tape:
-                    inputs, kwargs = self.separate_inputs(*args, **kwargs)
-                    self.outputs = self._python_function(*inputs, **kwargs)
-                    self.defs = function_tape.get_op_defs()
-        else:
-            self.separate_inputs(*args, **kwargs)
-            workspace.get_workspace().run_operator(self.defs)
-        return self.outputs
-
-    def __get__(self, instance, owner):
-        """Override to patch the instance methods."""
-        del owner
-        if instance not in self._descriptor_cache:
-            if instance is None:
-                return self
-            self._descriptor_cache[instance] = \
-                class_method_to_instance_method(self, instance)
-        return self._descriptor_cache[instance]
+        execute_ws = workspace.get_workspace()
+        attributes = self._attribute_cache[execute_ws]
+        operators = attributes.get('operators', None)
+        if operators is None:
+            operators = self._trace_operators(*args, **kwargs)
+        inputs = attributes['inputs']
+        values, _ = self._spec.separate_inputs(*args, **kwargs)
+        for input, value in zip(inputs, values):
+            if not isinstance(input, Tensor):
+                continue
+            if hasattr(value, 'id'):
+                execute_ws.set_alias(value.id, input.id)
+        execute_ws.run_operator(operators)
+        return attributes['outputs']
 
 
 def trace(func=None, example_inputs=None):

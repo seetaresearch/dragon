@@ -12,13 +12,13 @@ REGISTER_CUDA_OPERATOR(SyncBatchNormGradient, BatchNormGradientOp<CUDAContext>);
 #endif
 
 OPERATOR_SCHEMA(SyncBatchNorm)
-    /* X, W, B, RunningMean, RunningVar */
+    /* X, W, B, M, V */
     .NumInputs(5)
     /* Y */
     .NumOutputs(1);
 
 OPERATOR_SCHEMA(SyncBatchNormGradient)
-    /* X, W, RunningMean, RunningVar, dY */
+    /* X, W, M, V, dY */
     .NumInputs(5)
     /* dX, dW, dB */
     .NumOutputs(3);

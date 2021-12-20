@@ -32,46 +32,10 @@ namespace dragon {
 
 namespace math {
 
-/*
- * Math Wrappers
- */
-
-template <typename T>
-class ScalarType {
- public:
-  typedef T type;
-};
-
-#if defined(__CUDACC__)
-template <>
-class ScalarType<float16> {
- public:
-  typedef half type;
-};
-#endif
-
-template <typename T>
-class AccmulatorType {
- public:
-  typedef float type;
-};
-
-template <>
-class AccmulatorType<int64_t> {
- public:
-  typedef double type;
-};
-
-template <>
-class AccmulatorType<double> {
- public:
-  typedef double type;
-};
-
 namespace utils {
 
 /*
- * Common Functions
+ * Common Functions.
  */
 
 template <
@@ -86,6 +50,13 @@ template <
     typename std::enable_if<std::is_integral<T>::value, int>::type = 0>
 MATH_UTILS_DECL T IsNaN(const T x) {
   return false;
+}
+
+template <
+    typename T,
+    typename std::enable_if<std::is_integral<T>::value, int>::type = 0>
+MATH_UTILS_DECL T IsFinite(const T x) {
+  return true;
 }
 
 template <
@@ -110,12 +81,28 @@ MATH_UTILS_DECL bool IsNaN(T x) {
 #endif
 }
 
+template <
+    typename T,
+    typename std::enable_if<std::is_floating_point<T>::value, int>::type = 0>
+MATH_UTILS_DECL bool IsFinite(T x) {
+#if defined(__CUDACC__)
+  return isfinite(x);
+#else
+  return std::isfinite(x);
+#endif
+}
+
 inline bool IsInf(float16 x) {
   return std::abs(convert::To<float>(x)) > HFLT_MAX;
 }
 
 inline bool IsNaN(float16 x) {
   return IsNaN(convert::To<float>(x));
+}
+
+inline bool IsFinite(float16 x) {
+  const float v = convert::To<float>(x);
+  return !(std::abs(v) > HFLT_MAX || IsNaN(v));
 }
 
 template <typename T>
@@ -129,6 +116,11 @@ MATH_UTILS_DECL T Sign(const T x) {
 }
 
 template <typename T>
+MATH_UTILS_DECL T Identity(const T x) {
+  return x;
+}
+
+template <typename T>
 MATH_UTILS_DECL T Square(const T x) {
   return x * x;
 }
@@ -139,7 +131,7 @@ MATH_UTILS_DECL T Cube(const T x) {
 }
 
 /*
- * CUDA Functions
+ * CUDA Functions.
  */
 
 #if defined(__CUDACC__)
@@ -158,6 +150,15 @@ inline __device__ bool IsNaN(half x) {
   return __hisnan(x);
 #else
   return isnan(__half2float(x));
+#endif
+}
+
+inline __device__ bool IsFinite(half x) {
+#if __CUDA_ARCH__ >= 530
+  return !(__hisinf(x) || __hisnan(x));
+#else
+  const float v = __half2float(x);
+  return !(isinf(v) || isnan(v));
 #endif
 }
 
@@ -197,7 +198,7 @@ inline __device__ half2 Cube(half2 x) {
 #endif // defined(__CUDACC__)
 
 /*
- * Math Utilities
+ * Math Utilities.
  */
 
 template <typename T>
@@ -205,150 +206,22 @@ inline T DivUp(const T a, const T b) {
   return (a + b - T(1)) / b;
 }
 
+template <typename T, typename DimT>
+inline T Prod(const DimT N, const T* v) {
+  return std::accumulate(v, v + N, T(1), std::multiplies<T>());
+}
+
 template <typename T>
-inline void ArgPartition(
-    const int count,
-    const int kth,
-    const bool descend,
-    const T* v,
-    vec64_t& indices) {
-  indices.resize(count);
-  std::iota(indices.begin(), indices.end(), 0);
-  if (descend) {
-    std::nth_element(
-        indices.begin(),
-        indices.begin() + kth,
-        indices.end(),
-        [&v](int64_t i1, int64_t i2) { return v[i1] > v[i2]; });
-  } else {
-    std::nth_element(
-        indices.begin(),
-        indices.begin() + kth,
-        indices.end(),
-        [&v](int64_t i1, int64_t i2) { return v[i1] < v[i2]; });
-  }
+inline T Prod(const vector<T> v) {
+  return std::accumulate(v.begin(), v.end(), T(1), std::multiplies<T>());
 }
 
-DRAGON_API bool IsBinaryBroadcast(
-    const vec64_t& A_dims,
-    const vec64_t& B_dims,
-    vec64_t& Y_dims);
-
-DRAGON_API bool IsRowwiseBroadcast(
-    const vec64_t& A_dims,
-    const vec64_t& B_dims,
-    int* rows,
-    int* cols,
-    int* broadcast_1st = nullptr);
-
-DRAGON_API bool IsColwiseBroadcast(
-    const vec64_t& A_dims,
-    const vec64_t& B_dims,
-    int* rows,
-    int* cols,
-    int* broadcast_1st = nullptr);
-
-DRAGON_API bool IsRowwiseReduce(
-    const int num_dims,
-    const int* A_dims,
-    const int* B_dims,
-    int* rows,
-    int* cols);
-
-DRAGON_API bool IsColwiseReduce(
-    const int num_dims,
-    const int* A_dims,
-    const int* B_dims,
-    int* rows,
-    int* cols);
-
-DRAGON_API void ComputeBinaryBroadcastDims(
-    const vec64_t& A_dims,
-    const vec64_t& B_dims,
-    vec64_t& A_broadcast_dims,
-    vec64_t& B_broadcast_dims,
-    int64_t* C_broadcast_dims = nullptr);
-
-DRAGON_API void ComputeBinaryBroadcastStrides(
-    const vec64_t& A_dims,
-    const vec64_t& B_dims,
-    vec64_t& A_broadcast_strides,
-    vec64_t& B_broadcast_strides,
-    vec64_t& Y_dims);
-
-DRAGON_API void ComputeBinaryBroadcastAxes(
-    const vec64_t& A_dims,
-    const vec64_t& B_dims,
-    const vec64_t& Y_dims,
-    vec32_t& A_broadcast_axes,
-    vec32_t& B_broadcast_axes);
-
-DRAGON_API void TransposeAxesForReduce(
-    const int num_dims,
-    const int num_axes,
-    const int* reduce_axes,
-    int* transpose_axes);
-
-template <typename DimT, typename StrideT>
-inline void
-ComputeStrides(const int num_dims, const DimT* dims, StrideT* strides) {
-  int64_t cur_stride = 1;
-  for (int i = num_dims - 1; i >= 0; --i) {
-    strides[i] = StrideT(cur_stride);
-    cur_stride *= int64_t(dims[i]);
-  }
-}
-
-template <typename DimT, typename AxisT, typename StrideT>
-inline void ComputeTransposeStrides(
-    const int num_dims,
-    const DimT* dims,
-    const AxisT* axes,
-    StrideT* strides) {
-  vec64_t buf(num_dims);
-  int64_t cur_stride = 1;
-  for (int i = num_dims - 1; i >= 0; --i) {
-    buf[i] = cur_stride;
-    cur_stride *= int64_t(dims[i]);
-  }
-  for (int i = 0; i < num_dims; ++i) {
-    strides[i] = StrideT(buf[axes[i]]);
-  }
-}
-
-template <typename DimT, typename AxisT>
-inline void CollapseTransposeAxes(
-    const int num_dims,
-    const DimT* dims,
-    const AxisT* axes,
-    vector<DimT>& new_dims,
-    vector<AxisT>& new_axes) {
-  new_dims = vector<DimT>(dims, dims + num_dims);
-  new_axes = vector<AxisT>({axes[0]});
-  vector<AxisT> collapse_axes;
-  for (int i = 1; i < num_dims; ++i) {
-    if (axes[i] - 1 == axes[i - 1]) {
-      collapse_axes.push_back(axes[i]);
-      new_dims[axes[i]] *= new_dims[axes[i] - 1];
-      new_dims[axes[i] - 1] = -1;
-    } else {
-      new_axes.push_back(axes[i]);
-    }
-  }
-  const auto& erase_iter = std::remove_if(
-      new_dims.begin(), new_dims.end(), [](int x) { return x == -1; });
-  new_dims.erase(erase_iter, new_dims.end());
-  for (int i = 0; i < new_axes.size(); ++i) {
-    const auto axis = new_axes[i];
-    for (auto collapse_axis : collapse_axes) {
-      if (axis > collapse_axis) new_axes[i]--;
-    }
-  }
-}
+/*
+ * Indexing Utilities.
+ */
 
 template <typename DimT, typename IndexT>
-inline IndexT
-GetIndexFromDims(const int num_dims, const DimT* dims, IndexT* index) {
+IndexT GetIndexFromDims(const int num_dims, const DimT* dims, IndexT* index) {
   IndexT ret = 0;
   for (int i = 0; i < num_dims; ++i) {
     if (dims[i] > 1) ret = ret * dims[i] + index[i];
@@ -357,8 +230,7 @@ GetIndexFromDims(const int num_dims, const DimT* dims, IndexT* index) {
 }
 
 template <typename DimT, typename IndexT>
-inline void
-IncreaseIndexInDims(const int num_dims, const DimT* dims, IndexT* index) {
+void IncreaseIndexInDims(const int num_dims, const DimT* dims, IndexT* index) {
   for (int i = num_dims - 1; i >= 0; --i) {
     ++index[i];
     if (index[i] >= dims[i]) {

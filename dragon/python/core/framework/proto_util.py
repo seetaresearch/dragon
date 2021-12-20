@@ -45,6 +45,8 @@ def make_argument(key, value):
         argument.ints.extend(value)
     elif all(type(v) is str for v in value):
         argument.strings.extend([str.encode(v) for v in value])
+    elif all(type(v) is bytes for v in value):
+        argument.strings.extend(value)
     elif all(isinstance(v, message_proto.Message) for v in value):
         argument.strings.extend([v.SerializeToString() for v in value])
     else:

@@ -1,6 +1,7 @@
 #ifdef USE_CUDA
 
 #include "dragon/core/context_cuda.h"
+#include "dragon/utils/math_functions.h"
 #include "dragon/utils/op_kernels.h"
 
 namespace dragon {
@@ -40,8 +41,7 @@ void _RollImpl(
     T* y,
     CUDAContext* ctx) {
   SimpleArray<int, D> X_shifts, X_strides, Y_dims;
-  const auto N =
-      std::accumulate(y_dims, y_dims + D, 1, std::multiplies<int64_t>());
+  const auto N = math::utils::Prod(D, y_dims);
   for (int i = 0; i < D; ++i) {
     X_shifts.data[i] = x_shifts[i];
     X_strides.data[i] = x_strides[i];

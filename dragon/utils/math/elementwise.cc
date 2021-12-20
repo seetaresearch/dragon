@@ -97,12 +97,12 @@ DEFINE_UNARY_FUNC(Square, float16);
 DEFINE_UNARY_FUNC(Not, bool);
 #undef DEFINE_UNARY_FUNC
 
-#define DEFINE_UNARY_FUNC(name, T, expr)                   \
+#define DEFINE_UNARY_FUNC(name, T, Expr)                   \
   template <>                                              \
   DRAGON_API void name<T, CPUContext>(                     \
       const int N, const T* x, T* y, CPUContext* ctx) {    \
     EigenVectorArrayMap<T>(y, N) =                         \
-        ConstEigenVectorArrayMap<T>(x, N).unaryExpr(expr); \
+        ConstEigenVectorArrayMap<T>(x, N).unaryExpr(Expr); \
   }
 
 DEFINE_UNARY_FUNC(Sign, uint8_t, [](uint8_t x) {
@@ -318,6 +318,29 @@ DRAGON_API void IsNaN<float16, CPUContext>(
 DEFINE_IS_NAN_FUNC(float);
 DEFINE_IS_NAN_FUNC(double);
 #undef DEFINE_IS_NAN_FUNC
+
+#define DEFINE_IS_FINITE_FUNC(T)                           \
+  template <>                                              \
+  DRAGON_API void IsFinite<T, CPUContext>(                 \
+      const int N, const T* x, bool* y, CPUContext* ctx) { \
+    EigenVectorArrayMap<bool>(y, N) =                      \
+        ConstEigenVectorArrayMap<T>(x, N).isFinite();      \
+  }
+
+template <>
+DRAGON_API void IsFinite<float16, CPUContext>(
+    const int N,
+    const float16* x,
+    bool* y,
+    CPUContext* ctx) {
+  for (int i = 0; i < N; ++i) {
+    y[i] = math::utils::IsFinite(x[i]);
+  }
+}
+
+DEFINE_IS_FINITE_FUNC(float);
+DEFINE_IS_FINITE_FUNC(double);
+#undef DEFINE_IS_FINITE_FUNC
 
 #define DEFINE_REPLACE_NAN_FUNC(T)                                     \
   template <>                                                          \

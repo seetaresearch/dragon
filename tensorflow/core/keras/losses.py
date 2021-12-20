@@ -17,13 +17,13 @@ from dragon.core.framework import context
 from dragon.core.ops import loss_ops
 from dragon.core.util import six
 from dragon.vm.tensorflow.core.keras.utils import generic_utils
-from dragon.vm.tensorflow.core.keras.utils import losses_utils
+from dragon.vm.tensorflow.core.keras.utils.losses_utils import Reduction
 
 
 class Loss(object):
     """The base class for loss criterion."""
 
-    def __init__(self, reduction=losses_utils.Reduction.MEAN, name=None):
+    def __init__(self, reduction=Reduction.MEAN, name=None):
         """Create a ``Loss`` criterion.
 
         Parameters
@@ -34,7 +34,7 @@ class Loss(object):
             The operation name.
 
         """
-        losses_utils.Reduction.validate(reduction)
+        Reduction.validate(reduction)
         self.reduction = reduction
         self.name = name
 
@@ -66,13 +66,7 @@ class Loss(object):
 class LossFunctionWrapper(Loss):
     """Wrap loss class over the function."""
 
-    def __init__(
-        self,
-        fn,
-        reduction=losses_utils.Reduction.SUM,
-        name=None,
-        **kwargs
-    ):
+    def __init__(self, fn, reduction=Reduction.SUM, name=None, **kwargs):
         super(LossFunctionWrapper, self).__init__(
             reduction=reduction, name=name)
         self.fn = fn
@@ -100,11 +94,7 @@ class BinaryCrossentropy(LossFunctionWrapper):
 
     """
 
-    def __init__(
-        self,
-        reduction=losses_utils.Reduction.MEAN,
-        name=None,
-    ):
+    def __init__(self, reduction=Reduction.MEAN, name=None):
         """Create a ``BinaryCrossentropy`` criterion.
 
         Parameters
@@ -116,10 +106,7 @@ class BinaryCrossentropy(LossFunctionWrapper):
 
         """
         super(BinaryCrossentropy, self).__init__(
-            binary_crossentropy,
-            reduction=reduction,
-            name=name,
-        )
+            binary_crossentropy, reduction=reduction, name=name)
 
 
 class CategoricalCrossentropy(LossFunctionWrapper):
@@ -140,12 +127,7 @@ class CategoricalCrossentropy(LossFunctionWrapper):
 
     """
 
-    def __init__(
-        self,
-        axis=-1,
-        reduction=losses_utils.Reduction.MEAN,
-        name=None,
-    ):
+    def __init__(self, axis=-1, reduction=Reduction.MEAN, name=None):
         """Create a ``CategoricalCrossentropy`` criterion.
 
         Parameters
@@ -180,11 +162,7 @@ class MeanAbsoluteError(LossFunctionWrapper):
 
     """
 
-    def __init__(
-        self,
-        reduction=losses_utils.Reduction.MEAN,
-        name=None,
-    ):
+    def __init__(self, reduction=Reduction.MEAN, name=None):
         """Create a ``MeanAbsoluteError`` criterion.
 
         Parameters
@@ -217,11 +195,7 @@ class MeanSquaredError(LossFunctionWrapper):
 
     """
 
-    def __init__(
-        self,
-        reduction=losses_utils.Reduction.MEAN,
-        name=None,
-    ):
+    def __init__(self, reduction=Reduction.MEAN, name=None):
         """Create a ``MeanSquaredError`` criterion.
 
         Parameters
@@ -258,7 +232,7 @@ class SparseCategoricalCrossentropy(LossFunctionWrapper):
         self,
         axis=-1,
         ignore_index=None,
-        reduction=losses_utils.Reduction.VALID,
+        reduction=Reduction.VALID,
         name=None,
     ):
         """Create a ``SparseCategoricalCrossentropy`` criterion.
@@ -284,7 +258,7 @@ class SparseCategoricalCrossentropy(LossFunctionWrapper):
         )
 
 
-def binary_crossentropy(y_true, y_pred, reduction=losses_utils.Reduction.VALID):
+def binary_crossentropy(y_true, y_pred, reduction=Reduction.VALID):
     r"""Compute the binary cross entropy with contiguous targets.
 
     The **CrossEntropy** function is defined as:
@@ -318,12 +292,7 @@ def binary_crossentropy(y_true, y_pred, reduction=losses_utils.Reduction.VALID):
         [y_pred, y_true], reduction=reduction.upper())
 
 
-def categorical_crossentropy(
-    y_true,
-    y_pred,
-    axis=-1,
-    reduction=losses_utils.Reduction.MEAN,
-):
+def categorical_crossentropy(y_true, y_pred, axis=-1, reduction=Reduction.MEAN):
     """Compute the categorical cross entropy with contiguous targets.
 
     Examples:
@@ -355,7 +324,7 @@ def categorical_crossentropy(
         [y_pred, y_true], axis=axis, reduction=reduction.upper())
 
 
-def mean_absolute_error(y_true, y_pred, reduction=losses_utils.Reduction.MEAN):
+def mean_absolute_error(y_true, y_pred, reduction=Reduction.MEAN):
     """Compute the reduced element-wise absolute value difference.
 
     Examples:
@@ -379,7 +348,7 @@ def mean_absolute_error(y_true, y_pred, reduction=losses_utils.Reduction.MEAN):
     return loss_ops.l1_loss([y_pred, y_true], reduction=reduction.upper())
 
 
-def mean_squared_error(y_true, y_pred, reduction=losses_utils.Reduction.MEAN):
+def mean_squared_error(y_true, y_pred, reduction=Reduction.MEAN):
     r"""Compute the reduced element-wise squared error.
 
     Examples:
@@ -413,7 +382,7 @@ def sparse_categorical_crossentropy(
     y_pred,
     axis=-1,
     ignore_index=None,
-    reduction=losses_utils.Reduction.VALID,
+    reduction=Reduction.VALID,
 ):
     r"""Compute the categorical cross entropy with sparse labels.
 

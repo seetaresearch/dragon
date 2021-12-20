@@ -47,8 +47,7 @@ __global__ void _Reverse(
     CUDA_TENSOR_DIMS_CHECK(num_dims);                                  \
     SimpleArray<uint8_t, CUDA_TENSOR_MAX_DIMS> X_flips;                \
     SimpleArray<int, CUDA_TENSOR_MAX_DIMS> X_strides, Y_dims;          \
-    const auto N = std::accumulate(                                    \
-        y_dims, y_dims + num_dims, 1, std::multiplies<int64_t>());     \
+    const auto N = math::utils::Prod(num_dims, y_dims);                \
     for (int i = 0; i < num_dims; ++i) {                               \
       X_flips.data[i] = x_flips[i];                                    \
       X_strides.data[i] = x_strides[i];                                \

@@ -455,7 +455,7 @@ def gather_elements_spec(args, inputs, outputs):
     return outputs
 
 
-@register(['IsInf', 'IsNaN', 'Not'])
+@register(['IsFinite', 'IsInf', 'IsNaN', 'Not'])
 def is_spec(args, inputs, outputs):
     outputs[0]._dtype = 'bool'
     try:
@@ -649,7 +649,10 @@ def range_spec(args, inputs, outputs):
     'ReduceMax',
     'ReduceMean',
     'ReduceMin',
-    'ReduceSum'])
+    'ReduceSum',
+    'ReduceL1',
+    'ReduceL2',
+])
 def reduce_spec(args, inputs, outputs):
     outputs[0]._dtype = inputs[0].dtype
     axes, keepdims = args['axes'], args['keepdims']
@@ -659,18 +662,17 @@ def reduce_spec(args, inputs, outputs):
         try:
             out_shape = list(inputs[0].shape[:])
             for axis in axes:
-                if axis < len(out_shape):
-                    out_shape[axis] = -1
+                out_shape[axis] = -1
             if not keepdims:
                 squeezed_shape = []
                 for d in out_shape:
-                    if d >= 0:
+                    if d != -1:
                         squeezed_shape.append(d)
                 out_shape = squeezed_shape
             else:
                 out_shape = [1 if d < 0 else d for d in out_shape]
             outputs[0]._shape = tuple(out_shape)
-        except TypeError:
+        except (TypeError, IndexError):
             outputs[0]._shape = None
     return outputs
 
@@ -888,9 +890,8 @@ def split_spec(args, inputs, outputs):
     for i in range(num_outputs):
         outputs[i]._dtype = inputs[0].dtype
     axis = args['axis']
-    size_splits = args['size_splits']
-    slice_points = args['slice_points']
-    slice_offset = 0
+    keepdims = args.get('keepdims', True)
+    size_splits = args.get('split', None)
     for i in range(len(outputs)):
         try:
             if axis >= len(inputs[0].shape[:]):
@@ -898,18 +899,10 @@ def split_spec(args, inputs, outputs):
             out_shape = list(inputs[0].shape[:])
         except TypeError:
             return outputs
-        if size_splits is not None:
+        if 'split_desc' in args:
+            out_shape[axis] = None
+        elif size_splits is not None:
             out_shape[axis] = size_splits[i]
-        elif slice_points is not None:
-            try:
-                if i < len(outputs) - 1:
-                    slice_dim = slice_points[i] - slice_offset
-                    slice_offset += slice_dim
-                else:
-                    slice_dim = inputs[0].shape[axis] - slice_offset
-                out_shape[axis] = slice_dim
-            except TypeError:
-                out_shape[axis] = None
         else:
             try:
                 slice_dim = (out_shape[axis] + num_outputs - 1) // num_outputs
@@ -918,7 +911,10 @@ def split_spec(args, inputs, outputs):
                 out_shape[axis] = slice_dim
             except TypeError:
                 out_shape[axis] = None
-        outputs[i]._shape = tuple(out_shape) if out_shape is not None else None
+        if out_shape is not None:
+            if not keepdims:
+                out_shape.pop(axis)
+            outputs[i]._shape = tuple(out_shape)
     return outputs
 
 
@@ -983,12 +979,16 @@ def tile_spec(args, inputs, outputs):
         out_shape = list(inputs[0].shape[:])
         if 'repeats' in args:
             repeats = args['repeats']
+            num_repeats = len(repeats)
+            num_dims = max(num_repeats, len(out_shape))
+            start_axis = num_dims - len(out_shape)
+            out_shape = [1] * start_axis + out_shape[:]
             for i, size in enumerate(repeats):
-                if i < len(out_shape):
-                    try:
-                        out_shape[i] *= size
-                    except TypeError:
-                        out_shape[i] = None
+                start_axis = i + (num_dims - num_repeats)
+                try:
+                    out_shape[start_axis] *= size
+                except TypeError:
+                    out_shape[start_axis] = None
         else:
             out_shape = [None] * len(out_shape)
         outputs[0]._shape = tuple(out_shape)

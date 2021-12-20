@@ -1,5 +1,5 @@
 #include "dragon/core/workspace.h"
-#include "dragon/operators/array/initialize_ops.h"
+#include "dragon/operators/array/initialize_op.h"
 #include "dragon/utils/op_kernels.h"
 
 namespace dragon {
@@ -11,7 +11,7 @@ void PermutationOp<Context>::DoRunWithType() {
   kernels::Permutation(
       Y->count(),
       Y->template mutable_data<T, Context>(),
-      ctx()->workspace()->template data<uint32_t, Context>({Y->count()})[0],
+      ctx()->workspace()->template data<uint32_t, Context>(Y->count()),
       ctx());
 }
 

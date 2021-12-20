@@ -33,7 +33,7 @@ void TransposeOp<Context>::DoRunWithType() {
   }
 
   auto* scratch = ((void*)&X == (void*)Y)
-      ? ctx()->workspace()->template data<T, Context>({X.count()})[0]
+      ? ctx()->workspace()->template data<T, Context>(X.count())
       : Y->Reshape(Y_dims)->template mutable_data<T, Context>();
 
   math::Transpose(

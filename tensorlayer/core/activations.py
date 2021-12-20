@@ -75,8 +75,7 @@ def get(identifier):
     else:
         raise TypeError(
             'Could not interpret initializer identifier: {}.'
-            .format(repr(identifier))
-        )
+            .format(repr(identifier)))
 
 
 # Alias

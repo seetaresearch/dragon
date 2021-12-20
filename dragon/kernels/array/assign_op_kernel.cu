@@ -46,8 +46,7 @@ __global__ void _Assign(
       CUDAContext* ctx) {                                               \
     CUDA_TENSOR_DIMS_CHECK(num_dims);                                   \
     SimpleArray<int, CUDA_TENSOR_MAX_DIMS> X_dims, Y_strides, X_starts; \
-    const auto N = std::accumulate(                                     \
-        x_dims, x_dims + num_dims, 1, std::multiplies<int64_t>());      \
+    const auto N = math::utils::Prod(num_dims, x_dims);                 \
     for (int i = 0; i < num_dims; ++i) {                                \
       X_dims.data[i] = x_dims[i];                                       \
       Y_strides.data[i] = y_strides[i];                                 \

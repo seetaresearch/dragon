@@ -28,7 +28,6 @@ from dragon.vm.tensorflow.core.keras import saving
 from dragon.vm.tensorflow.core.keras.engine import input_spec
 from dragon.vm.tensorflow.core.module import module
 from dragon.vm.tensorflow.core.ops import variables as tf_variables
-from dragon.vm.tensorflow.core.training.tracking import layer_utils
 
 
 class Layer(module.Module):
@@ -44,13 +43,7 @@ class Layer(module.Module):
 
     """
 
-    def __init__(
-        self,
-        trainable=True,
-        name=None,
-        dtype=None,
-        **kwargs
-    ):
+    def __init__(self, trainable=True, name=None, dtype=None, **kwargs):
         """Create a ``Layer``.
 
         Parameters
@@ -65,15 +58,10 @@ class Layer(module.Module):
         """
         super(Layer, self).__init__(name)
         self._trainable = trainable
-        self._dtype = dtype
-
-        # Modeling attributes.
-        self.input_spec = None
+        self._dtype = dtype or dtypes.float32
         self._trainable_weights = []
         self._non_trainable_weights = []
-        self._layers = []
-
-        # Indicating whether the variables are initialized.
+        self.input_spec = None
         self.built = False
 
     @property
@@ -89,37 +77,23 @@ class Layer(module.Module):
         return self._dtype
 
     @property
-    def layers(self):
-        """Return the layers over all children.
-
-        Returns
-        -------
-        Sequence[dragon.vm.tensorflow.keras.layers.Layer]
-            The sequence containing layers.
-
-        """
-        return layer_utils.filter_empty_layer_containers(self._layers)
-
-    @property
     def non_trainable_weights(self):
         """Return the non-trainable weights.
 
         Returns
         -------
         Sequence[dragon.vm.tensorflow.Variable]
-            The sequence containing weights.
+            The non-trainable weights.
 
         """
         if self.trainable:
-            nested = self._gather_children_attribute('non_trainable_weights')
-            non_trainable_weights = self._non_trainable_weights + nested
+            nested = self._gather_children_attribute('non_trainable_variables')
+            weights = self._non_trainable_weights + nested
         else:
-            non_trainable_weights = (
-                self._trainable_weights +
-                self._non_trainable_weights +
-                self._gather_children_attribute('weights')
-            )
-        return self._dedupe_weights(non_trainable_weights)
+            weights = (self._trainable_weights +
+                       self._non_trainable_weights +
+                       self._gather_children_attribute('variables'))
+        return self._dedupe_weights(weights)
 
     @property
     def non_trainable_variables(self):
@@ -130,7 +104,7 @@ class Layer(module.Module):
         Returns
         -------
         Sequence[dragon.vm.tensorflow.Variable]
-            The sequence containing variables.
+            The non-trainable variables.
 
         """
         return self.non_trainable_weights
@@ -168,14 +142,13 @@ class Layer(module.Module):
         Returns
         -------
         Sequence[dragon.vm.tensorflow.Variable]
-            The sequence containing weights.
+            The trainable weights.
 
         """
         if self.trainable:
-            nested = self._gather_children_attribute('trainable_weights')
+            nested = self._gather_children_attribute('trainable_variables')
             return self._dedupe_weights(self._trainable_weights + nested)
-        else:
-            return []
+        return []
 
     @property
     def trainable_variables(self):
@@ -186,7 +159,7 @@ class Layer(module.Module):
         Returns
         -------
         Sequence[dragon.vm.tensorflow.Variable]
-            The sequence containing variables.
+            The trainable variables.
 
         """
         return self.trainable_weights
@@ -198,7 +171,7 @@ class Layer(module.Module):
         Returns
         -------
         Sequence[dragon.vm.tensorflow.Variable]
-            The sequence containing weights.
+            The weights.
 
         """
         return self.trainable_weights + self.non_trainable_weights
@@ -290,15 +263,14 @@ class Layer(module.Module):
         Parameters
         ----------
         args... : Sequence[dragon.Tensor]
-            The input tensor(s).
+            The input tensors.
 
         Returns
         -------
         Sequence[dragon.Tensor]
-            The output tensor(s).
+            The output tensors.
 
         """
-        pass
 
     def load_weights(self, filepath, verbose=False):
         """Load the value of weights from a binary file.
@@ -367,29 +339,35 @@ class Layer(module.Module):
                 seen_weights.add(wid)
         return output
 
+    def _flatten_layers(self, recursive=True, include_self=True):
+        """Flatten the layer instances."""
+        for m in self._flatten_modules(recursive, include_self):
+            if isinstance(m, Layer):
+                yield m
+
+    def _flatten_modules(self, recursive=True, include_self=True):
+        """Flatten the module instances."""
+        if include_self:
+            yield self
+        for m in self._flatten(recursive=recursive, predicate=module._is_module):
+            yield m
+
     def _gather_children_attribute(self, attribute):
-        assert attribute in {
-            'weights',
-            'trainable_weights',
-            'non_trainable_weights',
-            'updates',
-            'cost',
-            'metrics',
-        }
-        if hasattr(self, '_layers'):
-            layers = layer_utils.filter_empty_layer_containers(self._layers)
-            return list(itertools.chain.from_iterable(
-                getattr(layer, attribute) for layer in layers))
-        return []
+        """Return the attribute values of nested layers."""
+        assert attribute in {'variables',
+                             'trainable_variables',
+                             'non_trainable_variables'}
+        nested_layers = self._flatten_modules(recursive=False, include_self=False)
+        values = (getattr(layer, attribute) for layer in nested_layers)
+        return list(itertools.chain.from_iterable(values))
 
     def _maybe_build(self, inputs):
         if not self.built:
-            input_spec.assert_input_compatibility(
-                self.input_spec, inputs, self.name)
-            input_list = nest.flatten(inputs)
+            input_spec.assert_input_compatibility(self.input_spec, inputs, self.name)
+            inputs_list = nest.flatten(inputs)
             input_shapes = None
-            if all(hasattr(x, 'shape') for x in input_list):
-                input_shapes = [x.shape for x in input_list]
+            if all(hasattr(x, 'shape') for x in inputs_list):
+                input_shapes = [x.shape for x in inputs_list]
                 if not nest.is_sequence(inputs):
                     input_shapes = input_shapes[0]
             self.build(input_shapes)
@@ -399,24 +377,21 @@ class Layer(module.Module):
         if not hasattr(self, name):
             super(Layer, self).__setattr__(name, default_value)
 
-    def _name_scope(self):
-        return self.name
-
-    def __call__(self, inputs, *args, **kwargs):
+    def __call__(self, *args, **kwargs):
         """Wrap the ``self.call(...)`` with pre-post processing."""
-        with context.name_scope(self._name_scope()):
+        inputs = None
+        if args:
+            inputs, args = args[0], args[1:]
+        with context.name_scope(self.name):
             self._maybe_build(inputs)
             outputs = self.call(inputs, *args, **kwargs)
         return outputs
 
     def __setattr__(self, name, value):
         # Add the layer.
-        if self.__class__.__name__ != 'Sequential' and \
-                isinstance(value, Layer):
-            if not any((layer is value for layer in self._layers)):
-                if value._name is None:
-                    value._name = name
-                self._layers.append(value)
+        if isinstance(value, Layer):
+            if value._name is None:
+                value._name = name
         # Add the variables.
         for val in nest.flatten(value):
             if not isinstance(val, tf_variables.Variable):
@@ -435,9 +410,8 @@ class Layer(module.Module):
 
 def _is_hdf5_filepath(filepath):
     """Predicate the filepath is a h5 file."""
-    return (filepath.endswith('.h5') or
-            filepath.endswith('.keras') or
-            filepath.endswith('.hdf5'))
+    return (filepath.endswith('.h5') or filepath.endswith('.hdf5') or
+            filepath.endswith('.keras'))
 
 
 def _is_pkl_filepath(filepath):

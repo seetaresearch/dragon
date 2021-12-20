@@ -1,24 +1,22 @@
+#include "dragon/operators/loss/ctc_loss_op.h"
 #include "dragon/core/workspace.h"
-#include "dragon/operators/loss/ctc_loss_ops.h"
-#include "dragon/utils/math_functions.h"
+#include "dragon/utils/op_kernels.h"
 
 namespace dragon {
 
 template <class Context>
 template <typename T>
 void CTCLossGradientOp<Context>::DoRunWithType() {
-  auto* G = Buffer("grad");
-  Output(0)->ReshapeLike(*G);
-
-  auto* g = G->template data<T, Context>();
-  auto* dy = Input(0).template data<T, Context>();
-  auto* dx = Output(0)->template mutable_data<T, Context>();
-
-  T alpha;
-  ctx()->template Copy<T, CPUContext, Context>(1, &alpha, dy);
-  ctx()->FinishDeviceComputation();
-
-  math::Scale(Output(0)->count(), alpha, g, dx, ctx());
+  auto &dL = Input(0), &X_grad = Input("X_grad");
+  auto* dX = Output(0)->ReshapeLike(X_grad)->CopyFrom(X_grad, ctx());
+  kernels::ReduceLossGrad(
+      dX->count(),
+      0,
+      1.f,
+      dL.template data<T, Context>(),
+      (T*)nullptr,
+      dX->template mutable_data<T, Context>(),
+      ctx());
 }
 
 template <class Context>
@@ -37,13 +35,13 @@ DEPLOY_CUDA_OPERATOR(CTCLossGradient);
 #endif
 
 OPERATOR_SCHEMA(CTCLoss)
-    /* X, T */
+    /* X, Y */
     .NumInputs(2)
-    /* Y */
+    /* L */
     .NumOutputs(1);
 
 OPERATOR_SCHEMA(CTCLossGradient)
-    /* dY */
+    /* dL */
     .NumInputs(1)
     /* dX */
     .NumOutputs(1);

@@ -15,8 +15,8 @@ from __future__ import division
 from __future__ import print_function
 
 from dragon.core.autograph import context
-from dragon.core.autograph.op_impl import OpLib
-from dragon.core.autograph.op_impl import OpSchema
+from dragon.core.autograph.op_lib import OpLib
+from dragon.core.autograph.op_lib import OpSchema
 
 
 def python_plugin(
@@ -74,4 +74,4 @@ def stop_gradient(inputs, **kwargs):
     """
     if context.executing_eagerly():
         raise RuntimeError('Excepted the graph execution mode.')
-    return OpLib.add('StopGradient', inputs, **kwargs)
+    return OpLib.add('GradientStop', inputs, **kwargs)

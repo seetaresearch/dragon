@@ -20,19 +20,18 @@ PythonPluginOp<Context>::PythonPluginOp(const OperatorDef& def, Workspace* ws)
       module_name_(OP_SINGLE_ARG(string, "module_name", "")),
       class_name_(OP_SINGLE_ARG(string, "class_name", "")),
       kwargs_str_(OP_SINGLE_ARG(string, "kwargs_str", "")) {
-  // Initialize interpreter and load module
+  // Initialize interpreter and load module.
   Py_Initialize();
-  auto* target_module = PyImport_ImportModule(module_name_.c_str());
-  CHECK(target_module) << "\nFailed to import module: " << target_module;
+  auto* module = PyImport_ImportModule(module_name_.c_str());
+  CHECK(module) << "\nFailed to import module: " << module;
 
-  auto* module_dict = PyModule_GetDict(target_module);
-  auto* target_class = PyDict_GetItemString(module_dict, class_name_.c_str());
-  CHECK(target_class) << "\nFailed to import class: " << class_name_
-                      << " from module: " << module_name_;
+  auto* module_dict = PyModule_GetDict(module);
+  auto* op_class = PyDict_GetItemString(module_dict, class_name_.c_str());
+  CHECK(op_class) << "\nFailed to import class: " << class_name_
+                  << " from module: " << module_name_;
+  self_ = PyObject_CallObject(op_class, NULL);
 
-  self_ = PyObject_CallObject(target_class, NULL);
-
-  // Project inputs and outputs
+  // Project inputs and outputs.
   inputs_ = PyList_New(InputSize());
   outputs_ = PyList_New(OutputSize());
   for (int i = 0; i < InputSize(); i++) {

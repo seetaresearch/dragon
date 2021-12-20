@@ -31,11 +31,9 @@ class Brightness(object):
     Examples:
 
     ```python
-    # Historical jitter range for brightness
-    twist_rng = dali.ops.Uniform(range=[0.6, 1.4])
-
+    rng = dali.ops.Uniform((0.6, 1.4))
     brightness = dali.ops.Brightness()
-    y = brightness(inputs['x'], brightness=twist_rng())
+    y = brightness(inputs['x'], brightness=rng())
     ```
 
     """
@@ -58,11 +56,9 @@ class BrightnessContrast(object):
     Examples:
 
     ```python
-    # Historical jitter range for brightness and contrast
-    twist_rng = dali.ops.Uniform(range=[0.6, 1.4])
-
+    rng = dali.ops.Uniform((0.6, 1.4))
     bc = dali.ops.BrightnessContrast()
-    y = bc(inputs['x'], brightness=twist_rng(), contrast=twist_rng())
+    y = bc(inputs['x'], brightness=rng(), contrast=rng())
     ```
 
     """
@@ -79,17 +75,82 @@ class BrightnessContrast(object):
         return ops.BrightnessContrast(device=context.get_device_type(), **kwargs)
 
 
+class ColorSpaceConversion(object):
+    """Convert the color space of image.
+
+    Examples:
+
+    ```python
+    convert = dali.ops.ColorSpaceConversion('BGR', 'RGB')
+    y = convert(inputs['x'])
+    ```
+
+    """
+
+    def __new__(cls, image_type, output_type, **kwargs):
+        """Create a ``ColorSpaceConversion`` operator.
+
+        Parameters
+        ----------
+        image_type : str
+            The color space of input image.
+        output_type : str
+            The color space of output image.
+
+        Returns
+        -------
+        nvidia.dali.ops.ColorSpaceConversion
+            The operator.
+
+        """
+        if isinstance(image_type, six.string_types):
+            image_type = getattr(types, image_type)
+        if isinstance(output_type, six.string_types):
+            output_type = getattr(types, output_type)
+        return ops.ColorSpaceConversion(
+            image_type=image_type,
+            output_type=output_type,
+            device=context.get_device_type(),
+            **kwargs
+        )
+
+
+class ColorTwist(object):
+    """Adjust the hue, saturation and brightness of image.
+
+    Examples:
+
+    ```python
+    rng1 = dali.ops.Uniform((0.6, 1.4))
+    rng2 = dali.ops.Uniform((-36., 36.))
+    twist = dali.ops.ColorTwist()
+    y = twist(inputs['x'], brightness=rng1(), contrast=rng1(),
+              saturation=rng1(), hue=rng2())
+    ```
+
+    """
+
+    def __new__(cls, **kwargs):
+        """Create a ``Brightness`` operator.
+
+        Returns
+        -------
+        nvidia.dali.ops.Brightness
+            The operator.
+
+        """
+        return ops.ColorTwist(device=context.get_device_type(), **kwargs)
+
+
 class Contrast(object):
     """Adjust the contrast of image.
 
     Examples:
 
     ```python
-    # Historical jitter range for contrast
-    twist_rng = dali.ops.Uniform(range=[0.6, 1.4])
-
+    rng = dali.ops.Uniform((0.6, 1.4))
     contrast = dali.ops.Contrast()
-    y = contrast(inputs['x'], contrast=twist_rng())
+    y = contrast(inputs['x'], contrast=rng())
     ```
 
     """
@@ -175,6 +236,48 @@ class CropMirrorNormalize(object):
             std=std,
             dtype=dtype,
             output_layout=output_layout,
+            device=context.get_device_type(),
+            **kwargs
+        )
+
+
+class GaussianBlur(object):
+    """Apply gaussian blur to image.
+
+    Examples:
+
+    ```python
+    sigma_rng = dali.ops.Uniform((0.1, 2.0))
+    blur = dali.ops.GaussianBlur()
+    y = blur(inputs['x'], sigma=sigma_rng())
+    ```
+
+    """
+
+    def __new__(cls, sigma=None, window_size=None, dtype=None, **kwargs):
+        """Create a ``GaussianBlur`` operator.
+
+        Parameters
+        ----------
+        sigma : Union[float, Sequence[float]], optional
+            The sigma value to gaussian kernel.
+        window_size : Union[int, Sequence[int]], optional
+            The window size to gaussian kernel.
+        dtype : str, optional
+            The output data type.
+
+        Returns
+        -------
+        nvidia.dali.ops.GaussianBlur
+            The operator.
+
+        """
+        if isinstance(dtype, six.string_types):
+            dtype = getattr(types, dtype.upper())
+        return ops.GaussianBlur(
+            sigma=sigma,
+            window_size=window_size,
+            dtype=dtype,
             device=context.get_device_type(),
             **kwargs
         )
@@ -419,7 +522,7 @@ class Resize(object):
 
     ```python
     # Resize to a fixed area
-    resize1 = dali.ops.Resize(resize_x=300, resize_y=300)
+    resize1 = dali.ops.Resize(size=300)
 
     # Resize along the shorter side
     resize2 = dali.ops.Resize(resize_shorter=600, max_size=1000)
@@ -432,8 +535,7 @@ class Resize(object):
 
     def __new__(
         cls,
-        resize_x=None,
-        resize_y=None,
+        size=None,
         resize_shorter=None,
         resize_longer=None,
         max_size=None,
@@ -446,10 +548,8 @@ class Resize(object):
 
         Parameters
         ----------
-        resize_x : int, optional
-            The output image width.
-        resize_y : int, optional
-            The output image height.
+        size : Union[int, Sequence[int]]
+            The output image size.
         resize_shorter : int, optional
             Resize along the shorter side and limited by ``max_size``.
         resize_longer : int, optional
@@ -476,8 +576,7 @@ class Resize(object):
         if isinstance(min_filter, six.string_types):
             min_filter = getattr(types, 'INTERP_' + min_filter.upper())
         return ops.Resize(
-            resize_x=resize_x,
-            resize_y=resize_y,
+            size=size,
             resize_shorter=resize_shorter,
             resize_longer=resize_longer,
             max_size=max_size,

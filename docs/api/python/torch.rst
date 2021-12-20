@@ -4,7 +4,7 @@ vm.torch
 .. only:: html
 
   Classes
-  #######
+  -------
 
   `class device <torch/device.html>`_
   : Represent the device spec.
@@ -28,7 +28,7 @@ vm.torch
   : A multi-dimensional array containing elements of a single data type.
 
   Functions
-  #########
+  ---------
 
   `abs(...) <torch/abs.html>`_
   : Compute the absolute value of input.
@@ -144,6 +144,9 @@ vm.torch
   `index_select(...) <torch/index_select.html>`_
   : Select elements along the given dimension using index.
 
+  `isfinite(...) <torch/isfinite.html>`_
+  : Check if the elements of input are finite.
+
   `isinf(...) <torch/isinf.html>`_
   : Check if the elements of input are infinite.
 
@@ -219,14 +222,14 @@ vm.torch
   `nonzero(...) <torch/nonzero.html>`_
   : Return the index of non-zero elements.
 
+  `norm(...) <torch/norm.html>`_
+  : Compute the min value of elements along the given dimension.
+
   `ones(...) <torch/ones.html>`_
   : Return a tensor filled with ones.
 
   `ones_like(...) <torch/ones_like.html>`_
   : Return a tensor of ones with shape as the other.
-
-  `one_hot(...) <torch/one_hot.html>`_
-  : Return the one-hot representation for input.
 
   `permute(...) <torch/permute.html>`_
   : Return a new tensor with the specific order of dimensions.
@@ -279,6 +282,9 @@ vm.torch
   `sqrt(...) <torch/sqrt.html>`_
   : Compute the square root of input.
 
+  `square(...) <torch/square.html>`_
+  : Compute the square of input.
+
   `squeeze(...) <torch/squeeze.html>`_
   : Remove the dimensions of input with size 1.
 
@@ -308,6 +314,9 @@ vm.torch
 
   `triu(...) <torch/triu.html>`_
   : Return the upper triangular part of input.
+
+  `unbind(...) <torch/unbind.html>`_
+  : Unpack input into chunks along the given dimension.
 
   `unique(...) <torch/unique.html>`_
   : Return the unique elements of input.
@@ -370,6 +379,7 @@ vm.torch
   torch/ge
   torch/gt
   torch/index_select
+  torch/isfinite
   torch/isinf
   torch/isnan
   torch/le
@@ -396,9 +406,9 @@ vm.torch
   torch/neg
   torch/no_grad
   torch/nonzero
+  torch/norm
   torch/ones
   torch/ones_like
-  torch/one_hot
   torch/permute
   torch/pow
   torch/rand
@@ -417,6 +427,7 @@ vm.torch
   torch/sort
   torch/split
   torch/sqrt
+  torch/square
   torch/squeeze
   torch/stack
   torch/sub
@@ -427,6 +438,7 @@ vm.torch
   torch/transpose
   torch/tril
   torch/triu
+  torch/unbind
   torch/unique
   torch/unsqueeze
   torch/where

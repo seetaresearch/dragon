@@ -1,5 +1,5 @@
 #include "dragon/core/workspace.h"
-#include "dragon/operators/math/elementwise_ops.h"
+#include "dragon/operators/math/elementwise_op.h"
 #include "dragon/utils/math_functions.h"
 #include "dragon/utils/op_kernels.h"
 
@@ -11,19 +11,21 @@ void MaximumGradientOp<Context>::DoRunWithType() {
   auto &A = Input(0), &B = Input(1), &dY = Input(2);
   auto *dA = Output(0), *dB = Output(1);
 
-  vec32_t A_broadcast_axes, B_broadcast_axes;
-  vec32_t Y_dims(dY.dims().begin(), dY.dims().end());
-  math::utils::ComputeBinaryBroadcastAxes(
+  vec64_t A_broadcast_axes, B_broadcast_axes;
+  math::utils::ComputeBroadcastAxes(
       A.dims(), B.dims(), dY.dims(), A_broadcast_axes, B_broadcast_axes);
 
-  // Temporal space to store the intermediate gradient
-  bool* mask = nullptr;
-  T* scratch = nullptr;
+  // Scratch to save the intermediates.
+  size_t scratch_size = 0, scratch_offset = 0;
+  if (dA->has_name() || dB->has_name()) scratch_size += dY.size();
+  if ((dA->has_name() && !A_broadcast_axes.empty()) ||
+      (dB->has_name() && !B_broadcast_axes.empty())) {
+    scratch_size += (scratch_offset = dY.size() * sizeof(T));
+  }
+  void* scratch = ctx()->workspace()->template data<Context>(scratch_size);
+  auto* mask = (bool*)scratch + scratch_offset;
 
   if (dA->has_name()) {
-    auto scratches = ctx()->workspace()->template data<Context>(
-        {dY.size() * sizeof(T), dY.size() * sizeof(bool)});
-    mask = (bool*)scratches[1], scratch = (T*)scratches[0];
     if (A_broadcast_axes.empty()) {
       if (B_broadcast_axes.empty()) {
         math::Greater(
@@ -43,11 +45,11 @@ void MaximumGradientOp<Context>::DoRunWithType() {
             mask,
             ctx());
       }
-      math::Cast(dY.count(), mask, scratch, ctx());
-      math::Mul(
+      math::ApplyMask(
           dY.count(),
+          1.f,
+          (uint8_t*)mask,
           dY.template data<T, Context>(),
-          scratch,
           dA->ReshapeLike(A)->template mutable_data<T, Context>(),
           ctx());
     } else {
@@ -60,27 +62,26 @@ void MaximumGradientOp<Context>::DoRunWithType() {
           B.template data<T, Context>(),
           mask,
           ctx());
-      math::Cast(dY.count(), mask, scratch, ctx());
-      math::Mul(
-          dY.count(), dY.template data<T, Context>(), scratch, scratch, ctx());
+      math::ApplyMask(
+          dY.count(),
+          1.f,
+          (uint8_t*)mask,
+          dY.template data<T, Context>(),
+          (T*)scratch,
+          ctx());
       math::ReduceSum(
-          Y_dims.size(),
-          Y_dims.data(),
+          dY.ndim(),
+          dY.dims().data(),
           A_broadcast_axes.size(),
           A_broadcast_axes.data(),
           1.f,
-          scratch,
+          (T*)scratch,
           dA->ReshapeLike(A)->template mutable_data<T, Context>(),
           ctx());
     }
   }
 
   if (dB->has_name()) {
-    if (mask == nullptr) {
-      auto scratches = ctx()->workspace()->template data<Context>(
-          {dY.size() * sizeof(T), dY.size() * sizeof(bool)});
-      mask = (bool*)scratches[1], scratch = (T*)scratches[0];
-    }
     if (B_broadcast_axes.empty()) {
       if (A_broadcast_axes.empty()) {
         math::LessEqual(
@@ -100,11 +101,11 @@ void MaximumGradientOp<Context>::DoRunWithType() {
             mask,
             ctx());
       }
-      math::Cast(dY.count(), mask, scratch, ctx());
-      math::Mul(
+      math::ApplyMask(
           dY.count(),
+          1.f,
+          (uint8_t*)mask,
           dY.template data<T, Context>(),
-          scratch,
           dB->ReshapeLike(B)->template mutable_data<T, Context>(),
           ctx());
     } else {
@@ -117,16 +118,20 @@ void MaximumGradientOp<Context>::DoRunWithType() {
           B.template data<T, Context>(),
           mask,
           ctx());
-      math::Cast(dY.count(), mask, scratch, ctx());
-      math::Mul(
-          dY.count(), dY.template data<T, Context>(), scratch, scratch, ctx());
+      math::ApplyMask(
+          dY.count(),
+          1.f,
+          (uint8_t*)mask,
+          dY.template data<T, Context>(),
+          (T*)scratch,
+          ctx());
       math::ReduceSum(
-          Y_dims.size(),
-          Y_dims.data(),
+          dY.ndim(),
+          dY.dims().data(),
           B_broadcast_axes.size(),
           B_broadcast_axes.data(),
           1.f,
-          scratch,
+          (T*)scratch,
           dB->ReshapeLike(B)->template mutable_data<T, Context>(),
           ctx());
     }

@@ -1,5 +1,4 @@
 #include "dragon/operators/array/concat_op.h"
-#include "dragon/core/workspace.h"
 #include "dragon/utils/math_functions.h"
 
 namespace dragon {
@@ -7,44 +6,38 @@ namespace dragon {
 template <class Context>
 template <typename T>
 void ConcatOp<Context>::DoRunWithType() {
-  auto &X = Input(0), *Y = Output(0);
-  GET_OP_AXIS_ARG(axis, X.ndim(), 0);
+  auto &X_ref = Input(0), *Y = Output(0);
+  GET_OP_AXIS_ARG(axis, X_ref.ndim(), 0);
 
-  SET_INPUT_SPEC(0);
-  vec64_t Y_dims(X.dims());
+  vec64_t Y_dims(X_ref.dims());
   for (int i = 1; i < InputSize(); ++i) {
-    CHECK_EQ(X.ndim(), Input(i).ndim())
-        << "\nAll inputs should have the same ndim.";
-    for (int j = 0; j < X.ndim(); ++j) {
+    auto& X = Input(i);
+    CHECK_EQ(X_ref.ndim(), X.ndim())
+        << "\nAll inputs should have the same number of dimensions.";
+    for (int j = 0; j < X_ref.ndim(); ++j) {
       if (j == axis) continue;
-      CHECK_EQ(Y_dims[j], Input(i).dim(j))
-          << "\nAll inputs should have the same dims"
+      CHECK_EQ(X_ref.dim(j), X.dim(j))
+          << "\nAll inputs should have the same dimensions"
           << ", except the concat axis.";
     }
-    SET_INPUT_SPEC(i);
-    Y_dims[axis] += Input(i).dim(axis);
+    Y_dims[axis] += X.dim(axis);
   }
 
   Y->Reshape(Y_dims);
-  int64_t output_offset = 0;
-
+  int64_t copy_offset = 0;
   for (int i = 0; i < InputSize(); ++i) {
-    auto& Xi = Input(i);
+    auto& X = Input(i);
+    Output("X_spec:" + str::to(i))->ReshapeLike(X);
     math::CopyMatrix(
-        Xi.count(0, axis),
-        Xi.count(axis),
-        Xi.count(axis),
+        X.count(0, axis),
+        X.count(axis),
+        X.count(axis),
         Y->count(axis),
-        Xi.template data<T, Context>(),
-        Y->template mutable_data<T, Context>() + output_offset,
+        X.template data<T, Context>(),
+        Y->template mutable_data<T, Context>() + copy_offset,
         ctx());
-    output_offset += Xi.count(axis);
+    copy_offset += X.count(axis);
   }
-}
-
-template <class Context>
-void ConcatOp<Context>::RunOnDevice() {
-  DispatchHelper<dtypes::Generic>::Call(this, Input(0));
 }
 
 template <class Context>
@@ -53,26 +46,21 @@ void ConcatGradientOp<Context>::DoRunWithType() {
   auto& dY = Input(0);
   GET_OP_AXIS_ARG(axis, dY.ndim(), 0);
 
-  int64_t input_offset = 0;
+  int64_t copy_offset = 0;
   for (int i = 0; i < OutputSize(); ++i) {
-    auto &X = INPUT_SPEC(i), *dX = Output(i);
+    auto &X = Input("X_spec:" + str::to(i)), *dX = Output(i);
     if (dX->has_name()) {
       math::CopyMatrix(
           dY.count(0, axis),
           X.count(axis),
           dY.count(axis),
           X.count(axis),
-          dY.template data<T, Context>() + input_offset,
+          dY.template data<T, Context>() + copy_offset,
           dX->ReshapeLike(X)->template mutable_data<T, Context>(),
           ctx());
     }
-    input_offset += X.count(axis);
+    copy_offset += X.count(axis);
   }
-}
-
-template <class Context>
-void ConcatGradientOp<Context>::RunOnDevice() {
-  DispatchHelper<dtypes::Floating>::Call(this, Input(0));
 }
 
 DEPLOY_CPU_OPERATOR(Concat);

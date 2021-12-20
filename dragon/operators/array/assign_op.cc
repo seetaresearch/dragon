@@ -45,10 +45,10 @@ void AssignOp<Context>::DoRunWithType() {
       CHECK(X_dims == dims1)
           << "\nCould not assign with shapes " << X.DimString() << " "
           << Tensor::DimString(X_dims);
-      math::utils::ComputeBinaryBroadcastDims(X.dims(), X_dims, dims1, dims2);
+      math::utils::ComputeBroadcastDims(X.dims(), X_dims, dims1, dims2);
       if (dims1 != dims2) {
         auto* scratch =
-            ctx()->workspace()->template data<T, Context>({XRef.count()})[0];
+            ctx()->workspace()->template data<T, Context>(XRef.count());
         math::Set(
             X.ndim(),
             X.dims().data(),

@@ -19,7 +19,7 @@ from __future__ import division
 from __future__ import print_function
 
 from dragon.core.ops import activation_ops
-from dragon.core.ops import array_ops
+from dragon.core.ops import constant_ops
 from dragon.core.ops import math_ops
 
 
@@ -146,7 +146,7 @@ def argmax(input, axis=None, name=None):
         The index of maximum elements.
 
     """
-    return array_ops.argmax(input, axis=axis, name=name)
+    return math_ops.argmax(input, axis=axis, name=name)
 
 
 def argmin(input, axis=None, name=None):
@@ -181,7 +181,7 @@ def argmin(input, axis=None, name=None):
         The index of minimum elements.
 
     """
-    return array_ops.argmin(input, axis=axis, name=name)
+    return math_ops.argmin(input, axis=axis, name=name)
 
 
 def cast(x, dtype, name=None):
@@ -209,7 +209,7 @@ def cast(x, dtype, name=None):
         The output tensor.
 
     """
-    return array_ops.cast(x, dtype=dtype, name=name)
+    return math_ops.cast(x, dtype=dtype, name=name)
 
 
 def ceil(x, name=None):
@@ -316,7 +316,7 @@ def cumsum(x, axis=0, exclusive=False, reverse=False, name=None):
         The output tensor.
 
     """
-    return array_ops.cumsum(
+    return math_ops.cumsum(
         x,
         axis=axis,
         exclusive=exclusive,
@@ -512,6 +512,34 @@ def greater_equal(x, y, name=None):
     return math_ops.greater_equal([x, y], name=name)
 
 
+def is_finite(x, name=None):
+    r"""Check if the elements of input are finite.
+
+    .. math:: \text{out} = \text{isfinite}(\text{input})
+
+    Examples:
+
+    ```python
+    x = tf.constant([0., float('nan'), float('inf')])
+    print(tf.math.is_finite(x))  # [True, False, False]
+    ```
+
+    Parameters
+    ----------
+    x : dragon.Tensor
+        The input tensor.
+    name : str, optional
+        The operation name.
+
+    Returns
+    -------
+    dragon.Tensor
+        The output tensor.
+
+    """
+    return math_ops.is_finite(x, name=name)
+
+
 def is_inf(x, name=None):
     r"""Check if the elements of input are infinite.
 
@@ -671,7 +699,7 @@ def linspace(start, stop, num, dtype='int64', name=None, axis=0):
         The output tensor.
 
     """
-    return array_ops.linspace(
+    return constant_ops.linspace(
         start, stop, num, dtype=dtype, name=name, axis=axis)
 
 
@@ -918,7 +946,7 @@ def range(start, limit=None, delta=1, dtype='int64', name=None):
         The output tensor.
 
     """
-    return array_ops.range(
+    return constant_ops.range(
         start=start,
         limit=limit,
         delta=delta,
@@ -989,12 +1017,8 @@ def reduce_max(input_tensor, axis=None, keepdims=False, name=None):
         The output tensor.
 
     """
-    return array_ops.max(
-        input_tensor,
-        axis=axis,
-        keepdims=keepdims,
-        name=name,
-    )
+    return math_ops.max(
+        input_tensor, axis=axis, keepdims=keepdims, name=name)
 
 
 def reduce_mean(input_tensor, axis=None, keepdims=False, name=None):
@@ -1034,12 +1058,8 @@ def reduce_mean(input_tensor, axis=None, keepdims=False, name=None):
         The output tensor.
 
     """
-    return array_ops.mean(
-        input_tensor,
-        axis=axis,
-        keepdims=keepdims,
-        name=name,
-    )
+    return math_ops.mean(
+        input_tensor, axis=axis, keepdims=keepdims, name=name)
 
 
 def reduce_min(input_tensor, axis=None, keepdims=False, name=None):
@@ -1076,12 +1096,8 @@ def reduce_min(input_tensor, axis=None, keepdims=False, name=None):
         The output tensor.
 
     """
-    return array_ops.min(
-        input_tensor,
-        axis=axis,
-        keepdims=keepdims,
-        name=name,
-    )
+    return math_ops.min(
+        input_tensor, axis=axis, keepdims=keepdims, name=name)
 
 
 def reduce_sum(input_tensor, axis=None, keepdims=False, name=None):
@@ -1121,12 +1137,8 @@ def reduce_sum(input_tensor, axis=None, keepdims=False, name=None):
         The output tensor.
 
     """
-    return array_ops.sum(
-        input_tensor,
-        axis=axis,
-        keepdims=keepdims,
-        name=name,
-    )
+    return math_ops.sum(
+        input_tensor, axis=axis, keepdims=keepdims, name=name)
 
 
 def round(x, name=None):

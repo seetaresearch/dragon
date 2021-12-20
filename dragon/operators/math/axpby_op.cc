@@ -1,5 +1,4 @@
-#include "dragon/core/workspace.h"
-#include "dragon/operators/math/elementwise_ops.h"
+#include "dragon/operators/math/elementwise_op.h"
 #include "dragon/utils/math_functions.h"
 
 namespace dragon {

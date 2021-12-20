@@ -14,17 +14,9 @@ dtype
 #####
 .. autoattribute:: dragon.vm.tensorflow.keras.layers.Layer.dtype
 
-layers
-######
-.. autoattribute:: dragon.vm.tensorflow.keras.layers.Layer.layers
-
 non_trainable_weights
 #####################
 .. autoattribute:: dragon.vm.tensorflow.keras.layers.Layer.non_trainable_weights
-
-non_trainable_variables
-#######################
-.. autoattribute:: dragon.vm.tensorflow.keras.layers.Layer.non_trainable_variables
 
 trainable
 #########
@@ -33,10 +25,6 @@ trainable
 trainable_weights
 #################
 .. autoattribute:: dragon.vm.tensorflow.keras.layers.Layer.trainable_weights
-
-trainable_variables
-###################
-.. autoattribute:: dragon.vm.tensorflow.keras.layers.Layer.trainable_variables
 
 weights
 #######

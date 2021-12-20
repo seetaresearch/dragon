@@ -9,13 +9,11 @@ template <class Context>
 template <typename T>
 void ResizeOp<Context>::DoRunWithType() {
   auto &X = Input(0), *Y = Output(0);
+  Output("X_spec")->ReshapeLike(X);
+  Output("X_sizes")->template CopyFrom<int64_t>(in_dims_);
+  Output("Y_sizes")->template CopyFrom<int64_t>(out_dims_);
 
-  // Store for the gradient calculation
-  SET_INPUT_SPEC(0);
-  Buffer("in_dims")->template CopyFrom<int64_t>(in_dims_);
-  Buffer("out_dims")->template CopyFrom<int64_t>(out_dims_);
-
-  // Dispatch kernel according to mode and dimensions
+  // Dispatch kernel according to mode and dimensions.
   if (mode_ == "NEAREST") {
     if (out_dims_.size() == 1 || out_dims_.size() == 2) {
       kernels::ResizeNearest2d(
@@ -86,7 +84,7 @@ void ResizeOp<Context>::RunOnDevice() {
     axis = num_axes;
   } else if (data_format() == "NHWC") {
     in_dims_.insert(in_dims_.begin() + 1, in_dims_.back());
-    in_dims_.pop_back(); // Store dimensions in NCHW order
+    in_dims_.pop_back(); // Store dimensions in NCHW order.
   } else {
     LOG(FATAL) << "Unknown data format: " << data_format();
   }
@@ -144,9 +142,9 @@ void ResizeGradientOp<Context>::DoRunWithType() {
   auto* dx = dX->template mutable_data<T, Context>();
   auto* dx_acc = (TypeMeta::Id<T>() == TypeMeta::Id<float>())
       ? (float*)nullptr
-      : ctx()->workspace()->template data<float, Context>({dX->count()})[0];
+      : ctx()->workspace()->template data<float, Context>(dX->count());
 
-  // Accumulate to dX
+  // Accumulate to dX.
   if (mode_ == "NEAREST") {
     if (out_dims_.size() == 1 || out_dims_.size() == 2) {
       kernels::ResizeNearest2dGrad(
@@ -199,7 +197,7 @@ void ResizeGradientOp<Context>::DoRunWithType() {
     LOG(FATAL) << "Unknown interpolation mode: " << mode_;
   }
 
-  // Convert to dX if necessary
+  // Convert to dX.
   if (dx_acc != nullptr) {
     math::Cast(dX->count(), dx_acc, dx, ctx());
   }
@@ -207,9 +205,9 @@ void ResizeGradientOp<Context>::DoRunWithType() {
 
 template <class Context>
 void ResizeGradientOp<Context>::RunOnDevice() {
-  Output(0)->ReshapeLike(INPUT_SPEC(0));
-  Buffer("in_dims")->template CopyTo<int64_t>(in_dims_);
-  Buffer("out_dims")->template CopyTo<int64_t>(out_dims_);
+  Output(0)->ReshapeLike(Input("X_spec"));
+  Input("X_sizes").template CopyTo<int64_t>(in_dims_);
+  Input("Y_sizes").template CopyTo<int64_t>(out_dims_);
   DispatchHelper<dtypes::Floating>::Call(this, Input(0));
 }
 

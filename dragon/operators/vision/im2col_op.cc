@@ -9,7 +9,9 @@ template <typename T>
 void Im2ColOp<Context>::DoRunWithType() {
   auto &X = Input(0), *Y = Output(0);
   ConvOpBase<Context>::ComputeOutShape();
-  if (str::find(this->padding_, "SAME")) SET_INPUT_SPEC(0);
+  if (str::find(this->padding_, "SAME")) {
+    Output("X_spec")->ReshapeLike(X);
+  }
 
   vec64_t Y_dims(X.dims());
   auto im_channels_iter = Y_dims.begin() + 1;
@@ -34,13 +36,10 @@ template <typename T>
 void Col2ImOp<Context>::DoRunWithType() {
   auto &X = Input(0), *Y = Output(0);
   if (str::find(this->padding_, "SAME")) {
-    auto* Y_ref = workspace()->TryGetTensor(handle() + "/X_spec:0");
-    if (Y_ref != nullptr) {
-      // Get output shape from the spec if computed.
-      this->output_shape_.resize(num_axes_);
-      for (int i = 0; i < num_axes_; ++i) {
-        this->output_shape_[i] = Y_ref->dim(axis_ + i);
-      }
+    auto& Y_spec = Input("X_spec");
+    this->output_shape_.resize(num_axes_);
+    for (int i = 0; i < num_axes_; ++i) {
+      this->output_shape_[i] = Y_spec.dim(axis_ + i);
     }
   }
   ConvOpBase<Context>::ComputeOutShape();

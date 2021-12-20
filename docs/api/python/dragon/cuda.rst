@@ -15,9 +15,6 @@ dragon.cuda
   `current_device(...) <cuda/current_device.html>`_
   : Return the index of current selected device.
 
-  `enable_cudnn(...) <cuda/enable_cudnn.html>`_
-  : Enable backend to use the cuDNN library.
-
   `get_device_capability(...) <cuda/get_device_capability.html>`_
   : Return the capability of specified device.
 
@@ -26,6 +23,9 @@ dragon.cuda
 
   `memory_allocated(...) <cuda/memory_allocated.html>`_
   : Return the size of memory used by tensors in current workspace.
+
+  `set_cudnn_flags(...) <cuda/set_cudnn_flags.html>`_
+  : Set the flags of cuDNN library.
 
   `set_default_device(...) <cuda/set_default_device.html>`_
   : Set the default device.
@@ -41,10 +41,10 @@ dragon.cuda
 
   cuda/Stream
   cuda/current_device
-  cuda/enable_cudnn
   cuda/get_device_capability
   cuda/is_available
   cuda/memory_allocated
+  cuda/set_cudnn_flags
   cuda/set_default_device
   cuda/set_device
   cuda/synchronize

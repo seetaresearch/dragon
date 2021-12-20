@@ -16,8 +16,8 @@ void LayerNormOp<Context>::DoRunWithType() {
   const auto C = X.count(axis);
   INITIALIZE_TENSOR_VIA_SPEC(W, vec64_t({C}), ParamT);
   INITIALIZE_TENSOR_VIA_SPEC(B, vec64_t({C}), ParamT);
-  auto* X_mu = Buffer("X_mu")->Reshape({N});
-  auto* X_rsig = Buffer("X_rsig")->Reshape({N});
+  auto* X_mu = Output("X_mu")->Reshape({N});
+  auto* X_rsig = Output("X_rsig")->Reshape({N});
 
   kernels::LayerNorm(
       N,

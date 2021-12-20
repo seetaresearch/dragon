@@ -27,7 +27,7 @@ class Adam(optimizer.Optimizer):
     The **Adam** update is defined as:
 
     .. math::
-        \text{Adam}(g) = -\frac{\text{lr} * m_{t}}{\sqrt{v_{t}} + \epsilon} \\
+        \text{Adam}(g) = \text{lr} * \frac{m_{t}}{\sqrt{v_{t}} + \epsilon} \\
             \quad \\ \text{where}\quad
                 \begin{cases}
                     m_{t} = \beta_{1} * m_{t-1} + (1 - \beta_{1}) * g \\

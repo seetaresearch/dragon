@@ -22,7 +22,10 @@ class SplitOp final : public Operator<Context> {
  public:
   SplitOp(const OperatorDef& def, Workspace* ws)
       : Operator<Context>(def, ws),
-        copy_chunks_(OP_SINGLE_ARG(int64_t, "copy", 1)) {}
+        copy_chunks_(OP_SINGLE_ARG(int64_t, "copy", 1)),
+        keep_dims_(OP_SINGLE_ARG(int64_t, "keepdims", 1)) {
+    INITIALIZE_OP_REPEATED_ARG(int64_t, split);
+  }
   USE_OPERATOR_FUNCTIONS;
 
   void RunOnDevice() override;
@@ -31,20 +34,30 @@ class SplitOp final : public Operator<Context> {
   void DoRunWithType();
 
  protected:
-  int64_t copy_chunks_;
+  int64_t copy_chunks_, keep_dims_;
+  DECLARE_OP_REPEATED_ARG(int64_t, split);
 };
 
 template <class Context>
 class SplitGradientOp final : public Operator<Context> {
  public:
-  SIMPLE_CTOR_DTOR(SplitGradientOp);
+  SplitGradientOp(const OperatorDef& def, Workspace* ws)
+      : Operator<Context>(def, ws) {
+    INITIALIZE_OP_REPEATED_ARG(int64_t, split);
+  }
   USE_OPERATOR_FUNCTIONS;
 
   void RunOnDevice() override;
 
   template <typename T>
   void DoRunWithType();
+
+ protected:
+  DECLARE_OP_REPEATED_ARG(int64_t, split);
 };
+
+DEFINE_OP_REPEATED_ARG(int64_t, SplitOp, split);
+DEFINE_OP_REPEATED_ARG(int64_t, SplitGradientOp, split);
 
 } // namespace dragon
 

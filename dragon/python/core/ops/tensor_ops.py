@@ -15,7 +15,7 @@ from __future__ import division
 from __future__ import print_function
 
 from dragon.core.autograph import context
-from dragon.core.autograph.op_impl import OpLib
+from dragon.core.autograph.op_lib import OpLib
 from dragon.core.framework.tensor import Tensor
 from dragon.core.ops import array_ops
 from dragon.core.ops import constant_ops
@@ -824,7 +824,7 @@ def setitem(self, key, value):
 
     """
     if context.executing_eagerly():
-        value = constant_ops.get_scalar(value, self.dtype)
+        value = constant_ops.scalar(value, self.dtype)
         if isinstance(key, Tensor):
             return OpLib.execute('Where', [key, value, self], outputs=[self])
         else:

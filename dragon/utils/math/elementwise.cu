@@ -3,6 +3,7 @@
 #include "dragon/core/context_cuda.h"
 #include "dragon/utils/math/elementwise.h"
 #include "dragon/utils/math/functional.h"
+#include "dragon/utils/math/types.h"
 #include "dragon/utils/math/utils.h"
 
 namespace dragon {
@@ -82,13 +83,13 @@ DEFINE_UNARY_FUNCTOR(SqrtHalf, sqrt);
 #endif
 #undef DEFINE_UNARY_FUNCTOR
 
-#define DEFINE_UNARY_FUNCTOR(name, func)                  \
-  template <typename T>                                   \
-  struct name##Functor {                                  \
-    inline __device__ T operator()(const T& x) const {    \
-      const float2 val = __half22float2(x);               \
-      return __floats2half2_rn(func(val.x), func(val.y)); \
-    }                                                     \
+#define DEFINE_UNARY_FUNCTOR(name, func)               \
+  template <typename T>                                \
+  struct name##Functor {                               \
+    inline __device__ T operator()(const T& x) const { \
+      const float2 v = __half22float2(x);              \
+      return __floats2half2_rn(func(v.x), func(v.y));  \
+    }                                                  \
   }
 
 #if __CUDA_ARCH__ < 530
@@ -137,9 +138,8 @@ __global__ void _Abs<half>(const int N, const half* x, half* y) {
 template <>
 __global__ void _Abs<half2>(const int N, const half2* x, half2* y) {
   CUDA_1D_KERNEL_LOOP(i, N) {
-    const float2 val = __half22float2(x[i]);
-    y[i] = __floats2half2_rn(
-        val.x > 0.f ? val.x : -val.x, val.y > 0.f ? val.y : -val.y);
+    const float2 v = __half22float2(x[i]);
+    y[i] = __floats2half2_rn(v.x > 0.f ? v.x : -v.x, v.y > 0.f ? v.y : -v.y);
   }
 }
 
@@ -171,8 +171,8 @@ __global__ void _InvStd(const int N, const float eps, const half* x, half* y) {
 __global__ void
 _InvStd(const int N, const float eps, const half2* x, half2* y) {
   CUDA_1D_KERNEL_LOOP(i, N) {
-    const float2 val = __half22float2(x[i]);
-    y[i] = __floats2half2_rn(rsqrt(val.x + eps), rsqrt(val.y + eps));
+    const float2 v = __half22float2(x[i]);
+    y[i] = __floats2half2_rn(rsqrt(v.x + eps), rsqrt(v.y + eps));
   }
 }
 
@@ -193,8 +193,8 @@ _Powx(const int N, const float exponent, const half* x, half* y) {
 __global__ void
 _Powx(const int N, const float exponent, const half2* x, half2* y) {
   CUDA_1D_KERNEL_LOOP(i, N) {
-    const float2 val = __half22float2(x[i]);
-    y[i] = __floats2half2_rn(pow(val.x, exponent), pow(val.y, exponent));
+    const float2 v = __half22float2(x[i]);
+    y[i] = __floats2half2_rn(pow(v.x, exponent), pow(v.y, exponent));
   }
 }
 
@@ -222,17 +222,16 @@ __global__ void _Sign<uint8_t>(const int N, const uint8_t* x, uint8_t* y) {
 template <>
 __global__ void _Sign<half>(const int N, const half* x, half* y) {
   CUDA_1D_KERNEL_LOOP(i, N) {
-    const float val = __half2float(x[i]);
-    y[i] = __float2half(math::utils::Sign(val));
+    const float v = __half2float(x[i]);
+    y[i] = __float2half(math::utils::Sign(v));
   }
 }
 
 template <>
 __global__ void _Sign<half2>(const int N, const half2* x, half2* y) {
   CUDA_1D_KERNEL_LOOP(i, N) {
-    const float2 val = __half22float2(x[i]);
-    y[i] =
-        __floats2half2_rn(math::utils::Sign(val.x), math::utils::Sign(val.y));
+    const float2 v = __half22float2(x[i]);
+    y[i] = __floats2half2_rn(math::utils::Sign(v.x), math::utils::Sign(v.y));
   }
 }
 
@@ -264,13 +263,6 @@ __global__ void _IsInf(const int N, const T* x, bool* y) {
   }
 }
 
-template <>
-__global__ void _IsInf<half>(const int N, const half* x, bool* y) {
-  CUDA_1D_KERNEL_LOOP(i, N) {
-    y[i] = math::utils::IsInf(x[i]);
-  }
-}
-
 template <typename T>
 __global__ void _IsNaN(const int N, const T* x, bool* y) {
   CUDA_1D_KERNEL_LOOP(i, N) {
@@ -278,23 +270,15 @@ __global__ void _IsNaN(const int N, const T* x, bool* y) {
   }
 }
 
-template <>
-__global__ void _IsNaN<half>(const int N, const half* x, bool* y) {
+template <typename T>
+__global__ void _IsFinite(const int N, const T* x, bool* y) {
   CUDA_1D_KERNEL_LOOP(i, N) {
-    y[i] = math::utils::IsNaN(x[i]);
+    y[i] = math::utils::IsFinite(x[i]);
   }
 }
 
 template <typename T>
 __global__ void _ReplaceNaN(const int N, const T value, const T* x, T* y) {
-  CUDA_1D_KERNEL_LOOP(i, N) {
-    y[i] = math::utils::IsNaN(__ldg(x + i)) ? value : __ldg(x + i);
-  }
-}
-
-template <>
-__global__ void
-_ReplaceNaN<half>(const int N, const half value, const half* x, half* y) {
   CUDA_1D_KERNEL_LOOP(i, N) {
     y[i] = math::utils::IsNaN(__ldg(x + i)) ? value : __ldg(x + i);
   }
@@ -619,70 +603,37 @@ DEFINE_NOT_ZERO_FUNC(float);
 DEFINE_NOT_ZERO_FUNC(double);
 #undef DEFINE_NOT_ZERO_FUNC
 
-#define DEFINE_IS_INF_FUNC(T)                                                 \
-  template <>                                                                 \
-  DRAGON_API void IsInf<T, CUDAContext>(                                      \
-      const int N, const T* x, bool* y, CUDAContext* ctx) {                   \
-    _IsInf<<<CUDA_BLOCKS(N), CUDA_THREADS, 0, ctx->cuda_stream()>>>(N, x, y); \
+#define DEFINE_IS_FUNC(name, T)                                       \
+  template <>                                                         \
+  DRAGON_API void name<T, CUDAContext>(                               \
+      const int N, const T* x, bool* y, CUDAContext* ctx) {           \
+    _##name<<<CUDA_BLOCKS(N), CUDA_THREADS, 0, ctx->cuda_stream()>>>( \
+        N, reinterpret_cast<const math::ScalarType<T>::type*>(x), y); \
   }
 
-template <>
-DRAGON_API void IsInf<float16, CUDAContext>(
-    const int N,
-    const float16* x,
-    bool* y,
-    CUDAContext* ctx) {
-  _IsInf<<<CUDA_BLOCKS(N), CUDA_THREADS, 0, ctx->cuda_stream()>>>(
-      N, reinterpret_cast<const half*>(x), y);
-}
-
-DEFINE_IS_INF_FUNC(float);
-DEFINE_IS_INF_FUNC(double);
-#undef DEFINE_IS_INF_FUNC
-
-#define DEFINE_IS_NAN_FUNC(T)                                                 \
-  template <>                                                                 \
-  DRAGON_API void IsNaN<T, CUDAContext>(                                      \
-      const int N, const T* x, bool* y, CUDAContext* ctx) {                   \
-    _IsNaN<<<CUDA_BLOCKS(N), CUDA_THREADS, 0, ctx->cuda_stream()>>>(N, x, y); \
-  }
-
-template <>
-DRAGON_API void IsNaN<float16, CUDAContext>(
-    const int N,
-    const float16* x,
-    bool* y,
-    CUDAContext* ctx) {
-  _IsNaN<<<CUDA_BLOCKS(N), CUDA_THREADS, 0, ctx->cuda_stream()>>>(
-      N, reinterpret_cast<const half*>(x), y);
-}
-
-DEFINE_IS_NAN_FUNC(float);
-DEFINE_IS_NAN_FUNC(double);
-#undef DEFINE_IS_NAN_FUNC
+DEFINE_IS_FUNC(IsInf, float16);
+DEFINE_IS_FUNC(IsInf, float);
+DEFINE_IS_FUNC(IsInf, double);
+DEFINE_IS_FUNC(IsNaN, float16);
+DEFINE_IS_FUNC(IsNaN, float);
+DEFINE_IS_FUNC(IsNaN, double);
+DEFINE_IS_FUNC(IsFinite, float16);
+DEFINE_IS_FUNC(IsFinite, float);
+DEFINE_IS_FUNC(IsFinite, double);
+#undef DEFINE_IS_FUNC
 
 #define DEFINE_REPLACE_NAN_FUNC(T)                                        \
   template <>                                                             \
   DRAGON_API void ReplaceNaN<T, CUDAContext>(                             \
       const int N, const T value, const T* x, T* y, CUDAContext* ctx) {   \
     _ReplaceNaN<<<CUDA_BLOCKS(N), CUDA_THREADS, 0, ctx->cuda_stream()>>>( \
-        N, value, x, y);                                                  \
+        N,                                                                \
+        convert::To<math::ScalarType<T>::type>(value),                    \
+        reinterpret_cast<const math::ScalarType<T>::type*>(x),            \
+        reinterpret_cast<math::ScalarType<T>::type*>(y));                 \
   }
 
-template <>
-DRAGON_API void ReplaceNaN<float16, CUDAContext>(
-    const int N,
-    const float16 value,
-    const float16* x,
-    float16* y,
-    CUDAContext* ctx) {
-  _ReplaceNaN<<<CUDA_BLOCKS(N), CUDA_THREADS, 0, ctx->cuda_stream()>>>(
-      N,
-      convert::To<half>(value),
-      reinterpret_cast<const half*>(x),
-      reinterpret_cast<half*>(y));
-}
-
+DEFINE_REPLACE_NAN_FUNC(float16);
 DEFINE_REPLACE_NAN_FUNC(float);
 DEFINE_REPLACE_NAN_FUNC(double);
 #undef DEFINE_REPLACE_NAN_FUNC

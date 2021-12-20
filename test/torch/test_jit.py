@@ -25,10 +25,8 @@ class TestJit(unittest.TestCase):
 
     @torch.jit.trace(example_inputs=[
         torch.Tensor(1, dtype=torch.int64),
-        torch.Tensor(1, dtype=torch.int64),
-    ])
+        torch.Tensor(1, dtype=torch.int64)])
     def func1(self, a, b, **kwargs):
-        _ = kwargs
         return a + b
 
     def test_trace(self):
@@ -50,13 +48,13 @@ class TestJit(unittest.TestCase):
 
         func5 = torch.jit.trace(lambda a, b: a + b)
         m = torch.jit.trace(TestModule())
-        a, b, c = torch.tensor([1, 2]), torch.tensor([3, 4]), torch.tensor(1)
+        a, b = torch.tensor([1, 2]), torch.tensor([3, 4])
         self.assertEqual(self.func1(a, b).numpy().tolist(), [4, 6])
         self.assertEqual(func2(a, b).numpy().tolist(), [4, 6])
         self.assertEqual(func3(a, b).numpy().tolist(), [4, 6])
         self.assertEqual(func5(a, b).numpy().tolist(), [4, 6])
         self.assertEqual(m(a, b).numpy().tolist(), [4, 6])
-        self.assertEqual(self.func1(a, b, c=c).numpy().tolist(), [4, 6])
+        self.assertEqual(self.func1(a, b).numpy().tolist(), [4, 6])
         try:
             func4(a, b)
         except ValueError:

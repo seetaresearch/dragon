@@ -147,7 +147,6 @@ vm.caffe.layers
   layers/SmoothL1Loss
   layers/Softmax
   layers/SoftmaxWithLoss
-  layers/StopGradient
   layers/TanH
   layers/Tile
 

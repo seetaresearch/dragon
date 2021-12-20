@@ -30,7 +30,6 @@ from dragon.vm.caffe.core.layers.common import Reshape
 from dragon.vm.caffe.core.layers.common import Scale
 from dragon.vm.caffe.core.layers.common import Slice
 from dragon.vm.caffe.core.layers.common import Softmax
-from dragon.vm.caffe.core.layers.common import StopGradient
 from dragon.vm.caffe.core.layers.common import Tile
 from dragon.vm.caffe.core.layers.data import Data
 from dragon.vm.caffe.core.layers.loss import EuclideanLoss

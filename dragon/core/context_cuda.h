@@ -26,7 +26,7 @@ class Workspace;
 
 class CUDAObjects {
  public:
-  /*! \brief Default Constructor */
+  /*! \brief Constructor */
   CUDAObjects() {
     for (int i = 0; i < CUDA_MAX_DEVICES; i++) {
       cuda_streams_[i] = vector<cudaStream_t>();
@@ -143,9 +143,6 @@ class CUDAObjects {
 #ifdef USE_CUDNN
   /*! \brief The cached cuDNN handles of each device */
   vector<cudnnHandle_t> cudnn_handles_[CUDA_MAX_DEVICES];
-
-  /*! \brief The disabled cuDNN operators */
-  Set<string> cudnn_disabled_ops_;
 #endif
 
 #ifdef USE_NCCL
@@ -153,14 +150,14 @@ class CUDAObjects {
   Map<string, ncclComm_t> nccl_comms_[CUDA_MAX_DEVICES];
 #endif
 
-  /*! \brief The flag that allows cuDNN or not */
+  /*! \brief The flag that uses cuDNN or not */
   bool cudnn_enabled_ = true;
-
-  /*! \brief The flag that enforces deterministic cuDNN algorithms or not */
-  bool cudnn_deterministic_ = false;
 
   /*! \brief The flag that benchmarks fastest cuDNN algorithms or not */
   bool cudnn_benchmark_ = false;
+
+  /*! \brief The flag that selects deterministic cuDNN algorithms or not */
+  bool cudnn_deterministic_ = false;
 
   /*! \brief The flag that allows cuDNN TF32 math type or not */
   bool cudnn_allow_tf32_ = false;
@@ -174,7 +171,7 @@ class CUDAObjects {
  */
 class DRAGON_API CUDAContext {
  public:
-  /*! \brief Default constructor */
+  /*! \brief Constructor */
   CUDAContext() : device_id_(0), random_seed_(DEFAULT_RNG_SEED) {}
 
   /*! \brief Constructor with the device index */
@@ -366,7 +363,7 @@ class DRAGON_API CUDAContext {
 
 class DRAGON_API CUDAContext {
  public:
-  /*! \brief Default constructor */
+  /*! \brief Constructor */
   explicit CUDAContext() {
     CUDA_NOT_COMPILED;
   }

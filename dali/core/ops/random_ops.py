@@ -20,6 +20,9 @@ except ImportError:
     from dragon.core.util import deprecation
     ops = deprecation.not_installed('nvidia.dali')
 
+from dragon.core.util import six
+from dragon.vm.dali.core.framework import types
+
 
 class CoinFlip(object):
     """Sample values from a bernoulli distribution.
@@ -33,13 +36,15 @@ class CoinFlip(object):
 
     """
 
-    def __new__(cls, probability=0.5, **kwargs):
+    def __new__(cls, probability=0.5, dtype=None, **kwargs):
         """Create a ``CoinFlip`` operator.
 
         Parameters
         ----------
         probability : float, optional, default=0.5
             The probability to return 1.
+        dtype : str, optional
+            The output data type.
 
         Returns
         -------
@@ -47,7 +52,10 @@ class CoinFlip(object):
             The operator.
 
         """
-        return ops.random.CoinFlip(probability=probability, **kwargs)
+        if isinstance(dtype, six.string_types):
+            dtype = getattr(types, dtype.upper())
+        return ops.random.CoinFlip(probability=probability,
+                                   dtype=dtype, **kwargs)
 
 
 class Uniform(object):
@@ -62,13 +70,15 @@ class Uniform(object):
 
     """
 
-    def __new__(cls, range=(-1., 1.), **kwargs):
+    def __new__(cls, range=(-1., 1.), dtype=None, **kwargs):
         """Create an ``Uniform`` operator.
 
         Parameters
         ----------
         range : Tuple[float, float], optional
             The lower and upper bound of distribution.
+        dtype : str, optional
+            The output data type.
 
         Returns
         -------
@@ -76,4 +86,6 @@ class Uniform(object):
             The operator.
 
         """
-        return ops.random.Uniform(range=range, **kwargs)
+        if isinstance(dtype, six.string_types):
+            dtype = getattr(types, dtype.upper())
+        return ops.random.Uniform(range=range, dtype=dtype, **kwargs)

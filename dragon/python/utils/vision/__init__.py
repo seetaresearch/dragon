@@ -14,4 +14,4 @@ from __future__ import division
 from __future__ import print_function
 
 from dragon.utils.vision.data_iterator import DataIterator
-from dragon.utils.vision.data_transformer import DataTransformer
+from dragon.utils.vision.data_worker import DataWorker

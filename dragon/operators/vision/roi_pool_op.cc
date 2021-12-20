@@ -9,11 +9,9 @@ template <class Context>
 template <typename T>
 void RoiPoolOp<Context>::DoRunWithType() {
   auto &X = Input(0), &RoI = Input(1), *Y = Output(0);
+  Output("X_spec")->ReshapeLike(X);
   Y->Reshape({RoI.dim(0), X.dim(1), out_h_, out_w_});
-  Buffer("Y_mask")->ReshapeLike(*Y);
-
-  // Store for the gradient calculation
-  SET_INPUT_SPEC(0);
+  auto* Y_mask = Output("Y_mask")->ReshapeLike(*Y);
 
   kernels::RoiPool(
       X.dim(1),
@@ -25,7 +23,7 @@ void RoiPoolOp<Context>::DoRunWithType() {
       spatial_scale_,
       X.template data<T, Context>(),
       RoI.template data<float, Context>(),
-      Buffer("Y_mask")->template mutable_data<int, Context>(),
+      Y_mask->template mutable_data<int, Context>(),
       Y->template mutable_data<T, Context>(),
       ctx());
 }
@@ -39,12 +37,12 @@ template <class Context>
 template <typename T>
 void RoiPoolGradientOp<Context>::DoRunWithType() {
   auto &RoI = Input(0), &dY = Input(1);
-  auto* dX = Output(0)->ReshapeLike(INPUT_SPEC(0));
+  auto* dX = Output(0)->ReshapeLike(Input("X_spec"));
 
   auto* dx = dX->template mutable_data<T, Context>();
   auto* dx_acc = (TypeMeta::Id<T>() == TypeMeta::Id<float>())
       ? (float*)nullptr
-      : ctx()->workspace()->template data<float, Context>({dX->count()})[0];
+      : ctx()->workspace()->template data<float, Context>(dX->count());
 
   // Empty gradient
   math::Set(
@@ -64,7 +62,7 @@ void RoiPoolGradientOp<Context>::DoRunWithType() {
       spatial_scale_,
       dY.template data<T, Context>(),
       RoI.template data<float, Context>(),
-      const_cast<int*>(Buffer("Y_mask")->template data<int, Context>()),
+      const_cast<int*>(Input("Y_mask").template data<int, Context>()),
       dx_acc != nullptr ? dx_acc : reinterpret_cast<float*>(dx),
       ctx());
 

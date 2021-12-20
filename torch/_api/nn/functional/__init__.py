@@ -32,6 +32,7 @@ from dragon.vm.torch.core.nn.functional import conv3d
 from dragon.vm.torch.core.nn.functional import conv_transpose1d
 from dragon.vm.torch.core.nn.functional import conv_transpose2d
 from dragon.vm.torch.core.nn.functional import conv_transpose3d
+from dragon.vm.torch.core.nn.functional import cosine_similarity
 from dragon.vm.torch.core.nn.functional import cross_entropy
 from dragon.vm.torch.core.nn.functional import ctc_loss
 from dragon.vm.torch.core.nn.functional import depthwise_conv2d
@@ -59,6 +60,7 @@ from dragon.vm.torch.core.nn.functional import mse_loss
 from dragon.vm.torch.core.nn.functional import multi_head_attention_forward
 from dragon.vm.torch.core.nn.functional import nll_loss
 from dragon.vm.torch.core.nn.functional import normalize
+from dragon.vm.torch.core.nn.functional import one_hot
 from dragon.vm.torch.core.nn.functional import pad
 from dragon.vm.torch.core.nn.functional import pixel_shuffle
 from dragon.vm.torch.core.nn.functional import pixel_unshuffle

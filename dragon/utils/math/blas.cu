@@ -112,23 +112,19 @@ __global__ void _Axpby<double>(
 
 } // namespace
 
-#define DEFINE_SCALE_FUNC(T)                                                \
-  template <>                                                               \
-  DRAGON_API void Scale<T, CUDAContext>(                                    \
-      const int N, const float alpha, const T* x, T* y, CUDAContext* ctx) { \
-    if (alpha != 1.f) {                                                     \
-      if (x != y) {                                                         \
-        cudaMemcpyAsync(                                                    \
-            y,                                                              \
-            x,                                                              \
-            sizeof(T) * N,                                                  \
-            cudaMemcpyDeviceToDevice,                                       \
-            ctx->cuda_stream());                                            \
-      }                                                                     \
-      return;                                                               \
-    }                                                                       \
-    _Scale<<<CUDA_BLOCKS(N), CUDA_THREADS, 0, ctx->cuda_stream()>>>(        \
-        N, static_cast<T>(alpha), x, y);                                    \
+#define DEFINE_SCALE_FUNC(T)                                                   \
+  template <>                                                                  \
+  DRAGON_API void Scale<T, CUDAContext>(                                       \
+      const int N, const float alpha, const T* x, T* y, CUDAContext* ctx) {    \
+    if (alpha != 1.f) {                                                        \
+      _Scale<<<CUDA_BLOCKS(N), CUDA_THREADS, 0, ctx->cuda_stream()>>>(         \
+          N, static_cast<T>(alpha), x, y);                                     \
+      return;                                                                  \
+    }                                                                          \
+    if (x != y) {                                                              \
+      CUDA_CHECK(cudaMemcpyAsync(                                              \
+          y, x, sizeof(T) * N, cudaMemcpyDeviceToDevice, ctx->cuda_stream())); \
+    }                                                                          \
   }
 
 DEFINE_SCALE_FUNC(int8_t);

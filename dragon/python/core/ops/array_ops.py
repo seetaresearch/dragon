@@ -15,121 +15,12 @@ from __future__ import division
 from __future__ import print_function
 
 from dragon.core.autograph import context
-from dragon.core.autograph.op_impl import OpLib
-from dragon.core.autograph.op_impl import OpSchema
+from dragon.core.autograph.op_lib import OpLib
+from dragon.core.autograph.op_lib import OpSchema
 from dragon.core.framework import types
 from dragon.core.ops import constant_ops
 from dragon.core.util import nest
 from dragon.core.util import six
-
-
-@OpSchema.num_inputs(1)
-def argmax(inputs, axis=0, keepdims=False, **kwargs):
-    """Compute the index of maximum elements along the given axis.
-
-    :attr:`axis` could be negative:
-
-    ```python
-    # A negative axis is the last-k axis
-    x = dragon.constant([[1, 2, 3], [4, 5, 6]])
-    print(dragon.math.argmax(x, axis=1))
-    print(dragon.math.argmax(x, axis=-1))  # Equivalent
-    ```
-
-    Parameters
-    ----------
-    inputs : dragon.Tensor
-        The input tensor.
-    axis : int, optional, default=0
-        The axis to reduce.
-    keepdims : bool, optional, default=False
-        Keep the reduced dimension or not.
-
-    Returns
-    -------
-    dragon.Tensor
-        The index of maximum elements.
-
-    """
-    if context.executing_eagerly():
-        return OpLib.execute('ArgMax', inputs, axis=axis, keepdims=keepdims)
-    return OpLib.add('ArgMax', inputs, axis=axis, keepdims=keepdims)
-
-
-@OpSchema.num_inputs(1)
-def argmin(inputs, axis=0, keepdims=False, **kwargs):
-    """Compute the index of minimum elements along the given axis.
-
-    :attr:`axis` could be negative:
-
-    ```python
-    # A negative axis is the last-k axis
-    x = dragon.constant([[1, 2, 3], [4, 5, 6]])
-    print(dragon.math.argmin(x, axis=1))
-    print(dragon.math.argmin(x, axis=-1))  # Equivalent
-    ```
-
-    Parameters
-    ----------
-    inputs : dragon.Tensor
-        The input tensor.
-    axis : int, optional, default=0
-        The axis to reduce.
-    keepdims : bool, optional, default=False
-        Keep the reduced dimension or not.
-
-    Returns
-    -------
-    dragon.Tensor
-        The index of minimum elements.
-
-    """
-    if context.executing_eagerly():
-        return OpLib.execute('ArgMin', inputs, axis=axis, keepdims=keepdims)
-    return OpLib.add('ArgMin', inputs, axis=axis, keepdims=keepdims)
-
-
-@OpSchema.num_inputs(1)
-def argsort(inputs, axis=-1, descending=False, **kwargs):
-    """Return the index of sorted elements along the given axis.
-
-    :attr:`axis` could be negative:
-
-    ```python
-    x = dragon.constant([[1, 2, 3], [3, 2, 1]])
-    index1 = dragon.argsort(x, axis=1)
-    index2 = dragon.argsort(x, axis=-1)  # Equivalent
-    ```
-
-    Use :attr:`descending` to sort in the inverse order:
-
-    ```python
-    x = dragon.constant([1, 2, 3])
-    index1 = dragon.argsort(-x, descending=False)
-    index2 = dragon.argsort(x, descending=True)  # Equivalent
-    ```
-
-    Parameters
-    ----------
-    inputs : dragon.Tensor
-        The input tensor.
-    axis : int, optional, default=-1
-        The axis to sort elements.
-    descending : bool, optional, default=False
-        Sort in the descending order or not.
-
-    Returns
-    -------
-    dragon.Tensor
-        The output tensor.
-
-    """
-    if context.executing_eagerly():
-        return OpLib.execute(
-            'Sort', inputs, outputs=[None, None], axis=axis,
-            descending=descending)[1]
-    return OpLib.add('Sort', inputs, axis=axis,
-                     descending=descending, num_outputs=2)[1]
 
 
 @OpSchema.num_inputs(2)
@@ -229,38 +120,6 @@ def broadcast_to(inputs, shape, **kwargs):
         return OpLib.execute(
             'Expand', inputs, ndim=len(args['dims']), dims=args['dims'])
     return OpLib.add('Expand', **args)
-
-
-@OpSchema.num_inputs(1)
-def cast(inputs, dtype, copy=True, **kwargs):
-    """Convert the data type of input.
-
-    Examples:
-
-    ```python
-    x = dragon.constant([1, 2, 3], dtype='int64')
-    print(dragon.cast(x, dtype='float32'))
-    ```
-
-    Parameters
-    ----------
-    inputs : dragon.Tensor
-        The input tensor.
-    dtype : str
-        The data type to convert to.
-    copy : bool, optional, default=True
-        Return a new tensor or call in-place.
-
-    Returns
-    -------
-    dragon.Tensor
-        The output tensor.
-
-    """
-    if context.executing_eagerly():
-        return OpLib.execute(
-            'Cast', inputs, outputs=[None] if copy else inputs, dtype=dtype)
-    return OpLib.add('Cast', inputs, dtype=dtype, **kwargs)
 
 
 @OpSchema.num_inputs(2, 3)
@@ -426,59 +285,6 @@ def concat(inputs, axis=0, **kwargs):
 
 
 @OpSchema.num_inputs(1)
-def cumsum(inputs, axis=0, exclusive=False, reverse=False, **kwargs):
-    """Compute the cumulative sum of elements along the given axis.
-
-    :attr:`axis` could be negative:
-
-    ```python
-    # A negative axis is the last-k axis
-    x = dragon.constant([[1, 2, 3], [4, 5, 6]])
-    print(dragon.math.cumsum(x, axis=1))   # [[1, 3, 6], [4, 9, 15]]
-    print(dragon.math.cumsum(x, axis=-1))  # Equivalent
-    ```
-
-    Use :attr:`exclusive` to exclude the top element:
-
-    ```python
-    x = dragon.constant([1, 2, 3])
-    print(dragon.math.cumsum(x, exclusive=True))  # [0, 1, 3]
-    ```
-
-    Use :attr:`reverse` to reverse the cumulative direction:
-
-    ```python
-    x = dragon.constant([1, 2, 3])
-    print(dragon.math.cumsum(x))  # [1, 3, 6]
-    print(dragon.math.cumsum(x, reverse=True))  # [6, 5, 3]
-    print(dragon.math.cumsum(x, exclusive=True, reverse=True))  # [5, 3, 0]
-    ```
-
-    Parameters
-    ----------
-    inputs : dragon.Tensor
-        The input tensor.
-    axis : int, optional, default=0
-        The axis to cumulate.
-    exclusive : bool, optional, default=False
-        ``True`` to exclude the top element.
-    reverse : bool, optional, default=False
-        ``True`` to cumulate in a reverse direction.
-
-    Returns
-    -------
-    dragon.Tensor
-        The output tensor.
-
-    """
-    if context.executing_eagerly():
-        return OpLib.execute(
-            'CumSum', inputs, axis=axis, exclusive=exclusive, reverse=reverse)
-    return OpLib.add('CumSum', inputs, axis=axis,
-                     exclusive=exclusive, reverse=reverse)
-
-
-@OpSchema.num_inputs(1)
 def expand_dims(inputs, axis, copy=True, **kwargs):
     """Expand the dimensions of input with size 1.
 
@@ -523,7 +329,7 @@ def expand_dims(inputs, axis, copy=True, **kwargs):
 
 @OpSchema.num_inputs(1)
 def flatten(inputs, axis=0, end_axis=-1, copy=True, **kwargs):
-    r"""Flatten the input along the given axes.
+    """Flatten the input along the given axes.
 
     Set :attr:`keep_axes` to flatten if shape is dynamic.
 
@@ -669,268 +475,6 @@ def identity(inputs, **kwargs):
     return OpLib.add('Identity', inputs, **kwargs)
 
 
-def linspace(start, stop, num, dtype='int64', axis=0, **kwargs):
-    r"""Generate evenly spaced values within intervals along the given axis.
-
-    Range :math:`[\text{start}, \text{stop})` is determined for :attr:`num` values:
-
-    ```python
-    x = dragon.linspace(2, 4, num=3)  # [2, 3, 4]
-    ```
-
-    More than one ranges are accepted to generate N-d coordinates:
-
-    ```python
-    x = dragon.linspace([1, 2], [3, 4], num=3, axis=0)  # [[1, 2], [2, 3], [3, 4]]
-    y = dragon.linspace([1, 2], [3, 4], num=3, axis=1)  # [[1, 2, 3], [2, 3, 4]]
-    ```
-
-    Parameters
-    ----------
-    start : Union[number, Sequence[number]]
-        The start of range.
-    stop: Union[number, Sequence[number]]
-        The stop of range.
-    num : int
-        The number of values to generate.
-    dtype : str, optional, default='int64'
-        The optional data type.
-    axis : int, optional, default=0
-        The axis to generate values.
-
-    Returns
-    -------
-    dragon.Tensor
-        The output tensor.
-
-    """
-    dtype = dtype.lower()
-    starts = [float(elem) for elem in nest.flatten(start)]
-    stops = [float(elem) for elem in nest.flatten(stop)]
-    dims = []
-    if len(starts) > 1 or starts == start:
-        dims = [len(starts)]
-    axis = axis if axis >= 0 else axis + len(dims) + 1
-    dims.insert(axis, num)
-    if context.executing_eagerly():
-        return OpLib.execute(
-            'LinSpace', [], ndim=len(dims), num_intervals=len(starts),
-            axis=axis, dtype=dtype, dims=dims, start=starts, stop=stops)
-    return OpLib.add('LinSpace', [], axis=axis, dtype=dtype, dims=dims,
-                     start=starts, stop=stops, **kwargs)
-
-
-@OpSchema.num_inputs(1)
-def max(inputs, axis=None, keepdims=False, **kwargs):
-    """Compute the max value of elements along the given axis.
-
-    :attr:`axis` could be negative or ``None``:
-
-    ```python
-    x = dragon.constant([[1, 2, 3], [4, 5, 6]])
-
-    # A negative axis is the last-k axis
-    print(dragon.math.max(x, 1))
-    print(dragon.math.max(x, -1))  # Equivalent
-
-    # If ``axis`` is None, the vector-style reduction
-    # will be applied to return a scalar result
-    print(dragon.math.max(x))  # 6
-
-    # Also, ``axis`` could be a sequence of integers
-    print(dragon.math.max(x, [0, 1]))  # 6
-    ```
-
-    Parameters
-    ----------
-    inputs : dragon.Tensor
-        The input tensor.
-    axis : int, optional
-        The axis to reduce.
-    keepdims : bool, optional, default=False
-        Keep the reduced dimensions or not.
-
-    Returns
-    -------
-    dragon.Tensor
-        The output tensor.
-
-    """
-    axes = None if axis is None else nest.flatten(axis)
-    if context.executing_eagerly():
-        return OpLib.execute('ReduceMax', inputs, axes=axes, keepdims=keepdims)
-    return OpLib.add('ReduceMax', inputs,
-                     axes=axes, keepdims=keepdims, **kwargs)
-
-
-@OpSchema.num_inputs(1)
-def mean(inputs, axis=None, keepdims=False, **kwargs):
-    """Compute the mean value of elements along the given axis.
-
-    :attr:`axis` could be negative or ``None``:
-
-    ```python
-    x = dragon.constant([[1, 2, 3], [4, 5, 6]], dtype='float32')
-
-    # A negative axis is the last-k axis
-    print(dragon.math.mean(x, 1))
-    print(dragon.math.mean(x, -1))  # Equivalent
-
-    # If axis is None, the vector-style reduction
-    # will be applied to return a scalar result
-    print(dragon.math.mean(x))  # 3.5
-
-    # Also, axis could be a sequence of integers
-    print(dragon.math.mean(x, [0, 1]))  # 3.5
-    ```
-
-    Parameters
-    ----------
-    inputs : dragon.Tensor
-        The input tensor.
-    axis : Union[int, Sequence[int]], optional
-        The axis to reduce.
-    keepdims : bool, optional, default=False
-        Keep the reduced dimensions or not.
-
-    Returns
-    -------
-    dragon.Tensor
-        The output tensor.
-
-    """
-    axes = None if axis is None else nest.flatten(axis)
-    if context.executing_eagerly():
-        return OpLib.execute('ReduceMean', inputs, axes=axes, keepdims=keepdims)
-    return OpLib.add('ReduceMean', inputs,
-                     axes=axes, keepdims=keepdims, **kwargs)
-
-
-@OpSchema.num_inputs(1)
-def min(inputs, axis=None, keepdims=False, **kwargs):
-    """Compute the min value of elements along the given axis.
-
-    :attr:`axis` could be negative or ``None``:
-
-    ```python
-    x = dragon.constant([[1, 2, 3], [4, 5, 6]])
-
-    # A negative axis is the last-k axis
-    print(dragon.math.min(x, 1))
-    print(dragon.math.min(x, -1))  # Equivalent
-
-    # If ``axis`` is None, the vector-style reduction
-    # will be applied to return a scalar result
-    print(dragon.math.min(x))  # 1
-
-    # Also, ``axis`` could be a sequence of integers
-    print(dragon.math.min(x, [0, 1]))  # 1
-    ```
-
-    Parameters
-    ----------
-    inputs : dragon.Tensor
-        The input tensor.
-    axis : int, optional
-        The axis to reduce.
-    keepdims : bool, optional, default=False
-        Keep the reduced dimensions or not.
-
-    Returns
-    -------
-    dragon.Tensor
-        The output tensor.
-
-    """
-    axes = None if axis is None else nest.flatten(axis)
-    if context.executing_eagerly():
-        return OpLib.execute('ReduceMin', inputs, axes=axes, keepdims=keepdims)
-    return OpLib.add('ReduceMin', inputs,
-                     axes=axes, keepdims=keepdims, **kwargs)
-
-
-@OpSchema.num_inputs(1)
-def moments(inputs, axis=None, keepdims=False, **kwargs):
-    r"""Compute the mean and variance of input along the given axis.
-
-    .. math::
-        \begin{cases}
-            \mathrm{E}[x] = \frac{1}{n}\sum(x) \\
-            \mathrm{Var}[x] = \frac{1}{n}\sum(x - \mathrm{E}[x])^{2}
-        \end{cases}
-
-    :attr:`axis` could be negative or ``None``:
-
-    ```python
-    x = dragon.constant([[1, 2, 3], [4, 5, 6]], dtype='float32')
-
-    # A negative axis is the last-k axis
-    print(dragon.nn.moments(x, 1))
-    print(dragon.nn.moments(x, -1))  # Equivalent
-
-    # If axis is None, reduce as a vector and return scalars
-    # will be applied to return a scalar result
-    print(dragon.nn.moments(x))  # mean is 3.5, var is 2.916667
-
-    # Also, axis could be a sequence of integers
-    print(dragon.nn.moments(x, [0, 1]))  # mean is 3.5, var is 2.916667
-    ```
-
-    Parameters
-    ----------
-    inputs : dragon.Tensor
-        The input tensor.
-    axis : Union[int, Sequence[int]], optional
-        The axis to reduce.
-    keepdims : bool, optional, default=False
-        Keep the reduced dimensions or not.
-
-    Returns
-    -------
-    dragon.Tensor
-        The mean tensor.
-    dragon.Tensor
-        The variance tensor.
-
-    """
-    axes = None if axis is None else nest.flatten(axis)
-    if context.executing_eagerly():
-        return OpLib.execute(
-            'Moments', inputs, outputs=[None, None],
-            axes=axes, keepdims=keepdims)
-    return OpLib.add('Moments', inputs, num_outputs=2,
-                     axes=axes, keepdims=keepdims, **kwargs)
-
-
-@OpSchema.num_inputs(1)
-def multinomial(inputs, sample_size=1, **kwargs):
-    """Return an index tensor sampled from the multinomial distribution.
-
-    Examples:
-
-    ```python
-    input = dragon.math.log(dragon.constant([0.5, 0.5]))
-    index = dragon.random.multinomial(input)
-    ```
-
-    Parameters
-    ----------
-    inputs : dragon.Tensor
-        The input tensor.
-    sample_size : int, optional, default=1
-        The number of samples.
-
-    Returns
-    -------
-    dragon.Tensor
-        The output tensor.
-
-    """
-    if context.executing_eagerly():
-        return OpLib.execute('Multinomial', inputs, sample_size=sample_size)
-    return OpLib.add('Multinomial', inputs, sample_size=sample_size, **kwargs)
-
-
 @OpSchema.num_inputs(1)
 def nonzero(inputs, **kwargs):
     r"""Return the index of non-zero elements.
@@ -955,7 +499,7 @@ def nonzero(inputs, **kwargs):
 
 @OpSchema.num_inputs(1)
 def one_hot(inputs, depth, on_value=1, off_value=0, **kwargs):
-    r"""Return the one-hot representation for input.
+    r"""Return the one-hot representation of input.
 
     .. math::
         \text{out}_{ij} =
@@ -1006,7 +550,7 @@ def one_hot(inputs, depth, on_value=1, off_value=0, **kwargs):
 
 @OpSchema.num_inputs(1)
 def pad(inputs, pads, mode='constant', value=0, **kwargs):
-    r"""Pad the input according to the given sizes.
+    """Pad the input according to the given sizes.
 
     :attr:`pads` should be a sequence with :math:`N` tuples,
     where :math:`N` is the number of input dimensions:
@@ -1049,10 +593,6 @@ def pad(inputs, pads, mode='constant', value=0, **kwargs):
     value, mode = float(value), mode.upper()
     pads_begin, pads_end = [], []
     for pad in pads:
-        if len(pad) != 2:
-            raise ValueError(
-                'The tuple length of <pads> '
-                'should be 2, got {}.'.format(len(pad)))
         pads_begin.append(pad[0])
         pads_end.append(pad[1])
     pads = pads_begin + pads_end
@@ -1061,85 +601,6 @@ def pad(inputs, pads, mode='constant', value=0, **kwargs):
             'Pad', inputs, mode=mode, value=value,
             ndim=len(pads_begin), pads=pads)
     return OpLib.add('Pad', inputs, value=value, mode=mode, pads=pads, **kwargs)
-
-
-@OpSchema.convert_arg('limit')
-def permutation(limit, dtype='int64', **kwargs):
-    r"""Return a tensor with value in the permuted range.
-
-    Set :attr:`limit` to determine a range :math:`[0, \text{limit})`:
-
-    ```python
-    x = dragon.random.permutation(4)
-    ```
-
-    Parameters
-    ----------
-    limit: Union[number, dragon.Tensor]
-        The end of interval.
-    dtype : str, optional, default='int64'
-        The optional data type.
-
-    Returns
-    -------
-    dragon.Tensor
-        The output tensor.
-
-    """
-    args = OpSchema.parse_args(locals())
-    args['dtype'] = args['dtype'].lower()
-    if context.executing_eagerly():
-        return OpLib.execute(
-            'Permutation', [], dtype=dtype, limit=args['limit'])
-    return OpLib.add('Permutation', [], **args)
-
-
-def range(start, limit=None, delta=1, dtype='int64', **kwargs):
-    r"""Return a tensor of evenly spaced values within a interval.
-
-    Use :attr:`start` and :attr:`limit` for a simple range:
-
-    ```python
-    x = dragon.range(2, 4)  # [2, 3]
-    ```
-
-    If :attr:`limit` is ``None``, range :math:`[0, \text{start})` will be taken:
-
-    ```python
-    x = dragon.range(5)  # [0, 1, 2, 3, 4]
-    ```
-
-    Use :attr:`delta` to make a striding range:
-
-    ```python
-    x = dragon.range(5, delta=2)  # [0, 2, 4]
-    ```
-
-    Parameters
-    ----------
-    start : number
-        The start of interval.
-    limit: number, optional
-        The end of interval.
-    delta : number, optional, default=1
-        The spacing between two elements.
-    dtype : str, optional, default='int64'
-        The output data type.
-
-    Returns
-    -------
-    dragon.Tensor
-        The output tensor.
-
-    """
-    dtype = dtype.lower()
-    slice = [float(start), float(delta)]
-    if limit is not None:
-        slice.insert(1, float(limit))
-    if context.executing_eagerly():
-        return OpLib.execute(
-            'Range', [], num_args=len(slice), dtype=dtype, slice=slice)
-    return OpLib.add('Range', [], slice=slice, dtype=dtype, **kwargs)
 
 
 @OpSchema.num_inputs(1)
@@ -1185,7 +646,7 @@ def repeat(inputs, axis=None, repeats=1, **kwargs):
 @OpSchema.num_inputs(1)
 @OpSchema.convert_arg(name='shape', name_v2='dims')
 def reshape(inputs, shape, copy=True, **kwargs):
-    r"""Change the dimensions of input.
+    """Change the dimensions of input.
 
     Examples:
 
@@ -1405,7 +866,7 @@ def scatter_elements(inputs, axis=0, copy=True, **kwargs):
 
 @OpSchema.num_inputs(1)
 def shape(inputs, **kwargs):
-    r"""Return the shape of input.
+    """Return the shape of input.
 
     Examples:
 
@@ -1479,59 +940,8 @@ def slice(inputs, starts, sizes, **kwargs):
 
 
 @OpSchema.num_inputs(1)
-def sort(inputs, axis=-1, descending=False, **kwargs):
-    """Return the sorted elements along the given axis.
-
-    :attr:`axis` could be negative:
-
-    ```python
-    # A negative axis is the last-k axis
-    x = dragon.constant([[1, 2, 3], [3, 2, 1]])
-    value1, index1 = dragon.sort(x, axis=1)
-    value2, index2 = dragon.sort(x, axis=-1)  # Equivalent
-    ```
-
-    Use :attr:`descending` to sort in the inverse order:
-
-    ```python
-    x = dragon.constant([1, 2, 3])
-    _, index1 = dragon.sort(-x, descending=False)
-    _, index2 = dragon.sort(x, descending=True)  # Equivalent
-    ```
-
-    Parameters
-    ----------
-    inputs : dragon.Tensor
-        The input tensor.
-    axis : int, optional, default=-1
-        The axis to sort.
-    descending : bool, optional, default=False
-        Sort in the descending order or not.
-
-    Returns
-    -------
-    Sequence[dragon.Tensor]
-        The value and index tensor.
-
-    """
-    if context.executing_eagerly():
-        return OpLib.execute(
-            'Sort', inputs, outputs=[None, None], axis=axis,
-            descending=descending)
-    return OpLib.add('Sort', inputs, axis=axis,
-                     descending=descending, num_outputs=2)
-
-
-@OpSchema.num_inputs(1)
-def split(
-    inputs,
-    num_or_size_splits,
-    axis=0,
-    slice_points=None,
-    copy=True,
-    **kwargs
-):
-    r"""Split input into chunks along the given axis.
+def split(inputs, num_or_size_splits, axis=0, copy=True, **kwargs):
+    """Split input into chunks along the given axis.
 
     Either number or size of splits will be accepted:
 
@@ -1551,14 +961,6 @@ def split(
     print(dragon.split(x, 2, axis=-1))  # Equivalent
     ```
 
-    Optionally, use ``slice_points`` to hint the splits:
-
-    ```python
-    x = dragon.constant([[1, 2], [3, 4], [5, 6]])
-    # Shape: (3, 2) -> (1, 2), (1, 2), (1, 2)
-    print(dragon.split(x, 3, slice_points=[1, 2]))
-    ```
-
     Parameters
     ----------
     inputs : dragon.Tensor
@@ -1567,35 +969,27 @@ def split(
         The number or size of chunks.
     axis : int, optional, default=0
         The axis to split.
-    slice_points : Sequence[int], optional
-        The optional slice points.
     copy : bool, optional, default=True
         Copy or create the views of input.
 
     Returns
     -------
     Sequence[dragon.Tensor]
-        The outputs.
+        The output tensors.
 
     """
     if nest.is_sequence(num_or_size_splits):
-        num_splits = len(num_or_size_splits)
         size_splits = num_or_size_splits
+        num = num_splits = len(num_or_size_splits)
     else:
-        num_splits = num_or_size_splits
         size_splits = None
-    if slice_points is not None:
-        if len(slice_points) + 1 != num_splits:
-            raise ValueError(
-                'Excepted %d values for <slice_points>.'
-                % len(slice_points))
+        num, num_splits = num_or_size_splits, 0
     if context.executing_eagerly():
         return OpLib.execute(
-            'Split', inputs, outputs=[None] * num_splits, axis=axis,
-            size_splits=size_splits, slice_points=slice_points, copy=copy)
-    return OpLib.add('Split', inputs, num_outputs=num_splits, axis=axis,
-                     size_splits=size_splits, slice_points=slice_points,
-                     copy=copy, **kwargs)
+            'Split', inputs, outputs=[None] * num, axis=axis,
+            num_splits=num_splits, split=size_splits, copy=copy)
+    return OpLib.add('Split', inputs, num_outputs=num, axis=axis,
+                     split=size_splits, copy=copy, **kwargs)
 
 
 @OpSchema.num_inputs(1)
@@ -1682,49 +1076,6 @@ def stack(inputs, axis=0, **kwargs):
 
 
 @OpSchema.num_inputs(1)
-def sum(inputs, axis=None, keepdims=False, **kwargs):
-    """Compute the sum value of elements along the given axis.
-
-    :attr:`axis` could be negative or ``None``:
-
-    ```python
-    x = dragon.constant([[1, 2, 3], [4, 5, 6]])
-
-    # A negative axis is the last-k axis
-    print(dragon.math.sum(x, 1))
-    print(dragon.math.sum(x, -1))  # Equivalent
-
-    # If axis is None, the vector-style reduction
-    # will be applied to return a scalar result
-    print(dragon.math.sum(x))  # 21
-
-    # Also, axis could be a sequence of integers
-    print(dragon.math.sum(x, [0, 1]))  # 21
-    ```
-
-    Parameters
-    ----------
-    inputs : dragon.Tensor
-        The input tensor.
-    axis : Union[int, Sequence[int]], optional
-        The axis to reduce.
-    keepdims : bool, optional, default=False
-        Keep the reduced dimensions or not.
-
-    Returns
-    -------
-    dragon.Tensor
-        The output tensor.
-
-    """
-    axes = None if axis is None else nest.flatten(axis)
-    if context.executing_eagerly():
-        return OpLib.execute('ReduceSum', inputs, axes=axes, keepdims=keepdims)
-    return OpLib.add('ReduceSum', inputs,
-                     axes=axes, keepdims=keepdims, **kwargs)
-
-
-@OpSchema.num_inputs(1)
 @OpSchema.convert_arg(name='repeats')
 def tile(inputs, repeats, **kwargs):
     """Repeat elements along each axis of input.
@@ -1759,7 +1110,7 @@ def tile(inputs, repeats, **kwargs):
 @OpSchema.num_inputs(1)
 @OpSchema.convert_arg('perm')
 def transpose(inputs, perm=None, copy=True, **kwargs):
-    r"""Permute the dimensions of input.
+    """Permute the dimensions of input.
 
     Examples:
 
@@ -1878,54 +1229,6 @@ def triu(inputs, k=0, copy=True, **kwargs):
 
 
 @OpSchema.num_inputs(1)
-def top_k(inputs, k=1, axis=-1, largest=True, sorted=True, **kwargs):
-    """Return the top-K largest or smallest elements along the given axis.
-
-    :attr:`axis` could be negative:
-
-    ```python
-    # A negative axis is the last-k axis
-    x = dragon.constant([[1, 2, 3], [3, 2, 1]])
-    value1, index1 = dragon.math.top_k(x, k=2, axis=1)
-    value2, index2 = dragon.math.top_k(x, k=2, axis=-1)  # Equivalent
-    ```
-
-    If ``largest`` is ``False``, the k smallest elements are returned:
-
-    ```python
-    x = dragon.constant([1, 2, 3])
-    _, index1 = dragon.math.top_k(-x, largest=True)
-    _, index2 = dragon.math.top_k(x, largest=False)  # Equivalent
-    ```
-
-    Parameters
-    ----------
-    inputs : dragon.Tensor
-        The input tensor.
-    k : int, optional, default=1
-        The number of top elements to select.
-    axis : int, optional, default=-1
-        The axis to retrieve.
-    largest : bool, optional, default=True
-        Return largest or smallest elements.
-    sorted : bool, optional, default=True
-        Whether to return in the sorted order.
-
-    Returns
-    -------
-    Sequence[dragon.vm.torch.Tensor]
-        The value and index tensor.
-
-    """
-    if context.executing_eagerly():
-        return OpLib.execute(
-            'TopK', inputs, outputs=[None, None], k=k, axis=axis,
-            largest=largest, sorted=sorted)
-    return OpLib.add('TopK', inputs, num_outputs=2, k=k, axis=axis,
-                     largest=largest, sorted=sorted, **kwargs)
-
-
-@OpSchema.num_inputs(1)
 def unique(inputs, return_inverse=False, return_counts=False, **kwargs):
     """Return the unique elements of input.
 
@@ -1974,6 +1277,52 @@ def unique(inputs, return_inverse=False, return_counts=False, **kwargs):
     return OpLib.add('Unique', inputs, num_outputs=num_outputs,
                      return_inverse=return_inverse,
                      return_counts=return_counts, **kwargs)
+
+
+@OpSchema.num_inputs(1)
+def unstack(inputs, axis=0, num=None, copy=True, **kwargs):
+    """Unpack input into chunks along the given axis.
+
+    The number of outputs should be equal to the dimension of axis:
+
+    ```python
+    x = dragon.constant([[1, 2, 3], [4, 5, 6]])
+    # Shape: (2, 3) -> (3,), (3,)
+    print(dragon.unstack(x, axis=0))
+    ```
+
+    :attr:`axis` can be negative:
+
+    ```python
+    x = dragon.constant([[1, 2, 3], [4, 5, 6]])
+    # Shape: (2, 3) -> (2,), (2,), (2,)
+    print(dragon.unstack(x, axis=-1))
+    ```
+
+    Parameters
+    ----------
+    inputs : dragon.Tensor
+        The input tensor.
+    axis : int, optional, default=0
+        The axis to unpack.
+    num : int, optional
+        The number of outputs.
+    copy : bool, optional, default=True
+        Copy or create the views of input.
+
+    Returns
+    -------
+    Sequence[dragon.Tensor]
+        The output tensors.
+
+    """
+    num_outputs = num or inputs[0].shape[axis]
+    if context.executing_eagerly():
+        return OpLib.execute(
+            'Split', inputs, outputs=[None] * num_outputs,
+            axis=axis, copy=copy, keepdims=False)
+    return OpLib.add('Split', inputs, num_outputs=num_outputs,
+                     axis=axis, copy=copy, keepdims=False, **kwargs)
 
 
 @OpSchema.num_inputs(1, 3)

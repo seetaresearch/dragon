@@ -8,12 +8,12 @@ template <class Context>
 template <typename T>
 void RepeatOp<Context>::DoRunWithType() {
   auto &X = Input(0), *Y = Output(0);
+  Output("X_spec")->ReshapeLike(X);
   GET_OP_AXIS_ARG(axis, X.ndim(), INT_MAX);
-  SET_INPUT_SPEC(0);
 
-  // Determine the repeat scheme
-  // 1) Repeat to a flatten vector if axis is not specified
-  // 2) Repeat along the specified axis
+  // Determine the repeat scheme.
+  // 1) Repeat to a flatten vector if axis is not specified.
+  // 2) Repeat along the specified axis.
   int64_t N, C, S;
   int64_t reps = repeats();
   if (axis == INT_MAX) {
@@ -29,7 +29,7 @@ void RepeatOp<Context>::DoRunWithType() {
     Y->Reshape(Y_dims);
   }
 
-  // Dispatch the repeat kenrel
+  // Dispatch the repeat kenrel.
   kernels::Repeat(
       N,
       S,
@@ -43,7 +43,7 @@ void RepeatOp<Context>::DoRunWithType() {
 template <class Context>
 template <typename T>
 void RepeatGradientOp<Context>::DoRunWithType() {
-  auto &X = INPUT_SPEC(0), &dY = Input(0), *dX = Output(0);
+  auto &X = Input("X_spec"), &dY = Input(0), *dX = Output(0);
   GET_OP_AXIS_ARG(axis, X.ndim(), INT_MAX);
 
   // Determine the repeat scheme

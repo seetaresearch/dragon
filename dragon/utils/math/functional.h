@@ -21,8 +21,97 @@ namespace dragon {
 namespace math {
 
 /*
- * Arithmetic Functors
- */
+ * Arithmetic Functors */
+
+template <typename T>
+struct IdentityFunctor {
+#if defined(__CUDA_ARCH__)
+  inline __device__ T operator()(const T& x) const {
+    return x;
+  }
+#else
+  inline T operator()(const T& x) const {
+    return x;
+  }
+#endif
+};
+
+template <typename T>
+struct AbsFunctor {
+#if defined(__CUDA_ARCH__)
+  inline __device__ T operator()(const T& x) const {
+    return abs(x);
+  }
+#else
+  inline T operator()(const T& x) const {
+    return std::abs(x);
+  }
+#endif
+};
+
+#if defined(__CUDA_ARCH__)
+template <>
+struct AbsFunctor<half> {
+  inline __device__ half operator()(const half& x) const {
+#if __CUDA_ARCH__ >= 530
+    return __habs(x);
+#else
+    return __float2half(fabsf(__half2float(x)));
+#endif
+  }
+};
+
+template <>
+struct AbsFunctor<half2> {
+  inline __device__ half2 operator()(const half2& x) const {
+#if __CUDA_ARCH__ >= 530
+    return __habs2(x);
+#else
+    const float2 v = __half22float2(x);
+    return __floats2half2_rn(fabsf(v.x), fabsf(v.y));
+#endif
+  }
+};
+#endif
+
+template <typename T>
+struct SqrFunctor {
+#if defined(__CUDA_ARCH__)
+  inline __device__ T operator()(const T& x) const {
+    return x * x;
+  }
+#else
+  inline T operator()(const T& x) const {
+    return x * x;
+  }
+#endif
+};
+
+#if defined(__CUDA_ARCH__)
+template <>
+struct SqrFunctor<half> {
+  inline __device__ half operator()(const half& x) const {
+#if __CUDA_ARCH__ >= 530
+    return __hmul(x, x);
+#else
+    const float v = __half2float(x);
+    return __float2half(v * v);
+#endif
+  }
+};
+
+template <>
+struct SqrFunctor<half2> {
+  inline __device__ half2 operator()(const half2& x) const {
+#if __CUDA_ARCH__ >= 530
+    return __hmul2(x, x);
+#else
+    const float2 v = __half22float2(x);
+    return __floats2half2_rn(v.x * v.x, v.y * v.y);
+#endif
+  }
+};
+#endif
 
 template <typename T>
 struct MaxFunctor {

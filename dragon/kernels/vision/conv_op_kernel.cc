@@ -195,10 +195,8 @@ void _Im2ColNdNCHW(
   col_dims.insert(col_dims.end(), kshape, kshape + num_dims);
   col_dims.insert(col_dims.end(), out_shape, out_shape + num_dims);
   math::utils::ComputeStrides(num_dims, in_shape, in_strides.data());
-  const auto N = std::accumulate(
-      col_dims.begin(), col_dims.end(), 1, std::multiplies<int>());
-  const auto S =
-      std::accumulate(in_shape, in_shape + num_dims, 1, std::multiplies<int>());
+  const auto N = math::utils::Prod(col_dims);
+  const auto S = math::utils::Prod(num_dims, in_shape);
   vec32_t index(col_dims.size(), 0);
   int32_t im_idx, r;
   for (int col_idx = 0; col_idx < N; ++col_idx) {
@@ -239,8 +237,7 @@ void _Im2ColNdNHWC(
   col_dims.insert(col_dims.begin(), kshape, kshape + num_dims);
   col_dims.insert(col_dims.begin(), out_shape, out_shape + num_dims);
   math::utils::ComputeStrides(num_dims, in_shape, in_strides.data());
-  const auto N = std::accumulate(
-      col_dims.begin(), col_dims.end(), 1, std::multiplies<int>());
+  const auto N = math::utils::Prod(col_dims);
   vec32_t index(col_dims.size(), 0);
   int32_t im_idx, r;
   for (int col_idx = 0; col_idx < N; ++col_idx) {
@@ -360,40 +357,39 @@ DEFINE_KERNEL_LAUNCHER(Col2Im2d, true, double);
     LOG(FATAL) << "Unknown DataFormat: " << data_format; \
   }
 
-#define DEFINE_KERNEL_LAUNCHER(name, kTransposed, T)                 \
-  template <>                                                        \
-  void name<T, CPUContext>(                                          \
-      const int num_dims,                                            \
-      const int channels,                                            \
-      const int* in_shape,                                           \
-      const int* out_shape,                                          \
-      const int* kshape,                                             \
-      const int* strides,                                            \
-      const int* pads,                                               \
-      const int* dilations,                                          \
-      const string& data_format,                                     \
-      const T* x,                                                    \
-      T* y,                                                          \
-      CPUContext* ctx) {                                             \
-    if (kTransposed) {                                               \
-      const auto in_dim = std::accumulate(                           \
-          in_shape, in_shape + num_dims, 1, std::multiplies<int>()); \
-      math::Set(channels* in_dim, T(0), y, ctx);                     \
-    }                                                                \
-    DISPATCH_CONV_KERNEL(                                            \
-        _Im2ColNd,                                                   \
-        kTransposed,                                                 \
-        T,                                                           \
-        num_dims,                                                    \
-        channels,                                                    \
-        in_shape,                                                    \
-        out_shape,                                                   \
-        kshape,                                                      \
-        strides,                                                     \
-        pads,                                                        \
-        dilations,                                                   \
-        x,                                                           \
-        y);                                                          \
+#define DEFINE_KERNEL_LAUNCHER(name, kTransposed, T)             \
+  template <>                                                    \
+  void name<T, CPUContext>(                                      \
+      const int num_dims,                                        \
+      const int channels,                                        \
+      const int* in_shape,                                       \
+      const int* out_shape,                                      \
+      const int* kshape,                                         \
+      const int* strides,                                        \
+      const int* pads,                                           \
+      const int* dilations,                                      \
+      const string& data_format,                                 \
+      const T* x,                                                \
+      T* y,                                                      \
+      CPUContext* ctx) {                                         \
+    if (kTransposed) {                                           \
+      const auto in_dim = math::utils::Prod(num_dims, in_shape); \
+      math::Set(channels* in_dim, T(0), y, ctx);                 \
+    }                                                            \
+    DISPATCH_CONV_KERNEL(                                        \
+        _Im2ColNd,                                               \
+        kTransposed,                                             \
+        T,                                                       \
+        num_dims,                                                \
+        channels,                                                \
+        in_shape,                                                \
+        out_shape,                                               \
+        kshape,                                                  \
+        strides,                                                 \
+        pads,                                                    \
+        dilations,                                               \
+        x,                                                       \
+        y);                                                      \
   }
 
 DEFINE_KERNEL_LAUNCHER(Im2ColNd, false, float);

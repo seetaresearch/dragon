@@ -20,11 +20,12 @@ import numbers
 
 from dragon.core.util import math_util
 from dragon.core.util import nest
-from dragon.vm.torch.core.autograd.function_impl import FunctionLib
+from dragon.vm.torch.core.autograd.function import Function
 from dragon.vm.torch.core.nn import functional as F
 from dragon.vm.torch.core.nn.modules.module import Module
 from dragon.vm.torch.core.nn.parameter import Parameter
-from dragon.vm.torch.core.ops import init_ops
+from dragon.vm.torch.core.ops import constant_ops
+from dragon.vm.torch.core.ops import random_ops
 from dragon.vm.torch.core.tensor import Tensor
 
 
@@ -75,10 +76,10 @@ class RNNBase(Module):
             matrix_shape[0] //= self._num_gates
             bias_shape[0] //= self._num_gates
             self._set_parameter(
-                init_ops.uniform(-stddev, stddev, matrix_shape),
+                random_ops.uniform(-stddev, stddev, matrix_shape),
                 layer_id, param_id, 'matrix')
             self._set_parameter(
-                init_ops.uniform(-stddev, stddev, bias_shape),
+                random_ops.uniform(-stddev, stddev, bias_shape),
                 layer_id, param_id, 'bias')
 
     def flatten_parameters(self):
@@ -122,7 +123,7 @@ class RNNBase(Module):
         if hx is not None:
             inputs += nest.flatten(hx)
         outputs = [None] * (3 if self.mode == 'lstm' else 2)
-        outputs = FunctionLib.apply(
+        outputs = Function.apply(
             'Recurrent', input.device, inputs, outputs=outputs,
             rnn_mode=self.mode, bidirectional=self.bidirectional,
             input_size=self.input_size, hidden_size=self.hidden_size,
@@ -132,7 +133,7 @@ class RNNBase(Module):
 
     def _set_parameter(self, data, layer_id=0, param_id=0, param_type='matrix'):
         """Set the data of a parameter."""
-        return FunctionLib.apply(
+        return Function.apply(
             'RNNParamSet', data.device, [data], outputs=[self.weights],
             rnn_mode=self.mode, bidirectional=self.bidirectional,
             input_size=self.input_size, hidden_size=self.hidden_size,
@@ -352,7 +353,7 @@ class LSTMCell(RNNCellBase):
 
     def forward(self, input, hx=None):
         if hx is None:
-            zeros = init_ops.zeros(
+            zeros = constant_ops.zeros(
                 input.size(0), self.hidden_size,
                 dtype=input.dtype, device=input.device)
             hx = (zeros, zeros)

@@ -1,5 +1,4 @@
-#include "dragon/core/workspace.h"
-#include "dragon/operators/math/elementwise_ops.h"
+#include "dragon/operators/math/elementwise_op.h"
 #include "dragon/utils/math_functions.h"
 
 namespace dragon {
@@ -8,8 +7,8 @@ template <class Context>
 template <typename T>
 void AddOp<Context>::DoRunWithType() {
   auto &A = Input(0), &B = Input(1);
-  SET_INPUT_SPEC(0);
-  SET_INPUT_SPEC(1);
+  Output("A_spec")->ReshapeLike(A);
+  Output("B_spec")->ReshapeLike(B);
 
   vec64_t Y_dims(A.dims());
   if (A.dims() == B.dims()) {
@@ -45,41 +44,44 @@ template <class Context>
 template <typename T>
 void AddGradientOp<Context>::DoRunWithType() {
   auto &dY = Input(0), *dA = Output(0), *dB = Output(1);
-  auto &A = INPUT_SPEC(0), &B = INPUT_SPEC(1);
+  auto &A_spec = Input("A_spec"), &B_spec = Input("B_spec");
 
-  vec32_t A_broadcast_axes, B_broadcast_axes;
-  vec32_t Y_dims(dY.dims().begin(), dY.dims().end());
-  math::utils::ComputeBinaryBroadcastAxes(
-      A.dims(), B.dims(), dY.dims(), A_broadcast_axes, B_broadcast_axes);
+  vec64_t A_broadcast_axes, B_broadcast_axes;
+  math::utils::ComputeBroadcastAxes(
+      A_spec.dims(),
+      B_spec.dims(),
+      dY.dims(),
+      A_broadcast_axes,
+      B_broadcast_axes);
 
   if (dA->has_name()) {
     if (A_broadcast_axes.empty()) {
-      dA->ReshapeLike(A)->CopyFrom(dY, ctx());
+      dA->ReshapeLike(A_spec)->CopyFrom(dY, ctx());
     } else {
       math::ReduceSum(
-          Y_dims.size(),
-          Y_dims.data(),
+          dY.ndim(),
+          dY.dims().data(),
           A_broadcast_axes.size(),
           A_broadcast_axes.data(),
           1.f,
           dY.template data<T, Context>(),
-          dA->ReshapeLike(A)->template mutable_data<T, Context>(),
+          dA->ReshapeLike(A_spec)->template mutable_data<T, Context>(),
           ctx());
     }
   }
 
   if (dB->has_name()) {
     if (B_broadcast_axes.empty()) {
-      dB->ReshapeLike(B)->CopyFrom(dY, ctx());
+      dB->ReshapeLike(B_spec)->CopyFrom(dY, ctx());
     } else {
       math::ReduceSum(
-          Y_dims.size(),
-          Y_dims.data(),
+          dY.ndim(),
+          dY.dims().data(),
           B_broadcast_axes.size(),
           B_broadcast_axes.data(),
           1.f,
           dY.template data<T, Context>(),
-          dB->ReshapeLike(B)->template mutable_data<T, Context>(),
+          dB->ReshapeLike(B_spec)->template mutable_data<T, Context>(),
           ctx());
     }
   }

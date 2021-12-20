@@ -22,7 +22,7 @@ import numpy
 
 from dragon.core.framework.tensor import Tensor
 from dragon.core.ops import array_ops
-from dragon.core.ops import init_ops
+from dragon.core.ops import constant_ops
 from dragon.core.ops import vision_ops
 
 
@@ -214,7 +214,7 @@ def fill(dims, value=0, dtype=None, name=None):
             dtype = 'int32'
         elif dtype == numpy.float64:
             dtype = 'float32'
-    return init_ops.fill(shape=dims, value=value, dtype=dtype, name=name)
+    return constant_ops.fill(shape=dims, value=value, dtype=dtype, name=name)
 
 
 def gather(params, indices, axis=0, name=None):
@@ -299,7 +299,7 @@ def ones(shape, dtype='float32', name=None):
         The operation name.
 
     """
-    return init_ops.fill(shape, value=1, dtype=dtype, name=name)
+    return constant_ops.fill(shape, value=1, dtype=dtype, name=name)
 
 
 def ones_like(input, dtype='float32', name=None):
@@ -324,7 +324,7 @@ def ones_like(input, dtype='float32', name=None):
         The operation name.
 
     """
-    return init_ops.ones_like(input, dtype=dtype, name=name)
+    return constant_ops.ones_like(input, dtype=dtype, name=name)
 
 
 def one_hot(
@@ -334,7 +334,7 @@ def one_hot(
     off_value=0,
     name=None,
 ):
-    r"""Return the one-hot representation for input.
+    r"""Return the one-hot representation of input.
 
     .. math::
         \text{out}_{ij} =
@@ -470,7 +470,7 @@ def placeholder(dtype=None, shape=None, name=None):
     return Tensor(shape, dtype, name=name, symbolic=True)
 
 
-def reshape(tensor, shape, name=None):
+def reshape(tensor, shape, copy=True, name=None):
     """Change the dimensions of input.
 
     Examples:
@@ -496,11 +496,14 @@ def reshape(tensor, shape, name=None):
         The input tensor.
     shape : Union[Sequence[int], dragon.Tensor]
         The output shape.
+    copy : bool, optional, default=True
+        Return a new tensor or call in-place.
+
     name : str, optional
         The operation name.
 
     """
-    return array_ops.reshape(tensor, shape=shape, name=name)
+    return array_ops.reshape(tensor, shape=shape, copy=copy, name=name)
 
 
 def reverse(tensor, axis, name=None):
@@ -684,12 +687,7 @@ def space_to_depth(input, block_size, data_format='NHWC', name=None):
     )
 
 
-def split(
-    value,
-    num_or_size_splits,
-    axis=0,
-    name=None,
-):
+def split(value, num_or_size_splits, axis=0, copy=True, name=None):
     """Split input into chunks along the given axis.
 
     Either number or size of splits will be accepted:
@@ -718,13 +716,15 @@ def split(
         The number or size of chunks.
     axis : int, optional, default=0
         The axis to split.
+    copy : bool, optional, default=True
+        Copy or create the views of input.
     name : str, optional
         The operation name.
 
     Returns
     -------
     Sequence[dragon.Tensor]
-        The outputs.
+        The output tensors.
 
     """
     return array_ops.split(value, num_or_size_splits, axis, name=name)
@@ -894,6 +894,47 @@ def unique_with_counts(x, name=None, **kwargs):
     )
 
 
+def unstack(value, num=None, axis=0, copy=True, name=None):
+    """Unpack input into chunks along the given axis.
+
+    The number of outputs should be equal to the dimension of axis:
+
+    ```python
+    x = tf.constant([[1, 2, 3], [4, 5, 6]])
+    # Shape: (2, 3) -> (3,), (3,)
+    print(tf.unstack(x, axis=0))
+    ```
+
+    :attr:`axis` can be negative:
+
+    ```python
+    x = tf.constant([[1, 2, 3], [4, 5, 6]])
+    # Shape: (2, 3) -> (2,), (2,), (2,)
+    print(tf.unstack(x, axis=-1))
+    ```
+
+    Parameters
+    ----------
+    value : dragon.Tensor
+        The input tensor.
+    num : int, optional
+        The number of outputs.
+    axis : int, optional, default=0
+        The axis to unpack.
+    copy : bool, optional, default=True
+        Copy or create the views of input.
+    name : str, optional
+        The operation name.
+
+    Returns
+    -------
+    Sequence[dragon.Tensor]
+        The output tensors.
+
+    """
+    return array_ops.unstack(value, axis, num=num, copy=copy, name=name)
+
+
 def zeros(shape, dtype='float32', name=None):
     r"""Return a tensor filled with zeros.
 
@@ -913,7 +954,7 @@ def zeros(shape, dtype='float32', name=None):
         The operation name.
 
     """
-    return init_ops.fill(shape, value=0., dtype=dtype, name=name)
+    return constant_ops.fill(shape, value=0., dtype=dtype, name=name)
 
 
 def zeros_like(input, dtype='float32', name=None):
@@ -938,4 +979,4 @@ def zeros_like(input, dtype='float32', name=None):
         The operation name.
 
     """
-    return init_ops.zeros_like(input, dtype=dtype, name=name)
+    return constant_ops.zeros_like(input, dtype=dtype, name=name)

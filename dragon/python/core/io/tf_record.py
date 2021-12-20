@@ -29,14 +29,12 @@ class TFRecordExample(object):
     def __init__(self):
         """Create a ``TFRecordExample``."""
         self._proto = None
-        self._features = collections.OrderedDict()
 
     @property
     def proto(self):
         """Pack the stored features into a protocol message."""
         if self._proto is None:
-            features = tf_example_pb2.Features(feature=self._features)
-            self._proto = tf_example_pb2.Example(features=features)
+            self._proto = tf_example_pb2.Example()
         return self._proto
 
     def add_floats(self, key, value):
@@ -50,9 +48,8 @@ class TFRecordExample(object):
             A sequence of floats.
 
         """
-        self._features[key] = tf_example_pb2.Feature(
-            float_list=tf_example_pb2.FloatList(value=value),
-        )
+        feature = self.proto.features.feature[key]
+        feature.float_list.value.extend(value)
 
     def add_ints(self, key, value):
         """Add a named integer feature.
@@ -65,9 +62,8 @@ class TFRecordExample(object):
             A sequence of integers.
 
         """
-        self._features[key] = tf_example_pb2.Feature(
-            int64_list=tf_example_pb2.Int64List(value=value),
-        )
+        feature = self.proto.features.feature[key]
+        feature.int64_list.value.extend(value)
 
     def add_strings(self, key, value):
         """Add a named string feature.
@@ -80,9 +76,26 @@ class TFRecordExample(object):
             A sequence of strings.
 
         """
-        self._features[key] = tf_example_pb2.Feature(
-            bytes_list=tf_example_pb2.BytesList(value=value),
-        )
+        feature = self.proto.features.feature[key]
+        feature.bytes_list.value.extend(value)
+
+    def parse_from(self, data, pack_length=True, pack_crc32=True):
+        """Parse serialized the message from raw bytes.
+
+        Parameters
+        ----------
+        data : bytes
+            The serialized bytes.
+        pack_length : bool, optional, default=True
+            ``True`` to pack with length.
+        pack_crc32 : bool, optional, default=True
+            ``True`` to pack with crc32.
+
+        """
+        offset = 8 if pack_length else 0
+        offset += 4 if pack_crc32 else 0
+        self._proto = tf_example_pb2.Example()
+        self._proto.ParseFromString(data[offset:-(4 if pack_crc32 else 0)])
 
     def reset(self):
         """Reset the message."""
@@ -102,10 +115,9 @@ class TFRecordExample(object):
         Returns
         -------
         bytes
-            The serialized message bytes.
+            The serialized bytes.
 
         """
-
         def mask_crc32(value):
             crc = zlib.crc32(bytes(value))
             crc = crc & 0xffffffff if crc < 0 else crc
@@ -113,28 +125,20 @@ class TFRecordExample(object):
             crc = (crc >> 15) | (crc << 17).astype('uint32')
             return int((crc + 0xa282ead8).astype('uint32'))
 
-        bytes_seq = []
-        proto_bytes = self.proto.SerializeToString()
-
+        data = bytes()
+        serialized = self.proto.SerializeToString()
         if pack_length:
-            length = len(proto_bytes)
-            bytes_seq.append(struct.pack('q', length))
+            length = len(serialized)
+            data += struct.pack('q', length)
             if pack_crc32:
                 length_crc = mask_crc32(length)
-                bytes_seq.append(struct.pack('I', length_crc))
-
-        bytes_seq.append(proto_bytes)
+                data += struct.pack('I', length_crc)
+        data += serialized
         if pack_crc32:
-            proto_crc = mask_crc32(proto_bytes)
-            bytes_seq.append(struct.pack('I', proto_crc))
+            proto_crc = mask_crc32(serialized)
+            data += struct.pack('I', proto_crc)
 
-        if len(bytes_seq) == 1:
-            return bytes_seq[0]
-
-        bytes_all = bytes()
-        for b in bytes_seq:
-            bytes_all += b
-        return bytes_all
+        return data
 
 
 class TFRecordWriter(object):

@@ -21,7 +21,7 @@ from dragon.core.util import tls
 
 
 def device(device_type, device_index=0):
-    """Context-manager to nest the device spec.
+    """Context-manager to nest the device.
 
     Examples:
 
@@ -32,20 +32,21 @@ def device(device_type, device_index=0):
 
     Parameters
     ----------
-    device_type : {'cpu', 'gpu', 'cuda', 'cnml'}, required
-        The type of device.
+    device_type : str
+        The device type.
     device_index : int, optional, default=0
-        The index of the device.
+        The device index.
 
     Returns
     -------
-    Dict
-        The current default device spec.
+    dragon.DeviceSpec
+        The current nesting device spec.
 
     """
     device_type = device_type.lower()
     if device_type not in mapping.DEVICE_STRING_TO_DEVICE_TYPE:
         raise ValueError('Unsupported device type: ' + device_type)
+    device_type = mapping.DEVICE_STRING_TO_DEVICE_TYPE[device_type]
     spec = device_spec.DeviceSpec(device_type, device_index)
     return _GLOBAL_DEVICE_STACK.get_controller(spec)
 

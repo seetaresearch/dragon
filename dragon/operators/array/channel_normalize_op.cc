@@ -45,15 +45,15 @@ void ChannelNormalizeOp<Context>::DoRunWithTypeAndCast() {
 template <class Context>
 template <typename T>
 void ChannelNormalizeOp<Context>::DoRunWithType() {
-  if (dtype() == "float16") {
+  if (data_type() == "float16") {
     DoRunWithTypeAndCast<T, float16>();
-  } else if (dtype() == "float32") {
+  } else if (data_type() == "float32") {
     DoRunWithTypeAndCast<T, float>();
-  } else if (dtype() == "float64") {
+  } else if (data_type() == "float64") {
     DoRunWithTypeAndCast<T, double>();
   } else {
     LOG(FATAL) << MessageForUnsupported(
-        dtype(), {"float16", "float32", "float64"});
+        data_type(), {"float16", "float32", "float64"});
   }
 }
 

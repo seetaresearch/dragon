@@ -114,6 +114,46 @@ class Erase(object):
         )
 
 
+class Flip(object):
+    """Flip input in selected dimensions.
+
+    Examples:
+
+    ```python
+    flip_rng = dali.ops.CoinFlip(0.5)
+    flip = dali.ops.Flip()
+    y = flip(inputs['x'], horizontal=flip_rng())
+    ```
+
+    """
+
+    def __new__(cls, horizontal=None, vertical=None, depthwise=None, **kwargs):
+        """Create a ``Flip`` operator.
+
+        Parameters
+        ----------
+        horizontal : int, optional
+            Whether to apply the horizontal flip.
+        vertical : int, optional
+            Whether to apply the vertical flip.
+        depthwise : bool, optional, default=True
+            Whether to apply the depthwise flip.
+
+        Returns
+        -------
+        nvidia.dali.ops.Flip
+            The operator.
+
+        """
+        return ops.Flip(
+            horizontal=horizontal,
+            vertical=vertical,
+            depthwise=depthwise,
+            device=context.get_device_type(),
+            **kwargs
+        )
+
+
 class Pad(object):
     """Pad input to have the same dimensions.
 
@@ -245,6 +285,7 @@ class Slice(object):
         return ops.Slice(
             axes=axes,
             normalized_anchor=normalized_anchor,
+            normalized_shape=normalized_shape,
             device=context.get_device_type(),
             **kwargs
         )

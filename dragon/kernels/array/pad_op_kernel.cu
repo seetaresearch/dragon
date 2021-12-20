@@ -92,8 +92,7 @@ void _PadImpl(
     T* y,
     CUDAContext* ctx) {
   SimpleArray<int, D> X_dims, X_strides, Y_dims, X_pads;
-  const auto N =
-      std::accumulate(y_dims, y_dims + D, 1, std::multiplies<int64_t>());
+  const auto N = math::utils::Prod(D, y_dims);
   for (int i = 0; i < D; ++i) {
     X_dims.data[i] = x_dims[i];
     X_strides.data[i] = x_strides[i];

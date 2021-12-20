@@ -11,7 +11,7 @@ void MatMulOp<Context>::DoRunWithType() {
   auto A_ndim = A.ndim(), B_ndim = B.ndim();
 
   if (A_ndim == 1 && B_ndim == 1) {
-    // Vector x Vector
+    // Vector @ Vector.
     CHECK_EQ(A.count(), B.count()) << "\nExcept equal length of two vectors.";
     math::Dot(
         A.count(),
@@ -31,7 +31,7 @@ void MatMulOp<Context>::DoRunWithType() {
     vec64_t Y_dims(B.dims().begin(), B.dims().end() - 1);
     Y_dims.back() = B.dims().back();
     if (batch_size == 1) {
-      // Vector x Matrix
+      // Vector @ Matrix.
       math::Gemv(
           CblasTrans,
           N,
@@ -43,7 +43,7 @@ void MatMulOp<Context>::DoRunWithType() {
           Y->Reshape(Y_dims)->template mutable_data<T, Context>(),
           ctx());
     } else {
-      // Broadcasted Vector x Batched Matrix
+      // Broadcasted Vector @ Batched Matrix.
       math::GemmStridedBatched(
           CblasTrans,
           CblasNoTrans,
@@ -65,7 +65,7 @@ void MatMulOp<Context>::DoRunWithType() {
   }
 
   if (B_ndim == 1) {
-    // Matrix x Vector
+    // Matrix @ Vector.
     const auto N = B.count();
     CHECK_EQ(A.dim(A_ndim - 1), N) << "\nExcept the last dim of A is " << N
                                    << ", got " << A.dim(A_ndim - 1);
@@ -85,49 +85,36 @@ void MatMulOp<Context>::DoRunWithType() {
     return;
   }
 
-  // Check matrix A
+  // Check matrix A.
   const auto M = A.dim(A_ndim - 2);
   const auto K = A.dim(A_ndim - 1);
 
-  // Check matrix B
+  // Check matrix B.
   CHECK_EQ(B.dim(B_ndim - 2), K) << "\nExcept the second last dim of B is " << K
                                  << ", got " << B.dim(B_ndim - 2);
   const auto N = B.dim(B_ndim - 1);
 
-  // Check batching && broadcasting
+  // Check batching && broadcasting.
   vec64_t A_dims(A.dims().begin(), A.dims().end() - 2);
   vec64_t B_dims(B.dims().begin(), B.dims().end() - 2);
   vec64_t A_batch_dims, B_batch_dims, Y_dims;
   if (math::utils::IsBinaryBroadcast(A_dims, B_dims, Y_dims)) {
-    math::utils::ComputeBinaryBroadcastDims(
+    math::utils::ComputeBroadcastDims(
         A_dims, B_dims, A_batch_dims, B_batch_dims);
   } else {
     LOG(FATAL) << "Could not broadcast together with shapes " << A.DimString()
                << " " << B.DimString();
   }
-  const int64_t batch_ndim = A_batch_dims.size();
-  const bool broadcasting = A_batch_dims != B_batch_dims;
   Y_dims.push_back(M);
   Y_dims.push_back(N);
-
-  const auto A_batch_size = std::accumulate(
-      A_batch_dims.begin(),
-      A_batch_dims.end(),
-      1LL,
-      std::multiplies<int64_t>());
-  const auto B_batch_size = std::accumulate(
-      B_batch_dims.begin(),
-      B_batch_dims.end(),
-      1LL,
-      std::multiplies<int64_t>());
-  const auto Y_batch_size = std::accumulate(
-      Y_dims.begin(),
-      Y_dims.begin() + batch_ndim,
-      1LL,
-      std::multiplies<int64_t>());
+  const int64_t batch_ndim = A_batch_dims.size();
+  const bool broadcasting = A_batch_dims != B_batch_dims;
+  const auto A_batch_size = math::utils::Prod(A_batch_dims);
+  const auto B_batch_size = math::utils::Prod(B_batch_dims);
+  const auto Y_batch_size = math::utils::Prod(batch_ndim, Y_dims.data());
 
   if (B_batch_size == 1) {
-    // Batched Matrix x Broadcasted Matrix
+    // Batched Matrix @ Broadcasted Matrix.
     math::Gemm(
         CblasNoTrans,
         CblasNoTrans,
@@ -141,7 +128,7 @@ void MatMulOp<Context>::DoRunWithType() {
         Y->Reshape(Y_dims)->template mutable_data<T, Context>(),
         ctx());
   } else if (A_batch_size == 1) {
-    // Broadcasted Matrix x Batched Matrix
+    // Broadcasted Matrix @ Batched Matrix.
     math::GemmStridedBatched(
         CblasNoTrans,
         CblasNoTrans,
@@ -159,7 +146,7 @@ void MatMulOp<Context>::DoRunWithType() {
         Y->Reshape(Y_dims)->template mutable_data<T, Context>(),
         ctx());
   } else if (!broadcasting) {
-    // Batched Matrix x Batched Matrix
+    // Batched Matrix @ Batched Matrix.
     math::GemmStridedBatched(
         CblasNoTrans,
         CblasNoTrans,
@@ -177,7 +164,7 @@ void MatMulOp<Context>::DoRunWithType() {
         Y->Reshape(Y_dims)->template mutable_data<T, Context>(),
         ctx());
   } else {
-    // Broadcasted Matrix x Broadcasted Matrix
+    // Broadcasted Matrix @ Broadcasted Matrix.
     vector<const T*> A_arr(Y_batch_size);
     vector<const T*> B_arr(Y_batch_size);
     vector<T*> Y_arr(Y_batch_size);
@@ -224,7 +211,7 @@ void MatMulGradientOp<Context>::DoRunWithType() {
   auto A_ndim = A.ndim(), B_ndim = B.ndim();
 
   if (A_ndim == 1 && B_ndim == 1) {
-    // Vector x Vector
+    // Vector @ Vector.
     if (dA->has_name()) {
       math::Mul(
           dY.ndim(),
@@ -256,7 +243,7 @@ void MatMulGradientOp<Context>::DoRunWithType() {
       const auto M = B.dim(B_ndim - 1);
       const auto batch_size = B.count() / (M * N);
       if (batch_size == 1) {
-        // Vector x Matrix
+        // Vector @ Matrix.
         math::Gemv(
             CblasNoTrans,
             N,
@@ -268,9 +255,9 @@ void MatMulGradientOp<Context>::DoRunWithType() {
             dA->ReshapeLike(A)->template mutable_data<T, Context>(),
             ctx());
       } else {
-        // Broadcasted Vector x Batched Matrix
+        // Broadcasted Vector @ Batched Matrix.
         auto* scratch =
-            ctx()->workspace()->template data<T, Context>({batch_size * N})[0];
+            ctx()->workspace()->template data<T, Context>(batch_size * N);
         math::GemmStridedBatched(
             CblasNoTrans,
             CblasNoTrans,
@@ -289,9 +276,9 @@ void MatMulGradientOp<Context>::DoRunWithType() {
             ctx());
         math::ReduceSum(
             2,
-            vec32_t{int(batch_size), int(N)}.data(),
+            vec64_t{batch_size, N}.data(),
             1,
-            vec32_t{0}.data(),
+            vec64_t{0}.data(),
             1.f,
             scratch,
             dA->ReshapeLike(A)->template mutable_data<T, Context>(),
@@ -302,7 +289,7 @@ void MatMulGradientOp<Context>::DoRunWithType() {
       const auto M = B.dim(B_ndim - 1);
       const auto batch_size = B.count() / (M * N);
       if (batch_size == 1) {
-        // Vector x Matrix
+        // Vector @ Matrix.
         math::Gemm(
             CblasNoTrans,
             CblasNoTrans,
@@ -316,7 +303,7 @@ void MatMulGradientOp<Context>::DoRunWithType() {
             dB->ReshapeLike(B)->template mutable_data<T, Context>(),
             ctx());
       } else {
-        // Broadcasted Vector x Batched Matrix
+        // Broadcasted Vector @ Batched Matrix.
         math::GemmStridedBatched(
             CblasNoTrans,
             CblasNoTrans,
@@ -341,7 +328,7 @@ void MatMulGradientOp<Context>::DoRunWithType() {
   if (B_ndim == 1) {
     const auto N = B.count();
     const auto M = A.count() / N;
-    // Matrix x Vector
+    // Matrix @ Vector.
     if (dA->has_name()) {
       math::Gemm(
           CblasNoTrans,
@@ -371,20 +358,20 @@ void MatMulGradientOp<Context>::DoRunWithType() {
     return;
   }
 
-  // Check matrix A && B
+  // Check matrix A && B.
   const auto M = A.dim(A_ndim - 2);
   const auto K = A.dim(A_ndim - 1);
   const auto N = B.dim(B_ndim - 1);
 
-  // Check batching && broadcasting
+  // Check batching && broadcasting.
   vec64_t A_dims(A.dims().begin(), A.dims().end() - 2);
   vec64_t B_dims(B.dims().begin(), B.dims().end() - 2);
   vec64_t A_batch_dims, B_batch_dims, Y_batch_dims;
-  vec32_t A_batch_axes, B_batch_axes;
+  vec64_t A_batch_axes, B_batch_axes;
   if (math::utils::IsBinaryBroadcast(A_dims, B_dims, Y_batch_dims)) {
-    math::utils::ComputeBinaryBroadcastDims(
+    math::utils::ComputeBroadcastDims(
         A_dims, B_dims, A_batch_dims, B_batch_dims);
-    math::utils::ComputeBinaryBroadcastAxes(
+    math::utils::ComputeBroadcastAxes(
         A_batch_dims, B_batch_dims, Y_batch_dims, A_batch_axes, B_batch_axes);
   } else {
     LOG(FATAL) << "Could not broadcast together with shapes " << A.DimString()
@@ -392,25 +379,12 @@ void MatMulGradientOp<Context>::DoRunWithType() {
   }
   const int64_t batch_ndim = A_batch_dims.size();
   const bool broadcasting = A_batch_dims != B_batch_dims;
-
-  const auto A_batch_size = std::accumulate(
-      A_batch_dims.begin(),
-      A_batch_dims.end(),
-      1LL,
-      std::multiplies<int64_t>());
-  const auto B_batch_size = std::accumulate(
-      B_batch_dims.begin(),
-      B_batch_dims.end(),
-      1LL,
-      std::multiplies<int64_t>());
-  const auto Y_batch_size = std::accumulate(
-      Y_batch_dims.begin(),
-      Y_batch_dims.end(),
-      1LL,
-      std::multiplies<int64_t>());
+  const auto A_batch_size = math::utils::Prod(A_batch_dims);
+  const auto B_batch_size = math::utils::Prod(B_batch_dims);
+  const auto Y_batch_size = math::utils::Prod(Y_batch_dims);
 
   if (B_batch_size == 1) {
-    // Batched Matrix x Broadcasted Matrix
+    // Batched Matrix @ Broadcasted Matrix.
     if (dA->has_name()) {
       math::Gemm(
           CblasNoTrans,
@@ -440,10 +414,10 @@ void MatMulGradientOp<Context>::DoRunWithType() {
           ctx());
     }
   } else if (A_batch_size == 1) {
-    // Broadcasted Matrix x Batched Matrix
+    // Broadcasted Matrix @ Batched Matrix.
     if (dA->has_name()) {
-      auto* scratch = ctx()->workspace()->template data<T, Context>(
-          {Y_batch_size * M * K})[0];
+      auto* scratch =
+          ctx()->workspace()->template data<T, Context>(Y_batch_size * M * K);
       math::GemmStridedBatched(
           CblasNoTrans,
           CblasTrans,
@@ -462,9 +436,9 @@ void MatMulGradientOp<Context>::DoRunWithType() {
           ctx());
       math::ReduceSum(
           2,
-          vec32_t{int(Y_batch_size), int(M * K)}.data(),
+          vec64_t{Y_batch_size, M * K}.data(),
           1,
-          vec32_t{0}.data(),
+          vec64_t{0}.data(),
           1.f,
           scratch,
           dA->ReshapeLike(A)->template mutable_data<T, Context>(),
@@ -489,7 +463,7 @@ void MatMulGradientOp<Context>::DoRunWithType() {
           ctx());
     }
   } else if (!broadcasting) {
-    // Batched Matrix x Batched Matrix
+    // Batched Matrix @ Batched Matrix.
     if (dA->has_name()) {
       math::GemmStridedBatched(
           CblasNoTrans,
@@ -527,7 +501,7 @@ void MatMulGradientOp<Context>::DoRunWithType() {
           ctx());
     }
   } else {
-    // Broadcasted Matrix x Broadcasted Matrix
+    // Broadcasted Matrix @ Broadcasted Matrix.
     vector<const T*> A_arr(Y_batch_size);
     vector<const T*> B_arr(Y_batch_size);
     vector<const T*> dY_arr(Y_batch_size);
@@ -535,12 +509,12 @@ void MatMulGradientOp<Context>::DoRunWithType() {
     vector<T*> dB_arr(Y_batch_size);
     if (dA->has_name()) {
       vec64_t index(batch_ndim, 0);
-      vec32_t scratch_dims({Y_batch_dims.begin(), Y_batch_dims.end()});
-      scratch_dims.push_back(int(M * K));
+      vec64_t scratch_dims(Y_batch_dims);
+      scratch_dims.push_back(M * K);
       auto* dY_data = dY.template data<T, Context>();
       auto* B_data = B.template data<T, Context>();
       auto* scratch = ctx()->workspace()->template data<T, Context>(
-          {Y_batch_size * std::max(M * K, K * N)})[0];
+          Y_batch_size * std::max(M * K, K * N));
       for (int64_t Y_i = 0; Y_i < Y_batch_size; ++Y_i) {
         const auto B_i = math::utils::GetIndexFromDims(
             batch_ndim, B_batch_dims.data(), index.data());
@@ -575,12 +549,12 @@ void MatMulGradientOp<Context>::DoRunWithType() {
     }
     if (dB->has_name()) {
       vec64_t index(batch_ndim, 0);
-      vec32_t scratch_dims({Y_batch_dims.begin(), Y_batch_dims.end()});
-      scratch_dims.push_back(int(K * N));
+      vec64_t scratch_dims(Y_batch_dims);
+      scratch_dims.push_back(K * N);
       auto* dY_data = dY.template data<T, Context>();
       auto* A_data = A.template data<T, Context>();
       auto* scratch = ctx()->workspace()->template data<T, Context>(
-          {Y_batch_size * std::max(M * K, K * N)})[0];
+          Y_batch_size * std::max(M * K, K * N));
       for (int64_t Y_i = 0; Y_i < Y_batch_size; ++Y_i) {
         const auto A_i = math::utils::GetIndexFromDims(
             batch_ndim, A_batch_dims.data(), index.data());

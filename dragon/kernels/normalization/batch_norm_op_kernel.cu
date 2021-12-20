@@ -93,13 +93,13 @@ __global__ void _BatchNormWGrad(
     CUDA_2D_KERNEL_LOOP2(j, NxS) {
       const int idx = kOrder == StorageOrder::NCHW ? (j / S * C + i) * S + j % S
                                                    : j * C + i;
-      dg_val += LDG2(dy, idx) * (LDG2(x, idx) - LDG(mu, i)) * LDG(rsig, i);
+      dg_val += LDG2(dy, idx) * (LDG2(x, idx) - LDG(mu, i));
       db_val += LDG2(dy, idx);
     }
     dg_val = BlockReduce<AccT>(dg_storage).Sum(dg_val);
     db_val = BlockReduce<AccT>(db_storage).Sum(db_val);
     if (threadIdx.x == 0) {
-      dgamma[i] = dg_val;
+      dgamma[i] = dg_val * rsig[i];
       dbeta[i] = db_val;
     }
   }

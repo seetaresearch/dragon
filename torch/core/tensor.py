@@ -140,7 +140,7 @@ class Tensor(object):
         if self._requires_grad:
             default_ws = workspace.get_workspace()
             impl = default_ws.get_tensor(self.id + '_grad')
-            if impl is not None and impl.size > 0:
+            if impl and impl.size > 0:
                 return Tensor(device=self.device, impl=impl)
         return None
 
@@ -1322,6 +1322,22 @@ class Tensor(object):
 
         """
 
+    def isfinite(self):
+        r"""Return if the elements are finite.
+
+        .. math:: \text{out} = \text{isfinite}(\text{self})
+
+        Returns
+        -------
+        dragon.vm.torch.Tensor
+            The output tensor.
+
+        See Also
+        --------
+        `torch.isfinite(...)`_
+
+        """
+
     def isinf(self):
         r"""Return if the elements are infinite.
 
@@ -2097,6 +2113,31 @@ class Tensor(object):
 
         """
 
+    def norm(self, p='fro', dim=None, keepdim=False, out=None, dtype=None):
+        """Compute the norm value of elements along the given dimension.
+
+        Parameters
+        ----------
+        p : {'fro', 1, 2}, optional
+            The norm order.
+        dim : Union[int, Sequence[int]], optional
+            The dimension to reduce.
+        keepdim : bool, optional, default=False
+            Keep the reduced dimension or not.
+        dtype : str, optional
+            The data type to cast to.
+
+        Returns
+        -------
+        dragon.vm.torch.Tensor
+            The output tensor.
+
+        See Also
+        --------
+        `torch.norm(...)`_
+
+        """
+
     def normal_(self, mean=0, std=1):
         r"""Fill self from a normal distribution.
 
@@ -2247,12 +2288,12 @@ class Tensor(object):
 
         """
 
-    def reshape(self, shape):
+    def reshape(self, *shape):
         """Return a tensor with the same data but a different shape.
 
         Parameters
         ----------
-        shape : Sequence[int]
+        shape : Union[Sequence[int], int...]
             The new shape.
 
         Returns
@@ -2266,12 +2307,12 @@ class Tensor(object):
 
         """
 
-    def reshape_(self, shape):
+    def reshape_(self, *shape):
         """Change into a new shape with the same data.
 
         Parameters
         ----------
-        shape : Sequence[int]
+        shape : Union[Sequence[int], int...]
             The new shape.
 
         Returns
@@ -2620,6 +2661,22 @@ class Tensor(object):
         See Also
         --------
         `torch.sqrt(...)`_
+
+        """
+
+    def square(self):
+        r"""Compute the square of input.
+
+        .. math:: \text{out} = \text{self}^{2}
+
+        Returns
+        -------
+        dragon.vm.torch.Tensor
+            The output tensor.
+
+        See Also
+        --------
+        `torch.square(...)`_
 
         """
 
@@ -2990,6 +3047,27 @@ class Tensor(object):
 
         """
 
+    def unbind(self, dim=0, copy=True):
+        """Unpack to chunks along the given dimension.
+
+        Parameters
+        ----------
+        dim : int, optional, default=0
+            The dimension to unpack.
+        copy : bool, optional, default=True
+            Copy or create the views of input.
+
+        Returns
+        -------
+        Sequence[dragon.vm.torch.Tensor]
+            The output tensors.
+
+        See Also
+        --------
+        `torch.unbind(...)`_
+
+        """
+
     def unique(self, return_inverse=False, return_counts=False, **kwargs):
         """Return the unique elements.
 
@@ -3200,6 +3278,7 @@ class Tensor(object):
 
     def __del__(self):
         if self._deleter:
+            # print(self._impl.name)
             self._deleter.release(self._impl.name)
 
     def __eq__(self, other):

@@ -30,13 +30,6 @@ variables
 #########
 .. autoattribute:: dragon.vm.tensorflow.Module.variables
 
-Methods
--------
-
-flatten
-#######
-.. automethod:: dragon.vm.tensorflow.Module.flatten
-
 .. raw:: html
 
   <style>

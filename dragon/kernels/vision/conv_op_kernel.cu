@@ -370,66 +370,63 @@ DEFINE_KERNEL_LAUNCHER(Col2Im2d, true, double);
     LOG(FATAL) << "Unknown DataFormat: " << data_format;                   \
   }
 
-#define DEFINE_KERNEL_LAUNCHER(name, kTransposed, T)                           \
-  template <>                                                                  \
-  void name<T, CUDAContext>(                                                   \
-      const int num_dims,                                                      \
-      const int channels,                                                      \
-      const int* in_shape,                                                     \
-      const int* out_shape,                                                    \
-      const int* kshape,                                                       \
-      const int* strides,                                                      \
-      const int* pads,                                                         \
-      const int* dilations,                                                    \
-      const string& data_format,                                               \
-      const T* x,                                                              \
-      T* y,                                                                    \
-      CUDAContext* ctx) {                                                      \
-    CHECK_LE(num_dims, 3) << "Too many (> " << 3                               \
-                          << ") dimensions to launch the cuda kernel.";        \
-    SimpleArray<int, 3> in_shape_arr;                                          \
-    SimpleArray<int, 3> out_shape_arr;                                         \
-    SimpleArray<int, 3> kshape_arr;                                            \
-    SimpleArray<int, 3> strides_arr;                                           \
-    SimpleArray<int, 3> pads_arr;                                              \
-    SimpleArray<int, 3> dilations_arr;                                         \
-    for (int i = 0; i < num_dims; ++i) {                                       \
-      in_shape_arr.data[i] = in_shape[i];                                      \
-      out_shape_arr.data[i] = out_shape[i];                                    \
-      kshape_arr.data[i] = kshape[i];                                          \
-      strides_arr.data[i] = strides[i];                                        \
-      pads_arr.data[i] = pads[i];                                              \
-      dilations_arr.data[i] = dilations[i];                                    \
-    }                                                                          \
-    const auto kernel_dim =                                                    \
-        std::accumulate(kshape, kshape + num_dims, 1, std::multiplies<int>()); \
-    const auto inner_dim = std::accumulate(                                    \
-        out_shape, out_shape + num_dims, 1, std::multiplies<int>());           \
-    const auto outer_dim = channels * kernel_dim;                              \
-    if (kTransposed) {                                                         \
-      const auto in_dim = std::accumulate(                                     \
-          in_shape, in_shape + num_dims, 1, std::multiplies<int>());           \
-      math::Set(channels* in_dim, convert::To<T>(0.f), y, ctx);                \
-    }                                                                          \
-    DISPATCH_CONV_KERNEL(                                                      \
-        _Im2ColNd,                                                             \
-        kTransposed,                                                           \
-        math::ScalarType<T>::type,                                             \
-        outer_dim,                                                             \
-        CUDA_THREADS,                                                          \
-        channels,                                                              \
-        kernel_dim,                                                            \
-        outer_dim,                                                             \
-        inner_dim,                                                             \
-        num_dims,                                                              \
-        in_shape_arr,                                                          \
-        out_shape_arr,                                                         \
-        kshape_arr,                                                            \
-        strides_arr,                                                           \
-        pads_arr,                                                              \
-        dilations_arr,                                                         \
-        reinterpret_cast<const math::ScalarType<T>::type*>(x),                 \
-        reinterpret_cast<math::ScalarType<T>::type*>(y));                      \
+#define DEFINE_KERNEL_LAUNCHER(name, kTransposed, T)                    \
+  template <>                                                           \
+  void name<T, CUDAContext>(                                            \
+      const int num_dims,                                               \
+      const int channels,                                               \
+      const int* in_shape,                                              \
+      const int* out_shape,                                             \
+      const int* kshape,                                                \
+      const int* strides,                                               \
+      const int* pads,                                                  \
+      const int* dilations,                                             \
+      const string& data_format,                                        \
+      const T* x,                                                       \
+      T* y,                                                             \
+      CUDAContext* ctx) {                                               \
+    CHECK_LE(num_dims, 3) << "Too many (> " << 3                        \
+                          << ") dimensions to launch the cuda kernel."; \
+    SimpleArray<int, 3> in_shape_arr;                                   \
+    SimpleArray<int, 3> out_shape_arr;                                  \
+    SimpleArray<int, 3> kshape_arr;                                     \
+    SimpleArray<int, 3> strides_arr;                                    \
+    SimpleArray<int, 3> pads_arr;                                       \
+    SimpleArray<int, 3> dilations_arr;                                  \
+    for (int i = 0; i < num_dims; ++i) {                                \
+      in_shape_arr.data[i] = in_shape[i];                               \
+      out_shape_arr.data[i] = out_shape[i];                             \
+      kshape_arr.data[i] = kshape[i];                                   \
+      strides_arr.data[i] = strides[i];                                 \
+      pads_arr.data[i] = pads[i];                                       \
+      dilations_arr.data[i] = dilations[i];                             \
+    }                                                                   \
+    const auto kernel_dim = math::utils::Prod(num_dims, kshape);        \
+    const auto inner_dim = math::utils::Prod(num_dims, out_shape);      \
+    const auto outer_dim = channels * kernel_dim;                       \
+    if (kTransposed) {                                                  \
+      const auto in_dim = math::utils::Prod(num_dims, in_shape);        \
+      math::Set(channels* in_dim, convert::To<T>(0.f), y, ctx);         \
+    }                                                                   \
+    DISPATCH_CONV_KERNEL(                                               \
+        _Im2ColNd,                                                      \
+        kTransposed,                                                    \
+        math::ScalarType<T>::type,                                      \
+        outer_dim,                                                      \
+        CUDA_THREADS,                                                   \
+        channels,                                                       \
+        kernel_dim,                                                     \
+        outer_dim,                                                      \
+        inner_dim,                                                      \
+        num_dims,                                                       \
+        in_shape_arr,                                                   \
+        out_shape_arr,                                                  \
+        kshape_arr,                                                     \
+        strides_arr,                                                    \
+        pads_arr,                                                       \
+        dilations_arr,                                                  \
+        reinterpret_cast<const math::ScalarType<T>::type*>(x),          \
+        reinterpret_cast<math::ScalarType<T>::type*>(y));               \
   }
 
 DEFINE_KERNEL_LAUNCHER(Im2ColNd, false, float16);

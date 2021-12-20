@@ -15,7 +15,7 @@ from __future__ import division
 from __future__ import print_function
 
 from dragon.core.util import nest
-from dragon.vm.torch.core.autograd.function_impl import FunctionLib
+from dragon.vm.torch.core.autograd.function import Function
 from dragon.vm.torch.core.nn import _reduction
 from dragon.vm.torch.core.nn.modules import utils
 
@@ -299,7 +299,7 @@ def batch_norm(
     `torch.nn.BatchNorm2d(...)`_
 
     """
-    return FunctionLib.apply(
+    return Function.apply(
         'BatchNorm', input.device,
         [input, weight, bias, running_mean, running_var],
         axis=1, epsilon=eps, use_stats=int(not training),
@@ -348,7 +348,7 @@ def binary_cross_entropy_with_logits(
         reduction = _reduction.legacy_get_string(size_average, reduce)
     else:
         reduction = reduction
-    return FunctionLib.apply(
+    return Function.apply(
         'SigmoidCrossEntropyLoss', input.device,
         [input, target], reduction=reduction.upper())
 
@@ -374,7 +374,7 @@ def channel_shuffle(input, groups):
     `torch.nn.ChannelShuffle(...)`_
 
     """
-    return FunctionLib.apply(
+    return Function.apply(
         'ChannelShuffle', input.device, [input], axis=1, group=groups)
 
 
@@ -633,6 +633,35 @@ def conv_transpose3d(
     return _conv_transpose('ConvTranspose', utils._triple, **locals())
 
 
+def cosine_similarity(x1, x2, dim=1, eps=1e-8):
+    """Compute the cosine similarity between inputs.
+
+    Parameters
+    ----------
+    x1 : dragon.vm.torch.Tensor
+        The first input tensor.
+    x2 : dragon.vm.torch.Tensor
+        The second input tensor.
+    dim : int, optional, default=1
+        The vector dimension.
+    eps : float, optional, default=1e-8
+        The epsilon value.
+
+    Returns
+    -------
+    dragon.vm.torch.Tensor
+        The output tensor.
+
+    See Also
+    --------
+    `torch.nn.CosineSimilarity(...)`_
+
+    """
+    x1 = normalize(x1, p=2, dim=dim, eps=eps)
+    x2 = normalize(x2, p=2, dim=dim, eps=eps)
+    return (x1 * x2).sum(dim)
+
+
 def cross_entropy(
     input,
     target,
@@ -642,7 +671,7 @@ def cross_entropy(
     reduce=None,
     reduction='mean',
 ):
-    r"""Compute the softmax cross entropy with sparse target.
+    """Compute the softmax cross entropy with sparse target.
 
     Parameters
     ----------
@@ -675,13 +704,13 @@ def cross_entropy(
         reduction = _reduction.legacy_get_string(size_average, reduce)
     else:
         reduction = reduction
-    return FunctionLib.apply(
+    return Function.apply(
         'SoftmaxCrossEntropyLoss', input.device, [input, target],
         axis=1, ignore_index=ignore_index, reduction=reduction.upper())
 
 
 def ctc_loss(input, target, padding_mask=-1, reduction='mean'):
-    r"""Compute the ctc loss with batched labels.
+    """Compute the ctc loss.
     `[Graves & Gomez, 2006] <http://www.cs.utoronto.ca/~graves/icml_2006.pdf>`_.
 
     Parameters
@@ -705,7 +734,7 @@ def ctc_loss(input, target, padding_mask=-1, reduction='mean'):
     `torch.nn.CTCLoss(...)`_
 
     """
-    return FunctionLib.apply(
+    return Function.apply(
         'CTCLoss', input.device, [input, target],
         padding_mask=padding_mask, reduction=reduction.upper())
 
@@ -775,7 +804,7 @@ def dropout(input, p=0.5, training=True, inplace=False):
     """
     if not training or p <= 0:
         return input
-    return FunctionLib.apply(
+    return Function.apply(
         'Dropout', input.device, [input],
         outputs=[input if inplace else None], ratio=p)
 
@@ -808,7 +837,7 @@ def drop_block2d(input, p=0.5, block_size=1, training=True, inplace=False):
     """
     if not training or p <= 0:
         return input
-    return FunctionLib.apply(
+    return Function.apply(
         'DropBlock', input.device, [input],
         outputs=[input if inplace else None], block_size=block_size, ratio=p)
 
@@ -840,7 +869,7 @@ def drop_path(input, p=0.2, training=True, inplace=False):
     """
     if not training or p <= 0:
         return input
-    return FunctionLib.apply(
+    return Function.apply(
         'DropPath', input.device, [input],
         outputs=[input if inplace else None], ratio=p)
 
@@ -868,7 +897,7 @@ def elu(input, alpha=1.0, inplace=False):
     `torch.nn.ELU(...)`_
 
     """
-    return FunctionLib.apply(
+    return Function.apply(
         'Elu', input.device, [input],
         outputs=[input if inplace else None], alpha=float(alpha))
 
@@ -927,7 +956,7 @@ def gelu(input):
     `torch.nn.GELU(...)`_
 
     """
-    return FunctionLib.apply('Gelu', input.device, [input], approximate=False)
+    return Function.apply('Gelu', input.device, [input], approximate=False)
 
 
 def group_norm(input, num_groups, weight, bias, eps=1e-5):
@@ -957,7 +986,7 @@ def group_norm(input, num_groups, weight, bias, eps=1e-5):
     `torch.nn.GroupNorm(...)`_
 
     """
-    return FunctionLib.apply(
+    return Function.apply(
         'GroupNorm', input.device, [input, weight, bias],
         axis=1, group=num_groups, epsilon=eps)
 
@@ -982,7 +1011,7 @@ def hardsigmoid(input, inplace=False):
     `torch.nn.Hardsigmoid(...)`_
 
     """
-    return FunctionLib.apply(
+    return Function.apply(
         'HardSigmoid', input.device, [input],
         outputs=[input if inplace else None], alpha=1. / 6., beta=0.5)
 
@@ -1006,7 +1035,7 @@ def hardswish(input):
     `torch.nn.Hardswish(...)`_
 
     """
-    return FunctionLib.apply('HardSwish', input.device, [input])
+    return Function.apply('HardSwish', input.device, [input])
 
 
 def interpolate(
@@ -1070,7 +1099,7 @@ def interpolate(
     mode = mode.upper()
     mode = mode.replace('BILINEAR', 'LINEAR')
     mode = mode.replace('TRILINEAR', 'LINEAR')
-    return FunctionLib.apply(
+    return Function.apply(
         'Resize', input.device, [input],
         mode=mode, align_corners=align_corners,
         num_sizes=len(size) if size is not None else 0,
@@ -1161,7 +1190,7 @@ def l1_loss(input, target, size_average=None, reduce=None, reduction='mean'):
         reduction = _reduction.legacy_get_string(size_average, reduce)
     else:
         reduction = reduction
-    return FunctionLib.apply(
+    return Function.apply(
         'L1Loss', input.device, [input, target],
         reduction=reduction.upper())
 
@@ -1193,7 +1222,7 @@ def layer_norm(input, normalized_shape, weight, bias, eps=1e-5):
     `torch.nn.LayerNorm(...)`_
 
     """
-    return FunctionLib.apply(
+    return Function.apply(
         'LayerNorm', input.device, [input, weight, bias],
         axis=input.ndimension() - len(normalized_shape), epsilon=eps)
 
@@ -1229,7 +1258,7 @@ def leaky_relu(input, negative_slope=0.01, inplace=False):
     `torch.nn.LeakyReLU(...)`_
 
     """
-    return FunctionLib.apply(
+    return Function.apply(
         'Relu', input.device, [input],
         outputs=[input if inplace else None], alpha=float(negative_slope))
 
@@ -1258,7 +1287,7 @@ def linear(input, weight, bias=None):
     `torch.nn.Linear(...)`_
 
     """
-    return FunctionLib.apply(
+    return Function.apply(
         'Gemm', input.device,
         [input, weight] + ([bias] if bias else []),
         transA=False, transB=True)
@@ -1298,7 +1327,7 @@ def local_response_norm(input, size, alpha=1e-4, beta=0.75, k=1.):
     `torch.nn.LocalResponseNorm(...)`_
 
     """
-    return FunctionLib.apply(
+    return Function.apply(
         'LRN', input.device, [input],
         size=size, alpha=float(alpha), beta=float(beta), bias=float(k))
 
@@ -1329,7 +1358,7 @@ def log_softmax(input, dim, inplace=False):
     `torch.nn.LogSoftmax(...)`_
 
     """
-    return FunctionLib.apply(
+    return Function.apply(
         'LogSoftmax', input.device, [input],
         outputs=[input if inplace else None], axis=dim)
 
@@ -1354,7 +1383,7 @@ def lstm_cell(input, cx):
     `torch.nn.LSTMCell(...)`_
 
     """
-    return FunctionLib.apply('LSTMCell', input.device, [input, cx])
+    return Function.apply('LSTMCell', input.device, [input, cx])
 
 
 def max_pool1d(input, kernel_size, stride=1, padding=0, ceil_mode=False):
@@ -1478,7 +1507,7 @@ def mse_loss(input, target, size_average=None, reduce=None, reduction='mean'):
         reduction = _reduction.legacy_get_string(size_average, reduce)
     else:
         reduction = reduction
-    return FunctionLib.apply(
+    return Function.apply(
         'L2Loss', input.device, [input, target],
         reduction=reduction.upper())
 
@@ -1563,16 +1592,20 @@ def multi_head_attention_forward(
 
     def to_qkv(input, weight, bias, num_proj=1):
         """Compute input projections via a single matmul."""
-        qkv_size = (tgt_len, bsz, num_proj * num_heads, head_dim)
-        outputs = linear(input, weight, bias).reshape_(qkv_size)
-        outputs = outputs.permute(1, 2, 0, 3)
-        return outputs if num_proj == 1 else outputs.chunk(num_proj, 1)
+        if num_proj > 1:
+            qkv_shape = (tgt_len, bsz, num_proj, num_heads, head_dim)
+            qkv = linear(input, weight, bias).reshape_(qkv_shape)
+            return qkv.permute(2, 1, 3, 0, 4)
+        qkv_shape = (tgt_len, bsz, num_heads, head_dim)
+        qkv = linear(input, weight, bias).reshape_(qkv_shape)
+        return qkv.permute(1, 2, 0, 3)
 
     q, k, v = None, None, None
     if not use_separate_proj_weight:
         if (query is key) and (key is value):
             # Parallelism for self attention.
-            q, k, v = to_qkv(query, in_proj_weight, in_proj_bias, 3)
+            qkv = to_qkv(query, in_proj_weight, in_proj_bias, 3)
+            q, k, v = qkv.unbind(dim=0, copy=False)
         elif key is value:
             # Parallelism for encode-decoder attention.
             q_proj_weight = in_proj_weight[:embed_dim, :]
@@ -1582,7 +1615,8 @@ def multi_head_attention_forward(
                 q_proj_bias = in_proj_bias[:embed_dim]
                 kv_proj_bias = in_proj_bias[embed_dim:]
             q = to_qkv(query, q_proj_weight, q_proj_bias)
-            k, v = to_qkv(key, kv_proj_weight, kv_proj_bias, 2)
+            kv = to_qkv(key, kv_proj_weight, kv_proj_bias, 2)
+            k, v = kv.unbind(dim=0, copy=False)
     if q is None:
         q_proj_bias = k_proj_bias = v_proj_bias = in_proj_bias
         if use_separate_proj_weight and q_proj_weight is None:
@@ -1596,8 +1630,7 @@ def multi_head_attention_forward(
         q = to_qkv(query, q_proj_weight, q_proj_bias)
         k = to_qkv(key, k_proj_weight, k_proj_bias)
         v = to_qkv(value, v_proj_weight, v_proj_bias)
-    q *= float(head_dim) ** -0.5
-    attn = q.bmm(k.transpose(-2, -1))
+    attn = q @ (k.transpose(-2, -1).mul_(float(head_dim) ** -0.5))
     assert attn.size() == (bsz, num_heads, tgt_len, src_len)
     if attn_mask is not None:
         if attn_mask.dtype == 'bool' or attn_mask.dtype == 'uint8':
@@ -1610,7 +1643,7 @@ def multi_head_attention_forward(
         attn.masked_fill_(key_padding_mask, float('-inf'))
     attn = softmax(attn, dim=-1, inplace=True)
     attn = dropout(attn, p=dropout_p, training=training)
-    output = attn.bmm(v).permute(2, 0, 1, 3)
+    output = (attn @ v).permute(2, 0, 1, 3)
     output = output.reshape_((tgt_len, bsz, embed_dim))
     output = linear(output, out_proj_weight, out_proj_bias)
     weights = attn.mean(dim=1) if need_weights else None
@@ -1626,11 +1659,7 @@ def nll_loss(
     reduce=None,
     reduction='mean',
 ):
-    r"""Compute the negative likelihood loss with sparse labels.
-
-    The **NLLLoss** function is defined as:
-
-    .. math:: \text{NLLLoss}(p_{t}) = -\log(p_{t})
+    """Compute the negative likelihood loss.
 
     Parameters
     ----------
@@ -1663,7 +1692,7 @@ def nll_loss(
         reduction = _reduction.legacy_get_string(size_average, reduce)
     else:
         reduction = reduction
-    return FunctionLib.apply(
+    return Function.apply(
         'NLLLoss', input.device, [input, target],
         axis=1, ignore_index=ignore_index, reduction=reduction.upper())
 
@@ -1696,9 +1725,34 @@ def normalize(input, p=2, dim=1, end_dim=None, eps=1e-12, out=None):
         The output tensor.
 
     """
-    return FunctionLib.apply(
+    return Function.apply(
         'LpNormalize', input.device, [input], outputs=[out],
         p=p, axis=dim, end_axis=end_dim, epsilon=eps, reduction='SUM')
+
+
+def one_hot(tensor, num_classes, on_value=1, off_value=0):
+    """Return the one-hot representation of input.
+
+    Parameters
+    ----------
+    tensor : dragon.vm.torch.Tensor
+        The input tensor.
+    num_classes : int
+        The number of classes.
+    on_value : number, optional, default=1
+        The value for equal branch.
+    off_value : number, optional, default=0
+        The value for not-equal branch.
+
+    Returns
+    -------
+    dragon.vm.torch.Tensor
+        The output tensor.
+
+    """
+    return Function.apply(
+        'OneHot', tensor.device, [tensor], depth=num_classes,
+        on_value=float(on_value), off_value=float(off_value))
 
 
 def pad(input, pad, mode='constant', value=0):
@@ -1741,7 +1795,7 @@ def pad(input, pad, mode='constant', value=0):
         pads_end[ndim - 1 - i] = pad[i * 2 + 1]
     mode = {'constant': 'CONSTANT', 'reflect': 'REFLECT',
             'replicate': 'EDGE', 'circular': 'EDGE'}[mode]
-    return FunctionLib.apply(
+    return Function.apply(
         'Pad', input.device, [input], mode=mode, value=float(value),
         ndim=ndim, pads=pads_begin + pads_end)
 
@@ -1764,7 +1818,7 @@ def pixel_shuffle(input, upscale_factor, inplace=False):
         The output tensor.
 
     """
-    return FunctionLib.apply(
+    return Function.apply(
         'DepthToSpace', input.device, [input],
         outputs=[input if inplace else None],
         block_size=int(upscale_factor), mode='CRD', data_format='NCHW')
@@ -1788,7 +1842,7 @@ def pixel_unshuffle(input, downscale_factor, inplace=False):
         The output tensor.
 
     """
-    return FunctionLib.apply(
+    return Function.apply(
         'SpaceToDepth', input.device, [input],
         outputs=[input if inplace else None],
         block_size=int(downscale_factor), mode='CRD', data_format='NCHW')
@@ -1824,7 +1878,7 @@ def prelu(input, weight):
     `torch.nn.PReLU(...)`_
 
     """
-    return FunctionLib.apply('PRelu', input.device, [input, weight])
+    return Function.apply('PRelu', input.device, [input, weight])
 
 
 def relu(input, inplace=False):
@@ -1857,7 +1911,7 @@ def relu(input, inplace=False):
     `torch.nn.ReLU(...)`_
 
     """
-    return FunctionLib.apply(
+    return Function.apply(
         'Relu', input.device, [input],
         outputs=[input if inplace else None], alpha=0.)
 
@@ -1892,7 +1946,7 @@ def relu6(input, inplace=False):
     `torch.nn.ReLU6(...)`_
 
     """
-    return FunctionLib.apply(
+    return Function.apply(
         'Relu', input.device, [input],
         outputs=[input if inplace else None], alpha=0., max_value=6.)
 
@@ -1927,7 +1981,7 @@ def selu(input, inplace=False):
     `torch.nn.SELU(...)`_
 
     """
-    return FunctionLib.apply(
+    return Function.apply(
         'Selu', input.device, [input],
         outputs=[input if inplace else None], alpha=1.67326, gamma=1.0507)
 
@@ -1956,7 +2010,7 @@ def sigmoid(input, inplace=False):
     `torch.nn.Sigmoid(...)`_
 
     """
-    return FunctionLib.apply(
+    return Function.apply(
         'Sigmoid', input.device, [input],
         outputs=[input if inplace else None])
 
@@ -1972,12 +2026,8 @@ def sigmoid_focal_loss(
     reduce=None,
     reduction='valid',
 ):
-    r"""Compute the sigmoid focal loss with sparse labels.
+    """Compute the sigmoid focal loss.
     `[Lin et.al, 2017] <https://arxiv.org/abs/1708.02002>`__.
-
-    The **FocalLoss** function is defined as:
-
-    .. math:: \text{FocalLoss}(p_{t}) = -(1 - p_{t})^{\gamma}\log(p_{t})
 
     Parameters
     ----------
@@ -2014,7 +2064,7 @@ def sigmoid_focal_loss(
         reduction = _reduction.legacy_get_string(size_average, reduce)
     else:
         reduction = reduction
-    return FunctionLib.apply(
+    return Function.apply(
         'SigmoidFocalLoss', input.device, [input, target],
         axis=1, alpha=float(alpha), gamma=float(gamma),
         start_index=start_index, reduction=reduction.upper())
@@ -2043,7 +2093,7 @@ def silu(input):
     `torch.nn.SiLU(...)`_
 
     """
-    return FunctionLib.apply('Silu', input.device, [input])
+    return Function.apply('Silu', input.device, [input])
 
 
 def smooth_l1_loss(
@@ -2095,7 +2145,7 @@ def smooth_l1_loss(
         reduction = _reduction.legacy_get_string(size_average, reduce)
     else:
         reduction = reduction
-    return FunctionLib.apply(
+    return Function.apply(
         'SmoothL1Loss', input.device, [input, target],
         beta=float(beta), reduction=reduction.upper())
 
@@ -2126,7 +2176,7 @@ def softmax(input, dim, inplace=False):
     `torch.nn.Softmax(...)`_
 
     """
-    return FunctionLib.apply(
+    return Function.apply(
         'Softmax', input.device, [input],
         outputs=[input if inplace else None], axis=dim)
 
@@ -2180,7 +2230,7 @@ def sync_batch_norm(
         kwargs = locals()
         kwargs.pop('process_group')
         return batch_norm(**kwargs)
-    return FunctionLib.apply(
+    return Function.apply(
         'SyncBatchNorm', input.device,
         [input, weight, bias, running_mean, running_var],
         axis=1, epsilon=eps, use_stats=int(not training),
@@ -2211,7 +2261,7 @@ def tanh(input, inplace=False):
     `torch.nn.Tanh(...)`_
 
     """
-    return FunctionLib.apply(
+    return Function.apply(
         'Tanh', input.device, [input],
         outputs=[input if inplace else None])
 
@@ -2243,7 +2293,7 @@ def unfold(input, kernel_size, dilation=1, padding=0, stride=1):
 
     """
     nd_util = utils._ntuple(input.ndimension() - 2)
-    out = FunctionLib.apply(
+    out = Function.apply(
         'Im2Col',
         input.device,
         [input],
@@ -2390,7 +2440,7 @@ def _conv(
 ):
     """Apply a conv function."""
     weight_shape = list(weight.shape)
-    return FunctionLib.apply(
+    return Function.apply(
         conv_type,
         input.device,
         [input, weight] + ([bias] if bias else []),
@@ -2421,7 +2471,7 @@ def _conv_transpose(
 ):
     """Apply a transposed conv function."""
     weight_shape = list(weight.shape)
-    return FunctionLib.apply(
+    return Function.apply(
         conv_type,
         input.device,
         [input, weight] + ([bias] if bias else []),
@@ -2449,7 +2499,7 @@ def _pool(
     ceil_mode=False,
 ):
     """Apply a pool function."""
-    return FunctionLib.apply(
+    return Function.apply(
         'Pool',
         input.device,
         [input],

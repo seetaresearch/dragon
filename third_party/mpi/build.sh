@@ -3,13 +3,13 @@
 # See https://www.open-mpi.org/faq/?category=buildcuda
 USE_CUDA_AWARE=${1:-1}
 
-if [ -f "openmpi-4.0.0.tar.gz" ];then echo "Skip downloading...."
-else wget https://download.open-mpi.org/release/open-mpi/v4.0/openmpi-4.0.0.tar.gz
+if [ -f "openmpi-4.1.2.tar.gz" ];then echo "Skip downloading...."
+else wget https://download.open-mpi.org/release/open-mpi/v4.1/openmpi-4.1.2.tar.gz
 fi
 
 rm -rf src
-tar -xzvf openmpi-4.0.0.tar.gz
-mv openmpi-4.0.0 src
+tar -xzvf openmpi-4.1.2.tar.gz
+mv openmpi-4.1.2 src
 cd src
 
 INSTALL_PATH=$(cd "$(dirname "$0")/..";pwd)

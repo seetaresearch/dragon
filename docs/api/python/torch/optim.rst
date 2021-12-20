@@ -14,6 +14,10 @@ vm.torch.optim
   : The optimizer to apply AdamW algorithm.
   `[Loshchilov & Hutter, 2017] <https://arxiv.org/abs/1711.05101>`_.
 
+  `class LARS <optim/LARS.html>`_
+  : The optimizer to apply LARS algorithm.
+  `[You et.al, 2017] <https://arxiv.org/abs/1708.03888>`_.
+
   `class Optimizer <optim/Optimizer.html>`_
   : The base class of optimizers.
 
@@ -29,6 +33,7 @@ vm.torch.optim
 
   optim/Adam
   optim/AdamW
+  optim/LARS
   optim/Optimizer
   optim/RMSprop
   optim/SGD

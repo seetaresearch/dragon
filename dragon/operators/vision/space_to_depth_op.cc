@@ -61,7 +61,7 @@ void SpaceToDepthOp<Context>::DoRunWithType() {
       << X_reshape.DimString() << " with block size " << block_size_ << ".";
 
   auto* scratch = ((void*)&X == (void*)Y)
-      ? ctx()->workspace()->template data<T, Context>({X.count()})[0]
+      ? ctx()->workspace()->template data<T, Context>(X.count())
       : Y->Reshape(out_shape)->template mutable_data<T, Context>();
 
   math::Transpose(
@@ -129,7 +129,7 @@ void DepthToSpaceOp<Context>::DoRunWithType() {
       << X_reshape.DimString() << " with block size " << block_size_ << ".";
 
   auto* scratch = ((void*)&X == (void*)Y)
-      ? ctx()->workspace()->template data<T, Context>({X.count()})[0]
+      ? ctx()->workspace()->template data<T, Context>(X.count())
       : Y->Reshape(out_shape)->template mutable_data<T, Context>();
 
   math::Transpose(

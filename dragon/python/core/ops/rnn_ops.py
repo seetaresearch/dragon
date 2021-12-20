@@ -19,9 +19,9 @@ import math
 
 from dragon.core.autograph import context
 from dragon.core.framework.tensor import Tensor
-from dragon.core.autograph.op_impl import OpLib
-from dragon.core.autograph.op_impl import OpSchema
-from dragon.core.ops import init_ops
+from dragon.core.autograph.op_lib import OpLib
+from dragon.core.autograph.op_lib import OpSchema
+from dragon.core.ops import random_ops
 from dragon.core.util import math_util
 from dragon.core.util import nest
 
@@ -106,10 +106,10 @@ class RNNModule(object):
             matrix_shape[0] //= self._num_gates
             bias_shape[0] //= self._num_gates
             self._set_parameter(
-                init_ops.random_uniform(matrix_shape, -stddev, stddev),
+                random_ops.random_uniform(matrix_shape, -stddev, stddev),
                 layer_id, param_id, 'matrix')
             self._set_parameter(
-                init_ops.random_uniform(bias_shape, -stddev, stddev),
+                random_ops.random_uniform(bias_shape, -stddev, stddev),
                 layer_id, param_id, 'bias')
 
     def _set_parameter(self, data, layer_id=0, param_id=0, param_type='matrix'):

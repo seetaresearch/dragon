@@ -16,20 +16,20 @@ from __future__ import print_function
 
 from dragon.core import distributed
 from dragon.core.autograph import context
-from dragon.core.autograph.op_impl import OpLib
-from dragon.core.autograph.op_impl import OpSchema
+from dragon.core.autograph.op_lib import OpLib
+from dragon.core.autograph.op_lib import OpSchema
 
 
 @OpSchema.num_inputs(1)
-def all_reduce(inputs, operation='mean', group=None, **kwargs):
+def all_reduce(inputs, reduction='mean', group=None, **kwargs):
     """Reduce the input across all nodes in a group.
 
     Parameters
     ----------
     inputs : dragon.Tensor
         The input tensor.
-    operation : {'mean', 'sum'}, optional
-        The reduce operation.
+    reduction : str, optional
+        The reduction method.
     group : ProcessGroup, optional
         The group for communication.
 
@@ -39,16 +39,16 @@ def all_reduce(inputs, operation='mean', group=None, **kwargs):
         The output tensor.
 
     """
-    operation = operation.upper()
+    reduction = reduction.upper()
     if group is None:
         group = distributed.get_group()
     if group is None:
         raise ValueError('<group> is required.')
-    if operation not in ('MEAN', 'SUM'):
-        raise ValueError('Unsupported operation: ' + operation)
+    if reduction not in ('MEAN', 'SUM'):
+        raise ValueError('Unsupported reduction: ' + reduction)
     coll_args = group.arguments.copy()
-    coll_args['communication'] = 'ALLREDUCE'
-    coll_args['operation'] = operation
+    coll_args['operation'] = 'ALLREDUCE'
+    coll_args['reduction'] = reduction
     if context.executing_eagerly():
         return OpLib.execute('Collective', inputs, **coll_args)
     kwargs.update(coll_args)
@@ -81,7 +81,7 @@ def broadcast(inputs, root=0, group=None, **kwargs):
         raise ValueError('<group> is required.')
     coll_args = group.arguments.copy()
     coll_args['root'] = root
-    coll_args['communication'] = 'BROADCAST'
+    coll_args['operation'] = 'BROADCAST'
     if context.executing_eagerly():
         return OpLib.execute('Collective', inputs, **coll_args)
     kwargs.update(coll_args)

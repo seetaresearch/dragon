@@ -125,8 +125,7 @@ def get_variable(
     if shape is None:
         raise ValueError('Must specific a shape to create a Variable.')
     if initializer is None:
-        initializer = get_default_initializer(
-            name, shape=shape, dtype=dtype)
+        initializer = get_default_initializer(name, shape, dtype=dtype)
     if use_resource or eager_context.executing_eagerly():
         with eager_context.eager_mode():
             if callable(initializer):

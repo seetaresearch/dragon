@@ -45,13 +45,13 @@ void BiasAddGradientOp<Context>::DoRunWithType() {
   }
 
   if (dB->has_name()) {
-    vec32_t dims, axes;
+    vec64_t dims, axes;
     if (data_format() == "NCHW") {
-      dims = {(int)dY.dim(0), (int)dY.dim(1), (int)dY.count(2)};
+      dims = {dY.dim(0), dY.dim(1), dY.count(2)};
       axes = {0, 2};
       dB->Reshape({dY.dim(1)});
     } else if (data_format() == "NHWC") {
-      dims = {(int)(dY.count() / dY.dim(-1)), (int)dY.dim(-1)};
+      dims = {dY.count() / dY.dim(-1), dY.dim(-1)};
       axes = {0};
       dB->Reshape({dY.dim(-1)});
     }

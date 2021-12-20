@@ -51,6 +51,9 @@ dragon.math
   `greater_equal(...) <math/greater_equal.html>`_
   : Compute the element-wise greater-equal comparison.
 
+  `is_finite(...) <math/is_finite.html>`_
+  : Check if the elements of input are finite.
+
   `is_inf(...) <math/is_inf.html>`_
   : Check if the elements of input are infinite.
 
@@ -104,6 +107,9 @@ dragon.math
 
   `negative(...) <math/negative.html>`_
   : Compute the element-wise negative.
+
+  `norm(...) <math/norm.html>`_
+  : Compute the norm value of elements along the given axis.
 
   `not_equal(...) <math/not_equal.html>`_
   : Compute the element-wise not-equal comparison.
@@ -165,6 +171,7 @@ dragon.math
   math/gemm
   math/greater
   math/greater_equal
+  math/is_finite
   math/is_inf
   math/is_nan
   math/less
@@ -183,6 +190,7 @@ dragon.math
   math/minimum
   math/mul
   math/negative
+  math/norm
   math/not_equal
   math/pow
   math/reciprocal

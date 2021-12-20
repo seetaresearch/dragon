@@ -47,9 +47,10 @@ class Iterator(object):
         # Build pipeline and cache the first batch.
         with self._api_scope():
             self._pipe.build()
-            # Enforce the correct device of current process
-            # to initialize cuda handles instead of device 0.
-            cuda.set_device(self._pipe.device_id)
+            if self._pipe.device_id is not None:
+                # Enforce the correct device of current process
+                # to initialize cuda handles instead of device 0.
+                cuda.set_device(self._pipe.device_id)
             self._pipe.schedule_run()
             self._copies = None
             self._first_batch = None
@@ -86,14 +87,13 @@ class Iterator(object):
         if self._copies is None:
             self._copies = []
             for tensor in tensors:
-                self._copies.append(
-                    self.new_tensor(
-                        shape=tensor.shape(),
-                        dtype=str(types.np_dtype(tensor.dtype())),
-                        device=self.new_device(
-                            device_type=('cuda' if isinstance(tensor, TensorGPU)
-                                         else 'cpu'),
-                            device_index=self._pipe.device_id)))
+                self._copies.append(self.new_tensor(
+                    shape=tensor.shape(),
+                    dtype=str(types.np_dtype(tensor.dtype())),
+                    device=self.new_device(
+                        device_type=('cuda' if isinstance(tensor, TensorGPU)
+                                     else 'cpu'),
+                        device_index=self._pipe.device_id)))
         # Transfer the data: DALI => Storage
         for i, tensor in enumerate(tensors):
             self._transfer_tensor(tensor, self._copies[i])

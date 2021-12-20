@@ -86,7 +86,9 @@ class TestModule(unittest.TestCase):
         m.sub2.register_parameter('weight', torch.nn.Parameter(torch.tensor(1)))
         m.add_module('sub3', None)
         m.register_parameter('weight', torch.nn.Parameter(torch.tensor(1)))
+        m.weight = torch.nn.Parameter(torch.tensor(1))
         m.register_buffer('bias', torch.tensor(1))
+        m.bias = torch.tensor(1)
         m.sub2 = None
         m.sub3 = torch.nn.Conv2d(2, 3, 3)
         m.cpu().float()
@@ -120,6 +122,14 @@ class TestModule(unittest.TestCase):
         for _ in m.buffers():
             pass
         _, _ = repr(m), repr(m.weight)
+        try:
+            m.weight = 1
+        except TypeError:
+            m.weight = None
+        try:
+            m.bias = 1
+        except TypeError:
+            m.bias = None
 
     def test_sequential(self):
         m1 = torch.nn.Sequential(torch.nn.Module())
@@ -398,6 +408,17 @@ class TestModules(OpTestCase):
             y, _ = m(x), repr(m)
             self.assertEqual(y, np.array(result), prec=1e-3)
 
+    def test_cosine_similarity(self):
+        for dim in (0, 1):
+            data1 = uniform((10, 20))
+            data2 = uniform((10, 20))
+            a, b = new_tensor(data1), new_tensor(data2)
+            m = torch.nn.CosineSimilarity(dim=dim)
+            y, _ = m(a, b), repr(m)
+            result = ((data1 / np.linalg.norm(data1, axis=dim, keepdims=True)) *
+                      (data2 / np.linalg.norm(data2, axis=dim, keepdims=True))).sum(dim)
+            self.assertEqual(y, result)
+
     def test_cross_entropy_loss(self):
         for reduction in ('mean', 'sum', 'none'):
             data1 = np.log(np.array(
@@ -649,6 +670,14 @@ class TestModules(OpTestCase):
             y, _ = m(a, b), repr(m)
             result = reduce(-data1[np.arange(2), data2], reduction=reduction)
             self.assertEqual(y, result)
+
+    def test_one_hot(self):
+        entries = [(2, 3, 3), (1, 2, 3), (2, 2, 2)]
+        for index in entries:
+            index = np.array(index, 'int64')
+            x = new_tensor(index)
+            y = torch.nn.functional.one_hot(x, num_classes=10)
+            self.assertEqual(y, np.eye(10, dtype='int64')[index])
 
     def test_pad(self):
         for ndim in (1, 2, 3):

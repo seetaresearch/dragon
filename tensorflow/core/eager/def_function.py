@@ -17,7 +17,7 @@ from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
 
-from dragon.core.autograph import function_impl
+from dragon.core.autograph import function_lib
 
 
 def function(func=None, input_signature=None):
@@ -74,4 +74,4 @@ def function(func=None, input_signature=None):
         The function to run the graph once.
 
     """
-    return function_impl.function(func, input_signature)
+    return function_lib.function(func, input_signature)

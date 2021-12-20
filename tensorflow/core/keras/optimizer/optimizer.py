@@ -31,12 +31,13 @@ class Optimizer(optimizer_v1.Optimizer):
         """
         self._name = name
         clip_norm = kwargs.pop('clipnorm', 0)
+        clip_value = kwargs.pop('clipvalue', 0)
         clip_norm = kwargs.pop('global_clipnorm', clip_norm)
-        super(Optimizer, self).__init__(clip_norm=clip_norm)
-        for k in kwargs:
-            raise TypeError('Unexpected keyword argument: ' + str(k))
+        super(Optimizer, self).__init__(clip_norm=clip_norm,
+                                        clip_value=clip_value)
         self._iterations = 0
         self._hyper_aliases = {'clipnorm': 'clip_norm',
+                               'clipvalue': 'clip_value',
                                'global_clipnorm': 'clip_norm'}
 
     @property

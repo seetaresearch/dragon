@@ -20,7 +20,7 @@ from dragon.core import distributed
 from dragon.vm.torch.core.nn import functional as F
 from dragon.vm.torch.core.nn.modules.module import Module
 from dragon.vm.torch.core.nn.parameter import Parameter
-from dragon.vm.torch.core.ops import init_ops
+from dragon.vm.torch.core.ops import constant_ops
 from dragon.vm.torch.core.tensor import Tensor
 
 
@@ -45,14 +45,14 @@ class _BatchNorm(Module):
             self.weight = Parameter(Tensor(num_features))
             self.bias = Parameter(Tensor(num_features))
         else:
-            self.register_buffer('weight', init_ops.ones(num_features))
-            self.register_buffer('bias', init_ops.zeros(num_features))
+            self.register_buffer('weight', constant_ops.ones(num_features))
+            self.register_buffer('bias', constant_ops.zeros(num_features))
         if self.track_running_stats:
             self.num_batches_tracked = 0
         else:
             self.num_batches_tracked = None
-        self.register_buffer('running_mean', init_ops.zeros(num_features))
-        self.register_buffer('running_var', init_ops.ones(num_features))
+        self.register_buffer('running_mean', constant_ops.zeros(num_features))
+        self.register_buffer('running_var', constant_ops.ones(num_features))
         self.reset_parameters()
 
     def reset_running_stats(self):
@@ -333,8 +333,7 @@ class SyncBatchNorm(_BatchNorm):
                 training=self.training,
                 momentum=self._get_momentum(),
                 eps=self.eps,
-                process_group=self.process_group,
-            )
+                process_group=self.process_group)
         else:
             return F.batch_norm(
                 input,
@@ -344,5 +343,42 @@ class SyncBatchNorm(_BatchNorm):
                 self.bias,
                 training=self.training,
                 momentum=self._get_momentum(),
-                eps=self.eps
-            )
+                eps=self.eps)
+
+    @classmethod
+    def convert_sync_batchnorm(cls, module, process_group=None):
+        """Convert to sync batch normalization recursively.
+
+        Parameters
+        ----------
+        module : dragon.vm.torch.nn.Module
+            The module containing batch normalization.
+        process_group : ProcessGroup, optional
+            The group for communication.
+
+        Returns
+        -------
+        dragon.vm.torch.nn.Module
+            The output module.
+
+        """
+        module_output = module
+        if isinstance(module, _BatchNorm):
+            module_output = SyncBatchNorm(
+                module.num_features,
+                module.eps,
+                module.momentum,
+                module.affine,
+                module.track_running_stats,
+                process_group)
+            if module.affine:
+                module_output.weight = module.weight
+                module_output.bias = module.bias
+            module_output.running_mean = module.running_mean
+            module_output.running_var = module.running_var
+            module_output.num_batches_tracked = module.num_batches_tracked
+        for name, child in module.named_children():
+            module_output.add_module(
+                name, cls.convert_sync_batchnorm(child, process_group))
+        del module
+        return module_output

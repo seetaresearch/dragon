@@ -15,7 +15,7 @@ from __future__ import division as _division
 from __future__ import print_function as _print_function
 
 # Classes
-from dragon.vm.torch.core.autograd.function_impl import FunctionLib
+from dragon.vm.torch.core.autograd.function import Function
 from dragon.vm.torch.core.autograd.grad_mode import enable_grad
 from dragon.vm.torch.core.autograd.grad_mode import no_grad
 from dragon.vm.torch.core.autograd.grad_mode import set_grad_enabled

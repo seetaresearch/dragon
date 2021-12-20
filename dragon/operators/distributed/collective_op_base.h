@@ -33,14 +33,14 @@ class CollectiveOpBase : public Operator<Context> {
         comm_((MPI_Comm)OP_SINGLE_ARG(int64_t, "comm", 0)),
         group_((MPI_Group)OP_SINGLE_ARG(int64_t, "group", 0)) {
     if ((int64_t)comm_ == 0) return;
-    // The given group should be created before
+    // The given group should be created before.
     CHECK((int64_t)group_ != 0) << "\nEncounter the invalid mpi group.";
 
-    // Collect comm and rank infomation
+    // Collect comm and rank information.
     MPI_Comm_size(comm_, &comm_size_);
     MPI_Comm_rank(comm_, &comm_rank_);
 
-    // Translate the root into the group
+    // Translate the root into the group.
     MPI_Group world_group;
     auto root = OP_SINGLE_ARG(int, "root", 0);
     auto group_world_ranks = OP_REPEATED_ARG(int64_t, "ranks");
@@ -52,8 +52,8 @@ class CollectiveOpBase : public Operator<Context> {
     CHECK(comm_root_ != MPI_UNDEFINED)
         << "\nRoot is not included in the group.";
 
-    // Check whether the NCCL backend should be enabled
-    // If not, we will fallback to the MPI backend
+    // Check whether the NCCL backend should be enabled.
+    // If not, we will fallback to the MPI backend.
 #ifdef USE_NCCL
     enable_nccl_ = OP_SINGLE_ARG(string, "backend", "MPI") == "NCCL";
     enable_nccl_ &= (TypeMeta::Id<Context>() == TypeMeta::Id<CUDAContext>());
@@ -64,17 +64,17 @@ class CollectiveOpBase : public Operator<Context> {
 
   template <typename T>
   void Recv(T* buf, int count, int from) {
-    MPI_Recv(buf, count, mpi_dtype<T>(), from, 0, comm_, MPI_STATUS_IGNORE);
+    MPI_Recv(buf, count, mpi_data_type<T>(), from, 0, comm_, MPI_STATUS_IGNORE);
   }
 
   template <typename T>
   void IRecv(T* buf, int count, int from, MPI_Request* req) {
-    MPI_Irecv(buf, count, mpi_dtype<T>(), from, 0, comm_, req);
+    MPI_Irecv(buf, count, mpi_data_type<T>(), from, 0, comm_, req);
   }
 
   template <typename T>
   void Send(const T* buf, int count, int to) {
-    MPI_Send(buf, count, mpi_dtype<T>(), to, 0, comm_);
+    MPI_Send(buf, count, mpi_data_type<T>(), to, 0, comm_);
   }
 
   template <typename T>
@@ -88,12 +88,12 @@ class CollectiveOpBase : public Operator<Context> {
     MPI_Sendrecv(
         send_buf,
         send_count,
-        mpi_dtype<T>(),
+        mpi_data_type<T>(),
         to,
         0,
         recv_buf,
         recv_count,
-        mpi_dtype<T>(),
+        mpi_data_type<T>(),
         from,
         0,
         comm_,
@@ -102,7 +102,19 @@ class CollectiveOpBase : public Operator<Context> {
 
   template <typename T>
   void Broadcast(T* buf, int count) {
-    MPI_Bcast(buf, count, mpi_dtype<T>(), comm_root_, comm_);
+    MPI_Bcast(buf, count, mpi_data_type<T>(), comm_root_, comm_);
+  }
+
+  template <typename T>
+  void AllGather(const T* send_buf, T* recv_buf, int count) {
+    MPI_Allgather(
+        send_buf,
+        count,
+        mpi_data_type<T>(),
+        recv_buf,
+        count,
+        mpi_data_type<T>(),
+        comm_);
   }
 
   template <typename T>
@@ -111,13 +123,13 @@ class CollectiveOpBase : public Operator<Context> {
         send_buf == recv_buf ? MPI_IN_PLACE : send_buf,
         recv_buf,
         count,
-        mpi_dtype<T>(),
+        mpi_data_type<T>(),
         MPI_SUM,
         comm_);
   }
 
   template <typename T>
-  MPI_Datatype mpi_dtype() {
+  MPI_Datatype mpi_data_type() {
     static MPI_Datatype unknown_dtype = MPI_DATATYPE_NULL;
     static Map<TypeId, MPI_Datatype> m{
         {TypeMeta::Id<bool>(), MPI_CHAR},
@@ -135,7 +147,7 @@ class CollectiveOpBase : public Operator<Context> {
 
 #ifdef USE_NCCL
   template <typename T>
-  ncclDataType_t nccl_dtype() {
+  ncclDataType_t nccl_data_type() {
     static Map<TypeId, ncclDataType_t> m{
         {TypeMeta::Id<bool>(), ncclChar},
         {TypeMeta::Id<int8_t>(), ncclInt8},
@@ -161,7 +173,7 @@ class CollectiveOpBase : public Operator<Context> {
     if (ret == nullptr) {
       ncclUniqueId comm_uuid;
       if (comm_rank_ == comm_root_) {
-        // Create a new socket listening at root
+        // Create a new socket listening at root.
         NCCL_CHECK(ncclGetUniqueId(&comm_uuid));
       }
       Broadcast((uint8_t*)&comm_uuid, sizeof(comm_uuid));
@@ -190,6 +202,7 @@ class CollectiveOpBase : public Operator<Context> {
   using CollectiveOpBase<Context>::Send;       \
   using CollectiveOpBase<Context>::SendRecv;   \
   using CollectiveOpBase<Context>::Broadcast;  \
+  using CollectiveOpBase<Context>::AllGather;  \
   using CollectiveOpBase<Context>::AllReduce;  \
   using CollectiveOpBase<Context>::comm_;      \
   using CollectiveOpBase<Context>::comm_size_; \

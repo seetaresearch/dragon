@@ -1,5 +1,5 @@
+#include "dragon/operators/array/gather_op.h"
 #include "dragon/core/workspace.h"
-#include "dragon/operators/array/gather_ops.h"
 #include "dragon/utils/math_functions.h"
 #include "dragon/utils/op_kernels.h"
 
@@ -9,9 +9,9 @@ template <class Context>
 template <typename T>
 void GatherOp<Context>::DoRunWithType() {
   auto &X = Input(0), &X_index = Input(1), *Y = Output(0);
+  Output("X_spec")->ReshapeLike(X);
   GET_OP_AXIS_ARG(axis, X.ndim(), 0);
   GET_OP_AXIS_ARG(end_axis, X.ndim(), axis);
-  SET_INPUT_SPEC(0);
 
   CHECK_GT(X_index.count(), 0) << "\nLength of index must > 0.";
   vec64_t X_dims(X.dims());
@@ -38,24 +38,24 @@ void GatherOp<Context>::RunOnDevice() {
 template <class Context>
 template <typename T>
 void GatherGradientOp<Context>::DoRunWithType() {
-  auto &X_index = Input(0), &dY = Input(1), *dX = Output(0);
-  dX->ReshapeLike(INPUT_SPEC(0));
+  auto &X_index = Input(0), &dY = Input(1);
+  auto* dX = Output(0)->ReshapeLike(Input("X_spec"));
   GET_OP_AXIS_ARG(axis, dX->ndim(), 0);
   GET_OP_AXIS_ARG(end_axis, dX->ndim(), axis);
 
   auto* dx = dX->template mutable_data<T, Context>();
   auto* dx_acc = (TypeMeta::Id<T>() == TypeMeta::Id<float>())
       ? (float*)nullptr
-      : ctx()->workspace()->template data<float, Context>({dX->count()})[0];
+      : ctx()->workspace()->template data<float, Context>(dX->count());
 
-  // Empty gradient
+  // Zero dX.
   math::Set(
       dX->count(),
       0.f,
       dx_acc != nullptr ? dx_acc : reinterpret_cast<float*>(dx),
       ctx());
 
-  // Accumulate to dX
+  // Accumulate to dX.
   kernels::GatherGrad(
       dX->count(0, axis),
       dX->count(end_axis + 1),
@@ -66,7 +66,7 @@ void GatherGradientOp<Context>::DoRunWithType() {
       dx_acc != nullptr ? dx_acc : reinterpret_cast<float*>(dx),
       ctx());
 
-  // Convert to dX if necessary
+  // Convert to dX.
   if (dx_acc != nullptr) {
     math::Cast(dX->count(), dx_acc, dx, ctx());
   }

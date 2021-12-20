@@ -12,8 +12,8 @@ void DropPathOp<Context>::DoRunWithType() {
   if (phase() == "TEST") {
     Y->ReshapeLike(X)->CopyFrom(X, ctx());
   } else if (phase() == "TRAIN") {
-    auto* X_mask = Buffer("X_mask")->Reshape({X.dim(0)});
     auto drop_ratio = ratio();
+    auto* X_mask = Output("X_mask")->Reshape({X.dim(0)});
     kernels::DropPath(
         X.dim(0),
         X.stride(0),
@@ -22,7 +22,7 @@ void DropPathOp<Context>::DoRunWithType() {
         X.template data<T, Context>(),
         Y->ReshapeLike(X)->template mutable_data<T, Context>(),
         X_mask->template mutable_data<uint8_t, Context>(),
-        ctx()->workspace()->template data<uint32_t, Context>({X.dim(0)})[0],
+        ctx()->workspace()->template data<uint32_t, Context>(X.dim(0)),
         ctx());
   } else {
     LOG(FATAL) << "Unknown Phase: " << phase();
@@ -45,7 +45,7 @@ void DropPathGradientOp<Context>::DoRunWithType() {
         dY.dim(0),
         dY.stride(0),
         1.f / (1.f - ratio()),
-        Buffer("X_mask")->template data<uint8_t, Context>(),
+        Input("X_mask").template data<uint8_t, Context>(),
         dY.template data<T, Context>(),
         dX->ReshapeLike(dY)->template mutable_data<T, Context>(),
         ctx());

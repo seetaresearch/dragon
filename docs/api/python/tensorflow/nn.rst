@@ -18,10 +18,6 @@ vm.tensorflow.nn
   `avg_pool3d(...) <nn/avg_pool3d.html>`_
   : Apply the 3d average pooling.
 
-  `batch_normalization(...) <nn/batch_normalization.html>`_
-  : Apply the batch normalization.
-  `[Ioffe & Szegedy, 2015] <https://arxiv.org/abs/1502.03167>`_.
-
   `bias_add(...) <nn/bias_add.html>`_
   : Add the bias across channels to input.
 
@@ -63,6 +59,10 @@ vm.tensorflow.nn
   `elu(...) <nn/elu.html>`_
   : Apply the exponential exponential linear unit to input.
   `[Clevert et.al, 2015] <https://arxiv.org/abs/1511.07289>`_.
+
+  `fused_batch_norm(...) <nn/fused_batch_norm.html>`_
+  : Apply the batch normalization.
+  `[Ioffe & Szegedy, 2015] <https://arxiv.org/abs/1502.03167>`_.
 
   `gelu(...) <nn/gelu.html>`_
   : Apply the gaussian error linear unit.
@@ -121,10 +121,6 @@ vm.tensorflow.nn
   `sparse_softmax_cross_entropy_with_logits(...) <nn/sparse_softmax_cross_entropy_with_logits.html>`_
   : Compute the softmax cross entropy with sparse labels.
 
-  `swish(...) <nn/swish.html>`_
-  : Apply the swish function.
-  `[Ramachandran et.al, 2017] <https://arxiv.org/abs/1710.05941>`_.
-
 .. toctree::
   :hidden:
 
@@ -132,7 +128,6 @@ vm.tensorflow.nn
   nn/avg_pool1d
   nn/avg_pool2d
   nn/avg_pool3d
-  nn/batch_normalization
   nn/bias_add
   nn/conv1d
   nn/conv1d_transpose
@@ -146,6 +141,7 @@ vm.tensorflow.nn
   nn/depth_to_space
   nn/dropout
   nn/elu
+  nn/fused_batch_norm
   nn/gelu
   nn/leaky_relu
   nn/local_response_normalization
@@ -163,7 +159,6 @@ vm.tensorflow.nn
   nn/softmax_cross_entropy_with_logits
   nn/space_to_depth
   nn/sparse_softmax_cross_entropy_with_logits
-  nn/swish
 
 .. raw:: html
 

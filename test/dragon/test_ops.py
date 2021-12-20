@@ -22,7 +22,7 @@ import unittest
 import dragon
 import numpy as np
 
-from dragon.core.autograph.graph_impl import GraphLib
+from dragon.core.autograph.graph_lib import GraphLib
 from dragon.core.autograph.context import context as execution_context
 from dragon.core.util import nest
 from dragon.core.testing.unittest.common_utils import run_tests
@@ -112,13 +112,13 @@ class TestActivationOps(OpTestCase):
 
     @unittest.skipIf(not TEST_CUDA, 'CUDA unavailable')
     def test_dropout_cuda(self):
-        dragon.cuda.enable_cudnn(False)
+        dragon.cuda.set_cudnn_flags(False)
         with dragon.device('cuda'):
             self.test_dropout()
 
     @unittest.skipIf(not TEST_CUDA, 'CUDA unavailable')
     def test_dropout_cudnn(self):
-        dragon.cuda.enable_cudnn(True)
+        dragon.cuda.set_cudnn_flags(True)
         with dragon.device('cuda'), self.cudnn_ws.as_default():
             self.test_dropout()
 
@@ -142,7 +142,7 @@ class TestActivationOps(OpTestCase):
 
     @unittest.skipIf(not TEST_CUDA, 'CUDA unavailable')
     def test_drop_block_cuda(self):
-        dragon.cuda.enable_cudnn(False)
+        dragon.cuda.set_cudnn_flags(False)
         with dragon.device('cuda'):
             self.test_drop_block()
 
@@ -160,7 +160,7 @@ class TestActivationOps(OpTestCase):
 
     @unittest.skipIf(not TEST_CUDA, 'CUDA unavailable')
     def test_drop_path_cuda(self):
-        dragon.cuda.enable_cudnn(False)
+        dragon.cuda.set_cudnn_flags(False)
         with dragon.device('cuda'):
             self.test_drop_path()
 
@@ -180,13 +180,13 @@ class TestActivationOps(OpTestCase):
 
     @unittest.skipIf(not TEST_CUDA, 'CUDA unavailable')
     def test_elu_cuda(self):
-        dragon.cuda.enable_cudnn(False)
+        dragon.cuda.set_cudnn_flags(False)
         with dragon.device('cuda'):
             self.test_elu()
 
     @unittest.skipIf(not TEST_CUDA, 'CUDA unavailable')
     def test_elu_cudnn(self):
-        dragon.cuda.enable_cudnn(True)
+        dragon.cuda.set_cudnn_flags(True)
         with dragon.device('cuda'), self.cudnn_ws.as_default():
             self.test_elu()
 
@@ -210,7 +210,7 @@ class TestActivationOps(OpTestCase):
 
     @unittest.skipIf(not TEST_CUDA, 'CUDA unavailable')
     def test_gelu_cuda(self):
-        dragon.cuda.enable_cudnn(False)
+        dragon.cuda.set_cudnn_flags(False)
         with dragon.device('cuda'):
             self.test_gelu()
 
@@ -290,7 +290,7 @@ class TestActivationOps(OpTestCase):
 
     @unittest.skipIf(not TEST_CUDA, 'CUDA unavailable')
     def test_log_softmax_cuda(self):
-        dragon.cuda.enable_cudnn(False)
+        dragon.cuda.set_cudnn_flags(False)
         with dragon.device('cuda'):
             self.test_log_softmax()
 
@@ -337,13 +337,13 @@ class TestActivationOps(OpTestCase):
 
     @unittest.skipIf(not TEST_CUDA, 'CUDA unavailable')
     def test_relu_cuda(self):
-        dragon.cuda.enable_cudnn(False)
+        dragon.cuda.set_cudnn_flags(False)
         with dragon.device('cuda'):
             self.test_relu()
 
     @unittest.skipIf(not TEST_CUDA, 'CUDA unavailable')
     def test_relu_cudnn(self):
-        dragon.cuda.enable_cudnn(True)
+        dragon.cuda.set_cudnn_flags(True)
         with dragon.device('cuda'), self.cudnn_ws.as_default():
             self.test_relu()
 
@@ -385,7 +385,7 @@ class TestActivationOps(OpTestCase):
 
     @unittest.skipIf(not TEST_CUDA, 'CUDA unavailable')
     def test_selu_cuda(self):
-        dragon.cuda.enable_cudnn(False)
+        dragon.cuda.set_cudnn_flags(False)
         with dragon.device('cuda'):
             self.test_selu()
 
@@ -403,13 +403,13 @@ class TestActivationOps(OpTestCase):
 
     @unittest.skipIf(not TEST_CUDA, 'CUDA unavailable')
     def test_sigmoid_cuda(self):
-        dragon.cuda.enable_cudnn(False)
+        dragon.cuda.set_cudnn_flags(False)
         with dragon.device('cuda'):
             self.test_sigmoid()
 
     @unittest.skipIf(not TEST_CUDA, 'CUDA unavailable')
     def test_sigmoid_cudnn(self):
-        dragon.cuda.enable_cudnn(True)
+        dragon.cuda.set_cudnn_flags(True)
         with dragon.device('cuda'), self.cudnn_ws.as_default():
             self.test_sigmoid()
 
@@ -446,13 +446,13 @@ class TestActivationOps(OpTestCase):
 
     @unittest.skipIf(not TEST_CUDA, 'CUDA unavailable')
     def test_softmax_cuda(self):
-        dragon.cuda.enable_cudnn(False)
+        dragon.cuda.set_cudnn_flags(False)
         with dragon.device('cuda'):
             self.test_softmax()
 
     @unittest.skipIf(not TEST_CUDA, 'CUDA unavailable')
     def test_softmax_cudnn(self):
-        dragon.cuda.enable_cudnn(True)
+        dragon.cuda.set_cudnn_flags(True)
         with dragon.device('cuda'), self.cudnn_ws.as_default():
             self.test_softmax()
 
@@ -470,13 +470,13 @@ class TestActivationOps(OpTestCase):
 
     @unittest.skipIf(not TEST_CUDA, 'CUDA unavailable')
     def test_tanh_cuda(self):
-        dragon.cuda.enable_cudnn(False)
+        dragon.cuda.set_cudnn_flags(False)
         with dragon.device('cuda'):
             self.test_tanh()
 
     @unittest.skipIf(not TEST_CUDA, 'CUDA unavailable')
     def test_tanh_cudnn(self):
-        dragon.cuda.enable_cudnn(True)
+        dragon.cuda.set_cudnn_flags(True)
         with dragon.device('cuda'), self.cudnn_ws.as_default():
             self.test_tanh()
 
@@ -1020,19 +1020,20 @@ class TestArrayOps(OpTestCase):
             self.test_sort()
 
     def test_split(self):
-        entries = [(2, 1, None), ((2, 1), 1, None), (2, 1, (2,))]
+        entries = [(2, 0), (2, 1), ((1, 1), 1)]
         for execution in ('EAGER_MODE', 'GRAPH_MODE'):
             with execution_context().mode(execution):
-                for args in entries:
-                    data = arange((2, 3))
-                    grad = np.ones((2, 3), 'float32')
-                    grad[:, -1] = 0
+                for num, axis in entries:
+                    data = arange((2, 2))
+                    grad = np.zeros(data.shape, 'float32')
+                    grad[tuple(slice(0, 1) if i == axis else
+                               slice(None) for i in range(data.ndim))] = 1
                     x = new_tensor(data)
                     with dragon.GradientTape() as tape:
                         tape.watch(x)
-                        y = dragon.split(x, *args)
+                        y = dragon.split(x, num, axis=axis)
                     dx = tape.gradient(y[0], [x])[0]
-                    self.assertEqual([y, dx], [np.split(data, (2,), axis=1), grad])
+                    self.assertEqual([y, dx], [np.split(data, (1,), axis=axis), grad])
 
     @unittest.skipIf(not TEST_CUDA, 'CUDA unavailable')
     def test_split_cuda(self):
@@ -1091,7 +1092,7 @@ class TestArrayOps(OpTestCase):
                     with dragon.GradientTape() as tape:
                         tape.watch(x)
                         y = dragon.tile(x, repeats)
-                    repeats = repeats + (1,) * (len(data.shape) - len(repeats))
+                    repeats = (1,) * (len(data.shape) - len(repeats)) + repeats
                     grad = np.tile(data, repeats)
                     dy = new_tensor(grad)
                     dx = tape.gradient(y, [x], output_gradients=[dy])[0]
@@ -1180,6 +1181,29 @@ class TestArrayOps(OpTestCase):
     def test_top_k_cuda(self):
         with dragon.device('cuda'):
             self.test_top_k()
+
+    def test_unstack(self):
+        entries = [0, 1]
+        for execution in ('EAGER_MODE', 'GRAPH_MODE'):
+            with execution_context().mode(execution):
+                for axis in entries:
+                    data = arange((2, 3))
+                    num = data.shape[axis]
+                    grad = np.zeros(data.shape, 'float32')
+                    grad[tuple(slice(0, 1) if i == axis else
+                               slice(None) for i in range(data.ndim))] = 1
+                    x = new_tensor(data)
+                    with dragon.GradientTape() as tape:
+                        tape.watch(x)
+                        y = dragon.unstack(x, axis)
+                        dx = tape.gradient(y[0], [x])[0]
+                    result = [x.squeeze(axis) for x in np.split(data, num, axis)]
+                    self.assertEqual([y, dx], [result, grad])
+
+    @unittest.skipIf(not TEST_CUDA, 'CUDA unavailable')
+    def test_unstack_cuda(self):
+        with dragon.device('cuda'):
+            self.test_unstack()
 
     def test_unique(self):
         data = np.array([1, 1, 3, 5, 5, 7, 9])
@@ -1688,6 +1712,48 @@ class TestMathOps(OpTestCase):
         with dragon.device('cuda'):
             self.test_argmin()
 
+    def test_bitwise_and(self):
+        for execution in ('EAGER_MODE', 'GRAPH_MODE'):
+            with execution_context().mode(execution):
+                data1 = arange(8, dtype='uint8')
+                data2 = arange(8, start=-4, dtype='uint8')
+                x1, x2 = new_tensor(data1), new_tensor(data2)
+                y = dragon.bitwise.bitwise_and([x1, x2])
+                self.assertEqual(y, np.bitwise_and(data1, data2))
+
+    @unittest.skipIf(not TEST_CUDA, 'CUDA unavailable')
+    def test_bitwise_and_cuda(self):
+        with dragon.device('cuda'):
+            self.test_bitwise_and()
+
+    def test_bitwise_or(self):
+        for execution in ('EAGER_MODE', 'GRAPH_MODE'):
+            with execution_context().mode(execution):
+                data1 = arange(8, dtype='uint8')
+                data2 = arange(8, start=-4, dtype='uint8')
+                x1, x2 = new_tensor(data1), new_tensor(data2)
+                y = dragon.bitwise.bitwise_or([x1, x2])
+                self.assertEqual(y, np.bitwise_or(data1, data2))
+
+    @unittest.skipIf(not TEST_CUDA, 'CUDA unavailable')
+    def test_bitwise_or_cuda(self):
+        with dragon.device('cuda'):
+            self.test_bitwise_or()
+
+    def test_bitwise_xor(self):
+        for execution in ('EAGER_MODE', 'GRAPH_MODE'):
+            with execution_context().mode(execution):
+                data1 = arange(8, dtype='uint8')
+                data2 = arange(8, start=-4, dtype='uint8')
+                x1, x2 = new_tensor(data1), new_tensor(data2)
+                y = dragon.bitwise.bitwise_xor([x1, x2])
+                self.assertEqual(y, np.bitwise_xor(data1, data2))
+
+    @unittest.skipIf(not TEST_CUDA, 'CUDA unavailable')
+    def test_bitwise_xor_cuda(self):
+        with dragon.device('cuda'):
+            self.test_bitwise_xor()
+
     def test_ceil(self):
         for execution in ('EAGER_MODE', 'GRAPH_MODE'):
             with execution_context().mode(execution):
@@ -1899,6 +1965,32 @@ class TestMathOps(OpTestCase):
         with dragon.device('cuda'):
             self.test_greater_equal()
 
+    def test_invert(self):
+        for execution in ('EAGER_MODE', 'GRAPH_MODE'):
+            with execution_context().mode(execution):
+                data = arange(8, start=-4, dtype='uint8')
+                x = new_tensor(data)
+                y = dragon.bitwise.invert(x)
+                self.assertEqual(y, ~data)
+
+    @unittest.skipIf(not TEST_CUDA, 'CUDA unavailable')
+    def test_invert_cuda(self):
+        with dragon.device('cuda'):
+            self.test_invert()
+
+    def test_is_finite(self):
+        for execution in ('EAGER_MODE', 'GRAPH_MODE'):
+            with execution_context().mode(execution):
+                data = np.array([0., float('nan'), float('inf')])
+                x = new_tensor(data)
+                y = dragon.math.is_finite(x)
+                self.assertEqual(y, np.isfinite(data))
+
+    @unittest.skipIf(not TEST_CUDA, 'CUDA unavailable')
+    def test_is_finite_cuda(self):
+        with dragon.device('cuda'):
+            self.test_is_finite()
+
     def test_is_inf(self):
         for execution in ('EAGER_MODE', 'GRAPH_MODE'):
             with execution_context().mode(execution):
@@ -1976,15 +2068,27 @@ class TestMathOps(OpTestCase):
                     data1 = np.random.binomial(1, 0.5, a_shape).astype('bool')
                     data2 = np.random.binomial(1, 0.5, b_shape).astype('bool')
                     a, b = new_tensor(data1), new_tensor(data2)
-                    with dragon.GradientTape() as tape:
-                        tape.watch([a, b])
-                        y = dragon.math.logical_and([a, b])
+                    y = dragon.math.logical_and([a, b])
                     self.assertEqual(y, np.logical_and(data1, data2))
 
     @unittest.skipIf(not TEST_CUDA, 'CUDA unavailable')
     def test_logical_and_cuda(self):
         with dragon.device('cuda'):
             self.test_logical_and()
+
+    def test_logical_not(self):
+        for execution in ('EAGER_MODE', 'GRAPH_MODE'):
+            with execution_context().mode(execution):
+                for shape in self.unary_test_shapes:
+                    data = np.random.binomial(1, 0.5, shape).astype('bool')
+                    x = new_tensor(data)
+                    y = dragon.math.logical_not(x)
+                    self.assertEqual(y, np.logical_not(data))
+
+    @unittest.skipIf(not TEST_CUDA, 'CUDA unavailable')
+    def test_logical_not_cuda(self):
+        with dragon.device('cuda'):
+            self.test_logical_not()
 
     def test_logical_or(self):
         for execution in ('EAGER_MODE', 'GRAPH_MODE'):
@@ -1993,9 +2097,7 @@ class TestMathOps(OpTestCase):
                     data1 = np.random.binomial(1, 0.5, a_shape).astype('bool')
                     data2 = np.random.binomial(1, 0.5, b_shape).astype('bool')
                     a, b = new_tensor(data1), new_tensor(data2)
-                    with dragon.GradientTape() as tape:
-                        tape.watch([a, b])
-                        y = dragon.math.logical_or([a, b])
+                    y = dragon.math.logical_or([a, b])
                     self.assertEqual(y, np.logical_or(data1, data2))
 
     @unittest.skipIf(not TEST_CUDA, 'CUDA unavailable')
@@ -2010,9 +2112,7 @@ class TestMathOps(OpTestCase):
                     data1 = np.random.binomial(1, 0.5, a_shape).astype('bool')
                     data2 = np.random.binomial(1, 0.5, b_shape).astype('bool')
                     a, b = new_tensor(data1), new_tensor(data2)
-                    with dragon.GradientTape() as tape:
-                        tape.watch([a, b])
-                        y = dragon.math.logical_xor([a, b])
+                    y = dragon.math.logical_xor([a, b])
                     self.assertEqual(y, np.logical_xor(data1, data2))
 
     @unittest.skipIf(not TEST_CUDA, 'CUDA unavailable')
@@ -2085,11 +2185,11 @@ class TestMathOps(OpTestCase):
     def test_max(self):
         entries = [(0, True), (0, False),
                    (1, True), (1, False),
-                   ((0, 1), True), ((0, 1), False)]
+                   ((1, 2), True), ((1, 2), False)]
         for execution in ('EAGER_MODE', 'GRAPH_MODE'):
             with execution_context().mode(execution):
                 for axis, keepdims in entries:
-                    data = arange((2, 3))
+                    data = arange((2, 3, 3))
                     x = new_tensor(data)
                     y = dragon.math.max(x, axis, keepdims=keepdims)
                     result = np.max(data, axis, keepdims=keepdims)
@@ -2126,11 +2226,11 @@ class TestMathOps(OpTestCase):
     def test_mean(self):
         entries = [(0, True), (0, False),
                    (1, True), (1, False),
-                   ((0, 1), True), ((0, 1), False)]
+                   ((1, 2), True), ((1, 2), False)]
         for execution in ('EAGER_MODE', 'GRAPH_MODE'):
             with execution_context().mode(execution):
                 for axis, keepdims in entries:
-                    data = arange((2, 3))
+                    data = arange((2, 3, 3))
                     x = new_tensor(data)
                     with dragon.GradientTape() as tape:
                         tape.watch(x)
@@ -2154,11 +2254,11 @@ class TestMathOps(OpTestCase):
     def test_min(self):
         entries = [(0, True), (0, False),
                    (1, True), (1, False),
-                   ((0, 1), True), ((0, 1), False)]
+                   ((1, 2), True), ((1, 2), False)]
         for execution in ('EAGER_MODE', 'GRAPH_MODE'):
             with execution_context().mode(execution):
                 for axis, keepdims in entries:
-                    data = arange((2, 3))
+                    data = arange((2, 3, 3))
                     x = new_tensor(data)
                     y = dragon.math.min(x, axis, keepdims=keepdims)
                     result = np.min(data, axis, keepdims=keepdims)
@@ -2250,6 +2350,31 @@ class TestMathOps(OpTestCase):
     def test_negative_cuda(self):
         with dragon.device('cuda'):
             self.test_negative()
+
+    def test_norm(self):
+        entries = [(0, True), (0, False),
+                   (1, True), (1, False),
+                   ((1, 2), True), ((1, 2), False)]
+        for execution in ('EAGER_MODE', 'GRAPH_MODE'):
+            with execution_context().mode(execution):
+                for axis, keepdims in entries:
+                    for ord in (1, 2, 'fro', None):
+                        data = arange((2, 3, 3))
+                        x = new_tensor(data)
+                        y = dragon.math.norm(x, ord, axis, keepdims=keepdims)
+                        if ord == 1:
+                            result = np.sum(np.abs(data), axis=axis, keepdims=keepdims)
+                        elif ord == 2 or ord == 'fro':
+                            result = np.sum(np.square(data), axis=axis, keepdims=keepdims)
+                            result = np.sqrt(result)
+                        else:
+                            result = np.linalg.norm(data, ord, axis, keepdims=keepdims)
+                        self.assertEqual(y, result)
+
+    @unittest.skipIf(not TEST_CUDA, 'CUDA unavailable')
+    def test_norm_cuda(self):
+        with dragon.device('cuda'):
+            self.test_norm()
 
     def test_not_equal(self):
         for execution in ('EAGER_MODE', 'GRAPH_MODE'):
@@ -2512,11 +2637,11 @@ class TestMathOps(OpTestCase):
     def test_sum(self):
         entries = [(0, True), (0, False),
                    (1, True), (1, False),
-                   ((0, 1), True), ((0, 1), False)]
+                   ((1, 2), True), ((1, 2), False)]
         for execution in ('EAGER_MODE', 'GRAPH_MODE'):
             with execution_context().mode(execution):
                 for axis, keepdims in entries:
-                    data = arange((2, 3))
+                    data = arange((2, 3, 3))
                     x = new_tensor(data)
                     with dragon.GradientTape() as tape:
                         tape.watch(x)
@@ -2603,13 +2728,13 @@ class TestNormalizationOps(OpTestCase):
 
     @unittest.skipIf(not TEST_CUDA, 'CUDA unavailable')
     def test_batch_norm_cuda(self):
-        dragon.cuda.enable_cudnn(False)
+        dragon.cuda.set_cudnn_flags(False)
         with dragon.device('cuda'):
             self.test_batch_norm()
 
     @unittest.skipIf(not TEST_CUDA, 'CUDA unavailable')
     def test_batch_norm_cudnn(self):
-        dragon.cuda.enable_cudnn(True)
+        dragon.cuda.set_cudnn_flags(True)
         with dragon.device('cuda'), self.cudnn_ws.as_default():
             self.test_batch_norm()
 
@@ -2769,13 +2894,13 @@ class TestNormalizationOps(OpTestCase):
 
     @unittest.skipIf(not TEST_CUDA, 'CUDA unavailable')
     def test_local_response_norm_cuda(self):
-        dragon.cuda.enable_cudnn(False)
+        dragon.cuda.set_cudnn_flags(False)
         with dragon.device('cuda'):
             self.test_local_response_norm()
 
     @unittest.skipIf(not TEST_CUDA, 'CUDA unavailable')
     def test_local_response_norm_cudnn(self):
-        dragon.cuda.enable_cudnn(True)
+        dragon.cuda.set_cudnn_flags(True)
         with dragon.device('cuda'), self.cudnn_ws.as_default():
             self.test_local_response_norm(test_cudnn=True, prec=1e-2)
 
@@ -2830,7 +2955,7 @@ class TestTrainingOps(OpTestCase):
         super(TestTrainingOps, self).__init__(method_name)
         self.adam = dragon.optimizers.Adam()
         self.adam_w = dragon.optimizers.AdamW()
-        self.nesterov = dragon.optimizers.Nesterov()
+        self.nesterov = dragon.optimizers.SGD(nesterov=True)
         self.rmsprop = dragon.optimizers.RMSprop()
         self.sgd = dragon.optimizers.SGD()
         self.sgd.lr = 0.01
@@ -2842,7 +2967,7 @@ class TestTrainingOps(OpTestCase):
             data1 = uniform((2, 3))
             data2, data3 = np.zeros((2, 3), 'float32'), np.zeros((2, 3), 'float32')
             param = new_tensor(data1)
-            for i in range(2):
+            for i in range(3):
                 t = i + 1
                 coef = math.sqrt(1 - math.pow(beta2, t)) / (1 - math.pow(beta1, t))
                 data4 = uniform((2, 3))
@@ -2866,7 +2991,7 @@ class TestTrainingOps(OpTestCase):
             data1 = uniform((2, 3))
             data2, data3 = np.zeros((2, 3), 'float32'), np.zeros((2, 3), 'float32')
             param = new_tensor(data1)
-            for i in range(2):
+            for i in range(3):
                 t = i + 1
                 coef = math.sqrt(1 - math.pow(beta2, t)) / (1 - math.pow(beta1, t))
                 data4 = uniform((2, 3))
@@ -2887,13 +3012,12 @@ class TestTrainingOps(OpTestCase):
             momentum, lr = self.nesterov.momentum, self.nesterov.lr
             data1, data2 = uniform((2, 3)), np.zeros((2, 3), 'float32')
             param = new_tensor(data1)
-            for i in range(2):
+            for i in range(3):
                 data3 = uniform((2, 3))
                 grad = new_tensor(data3)
                 self.nesterov.apply_gradients([[grad, param]])
-                data2_new = momentum * data2 + lr * data3
-                data1 -= (1 + momentum) * data2_new - momentum * data2
-                data2 = data2_new
+                data2 = momentum * data2 + data3
+                data1 -= lr * (momentum * data2 + data3)
                 self.assertEqual(param, data1)
 
     @unittest.skipIf(not TEST_CUDA, 'CUDA unavailable')
@@ -2908,13 +3032,13 @@ class TestTrainingOps(OpTestCase):
             data1 = uniform((2, 3))
             data2, data3 = np.zeros((2, 3), 'float32'), np.zeros((2, 3), 'float32')
             param = new_tensor(data1)
-            for i in range(2):
+            for i in range(3):
                 data4 = uniform((2, 3))
                 grad = new_tensor(data4)
                 self.rmsprop.apply_gradients([[grad, param]])
                 data3 = decay * data3 + (1 - decay) * np.square(data4)
-                data2 = momentum * data2 + (lr * data4 / (np.sqrt(data3) + eps))
-                data1 -= data2
+                data2 = momentum * data2 + (data4 / (np.sqrt(data3) + eps))
+                data1 -= lr * data2
                 self.assertEqual(param, data1)
 
     @unittest.skipIf(not TEST_CUDA, 'CUDA unavailable')
@@ -2927,12 +3051,12 @@ class TestTrainingOps(OpTestCase):
             momentum, lr = self.sgd.momentum, self.sgd.lr
             data1, data2 = uniform((2, 3)), np.zeros((2, 3), 'float32')
             param = new_tensor(data1)
-            for i in range(2):
+            for i in range(3):
                 data3 = uniform((2, 3))
                 grad = new_tensor(data3)
                 self.sgd.apply_gradients([[grad, param]])
-                data2 = momentum * data2 + lr * data3
-                data1 -= data2
+                data2 = momentum * data2 + data3
+                data1 -= lr * data2
                 self.assertEqual(param, data1)
 
     @unittest.skipIf(not TEST_CUDA, 'CUDA unavailable')
@@ -3319,13 +3443,13 @@ class TestVisionOps(OpTestCase):
 
     @unittest.skipIf(not TEST_CUDA, 'CUDA unavailable')
     def test_conv1d_cuda(self):
-        dragon.cuda.enable_cudnn(False)
+        dragon.cuda.set_cudnn_flags(False)
         with dragon.device('cuda'):
             self.test_conv1d()
 
     @unittest.skipIf(not TEST_CUDA, 'CUDA unavailable')
     def test_conv1d_cudnn(self):
-        dragon.cuda.enable_cudnn(True)
+        dragon.cuda.set_cudnn_flags(True)
         with dragon.device('cuda'), self.cudnn_ws.as_default():
             self.test_conv1d()
 
@@ -3398,13 +3522,13 @@ class TestVisionOps(OpTestCase):
 
     @unittest.skipIf(not TEST_CUDA, 'CUDA unavailable')
     def test_conv2d_cuda(self):
-        dragon.cuda.enable_cudnn(False)
+        dragon.cuda.set_cudnn_flags(False)
         with dragon.device('cuda'):
             self.test_conv2d()
 
     @unittest.skipIf(not TEST_CUDA, 'CUDA unavailable')
     def test_conv2d_cudnn(self):
-        dragon.cuda.enable_cudnn(True)
+        dragon.cuda.set_cudnn_flags(True)
         with dragon.device('cuda'), self.cudnn_ws.as_default():
             self.test_conv2d()
 
@@ -3523,13 +3647,13 @@ class TestVisionOps(OpTestCase):
 
     @unittest.skipIf(not TEST_CUDA, 'CUDA unavailable')
     def test_conv3d_cuda(self):
-        dragon.cuda.enable_cudnn(False)
+        dragon.cuda.set_cudnn_flags(False)
         with dragon.device('cuda'):
             self.test_conv3d()
 
     @unittest.skipIf(not TEST_CUDA, 'CUDA unavailable')
     def test_conv3d_cudnn(self):
-        dragon.cuda.enable_cudnn(True)
+        dragon.cuda.set_cudnn_flags(True)
         with dragon.device('cuda'), self.cudnn_ws.as_default():
             self.test_conv3d(test_nhwc=TEST_CUDNN_CONV3D_NHWC)
 
@@ -3587,13 +3711,13 @@ class TestVisionOps(OpTestCase):
 
     @unittest.skipIf(not TEST_CUDA, 'CUDA unavailable')
     def test_conv1d_transpose_cuda(self):
-        dragon.cuda.enable_cudnn(False)
+        dragon.cuda.set_cudnn_flags(False)
         with dragon.device('cuda'):
             self.test_conv1d_transpose()
 
     @unittest.skipIf(not TEST_CUDA, 'CUDA unavailable')
     def test_conv1d_transpose_cudnn(self):
-        dragon.cuda.enable_cudnn(True)
+        dragon.cuda.set_cudnn_flags(True)
         with dragon.device('cuda'), self.cudnn_ws.as_default():
             self.test_conv1d_transpose()
 
@@ -3667,13 +3791,13 @@ class TestVisionOps(OpTestCase):
 
     @unittest.skipIf(not TEST_CUDA, 'CUDA unavailable')
     def test_conv2d_transpose_cuda(self):
-        dragon.cuda.enable_cudnn(False)
+        dragon.cuda.set_cudnn_flags(False)
         with dragon.device('cuda'):
             self.test_conv2d_transpose()
 
     @unittest.skipIf(not TEST_CUDA, 'CUDA unavailable')
     def test_conv2d_transpose_cudnn(self):
-        dragon.cuda.enable_cudnn(True)
+        dragon.cuda.set_cudnn_flags(True)
         with dragon.device('cuda'), self.cudnn_ws.as_default():
             self.test_conv2d_transpose()
 
@@ -3793,13 +3917,13 @@ class TestVisionOps(OpTestCase):
 
     @unittest.skipIf(not TEST_CUDA, 'CUDA unavailable')
     def test_conv3d_transpose_cuda(self):
-        dragon.cuda.enable_cudnn(False)
+        dragon.cuda.set_cudnn_flags(False)
         with dragon.device('cuda'):
             self.test_conv3d_transpose()
 
     @unittest.skipIf(not TEST_CUDA, 'CUDA unavailable')
     def test_conv3d_transpose_cudnn(self):
-        dragon.cuda.enable_cudnn(True)
+        dragon.cuda.set_cudnn_flags(True)
         with dragon.device('cuda'), self.cudnn_ws.as_default():
             self.test_conv3d_transpose(test_nhwc=TEST_CUDNN_CONV3D_NHWC)
 
@@ -3863,13 +3987,13 @@ class TestVisionOps(OpTestCase):
 
     @unittest.skipIf(not TEST_CUDA, 'CUDA unavailable')
     def test_depthwise_conv2d_cuda(self):
-        dragon.cuda.enable_cudnn(False)
+        dragon.cuda.set_cudnn_flags(False)
         with dragon.device('cuda'):
             self.test_depthwise_conv2d(test_grad=True)
 
     @unittest.skipIf(not TEST_CUDA, 'CUDA unavailable')
     def test_depthwise_conv2d_cudnn(self):
-        dragon.cuda.enable_cudnn(True)
+        dragon.cuda.set_cudnn_flags(True)
         with dragon.device('cuda'), self.cudnn_ws.as_default():
             self.test_depthwise_conv2d(test_grad=True)
 
@@ -3985,13 +4109,13 @@ class TestVisionOps(OpTestCase):
 
     @unittest.skipIf(not TEST_CUDA, 'CUDA unavailable')
     def test_pool1d_cuda(self):
-        dragon.cuda.enable_cudnn(False)
+        dragon.cuda.set_cudnn_flags(False)
         with dragon.device('cuda'):
             self.test_pool1d()
 
     @unittest.skipIf(not TEST_CUDA, 'CUDA unavailable')
     def test_pool1d_cudnn(self):
-        dragon.cuda.enable_cudnn(True)
+        dragon.cuda.set_cudnn_flags(True)
         with dragon.device('cuda'), self.cudnn_ws.as_default():
             self.test_pool1d()
 
@@ -4022,13 +4146,13 @@ class TestVisionOps(OpTestCase):
 
     @unittest.skipIf(not TEST_CUDA, 'CUDA unavailable')
     def test_pool2d_cuda(self):
-        dragon.cuda.enable_cudnn(False)
+        dragon.cuda.set_cudnn_flags(False)
         with dragon.device('cuda'):
             self.test_pool2d()
 
     @unittest.skipIf(not TEST_CUDA, 'CUDA unavailable')
     def test_pool2d_cudnn(self):
-        dragon.cuda.enable_cudnn(True)
+        dragon.cuda.set_cudnn_flags(True)
         with dragon.device('cuda'), self.cudnn_ws.as_default():
             self.test_pool2d()
 
@@ -4059,13 +4183,13 @@ class TestVisionOps(OpTestCase):
 
     @unittest.skipIf(not TEST_CUDA, 'CUDA unavailable')
     def test_pool3d_cuda(self):
-        dragon.cuda.enable_cudnn(False)
+        dragon.cuda.set_cudnn_flags(False)
         with dragon.device('cuda'):
             self.test_pool3d()
 
     @unittest.skipIf(not TEST_CUDA, 'CUDA unavailable')
     def test_pool3d_cudnn(self):
-        dragon.cuda.enable_cudnn(True)
+        dragon.cuda.set_cudnn_flags(True)
         with dragon.device('cuda'), self.cudnn_ws.as_default():
             self.test_pool3d()
 

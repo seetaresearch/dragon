@@ -17,19 +17,18 @@ void PadOp<Context>::DoRunWithType() {
       << "for input dimensions " << X.DimString() << ".";
 
   vec64_t X_pads(num_dims * 2), Y_dims(X.dims());
-
   for (int i = 0; i < num_dims; ++i) {
     X_pads[i] = pads(i);
     X_pads[i + num_dims] = pads(i + num_dims);
     Y_dims[i] += (X_pads[i] + X_pads[i + num_dims]);
   }
 
-  // Store for the gradient calculation
-  Buffer("X_pads")->template CopyFrom<int64_t>(X_pads);
+  // Save for the gradient computation.
+  Output("X_pads")->template CopyFrom<int64_t>(X_pads);
 
   if (X.dims() == Y_dims) {
     Y->Reshape(Y_dims)->CopyFrom(X, ctx());
-    return; // Just copy the contents
+    return;
   }
 
   if (mode_ == "CONSTANT") {
@@ -84,7 +83,7 @@ void PadGradientOp<Context>::DoRunWithType() {
   auto &dY = Input(0), *dX = Output(0);
 
   vec64_t X_dims(dY.dims()), X_pads;
-  Buffer("X_pads")->template CopyTo<int64_t>(X_pads);
+  Input("X_pads").template CopyTo<int64_t>(X_pads);
 
   // Restore the input dimensions
   int num_dims = dY.ndim();

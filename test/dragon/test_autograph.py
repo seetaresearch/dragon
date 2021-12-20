@@ -372,7 +372,7 @@ class TestOpSpec(unittest.TestCase):
             self.assertEqual(dragon.math.sum(self.sym1, axis=0).shape, None)
             self.assertEqual(dragon.math.sum(self.sym1, keepdims=True).shape, ())
             self.assertEqual(dragon.math.sum(self.sym2, axis=0).shape, ())
-            self.assertEqual(dragon.math.sum(self.sym2, axis=1).shape, (1,))
+            self.assertEqual(dragon.math.sum(self.sym2, axis=1).shape, None)
             self.assertEqual(dragon.math.sum(self.sym2, axis=0, keepdims=True).shape, (1,))
 
     def test_repeat(self):
@@ -439,9 +439,10 @@ class TestOpSpec(unittest.TestCase):
             self.assertEqual(dragon.split(self.sym2, 2)[0].shape, (1,))
             self.assertEqual(dragon.split(self.sym2, 2, axis=1)[0].shape, None)
             self.assertEqual(dragon.split(self.sym2, (1, 1))[0].shape, (1,))
-            self.assertEqual(dragon.split(self.sym2, 2, slice_points=(1,))[0].shape, (1,))
             self.assertEqual(dragon.split(self.sym3, 2, axis=1)[0].shape, (1, None))
-            self.assertEqual(dragon.split(self.sym3, 2, axis=1, slice_points=(1,))[1].shape, (1, None))
+            self.assertEqual(dragon.unstack(self.sym1, axis=0, num=2)[0].shape, None)
+            self.assertEqual(dragon.unstack(self.sym2, axis=0)[0].shape, ())
+            self.assertEqual(dragon.unstack(self.sym3, axis=1, num=2)[0].shape, (1,))
 
     def test_squeeze(self):
         with dragon.graph_mode():

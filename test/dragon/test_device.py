@@ -32,7 +32,7 @@ class TestCUDA(unittest.TestCase):
         dragon.cuda.synchronize()
 
     def test_cudnn(self):
-        dragon.cuda.enable_cudnn()
+        dragon.cuda.set_cudnn_flags()
 
     def test_device(self):
         major, minor = dragon.cuda.get_device_capability(0)

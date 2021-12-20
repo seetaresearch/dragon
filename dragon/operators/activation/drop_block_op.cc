@@ -22,9 +22,9 @@ void DropBlockOp<Context>::DoRunWithType() {
       feat_area *= feat_size;
       mask_area *= block_size_ * seed_size;
     }
-    auto* X_mask = Buffer("X_mask")->ReshapeLike(X);
     auto alpha = ratio();
     auto gamma = alpha * float(feat_area) / float(mask_area);
+    auto* X_mask = Output("X_mask")->ReshapeLike(X);
     if (num_axes == 1 || num_axes == 2) {
       kernels::DropBlock2d(
           X.dim(0),
@@ -38,7 +38,7 @@ void DropBlockOp<Context>::DoRunWithType() {
           X.template data<T, Context>(),
           Y->ReshapeLike(X)->template mutable_data<T, Context>(),
           X_mask->template mutable_data<uint8_t, Context>(),
-          ctx()->workspace()->template data<uint32_t, Context>({X.count()})[0],
+          ctx()->workspace()->template data<uint32_t, Context>(X.count()),
           ctx());
     }
   } else {
@@ -62,7 +62,7 @@ void DropBlockGradientOp<Context>::DoRunWithType() {
     math::ApplyMask(
         dY.count(),
         1.f / (1.f - ratio()),
-        Buffer("X_mask")->template data<uint8_t, Context>(),
+        Input("X_mask").template data<uint8_t, Context>(),
         dY.template data<T, Context>(),
         dX->ReshapeLike(dY)->template mutable_data<T, Context>(),
         ctx());

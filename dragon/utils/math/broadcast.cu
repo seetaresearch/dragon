@@ -5,6 +5,7 @@
 #include "dragon/utils/math/broadcast.h"
 #include "dragon/utils/math/elementwise.h"
 #include "dragon/utils/math/functional.h"
+#include "dragon/utils/math/types.h"
 #include "dragon/utils/math/utils.h"
 
 namespace dragon {
@@ -134,8 +135,7 @@ void _BroadcastSetImpl(
     T* y,
     CUDAContext* ctx) {
   SimpleArray<int, D> X_strides, Y_dims;
-  const auto N =
-      std::accumulate(y_dims, y_dims + D, 1, std::multiplies<int64_t>());
+  const auto N = math::utils::Prod(D, y_dims);
   for (int i = 0; i < D; ++i) {
     X_strides.data[i] = x_strides[i];
     Y_dims.data[i] = y_dims[i];
@@ -155,8 +155,7 @@ void _BroadcastBinaryFuncImpl(
     OutputT* y,
     CUDAContext* ctx) {
   SimpleArray<int, D> A_strides, B_strides, Y_dims;
-  const auto N =
-      std::accumulate(y_dims, y_dims + D, 1, std::multiplies<int64_t>());
+  const auto N = math::utils::Prod(D, y_dims);
   for (int i = 0; i < D; ++i) {
     A_strides.data[i] = a_strides[i];
     B_strides.data[i] = b_strides[i];
@@ -179,8 +178,7 @@ void _BroadcastWhereImpl(
     CUDAContext* ctx) {
   SimpleArray<int, D> A_strides, B_strides, C_strides;
   SimpleArray<int, D> Y_dims;
-  const auto N =
-      std::accumulate(y_dims, y_dims + D, 1, std::multiplies<int64_t>());
+  const auto N = math::utils::Prod(D, y_dims);
   for (int i = 0; i < D; ++i) {
     A_strides.data[i] = a_strides[i];
     B_strides.data[i] = b_strides[i];
@@ -203,16 +201,15 @@ void _BroadcastWhereImpl(
       const T* x,                                                           \
       T* y,                                                                 \
       CUDAContext* ctx) {                                                   \
-    int rows, cols;                                                         \
+    int64_t rows, cols;                                                     \
     vec64_t X_dims(x_dims, x_dims + x_ndim);                                \
     vec64_t Y_dims(y_dims, y_dims + y_ndim);                                \
     vec64_t X_broadcast_dims, Y_broadcast_dims;                             \
-    math::utils::ComputeBinaryBroadcastDims(                                \
+    math::utils::ComputeBroadcastDims(                                      \
         X_dims, Y_dims, X_broadcast_dims, Y_broadcast_dims);                \
     if (X_broadcast_dims == Y_broadcast_dims) {                             \
-      auto count = std::accumulate(                                         \
-          x_dims, x_dims + x_ndim, 1, std::multiplies<int64_t>());          \
-      Copy(count, x, y, ctx);                                               \
+      const auto N = math::utils::Prod(x_ndim, x_dims);                     \
+      Copy(N, x, y, ctx);                                                   \
       return;                                                               \
     }                                                                       \
     if (math::utils::IsRowwiseBroadcast(X_dims, Y_dims, &rows, &cols)) {    \
@@ -235,7 +232,7 @@ void _BroadcastWhereImpl(
     }                                                                       \
     vec64_t X_broadcast_strides, _;                                         \
     CUDA_TENSOR_DIMS_CHECK(int(Y_dims.size()));                             \
-    math::utils::ComputeBinaryBroadcastStrides(                             \
+    math::utils::ComputeBroadcastStrides(                                   \
         X_dims, Y_dims, X_broadcast_strides, _, _);                         \
     DISPATCH_FUNC_BY_VALUE_WITH_TYPE_1(                                     \
         _BroadcastSetImpl,                                                  \
@@ -269,16 +266,15 @@ DEFINE_SET_FUNC(double, double);
       const InputT* b,                                                       \
       OutputT* y,                                                            \
       CUDAContext* ctx) {                                                    \
-    int rows, cols, broadcast_1st;                                           \
+    int64_t rows, cols, broadcast_1st;                                       \
     vec64_t A_dims(a_dims, a_dims + a_ndim);                                 \
     vec64_t B_dims(b_dims, b_dims + b_ndim);                                 \
     vec64_t A_broadcast_dims, B_broadcast_dims;                              \
-    math::utils::ComputeBinaryBroadcastDims(                                 \
+    math::utils::ComputeBroadcastDims(                                       \
         A_dims, B_dims, A_broadcast_dims, B_broadcast_dims);                 \
     if (A_broadcast_dims == B_broadcast_dims) {                              \
-      auto count = std::accumulate(                                          \
-          a_dims, a_dims + a_ndim, 1, std::multiplies<int64_t>());           \
-      name(count, a, b, y, ctx);                                             \
+      const auto N = math::utils::Prod(a_ndim, a_dims);                      \
+      name(N, a, b, y, ctx);                                                 \
       return;                                                                \
     }                                                                        \
     if (math::utils::IsRowwiseBroadcast(                                     \
@@ -342,7 +338,7 @@ DEFINE_SET_FUNC(double, double);
       return;                                                                \
     }                                                                        \
     vec64_t A_broadcast_strides, B_broadcast_strides, Y_dims;                \
-    math::utils::ComputeBinaryBroadcastStrides(                              \
+    math::utils::ComputeBroadcastStrides(                                    \
         A_dims, B_dims, A_broadcast_strides, B_broadcast_strides, Y_dims);   \
     CUDA_TENSOR_DIMS_CHECK(int(Y_dims.size()));                              \
     DISPATCH_FUNC_BY_VALUE_WITH_TYPE_3(                                      \
@@ -519,61 +515,57 @@ DEFINE_BINARY_FUNC(Greater, bool, bool, uint8_t, bool);
 DEFINE_BINARY_FUNC(GreaterEqual, bool, bool, uint8_t, bool);
 #undef DEFINE_BINARY_FUNC
 
-#define DEFINE_WHERE_FUNC(T, ScalarT)                                      \
-  template <>                                                              \
-  DRAGON_API void Where<T, CUDAContext>(                                   \
-      const int a_ndim,                                                    \
-      const int64_t* a_dims,                                               \
-      const int b_ndim,                                                    \
-      const int64_t* b_dims,                                               \
-      const int c_ndim,                                                    \
-      const int64_t* c_dims,                                               \
-      const T* a,                                                          \
-      const T* b,                                                          \
-      const bool* c,                                                       \
-      T* y,                                                                \
-      CUDAContext* ctx) {                                                  \
-    vec64_t A_dims(a_dims, a_dims + a_ndim);                               \
-    vec64_t B_dims(b_dims, b_dims + b_ndim);                               \
-    vec64_t C_dims(c_dims, c_dims + c_ndim);                               \
-    vec64_t A_broadcast_dims, B_broadcast_dims, C_broadcast_dims;          \
-    vec64_t A_broadcast_strides, B_broadcast_strides, C_broadcast_strides; \
-    vec64_t Y_dims, _, __;                                                 \
-    math::utils::ComputeBinaryBroadcastStrides(A_dims, B_dims, _, _, __);  \
-    math::utils::ComputeBinaryBroadcastStrides(C_dims, __, _, _, Y_dims);  \
-    math::utils::ComputeBinaryBroadcastDims(                               \
-        A_dims, Y_dims, A_broadcast_dims, _);                              \
-    math::utils::ComputeBinaryBroadcastDims(                               \
-        B_dims, Y_dims, B_broadcast_dims, _);                              \
-    math::utils::ComputeBinaryBroadcastDims(                               \
-        C_dims, Y_dims, C_broadcast_dims, _);                              \
-    if (A_broadcast_dims == B_broadcast_dims &&                            \
-        B_broadcast_dims == C_broadcast_dims) {                            \
-      auto count = std::accumulate(                                        \
-          a_dims, a_dims + a_ndim, 1, std::multiplies<int64_t>());         \
-      Where(count, a, b, c, y, ctx);                                       \
-      return;                                                              \
-    }                                                                      \
-    CUDA_TENSOR_DIMS_CHECK((int)Y_dims.size());                            \
-    math::utils::ComputeBinaryBroadcastStrides(                            \
-        A_dims, Y_dims, A_broadcast_strides, _, _);                        \
-    math::utils::ComputeBinaryBroadcastStrides(                            \
-        B_dims, Y_dims, B_broadcast_strides, _, _);                        \
-    math::utils::ComputeBinaryBroadcastStrides(                            \
-        C_dims, Y_dims, C_broadcast_strides, _, _);                        \
-    DISPATCH_FUNC_BY_VALUE_WITH_TYPE_1(                                    \
-        _BroadcastWhereImpl,                                               \
-        ScalarT,                                                           \
-        int(Y_dims.size()),                                                \
-        A_broadcast_strides.data(),                                        \
-        B_broadcast_strides.data(),                                        \
-        C_broadcast_strides.data(),                                        \
-        Y_dims.data(),                                                     \
-        reinterpret_cast<const ScalarT*>(a),                               \
-        reinterpret_cast<const ScalarT*>(b),                               \
-        reinterpret_cast<const uint8_t*>(c),                               \
-        reinterpret_cast<ScalarT*>(y),                                     \
-        ctx);                                                              \
+#define DEFINE_WHERE_FUNC(T, ScalarT)                                       \
+  template <>                                                               \
+  DRAGON_API void Where<T, CUDAContext>(                                    \
+      const int a_ndim,                                                     \
+      const int64_t* a_dims,                                                \
+      const int b_ndim,                                                     \
+      const int64_t* b_dims,                                                \
+      const int c_ndim,                                                     \
+      const int64_t* c_dims,                                                \
+      const T* a,                                                           \
+      const T* b,                                                           \
+      const bool* c,                                                        \
+      T* y,                                                                 \
+      CUDAContext* ctx) {                                                   \
+    vec64_t A_dims(a_dims, a_dims + a_ndim);                                \
+    vec64_t B_dims(b_dims, b_dims + b_ndim);                                \
+    vec64_t C_dims(c_dims, c_dims + c_ndim);                                \
+    vec64_t A_broadcast_dims, B_broadcast_dims, C_broadcast_dims;           \
+    vec64_t A_broadcast_strides, B_broadcast_strides, C_broadcast_strides;  \
+    vec64_t Y_dims, _, __;                                                  \
+    math::utils::ComputeBroadcastStrides(A_dims, B_dims, _, _, __);         \
+    math::utils::ComputeBroadcastStrides(C_dims, __, _, _, Y_dims);         \
+    math::utils::ComputeBroadcastDims(A_dims, Y_dims, A_broadcast_dims, _); \
+    math::utils::ComputeBroadcastDims(B_dims, Y_dims, B_broadcast_dims, _); \
+    math::utils::ComputeBroadcastDims(C_dims, Y_dims, C_broadcast_dims, _); \
+    if (A_broadcast_dims == B_broadcast_dims &&                             \
+        B_broadcast_dims == C_broadcast_dims) {                             \
+      const auto N = math::utils::Prod(a_ndim, a_dims);                     \
+      Where(N, a, b, c, y, ctx);                                            \
+      return;                                                               \
+    }                                                                       \
+    CUDA_TENSOR_DIMS_CHECK((int)Y_dims.size());                             \
+    math::utils::ComputeBroadcastStrides(                                   \
+        A_dims, Y_dims, A_broadcast_strides, _, _);                         \
+    math::utils::ComputeBroadcastStrides(                                   \
+        B_dims, Y_dims, B_broadcast_strides, _, _);                         \
+    math::utils::ComputeBroadcastStrides(                                   \
+        C_dims, Y_dims, C_broadcast_strides, _, _);                         \
+    DISPATCH_FUNC_BY_VALUE_WITH_TYPE_1(                                     \
+        _BroadcastWhereImpl,                                                \
+        ScalarT,                                                            \
+        int(Y_dims.size()),                                                 \
+        A_broadcast_strides.data(),                                         \
+        B_broadcast_strides.data(),                                         \
+        C_broadcast_strides.data(),                                         \
+        Y_dims.data(),                                                      \
+        reinterpret_cast<const ScalarT*>(a),                                \
+        reinterpret_cast<const ScalarT*>(b),                                \
+        reinterpret_cast<const uint8_t*>(c),                                \
+        reinterpret_cast<ScalarT*>(y),                                      \
+        ctx);                                                               \
   }
 
 DEFINE_WHERE_FUNC(bool, uint8_t);

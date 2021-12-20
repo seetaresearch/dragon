@@ -19,7 +19,7 @@ from dragon.vm.torch.core.nn.init import xavier_uniform_
 from dragon.vm.torch.core.nn.modules.linear import Linear
 from dragon.vm.torch.core.nn.modules.module import Module
 from dragon.vm.torch.core.nn.parameter import Parameter
-from dragon.vm.torch.core.ops import init_ops
+from dragon.vm.torch.core.ops import random_ops
 from dragon.vm.torch.core.tensor import Tensor
 
 
@@ -148,8 +148,8 @@ class GumbelSoftmax(Module):
         return 'dim={}{}'.format(self.dim, inplace_str)
 
     def forward(self, input):
-        u_dist = init_ops.rand(input.shape, dtype=input.dtype,
-                               device=input.device)
+        u_dist = random_ops.rand(input.shape, dtype=input.dtype,
+                                 device=input.device)
         gumbel = -((-(u_dist.log())).log())
         gumbel = (input + gumbel) / self.tau
         return F.softmax(gumbel, self.dim, self.inplace)

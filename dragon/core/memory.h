@@ -37,7 +37,7 @@ class DRAGON_API UnifiedMemory {
     SYNCED = 3,
   };
 
-  /*! \brief Default constructor */
+  /*! \brief Constructor */
   UnifiedMemory() {}
 
   /*! \brief Constructor with the type meta and size */
@@ -49,23 +49,23 @@ class DRAGON_API UnifiedMemory {
   /*! \brief Switch to the given cuda device */
   void SwitchToCUDADevice(int device);
 
-  /*! \brief Involve the state to cpu */
+  /*! \brief Set to the cpu state */
   void ToCPU(size_t size = 0);
 
-  /*! \brief Involve the state to cuda */
+  /*! \brief Set to the cuda state */
   void ToCUDA(size_t size = 0);
 
-  /*! \brief Return the memory state */
+  /*! \brief Return the state */
   State state() const {
     return state_;
   }
 
-  /*! \brief Return the total number of bytes */
+  /*! \brief Return the data size */
   size_t size() const {
     return size_;
   }
 
-  /*! \brief Return the total number of bytes on given device */
+  /*! \brief Return the data size on given device */
   size_t size(const string& device_type, int device_id) const {
     if (device_type == "cuda") {
       if (own_cuda_ptr_ && cuda_ptr_ && device_id_ == device_id) {

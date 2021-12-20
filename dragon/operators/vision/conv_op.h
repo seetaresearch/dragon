@@ -13,8 +13,8 @@
 #ifndef DRAGON_OPERATORS_VISION_CONV_OP_H_
 #define DRAGON_OPERATORS_VISION_CONV_OP_H_
 
+#include "dragon/operators/vision/conv_op_algo.h"
 #include "dragon/operators/vision/conv_op_base.h"
-#include "dragon/operators/vision/conv_op_cache.h"
 
 namespace dragon {
 
@@ -96,16 +96,16 @@ class CuDNNConvOp final : public CuDNNConvOpBase<Context> {
   }
 
   template <typename T>
-  void ResetDesc();
+  void SetOpDesc();
 
-  size_t cudnn_ws_size_;
   vec64_t input_dims_, filter_dims_;
-  bool exhaustive_search_ = false;
-  bool algo_deterministic_ = false;
-  cudnnConvolutionFwdAlgo_t fwd_algo_;
   cudnnTensorDescriptor_t input_desc_, output_desc_, bias_desc_;
-  using FwdAlgoWithCost = std::tuple<cudnnConvolutionFwdAlgo_t, float>;
-  ConvAlgorithmCache<FwdAlgoWithCost> algo_cache_;
+
+  using FwdAlgo = cudnnConvolutionFwdAlgo_t;
+  using FwdAlgoWithCost = std::tuple<FwdAlgo, float>;
+  FwdAlgo fwd_algo_;
+  ConvAlgoCache<FwdAlgoWithCost> fwd_algo_cache_;
+  bool exhaustive_search_;
 };
 
 template <class Context>
@@ -142,22 +142,20 @@ class CuDNNConvGradientOp final : public CuDNNConvOpBase<Context> {
   }
 
   template <typename T>
-  void ResetDesc();
+  void SetOpDesc();
 
-  size_t cudnn_ws_size_;
   vec64_t input_dims_, filter_dims_;
-  bool data_algo_deterministic_ = false;
-  bool filter_algo_deterministic_ = false;
-  bool exhaustive_search_data_ = false;
-  bool exhaustive_search_filter_ = false;
-  cudnnConvolutionBwdFilterAlgo_t bwd_filter_algo_;
-  cudnnConvolutionBwdDataAlgo_t bwd_data_algo_;
   cudnnTensorDescriptor_t input_desc_, output_desc_, bias_desc_;
-  using BwdDataAlgoWithCost = std::tuple<cudnnConvolutionBwdDataAlgo_t, float>;
-  using BwdFilterAlgoWithCost =
-      std::tuple<cudnnConvolutionBwdFilterAlgo_t, float>;
-  ConvAlgorithmCache<BwdDataAlgoWithCost> data_algo_cache_;
-  ConvAlgorithmCache<BwdFilterAlgoWithCost> filter_algo_cache_;
+
+  using BwdDataAlgo = cudnnConvolutionBwdDataAlgo_t;
+  using BwdFilterAlgo = cudnnConvolutionBwdFilterAlgo_t;
+  using BwdDataAlgoWithCost = std::tuple<BwdDataAlgo, float>;
+  using BwdFilterAlgoWithCost = std::tuple<BwdFilterAlgo, float>;
+  BwdDataAlgo bwd_data_algo_;
+  BwdFilterAlgo bwd_filter_algo_;
+  ConvAlgoCache<BwdDataAlgoWithCost> data_algo_cache_;
+  ConvAlgoCache<BwdFilterAlgoWithCost> filter_algo_cache_;
+  bool exhaustive_search_data_, exhaustive_search_filter_;
 };
 
 #endif // USE_CUDNN

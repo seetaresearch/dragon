@@ -20,7 +20,6 @@ from dragon.vm.tensorflow.core.ops.nn import avg_pool1d
 from dragon.vm.tensorflow.core.ops.nn import avg_pool2d
 from dragon.vm.tensorflow.core.ops.nn import avg_pool3d
 from dragon.vm.tensorflow.core.ops.nn import bias_add
-from dragon.vm.tensorflow.core.ops.nn import batch_normalization
 from dragon.vm.tensorflow.core.ops.nn import conv1d
 from dragon.vm.tensorflow.core.ops.nn import conv2d
 from dragon.vm.tensorflow.core.ops.nn import conv3d
@@ -32,6 +31,7 @@ from dragon.vm.tensorflow.core.ops.nn import conv_transpose
 from dragon.vm.tensorflow.core.ops.nn import depthwise_conv2d
 from dragon.vm.tensorflow.core.ops.nn import dropout
 from dragon.vm.tensorflow.core.ops.nn import elu
+from dragon.vm.tensorflow.core.ops.nn import fused_batch_norm
 from dragon.vm.tensorflow.core.ops.nn import gelu
 from dragon.vm.tensorflow.core.ops.nn import l2_loss
 from dragon.vm.tensorflow.core.ops.nn import l2_normalize
@@ -46,11 +46,10 @@ from dragon.vm.tensorflow.core.ops.nn import moments
 from dragon.vm.tensorflow.core.ops.nn import relu
 from dragon.vm.tensorflow.core.ops.nn import relu6
 from dragon.vm.tensorflow.core.ops.nn import selu
-from dragon.vm.tensorflow.core.ops.nn import silu
 from dragon.vm.tensorflow.core.ops.nn import sigmoid_cross_entropy_with_logits
+from dragon.vm.tensorflow.core.ops.nn import silu
 from dragon.vm.tensorflow.core.ops.nn import softmax
 from dragon.vm.tensorflow.core.ops.nn import softmax_cross_entropy_with_logits
 from dragon.vm.tensorflow.core.ops.nn import sparse_softmax_cross_entropy_with_logits
-from dragon.vm.tensorflow.core.ops.nn import swish
 
 __all__ = [_s for _s in dir() if not _s.startswith('_')]

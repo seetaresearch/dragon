@@ -17,13 +17,13 @@ from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
 
+from dragon.core.ops import normalization_ops
 from dragon.vm.tensorflow.core.framework import dtypes
 from dragon.vm.tensorflow.core.framework import tensor_shape
 from dragon.vm.tensorflow.core.keras import initializers
 from dragon.vm.tensorflow.core.keras import regularizers
 from dragon.vm.tensorflow.core.keras.engine.base_layer import Layer
 from dragon.vm.tensorflow.core.keras.engine.input_spec import InputSpec
-from dragon.vm.tensorflow.core.ops import nn
 
 
 class BatchNormalization(Layer):
@@ -97,63 +97,146 @@ class BatchNormalization(Layer):
         input_shape = tensor_shape.TensorShape(input_shape)
         if not input_shape.ndims:
             raise ValueError('Input has undefined rank: ' + str(input_shape))
+        ndims = len(input_shape)
+        self.axis = ndims + self.axis if self.axis < 0 else self.axis
+        if self.axis < 0 or self.axis >= ndims:
+            raise ValueError('Invalid axis: %s' % (self.axis,))
         param_shape = [input_shape.dims[self.axis]]
-        self.input_spec = InputSpec(
-            # Each layer should adapt to the:
-            #  1) The number of dimensions.
-            #  2) The dimension of the channel axis.
-            ndim=input_shape.ndims,
-            axes={self.axis: param_shape[0]},
-        )
+        self.input_spec = InputSpec(ndim=input_shape.ndims,
+                                    axes={self.axis: param_shape[0]})
         self.gamma = self.add_weight(
             name='gamma',
             shape=param_shape,
             dtype=self._param_dtype,
             initializer=self.gamma_initializer,
             regularizer=self.gamma_regularizer,
-            trainable=self.scale,
-        )
+            trainable=self.scale)
         self.beta = self.add_weight(
             name='beta',
             shape=param_shape,
             dtype=self._param_dtype,
             initializer=self.beta_initializer,
             regularizer=self.beta_regularizer,
-            trainable=self.center,
-        )
+            trainable=self.center)
         self.moving_mean = self.add_weight(
             name='moving_mean',
             shape=param_shape,
             dtype=self._param_dtype,
             initializer=self.moving_mean_initializer,
-            trainable=False,
-        )
+            trainable=False)
         self.moving_variance = self.add_weight(
             name='moving_variance',
             shape=param_shape,
             dtype=self._param_dtype,
             initializer=self.moving_variance_initializer,
-            trainable=False,
-        )
+            trainable=False)
         self.built = True
 
-    def call(self, inputs):
-        return nn.batch_normalization(
-            inputs,
-            self.moving_mean,
-            self.moving_variance,
-            self.beta,
-            self.gamma,
-            axis=self.axis,
-            momentum=self.momentum,
-            variance_epsilon=self.epsilon,
-            trainable=self._trainable,
-        )
+    def call(self, inputs, training=None):
+        return normalization_ops.batch_norm(
+            [inputs, self.gamma, self.beta,
+             self.moving_mean, self.moving_variance],
+            axis=self.axis, momentum=self.momentum, epsilon=self.epsilon,
+            use_stats=not training)
 
     @property
     def _param_dtype(self):
-        if self.dtype == dtypes.float16 or \
-                self.dtype == dtypes.bfloat16:
+        if self.dtype == dtypes.float16 or self.dtype == dtypes.bfloat16:
+            return dtypes.float32
+        else:
+            return self.dtype or dtypes.float32
+
+
+class LayerNormalization(Layer):
+    r"""LayerNormalization layer.
+    `[Ba et.al, 2016] <https://arxiv.org/abs/1607.06450>`_
+
+    """
+
+    def __init__(
+        self,
+        axis=-1,
+        epsilon=1e-3,
+        center=True,
+        scale=True,
+        beta_initializer='zeros',
+        gamma_initializer='ones',
+        beta_regularizer=None,
+        gamma_regularizer=None,
+        name=None,
+        **kwargs
+    ):
+        """Create a ``LayerNormalization`` layer.
+
+        Parameters
+        ----------
+        axis : int, optional, default=-1
+            The channel axis.
+        momentum : float, optional, default=0.99
+            The decay factor of running average.
+        epsilon : float, optional, default=1e-3
+            The epsilon value.
+        center : bool, optional, default=True
+            ``False`` to freeze the ``beta`` anyway.
+        scale : bool, optional, default=True
+            ``False`` to freeze the ``gamma`` anyway.
+        beta_initializer : Union[callable, str], optional
+            The initializer for beta tensor.
+        gamma_initializer : Union[callable, str], optional
+            The initializer for gamma tensor.
+        beta_regularizer : Union[callable, str], optional
+            The regularizer for beta tensor.
+        gamma_regularizer : Union[callable, str], optional
+            The regularizer for gamma tensor.
+
+        """
+        super(LayerNormalization, self).__init__(name=name, **kwargs)
+        self.axis = axis
+        self.epsilon = epsilon
+        self.center = center
+        self.scale = scale
+        self.beta_initializer = initializers.get(beta_initializer)
+        self.gamma_initializer = initializers.get(gamma_initializer)
+        self.beta_regularizer = regularizers.get(beta_regularizer)
+        self.gamma_regularizer = regularizers.get(gamma_regularizer)
+        self.beta = None
+        self.gamma = None
+
+    def build(self, input_shape):
+        input_shape = tensor_shape.TensorShape(input_shape)
+        if not input_shape.ndims:
+            raise ValueError('Input has undefined rank: ' + str(input_shape))
+        ndims = len(input_shape)
+        self.axis = ndims + self.axis if self.axis < 0 else self.axis
+        if self.axis < 0 or self.axis >= ndims:
+            raise ValueError('Invalid axis: %s' % (self.axis,))
+        param_shape = [input_shape.dims[self.axis]]
+        self.input_spec = InputSpec(ndim=input_shape.ndims,
+                                    axes={self.axis: param_shape[0]})
+        self.gamma = self.add_weight(
+            name='gamma',
+            shape=param_shape,
+            dtype=self._param_dtype,
+            initializer=self.gamma_initializer,
+            regularizer=self.gamma_regularizer,
+            trainable=self.scale)
+        self.beta = self.add_weight(
+            name='beta',
+            shape=param_shape,
+            dtype=self._param_dtype,
+            initializer=self.beta_initializer,
+            regularizer=self.beta_regularizer,
+            trainable=self.center)
+        self.built = True
+
+    def call(self, inputs):
+        return normalization_ops.layer_norm(
+            [inputs, self.gamma, self.beta], axis=self.axis,
+            epsilon=self.epsilon)
+
+    @property
+    def _param_dtype(self):
+        if self.dtype == dtypes.float16 or self.dtype == dtypes.bfloat16:
             return dtypes.float32
         else:
             return self.dtype or dtypes.float32

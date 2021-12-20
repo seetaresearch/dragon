@@ -21,7 +21,7 @@ from dragon.vm.torch.core.nn import functional as F
 from dragon.vm.torch.core.nn.modules.module import Module
 from dragon.vm.torch.core.nn.parameter import Parameter
 from dragon.vm.torch.core.ops import array_ops
-from dragon.vm.torch.core.ops import init_ops
+from dragon.vm.torch.core.ops import constant_ops
 from dragon.vm.torch.core.tensor import Tensor
 
 
@@ -82,16 +82,16 @@ class AffineChannel(Module):
         self.num_features = num_features
         self.inplace = inplace
         if not fix_weight:
-            self.weight = Parameter(init_ops.ones(num_features))
+            self.weight = Parameter(constant_ops.ones(num_features))
             if inplace:
                 raise ValueError('In-place operation requires fixed weight.')
         else:
-            self.register_buffer('weight', init_ops.ones(num_features))
+            self.register_buffer('weight', constant_ops.ones(num_features))
         if bias:
             if not fix_bias:
-                self.bias = Parameter(init_ops.zeros(num_features))
+                self.bias = Parameter(constant_ops.zeros(num_features))
             else:
-                self.register_buffer('bias', init_ops.zeros(num_features))
+                self.register_buffer('bias', constant_ops.zeros(num_features))
         else:
             self.bias = None
 
@@ -166,8 +166,8 @@ class GroupNorm(Module):
             self.weight = Parameter(Tensor(num_channels))
             self.bias = Parameter(Tensor(num_channels))
         else:
-            self.register_buffer('weight', init_ops.ones(num_channels))
-            self.register_buffer('bias', init_ops.zeros(num_channels))
+            self.register_buffer('weight', constant_ops.ones(num_channels))
+            self.register_buffer('bias', constant_ops.zeros(num_channels))
         self.reset_parameters()
 
     def reset_parameters(self):
@@ -238,8 +238,8 @@ class LayerNorm(Module):
             self.weight = Parameter(Tensor(*self.normalized_shape))
             self.bias = Parameter(Tensor(*self.normalized_shape))
         else:
-            self.register_buffer('weight', init_ops.ones(*self.normalized_shape))
-            self.register_buffer('bias', init_ops.zeros(*self.normalized_shape))
+            self.register_buffer('weight', constant_ops.ones(*self.normalized_shape))
+            self.register_buffer('bias', constant_ops.zeros(*self.normalized_shape))
         self.reset_parameters()
 
     def reset_parameters(self):

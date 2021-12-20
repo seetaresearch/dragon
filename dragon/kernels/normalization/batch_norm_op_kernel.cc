@@ -16,18 +16,19 @@ void _BatchNormExpectation(
     AccT* ex,
     AccT* ex2) {
   const int kCDim = kOrder == StorageOrder::NCHW ? 1 : 2;
+  const int C = dims[kCDim];
   const int NxCxS = dims[0] * dims[1] * dims[2];
   std::array<int, 3> index = {0, 0, 0};
-  for (int i = 0; i < NxCxS; ++i) {
-    const T x_val = x[i];
-    const int pi = index[kCDim];
-    ex[pi] += x_val;
-    ex2[pi] += x_val * x_val;
+  for (int xi = 0; xi < NxCxS; ++xi) {
+    const T val = x[xi];
+    const int i = index[kCDim];
+    ex[i] += val;
+    ex2[i] += val * val;
     math::utils::IncreaseIndexInDims(3, dims.data(), index.data());
   }
-  for (int i = 0; i < dims[kCDim]; ++i) {
-    ex[i] = ex[i] / normalizer;
-    ex2[i] = ex2[i] / normalizer;
+  for (int i = 0; i < C; ++i) {
+    ex[i] /= normalizer;
+    ex2[i] /= normalizer;
   }
 }
 

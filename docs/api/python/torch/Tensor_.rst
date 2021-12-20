@@ -305,6 +305,10 @@ int\_
 ######
 .. automethod:: dragon.vm.torch.Tensor.int_
 
+isfinite
+########
+.. automethod:: dragon.vm.torch.Tensor.isfinite
+
 isinf
 #####
 .. automethod:: dragon.vm.torch.Tensor.isinf
@@ -461,6 +465,10 @@ nonzero
 #######
 .. automethod:: dragon.vm.torch.Tensor.nonzero
 
+norm
+####
+.. automethod:: dragon.vm.torch.Tensor.norm
+
 normal\_
 ########
 .. automethod:: dragon.vm.torch.Tensor.normal_
@@ -581,6 +589,10 @@ sqrt\_
 ######
 .. automethod:: dragon.vm.torch.Tensor.sqrt_
 
+square
+######
+.. automethod:: dragon.vm.torch.Tensor.square
+
 squeeze
 #######
 .. automethod:: dragon.vm.torch.Tensor.squeeze
@@ -640,6 +652,10 @@ triu\_
 type
 ####
 .. automethod:: dragon.vm.torch.Tensor.type
+
+unbind
+######
+.. automethod:: dragon.vm.torch.Tensor.unbind
 
 uniform\_
 #########
@@ -706,6 +722,7 @@ zero\_
 .. _torch.gather(...): gather.html
 .. _torch.ge(...): ge.html
 .. _torch.gt(...): gt.html
+.. _torch.isfinite(...): isfinite.html
 .. _torch.isinf(...): isinf.html
 .. _torch.isnan(...): isnan.html
 .. _torch.le(...): le.html
@@ -726,6 +743,7 @@ zero\_
 .. _torch.ne(...): ne.html
 .. _torch.neg(...): neg.html
 .. _torch.nonzero(...): nonzero.html
+.. _torch.norm(...): norm.html
 .. _torch.ones(...): ones.html
 .. _torch.pow(...): pow.html
 .. _torch.reciprocal(...): reciprocal.html
@@ -740,6 +758,7 @@ zero\_
 .. _torch.sort(...): sort.html
 .. _torch.split(...): split.html
 .. _torch.sqrt(...): sqrt.html
+.. _torch.square(...): square.html
 .. _torch.squeeze(...): squeeze.html
 .. _torch.sub(...): sub.html
 .. _torch.sum(...): sum.html
@@ -748,6 +767,7 @@ zero\_
 .. _torch.transpose(...): transpose.html
 .. _torch.tril(...): tril.html
 .. _torch.triu(...): triu.html
+.. _torch.unbind(...): unbind.html
 .. _torch.unique(...): unique.html
 .. _torch.unsqueeze(...): unsqueeze.html
 .. _torch.where(...): where.html

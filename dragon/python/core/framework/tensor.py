@@ -66,7 +66,7 @@ class Tensor(types.TensorBase):
                 self._impl.FromShape(self._shape, self._dtype)
                 self._deleter = default_ws._handle_pool
             else:
-                self._impl = default_ws.create_tensor(scope='Symbol')
+                self._impl = default_ws.create_tensor(scope='Tensor')
                 self._deleter = None
         self._name = context.get_name_scope() + name if name else None
 

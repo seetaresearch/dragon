@@ -177,7 +177,7 @@ PYBIND11_MODULE(libdragon_python, m) {
         onnx_backend.Prepare(model_path, &init_graph, &pred_graph);
         // Serializing to Python is intractable
         // We should apply the initializer immediately
-        self->RunGraph(self->CreateGraph(init_graph)->name(), "", "");
+        self->RunGraph(self->CreateGraph(init_graph)->name());
         return py::bytes(pred_graph.SerializeAsString());
       });
 

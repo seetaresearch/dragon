@@ -31,6 +31,28 @@ from dragon.vm.tensorflow.core.keras.engine.input_spec import InputSpec
 from dragon.vm.tensorflow.core.keras.utils import conv_utils
 
 
+class Activation(Layer):
+    """Activation layer."""
+
+    def __init__(self, activation, **kwargs):
+        """Create an ``Activation`` layer.
+
+        Parameters
+        ----------
+        activation : Union[callable, str], optional
+            The optional activation function.
+
+        """
+        super(Activation, self).__init__(**kwargs)
+        self.activation = activations.get(activation)
+        self.inplace = kwargs.get('inplace', False)
+
+    def call(self, inputs):
+        if self.inplace:
+            return self.activation(inputs, inplace=True)
+        return self.activation(inputs)
+
+
 class Dense(Layer):
     """Fully-connected layer."""
 
@@ -100,8 +122,7 @@ class Dense(Layer):
             initializer=self.kernel_initializer,
             regularizer=self.kernel_regularizer,
             dtype=self.dtype,
-            trainable=True,
-        )
+            trainable=True)
         if self.use_bias:
             self.bias = self.add_weight(
                 'bias',
@@ -109,8 +130,7 @@ class Dense(Layer):
                 initializer=self.bias_initializer,
                 regularizer=self.bias_regularizer,
                 dtype=self.dtype,
-                trainable=True,
-            )
+                trainable=True)
         else:
             self.bias = None
         self.built = True
@@ -118,8 +138,7 @@ class Dense(Layer):
     def call(self, inputs):
         outputs = math_ops.gemm(
             [inputs, self.kernel] +
-            ([self.bias] if self.use_bias else []),
-        )
+            ([self.bias] if self.use_bias else []))
         if self.activation is not None:
             return self.activation(outputs)
         return outputs
@@ -158,10 +177,7 @@ class Dropout(Layer):
     def call(self, inputs):
         if self.trainable:
             return activation_ops.dropout(
-                inputs,
-                ratio=self.rate,
-                inplace=self.inplace,
-            )
+                inputs, ratio=self.rate, inplace=self.inplace)
         return inputs
 
 
@@ -200,9 +216,6 @@ class Flatten(Layer):
         self.input_spec = InputSpec(min_ndim=1)
 
     def call(self, inputs):
-        if self.data_format == 'channels_first':
-            perm = [0] + [i for i in range(2, len(inputs.shape))] + [1]
-            inputs = array_ops.transpose(inputs, perm=perm)
         return array_ops.flatten(inputs, axis=1)
 
 

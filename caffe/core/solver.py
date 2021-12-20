@@ -19,11 +19,10 @@ import time
 
 import google.protobuf.text_format
 
-from dragon.core.autograph import function_impl
+from dragon.core.autograph import function_lib
 from dragon.core.training.adam import Adam
 from dragon.core.training.rmsprop import RMSprop
 from dragon.core.training.sgd import SGD
-from dragon.core.training.sgd import Nesterov
 from dragon.core.util import logging
 from dragon.vm.caffe.core.net import Net
 from dragon.vm.caffe.core.proto import caffe_pb2
@@ -50,8 +49,7 @@ class Solver(object):
         if self._proto.iter_size > 1:
             raise NotImplementedError('Gradient accumulation is not supported.')
         self._optimizer_args = {
-            'scale': 1. / self._proto.iter_size,
-            'clip_norm': float(self._proto.clip_gradients),
+            'grad_scale': 1. / self._proto.iter_size,
             'weight_decay': float(self._proto.weight_decay)
             if str(self._proto.regularization_type) == 'L2' else 0,
         }
@@ -269,7 +267,7 @@ class Solver(object):
             self.base_lr = (self._proto.base_lr *
                             pow(1. - float(self.iter) / max_iter, power))
 
-    @function_impl.function
+    @function_lib.function
     def _apply_update(self):
         """Apply the weights update."""
         grads_and_vars = [(blob.diff, blob.data)
@@ -342,7 +340,8 @@ class NesterovSolver(Solver):
         super(NesterovSolver, self).__init__(solver_file, is_root)
         self._optimizer_args['lr'] = self._proto.base_lr
         self._optimizer_args['momentum'] = self._proto.momentum
-        self._optimizer = Nesterov(**self._optimizer_args)
+        self._optimizer_args['nesterov'] = True
+        self._optimizer = SGD(**self._optimizer_args)
 
 
 class RMSPropSolver(Solver):

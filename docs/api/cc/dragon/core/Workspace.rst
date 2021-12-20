@@ -57,11 +57,11 @@ UniqueName
 
 data
 ####
-.. doxygenfunction:: dragon::Workspace::data(const vector<size_t> &segments, const string &name = "data:0")
+.. doxygenfunction:: dragon::Workspace::data(size_t size, const string &name = "BufferShared")
 
 data
 ####
-.. doxygenfunction:: dragon::Workspace::data(const vector<int64_t> &segments, const string &name = "data:0")
+.. doxygenfunction:: dragon::Workspace::data(int64_t size, const string &name = "BufferShared")
 
 graphs
 ######

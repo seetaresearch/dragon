@@ -17,8 +17,7 @@ void _ConstPad(
     const T value,
     const T* x,
     T* y) {
-  const auto N =
-      std::accumulate(y_dims, y_dims + num_dims, 1, std::multiplies<int64_t>());
+  const auto N = math::utils::Prod(num_dims, y_dims);
   vec64_t index(num_dims, 0);
   int64_t xi, d, r;
   for (int yi = 0; yi < N; ++yi) {
@@ -42,8 +41,7 @@ void _ReflectPad(
     const int64_t* pads,
     const T* x,
     T* y) {
-  const auto N =
-      std::accumulate(y_dims, y_dims + num_dims, 1, std::multiplies<int64_t>());
+  const auto N = math::utils::Prod(num_dims, y_dims);
   vec64_t index(num_dims, 0);
   int64_t xi, d, r;
   for (int yi = 0; yi < N; ++yi) {
@@ -68,8 +66,7 @@ void _EdgePad(
     const int64_t* pads,
     const T* x,
     T* y) {
-  const auto N =
-      std::accumulate(y_dims, y_dims + num_dims, 1, std::multiplies<int64_t>());
+  const auto N = math::utils::Prod(num_dims, y_dims);
   vec64_t index(num_dims, 0);
   int64_t xi, d, r;
   for (int yi = 0; yi < N; ++yi) {

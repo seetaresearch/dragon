@@ -17,6 +17,8 @@ from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
 
+import itertools
+
 from dragon.core.util import inspect
 from dragon.core.util import nest
 from dragon.vm.tensorflow.core.keras.engine import base_layer
@@ -37,6 +39,11 @@ class Sequential(base_layer.Layer):
 
     """
 
+    _MODULE_IGNORED_PROPERTIES = frozenset(itertools.chain((
+        '_layer_call_argspecs',
+        base_layer.Layer._MODULE_IGNORED_PROPERTIES,
+    )))
+
     def __init__(self, layers=None, name=None):
         """Create a ``Sequential`` layer.
 
@@ -49,8 +56,9 @@ class Sequential(base_layer.Layer):
 
         """
         super(Sequential, self).__init__(name=name)
+        self._layers = []
         self._layer_call_argspecs = {}
-        if layers:
+        if layers is not None:
             for layer in nest.flatten(layers):
                 self.add(layer)
 
@@ -61,7 +69,7 @@ class Sequential(base_layer.Layer):
         Returns
         -------
         Sequence[dragon.vm.tensorflow.keras.layers.Layer]
-            The sequence containing layers.
+            The layers.
 
         """
         return self._layers
@@ -76,22 +84,23 @@ class Sequential(base_layer.Layer):
 
         """
         if not isinstance(layer, base_layer.Layer):
-            raise TypeError(
-                'Excepted the <layer> should be '
-                'an instance of <tf.keras.layers.Layer>, '
-                'Got: ' + str(layer)
-            )
+            raise TypeError('Excepted the <layer> should be '
+                            'an instance of <tf.keras.layers.Layer>, '
+                            'Got: ' + str(layer))
         self.built = False
         if layer._name is None:
             layer._name = str(len(self._layers))
         self._layers.append(layer)
         self._layer_call_argspecs[layer] = inspect.getfullargspec(layer.call)
 
-    def call(self, inputs):
+    def call(self, inputs, training=None):
         """Call the layers sequentially."""
         outputs = inputs
         for layer in self._layers:
             kwargs = {}
+            argspec = self._layer_call_argspecs[layer].args
+            if 'training' in argspec:
+                kwargs['training'] = training
             outputs = layer(inputs, **kwargs)
             inputs = outputs
         return outputs

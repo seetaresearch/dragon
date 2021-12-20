@@ -25,7 +25,9 @@ class TileOp final : public Operator<Context> {
   }
   USE_OPERATOR_FUNCTIONS;
 
-  void RunOnDevice() override;
+  void RunOnDevice() override {
+    DispatchHelper<dtypes::Generic>::Call(this, Input(0));
+  }
 
   template <typename T>
   void DoRunWithType();
@@ -43,7 +45,9 @@ class TileGradientOp final : public Operator<Context> {
   }
   USE_OPERATOR_FUNCTIONS;
 
-  void RunOnDevice() override;
+  void RunOnDevice() override {
+    DispatchHelper<dtypes::Floating>::Call(this, Input(0));
+  }
 
   template <typename T>
   void DoRunWithType();

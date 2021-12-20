@@ -68,6 +68,16 @@ class TestOptimizer(unittest.TestCase):
             except (ValueError, NotImplementedError):
                 pass
 
+    def test_lars(self):
+        weight = torch.ones(1, requires_grad=True)
+        entries = [(-0.1, 0, 0.001), (0.1, -0.1, 0.001),
+                   (0.1, 0, -0.001), (0.1, 0.9, 0.001)]
+        for lr, momentum, trust_coef in entries:
+            try:
+                _ = torch.optim.LARS([weight], lr=lr, momentum=momentum, trust_coef=trust_coef)
+            except ValueError:
+                pass
+
     def test_rmsprop(self):
         weight = torch.ones(1, requires_grad=True)
         entries = [(-0.1, (0., 0.), 1e-8, False),
@@ -86,7 +96,7 @@ class TestOptimizer(unittest.TestCase):
 
     def test_sgd(self):
         weight = torch.ones(1, requires_grad=True)
-        entries = [(-0.1, 0., False), (0.1, -0.1, False), (0.1, 0., True)]
+        entries = [(-0.1, 0, False), (0.1, -0.1, False), (0.1, 0.9, True)]
         for lr, momentum, nesterov in entries:
             try:
                 _ = torch.optim.SGD([weight], lr=lr, momentum=momentum, nesterov=nesterov)
@@ -105,7 +115,7 @@ class TestOptimizer(unittest.TestCase):
         self.assertLessEqual(float(weight1.grad) - 0., 1e-5)
         optimizer.zero_grad(set_to_none=True)
         self.assertEqual(weight1.grad, None)
-        for i in range(2):
+        for i in range(3):
             y = weight1 + 1
             y.backward(y)
             optimizer.sum_grad()

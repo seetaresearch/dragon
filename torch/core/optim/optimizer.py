@@ -18,12 +18,13 @@ from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
 
+import collections
+
 import numpy
 
 from dragon.core import distributed
 from dragon.core.framework import workspace
-from dragon.vm.torch.core.autograd.function_impl import FunctionLib
-from dragon.vm.torch.core.ops import distributed_ops
+from dragon.vm.torch.core.autograd.function import Function
 from dragon.vm.torch.core.tensor import Tensor
 
 # A simple parameter flag.
@@ -44,7 +45,7 @@ class Optimizer(object):
 
     """
 
-    def __init__(self, params, defaults):
+    def __init__(self, params, defaults, **kwargs):
         """Create a ``Optimizer``.
 
         Parameters
@@ -55,9 +56,14 @@ class Optimizer(object):
             The pre-defined default hyper-parameters.
 
         """
-        self.defaults = defaults
         if isinstance(params, Tensor):
             raise TypeError('<params> should be a sequence of tensors.')
+        defaults.update({'grad_scale': kwargs.pop('grad_scale', 1),
+                         'clip_norm': kwargs.pop('clip_norm', 0),
+                         'clip_value': kwargs.pop('clip_value', 0)})
+        if kwargs:
+            raise ValueError('Unexpected arguments: ' + ','.join(v for v in kwargs))
+        self.defaults = defaults
         self.param_groups = []
         param_groups = list(params)
         if len(param_groups) == 0:
@@ -66,8 +72,9 @@ class Optimizer(object):
             param_groups = [{'params': param_groups}]
         for param_group in param_groups:
             self.add_param_group(param_group)
-        self._op_type = self.__class__.__name__ + 'Update'
-        self._hyper = {}
+        self._op_type = self.__class__.__name__
+        self._hyper = dict((k, [k, collections.defaultdict(str)])
+                           for k in self.defaults.keys())
         self._sums_grad = False
 
     def add_param_group(self, param_group):
@@ -98,8 +105,11 @@ class Optimizer(object):
             param_group['params'] = list(params)
 
         for param in param_group['params']:
-            if not param.requires_grad:
-                raise ValueError("Optimize a parameter that doesn't require grad.")
+            if not isinstance(param, Tensor):
+                raise TypeError('Optimizer can only optimize Tensors, '
+                                "but one of the params is " + str(type(param)))
+            if not param.is_leaf:
+                raise ValueError("Optimize a non-leaf Tensor.")
 
         for name, default in self.defaults.items():
             if default is required and name not in param_group:
@@ -111,7 +121,7 @@ class Optimizer(object):
 
         if 'name' not in param_group:
             default_ws = workspace.get_workspace()
-            param_group['name'] = default_ws._handle_pool.create('Optimizer')
+            param_group['name'] = default_ws.create_handle('Optimizer')
 
         param_set = set()
         for group in self.param_groups:
@@ -164,7 +174,7 @@ class Optimizer(object):
                 if grad is not None:
                     grads.append(grad)
                     sum_grads.append(grad.id + '_sum')
-            FunctionLib.apply(
+            Function.apply(
                 'Axpby', grads[0].device,
                 grads, outputs=sum_grads,
                 alpha=1., beta=1. if self._sums_grad else 0.)
@@ -227,22 +237,24 @@ class Optimizer(object):
         # Update hyper from group values.
         for name in self._hyper.keys():
             group_name = group['name']
-            impl_name, group_coll = self._hyper[name]
-            if group_name not in group_coll:
+            impl_name, group_dict = self._hyper[name]
+            if group_name not in group_dict:
                 impl_name = group_name + '/' + impl_name
-                group_coll[group_name] = execute_ws.create_tensor(impl_name)
-            hyper_impl = group_coll[group_name]
-            hyper_impl.FromNumpy(numpy.array(group[name], 'float32'), False)
+                group_dict[group_name] = execute_ws.create_tensor(impl_name)
+            impl = group_dict[group_name]
+            impl.FromNumpy(numpy.array(group[name], 'float32'), False)
 
         # Reduce grads in the process group.
         process_group = distributed.get_group()
         if process_group is not None:
-            distributed_ops.all_reduce(grads, 'MEAN', process_group)
+            Function.apply('Collective', grads[0].device, grads,
+                           outputs=grads, operation='ALLREDUCE',
+                           reduction='MEAN', **process_group.arguments)
 
         # Apply updates.
-        FunctionLib.apply(
-            self._op_type, params_with_grad[0].device, grads,
-            outputs=params_with_grad, handle=group['name'], weight_decay=None)
+        Function.apply(self._op_type, params_with_grad[0].device, grads,
+                       outputs=params_with_grad, name=group['name'],
+                       weight_decay=None)
 
     @staticmethod
     def _get_grad(execute_ws, param, summed=False):

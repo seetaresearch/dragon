@@ -14,7 +14,8 @@ from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
 
-from dragon.vm.torch.core.autograd.function_impl import FunctionLib
+from dragon.core.util import nest
+from dragon.vm.torch.core.autograd.function import Function
 from dragon.vm.torch.core.ops import constant_ops
 
 
@@ -94,9 +95,77 @@ def addmm(input, mat1, mat2, beta=1, alpha=1, out=None):
         The output tensor.
 
     """
-    return FunctionLib.apply(
+    return Function.apply(
         'Gemm', input.device, [mat1, mat2, input], outputs=[out],
         alpha=float(alpha), beta=float(beta))
+
+
+def argmax(input, dim, keepdim=False, out=None):
+    """Return the index of maximum elements along the given dimension.
+
+    :attr:`dim` could be negative:
+
+    ```python
+    # A negative dimension is the last-k dimension
+    x = torch.tensor([[1, 2, 3], [4, 5, 6]])
+    print(torch.argmax(x, dim=1))
+    print(torch.argmax(x, dim=-1))  # Equivalent
+    ```
+
+    Parameters
+    ----------
+    input : dragon.vm.torch.Tensor
+        The input tensor.
+    dim : int
+        The dimension to reduce.
+    keepdim : bool, optional, default=False
+        Keep the reduced dimension or not.
+    out : dragon.vm.torch.Tensor, optional
+        The output tensor.
+
+    Returns
+    -------
+    dragon.vm.torch.Tensor
+        The index of maximum elements.
+
+    """
+    return Function.apply(
+        'ArgMax', input.device, [input], outputs=[out],
+        axis=dim, keepdims=keepdim)
+
+
+def argmin(input, dim, keepdim=False, out=None):
+    """Return the index of minimum elements along the given dimension.
+
+    :attr:`dim` could be negative:
+
+    ```python
+    # A negative dimension is the last-k dimension
+    x = torch.tensor([[1, 2, 3], [4, 5, 6]])
+    print(torch.argmin(x, dim=1))
+    print(torch.argmin(x, dim=-1))  # Equivalent
+    ```
+
+    Parameters
+    ----------
+    input : dragon.vm.torch.Tensor
+        The input tensor.
+    dim : int, optional
+        The dimension to reduce.
+    keepdim : bool, optional, default=False
+        Keep the reduced dimension or not.
+    out : dragon.vm.torch.Tensor, optional
+        The output tensor.
+
+    Returns
+    -------
+    dragon.vm.torch.Tensor
+        The index of minimum elements.
+
+    """
+    return Function.apply(
+        'ArgMin', input.device, [input], outputs=[out],
+        axis=dim, keepdims=keepdim)
 
 
 def baddbmm(input, batch1, batch2, beta=1, alpha=1, out=None):
@@ -279,8 +348,30 @@ def bmm(input, mat2, out=None):
         The output tensor.
 
     """
-    return FunctionLib.apply(
+    return Function.apply(
         'MatMul', input.device, [input, mat2], outputs=[out])
+
+
+def cast(input, dtype='float32', out=None):
+    """Cast the data type of input.
+
+    Parameters
+    ----------
+    input : dragon.vm.torch.Tensor
+        The input.
+    dtype : str, optional, default='float32'
+        The data type to cast to.
+    out : dragon.vm.torch.Tensor, optional
+        The output tensor.
+
+    Returns
+    -------
+    dragon.vm.torch.Tensor
+        The output tensor.
+
+    """
+    return Function.apply(
+        'Cast', input.device, [input], outputs=[out], dtype=dtype)
 
 
 def ceil(input, out=None):
@@ -335,7 +426,7 @@ def clamp(input, min=None, max=None, out=None):
     """
     low = float(min) if min is not None else None
     high = float(max) if max is not None else None
-    return FunctionLib.apply(
+    return Function.apply(
         'Clip', input.device, [input], outputs=[out], low=low, high=high)
 
 
@@ -365,6 +456,37 @@ def cos(input, out=None):
 
     """
     return _unary_func(input, 'Cos', out)
+
+
+def cumsum(input, dim, out=None):
+    """Compute the cumulative sum of elements along the given dimension.
+
+    :attr:`dim` could be negative:
+
+    ```python
+    # A negative dimension is the last-k dimension
+    x = torch.tensor([[1, 2, 3], [4, 5, 6]])
+    print(torch.cumsum(x, dim=1))  # [[1, 3, 6], [4, 9, 15]]
+    print(torch.cumsum(x, dim=-1))  # Equivalent
+    ```
+
+    Parameters
+    ----------
+    input : dragon.vm.torch.Tensor
+        The input tensor.
+    dim : int
+        The cumulative dimension.
+    out : dragon.vm.torch.Tensor, optional
+        The output tensor.
+
+    Returns
+    -------
+    dragon.vm.torch.Tensor
+        The output tensor.
+
+    """
+    return Function.apply(
+        'CumSum', input.device, [input], outputs=[out], axis=dim)
 
 
 def div(input, other, out=None):
@@ -506,6 +628,32 @@ def gt(input, other, out=None):
 
     """
     return _binary_func(input, other, 'Greater', out)
+
+
+def isfinite(input):
+    r"""Check if the elements of input are finite.
+
+    .. math:: \text{out} = \text{isfinite}(\text{input})
+
+    Examples:
+
+    ```python
+    x = torch.tensor([0., float('nan'), float('inf')])
+    print(torch.isfinite(x))  # [True, False, False]
+    ```
+
+    Parameters
+    ----------
+    input : dragon.vm.torch.Tensor
+        The input tensor.
+
+    Returns
+    -------
+    dragon.vm.torch.Tensor
+        The output tensor.
+
+    """
+    return _unary_func(input, 'IsFinite')
 
 
 def isinf(input):
@@ -833,8 +981,52 @@ def matmul(input, other, out=None):
         The output tensor.
 
     """
-    return FunctionLib.apply(
+    return Function.apply(
         'MatMul', input.device, [input, other], outputs=[out])
+
+
+def max(input, dim=None, keepdim=False, out=None):
+    """Compute the max value of elements along the given dimension.
+
+    :attr:`dim` could be negative or ``None``:
+
+    ```python
+    x = torch.tensor([[1, 2, 3], [4, 5, 6]])
+
+    # A negative dimension is the last-k dimension
+    print(torch.max(x, dim=1))
+    print(torch.max(x, dim=-1))  # Equivalent
+
+    # If dimension is None, reduce input as a vector
+    # and return a scalar result
+    print(torch.max(x))  # 6
+
+    # Also, dimension could be a sequence of integers
+    print(torch.max(x, (0, 1)))  # 6
+    ```
+
+    Parameters
+    ----------
+    input : dragon.vm.torch.Tensor
+        The input tensor.
+    dim : Union[int, Sequence[int]], optional
+        The dimension to reduce.
+    keepdim : bool, optional, default=False
+        Keep the reduced dimension or not.
+    out : dragon.vm.torch.Tensor, optional
+        The output tensor.
+
+    Returns
+    -------
+    dragon.vm.torch.Tensor
+        The output tensor.
+
+    """
+    keepdim = keepdim if dim is not None else False
+    dim = nest.flatten(dim) if dim is not None else dim
+    return Function.apply(
+        'ReduceMax', input.device, [input], outputs=[out],
+        axes=dim, keepdims=keepdim)
 
 
 def maximum(input, other, out=None):
@@ -858,6 +1050,94 @@ def maximum(input, other, out=None):
 
     """
     return _binary_func(input, other, 'Maximum', out)
+
+
+def mean(input, dim=None, keepdim=False, out=None):
+    """Compute the mean value of elements along the given dimension.
+
+    :attr:`dim` could be negative or ``None``:
+
+    ```python
+    x = torch.tensor([[1., 2., 3.], [4., 5., 6.]])
+
+    # A negative dimension is the last-k dimension
+    print(torch.mean(x, dim=1))
+    print(torch.mean(x, dim=-1))  # Equivalent
+
+    # If dimension is None, reduce input as a vector
+    # and return a scalar result
+    print(torch.mean(x))  # 3.5
+
+    # Also, dimension could be a sequence of integers
+    print(torch.mean(x, dim=(0, 1)))  # 3.5
+    ```
+
+    Parameters
+    ----------
+    input : dragon.vm.torch.Tensor
+        The input tensor.
+    dim : Union[int, Sequence[int]], optional
+        The dimension to reduce.
+    keepdim : bool, optional, default=False
+        Keep the reduced dimension or not.
+    out : dragon.vm.torch.Tensor, optional
+        The output tensor.
+
+    Returns
+    -------
+    dragon.vm.torch.Tensor
+        The output tensor.
+
+    """
+    keepdim = keepdim if dim is not None else False
+    dim = nest.flatten(dim) if dim is not None else dim
+    return Function.apply(
+        'ReduceMean', input.device, [input], outputs=[out],
+        axes=dim, keepdims=keepdim)
+
+
+def min(input, dim=None, keepdim=False, out=None):
+    """Compute the min value of elements along the given dimension.
+
+    :attr:`dim` could be negative or ``None``:
+
+    ```python
+    x = torch.tensor([[1, 2, 3], [4, 5, 6]])
+
+    # A negative dimension is the last-k dimension
+    print(torch.min(x, dim=1))
+    print(torch.min(x, dim=-1))  # Equivalent
+
+    # If dimension is None, reduce input as a vector
+    # and return a scalar result
+    print(torch.min(x))  # 1
+
+    # Also, dimension could be a sequence of integers
+    print(torch.min(x, (0, 1)))  # 1
+    ```
+
+    Parameters
+    ----------
+    input : dragon.vm.torch.Tensor
+        The input tensor.
+    dim : Union[int, Sequence[int]], optional
+        The dimension to reduce.
+    keepdim : bool, optional, default=False
+        Keep the reduced dimension or not.
+    out : dragon.vm.torch.Tensor, optional
+        The output tensor.
+
+    Returns
+    -------
+    dragon.vm.torch.Tensor
+        The output tensor.
+
+    """
+    keepdim = keepdim if dim is not None else False
+    dim = nest.flatten(dim) if dim is not None else dim
+    return Function.apply(
+        'ReduceMin', input.device, [input], outputs=[out],
+        axes=dim, keepdims=keepdim)
 
 
 def minimum(input, other, out=None):
@@ -903,7 +1183,7 @@ def mm(input, mat2, out=None):
         The output tensor.
 
     """
-    return FunctionLib.apply(
+    return Function.apply(
         'Gemm', input.device, [input, mat2], outputs=[out])
 
 
@@ -972,6 +1252,61 @@ def neg(input, out=None):
 
     """
     return _unary_func(input, 'Neg', out)
+
+
+def norm(input, p='fro', dim=None, keepdim=False, out=None, dtype=None):
+    """Compute the norm value of elements along the given dimension.
+
+    :attr:`dim` could be negative or ``None``:
+
+    ```python
+    x = torch.tensor([[1., 2., 3.], [4., 5., 6.]])
+
+    # A negative dimension is the last-k axis
+    print(torch.norm(x, dim=1))
+    print(torch.norm(x, dim=-1))  # Equivalent
+
+    # If ``dim`` is None, the vector-style reduction
+    # will be applied to return a scalar result
+    print(torch.norm(x))  # 9.539
+
+    # Also, ``dim`` could be a sequence of integers
+    print(torch.norm(x, dim=(0, 1)))  # 9.539
+    ```
+
+    Parameters
+    ----------
+    input : dragon.vm.torch.Tensor
+        The input tensor.
+    p : {'fro', 1, 2}, optional
+        The norm order.
+    dim : Union[int, Sequence[int]], optional
+        The dimension to reduce.
+    keepdim : bool, optional, default=False
+        Keep the reduced dimension or not.
+    out : dragon.vm.torch.Tensor, optional
+        The output tensor.
+    dtype : str, optional
+        The data type to cast to.
+
+    Returns
+    -------
+    dragon.vm.torch.Tensor
+        The output tensor.
+
+    """
+    if p is None or p == 2 or p == 'fro':
+        op_type = 'ReduceL2'
+    elif p == 1:
+        op_type = 'ReduceL1'
+    else:
+        raise ValueError('Unsupported norm order: ' + str(p))
+    input = input.to(dtype=dtype)
+    keepdim = keepdim if dim is not None else False
+    dim = nest.flatten(dim) if dim is not None else dim
+    return Function.apply(
+        op_type, input.device, [input], outputs=[out],
+        axes=dim, keepdims=keepdim)
 
 
 def pow(input, exponent, out=None):
@@ -1180,6 +1515,34 @@ def sqrt(input, out=None):
     return _unary_func(input, 'Sqrt', out)
 
 
+def square(input, out=None):
+    r"""Compute the square of input.
+
+    .. math:: \text{out} = \text{input}^{2}
+
+    Examples:
+
+    ```python
+    x = torch.tensor([2., 3., 4.])
+    print(torch.square(x))  # [4., 9., 16.]
+    ```
+
+    Parameters
+    ----------
+    input : dragon.vm.torch.Tensor
+        The input tensor.
+    out : dragon.vm.torch.Tensor, optional
+        The output tensor.
+
+    Returns
+    -------
+    dragon.vm.torch.Tensor
+        The output tensor.
+
+    """
+    return _unary_func(input, 'Square', out)
+
+
 def sub(input, other, out=None):
     r"""Compute the element-wise subtraction.
 
@@ -1203,14 +1566,58 @@ def sub(input, other, out=None):
     return _binary_func(input, other, 'Sub', out)
 
 
+def sum(input, dim=None, keepdim=False, out=None):
+    """Compute the sum value of elements along the given dimension.
+
+    :attr:`dim` could be negative or ``None``:
+
+    ```python
+    x = torch.tensor([[1, 2, 3], [4, 5, 6]])
+
+    # A negative dimension is the last-k dimension
+    print(torch.sum(x, dim=1))
+    print(torch.sum(x, dim=-1))  # Equivalent
+
+    # If dimension is None, reduce input as a vector
+    # and return a scalar result
+    print(torch.sum(x))  # 21
+
+    # Also, dimension could be a sequence of integers
+    print(torch.sum(x, (0, 1)))  # 21
+    ```
+
+    Parameters
+    ----------
+    input : dragon.vm.torch.Tensor
+        The input tensor.
+    dim : Union[int, Sequence[int]], optional
+        The dimension to reduce.
+    keepdim : bool, optional, default=False
+        Keep the reduced dimension or not.
+    out : dragon.vm.torch.Tensor, optional
+        The output tensor.
+
+    Returns
+    -------
+    dragon.vm.torch.Tensor
+        The output tensor.
+
+    """
+    keepdim = keepdim if dim is not None else False
+    dim = nest.flatten(dim) if dim is not None else dim
+    return Function.apply(
+        'ReduceSum', input.device, [input], outputs=[out],
+        axes=dim, keepdims=keepdim)
+
+
 def _binary_func(input, value, op_type, out=None):
     """Compute a binary function."""
     input, value = constant_ops.remove_scalars(input, value)
-    return FunctionLib.apply(
+    return Function.apply(
         op_type, input.device, [input, value], outputs=[out])
 
 
 def _unary_func(input, op_type, out=None):
     """Compute an unary function."""
-    return FunctionLib.apply(
+    return Function.apply(
         op_type, input.device, [input], outputs=[out])

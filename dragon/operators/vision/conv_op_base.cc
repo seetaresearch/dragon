@@ -113,10 +113,10 @@ void ConvOpBase<Context>::Reshape(bool backward) {
   const auto& W = Input(1);
   auto* Y_ref = backward ? &Input(-1) : Output(0);
 
-  // Determine the input and output channels
+  // Compute input and output channels.
   in_channels_ = data_format() == "NCHW" ? X.dim(1) : X.dim(-1);
   if (out_channels_ <= 0) {
-    // Infer the output channels from the weights shape
+    // Infer output channels from the weights shape.
     out_channels_ = W.count() / (in_channels_ / group_);
     for (int i = 0; i < num_axes_; ++i) {
       out_channels_ /= kshape_[i];
@@ -132,16 +132,14 @@ void ConvOpBase<Context>::Reshape(bool backward) {
     conv_in_channels_ = in_channels_;
   }
 
-  // Determine the weight and bias shape
-  // Weight shape is assumed as NCHW format
-  // whatever to compute the fans correctly
+  // Compute weight and bias shape in NCHW format.
   w_shape_ = {conv_out_channels_, conv_in_channels_ / group_};
   for (int i = 0; i < num_axes_; ++i) {
     w_shape_.push_back(kshape_[i]);
   }
   b_shape_ = {out_channels_};
 
-  // Determine the output shape
+  // Compute output shape.
   ComputeOutShape();
   if (backward) {
     if (Output(0)->has_name()) Output(0)->ReshapeLike(X);
@@ -163,7 +161,7 @@ void ConvOpBase<Context>::Reshape(bool backward) {
     Output(0)->Reshape(Y_dims);
   }
 
-  // Determine the output dim
+  // Compute output dim.
   auto end_axis = X.ndim() - 1;
   if (data_format() == "NCHW") {
     if (Transposed()) {
@@ -181,7 +179,7 @@ void ConvOpBase<Context>::Reshape(bool backward) {
     out_dim_ = Y_ref->count(axis_, end_axis);
   }
 
-  // Compute strides
+  // Compute strides.
   X_stride_ = X.stride(0);
   Y_stride_ = Y_ref->stride(0);
   kernel_dim_ = conv_in_channels_ / group_;
@@ -192,7 +190,7 @@ void ConvOpBase<Context>::Reshape(bool backward) {
   W_stride_ = conv_out_channels_ * kernel_dim_ / group_;
   Y_stride1_ = conv_out_channels_ * conv_out_dim_ / group_;
 
-  // Compute im2col arguments
+  // Compute Im2Col arguments.
   in_shape_.clear();
   for (int i = 0; i < num_axes_; ++i) {
     if (Transposed()) {

@@ -14,11 +14,61 @@ from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
 
+import functools
+import inspect
+import sys
+
 
 class _Decorator(object):
     """The metaclass of decorator objects."""
+
     def __init__(self, target):
         self._decorated_target = target
+
+
+class _DecoratorContextManager(object):
+    """The metaclass of decorator context manager."""
+
+    def __call__(self, func):
+        if inspect.isgeneratorfunction(func):
+            return self._wrap_generator(func)
+
+        @functools.wraps(func)
+        def decorate_context(*args, **kwargs):
+            with self.__class__():
+                return func(*args, **kwargs)
+        return decorate_context
+
+    def _wrap_generator(self, func):
+        @functools.wraps(func)
+        def generator_context(*args, **kwargs):
+            gen = func(*args, **kwargs)
+            cls = type(self)
+            try:
+                with cls():
+                    response = gen.send(None)
+                while True:
+                    try:
+                        request = yield response
+                    except GeneratorExit:
+                        with cls():
+                            gen.close()
+                        raise
+                    except BaseException:
+                        with cls():
+                            response = gen.throw(*sys.exc_info())
+                    else:
+                        with cls():
+                            response = gen.send(request)
+            except StopIteration as e:
+                return e.value
+        return generator_context
+
+    def __enter__(self):
+        raise NotImplementedError
+
+    def __exit__(self, *args):
+        raise NotImplementedError
 
 
 def make_decorator(target, decorator_func):

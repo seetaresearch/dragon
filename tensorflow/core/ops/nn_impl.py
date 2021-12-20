@@ -15,21 +15,21 @@ from __future__ import division
 from __future__ import print_function
 
 from dragon.core.ops import activation_ops
-from dragon.core.ops import array_ops
+from dragon.core.ops import math_ops
 from dragon.core.ops import normalization_ops
 
 
-def batch_normalization(
+def fused_batch_norm(
     x,
-    moving_mean,
-    moving_variance,
-    offset,
     scale,
-    axis=-1,
-    momentum=0.9,
-    variance_epsilon=1e-5,
-    trainable=False,
+    offset,
+    mean,
+    variance,
+    epsilon=0.001,
+    data_format='NHWC',
+    is_training=True,
     name=None,
+    exponential_avg_factor=1.0,
 ):
     r"""Apply the batch normalization.
     `[Ioffe & Szegedy, 2015] <https://arxiv.org/abs/1502.03167>`_.
@@ -49,24 +49,24 @@ def batch_normalization(
     ----------
     x : dragon.Tensor
         The input tensor.
-    moving_mean : dragon.Tensor
-        The moving mean.
-    moving_variance : dragon.Tensor
-        The moving variance.
-    offset : dragon.Tensor
-        The :math:`\beta` tensor.
     scale : dragon.Tensor
         The :math:`\gamma` tensor.
-    axis : int, optional, default=-1
-        The channel axis.
-    momentum : Union[float, dragon.Tensor], optional
-        The value to :math:`\text{momentum}`.
-    variance_epsilon : float, optional, default=1e-5
+    offset : dragon.Tensor
+        The :math:`\beta` tensor.
+    mean : dragon.Tensor
+        The running mean tensor.
+    variance : dragon.Tensor
+        The running variance tensor.
+    epsilon : float, optional, default=1e-3
         The value to :math:`\epsilon`.
-    trainable : bool, optional, default=False
-        The optional training flag.
+    data_format : str, optional, default='NHWC'
+        ``'NCHW'`` or ``'NHWC'``.
+    is_training : bool, optional, default=True
+        The value to indicate training or inference.
     name : str, optional
         The operation name.
+    exponential_avg_factor : float, optional, default=1.0
+        The value to :math:`1 - \text{momentum}`.
 
     Returns
     -------
@@ -78,12 +78,12 @@ def batch_normalization(
         x,
         scale,
         offset,
-        moving_mean,
-        moving_variance],
-        axis=axis,
-        momentum=momentum,
-        epsilon=variance_epsilon,
-        use_stats=not trainable,
+        mean,
+        variance],
+        axis=1 if data_format.startswith('NC') else -1,
+        momentum=1 - exponential_avg_factor,
+        epsilon=epsilon,
+        use_stats=not is_training,
         name=name,
     )
 
@@ -118,7 +118,7 @@ def l2_normalize(x, axis=None, epsilon=1e-12, name=None):
         The tensor :math:`x`.
     axis : Union[int, Sequence[int]], optional
         The axis to compute norm.
-    epsilon : float, optional, default=1e-5
+    epsilon : float, optional, default=1e-12
         The value to :math:`\epsilon`.
     name : str, optional
         The operation name.
@@ -182,22 +182,22 @@ def moments(x, axes=None, keepdims=False, name=None):
         The variance tensor.
 
     """
-    return array_ops.moments(x, axis=axes, keepdims=keepdims, name=name)
+    return math_ops.moments(x, axis=axes, keepdims=keepdims, name=name)
 
 
-def swish(features):
-    r"""Apply the swish function.
-    `[Ramachandran et.al, 2017] <https://arxiv.org/abs/1710.05941>`_.
+def silu(features):
+    r"""Apply the sigmoid linear unit.
+    `[Hendrycks & Gimpel, 2016] <https://arxiv.org/abs/1606.08415>`_.
 
-    The **Swish** function is defined as:
+    The **SiLU** function is defined as:
 
-    .. math:: \text{Swish}(x) = x \cdot \frac{1}{1 + \exp(-x)}
+    .. math:: \text{SiLU}(x) = x \cdot \frac{1}{1 + \exp(-x)}
 
     Examples:
 
     ```python
     x = tf.constant([-2.5, -1.0, 0.0, 1.0, 2.5])
-    print(tf.nn.swish(x))
+    print(tf.nn.silu(x))
     ```
 
     Parameters
@@ -211,4 +211,4 @@ def swish(features):
         The output tensor.
 
     """
-    return activation_ops.swish(features)
+    return activation_ops.silu(features)

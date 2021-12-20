@@ -85,7 +85,7 @@ class DataReader(multiprocessing.Process):
             The random seed to use instead.
 
         """
-        super(DataReader, self).__init__()
+        super(DataReader, self).__init__(daemon=True)
         self._dataset = kwargs.get('dataset', None)
         self._source = kwargs.get('source', '')
         self._part_idx = kwargs.get('part_idx', 0)
@@ -98,8 +98,7 @@ class DataReader(multiprocessing.Process):
         self._num_examples = 0
         self._example_buffer = []
         self._parts = []
-        self.q_out = None
-        self.daemon = True
+        self._reader_queue = None
 
     def before_first(self):
         """Move the cursor before begin."""
@@ -140,7 +139,7 @@ class DataReader(multiprocessing.Process):
             # Choose a loaded example from the buffer.
             i = self._parts[0].start % len(self._example_buffer)
             j = (self._parts[0].start + offset) % len(self._example_buffer)
-            self.q_out.put(self._example_buffer[j])
+            self._reader_queue.put(self._example_buffer[j])
             self._example_buffer[j] = self._example_buffer[i]
             # Load and push back a new example into the buffer.
             k = self._parts[-1].end % len(self._example_buffer)

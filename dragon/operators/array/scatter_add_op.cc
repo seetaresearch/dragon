@@ -1,5 +1,5 @@
 #include "dragon/core/workspace.h"
-#include "dragon/operators/array/scatter_ops.h"
+#include "dragon/operators/array/scatter_op.h"
 #include "dragon/utils/math_functions.h"
 #include "dragon/utils/op_kernels.h"
 
@@ -8,9 +8,9 @@ namespace dragon {
 template <class Context>
 template <typename T>
 void ScatterAddOp<Context>::DoRunWithType() {
-  SET_INPUT_SPEC(2);
   auto &X = Input(0), *Y = Output(0);
   auto &X_index = Input(1), &X_value = Input(2);
+  Output("X_value_spec")->ReshapeLike(X_value);
   GET_OP_AXIS_ARG(axis, X.ndim(), 0);
 
   CHECK_GT(X_index.count(), 0) << "\nLength of index must > 0.";
@@ -42,9 +42,9 @@ void ScatterAddOp<Context>::DoRunWithType() {
 template <class Context>
 template <typename T>
 void ScatterAddOp<Context>::DoRunWithTypeAndCast() {
-  SET_INPUT_SPEC(2);
   auto &X = Input(0), *Y = Output(0);
   auto &X_index = Input(1), &X_value = Input(2);
+  Output("X_value_spec")->ReshapeLike(X_value);
   GET_OP_AXIS_ARG(axis, X.ndim(), 0);
 
   CHECK_GT(X_index.count(), 0) << "\nLength of index must > 0.";
@@ -57,11 +57,11 @@ void ScatterAddOp<Context>::DoRunWithTypeAndCast() {
     if (i != axis) CHECK_LE(X_index.dim(i), X_value.dim(i));
   }
 
-  // Copy the input data.
-  auto* y = ctx()->workspace()->template data<float, Context>({X.count()})[0];
-  math::Cast(X.count(), X.template data<T, Context>(), y, ctx());
+  // Copy input data.
+  auto* scratch = ctx()->workspace()->template data<float, Context>(X.count());
+  math::Cast(X.count(), X.template data<T, Context>(), scratch, ctx());
 
-  // Add the new data.
+  // Add new data.
   kernels::ScatterAdd(
       axis,
       X.ndim(),
@@ -70,13 +70,13 @@ void ScatterAddOp<Context>::DoRunWithTypeAndCast() {
       X.strides().data(),
       X_index.template data<int64_t, Context>(),
       X_value.template data<T, Context>(),
-      y,
+      scratch,
       ctx());
 
   // Convert to Y.
   math::Cast(
       X.count(),
-      y,
+      scratch,
       Y->ReshapeLike(X)->template mutable_data<T, Context>(),
       ctx());
 }
@@ -102,9 +102,9 @@ void ScatterAddGradientOp<Context>::DoRunWithType() {
   GET_OP_AXIS_ARG(axis, dY.ndim(), 0);
 
   if (dX_value->has_name()) {
-    auto& X_value_ref = INPUT_SPEC(2);
+    auto& X_value_spec = Input("X_value_spec");
     for (int i = 0; i < X_index.ndim(); ++i) {
-      CHECK_EQ(X_index.dim(i), X_value_ref.dim(i));
+      CHECK_EQ(X_index.dim(i), X_value_spec.dim(i));
       if (i != axis) CHECK_EQ(X_index.dim(i), dY.dim(i));
     }
     kernels::GatherElements(

@@ -17,6 +17,7 @@ from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
 
+from dragon.core.ops import array_ops
 from dragon.core.ops import vision_ops
 from dragon.vm.tensorflow.core.framework import tensor_shape
 from dragon.vm.tensorflow.core.keras import activations
@@ -25,8 +26,6 @@ from dragon.vm.tensorflow.core.keras import regularizers
 from dragon.vm.tensorflow.core.keras.engine.base_layer import Layer
 from dragon.vm.tensorflow.core.keras.engine.input_spec import InputSpec
 from dragon.vm.tensorflow.core.keras.utils import conv_utils
-from dragon.vm.tensorflow.core.ops import array_ops
-from dragon.vm.tensorflow.core.ops import nn_ops
 
 
 class Conv(Layer):
@@ -41,6 +40,7 @@ class Conv(Layer):
         padding='valid',
         data_format='channels_last',
         dilation_rate=1,
+        groups=1,
         activation=None,
         use_bias=True,
         kernel_initializer='glorot_uniform',
@@ -69,6 +69,8 @@ class Conv(Layer):
             ``'channels_first'`` or ``'channels_last'``.
         dilation_rate : Union[int, Sequence[int]], optional, default=1
             The rate of dilated convolution.
+        groups : int, optional, default=1
+            The number of groups to split channels into.
         activation : Union[callable, str], optional
             The optional activation function.
         use_bias : bool, optional, default=True
@@ -86,6 +88,7 @@ class Conv(Layer):
         super(Conv, self).__init__(trainable=trainable, name=name, **kwargs)
         self.rank = rank
         self.filters = filters
+        self.groups = groups or 1
         self.kernel_size = conv_utils.normalize_tuple(kernel_size, rank)
         self.strides = conv_utils.normalize_tuple(strides, rank)
         self.padding = conv_utils.normalize_padding(padding)
@@ -98,32 +101,24 @@ class Conv(Layer):
         self.kernel_regularizer = regularizers.get(kernel_regularizer)
         self.bias_regularizer = regularizers.get(bias_regularizer)
         self.input_spec = InputSpec(ndim=self.rank + 2)
-        self.conv_function = kwargs.get('conv_function', nn_ops.convolution)
         self.kernel = None
         self.bias = None
 
     def build(self, input_shape):
         input_shape = tensor_shape.TensorShape(input_shape)
-        channel_axis = self._get_channel_axis()
-        if input_shape.dims[channel_axis] is None:
-            raise ValueError('The channel dimension of the input '
-                             'should be determined, got None.')
-        input_dim = int(input_shape[channel_axis])
-        if self.filters is None:
-            input_dim, self.filters = 1, input_dim
-        kernel_shape = [self.filters] + list(self.kernel_size)
-        if self.data_format == 'channels_first':
-            kernel_shape.insert(1, input_dim)
-        else:
-            kernel_shape.append(input_dim)
+        input_channel = self._get_input_channel(input_shape)
+        if input_channel % self.groups != 0:
+            raise ValueError(
+                'The number of input channels should be divided by the groups. '
+                'Got groups={}, channels={}.'.format(self.groups, input_channel))
+        input_filters = input_channel // self.groups
         self.kernel = self.add_weight(
             name='kernel',
-            shape=kernel_shape,
+            shape=(self.filters, input_filters) + self.kernel_size,
             initializer=self.kernel_initializer,
             regularizer=self.kernel_regularizer,
             trainable=True,
-            dtype=self.dtype,
-        )
+            dtype=self.dtype)
         if self.use_bias:
             self.bias = self.add_weight(
                 name='bias',
@@ -131,43 +126,43 @@ class Conv(Layer):
                 initializer=self.bias_initializer,
                 regularizer=self.bias_regularizer,
                 trainable=True,
-                dtype=self.dtype,
-            )
+                dtype=self.dtype)
         else:
             self.bias = None
         self.built = True
 
     def call(self, inputs):
-        output = self.conv_function(
-            input=inputs,
-            filters=self.kernel,
+        pads, padding = self._get_legacy_pads()
+        output = vision_ops.conv(
+            [inputs, self.kernel] +
+            ([self.bias] if self.use_bias else []),
+            kernel_shape=self.kernel_size,
             strides=self.strides,
-            padding=self.padding,
+            pads=pads,
             dilations=self.dilation_rate,
-            data_format=conv_utils.convert_data_format(
-                self.data_format, self.rank + 2))
-        if self.use_bias:
-            output = self._add_bias(output)
+            group=self.groups,
+            padding=padding.upper(),
+            data_format=conv_utils.convert_data_format(self.data_format))
         if self.activation is not None:
             return self.activation(output)
-        return output
-
-    def _add_bias(self, input):
-        """Add a bias tensor to input."""
-        if self.data_format == 'channels_first':
-            if self.rank == 1:
-                bias = array_ops.reshape(self.bias, (1, self.filters, 1))
-                input += bias
-                output = input
-            else:
-                output = nn_ops.bias_add(input, self.bias, data_format='NCHW')
-        else:
-            output = nn_ops.bias_add(input, self.bias, data_format='NHWC')
         return output
 
     def _get_channel_axis(self):
         """Return the channel axis."""
         return 1 if self.data_format == 'channels_first' else -1
+
+    def _get_input_channel(self, input_shape):
+        channel_axis = self._get_channel_axis()
+        if input_shape.dims[channel_axis] is None:
+            raise ValueError('The channel dimension of the input '
+                             'should be defined, got None.')
+        return int(input_shape[channel_axis])
+
+    def _get_legacy_pads(self):
+        pads, padding = 0, self.padding
+        if not isinstance(self.padding, str):
+            pads, padding = self.padding, 'valid'
+        return pads, padding
 
 
 class Conv1D(Conv):
@@ -443,26 +438,19 @@ class ConvTranspose(Conv):
 
     def build(self, input_shape):
         input_shape = tensor_shape.TensorShape(input_shape)
-        channel_axis = self._get_channel_axis()
-        if input_shape.dims[channel_axis] is None:
-            raise ValueError('The channel dimension of the inputs '
-                             'should be determined, got None.')
-        input_dim = int(input_shape[channel_axis])
-        if self.filters is None:
-            input_dim, self.filters = 1, input_dim
-        kernel_shape = [input_dim] + list(self.kernel_size)
-        if self.data_format == 'channels_first':
-            kernel_shape.insert(1, self.filters)
-        else:
-            kernel_shape.append(self.filters)
+        input_channel = self._get_input_channel(input_shape)
+        if input_channel % self.groups != 0:
+            raise ValueError(
+                'The number of input channels should be divided by the groups. '
+                'Got groups={}, channels={}.'.format(self.groups, input_channel))
+        input_filters = input_channel // self.groups
         self.kernel = self.add_weight(
             name='kernel',
-            shape=kernel_shape,
+            shape=(input_filters, self.filters) + self.kernel_size,
             initializer=self.kernel_initializer,
             regularizer=self.kernel_regularizer,
             trainable=True,
-            dtype=self.dtype,
-        )
+            dtype=self.dtype)
         if self.use_bias:
             self.bias = self.add_weight(
                 name='bias',
@@ -470,26 +458,25 @@ class ConvTranspose(Conv):
                 initializer=self.bias_initializer,
                 regularizer=self.bias_regularizer,
                 trainable=True,
-                dtype=self.dtype,
-            )
+                dtype=self.dtype)
         else:
             self.bias = None
         self.built = True
 
     def call(self, inputs):
-        output = nn_ops.conv_transpose(
-            input=inputs,
-            filters=self.kernel,
+        pads, padding = self._get_legacy_pads()
+        output = vision_ops.conv_transpose(
+            [inputs, self.kernel] +
+            ([self.bias] if self.use_bias else []),
+            kernel_shape=self.kernel_size,
             strides=self.strides,
-            padding=self.padding,
+            pads=pads,
+            dilations=self.dilation_rate,
+            group=self.groups,
+            padding=padding,
             output_padding=self.output_padding,
             output_shape=None,
-            dilations=self.dilation_rate,
-            data_format=conv_utils.convert_data_format(
-                self.data_format, self.rank + 2),
-        )
-        if self.use_bias:
-            self._add_bias(output)
+            data_format=conv_utils.convert_data_format(self.data_format))
         if self.activation is not None:
             return self.activation(output)
         return output
@@ -767,9 +754,23 @@ class DepthwiseConv2D(Conv):
             bias_initializer=initializers.get(bias_initializer),
             kernel_regularizer=regularizers.get(kernel_regularizer),
             bias_regularizer=regularizers.get(bias_regularizer),
-            conv_function=nn_ops.depthwise_conv2d,
             **kwargs
         )
+
+    def call(self, inputs):
+        pads, padding = self._get_legacy_pads()
+        output = vision_ops.depthwise_conv2d(
+            [inputs, self.kernel] +
+            ([self.bias] if self.use_bias else []),
+            kernel_shape=self.kernel_size,
+            strides=self.strides,
+            pads=pads,
+            dilations=self.dilation_rate,
+            padding=padding.upper(),
+            data_format=conv_utils.convert_data_format(self.data_format))
+        if self.activation is not None:
+            return self.activation(output)
+        return output
 
 
 class UpSampling(Layer):
@@ -909,13 +910,7 @@ class UpSampling3D(UpSampling):
 class ZeroPadding(Layer):
     """Zero padding layer."""
 
-    def __init__(
-        self,
-        rank,
-        padding=1,
-        data_format='channels_last',
-        **kwargs
-    ):
+    def __init__(self, rank, padding=1, data_format='channels_last', **kwargs):
         """Create a ``ZeroPadding`` Layer.
 
         Parameters
@@ -932,26 +927,21 @@ class ZeroPadding(Layer):
         self.rank = rank
         self.padding = conv_utils.normalize_paddings(padding, rank)
         self.data_format = conv_utils.normalize_data_format(data_format)
-        if self.data_format == 'channel_first':
+        if self.data_format == 'channels_first':
             self.padding = conv_utils.normalize_paddings(0, 2) + self.padding
         else:
             self.padding = conv_utils.normalize_paddings(0, 1) + self.padding
-            self.padding = self.padding + conv_utils.normalize_paddings(0, 1)
+            self.padding += conv_utils.normalize_paddings(0, 1)
         self.input_spec = InputSpec(ndim=rank + 2)
 
     def call(self, inputs):
-        return array_ops.pad(inputs, paddings=self.padding)
+        return array_ops.pad(inputs, pads=self.padding)
 
 
 class ZeroPadding1D(ZeroPadding):
     """1D zero padding layer."""
 
-    def __init__(
-        self,
-        padding=1,
-        data_format='channels_last',
-        **kwargs
-    ):
+    def __init__(self, padding=1, data_format='channels_last', **kwargs):
         """Create a ``ZeroPadding1D`` Layer.
 
         Parameters
@@ -963,22 +953,13 @@ class ZeroPadding1D(ZeroPadding):
 
         """
         super(ZeroPadding1D, self).__init__(
-            rank=1,
-            padding=padding,
-            data_format=data_format,
-            **kwargs
-        )
+            rank=1, padding=padding, data_format=data_format, **kwargs)
 
 
 class ZeroPadding2D(ZeroPadding):
     """2D zero padding layer."""
 
-    def __init__(
-        self,
-        padding=1,
-        data_format='channels_last',
-        **kwargs
-    ):
+    def __init__(self, padding=1, data_format='channels_last', **kwargs):
         """Create a ``ZeroPadding2D`` Layer.
 
         Parameters
@@ -990,22 +971,13 @@ class ZeroPadding2D(ZeroPadding):
 
         """
         super(ZeroPadding2D, self).__init__(
-            rank=2,
-            padding=padding,
-            data_format=data_format,
-            **kwargs
-        )
+            rank=2, padding=padding, data_format=data_format, **kwargs)
 
 
 class ZeroPadding3D(ZeroPadding):
     """3D zero padding layer."""
 
-    def __init__(
-        self,
-        padding=1,
-        data_format='channels_last',
-        **kwargs
-    ):
+    def __init__(self, padding=1, data_format='channels_last', **kwargs):
         """Create an ``ZeroPadding3D`` Layer.
 
         Parameters
@@ -1017,8 +989,4 @@ class ZeroPadding3D(ZeroPadding):
 
         """
         super(ZeroPadding3D, self).__init__(
-            rank=3,
-            padding=padding,
-            data_format=data_format,
-            **kwargs
-        )
+            rank=3, padding=padding, data_format=data_format, **kwargs)

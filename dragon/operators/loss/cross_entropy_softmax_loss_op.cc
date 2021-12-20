@@ -1,5 +1,5 @@
 #include "dragon/core/workspace.h"
-#include "dragon/operators/loss/cross_entropy_loss_ops.h"
+#include "dragon/operators/loss/cross_entropy_loss_op.h"
 #include "dragon/utils/math_functions.h"
 #include "dragon/utils/op_kernels.h"
 
@@ -18,19 +18,19 @@ void SoftmaxCrossEntropyLossOp<Context>::DoRunWithType() {
   const auto NxCxS = X.count();
 
   T *loss = nullptr, *mask = nullptr;
-  auto* X_norm = Buffer("X_norm")->ReshapeLike(X);
+  auto* X_norm = Output("X_norm")->ReshapeLike(X);
   auto* input = X_norm->template mutable_data<T, Context>();
 
   kernels::Softmax(N, S, C, X.template data<T, Context>(), input, ctx());
   if (Y.meta() == TypeMeta::Make<T>()) {
     CHECK_EQ(Y.count(), NxCxS) << "\nNumel of X and Y must be matched.";
     auto* target = Y.template data<T, Context>();
-    loss = ctx()->workspace()->template data<T, Context>({NxCxS})[0];
+    loss = ctx()->workspace()->template data<T, Context>(NxCxS);
     kernels::CrossEntropy(NxCxS, input, target, loss, ctx());
   } else {
     CHECK_EQ(Y.count(), NxS) << "\nNumel of X and Y must be matched.";
-    auto data = ctx()->workspace()->template data<T, Context>({NxS, NxS + 1});
-    loss = data[0], mask = data[1];
+    auto* scratch = ctx()->workspace()->template data<T, Context>(NxS * 2 + 1);
+    loss = scratch, mask = scratch + NxS;
     if (Y.meta() == TypeMeta::Make<int>()) {
       auto* target = Y.template data<int, Context>();
       kernels::CrossEntropy(
@@ -52,9 +52,9 @@ void SoftmaxCrossEntropyLossOp<Context>::DoRunWithType() {
     if (mask == nullptr) {
       math::ReduceSum(
           3,
-          vec32_t({int(N), int(C), int(S)}).data(),
+          vec64_t({N, C, S}).data(),
           1,
-          vec32_t({1}).data(),
+          vec64_t({1}).data(),
           1.f,
           loss,
           L->Reshape(out_dims)->template mutable_data<T, Context>(),
@@ -100,7 +100,7 @@ void SoftmaxCrossEntropyLossGradientOp<Context>::DoRunWithType() {
   const auto NxCxS = X.count();
 
   T* mask = nullptr;
-  auto* input = Buffer("X_norm")->template data<T, Context>();
+  auto* input = Input("X_norm").template data<T, Context>();
   auto* dl = dL.template data<T, Context>();
   auto* dx = dX->template mutable_data<T, Context>();
 
@@ -109,7 +109,7 @@ void SoftmaxCrossEntropyLossGradientOp<Context>::DoRunWithType() {
     auto* target = Y.template data<T, Context>();
     math::Axpy(NxCxS, -1.f, target, dx, ctx());
   } else {
-    mask = ctx()->workspace()->template data<T, Context>({NxS + 1})[0];
+    mask = ctx()->workspace()->template data<T, Context>(NxS + 1);
     if (Y.meta() == TypeMeta::Make<int>()) {
       auto* target = Y.template data<int, Context>();
       kernels::SoftmaxCrossEntropyGrad(

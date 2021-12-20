@@ -51,11 +51,15 @@ class Pooling(Layer):
         self.input_spec = InputSpec(ndim=rank + 2)
 
     def call(self, inputs):
+        pads, padding = 0, self.padding
+        if not isinstance(self.padding, str):
+            pads, padding = self.padding, 'valid'
         return self.pool_function(
             inputs,
             kernel_shape=self.pool_size,
             strides=self.strides,
-            padding=self.padding.upper(),
+            pads=pads,
+            padding=padding.upper(),
             data_format=conv_utils.convert_data_format(self.data_format),
         )
 

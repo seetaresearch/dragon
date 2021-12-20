@@ -24,12 +24,11 @@ class RMSprop(optimizer.Optimizer):
     The **RMSprop** update is defined as:
 
     .. math::
-        \text{RMSprop}(g) = -m_{t} \\
+        \text{RMSprop}(g) = \text{lr} * m_{t} \\
             \quad \\ \text{where} \quad
                 \begin{cases}
                     v_{t} = \text{decay} * v_{t-1} + (1 - \text{decay}) * g^{2} \\
-                    m_{t} = \text{momentum} * m_{t-1} +
-                            \frac{\text{lr} * g}{\sqrt{v_{t}} + \epsilon}
+                    m_{t} = \text{momentum} * m_{t-1} + \frac{g}{\sqrt{v_{t}} + \epsilon}
                 \end{cases}
 
     """

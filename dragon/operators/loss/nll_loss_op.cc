@@ -18,8 +18,8 @@ void NLLLossOp<Context>::DoRunWithType() {
   CHECK_EQ(Y.count(), NxS) << "\nNumel of X and Y must be matched.";
 
   auto* input = X.template mutable_data<T, Context>();
-  auto data = ctx()->workspace()->template data<T, Context>({NxS, NxS + 1});
-  auto *loss = data[0], *mask = data[1];
+  auto* scratch = ctx()->workspace()->template data<T, Context>(NxS * 2 + 1);
+  auto *loss = scratch, *mask = scratch + NxS;
 
   if (Y.meta() == TypeMeta::Make<int>()) {
     auto* target = Y.template data<int, Context>();
@@ -76,7 +76,7 @@ void NLLLossGradientOp<Context>::DoRunWithType() {
   auto* input = X.template data<T, Context>();
   auto* dl = dL.template data<T, Context>();
   auto* dx = dX->template mutable_data<T, Context>();
-  auto* mask = ctx()->workspace()->template data<T, Context>({NxS + 1})[0];
+  auto* mask = ctx()->workspace()->template data<T, Context>(NxS + 1);
   math::Set(dX->count(), convert::To<T>(0.f), dx, ctx());
 
   if (Y.meta() == TypeMeta::Make<int>()) {

@@ -14,7 +14,6 @@
 #define DRAGON_OPERATORS_VISION_IM2COL_OP_H_
 
 #include "dragon/operators/vision/conv_op_base.h"
-#include "dragon/operators/vision/conv_op_cache.h"
 
 namespace dragon {
 

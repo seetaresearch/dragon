@@ -14,7 +14,7 @@ from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
 
-from dragon.vm.torch.core.autograd.function_impl import FunctionLib
+from dragon.vm.torch.core.autograd.function import Function
 from dragon.vm.torch.core.tensor import Tensor
 
 
@@ -52,5 +52,4 @@ def backward(tensors, grad_tensors=None, retain_graph=False):
     else:
         grad_tensors = []
 
-    return FunctionLib._backward(
-        tensors, grad_tensors, retain_graph=retain_graph)
+    return Function.backward(tensors, grad_tensors, retain_graph=retain_graph)

@@ -82,11 +82,14 @@ vm.torch.nn
   `class ConvTranspose3d <nn/ConvTranspose3d.html>`_
   : Apply the 3d deconvolution.
 
+  `class CosineSimilarity <nn/CosineSimilarity.html>`_
+  : Compute the softmax cross entropy.
+
   `class CrossEntropyLoss <nn/CrossEntropyLoss.html>`_
-  : Compute the softmax cross entropy with sparse labels.
+  : Compute the softmax cross entropy.
 
   `class CTCLoss <nn/CTCLoss.html>`_
-  : Compute the ctc loss with batched labels.
+  : Compute the ctc loss.
   `[Graves & Gomez, 2006] <http://www.cs.utoronto.ca/~graves/icml_2006.pdf>`_.
 
   `class DepthwiseConv2d <nn/DepthwiseConv2d.html>`_
@@ -192,7 +195,7 @@ vm.torch.nn
   `[Vaswani et.al, 2017] <https://arxiv.org/abs/1706.03762>`_.
 
   `class NLLLoss <nn/NLLLoss.html>`_
-  : Compute the negative likelihood loss with sparse labels.
+  : Compute the negative likelihood loss.
 
   `class Parameter <nn/Parameter.html>`_
   : A wrapped tensor considered to be a module parameter.
@@ -248,7 +251,7 @@ vm.torch.nn
   : Apply the sigmoid function.
 
   `class SigmoidFocalLoss <nn/SigmoidFocalLoss.html>`_
-  : Compute the sigmoid focal loss with sparse labels.
+  : Compute the sigmoid focal loss.
   `[Lin et.al, 2017] <https://arxiv.org/abs/1708.02002>`__.
 
   `class SiLU <nn/SiLU.html>`_
@@ -327,6 +330,7 @@ vm.torch.nn
   nn/ConvTranspose1d
   nn/ConvTranspose2d
   nn/ConvTranspose3d
+  nn/CosineSimilarity
   nn/CrossEntropyLoss
   nn/CTCLoss
   nn/DepthwiseConv2d

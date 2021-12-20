@@ -379,6 +379,11 @@ class TestTensorOps(OpTestCase):
             self.assertEqual(
                 y, np.take(data.reshape(flatten_shape), index, axis=axes[0]))
 
+    def test_isfinite(self):
+        data = np.array([0., float('nan'), float('inf')])
+        x = new_tensor(data)
+        self.assertEqual(x.isfinite(), np.isfinite(data))
+
     def test_isinf(self):
         data = np.array([0., 1., float('inf')])
         x = new_tensor(data)
@@ -558,6 +563,24 @@ class TestTensorOps(OpTestCase):
         x = new_tensor(data)
         self.assertEqual((x > 2).nonzero(), np.stack(np.nonzero(data > 2), axis=1))
 
+    def test_norm(self):
+        entries = [(0, True), (0, False),
+                   (1, True), (1, False),
+                   ((0, 1), True), ((0, 1), False)]
+        for axis, keepdims in entries:
+            for ord in (1, 2, 'fro', None):
+                data = arange((2, 3))
+                x = new_tensor(data)
+                y = x.norm(ord, axis, keepdim=keepdims)
+                if ord == 1:
+                    result = np.sum(np.abs(data), axis=axis, keepdims=keepdims)
+                elif ord == 2 or ord == 'fro':
+                    result = np.sum(np.square(data), axis=axis, keepdims=keepdims)
+                    result = np.sqrt(result)
+                else:
+                    result = np.linalg.norm(data, ord, axis, keepdims=keepdims)
+                self.assertEqual(y, result)
+
     def test_normal(self):
         data = arange((2, 3))
         x = new_tensor(data)
@@ -606,7 +629,7 @@ class TestTensorOps(OpTestCase):
             data = arange((2, 2))
             x = new_tensor(data)
             y = x.repeat(repeats)
-            repeats = repeats + (1,) * (len(data.shape) - len(repeats))
+            repeats = (1,) * (len(data.shape) - len(repeats)) + repeats
             self.assertEqual(y, np.tile(data, repeats))
 
     def test_reshape(self):
@@ -769,6 +792,11 @@ class TestTensorOps(OpTestCase):
         x.sqrt_()
         self.assertEqual(x, np.sqrt(data))
 
+    def test_square(self):
+        data = np.array([2., 3., 4], 'float32')
+        x = new_tensor(data)
+        self.assertEqual(x.square(), np.square(data))
+
     def test_squeeze(self):
         entries = [((2, 1, 3), 1), ((1, 2, 1, 3), (0, 2)), ((3, 1, 2, 1), (1,))]
         for shape, axis in entries:
@@ -840,6 +868,19 @@ class TestTensorOps(OpTestCase):
             self.assertEqual(x, data.astype(dtype))
             y = x.type(dtype)
             self.assertEqual(y.type(), dtype)
+
+    def test_unbind(self):
+        entries = [0, 1]
+        for axis in entries:
+            data = arange((2, 3))
+            num = data.shape[axis]
+            grad = np.ones(data.shape, 'float32')
+            grad[tuple(slice(0, 1) if i == axis else
+                       slice(None) for i in range(data.ndim))] = 0
+            x = new_tensor(data)
+            y = x.unbind(axis)
+            result = [x.squeeze(axis) for x in np.split(data, num, axis)]
+            self.assertEqual(y, result)
 
     def test_uniform(self):
         data = arange((2, 3))
@@ -928,14 +969,6 @@ class TestTorchOps(OpTestCase):
             kwargs['axis'] = kwargs.pop('dim')
             data = np.linspace(*args, **kwargs)
             self.assertEqual(x, data)
-
-    def test_one_hot(self):
-        entries = [(2, 3, 3), (1, 2, 3), (2, 2, 2)]
-        for index in entries:
-            index = np.array(index, 'int64')
-            x = new_tensor(index)
-            y = torch.one_hot(x, depth=10)
-            self.assertEqual(y, np.eye(10, dtype='int64')[index])
 
     def test_ones_like(self):
         data = np.ones((2, 3), dtype='float32')

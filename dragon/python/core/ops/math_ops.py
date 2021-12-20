@@ -15,9 +15,10 @@ from __future__ import division
 from __future__ import print_function
 
 from dragon.core.autograph import context
-from dragon.core.autograph.op_impl import OpLib
-from dragon.core.autograph.op_impl import OpSchema
+from dragon.core.autograph.op_lib import OpLib
+from dragon.core.autograph.op_lib import OpSchema
 from dragon.core.ops import constant_ops
+from dragon.core.util import nest
 
 
 @OpSchema.num_inputs(1)
@@ -82,6 +83,72 @@ def add(inputs, **kwargs):
 
 
 @OpSchema.num_inputs(1)
+def argmax(inputs, axis=0, keepdims=False, **kwargs):
+    """Compute the index of maximum elements along the given axis.
+
+    :attr:`axis` could be negative:
+
+    ```python
+    # A negative axis is the last-k axis
+    x = dragon.constant([[1, 2, 3], [4, 5, 6]])
+    print(dragon.math.argmax(x, axis=1))
+    print(dragon.math.argmax(x, axis=-1))  # Equivalent
+    ```
+
+    Parameters
+    ----------
+    inputs : dragon.Tensor
+        The input tensor.
+    axis : int, optional, default=0
+        The axis to reduce.
+    keepdims : bool, optional, default=False
+        Keep the reduced dimension or not.
+
+    Returns
+    -------
+    dragon.Tensor
+        The index of maximum elements.
+
+    """
+    if context.executing_eagerly():
+        return OpLib.execute('ArgMax', inputs, axis=axis, keepdims=keepdims)
+    return OpLib.add('ArgMax', inputs, axis=axis, keepdims=keepdims)
+
+
+@OpSchema.num_inputs(1)
+def argmin(inputs, axis=0, keepdims=False, **kwargs):
+    """Compute the index of minimum elements along the given axis.
+
+    :attr:`axis` could be negative:
+
+    ```python
+    # A negative axis is the last-k axis
+    x = dragon.constant([[1, 2, 3], [4, 5, 6]])
+    print(dragon.math.argmin(x, axis=1))
+    print(dragon.math.argmin(x, axis=-1))  # Equivalent
+    ```
+
+    Parameters
+    ----------
+    inputs : dragon.Tensor
+        The input tensor.
+    axis : int, optional, default=0
+        The axis to reduce.
+    keepdims : bool, optional, default=False
+        Keep the reduced dimension or not.
+
+    Returns
+    -------
+    dragon.Tensor
+        The index of minimum elements.
+
+    """
+    if context.executing_eagerly():
+        return OpLib.execute('ArgMin', inputs, axis=axis, keepdims=keepdims)
+    return OpLib.add('ArgMin', inputs, axis=axis, keepdims=keepdims)
+
+
+@OpSchema.num_inputs(2)
 def bitwise_and(inputs, **kwargs):
     r"""Compute the element-wise AND bitwise operation.
 
@@ -172,6 +239,38 @@ def bitwise_xor(inputs, **kwargs):
     if context.executing_eagerly():
         return OpLib.execute('BitwiseXor', inputs)
     return OpLib.add('BitwiseXor', inputs, **kwargs)
+
+
+@OpSchema.num_inputs(1)
+def cast(inputs, dtype, copy=True, **kwargs):
+    """Convert the data type of input.
+
+    Examples:
+
+    ```python
+    x = dragon.constant([1, 2, 3], dtype='int64')
+    print(dragon.cast(x, dtype='float32'))
+    ```
+
+    Parameters
+    ----------
+    inputs : dragon.Tensor
+        The input tensor.
+    dtype : str
+        The data type to convert to.
+    copy : bool, optional, default=True
+        Return a new tensor or call in-place.
+
+    Returns
+    -------
+    dragon.Tensor
+        The output tensor.
+
+    """
+    if context.executing_eagerly():
+        return OpLib.execute(
+            'Cast', inputs, outputs=[None] if copy else inputs, dtype=dtype)
+    return OpLib.add('Cast', inputs, dtype=dtype, **kwargs)
 
 
 @OpSchema.num_inputs(1)
@@ -267,6 +366,59 @@ def cos(inputs, **kwargs):
     if context.executing_eagerly():
         return OpLib.execute('Cos', inputs)
     return OpLib.add('Cos', inputs, **kwargs)
+
+
+@OpSchema.num_inputs(1)
+def cumsum(inputs, axis=0, exclusive=False, reverse=False, **kwargs):
+    """Compute the cumulative sum of elements along the given axis.
+
+    :attr:`axis` could be negative:
+
+    ```python
+    # A negative axis is the last-k axis
+    x = dragon.constant([[1, 2, 3], [4, 5, 6]])
+    print(dragon.math.cumsum(x, axis=1))   # [[1, 3, 6], [4, 9, 15]]
+    print(dragon.math.cumsum(x, axis=-1))  # Equivalent
+    ```
+
+    Use :attr:`exclusive` to exclude the top element:
+
+    ```python
+    x = dragon.constant([1, 2, 3])
+    print(dragon.math.cumsum(x, exclusive=True))  # [0, 1, 3]
+    ```
+
+    Use :attr:`reverse` to reverse the cumulative direction:
+
+    ```python
+    x = dragon.constant([1, 2, 3])
+    print(dragon.math.cumsum(x))  # [1, 3, 6]
+    print(dragon.math.cumsum(x, reverse=True))  # [6, 5, 3]
+    print(dragon.math.cumsum(x, exclusive=True, reverse=True))  # [5, 3, 0]
+    ```
+
+    Parameters
+    ----------
+    inputs : dragon.Tensor
+        The input tensor.
+    axis : int, optional, default=0
+        The axis to cumulate.
+    exclusive : bool, optional, default=False
+        ``True`` to exclude the top element.
+    reverse : bool, optional, default=False
+        ``True`` to cumulate in a reverse direction.
+
+    Returns
+    -------
+    dragon.Tensor
+        The output tensor.
+
+    """
+    if context.executing_eagerly():
+        return OpLib.execute(
+            'CumSum', inputs, axis=axis, exclusive=exclusive, reverse=reverse)
+    return OpLib.add('CumSum', inputs, axis=axis,
+                     exclusive=exclusive, reverse=reverse)
 
 
 @OpSchema.num_inputs(2)
@@ -524,6 +676,35 @@ def invert(inputs, **kwargs):
     if context.executing_eagerly():
         return OpLib.execute('BitwiseNot', inputs)
     return OpLib.add('BitwiseNot', inputs, **kwargs)
+
+
+@OpSchema.num_inputs(1)
+def is_finite(inputs, **kwargs):
+    r"""Check if the elements of input are finite.
+
+    .. math:: \text{out} = \text{isfinite}(\text{input})
+
+    Examples:
+
+    ```python
+    x = dragon.constant([0., float('nan'), float('inf')])
+    print(dragon.math.is_finite(x))  # [True, False, False]
+    ```
+
+    Parameters
+    ----------
+    inputs : dragon.Tensor
+        The input tensor.
+
+    Returns
+    -------
+    dragon.Tensor
+        The output tensor.
+
+    """
+    if context.executing_eagerly():
+        return OpLib.execute('IsFinite', inputs)
+    return OpLib.add('IsFinite', inputs, **kwargs)
 
 
 @OpSchema.num_inputs(1)
@@ -864,6 +1045,49 @@ def matmul(inputs, **kwargs):
     return OpLib.add('MatMul', inputs, **kwargs)
 
 
+@OpSchema.num_inputs(1)
+def max(inputs, axis=None, keepdims=False, **kwargs):
+    """Compute the max value of elements along the given axis.
+
+    :attr:`axis` could be negative or ``None``:
+
+    ```python
+    x = dragon.constant([[1, 2, 3], [4, 5, 6]])
+
+    # A negative axis is the last-k axis
+    print(dragon.math.max(x, 1))
+    print(dragon.math.max(x, -1))  # Equivalent
+
+    # If ``axis`` is None, the vector-style reduction
+    # will be applied to return a scalar result
+    print(dragon.math.max(x))  # 6
+
+    # Also, ``axis`` could be a sequence of integers
+    print(dragon.math.max(x, (0, 1)))  # 6
+    ```
+
+    Parameters
+    ----------
+    inputs : dragon.Tensor
+        The input tensor.
+    axis : Union[int, Sequence[int]], optional
+        The axis to reduce.
+    keepdims : bool, optional, default=False
+        Keep the reduced dimensions or not.
+
+    Returns
+    -------
+    dragon.Tensor
+        The output tensor.
+
+    """
+    axes = None if axis is None else nest.flatten(axis)
+    if context.executing_eagerly():
+        return OpLib.execute('ReduceMax', inputs, axes=axes, keepdims=keepdims)
+    return OpLib.add('ReduceMax', inputs,
+                     axes=axes, keepdims=keepdims, **kwargs)
+
+
 @OpSchema.num_inputs(2)
 def maximum(inputs, **kwargs):
     r"""Compute the maximum value of given two inputs.
@@ -887,6 +1111,92 @@ def maximum(inputs, **kwargs):
     return OpLib.add('Maximum', inputs, **kwargs)
 
 
+@OpSchema.num_inputs(1)
+def mean(inputs, axis=None, keepdims=False, **kwargs):
+    """Compute the mean value of elements along the given axis.
+
+    :attr:`axis` could be negative or ``None``:
+
+    ```python
+    x = dragon.constant([[1, 2, 3], [4, 5, 6]], dtype='float32')
+
+    # A negative axis is the last-k axis
+    print(dragon.math.mean(x, 1))
+    print(dragon.math.mean(x, -1))  # Equivalent
+
+    # If axis is None, the vector-style reduction
+    # will be applied to return a scalar result
+    print(dragon.math.mean(x))  # 3.5
+
+    # Also, axis could be a sequence of integers
+    print(dragon.math.mean(x, (0, 1)))  # 3.5
+    ```
+
+    Parameters
+    ----------
+    inputs : dragon.Tensor
+        The input tensor.
+    axis : Union[int, Sequence[int]], optional
+        The axis to reduce.
+    keepdims : bool, optional, default=False
+        Keep the reduced dimensions or not.
+
+    Returns
+    -------
+    dragon.Tensor
+        The output tensor.
+
+    """
+    axes = None if axis is None else nest.flatten(axis)
+    if context.executing_eagerly():
+        return OpLib.execute('ReduceMean', inputs, axes=axes, keepdims=keepdims)
+    return OpLib.add('ReduceMean', inputs,
+                     axes=axes, keepdims=keepdims, **kwargs)
+
+
+@OpSchema.num_inputs(1)
+def min(inputs, axis=None, keepdims=False, **kwargs):
+    """Compute the min value of elements along the given axis.
+
+    :attr:`axis` could be negative or ``None``:
+
+    ```python
+    x = dragon.constant([[1, 2, 3], [4, 5, 6]])
+
+    # A negative axis is the last-k axis
+    print(dragon.math.min(x, 1))
+    print(dragon.math.min(x, -1))  # Equivalent
+
+    # If ``axis`` is None, the vector-style reduction
+    # will be applied to return a scalar result
+    print(dragon.math.min(x))  # 1
+
+    # Also, ``axis`` could be a sequence of integers
+    print(dragon.math.min(x, (0, 1)))  # 1
+    ```
+
+    Parameters
+    ----------
+    inputs : dragon.Tensor
+        The input tensor.
+    axis : Union[int, Sequence[int]], optional
+        The axis to reduce.
+    keepdims : bool, optional, default=False
+        Keep the reduced dimensions or not.
+
+    Returns
+    -------
+    dragon.Tensor
+        The output tensor.
+
+    """
+    axes = None if axis is None else nest.flatten(axis)
+    if context.executing_eagerly():
+        return OpLib.execute('ReduceMin', inputs, axes=axes, keepdims=keepdims)
+    return OpLib.add('ReduceMin', inputs,
+                     axes=axes, keepdims=keepdims, **kwargs)
+
+
 @OpSchema.num_inputs(2)
 def minimum(inputs, **kwargs):
     r"""Compute the minimum value of given two inputs.
@@ -908,6 +1218,59 @@ def minimum(inputs, **kwargs):
     if context.executing_eagerly():
         return OpLib.execute('Minimum', inputs)
     return OpLib.add('Minimum', inputs, **kwargs)
+
+
+@OpSchema.num_inputs(1)
+def moments(inputs, axis=None, keepdims=False, **kwargs):
+    r"""Compute the mean and variance of input along the given axis.
+
+    .. math::
+        \begin{cases}
+            \mathrm{E}[x] = \frac{1}{n}\sum(x) \\
+            \mathrm{Var}[x] = \frac{1}{n}\sum(x - \mathrm{E}[x])^{2}
+        \end{cases}
+
+    :attr:`axis` could be negative or ``None``:
+
+    ```python
+    x = dragon.constant([[1, 2, 3], [4, 5, 6]], dtype='float32')
+
+    # A negative axis is the last-k axis
+    print(dragon.nn.moments(x, 1))
+    print(dragon.nn.moments(x, -1))  # Equivalent
+
+    # If axis is None, reduce as a vector and return scalars
+    # will be applied to return a scalar result
+    print(dragon.nn.moments(x))  # mean is 3.5, var is 2.916667
+
+    # Also, axis could be a sequence of integers
+    print(dragon.nn.moments(x, (0, 1)))  # mean is 3.5, var is 2.916667
+    ```
+
+    Parameters
+    ----------
+    inputs : dragon.Tensor
+        The input tensor.
+    axis : Union[int, Sequence[int]], optional
+        The axis to reduce.
+    keepdims : bool, optional, default=False
+        Keep the reduced dimensions or not.
+
+    Returns
+    -------
+    dragon.Tensor
+        The mean tensor.
+    dragon.Tensor
+        The variance tensor.
+
+    """
+    axes = None if axis is None else nest.flatten(axis)
+    if context.executing_eagerly():
+        return OpLib.execute(
+            'Moments', inputs, outputs=[None, None],
+            axes=axes, keepdims=keepdims)
+    return OpLib.add('Moments', inputs, num_outputs=2,
+                     axes=axes, keepdims=keepdims, **kwargs)
 
 
 @OpSchema.num_inputs(2)
@@ -967,6 +1330,56 @@ def negative(inputs, **kwargs):
     if context.executing_eagerly():
         return OpLib.execute('Neg', inputs)
     return OpLib.add('Neg', inputs, **kwargs)
+
+
+@OpSchema.num_inputs(1)
+def norm(inputs, ord=None, axis=None, keepdims=False, **kwargs):
+    """Compute the norm value of elements along the given axis.
+
+    :attr:`axis` could be negative or ``None``:
+
+    ```python
+    x = dragon.constant([[1., 2., 3.], [4., 5., 6.]])
+
+    # A negative axis is the last-k axis
+    print(dragon.math.norm(x, axis=1))
+    print(dragon.math.norm(x, axis=-1))  # Equivalent
+
+    # If ``axis`` is None, the vector-style reduction
+    # will be applied to return a scalar result
+    print(dragon.math.norm(x))  # 9.539
+
+    # Also, ``axis`` could be a sequence of integers
+    print(dragon.math.norm(x, axis=(0, 1)))  # 9.539
+    ```
+
+    Parameters
+    ----------
+    inputs : dragon.Tensor
+        The input tensor.
+    ord : {1, 2, 'fro'}, optional
+        The norm order.
+    axis : Union[int, Sequence[int]], optional
+        The axis to reduce.
+    keepdims : bool, optional, default=False
+        Keep the reduced dimensions or not.
+
+    Returns
+    -------
+    dragon.Tensor
+        The output tensor.
+
+    """
+    if ord is None or ord == 2 or ord == 'fro':
+        op_type = 'ReduceL2'
+    elif ord == 1:
+        op_type = 'ReduceL1'
+    else:
+        raise ValueError('Unsupported norm order: ' + str(ord))
+    axes = None if axis is None else nest.flatten(axis)
+    if context.executing_eagerly():
+        return OpLib.execute(op_type, inputs, axes=axes, keepdims=keepdims)
+    return OpLib.add(op_type, inputs, axes=axes, keepdims=keepdims, **kwargs)
 
 
 @OpSchema.num_inputs(2)
@@ -1273,3 +1686,46 @@ def sub(inputs, **kwargs):
     if context.executing_eagerly():
         return OpLib.execute('Sub', inputs)
     return OpLib.add('Sub', inputs, **kwargs)
+
+
+@OpSchema.num_inputs(1)
+def sum(inputs, axis=None, keepdims=False, **kwargs):
+    """Compute the sum value of elements along the given axis.
+
+    :attr:`axis` could be negative or ``None``:
+
+    ```python
+    x = dragon.constant([[1, 2, 3], [4, 5, 6]])
+
+    # A negative axis is the last-k axis
+    print(dragon.math.sum(x, 1))
+    print(dragon.math.sum(x, -1))  # Equivalent
+
+    # If axis is None, the vector-style reduction
+    # will be applied to return a scalar result
+    print(dragon.math.sum(x))  # 21
+
+    # Also, axis could be a sequence of integers
+    print(dragon.math.sum(x, (0, 1)))  # 21
+    ```
+
+    Parameters
+    ----------
+    inputs : dragon.Tensor
+        The input tensor.
+    axis : Union[int, Sequence[int]], optional
+        The axis to reduce.
+    keepdims : bool, optional, default=False
+        Keep the reduced dimensions or not.
+
+    Returns
+    -------
+    dragon.Tensor
+        The output tensor.
+
+    """
+    axes = None if axis is None else nest.flatten(axis)
+    if context.executing_eagerly():
+        return OpLib.execute('ReduceSum', inputs, axes=axes, keepdims=keepdims)
+    return OpLib.add('ReduceSum', inputs,
+                     axes=axes, keepdims=keepdims, **kwargs)

@@ -12,8 +12,8 @@ void DropoutOp<Context>::DoRunWithType() {
   if (phase() == "TEST") {
     Y->ReshapeLike(X)->CopyFrom(X, ctx());
   } else if (phase() == "TRAIN") {
-    auto* X_mask = Buffer("X_mask")->ReshapeLike(X);
     auto drop_ratio = ratio();
+    auto* X_mask = Output("X_mask")->ReshapeLike(X);
     kernels::Dropout(
         X.count(),
         drop_ratio,
@@ -21,7 +21,7 @@ void DropoutOp<Context>::DoRunWithType() {
         X.template data<T, Context>(),
         Y->ReshapeLike(X)->template mutable_data<T, Context>(),
         X_mask->template mutable_data<uint8_t, Context>(),
-        ctx()->workspace()->template data<uint32_t, Context>({X.count()})[0],
+        ctx()->workspace()->template data<uint32_t, Context>(X.count()),
         ctx());
   } else {
     LOG(FATAL) << "Unknown Phase: " << phase();
@@ -43,7 +43,7 @@ void DropoutGradientOp<Context>::DoRunWithType() {
     math::ApplyMask(
         dY.count(),
         1.f / (1.f - ratio()),
-        Buffer("X_mask")->template data<uint8_t, Context>(),
+        Input("X_mask").template data<uint8_t, Context>(),
         dY.template data<T, Context>(),
         dX->ReshapeLike(dY)->template mutable_data<T, Context>(),
         ctx());

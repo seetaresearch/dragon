@@ -48,7 +48,7 @@ class ImageDecoder(object):
 
         Parameters
         ----------
-        output_type : {'BGR', 'RGB'}, optional
+        output_type : str, optional, default='BGR'
             The output color space.
         host_memory_padding : int, optional, default=8388608
             The number of bytes for host buffer.
@@ -103,7 +103,7 @@ class ImageDecoderRandomCrop(object):
 
         Parameters
         ----------
-        output_type : {'BGR', 'RGB'}, optional
+        output_type : str, optional, default='BGR'
             The output color space.
         host_memory_padding : int, optional, default=8388608
             The number of bytes for host buffer.

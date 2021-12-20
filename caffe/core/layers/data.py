@@ -96,9 +96,9 @@ class Data(Layer):
         self.data_args = {
             'source': data_param.source,
             'batch_size': data_param.batch_size,
-            'prefetch': data_param.prefetch,
+            'prefetch_depth': data_param.prefetch,
             'shuffle': image_data_param.shuffle,
-            'phase': {0: 'TRAIN', 1: 'TEST'}[int(layer_param.phase)],
+            'training': {0: True, 1: False}[int(layer_param.phase)],
             'crop_size': transform_param.crop_size,
             'mirror': transform_param.mirror,
         }

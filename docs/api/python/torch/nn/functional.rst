@@ -62,11 +62,14 @@ vm.torch.nn.functional
   `conv_transpose3d(...) <functional/conv_transpose3d.html>`_
   : Apply the 3d deconvolution to input.
 
+  `cosine_similarity(...) <functional/cosine_similarity.html>`_
+  : Compute the cosine similarity between inputs.
+
   `cross_entropy(...) <functional/cross_entropy.html>`_
-  : Compute the softmax cross entropy with sparse labels.
+  : Compute the softmax cross entropy.
 
   `ctc_loss(...) <functional/ctc_loss.html>`_
-  : Compute the ctc loss with batched labels.
+  : Compute the ctc loss.
   `[Graves & Gomez, 2006] <http://www.cs.utoronto.ca/~graves/icml_2006.pdf>`_.
 
   `depthwise_conv2d(...) <functional/depthwise_conv2d.html>`_
@@ -147,10 +150,13 @@ vm.torch.nn.functional
   `[Vaswani et.al, 2017] <https://arxiv.org/abs/1706.03762>`_.
 
   `nll_loss(...) <functional/nll_loss.html>`_
-  : Compute the negative likelihood loss with sparse labels.
+  : Compute the negative likelihood loss.
 
   `normalize(...) <functional/normalize.html>`_
   : Apply the :math:`L_{p}` normalization to the input.
+
+  `one_hot(...) <functional/one_hot.html>`_
+  : Return the one-hot representation of input.
 
   `pad(...) <functional/pad.html>`_
   : Pad the input according to the given sizes.
@@ -174,14 +180,14 @@ vm.torch.nn.functional
   `[Krizhevsky, 2010] <http://www.cs.utoronto.ca/~kriz/conv-cifar10-aug2010.pdf>`_.
 
   `selu(...) <functional/selu.html>`_
-  : Compute the sigmoid focal loss with sparse labels.
+  : Compute the sigmoid focal loss.
   `[Lin et.al, 2017] <https://arxiv.org/abs/1708.02002>`__.
 
   `sigmoid(...) <functional/sigmoid.html>`_
   : Apply the sigmoid function to input.
 
   `sigmoid_focal_loss(...) <functional/sigmoid_focal_loss.html>`_
-  : Compute the sigmoid focal loss with sparse labels.
+  : Compute the sigmoid focal loss.
   `[Lin et.al, 2017] <https://arxiv.org/abs/1708.02002>`__.
 
   `silu(...) <functional/silu.html>`_
@@ -235,6 +241,7 @@ vm.torch.nn.functional
   functional/conv_transpose1d
   functional/conv_transpose2d
   functional/conv_transpose3d
+  functional/cosine_similarity
   functional/cross_entropy
   functional/ctc_loss
   functional/depthwise_conv2d
@@ -261,6 +268,7 @@ vm.torch.nn.functional
   functional/multi_head_attention_forward
   functional/nll_loss
   functional/normalize
+  functional/one_hot
   functional/pad
   functional/pixel_shuffle
   functional/pixel_unshuffle

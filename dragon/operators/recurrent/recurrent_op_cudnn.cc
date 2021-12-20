@@ -8,7 +8,7 @@ namespace dragon {
 
 template <class Context>
 template <typename T>
-void CuDNNRecurrentOpBase<Context>::ResetDesc() {
+void CuDNNRecurrentOpBase<Context>::SetDesc() {
   input_dims_ = Input(0).dims();
   seq_length_ = Input(0).dim(0);
   auto input_type = TypeMeta::Id<T>();
@@ -17,39 +17,37 @@ void CuDNNRecurrentOpBase<Context>::ResetDesc() {
   auto ndirections = bidirectional_ ? 2 : 1;
   auto y_dim = hidden_size_ * ndirections;
 
-  // Setup Dropout
+  // Set Dropout.
   if (dropout_ > 0.f) {
     if (!states_initialized_) {
       states_initialized_ = 1;
-      auto cudnn_handle = ctx()->cudnn_handle();
-      CUDNN_CHECK(cudnnDropoutGetStatesSize(cudnn_handle, &states_size_));
+      const auto& handle = ctx()->cudnn_handle();
+      CUDNN_CHECK(cudnnDropoutGetStatesSize(handle, &states_size_));
       std::lock_guard<std::mutex> lk(CUDAContext::mutex());
-      auto* states_tensor = workspace()->CreateTensor(
-          "/share/cudnn/dropout:" + str::to(rng_seed_) + "/states");
-      if (states_tensor->count() > 0) {
-        auto* states = states_tensor->template mutable_data<uint8_t, Context>();
+      auto states_name = "cuDNNDropoutStates:" + str::to(rng_seed_);
+      auto* states = workspace()->CreateTensor(states_name);
+      if (states->count() > 0) {
         CUDNN_CHECK(cudnnRestoreDropoutDescriptor(
             dropout_desc_,
-            cudnn_handle,
+            handle,
             dropout_,
-            states,
+            states->template mutable_data<uint8_t, Context>(),
             states_size_,
             rng_seed_));
       } else {
-        auto* states = states_tensor->Reshape({(int64_t)states_size_})
-                           ->template mutable_data<uint8_t, Context>();
+        states->Reshape({int64_t(states_size_)});
         CUDNN_CHECK(cudnnSetDropoutDescriptor(
             dropout_desc_,
-            cudnn_handle,
+            handle,
             dropout_,
-            states,
+            states->template mutable_data<uint8_t, Context>(),
             states_size_,
             rng_seed_));
       }
     }
   }
 
-  // Setup RNN
+  // Set RNN.
   if (input_type == TypeMeta::Id<float16>()) {
     compute_type_ = CUDNN_DATA_FLOAT;
   } else if (input_type == TypeMeta::Id<float>()) {
@@ -69,7 +67,7 @@ void CuDNNRecurrentOpBase<Context>::ResetDesc() {
       CUDNN_RNN_ALGO_STANDARD,
       compute_type_));
 
-  // Setup TensorCore
+  // Set TensorCore.
   if (TENSOR_CORE_AVAILABLE()) {
     cudnnMathType_t math_type;
     if (input_type == TypeMeta::Id<float16>()) {
@@ -85,21 +83,21 @@ void CuDNNRecurrentOpBase<Context>::ResetDesc() {
     CUDNN_CHECK(cudnnSetRNNMatrixMathType(rnn_desc_, math_type));
   }
 
-  // Setup X and Y
+  // Set X and Y.
   output_dims_ = {seq_length_, batch_size, y_dim};
   x_descs_.reset(new CuDNNTensorDescs(seq_length_));
   y_descs_.reset(new CuDNNTensorDescs(seq_length_));
   x_descs_->Set<T>({batch_size, x_dim, 1}, {x_dim, 1, 1});
   y_descs_->Set<T>({batch_size, y_dim, 1}, {y_dim, 1, 1});
 
-  // Setup Hx, Cx, Hy and Cy
+  // Set Hx, Cx, Hy and Cy.
   hidden_dims_ = {num_layers_ * ndirections, batch_size, hidden_size_};
   CuDNNSetTensorDesc<T>(&hx_desc_, hidden_dims_);
   CuDNNSetTensorDesc<T>(&cx_desc_, hidden_dims_);
   CuDNNSetTensorDesc<T>(&hy_desc_, hidden_dims_);
   CuDNNSetTensorDesc<T>(&cy_desc_, hidden_dims_);
 
-  // Setup packed weights
+  // Set weights.
   size_t w_size;
   CUDNN_CHECK(cudnnGetRNNParamsSize(
       ctx()->cudnn_handle(),
@@ -121,7 +119,7 @@ void CuDNNRecurrentOpBase<Context>::ResetDesc() {
       3,
       vec32_t({(int)w_count, 1, 1}).data()));
 
-  // Determine the RNN workspace
+  // Set RNN workspace.
   CUDNN_CHECK(cudnnGetRNNWorkspaceSize(
       ctx()->cudnn_handle(),
       rnn_desc_,
@@ -134,7 +132,7 @@ template <class Context>
 template <typename T>
 void CuDNNRecurrentOp<Context>::DoRunWithType() {
   if (Input(0).dims() != input_dims_) {
-    this->template ResetDesc<T>();
+    this->template SetDesc<T>();
   }
 
   if (InputSize() > 2) {
@@ -159,9 +157,6 @@ void CuDNNRecurrentOp<Context>::DoRunWithType() {
     return Output(i)->template mutable_data<T, Context>();
   };
 
-  auto* scratch =
-      ctx()->workspace()->template data<Context>({workspace_size_})[0];
-
   if (phase() == "TRAIN") {
     CUDNN_CHECK(cudnnGetRNNTrainingReserveSize(
         ctx()->cudnn_handle(),
@@ -169,9 +164,7 @@ void CuDNNRecurrentOp<Context>::DoRunWithType() {
         seq_length_,
         x_descs_->data(),
         &reserve_size_));
-    auto* reserve = Buffer("reserve")
-                        ->Reshape({(int64_t)reserve_size_})
-                        ->template mutable_data<uint8_t, Context>();
+    auto* X_reserve = Output("X_reserve")->Reshape({int64_t(reserve_size_)});
     CUDNN_CHECK(cudnnRNNForwardTraining(
         ctx()->cudnn_handle(),
         rnn_desc_,
@@ -190,9 +183,9 @@ void CuDNNRecurrentOp<Context>::DoRunWithType() {
         yAt(1),
         cy_desc_,
         yAt(2),
-        scratch,
+        ctx()->workspace()->template data<Context>(workspace_size_),
         workspace_size_,
-        reserve,
+        X_reserve->template mutable_data<uint8_t, Context>(),
         reserve_size_));
   } else if (phase() == "TEST") {
     CUDNN_CHECK(cudnnRNNForwardInference(
@@ -213,7 +206,7 @@ void CuDNNRecurrentOp<Context>::DoRunWithType() {
         yAt(1),
         cy_desc_,
         yAt(2),
-        scratch,
+        ctx()->workspace()->template data<Context>(workspace_size_),
         workspace_size_));
   } else {
     LOG(FATAL) << "Unknown Phase: " << phase();
@@ -229,7 +222,7 @@ template <class Context>
 template <typename T>
 void CuDNNRecurrentGradientOp<Context>::DoRunWithType() {
   if (Input(0).dims() != input_dims_) {
-    this->template ResetDesc<T>();
+    this->template SetDesc<T>();
   }
 
   auto xAt = [this](int i) {
@@ -244,19 +237,14 @@ void CuDNNRecurrentGradientOp<Context>::DoRunWithType() {
     return Output(i)->template mutable_data<T, Context>();
   };
 
-  auto* scratch =
-      ctx()->workspace()->template data<Context>({workspace_size_})[0];
-
-  // Check the ReserveSpace
   CUDNN_CHECK(cudnnGetRNNTrainingReserveSize(
       ctx()->cudnn_handle(),
       rnn_desc_,
       seq_length_,
       x_descs_->data(),
       &reserve_size_));
-  auto* reserve_tensor = Buffer("reserve");
-  CHECK_EQ(reserve_size_, reserve_tensor->nbytes());
-  auto* reserve = reserve_tensor->template mutable_data<uint8_t, Context>();
+  auto& X_reserve = Input("X_reserve");
+  CHECK_EQ(reserve_size_, X_reserve.size());
 
   if (Output(0)->has_name() || Output(1)->has_name() || Output(2)->has_name() ||
       Output(3)->has_name()) {
@@ -284,15 +272,15 @@ void CuDNNRecurrentGradientOp<Context>::DoRunWithType() {
         yAt(2), // dHx
         cx_desc_,
         yAt(3), // dHy
-        scratch,
+        ctx()->workspace()->template data<Context>(workspace_size_),
         workspace_size_,
-        reserve,
+        X_reserve.template mutable_data<uint8_t, Context>(),
         reserve_size_));
   }
 
   if (Output(1)->has_name()) {
-    // CuDNN accumulates the gradient of weights
-    // We should reset them before bakcward computing
+    // CuDNN accumulates the gradient of weights.
+    // We should reset them before bakcward.
     math::Set(Output(1)->count(), convert::To<T>(0.f), yAt(1), ctx());
     CUDNN_CHECK(cudnnRNNBackwardWeights(
         ctx()->cudnn_handle(),
@@ -304,11 +292,11 @@ void CuDNNRecurrentGradientOp<Context>::DoRunWithType() {
         xAt(2), // Hx
         y_descs_->data(),
         xAt(4), // Y
-        scratch,
+        ctx()->workspace()->template data<Context>(workspace_size_),
         workspace_size_,
         w_desc_,
         yAt(1), // dW
-        reserve,
+        X_reserve.template mutable_data<uint8_t, Context>(),
         reserve_size_));
   }
 }

@@ -61,9 +61,9 @@ class Workspace(object):
     def as_default(self):
         """Set as the default workspace.
 
-        Call this method with the **with** keyword.
+        Call this method with the ``with`` keyword.
 
-        Once **with** is exited, the previous default will be set.
+        Once ``with`` is exited, the previous default will be set.
 
         Returns
         -------
@@ -74,7 +74,7 @@ class Workspace(object):
         return _GLOBAL_DEFAULT_WORKSPACE_STACK.get_controller(self)
 
     def clear(self):
-        """Release the created tensors, operators and graphs."""
+        """Release the tensors, operators and graphs."""
         self._impl.Clear()
 
     def create_graph(self, graph_def):
@@ -87,17 +87,22 @@ class Workspace(object):
             serialization.serialize_proto(graph_def),
             cfg.graph_verbosity == 1)
 
+    def create_handle(self, key):
+        """Create a handle."""
+        return self._handle_pool.create(key)
+
     def create_tensor(self, name=None, scope=None):
         """Create a tensor."""
-        return self._impl.CreateTensor(
-            name if name else self._handle_pool.create(scope))
+        if scope is not None:
+            name = self.create_handle(scope)
+        return self._impl.CreateTensor(name)
 
     def get_tensor(self, name):
         """Return the tensor."""
         return self._impl.GetTensor(name)
 
     def memory_allocated(self, device_type='cpu', device_index=0):
-        """Return the size of memory used by tensors on given device.
+        """Return the size of device memory used by tensors.
 
         Parameters
         ----------
@@ -109,15 +114,13 @@ class Workspace(object):
         Returns
         -------
         int
-            The total number of allocated bytes.
+            The length of allocated bytes.
 
         """
         return self._impl.MemoryAllocated(device_type, device_index)
 
     def merge_from(self, other):
         """Merge resources from the other.
-
-        The ``other`` will not be reset until ``self`` is reset.
 
         Parameters
         ----------
@@ -132,6 +135,10 @@ class Workspace(object):
         """
         self._impl.MergeFrom(other._impl)
         return self
+
+    def release_handle(self, handle):
+        """Release a handle."""
+        self._handle_pool.release(handle)
 
     def run_backward(self, op_defs, targets, grad_targets=None, sources=None):
         """Compute the gradients of operators."""
@@ -152,7 +159,7 @@ class Workspace(object):
         self._impl.RunGraph(name, exec_stage['include'], exec_stage['exclude'])
 
     def run_operator(self, op_def):
-        """Run the operator."""
+        """Run an operator."""
         cfg = config.config()
         if isinstance(op_def, dragon_pb2.OperatorDef):
             op_def = op_def.SerializePartialToString()

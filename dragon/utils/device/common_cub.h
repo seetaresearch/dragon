@@ -19,7 +19,9 @@
 #include <cub/block/block_reduce.cuh>
 #include <cub/device/device_reduce.cuh>
 #include <cub/device/device_select.cuh>
+#include <cub/iterator/cache_modified_output_iterator.cuh>
 #include <cub/iterator/counting_input_iterator.cuh>
+#include <cub/iterator/transform_input_iterator.cuh>
 #include <cub/warp/warp_reduce.cuh>
 
 namespace dragon {

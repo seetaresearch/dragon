@@ -14,7 +14,7 @@ from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
 
-from dragon.core.ops import init_ops
+from dragon.core.ops import random_ops
 
 
 def random_normal(
@@ -50,7 +50,7 @@ def random_normal(
         The output tensor.
 
     """
-    _, dtype, init_fn = seed, dtype, init_ops.random_normal
+    _, dtype, init_fn = seed, dtype, random_ops.random_normal
     return init_fn(shape, mean, stddev, dtype=dtype, name=name)
 
 
@@ -87,7 +87,7 @@ def random_uniform(
         The output tensor.
 
     """
-    _, dtype, init_fn = seed, dtype, init_ops.random_uniform
+    _, dtype, init_fn = seed, dtype, random_ops.random_uniform
     return init_fn(shape, minval, maxval, dtype=dtype, name=name)
 
 
@@ -125,5 +125,5 @@ def truncated_normal(
         The output tensor.
 
     """
-    _, dtype, init_fn = seed, dtype, init_ops.truncated_normal
+    _, dtype, init_fn = seed, dtype, random_ops.truncated_normal
     return init_fn(shape, mean, stddev, dtype=dtype, name=name)

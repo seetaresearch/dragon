@@ -11,7 +11,7 @@ void PoolOp<Context>::DoRunWithType() {
   auto &X = Input(0), *Y = Output(0);
 
   if (mode_ == "MAX") {
-    auto* Y_mask = Buffer("Y_mask")->Reshape(out_shape_);
+    auto* Y_mask = Output("Y_mask")->Reshape(out_shape_);
     if (num_axes_ == 1 || num_axes_ == 2) {
       kernels::MaxPool2d(
           in_dims_[0],
@@ -129,7 +129,7 @@ void PoolGradientOp<Context>::DoRunWithType() {
           num_axes_ == 1 ? 0 : pads_begin_[1],
           data_format(),
           dY.template data<T, Context>(),
-          const_cast<int*>(Buffer("Y_mask")->template data<int, Context>()),
+          const_cast<int*>(Input("Y_mask").template data<int, Context>()),
           dX->ReshapeLike(X)->template mutable_data<T, Context>(),
           ctx());
     } else if (num_axes_ == 3) {
@@ -153,7 +153,7 @@ void PoolGradientOp<Context>::DoRunWithType() {
           pads_begin_[2],
           data_format(),
           dY.template data<T, Context>(),
-          const_cast<int*>(Buffer("Y_mask")->template data<int, Context>()),
+          const_cast<int*>(Input("Y_mask").template data<int, Context>()),
           dX->ReshapeLike(X)->template mutable_data<T, Context>(),
           ctx());
     } else {

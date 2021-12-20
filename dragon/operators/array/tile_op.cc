@@ -1,5 +1,6 @@
 #include "dragon/operators/array/tile_op.h"
 #include "dragon/core/workspace.h"
+#include "dragon/utils/math_functions.h"
 #include "dragon/utils/op_kernels.h"
 
 namespace dragon {
@@ -9,22 +10,33 @@ template <typename T>
 void TileOp<Context>::DoRunWithType() {
   auto &X = Input(0), *Y = Output(0);
 
-  int num_repeats;
+  int num_repeats, num_dims, start_axis;
   repeats(0, &num_repeats);
-  auto Y_dims = X.dims();
+  num_dims = std::max(num_repeats, X.ndim());
+  start_axis = num_dims - X.ndim();
+
+  vec64_t X_dims(num_dims, 1), Y_dims(num_dims, 1);
+  std::copy(X.dims().begin(), X.dims().end(), X_dims.begin() + start_axis);
+  std::copy(X.dims().begin(), X.dims().end(), Y_dims.begin() + start_axis);
   for (int i = 0; i < num_repeats; ++i) {
-    Y_dims[i] *= repeats(i);
+    start_axis = i + (num_dims - num_repeats);
+    Y_dims[start_axis] = X_dims[start_axis] * repeats(i);
   }
 
-  if (X.dims() == Y_dims) {
+  // Save for the gradient computation.
+  Output("X_spec")->ReshapeLike(X);
+  Output("X_dims")->template CopyFrom<int64_t>(X_dims);
+  Output("Y_dims")->template CopyFrom<int64_t>(Y_dims);
+
+  if (X_dims == Y_dims) {
     Y->Reshape(Y_dims)->CopyFrom(X, ctx());
-    return; // Just copy the contents
+    return;
   }
 
   kernels::Tile(
-      X.ndim(),
-      X.dims().data(),
-      X.strides().data(),
+      num_dims,
+      X_dims.data(),
+      Tensor(X_dims).strides().data(),
       Y_dims.data(),
       X.template data<T, Context>(),
       Y->Reshape(Y_dims)->template mutable_data<T, Context>(),
@@ -32,70 +44,38 @@ void TileOp<Context>::DoRunWithType() {
 }
 
 template <class Context>
-void TileOp<Context>::RunOnDevice() {
-  DispatchHelper<dtypes::Generic>::Call(this, Input(0));
-}
-
-template <class Context>
 template <typename T>
 void TileGradientOp<Context>::DoRunWithType() {
-  const T* dy;
-  T* dx;
-  if (src_ == &nav_) {
-    dy = ctx()->workspace()->template data<T, Context>({src_->count()})[0];
-  } else {
-    dy = src_->template data<T, Context>();
-  }
-  if (dest_ == &nav_) {
-    dx = ctx()->workspace()->template data<T, Context>({dest_->count()})[0];
-  } else {
-    dx = dest_->template mutable_data<T, Context>();
-  }
-  kernels::TileGrad(
-      dest_->count(0, axis_), dest_->count(axis_), repeat_, dy, dx, ctx());
-}
+  auto &dY = Input(0), *dX = Output(0)->ReshapeLike(Input("X_spec"));
 
-template <class Context>
-void TileGradientOp<Context>::RunOnDevice() {
-  auto &dY = Input(0), *dX = Output(0);
-
-  // Add the axes
-  int num_repeats;
-  repeats(0, &num_repeats);
-  vector<pair<int, int>> dispatch_axes;
-  for (int i = 0; i < dY.ndim() && i < num_repeats; i++) {
-    const auto repeats_val = repeats(i);
-    if (repeats_val > 1) {
-      dispatch_axes.push_back({repeats_val, i});
+  vec64_t X_dims, Y_dims;
+  vec64_t Y_reduce_axes, Y_reduce_dims;
+  Input("X_dims").template CopyTo<int64_t>(X_dims);
+  Input("Y_dims").template CopyTo<int64_t>(Y_dims);
+  for (int i = 0; i < X_dims.size(); ++i) {
+    if (X_dims[i] != Y_dims[i]) {
+      Y_reduce_axes.push_back(int64_t(Y_reduce_dims.size()));
+      Y_reduce_dims.push_back(Y_dims[i] / X_dims[i]);
+    }
+    if (X_dims[i] != 1) {
+      Y_reduce_dims.push_back(X_dims[i]);
     }
   }
-  std::sort(dispatch_axes.begin(), dispatch_axes.end());
-  std::reverse(dispatch_axes.begin(), dispatch_axes.end());
 
-  if (dispatch_axes.size() == 0) {
-    dX->ReshapeLike(dY)->CopyFrom(dY, ctx());
-    return; // Just copy the contents
+  if (Y_reduce_axes.empty()) {
+    dX->CopyFrom(dY, ctx());
+    return;
   }
 
-  // Select the initial source and destination
-  src_ = &dY, dest_ = dX;
-  if (dispatch_axes.size() % 2 == 0) dest_ = &nav_;
-
-  // Reduce N times along each axis
-  for (const auto& task : dispatch_axes) {
-    axis_ = task.second, repeat_ = task.first;
-    vec64_t X_dims(src_->dims());
-    X_dims[axis_] /= repeat_;
-    dest_->Reshape(X_dims);
-    DispatchHelper<dtypes::Floating>::Call(this, dY);
-    ctx()->FinishDeviceComputation();
-    std::swap(src_, dest_);
-    if (dispatch_axes.size() % 2 == 1) {
-      if (dest_ == &dY) dest_ = &nav_;
-    } else {
-      if (dest_ == &dY) dest_ = dX;
-    }
-  }
+  math::ReduceSum(
+      Y_reduce_dims.size(),
+      Y_reduce_dims.data(),
+      Y_reduce_axes.size(),
+      Y_reduce_axes.data(),
+      1.f,
+      dY.template data<T, Context>(),
+      dX->template mutable_data<T, Context>(),
+      ctx());
 }
 
 DEPLOY_CPU_OPERATOR(Tile);

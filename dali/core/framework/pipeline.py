@@ -53,13 +53,16 @@ try:
                 The number of workers to process external source.
 
             """
-            device_id = context.get_device()['device_index']
+            device = context.get_device()
+            if device['device_type'] == 'cpu':
+                device['device_index'] = None
             super(Pipeline, self).__init__(
                 batch_size=batch_size,
                 num_threads=num_threads,
-                device_id=device_id,
+                device_id=device['device_index'],
                 seed=seed,
                 prefetch_queue_depth=prefetch_queue_depth,
+                py_num_workers=py_num_workers,
                 **kwargs
             )
 

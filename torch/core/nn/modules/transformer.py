@@ -47,6 +47,7 @@ class TransformerDecoder(Module):
         dropout=0.1,
         activation='relu',
         norm=None,
+        norm_first=False,
     ):
         """Create a ``TransformerDecoder``.
 
@@ -64,6 +65,10 @@ class TransformerDecoder(Module):
             The dropout ratio.
         activation : str, optional, default='relu'
              The activation function.
+        norm : torch.nn.Module, optional
+            The norm module.
+        norm_first : bool, optional, default=False
+            Apply layer form before attention and feedforward.
 
         """
         super(TransformerDecoder, self).__init__()
@@ -74,6 +79,7 @@ class TransformerDecoder(Module):
                 dim_feedforward=dim_feedforward,
                 dropout=dropout,
                 activation=activation,
+                norm_first=norm_first,
             ) for _ in range(num_layers)])
         self.num_layers = num_layers
         self.norm = norm
@@ -121,6 +127,7 @@ class TransformerDecoderLayer(Module):
         dim_feedforward=2048,
         dropout=0.1,
         activation='relu',
+        norm_first=False,
     ):
         """Create a ``TransformerDecoderLayer``.
 
@@ -136,6 +143,8 @@ class TransformerDecoderLayer(Module):
             The dropout ratio.
         activation : str, optional, default='relu'
              The activation function.
+        norm_first : bool, optional, default=False
+            Apply layer form before attention and feedforward.
 
         """
         super(TransformerDecoderLayer, self).__init__()
@@ -144,6 +153,7 @@ class TransformerDecoderLayer(Module):
         self.linear1 = Linear(d_model, dim_feedforward)
         self.dropout = Dropout(dropout)
         self.linear2 = Linear(dim_feedforward, d_model)
+        self.norm_first = norm_first
         self.norm1 = LayerNorm(d_model)
         self.norm2 = LayerNorm(d_model)
         self.norm3 = LayerNorm(d_model)
@@ -161,6 +171,29 @@ class TransformerDecoderLayer(Module):
         tgt_key_padding_mask=None,
         memory_key_padding_mask=None,
     ):
+        if self.norm_first:
+            tgt2 = self.norm1(tgt)
+            tgt2 = self.self_attn(
+                tgt2, tgt2, tgt2,
+                attn_mask=tgt_mask,
+                key_padding_mask=tgt_key_padding_mask,
+                need_weights=False)[0]
+            tgt2 = self.dropout1(tgt2)
+            tgt = tgt2.__iadd__(tgt)
+            tgt2 = self.norm2(tgt)
+            tgt2 = self.multihead_attn(
+                tgt2, memory, memory,
+                attn_mask=memory_mask,
+                key_padding_mask=memory_key_padding_mask,
+                need_weights=False)[0]
+            tgt2 = self.dropout2(tgt2)
+            tgt = tgt2.__iadd__(tgt)
+            tgt2 = self.norm3(tgt)
+            tgt2 = self.linear2(self.dropout(self.activation(self.linear1(tgt2))))
+            tgt2 = self.dropout3(tgt2)
+            tgt = tgt2.__iadd__(tgt)
+            return tgt
+
         tgt2 = self.self_attn(
             tgt, tgt, tgt,
             attn_mask=tgt_mask,
@@ -207,6 +240,7 @@ class TransformerEncoder(Module):
         dropout=0.1,
         activation='relu',
         norm=None,
+        norm_first=False,
     ):
         """Create a ``TransformerEncoder``.
 
@@ -224,6 +258,10 @@ class TransformerEncoder(Module):
             The dropout ratio.
         activation : str, optional, default='relu'
              The activation function.
+        norm : torch.nn.Module, optional
+            The norm module.
+        norm_first : bool, optional, default=False
+            Apply layer form before attention and feedforward.
 
         """
         super(TransformerEncoder, self).__init__()
@@ -234,6 +272,7 @@ class TransformerEncoder(Module):
                 dim_feedforward=dim_feedforward,
                 dropout=dropout,
                 activation=activation,
+                norm_first=norm_first,
             ) for _ in range(num_layers)])
         self.num_layers = num_layers
         self.norm = norm
@@ -268,6 +307,7 @@ class TransformerEncoderLayer(Module):
         dim_feedforward=2048,
         dropout=0.1,
         activation='relu',
+        norm_first=False,
     ):
         """Create a ``TransformerEncoderLayer``.
 
@@ -283,6 +323,8 @@ class TransformerEncoderLayer(Module):
             The dropout ratio.
         activation : str, optional, default='relu'
              The activation function.
+        norm_first : bool, optional, default=False
+            Apply layer form before attention and feedforward.
 
         """
         super(TransformerEncoderLayer, self).__init__()
@@ -290,6 +332,7 @@ class TransformerEncoderLayer(Module):
         self.linear1 = Linear(d_model, dim_feedforward)
         self.dropout = Dropout(dropout)
         self.linear2 = Linear(dim_feedforward, d_model)
+        self.norm_first = norm_first
         self.norm1 = LayerNorm(d_model)
         self.norm2 = LayerNorm(d_model)
         self.dropout1 = Dropout(dropout, inplace=True)
@@ -297,6 +340,21 @@ class TransformerEncoderLayer(Module):
         self.activation = _get_activation_fn(activation)
 
     def forward(self, src, src_mask=None, src_key_padding_mask=None):
+        if self.norm_first:
+            src2 = self.norm1(src)
+            src2 = self.self_attn(
+                src2, src2, src2,
+                attn_mask=src_mask,
+                key_padding_mask=src_key_padding_mask,
+                need_weights=False)[0]
+            src2 = self.dropout1(src2)
+            src = src2.__iadd__(src)
+            src2 = self.norm2(src)
+            src2 = self.linear2(self.dropout(self.activation(self.linear1(src2))))
+            src2 = self.dropout2(src2)
+            src = src2.__iadd__(src)
+            return src
+
         src2 = self.self_attn(
             src, src, src,
             attn_mask=src_mask,

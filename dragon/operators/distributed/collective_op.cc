@@ -9,12 +9,12 @@ namespace dragon {
 template <class Context>
 template <typename T>
 void CollectiveOp<Context>::AllReduceMPI() {
-  int64_t count = src_tensor_->count();
-  int64_t seg_size = count / comm_size_;
-  int64_t residual = count % comm_size_;
+  const auto N = src_tensor_->count();
+  const auto split_size = N / comm_size_;
+  const auto residual_size = N % comm_size_;
 
-  vec64_t sizes(comm_size_, seg_size);
-  for (int i = 0; i < residual; ++i) {
+  vec64_t sizes(comm_size_, split_size);
+  for (int i = 0; i < residual_size; ++i) {
     sizes[i]++;
   }
 
@@ -27,29 +27,29 @@ void CollectiveOp<Context>::AllReduceMPI() {
   auto from = (comm_rank_ - 1 + comm_size_) % comm_size_;
 
   auto* data = src_tensor_->template mutable_data<T, Context>();
-  auto* scratch = ctx()->workspace()->template data<T, Context>({sizes[0]})[0];
+  auto* scratch = ctx()->workspace()->template data<T, Context>(sizes[0]);
 
-  // Scatter-Reduce
+  // Scatter-Reduce.
   MPI_Request recv_req;
-  for (int i = 0; i < comm_size_ - 1; i++) {
-    auto base_idx = comm_rank_ - i + comm_size_;
-    auto recv_idx = (base_idx - 1) % comm_size_;
-    auto send_idx = base_idx % comm_size_;
+  for (int i = 0; i < comm_size_ - 1; ++i) {
+    auto idx = comm_rank_ - i + comm_size_;
+    auto send_idx = idx % comm_size_;
+    auto recv_idx = (idx - 1) % comm_size_;
     auto* send_buf = &(data[ends[send_idx] - sizes[send_idx]]);
     auto* recv_buf = &(data[ends[recv_idx] - sizes[recv_idx]]);
     IRecv(scratch, sizes[recv_idx], from, &recv_req);
     Send(send_buf, sizes[send_idx], to);
     MPI_Wait(&recv_req, MPI_STATUS_IGNORE);
     math::Axpy(sizes[recv_idx], 1.f, scratch, recv_buf, ctx());
-    // Wait stream to finish the local reduce before next sending
+    // Wait stream to finish the local reduce before next sending.
     ctx()->FinishDeviceComputation();
   }
 
-  // Allgather
-  for (int i = 0; i < comm_size_ - 1; i++) {
-    auto base_idx = comm_rank_ - i + comm_size_;
-    auto send_idx = (base_idx + 1) % comm_size_;
-    auto recv_idx = base_idx % comm_size_;
+  // Allgather.
+  for (int i = 0; i < comm_size_ - 1; ++i) {
+    auto idx = comm_rank_ - i + comm_size_;
+    auto recv_idx = idx % comm_size_;
+    auto send_idx = (idx + 1) % comm_size_;
     auto* send_buf = &(data[ends[send_idx] - sizes[send_idx]]);
     auto* recv_buf = &(data[ends[recv_idx] - sizes[recv_idx]]);
     SendRecv(send_buf, sizes[send_idx], to, recv_buf, sizes[recv_idx], from);
@@ -65,8 +65,35 @@ void CollectiveOp<Context>::AllReduceNCCL() {
       (const void*)data,
       (void*)data,
       src_tensor_->count(),
-      this->template nccl_dtype<T>(),
+      this->template nccl_data_type<T>(),
       ncclSum,
+      this->nccl_comm(),
+      ((CUDAContext*)ctx())->cuda_stream()));
+#endif // USE_NCCL
+}
+
+template <class Context>
+template <typename T>
+void CollectiveOp<Context>::AllGatherMPI() {
+  auto dest_dims = src_tensor_->dims();
+  dest_dims[0] *= comm_size_;
+  AllGather(
+      src_tensor_->template data<T, Context>(),
+      dest_tensor_->Reshape(dest_dims)->template mutable_data<T, Context>(),
+      src_tensor_->count());
+}
+
+template <class Context>
+template <typename T>
+void CollectiveOp<Context>::AllGatherNCCL() {
+#ifdef USE_NCCL
+  auto dest_dims = src_tensor_->dims();
+  dest_dims[0] *= comm_size_;
+  NCCL_CHECK(ncclAllGather(
+      src_tensor_->template data<T, Context>(),
+      dest_tensor_->Reshape(dest_dims)->template mutable_data<T, Context>(),
+      src_tensor_->count(),
+      this->template nccl_data_type<T>(),
       this->nccl_comm(),
       ((CUDAContext*)ctx())->cuda_stream()));
 #endif // USE_NCCL
@@ -86,7 +113,7 @@ void CollectiveOp<Context>::BroadcastNCCL() {
   NCCL_CHECK(ncclBcast(
       (void*)src_tensor_->template mutable_data<T, Context>(),
       src_tensor_->count(),
-      this->template nccl_dtype<T>(),
+      this->template nccl_data_type<T>(),
       comm_root_,
       this->nccl_comm(),
       ((CUDAContext*)ctx())->cuda_stream()));
@@ -97,25 +124,20 @@ template <class Context>
 template <typename T>
 void CollectiveOp<Context>::DoRunWithType() {
   if (src_tensor_ != nullptr) {
-    // Dispatch collective communication
-    if (communication_ == "ALLREDUCE") {
-      if (enable_nccl_) {
-        AllReduceNCCL<T>();
-      } else {
-        AllReduceMPI<T>();
-      }
-    } else if (communication_ == "BROADCAST") {
-      if (enable_nccl_) {
-        BroadcastNCCL<T>();
-      } else {
-        BroadcastMPI<T>();
-      }
+    if (operation_ == "ALLREDUCE") {
+      if (enable_nccl_) return AllReduceNCCL<T>();
+      AllReduceMPI<T>();
+    } else if (operation_ == "ALLGATHER") {
+      if (enable_nccl_) return AllGatherNCCL<T>();
+      AllGatherMPI<T>();
+    } else if (operation_ == "BROADCAST") {
+      if (enable_nccl_) return BroadcastNCCL<T>();
+      BroadcastMPI<T>();
     } else {
-      LOG(FATAL) << "Unknown communication: " << communication_;
+      LOG(FATAL) << "Unknown operation: " << operation_;
     }
   } else {
-    // Dispatch other computation
-    if (communication_ == "ALLREDUCE" && operation_ == "MEAN") {
+    if (operation_ == "ALLREDUCE" && reduction_ == "MEAN") {
       auto* data = dest_tensor_->template mutable_data<T, Context>();
       math::Scale(dest_tensor_->count(), 1.f / comm_size_, data, data, ctx());
     }
@@ -126,16 +148,14 @@ template <class Context>
 void CollectiveOp<Context>::RunOnDevice() {
   if (comm_size_ <= 1) return;
   // Wait stream to finish the enqueued kernels.
-  // Otherwise, data corruption will happen through UVA
-  // during executing collectives asynchronously.
   ctx()->FinishDeviceComputation();
-  for (int i = 0; i < InputSize(); i++) {
-    src_tensor_ = &Input(i);
+  for (int i = 0; i < InputSize(); ++i) {
+    src_tensor_ = &Input(i), dest_tensor_ = Output(i);
     DispatchHelper<dtypes::Numerical>::Call(this, *src_tensor_);
   }
   src_tensor_ = nullptr;
-  for (int i = 0; i < InputSize(); i++) {
-    dest_tensor_ = &Input(i);
+  for (int i = 0; i < InputSize(); ++i) {
+    dest_tensor_ = Output(i);
     DispatchHelper<dtypes::Numerical>::Call(this, *dest_tensor_);
   }
 }

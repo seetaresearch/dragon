@@ -2,6 +2,7 @@
 
 #include "dragon/core/context_cuda.h"
 #include "dragon/utils/math/elementwise.h"
+#include "dragon/utils/math/types.h"
 #include "dragon/utils/math/utils.h"
 
 namespace dragon {

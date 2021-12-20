@@ -14,7 +14,7 @@ void CuDNNBatchNormOp<Context>::DoRunWithType() {
   INITIALIZE_TENSOR_VIA_SPEC(Input(3), vec64_t({C_}), ParamT);
   INITIALIZE_TENSOR_VIA_SPEC(Input(4), vec64_t({C_}), ParamT);
 
-  // Determine the descriptors
+  // Set descriptors.
   if (Input(0).ndim() == 2) {
     bn_mode_ = CUDNN_BATCHNORM_PER_ACTIVATION;
     CuDNNSetTensorDesc<T>(&input_desc_, vec64_t({N_, C_, 1, 1}));
@@ -24,10 +24,10 @@ void CuDNNBatchNormOp<Context>::DoRunWithType() {
   }
   CUDNN_CHECK(cudnnDeriveBNTensorDescriptor(bn_desc_, input_desc_, bn_mode_));
 
-  // Dispatch the training or inference implementation
+  // Run training or inference.
   if (training_ > 0) {
-    auto* X_mu = Buffer("X_mu")->Reshape({C_});
-    auto* X_rsig = Buffer("X_rsig")->Reshape({C_});
+    auto* X_mu = Output("X_mu")->Reshape({C_});
+    auto* X_rsig = Output("X_rsig")->Reshape({C_});
     CUDNN_CHECK(cudnnBatchNormalizationForwardTraining(
         ctx()->cudnn_handle(),
         bn_mode_,
@@ -40,7 +40,7 @@ void CuDNNBatchNormOp<Context>::DoRunWithType() {
         bn_desc_,
         Input(1).template data<ParamT, Context>(), // gamma
         Input(2).template data<ParamT, Context>(), // beta
-        recomputing_ == 0 ? 1.f - momentum() : 0.f,
+        1.f - momentum(),
         Input(3).template mutable_data<ParamT, Context>(), // rm
         Input(4).template mutable_data<ParamT, Context>(), // rv
         epsilon_,
@@ -66,24 +66,13 @@ void CuDNNBatchNormOp<Context>::DoRunWithType() {
 }
 
 template <class Context>
-void CuDNNBatchNormOp<Context>::RunOnDevice() {
-  GetBaseArguments();
-  auto* flag = workspace()->GetTensor("flagged/recomp");
-  recomputing_ = flag->template data<bool, CPUContext>()[0] ? 1 : 0;
-
-  // Dispatch the training or inference impl
-  Output(0)->ReshapeLike(Input(0));
-  DispatchHelper<dtypes::Floating>::Call(this, Input(0));
-}
-
-template <class Context>
 template <typename T>
-void CuDNNBatchNormGradientOp<Context>::TrainingImpl() {
+void CuDNNBatchNormGradientOp<Context>::RunTraining() {
   using ParamT = typename CuDNNType<T>::BNParamType;
   auto *dX = Output(0), *dW = Output(1), *dB = Output(2);
-  auto *X_mu = Buffer("X_mu"), *X_rsig = Buffer("X_rsig");
+  auto &X_mu = Input("X_mu"), &X_rsig = Input("X_rsig");
 
-  // Determine the descriptors
+  // Set descriptors.
   if (Input(0).ndim() == 2) {
     bn_mode_ = CUDNN_BATCHNORM_PER_ACTIVATION;
     CuDNNSetTensorDesc<T>(&input_desc_, vec64_t({N_, C_, 1, 1}));
@@ -93,7 +82,7 @@ void CuDNNBatchNormGradientOp<Context>::TrainingImpl() {
   }
   CUDNN_CHECK(cudnnDeriveBNTensorDescriptor(bn_desc_, input_desc_, bn_mode_));
 
-  // Gradient w.r.t. gamma, beta and input
+  // Gradient w.r.t. gamma, beta and input.
   CUDNN_CHECK(cudnnBatchNormalizationBackward(
       ctx()->cudnn_handle(),
       bn_mode_,
@@ -112,17 +101,8 @@ void CuDNNBatchNormGradientOp<Context>::TrainingImpl() {
       dW->Reshape({C_})->template mutable_data<ParamT, Context>(), // dw
       dB->Reshape({C_})->template mutable_data<ParamT, Context>(), // db
       epsilon_,
-      X_mu->template data<ParamT, Context>(), // mu
-      X_rsig->template data<ParamT, Context>())); // rsig
-}
-
-template <class Context>
-void CuDNNBatchNormGradientOp<Context>::RunOnDevice() {
-  GetBaseArguments();
-
-  // Dispatch the training or inference implementation
-  Output(0)->ReshapeLike(Input(0));
-  DispatchHelper<dtypes::Floating>::Call(this, Input(0));
+      X_mu.template data<ParamT, Context>(), // mu
+      X_rsig.template data<ParamT, Context>())); // rsig
 }
 
 DEPLOY_CUDNN_OPERATOR(BatchNorm);

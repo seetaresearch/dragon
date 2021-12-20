@@ -28,6 +28,7 @@ TESTS_AND_SOURCES = [
     ('dragon/test_ops', 'dragon.core'),
     ('dragon/test_util', 'dragon.core'),
     ('torch/test_autograd', 'dragon.vm.torch.core'),
+    ('torch/test_backends', 'dragon.vm.torch.core'),
     ('torch/test_jit', 'dragon.vm.torch.core'),
     ('torch/test_nn', 'dragon.vm.torch.core'),
     ('torch/test_ops', 'dragon.vm.torch.core'),

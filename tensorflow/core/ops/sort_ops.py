@@ -14,7 +14,7 @@ from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
 
-from dragon.core.ops import array_ops
+from dragon.core.ops import sort_ops
 
 
 def argsort(values, axis=-1, direction='ASCENDING', name=None):
@@ -55,12 +55,8 @@ def argsort(values, axis=-1, direction='ASCENDING', name=None):
     """
     if direction not in ('ASCENDING', 'DESCENDING'):
         raise ValueError('Unknown direction: ' + direction)
-    value_and_index = array_ops.sort(
-        values,
-        axis=axis,
-        descending=direction == 'DESCENDING',
-        name=name,
-    )
+    value_and_index = sort_ops.sort(
+        values, axis=axis, descending=direction == 'DESCENDING', name=name)
     return value_and_index[1]
 
 
@@ -102,10 +98,6 @@ def sort(values, axis=-1, direction='ASCENDING', name=None):
     """
     if direction not in ('ASCENDING', 'DESCENDING'):
         raise ValueError('Unknown direction: ' + direction)
-    value_and_index = array_ops.sort(
-        values,
-        axis=axis,
-        descending=direction == 'DESCENDING',
-        name=name,
-    )
+    value_and_index = sort_ops.sort(
+        values, axis=axis, descending=direction == 'DESCENDING', name=name)
     return value_and_index[0]
