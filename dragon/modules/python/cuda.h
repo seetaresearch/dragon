@@ -91,16 +91,24 @@ void RegisterModule_cuda(py::module& m) {
 #endif
   });
 
+  /*! \brief Set the flags of cuBLAS library */
+  m.def("cublasSetFlags", [](int allow_tf32) {
+#ifdef USE_CUDA
+    auto& ctx = CUDAContext::objects();
+    if (allow_tf32 >= 0) ctx.cublas_allow_tf32_ = allow_tf32;
+#endif
+  });
+
   /*! \brief Set the flags of cuDNN library */
   m.def(
       "cudnnSetFlags",
-      [](bool enabled, bool benchmark, bool deterministic, bool allow_tf32) {
+      [](int enabled, int benchmark, int deterministic, int allow_tf32) {
 #ifdef USE_CUDA
-        auto& cuda_objects = CUDAContext::objects();
-        cuda_objects.cudnn_enabled_ = enabled;
-        cuda_objects.cudnn_deterministic_ = deterministic;
-        cuda_objects.cudnn_benchmark_ = benchmark;
-        cuda_objects.cudnn_allow_tf32_ = allow_tf32;
+        auto& ctx = CUDAContext::objects();
+        if (enabled >= 0) ctx.cudnn_enabled_ = enabled;
+        if (benchmark >= 0) ctx.cudnn_benchmark_ = benchmark;
+        if (deterministic >= 0) ctx.cudnn_deterministic_ = deterministic;
+        if (allow_tf32 >= 0) ctx.cudnn_allow_tf32_ = allow_tf32;
 #endif
       });
 

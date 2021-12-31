@@ -122,107 +122,16 @@ def broadcast_to(inputs, shape, **kwargs):
     return OpLib.add('Expand', **args)
 
 
-@OpSchema.num_inputs(2, 3)
-def channel_affine(inputs, axis=-1, end_axis=None, **kwargs):
-    r"""Apply affine transformation to each channel of input.
-
-    Parameters
-    ----------
-    inputs : Sequence[dragon.Tensor]
-        The input, weight and optional bias tensor.
-    axis : int, optional, default=-1
-        The first channel axis.
-    end_axis : int, optional
-        The last channel axis.
-
-    Returns
-    -------
-    dragon.Tensor
-        The output tensor.
-
-    """
-    outputs = kwargs.pop('outputs', [None])
-    if context.executing_eagerly():
-        return OpLib.execute(
-            'ChannelAffine', inputs, outputs=outputs,
-            axis=axis, end_axis=end_axis)
-    return OpLib.add('ChannelAffine', inputs,
-                     axis=axis, end_axis=end_axis, **kwargs)
-
-
-@OpSchema.num_inputs(1)
-@OpSchema.convert_arg('perm')
-def channel_normalize(
-    inputs,
-    mean,
-    std,
-    axis=-1,
-    dtype='float32',
-    perm=None,
-    **kwargs
-):
-    """Apply normalization to each channel of input.
-
-    :attr:`axis` can be negative:
-
-    ```python
-    m = s = (1., 1., 1.)
-    x = dragon.constant([1, 2, 3])
-    print(dragon.channel_normalize(x, m, s, axis=0))   # [0., 1., 2.]
-    print(dragon.channel_normalize(x, m, s, axis=-1))  # Equivalent
-    ```
-
-    If :attr:`perm` provided, :attr:`axis` is selected from the output layout:
-
-    ```python
-    m, s = (1., 2., 3.), (1., 1., 1.)
-    x = dragon.constant([[1, 2, 3]])
-    # Provided 3 values to normalize the last axis
-    # with length 1, only the first value will be taken
-    print(dragon.channel_normalize(x, m, s, perm=(1, 0)))  # [[0.], [1.], [2.]]
-    ```
-
-    Parameters
-    ----------
-    inputs : dragon.Tensor
-        The input tensor.
-    mean : Sequence[float], required
-        The mean to subtract.
-    std : Sequence[float], required
-        The standard deviation to divide.
-    axis : int, optional, default=-1
-        The channel axis.
-    dtype : str, optional, default='float32'
-        The output data type.
-    perm : Sequence[Union[int, dragon.Tensor]], optional
-        The output permutation.
-
-    Returns
-    -------
-    dragon.Tensor
-        The output tensor.
-
-    """
-    args = OpSchema.parse_args(locals())
-    if context.executing_eagerly():
-        return OpLib.execute(
-            'ChannelNormalize', inputs,
-            axis=axis, mean=mean, std=std, dtype=dtype,
-            ndim=len(args['perm']) if perm is not None else 0,
-            perm=args['perm'])
-    return OpLib.add('ChannelNormalize', **args)
-
-
 @OpSchema.num_inputs(1)
 def channel_shuffle(inputs, axis=-1, group=1, **kwargs):
-    """Apply group shuffle to each channel of input.
+    """Apply the group shuffle to each channel of input.
     `[Zhang et.al, 2017] <https://arxiv.org/abs/1707.01083>`_.
 
     Examples:
 
     ```python
     x = dragon.constant([1, 2, 3, 4])
-    print(dragon.channel_shuffle(x, group=2))  # [1, 3, 2, 4]
+    print(dragon.nn.channel_shuffle(x, group=2))  # [1, 3, 2, 4]
     ```
 
     Parameters

@@ -550,6 +550,9 @@ DEFINE_BINARY_FUNC(Maximum, double, double, max);
     _SimpleBinaryFunc(N, Functor<InputT>(), a, b, y);      \
   }
 
+DEFINE_BINARY_FUNC(Atan2, float16, float16, math::Atan2Functor);
+DEFINE_BINARY_FUNC(Atan2, float, float, math::Atan2Functor);
+DEFINE_BINARY_FUNC(Atan2, double, double, math::Atan2Functor);
 DEFINE_BINARY_FUNC(BitwiseAnd, bool, bool, std::bit_and);
 DEFINE_BINARY_FUNC(BitwiseAnd, uint8_t, uint8_t, std::bit_and);
 DEFINE_BINARY_FUNC(BitwiseAnd, int8_t, int8_t, std::bit_and);

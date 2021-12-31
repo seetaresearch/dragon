@@ -17,8 +17,10 @@ from dragon.core.ops.activation_ops import sigmoid
 from dragon.core.ops.activation_ops import tanh
 from dragon.core.ops.math_ops import abs
 from dragon.core.ops.math_ops import add
+from dragon.core.ops.math_ops import affine
 from dragon.core.ops.math_ops import argmax
 from dragon.core.ops.math_ops import argmin
+from dragon.core.ops.math_ops import atan2
 from dragon.core.ops.math_ops import ceil
 from dragon.core.ops.math_ops import clip
 from dragon.core.ops.math_ops import cos
@@ -60,7 +62,6 @@ from dragon.core.ops.math_ops import sqrt
 from dragon.core.ops.math_ops import square
 from dragon.core.ops.math_ops import sub
 from dragon.core.ops.math_ops import sum
-from dragon.core.ops.normalization_ops import lp_normalize
 from dragon.core.ops.sort_ops import top_k
 
 __all__ = [_s for _s in dir() if not _s.startswith('_')]

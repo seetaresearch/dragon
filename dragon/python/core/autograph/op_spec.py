@@ -81,6 +81,7 @@ def binary_shape_spec(inputs, outputs):
 
 @register([
     'Add',
+    'Atan2',
     'BitwiseAnd',
     'BitwiseOr',
     'BitwiseXor',
@@ -403,7 +404,7 @@ def gemm_spec(args, inputs, outputs):
     return outputs
 
 
-@register('ChannelNormalize')
+@register('ChannelNorm')
 def channel_normalize_spec(args, inputs, outputs):
     outputs[0]._dtype = args['dtype']
     try:

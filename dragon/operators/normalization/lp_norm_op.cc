@@ -1,21 +1,18 @@
-#include "dragon/operators/normalization/lp_normalize_op.h"
-#include "dragon/core/workspace.h"
-#include "dragon/utils/math_functions.h"
+#include "dragon/operators/normalization/lp_norm_op.h"
 #include "dragon/utils/op_kernels.h"
 
 namespace dragon {
 
 template <class Context>
 template <typename T>
-void LpNormalizeOp<Context>::DoRunWithType() {
+void LpNormOp<Context>::DoRunWithType() {
   auto &X = Input(0), *Y = Output(0);
   GET_OP_AXIS_ARG(axis, X.ndim(), -1);
   GET_OP_AXIS_ARG(end_axis, X.ndim(), axis);
   auto reduce_dim = X.count(axis, end_axis + 1);
 
-  // Normalize input with a scaled Lp-norm
   if (p_ == 1) {
-    kernels::L1Normalize(
+    kernels::L1Norm(
         X.count(0, axis),
         X.count(end_axis + 1),
         reduce_dim,
@@ -25,7 +22,7 @@ void LpNormalizeOp<Context>::DoRunWithType() {
         Y->ReshapeLike(X)->template mutable_data<T, Context>(),
         ctx());
   } else if (p_ == 2) {
-    kernels::L2Normalize(
+    kernels::L2Norm(
         X.count(0, axis),
         X.count(end_axis + 1),
         reduce_dim,
@@ -40,20 +37,15 @@ void LpNormalizeOp<Context>::DoRunWithType() {
 }
 
 template <class Context>
-void LpNormalizeOp<Context>::RunOnDevice() {
-  DispatchHelper<dtypes::Floating>::Call(this, Input(0));
-}
-
-template <class Context>
 template <typename T>
-void LpNormalizeGradientOp<Context>::DoRunWithType() {
+void LpNormGradientOp<Context>::DoRunWithType() {
   auto &X = Input(0), &dY = Input(1), *dX = Output(0);
   GET_OP_AXIS_ARG(axis, X.ndim(), -1);
   GET_OP_AXIS_ARG(end_axis, X.ndim(), axis);
   auto reduce_dim = X.count(axis, end_axis + 1);
 
   if (p_ == 1) {
-    kernels::L1NormalizeGrad(
+    kernels::L1NormGrad(
         X.count(0, axis),
         X.count(end_axis + 1),
         reduce_dim,
@@ -64,7 +56,7 @@ void LpNormalizeGradientOp<Context>::DoRunWithType() {
         dX->ReshapeLike(X)->template mutable_data<T, Context>(),
         ctx());
   } else if (p_ == 2) {
-    kernels::L2NormalizeGrad(
+    kernels::L2NormGrad(
         X.count(0, axis),
         X.count(end_axis + 1),
         reduce_dim,
@@ -79,33 +71,28 @@ void LpNormalizeGradientOp<Context>::DoRunWithType() {
   }
 }
 
-template <class Context>
-void LpNormalizeGradientOp<Context>::RunOnDevice() {
-  DispatchHelper<dtypes::Floating>::Call(this, Input(0));
-}
-
-DEPLOY_CPU_OPERATOR(LpNormalize);
+DEPLOY_CPU_OPERATOR(LpNorm);
 #ifdef USE_CUDA
-DEPLOY_CUDA_OPERATOR(LpNormalize);
+DEPLOY_CUDA_OPERATOR(LpNorm);
 #endif
 
-DEPLOY_CPU_OPERATOR(LpNormalizeGradient);
+DEPLOY_CPU_OPERATOR(LpNormGradient);
 #ifdef USE_CUDA
-DEPLOY_CUDA_OPERATOR(LpNormalizeGradient);
+DEPLOY_CUDA_OPERATOR(LpNormGradient);
 #endif
 
-OPERATOR_SCHEMA(LpNormalize)
+OPERATOR_SCHEMA(LpNorm)
     /* X */
     .NumInputs(1)
     /* Y */
     .NumOutputs(1);
 
-OPERATOR_SCHEMA(LpNormalizeGradient)
+OPERATOR_SCHEMA(LpNormGradient)
     /* X, dY */
     .NumInputs(2)
     /* dX */
     .NumOutputs(1);
 
-REGISTER_GRADIENT(LpNormalize, GenericGradientMaker);
+REGISTER_GRADIENT(LpNorm, GenericGradientMaker);
 
 } // namespace dragon

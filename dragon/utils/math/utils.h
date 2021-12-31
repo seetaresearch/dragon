@@ -16,9 +16,9 @@
 #include "dragon/utils/conversions.h"
 
 #if defined(__CUDACC__)
-#define MATH_UTILS_DECL inline __host__ __device__
+#define HOSTDEVICE_DECL inline __host__ __device__
 #else
-#define MATH_UTILS_DECL inline
+#define HOSTDEVICE_DECL inline
 #endif
 
 #define FIXED_DIVISOR_DIV_MOD(d, n, q, r) \
@@ -41,28 +41,28 @@ namespace utils {
 template <
     typename T,
     typename std::enable_if<std::is_integral<T>::value, int>::type = 0>
-MATH_UTILS_DECL T IsInf(const T x) {
+HOSTDEVICE_DECL T IsInf(const T x) {
   return false;
 }
 
 template <
     typename T,
     typename std::enable_if<std::is_integral<T>::value, int>::type = 0>
-MATH_UTILS_DECL T IsNaN(const T x) {
+HOSTDEVICE_DECL T IsNaN(const T x) {
   return false;
 }
 
 template <
     typename T,
     typename std::enable_if<std::is_integral<T>::value, int>::type = 0>
-MATH_UTILS_DECL T IsFinite(const T x) {
+HOSTDEVICE_DECL T IsFinite(const T x) {
   return true;
 }
 
 template <
     typename T,
     typename std::enable_if<std::is_floating_point<T>::value, int>::type = 0>
-MATH_UTILS_DECL bool IsInf(T x) {
+HOSTDEVICE_DECL bool IsInf(T x) {
 #if defined(__CUDACC__)
   return isinf(x);
 #else
@@ -73,7 +73,7 @@ MATH_UTILS_DECL bool IsInf(T x) {
 template <
     typename T,
     typename std::enable_if<std::is_floating_point<T>::value, int>::type = 0>
-MATH_UTILS_DECL bool IsNaN(T x) {
+HOSTDEVICE_DECL bool IsNaN(T x) {
 #if defined(__CUDACC__)
   return isnan(x);
 #else
@@ -84,7 +84,7 @@ MATH_UTILS_DECL bool IsNaN(T x) {
 template <
     typename T,
     typename std::enable_if<std::is_floating_point<T>::value, int>::type = 0>
-MATH_UTILS_DECL bool IsFinite(T x) {
+HOSTDEVICE_DECL bool IsFinite(T x) {
 #if defined(__CUDACC__)
   return isfinite(x);
 #else
@@ -106,27 +106,27 @@ inline bool IsFinite(float16 x) {
 }
 
 template <typename T>
-MATH_UTILS_DECL bool IsAGeZeroAndALtB(const T a, const T b) {
+HOSTDEVICE_DECL bool IsAGeZeroAndALtB(const T a, const T b) {
   return static_cast<unsigned int>(a) < static_cast<unsigned int>(b);
 }
 
 template <typename T>
-MATH_UTILS_DECL T Sign(const T x) {
+HOSTDEVICE_DECL T Sign(const T x) {
   return x > T(0) ? T(1) : (x < T(0) ? T(-1) : T(0));
 }
 
 template <typename T>
-MATH_UTILS_DECL T Identity(const T x) {
+HOSTDEVICE_DECL T Identity(const T x) {
   return x;
 }
 
 template <typename T>
-MATH_UTILS_DECL T Square(const T x) {
+HOSTDEVICE_DECL T Square(const T x) {
   return x * x;
 }
 
 template <typename T>
-MATH_UTILS_DECL T Cube(const T x) {
+HOSTDEVICE_DECL T Cube(const T x) {
   return x * x * x;
 }
 
@@ -246,5 +246,7 @@ void IncreaseIndexInDims(const int num_dims, const DimT* dims, IndexT* index) {
 } // namespace math
 
 } // namespace dragon
+
+#undef HOSTDEVICE_DECL
 
 #endif // DRAGON_UTILS_MATH_UTILS_H_

@@ -169,7 +169,7 @@ class TestModule(unittest.TestCase):
 class TestModules(OpTestCase):
     """Test the nn module class."""
 
-    def test_affine_channel(self):
+    def test_affine(self):
         data1 = arange((2, 3, 4, 5))
         data2, data3 = arange((1, 3, 1, 1)), arange((1, 3, 1, 1))
         w, b = new_tensor(data2.flatten()), new_tensor(data3.flatten())
@@ -181,21 +181,19 @@ class TestModules(OpTestCase):
         for bias, fix_weight, fix_bias in entries:
             x = new_tensor(data1)
             try:
-                m = torch.nn.AffineChannel(
+                m = torch.nn.Affine(
                     num_features=3,
                     bias=bias,
                     fix_weight=fix_weight,
                     fix_bias=fix_bias,
-                    inplace=True,
-                )
+                    inplace=True)
             except ValueError:
-                m = torch.nn.AffineChannel(
+                m = torch.nn.Affine(
                     num_features=3,
                     bias=bias,
                     fix_weight=fix_weight,
                     fix_bias=fix_bias,
-                    inplace=False,
-                )
+                    inplace=False)
             m.weight.copy_(w)
             result = data1 * data2
             if bias:
@@ -261,6 +259,18 @@ class TestModules(OpTestCase):
                 result = result * data2 + data3
                 y, _ = m(x), repr(m)
                 self.assertEqual(y, result)
+
+    def test_channel_norm(self):
+        entries = [((2, 3, 4), [(1., 2., 3.), (3., 2., 1.), 1], {'dims': (0, 1, 2)}),
+                   ((2, 3, 4), [(1., 2., 3.), (3., 2., 1.), 2], {'dims': (0, 2, 1)})]
+        for shape, args, kwargs in entries:
+            perm = kwargs['dims']
+            data = np.ones(shape, dtype='uint8').transpose(perm)
+            mean = np.array(args[0]).reshape((1, 3, 1)).transpose(perm)
+            std = np.array(args[1]).reshape((1, 3, 1)).transpose(perm)
+            x = torch.ones(shape, dtype='uint8')
+            y = torch.nn.functional.channel_norm(x, *args, **kwargs)
+            self.assertEqual(y, (data - mean) / std)
 
     def test_channel_shuffle(self):
         entries = [(1, 4)]

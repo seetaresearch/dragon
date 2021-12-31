@@ -52,14 +52,23 @@ __global__ void _ComputeCounts(
       CUDAContext* ctx) {                                                      \
     math::Copy(dim, x, y, ctx);                                                \
     auto policy = thrust::cuda::par.on(ctx->cuda_stream());                    \
+    auto* data = reinterpret_cast<math::ScalarType<T>::type*>(y);              \
     thrust::device_vector<int> order1(dim), order2(dim);                       \
     thrust::sequence(policy, order1.begin(), order1.end());                    \
     thrust::sequence(policy, order2.begin(), order2.end());                    \
     thrust::sort_by_key(                                                       \
-        policy, y, y + dim, order1.begin(), math::LessFunctor<T>());           \
+        policy,                                                                \
+        data,                                                                  \
+        data + dim,                                                            \
+        order1.begin(),                                                        \
+        math::LessFunctor<math::ScalarType<T>::type>());                       \
     auto last = thrust::unique_by_key(                                         \
-        policy, y, y + dim, order2.begin(), math::EqualFunctor<T>());          \
-    int n = num[0] = last.first - y;                                           \
+        policy,                                                                \
+        data,                                                                  \
+        data + dim,                                                            \
+        order2.begin(),                                                        \
+        math::EqualFunctor<math::ScalarType<T>::type>());                      \
+    int n = num[0] = last.first - data;                                        \
     if (inverse_index) {                                                       \
       _RemapInverse<<<CUDA_BLOCKS(n), CUDA_THREADS, 0, ctx->cuda_stream()>>>(  \
           dim, n, order1.data(), order2.data(), inverse_index);                \

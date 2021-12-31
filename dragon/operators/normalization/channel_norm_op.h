@@ -10,17 +10,17 @@
  * ------------------------------------------------------------
  */
 
-#ifndef DRAGON_OPERATORS_ARRAY_CHANNEL_NORMALIZE_OP_H_
-#define DRAGON_OPERATORS_ARRAY_CHANNEL_NORMALIZE_OP_H_
+#ifndef DRAGON_OPERATORS_NORMALIZATION_CHANNEL_NORM_OP_H_
+#define DRAGON_OPERATORS_NORMALIZATION_CHANNEL_NORM_OP_H_
 
 #include "dragon/core/operator.h"
 
 namespace dragon {
 
 template <class Context>
-class ChannelNormalizeOp final : public Operator<Context> {
+class ChannelNormOp final : public Operator<Context> {
  public:
-  ChannelNormalizeOp(const OperatorDef& def, Workspace* ws)
+  ChannelNormOp(const OperatorDef& def, Workspace* ws)
       : Operator<Context>(def, ws) {
     INITIALIZE_OP_REPEATED_ARG(int64_t, perm);
     auto mean = OP_REPEATED_ARG(float, "mean");
@@ -50,8 +50,8 @@ class ChannelNormalizeOp final : public Operator<Context> {
   DECLARE_OP_REPEATED_ARG(int64_t, perm);
 };
 
-DEFINE_OP_REPEATED_ARG(int64_t, ChannelNormalizeOp, perm);
+DEFINE_OP_REPEATED_ARG(int64_t, ChannelNormOp, perm);
 
 } // namespace dragon
 
-#endif // DRAGON_OPERATORS_ARRAY_CHANNEL_NORMALIZE_OP_H_
+#endif // DRAGON_OPERATORS_NORMALIZATION_CHANNEL_NORM_OP_H_

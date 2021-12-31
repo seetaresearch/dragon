@@ -24,14 +24,14 @@ PythonPluginOp<Context>::PythonPluginOp(const OperatorDef& def, Workspace* ws)
   Py_Initialize();
   auto* module = PyImport_ImportModule(module_name_.c_str());
   CHECK(module) << "\nFailed to import module: " << module;
-
   auto* module_dict = PyModule_GetDict(module);
   auto* op_class = PyDict_GetItemString(module_dict, class_name_.c_str());
   CHECK(op_class) << "\nFailed to import class: " << class_name_
                   << " from module: " << module_name_;
+
   self_ = PyObject_CallObject(op_class, NULL);
 
-  // Project inputs and outputs.
+  // Set inputs and outputs.
   inputs_ = PyList_New(InputSize());
   outputs_ = PyList_New(OutputSize());
   for (int i = 0; i < InputSize(); i++) {
@@ -41,16 +41,15 @@ PythonPluginOp<Context>::PythonPluginOp(const OperatorDef& def, Workspace* ws)
     PyList_SetItem(outputs_, i, PyBytes_FromStdString(Output(i)->name()));
   }
 
-  // Set: self.kwargs_str
+  // Attr: "kwargs_str"
   PyObject_SetAttr(
       self_,
       PyBytes_FromRawString("kwargs_str"),
       PyBytes_FromStdString(kwargs_str_));
 
-  // Method: self.setup(inputs, outputs)
   if (PyObject_HasAttr(self_, PyBytes_FromRawString("setup"))) {
     CHECK(PyObject_CallMethod(self_, "setup", "OO", inputs_, outputs_))
-        << CallMethodHelper("setup");
+        << CallMethodHelper("setup"); // Method: setup(inputs, outputs)
   }
 }
 
@@ -67,27 +66,24 @@ string PythonPluginOp<Context>::CallMethodHelper(const string& method_name) {
 
 template <class Context>
 void PythonPluginOp<Context>::RunOnDevice() {
-  // GIL may have been released
+  // GIL may have been released.
   pybind11::gil_scoped_acquire g;
 
-  // Atrribute: self.phase
+  // Attr: phase
   PyObject_SetAttr(
       self_, PyBytes_FromRawString("phase"), PyBytes_FromStdString(phase()));
 
-  // Method: self.reshape(input, outputs)
   if (PyObject_HasAttr(self_, PyBytes_FromRawString("reshape"))) {
     CHECK(PyObject_CallMethod(self_, "reshape", "OO", inputs_, outputs_))
-        << CallMethodHelper("reshape");
+        << CallMethodHelper("reshape"); // Method: reshape(input, outputs)
   }
 
-  // Method: self.run(input, outputs)
-  // Method: self.forward(input, outputs)
   if (PyObject_HasAttr(self_, PyBytes_FromRawString("forward"))) {
     CHECK(PyObject_CallMethod(self_, "forward", "OO", inputs_, outputs_))
-        << CallMethodHelper("forward");
+        << CallMethodHelper("forward"); // Method: run(input, outputs)
   } else if (PyObject_HasAttr(self_, PyBytes_FromRawString("run"))) {
     CHECK(PyObject_CallMethod(self_, "run", "OO", inputs_, outputs_))
-        << CallMethodHelper("run");
+        << CallMethodHelper("run"); // Method: forward(input, outputs)
   }
 }
 

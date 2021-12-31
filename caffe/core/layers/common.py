@@ -418,9 +418,9 @@ class Normalize(Layer):
     def __call__(self, bottom):
         if len(self.blobs) == 0:
             self.build(bottom)
-        outputs = [normalization_ops.lp_normalize(bottom, **self.norm_args)]
+        outputs = [normalization_ops.lp_norm(bottom, **self.norm_args)]
         outputs += [blob['data'] for blob in self.blobs]
-        return array_ops.channel_affine(outputs, **self.scale_args)
+        return math_ops.affine(outputs, **self.scale_args)
 
 
 class Permute(Layer):
@@ -591,8 +591,7 @@ class Scale(Layer):
         param = layer_param.scale_param
         self.axis = param.axis
         self.num_axes = param.num_axes
-        end_axis = -1 if self.num_axes < 1 else self.axis + self.num_axes - 1
-        self.call_args = {'axis': self.axis, 'end_axis': end_axis}
+        self.call_args = {'axis': list(range(self.axis, self.axis + self.num_axes))}
         self.filler = caffe_pb2.FillerParameter(type='constant', value=1)
         self.filler = param.filler if param.HasField('filler') else self.filler
         self.bias_filler = param.bias_filler
@@ -609,7 +608,7 @@ class Scale(Layer):
         if len(self.blobs) == 0:
             self.build(bottom)
         inputs = [bottom] + [blob['data'] for blob in self.blobs]
-        return array_ops.channel_affine(inputs, **self.call_args)
+        return math_ops.affine(inputs, **self.call_args)
 
 
 class Slice(Layer):

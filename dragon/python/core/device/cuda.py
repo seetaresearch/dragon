@@ -62,11 +62,23 @@ def current_device():
     return backend.cudaGetDevice()
 
 
+def set_cublas_flags(allow_tf32=None):
+    """Set the flags of cuBLAS library.
+
+    Parameters
+    ----------
+    allow_tf32 : bool, optional, default=False
+        Allow TF32 tensor core operation or not.
+
+    """
+    backend.cublasSetFlags(-1 if allow_tf32 is None else allow_tf32)
+
+
 def set_cudnn_flags(
-    enabled=True,
-    benchmark=False,
-    deterministic=False,
-    allow_tf32=False,
+    enabled=None,
+    benchmark=None,
+    deterministic=None,
+    allow_tf32=None,
 ):
     """Set the flags of cuDNN library.
 
@@ -82,7 +94,11 @@ def set_cudnn_flags(
         Allow TF32 tensor core operation or not.
 
     """
-    backend.cudnnSetFlags(enabled, benchmark, deterministic, allow_tf32)
+    backend.cudnnSetFlags(
+        -1 if enabled is None else enabled,
+        -1 if benchmark is None else benchmark,
+        -1 if deterministic is None else deterministic,
+        -1 if allow_tf32 is None else allow_tf32)
 
 
 def get_device_capability(device_index=None):

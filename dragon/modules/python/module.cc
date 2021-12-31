@@ -132,8 +132,8 @@ PYBIND11_MODULE(libdragon_python, m) {
                 PRINT(INFO) << GetVerboseDef(def.DebugString(), "graph");
               }
             }
-            // Return the graph name may be different from the def
-            // We will make a unique dummy name on creating the graph
+            // Return the graph name may be different from the def.
+            // We will make a unique dummy name on creating the graph.
             return graph->name();
           })
 
@@ -175,8 +175,8 @@ PYBIND11_MODULE(libdragon_python, m) {
         GraphDef init_graph, pred_graph;
         onnx::ONNXBackend onnx_backend;
         onnx_backend.Prepare(model_path, &init_graph, &pred_graph);
-        // Serializing to Python is intractable
-        // We should apply the initializer immediately
+        // Serializing to Python is intractable.
+        // We should apply the initializer immediately.
         self->RunGraph(self->CreateGraph(init_graph)->name());
         return py::bytes(pred_graph.SerializeAsString());
       });

@@ -78,16 +78,13 @@ def cast_args(**kwargs):
     return {'dtype': kwargs.get('dtype', 'float32')}
 
 
-@register('ChannelAffine')
-def channel_affine_args(**kwargs):
-    return {
-        'axis': kwargs.get('axis', -1),
-        'end_axis': kwargs.get('end_axis', kwargs.get('axis', -1)),
-    }
+@register('Affine')
+def affine_args(**kwargs):
+    return {'axes': kwargs.get('axes', None)}
 
 
-@register('ChannelNormalize')
-def channel_normalize_args(**kwargs):
+@register('ChannelNorm')
+def channel_norm_args(**kwargs):
     return {
         'axis': kwargs.get('axis', -1),
         'mean': kwargs.get('mean', None),
@@ -323,8 +320,8 @@ def loss_args(**kwargs):
     return {'reduction': kwargs.get('reduction', 'MEAN')}
 
 
-@register('LpNormalize')
-def lp_normalize_args(**kwargs):
+@register('LpNorm')
+def lp_norm_args(**kwargs):
     return {
         'p': kwargs.get('p', 2),
         'axis': kwargs.get('axis', -1),

@@ -51,6 +51,9 @@ vm.torch
   `argsort(...) <torch/argsort.html>`_
   : Return the index of sorted elements along the given dimension.
 
+  `atan2(...) <torch/atan2.html>`_
+  : Compute the element-wise arc-tangent of two arguments.
+
   `baddbmm(...) <torch/baddbmm.html>`_
   : Add input to the result of batched matrix-matrix multiplication.
 
@@ -74,12 +77,6 @@ vm.torch
 
   `ceil(...) <torch/ceil.html>`_
   : Compute the smallest integer not less than input.
-
-  `channel_affine(...) <torch/channel_affine.html>`_
-  : Apply affine transformation to each channel of input.
-
-  `channel_normalize(...) <torch/channel_normalize.html>`_
-  : Apply normalization to each channel of input.
 
   `chunk(...) <torch/chunk.html>`_
   : Split input into a specific number of chunks.
@@ -345,6 +342,7 @@ vm.torch
   torch/argmax
   torch/argmin
   torch/argsort
+  torch/atan2
   torch/baddbmm
   torch/bitwise_and
   torch/bitwise_not
@@ -353,8 +351,6 @@ vm.torch
   torch/bmm
   torch/cat
   torch/ceil
-  torch/channel_affine
-  torch/channel_normalize
   torch/chunk
   torch/clamp
   torch/cos

@@ -21,6 +21,9 @@ vm.tensorflow.math
   `argmin(...) <math/argmin.html>`_
   : Compute the index of minimum elements along the given axis.
 
+  `atan2(...) <math/atan2.html>`_
+  : Compute the element-wise arc-tangent of two arguments.
+
   `ceil(...) <math/ceil.html>`_
   : Compute the smallest integer not less than input.
 
@@ -134,6 +137,7 @@ vm.tensorflow.math
   math/add_n
   math/argmax
   math/argmin
+  math/atan2
   math/ceil
   math/cos
   math/cumsum

@@ -24,6 +24,9 @@ dragon.cuda
   `memory_allocated(...) <cuda/memory_allocated.html>`_
   : Return the size of memory used by tensors in current workspace.
 
+  `set_cublas_flags(...) <cuda/set_cublas_flags.html>`_
+  : Set the flags of cuBLAS library.
+
   `set_cudnn_flags(...) <cuda/set_cudnn_flags.html>`_
   : Set the flags of cuDNN library.
 
@@ -44,6 +47,7 @@ dragon.cuda
   cuda/get_device_capability
   cuda/is_available
   cuda/memory_allocated
+  cuda/set_cublas_flags
   cuda/set_cudnn_flags
   cuda/set_default_device
   cuda/set_device

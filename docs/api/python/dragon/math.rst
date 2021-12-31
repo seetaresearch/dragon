@@ -12,11 +12,17 @@ dragon.math
   `add(...) <math/add.html>`_
   : Compute the element-wise addition.
 
+  `affine(...) <math/affine.html>`_
+  : Apply the affine transformation to input.
+
   `argmax(...) <math/argmax.html>`_
   : Compute the index of maximum elements along the given axis.
 
   `argmin(...) <math/argmin.html>`_
   : Compute the index of minimum elements along the given axis.
+
+  `atan2(...) <math/atan2.html>`_
+  : Compute the element-wise arc-tangent of two arguments.
 
   `ceil(...) <math/ceil.html>`_
   : Compute the smallest integer not less than input.
@@ -80,9 +86,6 @@ dragon.math
 
   `logical_xor(...) <math/logical_xor.html>`_
   : Compute the element-wise XOR logical operation.
-
-  `lp_normalize(...) <math/lp_normalize.html>`_
-  : Apply the lp normalization.
 
   `matmul(...) <math/matmul.html>`_
   : Compute the matrix multiplication.
@@ -158,8 +161,10 @@ dragon.math
 
   math/abs
   math/add
+  math/affine
   math/argmax
   math/argmin
+  math/atan2
   math/ceil
   math/clip
   math/cos
@@ -181,7 +186,6 @@ dragon.math
   math/logical_not
   math/logical_or
   math/logical_xor
-  math/lp_normalize
   math/matmul
   math/max
   math/maximum

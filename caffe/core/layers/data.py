@@ -16,8 +16,8 @@ from __future__ import print_function
 
 from dragon.core.framework import workspace
 from dragon.core.io.kpl_record import KPLRecordDataset
-from dragon.core.ops import array_ops
 from dragon.core.ops import framework_ops
+from dragon.core.ops import normalization_ops
 from dragon.utils import vision
 from dragon.vm.caffe.core.layer import Layer
 
@@ -121,5 +121,5 @@ class Data(Layer):
         data._shape = (self.data_args['batch_size'],
                        None, None, len(self.norm_args['mean']))
         label._shape = (self.data_args['batch_size'], None)
-        data = array_ops.channel_normalize(data, **self.norm_args)
+        data = normalization_ops.channel_norm(data, **self.norm_args)
         return data, label

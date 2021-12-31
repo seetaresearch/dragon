@@ -11,7 +11,7 @@ namespace kernels {
 namespace {
 
 template <typename InputT, typename OutputT, int D>
-__global__ void _ChannelNormalize(
+__global__ void _ChannelNorm(
     const int N,
     const int axis,
     const int num_dims,
@@ -38,31 +38,27 @@ __global__ void _ChannelNormalize(
 
 /* ------------------- Launcher Separator ------------------- */
 
-#define DEFINE_KERNEL_LAUNCHER(InputT, OutputT)                 \
-  template <>                                                   \
-  void ChannelNormalize<InputT, OutputT, CUDAContext>(          \
-      const int axis,                                           \
-      const int num_dims,                                       \
-      const int64_t* x_strides,                                 \
-      const int64_t* y_dims,                                    \
-      const InputT* x,                                          \
-      const float* mean,                                        \
-      const float* std,                                         \
-      OutputT* y,                                               \
-      CUDAContext* ctx) {                                       \
-    CUDA_TENSOR_DIMS_CHECK(num_dims);                           \
-    SimpleArray<int, CUDA_TENSOR_MAX_DIMS> X_strides, Y_dims;   \
-    const auto N = math::utils::Prod(num_dims, y_dims);         \
-    for (int i = 0; i < num_dims; ++i) {                        \
-      X_strides.data[i] = x_strides[i];                         \
-      Y_dims.data[i] = y_dims[i];                               \
-    }                                                           \
-    _ChannelNormalize<<<                                        \
-        CUDA_BLOCKS(N),                                         \
-        CUDA_THREADS,                                           \
-        0,                                                      \
-        ctx->cuda_stream()>>>(                                  \
-        N, axis, num_dims, X_strides, Y_dims, x, mean, std, y); \
+#define DEFINE_KERNEL_LAUNCHER(InputT, OutputT)                            \
+  template <>                                                              \
+  void ChannelNorm<InputT, OutputT, CUDAContext>(                          \
+      const int axis,                                                      \
+      const int num_dims,                                                  \
+      const int64_t* x_strides,                                            \
+      const int64_t* y_dims,                                               \
+      const InputT* x,                                                     \
+      const float* mean,                                                   \
+      const float* std,                                                    \
+      OutputT* y,                                                          \
+      CUDAContext* ctx) {                                                  \
+    CUDA_TENSOR_DIMS_CHECK(num_dims);                                      \
+    SimpleArray<int, CUDA_TENSOR_MAX_DIMS> X_strides, Y_dims;              \
+    const auto N = math::utils::Prod(num_dims, y_dims);                    \
+    for (int i = 0; i < num_dims; ++i) {                                   \
+      X_strides.data[i] = x_strides[i];                                    \
+      Y_dims.data[i] = y_dims[i];                                          \
+    }                                                                      \
+    _ChannelNorm<<<CUDA_BLOCKS(N), CUDA_THREADS, 0, ctx->cuda_stream()>>>( \
+        N, axis, num_dims, X_strides, Y_dims, x, mean, std, y);            \
   }
 
 DEFINE_KERNEL_LAUNCHER(uint8_t, float16);

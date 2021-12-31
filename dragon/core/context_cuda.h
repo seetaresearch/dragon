@@ -56,15 +56,16 @@ class CUDAObjects {
       auto& handle = handles[stream_id];
       CUBLAS_CHECK(cublasSetPointerMode(handle, CUBLAS_POINTER_MODE_HOST));
       CUBLAS_CHECK(cublasSetStream(handle, stream(device_id, stream_id)));
-#if CUDA_VERSION >= 11000
-      if (cudnn_allow_tf32_) {
-        CUBLAS_CHECK(cublasSetMathMode(handle, CUBLAS_TF32_TENSOR_OP_MATH));
-      } else {
-        CUBLAS_CHECK(cublasSetMathMode(handle, CUBLAS_DEFAULT_MATH));
-      }
-#endif
     }
-    return handles[stream_id];
+    auto& handle = handles[stream_id];
+#if CUDA_VERSION >= 11000
+    if (cublas_allow_tf32_) {
+      CUBLAS_CHECK(cublasSetMathMode(handle, CUBLAS_TF32_TENSOR_OP_MATH));
+    } else {
+      CUBLAS_CHECK(cublasSetMathMode(handle, CUBLAS_DEFAULT_MATH));
+    }
+#endif
+    return handle;
   }
 
   /*! \brief Return the specified cudnn handle */
@@ -149,6 +150,9 @@ class CUDAObjects {
   /*! \brief The cached NCCL comms of each device */
   Map<string, ncclComm_t> nccl_comms_[CUDA_MAX_DEVICES];
 #endif
+
+  /*! \brief The flag that allows cuBLAS TF32 math type or not */
+  bool cublas_allow_tf32_ = false;
 
   /*! \brief The flag that uses cuDNN or not */
   bool cudnn_enabled_ = true;

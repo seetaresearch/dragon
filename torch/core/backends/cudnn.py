@@ -37,7 +37,7 @@ class CuDNNModule(object):
     @allow_tf32.setter
     def allow_tf32(self, value):
         self._allow_tf32 = value
-        self._set_flags()
+        cuda.set_cudnn_flags(allow_tf32=value)
 
     @property
     def benchmark(self):
@@ -47,7 +47,7 @@ class CuDNNModule(object):
     @benchmark.setter
     def benchmark(self, value):
         self._benchmark = value
-        self._set_flags()
+        cuda.set_cudnn_flags(benchmark=value)
 
     @property
     def deterministic(self):
@@ -57,7 +57,7 @@ class CuDNNModule(object):
     @deterministic.setter
     def deterministic(self, value):
         self._deterministic = value
-        self._set_flags()
+        cuda.set_cudnn_flags(deterministic=value)
 
     @property
     def enabled(self):
@@ -67,7 +67,7 @@ class CuDNNModule(object):
     @enabled.setter
     def enabled(self, value):
         self._enabled = value
-        self._set_flags()
+        cuda.set_cudnn_flags(enabled=value)
 
     @staticmethod
     def is_available():
@@ -96,15 +96,6 @@ class CuDNNModule(object):
             major, minor, patch = [int(x) for x in version.split('.')]
             version = major * 1000 + minor * 100 + patch
         return version
-
-    def _set_flags(self):
-        """Set all flags with current value."""
-        cuda.set_cudnn_flags(
-            enabled=self._enabled,
-            benchmark=self._benchmark,
-            deterministic=self._deterministic,
-            allow_tf32=self._allow_tf32,
-        )
 
 
 # Module instances.

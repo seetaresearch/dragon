@@ -126,6 +126,9 @@ template <typename T, class Context>
 DRAGON_API void Pow(const int N, const T* a, const T* b, T* y, Context* ctx);
 
 template <typename T, class Context>
+DRAGON_API void Atan2(const int N, const T* a, const T* b, T* y, Context* ctx);
+
+template <typename T, class Context>
 DRAGON_API void
 Minimum(const int N, const T* a, const T* b, T* y, Context* ctx);
 

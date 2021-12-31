@@ -36,16 +36,6 @@ dragon
   `cast(...) <dragon/cast.html>`_
   : Cast the data type of input.
 
-  `channel_affine(...) <dragon/channel_affine.html>`_
-  : Apply affine transformation to each channel of input.
-
-  `channel_normalize(...) <dragon/channel_normalize.html>`_
-  : Apply normalization to each channel of input.
-
-  `channel_shuffle(...) <dragon/channel_shuffle.html>`_
-  : Apply group shuffle to each channel of input.
-  `[Zhang et.al, 2017] <https://arxiv.org/abs/1707.01083>`_.
-
   `concat(...) <dragon/concat.html>`_
   : Concatenate the inputs along the given axis.
 
@@ -211,9 +201,6 @@ dragon
   dragon/boolean_mask
   dragon/broadcast_to
   dragon/cast
-  dragon/channel_affine
-  dragon/channel_normalize
-  dragon/channel_shuffle
   dragon/concat
   dragon/constant
   dragon/device

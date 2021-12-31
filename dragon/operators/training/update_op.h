@@ -37,17 +37,14 @@ class UpdateOpBase : public Operator<Context> {
   void RunOnDevice() override;
 
   template <typename T>
-  void TransformGrad(Tensor* dX, Tensor* X);
+  void TransformGrad(Tensor* dX);
 
-  virtual void ComputeUpdate(Tensor* dX, Tensor* X) = 0;
-
-  template <typename T>
-  void ApplyUpdate(Tensor* dX, Tensor* X);
+  virtual void ApplyUpdate(Tensor* dX, Tensor* X, Tensor* Y) = 0;
 
   template <typename T>
   T GetHyper(const string& key);
 
-  Tensor* Slot(const string& key);
+  Tensor* GetState(const string& key);
 
  protected:
   int weight_index_;
@@ -55,9 +52,26 @@ class UpdateOpBase : public Operator<Context> {
   float clip_norm_, clip_value_;
 };
 
-#define USE_UPDATE_FUNCTIONS             \
-  using UpdateOpBase<Context>::GetHyper; \
-  using UpdateOpBase<Context>::Slot
+#define USE_UPDATE_FUNCTIONS                                       \
+  using UpdateOpBase<Context>::GetHyper;                           \
+  using UpdateOpBase<Context>::GetState;                           \
+  void ApplyUpdate(Tensor* dX, Tensor* X, Tensor* Y) override {    \
+    if (dX->template IsType<float>()) {                            \
+      if (Y == nullptr) {                                          \
+        DoRunWithType<float, float>(dX, X, Y);                     \
+      } else if (Y->template IsType<float16>()) {                  \
+        DoRunWithType<float, float16>(dX, X, Y);                   \
+      } else {                                                     \
+        LOG(FATAL) << MessageForUnsupported(                       \
+            dtypes::to_string(Y->meta()), {"float16", "float32"}); \
+      }                                                            \
+    } else if (dX->template IsType<double>()) {                    \
+      DoRunWithType<double, double>(dX, X, Y);                     \
+    } else {                                                       \
+      LOG(FATAL) << MessageForUnsupported(                         \
+          dtypes::to_string(dX->meta()), {"float32", "float64"});  \
+    }                                                              \
+  }
 
 template <class Context>
 class MomentumSGDOp final : public UpdateOpBase<Context> {
@@ -73,7 +87,8 @@ class MomentumSGDOp final : public UpdateOpBase<Context> {
     UpdateOpBase<Context>::GetArguments();
   }
 
-  void ComputeUpdate(Tensor* dX, Tensor* /* X */) override;
+  template <typename T, typename CopyT>
+  void DoRunWithType(Tensor* dX, Tensor* X, Tensor* Y);
 
  protected:
   float lr_, momentum_;
@@ -93,7 +108,8 @@ class NesterovSGDOp final : public UpdateOpBase<Context> {
     UpdateOpBase<Context>::GetArguments();
   }
 
-  void ComputeUpdate(Tensor* dX, Tensor* /* X */) override;
+  template <typename T, typename CopyT>
+  void DoRunWithType(Tensor* dX, Tensor* X, Tensor* Y);
 
  protected:
   float lr_, momentum_;
@@ -110,15 +126,16 @@ class RMSpropOp final : public UpdateOpBase<Context> {
   void GetArguments() override {
     lr_ = this->template GetHyper<float>("lr");
     momentum_ = this->template GetHyper<float>("momentum");
-    decay_ = this->template GetHyper<float>("decay");
+    alpha_ = this->template GetHyper<float>("alpha");
     eps_ = this->template GetHyper<float>("eps");
     UpdateOpBase<Context>::GetArguments();
   }
 
-  void ComputeUpdate(Tensor* dX, Tensor* /* X */) override;
+  template <typename T, typename CopyT>
+  void DoRunWithType(Tensor* dX, Tensor* X, Tensor* Y);
 
  protected:
-  float lr_, momentum_, decay_, eps_;
+  float lr_, momentum_, alpha_, eps_;
 };
 
 template <class Context>
@@ -139,7 +156,8 @@ class AdamOp : public UpdateOpBase<Context> {
     UpdateOpBase<Context>::GetArguments();
   }
 
-  void ComputeUpdate(Tensor* dX, Tensor* /* X */) override;
+  template <typename T, typename CopyT>
+  void DoRunWithType(Tensor* dX, Tensor* X, Tensor* Y);
 
  protected:
   int64_t t_;
@@ -163,16 +181,15 @@ class AdamWOp final : public UpdateOpBase<Context> {
     t_++;
     correction_ = sqrt(1.f - pow(beta2_, t_)) / (1.f - pow(beta1_, t_));
     UpdateOpBase<Context>::GetArguments();
-    lambda_ = this->weight_decay_;
-    this->weight_decay_ = 0.f;
   }
 
-  void ComputeUpdate(Tensor* dX, Tensor* X) override;
+  template <typename T, typename CopyT>
+  void DoRunWithType(Tensor* dX, Tensor* X, Tensor* Y);
 
  protected:
   int64_t t_;
   float lr_, beta1_, beta2_;
-  float eps_, correction_, lambda_;
+  float eps_, correction_;
 };
 
 template <class Context>
@@ -190,13 +207,12 @@ class LARSOp final : public UpdateOpBase<Context> {
     UpdateOpBase<Context>::GetArguments();
   }
 
-  void ComputeUpdate(Tensor* dX, Tensor* X) override;
+  template <typename T, typename CopyT>
+  void DoRunWithType(Tensor* dX, Tensor* X, Tensor* Y);
 
  protected:
   float lr_, momentum_, trust_coef_;
 };
-
-#undef USE_UPDATE_FUNCTIONS
 
 } // namespace dragon
 

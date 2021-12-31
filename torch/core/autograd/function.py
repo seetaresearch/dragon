@@ -173,6 +173,7 @@ class Function(object):
                 outputs_id.append(outputs[i].id)
             else:
                 if isinstance(spec, Tensor):
+                    spec._device = device.copy()
                     outputs.append(spec)
                     outputs_id.append(spec.id)
                 else:

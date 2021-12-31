@@ -1,19 +1,23 @@
-#include "dragon/operators/array/channel_affine_op.h"
+#include "dragon/operators/math/affine_op.h"
 #include "dragon/core/workspace.h"
 #include "dragon/utils/math_functions.h"
-#include "dragon/utils/op_kernels.h"
 
 namespace dragon {
 
 template <class Context>
 template <typename T>
-void ChannelAffineOp<Context>::DoRunWithType() {
+void AffineOp<Context>::DoRunWithType() {
   auto &X = Input(0), &W = Input(1), *Y = Output(0, {0});
-  GET_OP_AXIS_ARG(axis, X.ndim(), -1);
-  GET_OP_AXIS_ARG(end_axis, X.ndim(), axis);
 
-  vec64_t affine_dims(
-      {X.dims().begin() + axis, X.dims().begin() + end_axis + 1});
+  // Compute affine dimensions.
+  vec64_t affine_dims;
+  for (auto axis : axes_) {
+    axis = axis < 0 ? axis + X.ndim() : axis;
+    CHECK(axis >= 0 && axis < X.ndim())
+        << "\nExcepted the axis in [-" << X.ndim() << ", " << X.ndim()
+        << "), got " << axis << ".";
+    affine_dims.push_back(X.dim(axis));
+  }
   CHECK(W.dims() == affine_dims)
       << "\nExcepted the weight shape is " << Tensor::DimString(affine_dims)
       << ", got " << W.DimString() << ".";
@@ -23,10 +27,11 @@ void ChannelAffineOp<Context>::DoRunWithType() {
         << ", got " << Input(2).DimString() << ".";
   }
 
-  kernels::ChannelAffine(
-      X.count(0, axis),
-      X.count(end_axis + 1),
-      X.count(axis, end_axis + 1),
+  math::Affine(
+      X.ndim(),
+      X.dims().data(),
+      axes_.size(),
+      axes_.data(),
       X.template data<T, Context>(),
       W.template data<T, Context>(),
       InputSize() <= 2 ? nullptr : Input(2).template data<T, Context>(),
@@ -35,28 +40,30 @@ void ChannelAffineOp<Context>::DoRunWithType() {
 }
 
 template <class Context>
-void ChannelAffineOp<Context>::RunOnDevice() {
-  DispatchHelper<dtypes::Numerical>::Call(this, Input(0));
-}
-
-template <class Context>
 template <typename T>
-void ChannelAffineGradientOp<Context>::DoRunWithType() {
+void AffineGradientOp<Context>::DoRunWithType() {
   auto &X = Input(0), &W = Input(1), &dY = Input(2);
   auto *dX = Output(0), *dW = Output(1), *dB = Output(2);
-  GET_OP_AXIS_ARG(axis, X.ndim(), -1);
-  GET_OP_AXIS_ARG(end_axis, X.ndim(), axis);
 
-  vec64_t affine_dims = {X.count(0, axis),
-                         X.count(axis, end_axis + 1),
-                         X.count(end_axis + 1)},
-          affine_axes = {0, 2};
+  // Compute reduce axes.
+  vec64_t reduce_axes;
+  for (int i = 0; i < X.ndim(); ++i) {
+    bool keep = true;
+    for (auto axis : axes_) {
+      axis = axis < 0 ? axis + X.ndim() : axis;
+      if (axis == i) keep = false;
+    }
+    if (keep) reduce_axes.push_back(i);
+  }
+
+  // Scratch to save the intermediates.
+  T* data = nullptr;
+  if (dW->has_name() && X.count() != W.count()) {
+    data = ctx()->workspace()->template data<T, Context>(X.count());
+  }
 
   // dW = dY * X
   if (dW->has_name()) {
-    Output(1)->ReshapeLike(Input(1));
-    auto* x = Input(0).template data<T, Context>();
-    auto* dw = Output(1)->template mutable_data<T, Context>();
     if (X.count() == W.count()) {
       math::Mul(
           X.count(),
@@ -65,20 +72,19 @@ void ChannelAffineGradientOp<Context>::DoRunWithType() {
           dW->ReshapeLike(W)->template mutable_data<T, Context>(),
           ctx());
     } else {
-      T* scratch = ctx()->workspace()->template data<T, Context>(X.count());
       math::Mul(
           X.count(),
           dY.template data<T, Context>(),
           X.template data<T, Context>(),
-          scratch,
+          data,
           ctx());
       math::ReduceSum(
-          3,
-          affine_dims.data(),
-          2,
-          affine_axes.data(),
+          X.ndim(),
+          X.dims().data(),
+          reduce_axes.size(),
+          reduce_axes.data(),
           1.f,
-          scratch,
+          data,
           dW->ReshapeLike(W)->template mutable_data<T, Context>(),
           ctx());
     }
@@ -90,10 +96,10 @@ void ChannelAffineGradientOp<Context>::DoRunWithType() {
       dB->ReshapeLike(W)->CopyFrom(dY, ctx());
     } else {
       math::ReduceSum(
-          3,
-          affine_dims.data(),
-          2,
-          affine_axes.data(),
+          X.ndim(),
+          X.dims().data(),
+          reduce_axes.size(),
+          reduce_axes.data(),
           1.f,
           dY.template data<T, Context>(),
           dB->ReshapeLike(W)->template mutable_data<T, Context>(),
@@ -103,11 +109,11 @@ void ChannelAffineGradientOp<Context>::DoRunWithType() {
 
   // dX = dY * W
   if (dX->has_name()) {
-    Output(0)->ReshapeLike(Input(-1));
-    kernels::ChannelAffine(
-        X.count(0, axis),
-        X.count(end_axis + 1),
-        X.count(axis, end_axis + 1),
+    math::Affine(
+        X.ndim(),
+        X.dims().data(),
+        axes_.size(),
+        axes_.data(),
         dY.template data<T, Context>(),
         W.template data<T, Context>(),
         (const T*)nullptr,
@@ -116,22 +122,17 @@ void ChannelAffineGradientOp<Context>::DoRunWithType() {
   }
 }
 
-template <class Context>
-void ChannelAffineGradientOp<Context>::RunOnDevice() {
-  DispatchHelper<dtypes::Floating>::Call(this, Input(0));
-}
-
-DEPLOY_CPU_OPERATOR(ChannelAffine);
+DEPLOY_CPU_OPERATOR(Affine);
 #ifdef USE_CUDA
-DEPLOY_CUDA_OPERATOR(ChannelAffine);
+DEPLOY_CUDA_OPERATOR(Affine);
 #endif
 
-DEPLOY_CPU_OPERATOR(ChannelAffineGradient);
+DEPLOY_CPU_OPERATOR(AffineGradient);
 #ifdef USE_CUDA
-DEPLOY_CUDA_OPERATOR(ChannelAffineGradient);
+DEPLOY_CUDA_OPERATOR(AffineGradient);
 #endif
 
-OPERATOR_SCHEMA(ChannelAffine)
+OPERATOR_SCHEMA(Affine)
     /* X, W, B */
     .NumInputs(2, 3)
     /* Y */
@@ -139,7 +140,7 @@ OPERATOR_SCHEMA(ChannelAffine)
     /* X => Y */
     .AllowInplace({{0, 0}});
 
-OPERATOR_SCHEMA(ChannelAffineGradient)
+OPERATOR_SCHEMA(AffineGradient)
     /* X, W, dY */
     .NumInputs(3)
     /* dX, dW, dB */
@@ -163,6 +164,6 @@ class GradientMaker final : public GradientMakerBase {
 
 } // namespace
 
-REGISTER_GRADIENT(ChannelAffine, GradientMaker);
+REGISTER_GRADIENT(Affine, GradientMaker);
 
 } // namespace dragon

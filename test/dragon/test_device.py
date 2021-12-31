@@ -31,6 +31,9 @@ class TestCUDA(unittest.TestCase):
         stream.synchronize()
         dragon.cuda.synchronize()
 
+    def test_cublas(self):
+        dragon.cuda.set_cublas_flags()
+
     def test_cudnn(self):
         dragon.cuda.set_cudnn_flags()
 

@@ -5,46 +5,41 @@
 namespace dragon {
 
 template <class Context>
-void AdamOp<Context>::ComputeUpdate(Tensor* dX, Tensor* /* X */) {
+template <typename T, typename CopyT>
+void AdamOp<Context>::DoRunWithType(Tensor* dX, Tensor* X, Tensor* Y) {
   kernels::Adam(
       dX->count(),
       lr_ * correction_,
       beta1_,
       beta2_,
       eps_,
-      dX->template mutable_data<float, Context>(),
-      Slot("m")->ReshapeLike(*dX)->template mutable_data<float, Context>(),
-      Slot("v")->ReshapeLike(*dX)->template mutable_data<float, Context>(),
+      this->weight_decay_,
+      X->template data<T, Context>(),
+      dX->template mutable_data<T, Context>(),
+      GetState("m")->ReshapeLike(*dX)->template mutable_data<T, Context>(),
+      GetState("v")->ReshapeLike(*dX)->template mutable_data<T, Context>(),
+      X->template mutable_data<T, Context>(),
+      Y ? Y->template mutable_data<CopyT, Context>() : (CopyT*)nullptr,
       ctx());
 }
 
 template <class Context>
-void AdamWOp<Context>::ComputeUpdate(Tensor* dX, Tensor* X) {
-  if (lambda_ > 0.f) {
-    kernels::AdamW(
-        dX->count(),
-        lr_ * correction_,
-        beta1_,
-        beta2_,
-        eps_,
-        this->lr_ * lambda_,
-        X->template data<float, Context>(),
-        dX->template mutable_data<float, Context>(),
-        Slot("m")->ReshapeLike(*dX)->template mutable_data<float, Context>(),
-        Slot("v")->ReshapeLike(*dX)->template mutable_data<float, Context>(),
-        ctx());
-  } else {
-    kernels::Adam(
-        dX->count(),
-        lr_ * correction_,
-        beta1_,
-        beta2_,
-        eps_,
-        dX->template mutable_data<float, Context>(),
-        Slot("m")->ReshapeLike(*dX)->template mutable_data<float, Context>(),
-        Slot("v")->ReshapeLike(*dX)->template mutable_data<float, Context>(),
-        ctx());
-  }
+template <typename T, typename CopyT>
+void AdamWOp<Context>::DoRunWithType(Tensor* dX, Tensor* X, Tensor* Y) {
+  kernels::AdamW(
+      dX->count(),
+      lr_ * correction_,
+      beta1_,
+      beta2_,
+      eps_,
+      lr_ * this->weight_decay_,
+      X->template data<T, Context>(),
+      dX->template mutable_data<T, Context>(),
+      GetState("m")->ReshapeLike(*dX)->template mutable_data<T, Context>(),
+      GetState("v")->ReshapeLike(*dX)->template mutable_data<T, Context>(),
+      X->template mutable_data<T, Context>(),
+      Y ? Y->template mutable_data<CopyT, Context>() : (CopyT*)nullptr,
+      ctx());
 }
 
 DEPLOY_CPU_OPERATOR(Adam);

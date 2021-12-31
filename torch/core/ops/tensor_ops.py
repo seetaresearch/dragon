@@ -186,6 +186,29 @@ def argsort(self, dim=-1, descending=False):
     return sort_ops.argsort(self, dim, descending)
 
 
+def atan2(self, other):
+    r"""Compute the element-wise arc-tangent of two arguments.
+
+    .. math:: \text{out} = \text{arctan}(\frac{\text{self}}{\text{other}})
+
+    Parameters
+    ----------
+    other : Union[dragon.vm.torch.Tensor, number]
+        The value to divide.
+
+    Returns
+    -------
+    dragon.vm.torch.Tensor
+        The output tensor.
+
+    See Also
+    --------
+    `torch.atan2(...)`_
+
+    """
+    return math_ops.atan2(self, other)
+
+
 def baddbmm(self, batch1, batch2, beta=1, alpha=1):
     r"""Add the result of batched matrix-matrix multiplication.
 
@@ -3051,6 +3074,7 @@ Tensor.addmm = addmm
 Tensor.argmax = argmax
 Tensor.argmin = argmin
 Tensor.argsort = argsort
+Tensor.atan2 = atan2
 Tensor.backward = backward
 Tensor.baddbmm = baddbmm
 Tensor.baddbmm_ = baddbmm_

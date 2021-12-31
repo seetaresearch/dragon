@@ -33,9 +33,6 @@ constexpr int CUDA_WARP_SIZE = 32;
 /*! \brief The number of cuda threads in a block */
 constexpr int CUDA_THREADS = 256;
 
-/*! \brief The maximum number of blocks to use in a default kernel call */
-constexpr int CUDA_MAX_BLOCKS = 4096;
-
 /*! \brief The maximum number of devices in a single machine */
 constexpr int CUDA_MAX_DEVICES = 16;
 
@@ -82,12 +79,15 @@ constexpr int CUDA_TENSOR_MAX_DIMS = 8;
   for (size_t j = threadIdx.x; j < m; j += blockDim.x)
 
 inline int CUDA_BLOCKS(const int N) {
-  return std::max(
-      std::min((N + CUDA_THREADS - 1) / CUDA_THREADS, CUDA_MAX_BLOCKS), 1);
-}
-
-inline int CUDA_2D_BLOCKS(const int N) {
-  return std::max(std::min(N, CUDA_MAX_BLOCKS), 1);
+  int device, sm_count, threads_per_sm;
+  CUDA_CHECK(cudaGetDevice(&device));
+  CUDA_CHECK(cudaDeviceGetAttribute(
+      &sm_count, cudaDevAttrMultiProcessorCount, device));
+  CUDA_CHECK(cudaDeviceGetAttribute(
+      &threads_per_sm, cudaDevAttrMaxThreadsPerMultiProcessor, device));
+  const auto num_blocks = (N + CUDA_THREADS - 1) / CUDA_THREADS;
+  const auto max_blocks = sm_count * threads_per_sm / CUDA_THREADS * 32;
+  return std::max(1, std::min(num_blocks, max_blocks));
 }
 
 #if CUDA_VERSION_MAX(9, 0)

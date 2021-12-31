@@ -34,12 +34,15 @@ from dragon.core.ops.activation_ops import relu6
 from dragon.core.ops.activation_ops import selu
 from dragon.core.ops.activation_ops import silu
 from dragon.core.ops.activation_ops import softmax
+from dragon.core.ops.array_ops import channel_shuffle
 from dragon.core.ops.math_ops import moments
 from dragon.core.ops.normalization_ops import batch_norm
+from dragon.core.ops.normalization_ops import channel_norm
 from dragon.core.ops.normalization_ops import group_norm
 from dragon.core.ops.normalization_ops import instance_norm
 from dragon.core.ops.normalization_ops import layer_norm
 from dragon.core.ops.normalization_ops import local_response_norm
+from dragon.core.ops.normalization_ops import lp_norm
 from dragon.core.ops.normalization_ops import sync_batch_norm
 from dragon.core.ops.vision_ops import bias_add
 from dragon.core.ops.vision_ops import conv

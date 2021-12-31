@@ -31,6 +31,17 @@ def add_exporter(op_def, context):
     return node, const_tensors
 
 
+@export_util.register('Affine')
+def affine_exporter(op_def, context):
+    node, const_tensors = export_util.translate(**locals())
+    node.op_type = 'ATen'  # Currently not supported in ai.onnx
+    helper.add_attribute(node, 'op_type', 'Affine')
+    for arg in op_def.arg:
+        if arg.name == 'axes':
+            helper.add_attribute(node, 'axes', arg.ints)
+    return node, const_tensors
+
+
 @export_util.register('Div')
 def div_exporter(op_def, context):
     node, const_tensors = export_util.translate(**locals())

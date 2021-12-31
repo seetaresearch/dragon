@@ -16,24 +16,25 @@
 #include "dragon/core/types.h"
 #include "dragon/utils/conversions.h"
 
+#if defined(__CUDA_ARCH__)
+#define HOSTDEVICE_DECL inline __host__ __device__
+#else
+#define HOSTDEVICE_DECL inline
+#endif
+
 namespace dragon {
 
 namespace math {
 
 /*
- * Arithmetic Functors */
+ * Arithmetic Functors
+ */
 
 template <typename T>
 struct IdentityFunctor {
-#if defined(__CUDA_ARCH__)
-  inline __device__ T operator()(const T& x) const {
+  HOSTDEVICE_DECL T operator()(const T& x) const {
     return x;
   }
-#else
-  inline T operator()(const T& x) const {
-    return x;
-  }
-#endif
 };
 
 template <typename T>
@@ -76,15 +77,9 @@ struct AbsFunctor<half2> {
 
 template <typename T>
 struct SqrFunctor {
-#if defined(__CUDA_ARCH__)
-  inline __device__ T operator()(const T& x) const {
+  HOSTDEVICE_DECL T operator()(const T& x) const {
     return x * x;
   }
-#else
-  inline T operator()(const T& x) const {
-    return x * x;
-  }
-#endif
 };
 
 #if defined(__CUDA_ARCH__)
@@ -115,40 +110,16 @@ struct SqrFunctor<half2> {
 
 template <typename T>
 struct MaxFunctor {
-#if defined(__CUDA_ARCH__)
-  inline __device__ T operator()(const T& lhs, const T& rhs) const {
+  HOSTDEVICE_DECL T operator()(const T& lhs, const T& rhs) const {
     return lhs < rhs ? rhs : lhs;
   }
-#else
-  inline T operator()(const T& lhs, const T& rhs) const {
-    return lhs < rhs ? rhs : lhs;
-  }
-#endif
 };
 
 template <>
 struct MaxFunctor<float16> {
-#if defined(__CUDA_ARCH__)
-  inline __device__ float16
-  operator()(const float16& lhs, const float16& rhs) const {
-#if __CUDA_ARCH__ >= 530
-    return __hlt(
-               *reinterpret_cast<const half*>(&lhs),
-               *reinterpret_cast<const half*>(&rhs))
-        ? rhs
-        : lhs;
-#else
-    return __half2float(*reinterpret_cast<const half*>(&lhs)) <
-            __half2float(*reinterpret_cast<const half*>(&rhs))
-        ? rhs
-        : lhs;
-#endif
-  }
-#else
   inline float16 operator()(const float16& lhs, const float16& rhs) const {
     return convert::To<float>(lhs) < convert::To<float>(rhs) ? rhs : lhs;
   }
-#endif
 };
 
 #if defined(__CUDA_ARCH__)
@@ -176,40 +147,16 @@ struct MaxFunctor<half2> {
 
 template <typename T>
 struct MinFunctor {
-#if defined(__CUDA_ARCH__)
-  inline __device__ T operator()(const T& lhs, const T& rhs) const {
+  HOSTDEVICE_DECL T operator()(const T& lhs, const T& rhs) const {
     return lhs < rhs ? lhs : rhs;
   }
-#else
-  inline T operator()(const T& lhs, const T& rhs) const {
-    return lhs < rhs ? lhs : rhs;
-  }
-#endif
 };
 
 template <>
 struct MinFunctor<float16> {
-#if defined(__CUDA_ARCH__)
-  inline __device__ float16
-  operator()(const float16& lhs, const float16& rhs) const {
-#if __CUDA_ARCH__ >= 530
-    return __hlt(
-               *reinterpret_cast<const half*>(&lhs),
-               *reinterpret_cast<const half*>(&rhs))
-        ? lhs
-        : rhs;
-#else
-    return __half2float(*reinterpret_cast<const half*>(&lhs)) <
-            __half2float(*reinterpret_cast<const half*>(&rhs))
-        ? lhs
-        : rhs;
-#endif
-  }
-#else
   inline float16 operator()(const float16& lhs, const float16& rhs) const {
     return convert::To<float>(lhs) < convert::To<float>(rhs) ? lhs : rhs;
   }
-#endif
 };
 
 #if defined(__CUDA_ARCH__)
@@ -237,39 +184,17 @@ struct MinFunctor<half2> {
 
 template <typename T>
 struct PlusFunctor {
-#if defined(__CUDA_ARCH__)
-  inline __device__ T operator()(const T& lhs, const T& rhs) const {
+  HOSTDEVICE_DECL T operator()(const T& lhs, const T& rhs) const {
     return lhs + rhs;
   }
-#else
-  inline T operator()(const T& lhs, const T& rhs) const {
-    return lhs + rhs;
-  }
-#endif
 };
 
 template <>
 struct PlusFunctor<float16> {
-#if defined(__CUDA_ARCH__)
-  inline __device__ float16
-  operator()(const float16& lhs, const float16& rhs) const {
-#if __CUDA_ARCH__ >= 530
-    half ret = __hadd(
-        *reinterpret_cast<const half*>(&lhs),
-        *reinterpret_cast<const half*>(&rhs));
-#else
-    half ret = __float2half(
-        __half2float(*reinterpret_cast<const half*>(&lhs)) +
-        __half2float(*reinterpret_cast<const half*>(&rhs)));
-#endif
-    return *reinterpret_cast<float16*>(&ret);
-  }
-#else
   inline float16 operator()(const float16& lhs, const float16& rhs) const {
     return convert::To<float16>(
         convert::To<float>(lhs) + convert::To<float>(rhs));
   }
-#endif
 };
 
 #if defined(__CUDA_ARCH__)
@@ -300,39 +225,17 @@ struct PlusFunctor<half2> {
 
 template <typename T>
 struct MinusFunctor {
-#if defined(__CUDA_ARCH__)
-  inline __device__ T operator()(const T& lhs, const T& rhs) const {
+  HOSTDEVICE_DECL T operator()(const T& lhs, const T& rhs) const {
     return lhs - rhs;
   }
-#else
-  inline T operator()(const T& lhs, const T& rhs) const {
-    return lhs - rhs;
-  }
-#endif
 };
 
 template <>
 struct MinusFunctor<float16> {
-#if defined(__CUDA_ARCH__)
-  inline __device__ float16
-  operator()(const float16& lhs, const float16& rhs) const {
-#if __CUDA_ARCH__ >= 530
-    half ret = __hsub(
-        *reinterpret_cast<const half*>(&lhs),
-        *reinterpret_cast<const half*>(&rhs));
-#else
-    half ret = __float2half(
-        __half2float(*reinterpret_cast<const half*>(&lhs)) -
-        __half2float(*reinterpret_cast<const half*>(&rhs)));
-#endif
-    return *reinterpret_cast<float16*>(&ret);
-  }
-#else
   inline float16 operator()(const float16& lhs, const float16& rhs) const {
     return convert::To<float16>(
         convert::To<float>(lhs) - convert::To<float>(rhs));
   }
-#endif
 };
 
 #if defined(__CUDA_ARCH__)
@@ -363,39 +266,17 @@ struct MinusFunctor<half2> {
 
 template <typename T>
 struct MultipliesFunctor {
-#if defined(__CUDA_ARCH__)
-  inline __device__ T operator()(const T& lhs, const T& rhs) const {
+  HOSTDEVICE_DECL T operator()(const T& lhs, const T& rhs) const {
     return lhs * rhs;
   }
-#else
-  inline T operator()(const T& lhs, const T& rhs) const {
-    return lhs * rhs;
-  }
-#endif
 };
 
 template <>
 struct MultipliesFunctor<float16> {
-#if defined(__CUDA_ARCH__)
-  inline __device__ float16
-  operator()(const float16& lhs, const float16& rhs) const {
-#if __CUDA_ARCH__ >= 530
-    half ret = __hmul(
-        *reinterpret_cast<const half*>(&lhs),
-        *reinterpret_cast<const half*>(&rhs));
-#else
-    half ret = __float2half(
-        __half2float(*reinterpret_cast<const half*>(&lhs)) *
-        __half2float(*reinterpret_cast<const half*>(&rhs)));
-#endif
-    return *reinterpret_cast<float16*>(&ret);
-  }
-#else
   inline float16 operator()(const float16& lhs, const float16& rhs) const {
     return convert::To<float16>(
         convert::To<float>(lhs) * convert::To<float>(rhs));
   }
-#endif
 };
 
 #if defined(__CUDA_ARCH__)
@@ -426,39 +307,17 @@ struct MultipliesFunctor<half2> {
 
 template <typename T>
 struct DividesFunctor {
-#if defined(__CUDA_ARCH__)
-  inline __device__ T operator()(const T& lhs, const T& rhs) const {
+  HOSTDEVICE_DECL T operator()(const T& lhs, const T& rhs) const {
     return lhs / rhs;
   }
-#else
-  inline T operator()(const T& lhs, const T& rhs) const {
-    return lhs / rhs;
-  }
-#endif
 };
 
 template <>
 struct DividesFunctor<float16> {
-#if defined(__CUDA_ARCH__)
-  inline __device__ float16
-  operator()(const float16& lhs, const float16& rhs) const {
-#if __CUDA_ARCH__ >= 530
-    half ret = __hdiv(
-        *reinterpret_cast<const half*>(&lhs),
-        *reinterpret_cast<const half*>(&rhs));
-#else
-    half ret = __float2half(
-        __half2float(*reinterpret_cast<const half*>(&lhs)) /
-        __half2float(*reinterpret_cast<const half*>(&rhs)));
-#endif
-    return *reinterpret_cast<float16*>(&ret);
-  }
-#else
   inline float16 operator()(const float16& lhs, const float16& rhs) const {
     return convert::To<float16>(
         convert::To<float>(lhs) / convert::To<float>(rhs));
   }
-#endif
 };
 
 #if defined(__CUDA_ARCH__)
@@ -498,20 +357,10 @@ struct PowFunctor {
 
 template <>
 struct PowFunctor<float16> {
-#if defined(__CUDA_ARCH__)
-  inline __device__ float16
-  operator()(const float16& lhs, const float16& rhs) const {
-    half ret = __float2half(
-        pow(__half2float(*reinterpret_cast<const half*>(&lhs)),
-            __half2float(*reinterpret_cast<const half*>(&rhs))));
-    return *reinterpret_cast<float16*>(&ret);
-  }
-#else
   inline float16 operator()(const float16& lhs, const float16& rhs) const {
     return convert::To<float16>(
         std::pow(convert::To<float>(lhs), convert::To<float>(rhs)));
   }
-#endif
 };
 
 #if defined(__CUDA_ARCH__)
@@ -532,34 +381,104 @@ struct PowFunctor<half2> {
 };
 #endif
 
+template <typename T>
+struct Atan2Functor {
+#if defined(__CUDA_ARCH__)
+  inline __device__ T operator()(const T& lhs, const T& rhs) const {
+    return atan2(lhs, rhs);
+  }
+#else
+  inline T operator()(const T& lhs, const T& rhs) const {
+    return std::atan2(lhs, rhs);
+  }
+#endif
+};
+
+template <>
+struct Atan2Functor<float16> {
+  inline float16 operator()(const float16& lhs, const float16& rhs) const {
+    return convert::To<float16>(
+        std::atan2(convert::To<float>(lhs), convert::To<float>(rhs)));
+  }
+};
+
+#if defined(__CUDA_ARCH__)
+template <>
+struct Atan2Functor<half> {
+  inline __device__ half operator()(const half& lhs, const half& rhs) const {
+    return __float2half(atan2f(__half2float(lhs), __half2float(rhs)));
+  }
+};
+
+template <>
+struct Atan2Functor<half2> {
+  inline __device__ half2 operator()(const half2& lhs, const half2& rhs) const {
+    const float2 v1 = __half22float2(lhs);
+    const float2 v2 = __half22float2(rhs);
+    return __floats2half2_rn(atan2f(v1.x, v2.x), atan2f(v1.y, v2.y));
+  }
+};
+#endif
+
+template <typename T>
+struct FMAFunctor {
+#if defined(__CUDA_ARCH__)
+  inline __device__ T operator()(const T& x, const T& y, const T& z) const {
+    return fma(x, y, z);
+  }
+#else
+  inline T operator()(const T& x, const T& y, const T& z) const {
+    return std::fma(x, y, z);
+  }
+#endif
+};
+
+#if defined(__CUDA_ARCH__)
+template <>
+struct FMAFunctor<half> {
+  inline __device__ half
+  operator()(const half& x, const half& y, const half& z) const {
+#if __CUDA_ARCH__ >= 530
+    return __hfma(x, y, z);
+#else
+    return __float2half(
+        fmaf(__half2float(x), __half2float(y), __half2float(z)));
+#endif
+  }
+};
+
+template <>
+struct FMAFunctor<half2> {
+  inline __device__ half2
+  operator()(const half2& x, const half2& y, const half2& z) const {
+#if __CUDA_ARCH__ >= 530
+    return __hfma2(x, y, z);
+#else
+    const float2 v1 = __half22float2(x);
+    const float2 v2 = __half22float2(y);
+    const float2 v3 = __half22float2(z);
+    return __floats2half2_rn(fmaf(v1.x, v2.x, v3.x), fmaf(v1.y, v2.y, v3.y));
+#endif
+  }
+};
+#endif
+
 /*
  * Logical Functors
  */
 
 template <typename T>
 struct NotFunctor {
-#if defined(__CUDA_ARCH__)
-  inline __device__ bool operator()(const T& x) const {
+  HOSTDEVICE_DECL bool operator()(const T& x) const {
     return !x;
   }
-#else
-  inline bool operator()(const T& x) const {
-    return !x;
-  }
-#endif
 };
 
 template <>
 struct NotFunctor<float16> {
-#if defined(__CUDA_ARCH__)
-  inline __device__ bool operator()(const float16& x) const {
-    return !__half2float(*reinterpret_cast<const half*>(&x));
-  }
-#else
   inline bool operator()(const float16& x) const {
     return !convert::To<float>(x);
   }
-#endif
 };
 
 #if defined(__CUDA_ARCH__)
@@ -573,30 +492,16 @@ struct NotFunctor<half> {
 
 template <typename T>
 struct AndFunctor {
-#if defined(__CUDA_ARCH__)
-  inline __device__ bool operator()(const T& lhs, const T& rhs) const {
+  HOSTDEVICE_DECL bool operator()(const T& lhs, const T& rhs) const {
     return lhs && rhs;
   }
-#else
-  inline bool operator()(const T& lhs, const T& rhs) const {
-    return lhs && rhs;
-  }
-#endif
 };
 
 template <>
 struct AndFunctor<float16> {
-#if defined(__CUDA_ARCH__)
-  inline __device__ bool operator()(const float16& lhs, const float16& rhs)
-      const {
-    return __half2float(*reinterpret_cast<const half*>(&lhs)) &&
-        __half2float(*reinterpret_cast<const half*>(&rhs));
-  }
-#else
   inline bool operator()(const float16& lhs, const float16& rhs) const {
     return convert::To<float>(lhs) && convert::To<float>(rhs);
   }
-#endif
 };
 
 #if defined(__CUDA_ARCH__)
@@ -610,30 +515,16 @@ struct AndFunctor<half> {
 
 template <typename T>
 struct OrFunctor {
-#if defined(__CUDA_ARCH__)
-  inline __device__ bool operator()(const T& lhs, const T& rhs) const {
+  HOSTDEVICE_DECL bool operator()(const T& lhs, const T& rhs) const {
     return lhs || rhs;
   }
-#else
-  inline bool operator()(const T& lhs, const T& rhs) const {
-    return lhs || rhs;
-  }
-#endif
 };
 
 template <>
 struct OrFunctor<float16> {
-#if defined(__CUDA_ARCH__)
-  inline __device__ bool operator()(const float16& lhs, const float16& rhs)
-      const {
-    return __half2float(*reinterpret_cast<const half*>(&lhs)) ||
-        __half2float(*reinterpret_cast<const half*>(&rhs));
-  }
-#else
   inline bool operator()(const float16& lhs, const float16& rhs) const {
     return convert::To<float>(lhs) || convert::To<float>(rhs);
   }
-#endif
 };
 
 #if defined(__CUDA_ARCH__)
@@ -647,32 +538,17 @@ struct OrFunctor<half> {
 
 template <typename T>
 struct XorFunctor {
-#if defined(__CUDA_ARCH__)
-  inline __device__ bool operator()(const T& lhs, const T& rhs) const {
+  HOSTDEVICE_DECL bool operator()(const T& lhs, const T& rhs) const {
     return convert::To<bool>(lhs) ^ convert::To<bool>(rhs);
   }
-#else
-  inline bool operator()(const T& lhs, const T& rhs) const {
-    return convert::To<bool>(lhs) ^ convert::To<bool>(rhs);
-  }
-#endif
 };
 
 template <>
 struct XorFunctor<float16> {
-#if defined(__CUDA_ARCH__)
-  inline __device__ bool operator()(const float16& lhs, const float16& rhs)
-      const {
-    return convert::To<bool>(
-               __half2float(*reinterpret_cast<const half*>(&lhs))) ^
-        convert::To<bool>(__half2float(*reinterpret_cast<const half*>(&rhs)));
-  }
-#else
   inline bool operator()(const float16& lhs, const float16& rhs) const {
     return convert::To<bool>(convert::To<float>(lhs)) ^
         convert::To<bool>(convert::To<float>(rhs));
   }
-#endif
 };
 
 #if defined(__CUDA_ARCH__)
@@ -691,54 +567,30 @@ struct XorFunctor<half> {
 
 template <typename T>
 struct BitNotFunctor {
-#if defined(__CUDA_ARCH__)
-  inline __device__ T operator()(const T& x) const {
+  HOSTDEVICE_DECL T operator()(const T& x) const {
     return ~x;
   }
-#else
-  inline T operator()(const T& x) const {
-    return ~x;
-  }
-#endif
 };
 
 template <typename T>
 struct BitAndFunctor {
-#if defined(__CUDA_ARCH__)
-  inline __device__ T operator()(const T& lhs, const T& rhs) const {
+  HOSTDEVICE_DECL T operator()(const T& lhs, const T& rhs) const {
     return lhs & rhs;
   }
-#else
-  inline T operator()(const T& lhs, const T& rhs) const {
-    return lhs & rhs;
-  }
-#endif
 };
 
 template <typename T>
 struct BitOrFunctor {
-#if defined(__CUDA_ARCH__)
-  inline __device__ T operator()(const T& lhs, const T& rhs) const {
+  HOSTDEVICE_DECL T operator()(const T& lhs, const T& rhs) const {
     return lhs | rhs;
   }
-#else
-  inline T operator()(const T& lhs, const T& rhs) const {
-    return lhs | rhs;
-  }
-#endif
 };
 
 template <typename T>
 struct BitXorFunctor {
-#if defined(__CUDA_ARCH__)
-  inline __device__ T operator()(const T& lhs, const T& rhs) const {
+  HOSTDEVICE_DECL T operator()(const T& lhs, const T& rhs) const {
     return lhs ^ rhs;
   }
-#else
-  inline T operator()(const T& lhs, const T& rhs) const {
-    return lhs ^ rhs;
-  }
-#endif
 };
 
 /*
@@ -747,36 +599,16 @@ struct BitXorFunctor {
 
 template <typename T>
 struct EqualFunctor {
-#if defined(__CUDA_ARCH__)
-  inline __device__ bool operator()(const T& lhs, const T& rhs) const {
+  HOSTDEVICE_DECL bool operator()(const T& lhs, const T& rhs) const {
     return lhs == rhs;
   }
-#else
-  inline bool operator()(const T& lhs, const T& rhs) const {
-    return lhs == rhs;
-  }
-#endif
 };
 
 template <>
 struct EqualFunctor<float16> {
-#if defined(__CUDA_ARCH__)
-  inline __device__ bool operator()(const float16& lhs, const float16& rhs)
-      const {
-#if __CUDA_ARCH__ >= 530
-    return __heq(
-        *reinterpret_cast<const half*>(&lhs),
-        *reinterpret_cast<const half*>(&rhs));
-#else
-    return __half2float(*reinterpret_cast<const half*>(&lhs)) ==
-        __half2float(*reinterpret_cast<const half*>(&rhs));
-#endif
-  }
-#else
   inline bool operator()(const float16& lhs, const float16& rhs) const {
     return convert::To<float>(lhs) == convert::To<float>(rhs);
   }
-#endif
 };
 
 #if defined(__CUDA_ARCH__)
@@ -794,36 +626,16 @@ struct EqualFunctor<half> {
 
 template <typename T>
 struct NotEqualFunctor {
-#if defined(__CUDA_ARCH__)
-  inline __device__ bool operator()(const T& lhs, const T& rhs) const {
+  HOSTDEVICE_DECL bool operator()(const T& lhs, const T& rhs) const {
     return lhs != rhs;
   }
-#else
-  inline bool operator()(const T& lhs, const T& rhs) const {
-    return lhs != rhs;
-  }
-#endif
 };
 
 template <>
 struct NotEqualFunctor<float16> {
-#if defined(__CUDA_ARCH__)
-  inline __device__ bool operator()(const float16& lhs, const float16& rhs)
-      const {
-#if __CUDA_ARCH__ >= 530
-    return __hne(
-        *reinterpret_cast<const half*>(&lhs),
-        *reinterpret_cast<const half*>(&rhs));
-#else
-    return __half2float(*reinterpret_cast<const half*>(&lhs)) !=
-        __half2float(*reinterpret_cast<const half*>(&rhs));
-#endif
-  }
-#else
   inline bool operator()(const float16& lhs, const float16& rhs) const {
     return convert::To<float>(lhs) != convert::To<float>(rhs);
   }
-#endif
 };
 
 #if defined(__CUDA_ARCH__)
@@ -841,36 +653,16 @@ struct NotEqualFunctor<half> {
 
 template <typename T>
 struct GreaterFunctor {
-#if defined(__CUDA_ARCH__)
-  inline __device__ bool operator()(const T& lhs, const T& rhs) const {
+  HOSTDEVICE_DECL bool operator()(const T& lhs, const T& rhs) const {
     return lhs > rhs;
   }
-#else
-  inline bool operator()(const T& lhs, const T& rhs) const {
-    return lhs > rhs;
-  }
-#endif
 };
 
 template <>
 struct GreaterFunctor<float16> {
-#if defined(__CUDA_ARCH__)
-  inline __device__ bool operator()(const float16& lhs, const float16& rhs)
-      const {
-#if __CUDA_ARCH__ >= 530
-    return __hgt(
-        *reinterpret_cast<const half*>(&lhs),
-        *reinterpret_cast<const half*>(&rhs));
-#else
-    return __half2float(*reinterpret_cast<const half*>(&lhs)) >
-        __half2float(*reinterpret_cast<const half*>(&rhs));
-#endif
-  }
-#else
   inline bool operator()(const float16& lhs, const float16& rhs) const {
     return convert::To<float>(lhs) > convert::To<float>(rhs);
   }
-#endif
 };
 
 #if defined(__CUDA_ARCH__)
@@ -888,36 +680,16 @@ struct GreaterFunctor<half> {
 
 template <typename T>
 struct LessFunctor {
-#if defined(__CUDA_ARCH__)
-  inline __device__ bool operator()(const T& lhs, const T& rhs) const {
+  HOSTDEVICE_DECL bool operator()(const T& lhs, const T& rhs) const {
     return lhs < rhs;
   }
-#else
-  inline bool operator()(const T& lhs, const T& rhs) const {
-    return lhs < rhs;
-  }
-#endif
 };
 
 template <>
 struct LessFunctor<float16> {
-#if defined(__CUDA_ARCH__)
-  inline __device__ bool operator()(const float16& lhs, const float16& rhs)
-      const {
-#if __CUDA_ARCH__ >= 530
-    return __hlt(
-        *reinterpret_cast<const half*>(&lhs),
-        *reinterpret_cast<const half*>(&rhs));
-#else
-    return __half2float(*reinterpret_cast<const half*>(&lhs)) <
-        __half2float(*reinterpret_cast<const half*>(&rhs));
-#endif
-  }
-#else
   inline bool operator()(const float16& lhs, const float16& rhs) const {
     return convert::To<float>(lhs) < convert::To<float>(rhs);
   }
-#endif
 };
 
 #if defined(__CUDA_ARCH__)
@@ -935,36 +707,16 @@ struct LessFunctor<half> {
 
 template <typename T>
 struct GreaterEqualFunctor {
-#if defined(__CUDA_ARCH__)
-  inline __device__ bool operator()(const T& lhs, const T& rhs) const {
+  HOSTDEVICE_DECL bool operator()(const T& lhs, const T& rhs) const {
     return lhs >= rhs;
   }
-#else
-  inline bool operator()(const T& lhs, const T& rhs) const {
-    return lhs >= rhs;
-  }
-#endif
 };
 
 template <>
 struct GreaterEqualFunctor<float16> {
-#if defined(__CUDA_ARCH__)
-  inline __device__ bool operator()(const float16& lhs, const float16& rhs)
-      const {
-#if __CUDA_ARCH__ >= 530
-    return __hge(
-        *reinterpret_cast<const half*>(&lhs),
-        *reinterpret_cast<const half*>(&rhs));
-#else
-    return __half2float(*reinterpret_cast<const half*>(&lhs)) >=
-        __half2float(*reinterpret_cast<const half*>(&rhs));
-#endif
-  }
-#else
   inline bool operator()(const float16& lhs, const float16& rhs) const {
     return convert::To<float>(lhs) >= convert::To<float>(rhs);
   }
-#endif
 };
 
 #if defined(__CUDA_ARCH__)
@@ -982,36 +734,16 @@ struct GreaterEqualFunctor<half> {
 
 template <typename T>
 struct LessEqualFunctor {
-#if defined(__CUDA_ARCH__)
-  inline __device__ bool operator()(const T& lhs, const T& rhs) const {
+  HOSTDEVICE_DECL bool operator()(const T& lhs, const T& rhs) const {
     return lhs <= rhs;
   }
-#else
-  inline bool operator()(const T& lhs, const T& rhs) const {
-    return lhs <= rhs;
-  }
-#endif
 };
 
 template <>
 struct LessEqualFunctor<float16> {
-#if defined(__CUDA_ARCH__)
-  inline __device__ bool operator()(const float16& lhs, const float16& rhs)
-      const {
-#if __CUDA_ARCH__ >= 530
-    return __hle(
-        *reinterpret_cast<const half*>(&lhs),
-        *reinterpret_cast<const half*>(&rhs));
-#else
-    return __half2float(*reinterpret_cast<const half*>(&lhs)) <
-        __half2float(*reinterpret_cast<const half*>(&rhs));
-#endif
-  }
-#else
   inline bool operator()(const float16& lhs, const float16& rhs) const {
     return convert::To<float>(lhs) <= convert::To<float>(rhs);
   }
-#endif
 };
 
 #if defined(__CUDA_ARCH__)
@@ -1030,5 +762,7 @@ struct LessEqualFunctor<half> {
 } // namespace math
 
 } // namespace dragon
+
+#undef HOSTDEVICE_DECL
 
 #endif // DRAGON_UTILS_MATH_FUNCTIONAL_H_

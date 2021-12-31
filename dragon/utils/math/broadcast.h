@@ -122,6 +122,17 @@ DRAGON_API void Pow(
     Context* ctx);
 
 template <typename T, class Context>
+DRAGON_API void Atan2(
+    const int A_ndim,
+    const int64_t* A_dims,
+    const int B_ndim,
+    const int64_t* B_dims,
+    const T* a,
+    const T* b,
+    T* y,
+    Context* ctx);
+
+template <typename T, class Context>
 DRAGON_API void Minimum(
     const int A_ndim,
     const int64_t* A_dims,

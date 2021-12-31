@@ -170,8 +170,42 @@ def adaptive_max_pool3d(input, output_size):
     return _pool('MAX', utils._triple, input, **args)
 
 
+def affine(input, weight, bias=None, dim=-1, out=None):
+    r"""Apply affine transformation to input.
+
+    .. math:: \text{out} = \text{input} \times \text{weight} + \text{bias}
+
+    Parameters
+    ----------
+    input : dragon.vm.torch.Tensor
+        The input tensor.
+    weight : dragon.vm.torch.Tensor
+        The weight tensor.
+    bias : dragon.vm.torch.Tensor, optional
+        The bias tensor.
+    dim : Union[int, Sequence[int]], optional
+        The dimension to apply.
+    out : dragon.vm.torch.Tensor, optional
+        The output tensor.
+
+    Returns
+    -------
+    dragon.vm.torch.Tensor
+        The output tensor.
+
+    See Also
+    --------
+    `torch.nn.Affine(...)`_
+
+    """
+    return Function.apply(
+        'Affine', input.device,
+        [input, weight] + ([bias] if bias else []), outputs=[out],
+        axes=nest.flatten(dim))
+
+
 def avg_pool1d(input, kernel_size, stride=1, padding=0, ceil_mode=False):
-    r"""Apply the 1d average pooling to input.
+    """Apply the 1d average pooling to input.
 
     Parameters
     ----------
@@ -200,7 +234,7 @@ def avg_pool1d(input, kernel_size, stride=1, padding=0, ceil_mode=False):
 
 
 def avg_pool2d(input, kernel_size, stride=1, padding=0, ceil_mode=False):
-    r"""Apply the 2d average pooling to input.
+    """Apply the 2d average pooling to input.
 
     Parameters
     ----------
@@ -229,7 +263,7 @@ def avg_pool2d(input, kernel_size, stride=1, padding=0, ceil_mode=False):
 
 
 def avg_pool3d(input, kernel_size, stride=1, padding=0, ceil_mode=False):
-    r"""Apply the 3d average pooling to input.
+    """Apply the 3d average pooling to input.
 
     Parameters
     ----------
@@ -267,7 +301,7 @@ def batch_norm(
     momentum=0.1,
     eps=1e-5,
 ):
-    r"""Apply the batch normalization to input.
+    """Apply the batch normalization to input.
     `[Ioffe & Szegedy, 2015] <https://arxiv.org/abs/1502.03167>`_.
 
     Parameters
@@ -315,7 +349,7 @@ def binary_cross_entropy_with_logits(
     reduction='mean',
     pos_weight=None,
 ):
-    r"""Compute the sigmoid cross entropy with contiguous target.
+    """Compute the sigmoid cross entropy with contiguous target.
 
     Parameters
     ----------
@@ -353,6 +387,55 @@ def binary_cross_entropy_with_logits(
         [input, target], reduction=reduction.upper())
 
 
+def channel_norm(input, mean, std, dim=-1, dtype='float32', dims=None):
+    """Apply the normalization to each channel of input.
+
+    :attr:`dim` can be negative:
+
+    ```python
+    m = s = (1., 1., 1.)
+    x = torch.tensor([1, 2, 3])
+    print(nn.functional.channel_norm(x, m, s, dim=0))  # [0., 1., 2.]
+    print(nn.functional.channel_norm(x, m, s, dim=-1))  # Equivalent
+    ```
+
+    If :attr:`dims` provided, :attr:`dim` is selected from the output layout:
+
+    ```python
+    m, s = (1., 2., 3.), (1., 1., 1.)
+    x = torch.tensor([[1, 2, 3]])
+    # Provided 3 values to normalize the last dimension
+    # with length 1, only the first value will be taken
+    print(nn.functional.channel_norm(x, m, s, dims=(1, 0)))  # [[0.], [1.], [2.]]
+    ```
+
+    Parameters
+    ----------
+    input : dragon.vm.torch.Tensor
+        The input tensor.
+    mean : Sequence[float], required
+        The mean to subtract.
+    std : Sequence[float], required
+        The standard deviation to divide.
+    dim : int, optional, default=-1
+        The channel dimension.
+    dtype : str, optional, default='float32'
+        The output data type.
+    dims : Sequence[int], optional
+        The order of output dimensions.
+
+    Returns
+    -------
+    dragon.vm.torch.Tensor
+        The output tensor.
+
+    """
+    return Function.apply(
+        'ChannelNorm', input.device, [input],
+        axis=dim, mean=mean, std=std, dtype=dtype,
+        ndim=len(dims) if dims is not None else 0, perm=dims)
+
+
 def channel_shuffle(input, groups):
     """Apply group shuffle to each channel of input.
     `[Zhang et.al, 2017] <https://arxiv.org/abs/1707.01083>`_.
@@ -387,7 +470,7 @@ def conv1d(
     dilation=1,
     groups=1,
 ):
-    r"""Apply the 1d convolution to input.
+    """Apply the 1d convolution to input.
 
     Parameters
     ----------
@@ -428,7 +511,7 @@ def conv2d(
     dilation=1,
     groups=1,
 ):
-    r"""Apply the 2d convolution to input.
+    """Apply the 2d convolution to input.
 
     Parameters
     ----------
@@ -469,7 +552,7 @@ def conv3d(
     dilation=1,
     groups=1,
 ):
-    r"""Apply the 3d convolution to input.
+    """Apply the 3d convolution to input.
 
     Parameters
     ----------
@@ -511,7 +594,7 @@ def conv_transpose1d(
     groups=1,
     dilation=1,
 ):
-    r"""Apply the 1d deconvolution to input.
+    """Apply the 1d deconvolution to input.
 
     Parameters
     ----------
@@ -555,7 +638,7 @@ def conv_transpose2d(
     groups=1,
     dilation=1,
 ):
-    r"""Apply the 2d deconvolution to input.
+    """Apply the 2d deconvolution to input.
 
     Parameters
     ----------
@@ -599,7 +682,7 @@ def conv_transpose3d(
     groups=1,
     dilation=1,
 ):
-    r"""Apply the 3d deconvolution to input.
+    """Apply the 3d deconvolution to input.
 
     Parameters
     ----------
@@ -747,7 +830,7 @@ def depthwise_conv2d(
     padding=0,
     dilation=1,
 ):
-    r"""Apply the 2d depthwise convolution to input.
+    """Apply the 2d depthwise convolution to input.
 
     Parameters
     ----------
@@ -778,7 +861,7 @@ def depthwise_conv2d(
 
 
 def dropout(input, p=0.5, training=True, inplace=False):
-    r"""Set the elements of the input to zero randomly.
+    """Set the elements of the input to zero randomly.
     `[Srivastava et.al, 2014] <http://jmlr.org/papers/v15/srivastava14a.html>`_.
 
     Parameters
@@ -810,7 +893,7 @@ def dropout(input, p=0.5, training=True, inplace=False):
 
 
 def drop_block2d(input, p=0.5, block_size=1, training=True, inplace=False):
-    r"""Set the blocks over input to zero randomly.
+    """Set the blocks over input to zero randomly.
 
     Parameters
     ----------
@@ -994,6 +1077,15 @@ def group_norm(input, num_groups, weight, bias, eps=1e-5):
 def hardsigmoid(input, inplace=False):
     r"""Apply the hard sigmoid function to input.
 
+    The **HardSigmoid** function is defined as:
+
+    .. math::
+        \text{Hardsigmoid}(x) = \begin{cases}
+            0 & \text{if~} x \le -3, \\
+            1 & \text{if~} x \ge +3, \\
+            x / 6 + 1 / 2 & \text{otherwise}
+        \end{cases}
+
     Parameters
     ----------
     input : dragon.vm.torch.Tensor
@@ -1019,6 +1111,15 @@ def hardsigmoid(input, inplace=False):
 def hardswish(input):
     r"""Apply the hard swish function to input.
     `[Howard et.al, 2019] <https://arxiv.org/abs/1905.02244>`_.
+
+    The **HardSwish** function is defined as:
+
+    .. math::
+        \text{Hardsigmoid}(x) = \begin{cases}
+            0 & \text{if~} x \le -3, \\
+            x & \text{if~} x \ge +3, \\
+            x \cdot (x + 3) /6 & \text{otherwise}
+        \end{cases}
 
     Parameters
     ----------
@@ -1161,7 +1262,7 @@ def kl_div(
 
 
 def l1_loss(input, target, size_average=None, reduce=None, reduction='mean'):
-    r"""Compute the element-wise absolute value difference.
+    """Compute the element-wise absolute value difference.
 
     Parameters
     ----------
@@ -1196,7 +1297,7 @@ def l1_loss(input, target, size_average=None, reduce=None, reduction='mean'):
 
 
 def layer_norm(input, normalized_shape, weight, bias, eps=1e-5):
-    r"""Apply the layer normalization to input.
+    """Apply the layer normalization to input.
     `[Ba et.al, 2016] <https://arxiv.org/abs/1607.06450>`_
 
     Parameters
@@ -1387,7 +1488,7 @@ def lstm_cell(input, cx):
 
 
 def max_pool1d(input, kernel_size, stride=1, padding=0, ceil_mode=False):
-    r"""Apply the 1d max pooling to input.
+    """Apply the 1d max pooling to input.
 
     Parameters
     ----------
@@ -1416,7 +1517,7 @@ def max_pool1d(input, kernel_size, stride=1, padding=0, ceil_mode=False):
 
 
 def max_pool2d(input, kernel_size, stride=1, padding=0, ceil_mode=False):
-    r"""Apply the 2d max pooling to input.
+    """Apply the 2d max pooling to input.
 
     Parameters
     ----------
@@ -1445,7 +1546,7 @@ def max_pool2d(input, kernel_size, stride=1, padding=0, ceil_mode=False):
 
 
 def max_pool3d(input, kernel_size, stride=1, padding=0, ceil_mode=False):
-    r"""Apply the 3d max pooling to input.
+    """Apply the 3d max pooling to input.
 
     Parameters
     ----------
@@ -1474,11 +1575,7 @@ def max_pool3d(input, kernel_size, stride=1, padding=0, ceil_mode=False):
 
 
 def mse_loss(input, target, size_average=None, reduce=None, reduction='mean'):
-    r"""Compute the element-wise squared error.
-
-    The ``MSELoss`` function is defined as:
-
-    .. math:: \text{MSELoss}(x, y) = (x - y)^{2}
+    """Compute the element-wise squared error.
 
     Parameters
     ----------
@@ -1726,7 +1823,7 @@ def normalize(input, p=2, dim=1, end_dim=None, eps=1e-12, out=None):
 
     """
     return Function.apply(
-        'LpNormalize', input.device, [input], outputs=[out],
+        'LpNorm', input.device, [input], outputs=[out],
         p=p, axis=dim, end_axis=end_dim, epsilon=eps, reduction='SUM')
 
 

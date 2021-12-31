@@ -1,6 +1,7 @@
 #ifdef USE_CUDA
 
 #include "dragon/core/context_cuda.h"
+#include "dragon/utils/math_functions.h"
 #include "dragon/utils/op_kernels.h"
 
 namespace dragon {
@@ -9,22 +10,45 @@ namespace kernels {
 
 namespace {
 
-template <typename T>
-__global__ void
-_MomentumSGD(const int N, const T lr, const T momentum, T* g, T* m) {
+template <typename T, typename CopyT>
+__global__ void _MomentumSGD(
+    const int N,
+    const T lr,
+    const T momentum,
+    const T wd,
+    const T* x,
+    const T* g,
+    T* m,
+    T* y,
+    CopyT* y_copy) {
   CUDA_1D_KERNEL_LOOP(i, N) {
-    T mi = m[i] = fma(momentum, m[i], g[i]);
-    g[i] = lr * mi;
+    const T gi = wd > T(0) ? fma(wd, x[i], g[i]) : g[i];
+    const T mi = m[i] = fma(momentum, m[i], gi);
+    y[i] -= lr * mi;
+    if (y_copy != nullptr) {
+      y_copy[i] = convert::To<CopyT>(y[i]);
+    }
   }
 }
 
-template <typename T>
-__global__ void
-_NesterovSGD(const int N, const T lr, const T momentum, T* g, T* m) {
+template <typename T, typename CopyT>
+__global__ void _NesterovSGD(
+    const int N,
+    const T lr,
+    const T momentum,
+    const T wd,
+    const T* x,
+    const T* g,
+    T* m,
+    T* y,
+    CopyT* y_copy) {
   CUDA_1D_KERNEL_LOOP(i, N) {
-    T gi = g[i];
-    T mi = m[i] = fma(momentum, m[i], gi);
-    g[i] = lr * fma(momentum, mi, gi);
+    const T gi = wd > T(0) ? fma(wd, x[i], g[i]) : g[i];
+    const T mi = m[i] = fma(momentum, m[i], gi);
+    y[i] -= lr * fma(momentum, mi, gi);
+    if (y_copy != nullptr) {
+      y_copy[i] = convert::To<CopyT>(y[i]);
+    }
   }
 }
 
@@ -32,29 +56,38 @@ _NesterovSGD(const int N, const T lr, const T momentum, T* g, T* m) {
 
 /* ------------------- Launcher Separator ------------------- */
 
-template <>
-void MomentumSGD<float, CUDAContext>(
-    const int N,
-    const float lr,
-    const float momentum,
-    float* g,
-    float* m,
-    CUDAContext* ctx) {
-  _MomentumSGD<<<CUDA_BLOCKS(N), CUDA_THREADS, 0, ctx->cuda_stream()>>>(
-      N, lr, momentum, g, m);
-}
+#define DEFINE_KERNEL_LAUNCHER(name, T, CopyT)                        \
+  template <>                                                         \
+  void name<T, CopyT, CUDAContext>(                                   \
+      const int N,                                                    \
+      const float lr,                                                 \
+      const float momentum,                                           \
+      const float wd,                                                 \
+      const T* x,                                                     \
+      const T* g,                                                     \
+      T* m,                                                           \
+      T* y,                                                           \
+      CopyT* y_copy,                                                  \
+      CUDAContext* ctx) {                                             \
+    _##name<<<CUDA_BLOCKS(N), CUDA_THREADS, 0, ctx->cuda_stream()>>>( \
+        N,                                                            \
+        convert::To<T>(lr),                                           \
+        convert::To<T>(momentum),                                     \
+        convert::To<T>(wd),                                           \
+        x,                                                            \
+        g,                                                            \
+        m,                                                            \
+        y,                                                            \
+        reinterpret_cast<math::ScalarType<CopyT>::type*>(y_copy));    \
+  }
 
-template <>
-void NesterovSGD<float, CUDAContext>(
-    const int N,
-    const float lr,
-    const float momentum,
-    float* g,
-    float* m,
-    CUDAContext* ctx) {
-  _NesterovSGD<<<CUDA_BLOCKS(N), CUDA_THREADS, 0, ctx->cuda_stream()>>>(
-      N, lr, momentum, g, m);
-}
+DEFINE_KERNEL_LAUNCHER(MomentumSGD, float, float16);
+DEFINE_KERNEL_LAUNCHER(MomentumSGD, float, float);
+DEFINE_KERNEL_LAUNCHER(MomentumSGD, double, double);
+DEFINE_KERNEL_LAUNCHER(NesterovSGD, float, float16);
+DEFINE_KERNEL_LAUNCHER(NesterovSGD, float, float);
+DEFINE_KERNEL_LAUNCHER(NesterovSGD, double, double);
+#undef DEFINE_KERNEL_LAUNCHER
 
 } // namespace kernels
 

@@ -1,13 +1,13 @@
-lp_normalize
+channel_norm
 ============
 
-.. autofunction:: dragon.math.lp_normalize
+.. autofunction:: dragon.nn.channel_norm
 
 .. raw:: html
 
   <style>
     h1:before {
-      content: "dragon.math.";
+      content: "dragon.nn.";
       color: #103d3e;
     }
   </style>

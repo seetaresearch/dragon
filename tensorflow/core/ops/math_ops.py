@@ -184,6 +184,35 @@ def argmin(input, axis=None, name=None):
     return math_ops.argmin(input, axis=axis, name=name)
 
 
+def atan2(y, x, name=None):
+    r"""Compute the element-wise arc-tangent of two arguments.
+
+    .. math:: \text{out} = \text{arctan}(\frac{\text{input1}}{\text{input2}})
+
+    ```python
+    y = tf.constant(1.)
+    x = tf.constant(2.)
+    print(tf.math.atan2(y, x))  # 0.46364761
+    ```
+
+    Parameters
+    ----------
+    y : dragon.Tensor
+        The input1 tensor.
+    x : dragon.Tensor
+        The input2 tensor.
+    name : str, optional
+        The operation name.
+
+    Returns
+    -------
+    dragon.Tensor
+        The output tensor.
+
+    """
+    return math_ops.atan2([y, x], name=name)
+
+
 def cast(x, dtype, name=None):
     """Cast the data type of input.
 

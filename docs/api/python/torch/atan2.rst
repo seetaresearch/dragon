@@ -1,7 +1,7 @@
-channel_normalize
-=================
+atan2
+=====
 
-.. autofunction:: dragon.vm.torch.channel_normalize
+.. autofunction:: dragon.vm.torch.atan2
 
 .. raw:: html
 

@@ -49,8 +49,6 @@ from dragon.vm.torch.core.tensor import Tensor
 from dragon.vm.torch.core.ops import tensor_ops as _
 from dragon.vm.torch.core.ops.array_ops import broadcast_to
 from dragon.vm.torch.core.ops.array_ops import cat
-from dragon.vm.torch.core.ops.array_ops import channel_affine
-from dragon.vm.torch.core.ops.array_ops import channel_normalize
 from dragon.vm.torch.core.ops.array_ops import chunk
 from dragon.vm.torch.core.ops.array_ops import flatten
 from dragon.vm.torch.core.ops.array_ops import flip
@@ -71,7 +69,6 @@ from dragon.vm.torch.core.ops.array_ops import scatter_add
 from dragon.vm.torch.core.ops.array_ops import split
 from dragon.vm.torch.core.ops.array_ops import squeeze
 from dragon.vm.torch.core.ops.array_ops import stack
-from dragon.vm.torch.core.ops.math_ops import sum
 from dragon.vm.torch.core.ops.array_ops import tile
 from dragon.vm.torch.core.ops.array_ops import transpose
 from dragon.vm.torch.core.ops.array_ops import tril
@@ -97,6 +94,7 @@ from dragon.vm.torch.core.ops.math_ops import add
 from dragon.vm.torch.core.ops.math_ops import addmm
 from dragon.vm.torch.core.ops.math_ops import argmax
 from dragon.vm.torch.core.ops.math_ops import argmin
+from dragon.vm.torch.core.ops.math_ops import atan2
 from dragon.vm.torch.core.ops.math_ops import baddbmm
 from dragon.vm.torch.core.ops.math_ops import bitwise_and
 from dragon.vm.torch.core.ops.math_ops import bitwise_not
@@ -144,6 +142,7 @@ from dragon.vm.torch.core.ops.math_ops import sin
 from dragon.vm.torch.core.ops.math_ops import sqrt
 from dragon.vm.torch.core.ops.math_ops import square
 from dragon.vm.torch.core.ops.math_ops import sub
+from dragon.vm.torch.core.ops.math_ops import sum
 from dragon.vm.torch.core.ops.random_ops import normal
 from dragon.vm.torch.core.ops.random_ops import rand
 from dragon.vm.torch.core.ops.random_ops import randn

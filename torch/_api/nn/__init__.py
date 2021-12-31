@@ -56,6 +56,7 @@ from dragon.vm.torch.core.nn.modules.dropout import Dropout
 from dragon.vm.torch.core.nn.modules.dropout import DropPath
 from dragon.vm.torch.core.nn.modules.flatten import Flatten
 from dragon.vm.torch.core.nn.modules.fold import Unfold
+from dragon.vm.torch.core.nn.modules.linear import Affine
 from dragon.vm.torch.core.nn.modules.linear import Identity
 from dragon.vm.torch.core.nn.modules.linear import Linear
 from dragon.vm.torch.core.nn.modules.loss import CTCLoss
@@ -68,7 +69,6 @@ from dragon.vm.torch.core.nn.modules.loss import NLLLoss
 from dragon.vm.torch.core.nn.modules.loss import SigmoidFocalLoss
 from dragon.vm.torch.core.nn.modules.loss import SmoothL1Loss
 from dragon.vm.torch.core.nn.modules.module import Module
-from dragon.vm.torch.core.nn.modules.normalization import AffineChannel
 from dragon.vm.torch.core.nn.modules.normalization import GroupNorm
 from dragon.vm.torch.core.nn.modules.normalization import LayerNorm
 from dragon.vm.torch.core.nn.modules.normalization import LocalResponseNorm

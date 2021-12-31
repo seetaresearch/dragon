@@ -13,67 +13,40 @@ T UpdateOpBase<Context>::GetHyper(const string& key) {
 }
 
 template <class Context>
-Tensor* UpdateOpBase<Context>::Slot(const string& key) {
+Tensor* UpdateOpBase<Context>::GetState(const string& key) {
   const string& weight_name = Output(weight_index_)->name();
   return workspace()->CreateTensor(name() + "/" + weight_name + "/" + key);
 }
 
 template <class Context>
 template <typename T>
-void UpdateOpBase<Context>::TransformGrad(Tensor* dX, Tensor* X) {
-  // Scale.
+void UpdateOpBase<Context>::TransformGrad(Tensor* dX) {
   if (grad_scale_ != 1.f) {
     auto* dx = dX->template mutable_data<T, Context>();
     math::Scale(dX->count(), grad_scale_, dx, dx, ctx());
   }
-  // Clip.
   if (clip_norm_ > 0.f) {
     auto* dx = dX->template mutable_data<T, Context>();
-    float grad_norm = std::sqrt(math::Dot(dX->count(), dx, dx, ctx()));
-    if (grad_norm > clip_norm_) {
-      math::Scale(dX->count(), clip_norm_ / grad_norm, dx, dx, ctx());
+    float norm = std::sqrt(math::Dot(dX->count(), dx, dx, ctx()));
+    if (norm > clip_norm_) {
+      math::Scale(dX->count(), clip_norm_ / norm, dx, dx, ctx());
     }
   } else if (clip_value_ > 0.f) {
     auto* dx = dX->template mutable_data<T, Context>();
     kernels::Clip(dX->count(), -clip_value_, clip_value_, dx, dx, ctx());
   }
-  // Penalty.
-  if (weight_decay_ > 0.f) {
-    math::Axpy(
-        X->count(),
-        weight_decay_,
-        X->template data<T, Context>(),
-        dX->template mutable_data<T, Context>(),
-        ctx());
-  }
-}
-
-template <class Context>
-template <typename T>
-void UpdateOpBase<Context>::ApplyUpdate(Tensor* dX, Tensor* X) {
-  math::Sub(
-      X->count(),
-      X->template data<T, Context>(),
-      dX->template data<T, Context>(),
-      X->template mutable_data<T, Context>(),
-      ctx());
 }
 
 template <class Context>
 void UpdateOpBase<Context>::RunOnDevice() {
   GetArguments();
-  for (int i = 0; i < InputSize(); ++i) {
-    weight_index_ = i;
-    auto &dX = Input(i), *X = Output(i);
-    if (dX.count() == 0 || X->count() == 0) return;
+  for (weight_index_ = 0; weight_index_ < InputSize(); ++weight_index_) {
+    auto &dX = Input(weight_index_), *X = Output(weight_index_);
+    if (dX.count() == 0 || X->count() == 0) continue;
     CHECK(dX.dims() == X->dims())
         << "\nWeight and grad should have the same dimensions."
         << "\nGot" << X->DimString() << " and " << dX.DimString();
-    if (dX.template IsType<float>()) {
-      TransformGrad<float>(&dX, X);
-      ComputeUpdate(&dX, X);
-      ApplyUpdate<float>(&dX, X);
-    } else if (dX.template IsType<float16>()) {
+    if (dX.template IsType<float16>()) {
       auto* X_master = workspace()->CreateTensor(X->name() + "_master");
       auto* X_grad = ctx()->workspace()->CreateTensor("BufferShared");
       if (X_master->count() != X->count()) {
@@ -88,17 +61,17 @@ void UpdateOpBase<Context>::RunOnDevice() {
           dX.template data<float16, Context>(),
           X_grad->ReshapeLike(dX)->template mutable_data<float, Context>(),
           ctx());
-      TransformGrad<float>(X_grad, X_master);
-      ComputeUpdate(X_grad, X_master);
-      ApplyUpdate<float>(X_grad, X_master);
-      math::Cast(
-          X->count(),
-          X_master->template data<float, Context>(),
-          X->template mutable_data<float16, Context>(),
-          ctx());
+      TransformGrad<float>(X_grad);
+      ApplyUpdate(X_grad, X_master, X);
+    } else if (dX.template IsType<float>()) {
+      TransformGrad<float>(&dX);
+      ApplyUpdate(&dX, X, nullptr);
+    } else if (dX.template IsType<double>()) {
+      TransformGrad<double>(&dX);
+      ApplyUpdate(&dX, X, nullptr);
     } else {
       LOG(FATAL) << MessageForUnsupported(
-          dtypes::to_string(dX.meta()), {"float16", "float32"});
+          dtypes::to_string(dX.meta()), {"float16", "float32", "float64"});
     }
   }
 }

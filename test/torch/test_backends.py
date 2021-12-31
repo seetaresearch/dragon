@@ -20,6 +20,17 @@ from dragon.core.testing.unittest.common_utils import run_tests
 from dragon.vm import torch
 
 
+class TestCUDA(unittest.TestCase):
+    """Test the CUDA backend."""
+
+    def test_library(self):
+        _ = torch.backends.cuda.is_built()
+
+    def test_set_flags(self):
+        torch.backends.cuda.matmul.allow_tf32 = False
+        self.assertEqual(torch.backends.cuda.matmul.allow_tf32, False)
+
+
 class TestCuDNN(unittest.TestCase):
     """Test the CuDNN backend."""
 

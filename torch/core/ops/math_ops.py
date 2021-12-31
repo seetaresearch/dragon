@@ -168,6 +168,37 @@ def argmin(input, dim, keepdim=False, out=None):
         axis=dim, keepdims=keepdim)
 
 
+def atan2(input, other, out=None):
+    r"""Compute the element-wise arc-tangent of two arguments.
+
+    .. math:: \text{out} = \text{arctan}(\frac{\text{input}}{\text{other}})
+
+    Examples:
+
+    ```python
+    y = torch.tensor(1.)
+    x = torch.tensor(2.)
+    print(torch.atan2(y, x))  # 0.46364761
+    ```
+
+    Parameters
+    ----------
+    input : dragon.vm.torch.Tensor
+        The input tensor.
+    other : Union[dragon.vm.torch.Tensor, number]
+        The tensor to divide.
+    out : dragon.vm.torch.Tensor, optional
+        The output tensor.
+
+    Returns
+    -------
+    dragon.vm.torch.Tensor
+        The output tensor.
+
+    """
+    return _binary_func(input, other, 'Atan2', out)
+
+
 def baddbmm(input, batch1, batch2, beta=1, alpha=1, out=None):
     r"""Add input to the result of batched matrix-matrix multiplication.
 

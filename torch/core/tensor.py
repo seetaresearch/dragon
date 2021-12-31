@@ -372,6 +372,27 @@ class Tensor(object):
 
         """
 
+    def atan2(self, other):
+        r"""Compute the element-wise arc-tangent of two arguments.
+
+        .. math:: \text{out} = \text{arctan}(\frac{\text{self}}{\text{other}})
+
+        Parameters
+        ----------
+        other : Union[dragon.vm.torch.Tensor, number]
+            The value to divide.
+
+        Returns
+        -------
+        dragon.vm.torch.Tensor
+            The output tensor.
+
+        See Also
+        --------
+        `torch.atan2(...)`_
+
+        """
+
     def backward(self, gradient=None, retain_graph=False):
         """Compute the derivatives of this tensor w.r.t. graph leaves.
 

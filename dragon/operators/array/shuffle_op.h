@@ -10,8 +10,8 @@
  * ------------------------------------------------------------
  */
 
-#ifndef DRAGON_OPERATORS_ARRAY_CHANNEL_SHUFFLE_OP_H_
-#define DRAGON_OPERATORS_ARRAY_CHANNEL_SHUFFLE_OP_H_
+#ifndef DRAGON_OPERATORS_ARRAY_SHUFFLE_OP_H_
+#define DRAGON_OPERATORS_ARRAY_SHUFFLE_OP_H_
 
 #include "dragon/core/operator.h"
 
@@ -25,24 +25,10 @@ class ChannelShuffleOp final : public Operator<Context> {
         group_(OP_SINGLE_ARG(int64_t, "group", 1)) {}
   USE_OPERATOR_FUNCTIONS;
 
-  void RunOnDevice() override;
+  void RunOnDevice() override {
+    DispatchHelper<dtypes::Generic>::Call(this, Input(0));
+  }
 
-  template <typename T>
-  void DoRunWithType();
-
- protected:
-  int64_t group_;
-};
-
-template <class Context>
-class ChannelShuffleGradientOp final : public Operator<Context> {
- public:
-  ChannelShuffleGradientOp(const OperatorDef& def, Workspace* ws)
-      : Operator<Context>(def, ws),
-        group_(OP_SINGLE_ARG(int64_t, "group", 1)) {}
-  USE_OPERATOR_FUNCTIONS;
-
-  void RunOnDevice() override;
   template <typename T>
   void DoRunWithType();
 
@@ -52,4 +38,4 @@ class ChannelShuffleGradientOp final : public Operator<Context> {
 
 } // namespace dragon
 
-#endif // DRAGON_OPERATORS_ARRAY_CHANNEL_SHUFFLE_OP_H_
+#endif // DRAGON_OPERATORS_ARRAY_SHUFFLE_OP_H_

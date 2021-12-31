@@ -58,9 +58,6 @@ from dragon.core.ops import tensor_ops as _
 from dragon.core.ops.array_ops import assign
 from dragon.core.ops.array_ops import boolean_mask
 from dragon.core.ops.array_ops import broadcast_to
-from dragon.core.ops.array_ops import channel_affine
-from dragon.core.ops.array_ops import channel_normalize
-from dragon.core.ops.array_ops import channel_shuffle
 from dragon.core.ops.array_ops import concat
 from dragon.core.ops.array_ops import expand_dims
 from dragon.core.ops.array_ops import flatten

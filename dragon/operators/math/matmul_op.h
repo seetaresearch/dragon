@@ -23,7 +23,9 @@ class MatMulOp final : public Operator<Context> {
   SIMPLE_CTOR_DTOR(MatMulOp);
   USE_OPERATOR_FUNCTIONS;
 
-  void RunOnDevice() override;
+  void RunOnDevice() override {
+    DispatchHelper<dtypes::Floating>::Call(this, Input(0));
+  }
 
   template <typename T>
   void DoRunWithType();
@@ -35,7 +37,9 @@ class MatMulGradientOp final : public Operator<Context> {
   SIMPLE_CTOR_DTOR(MatMulGradientOp);
   USE_OPERATOR_FUNCTIONS;
 
-  void RunOnDevice() override;
+  void RunOnDevice() override {
+    DispatchHelper<dtypes::Floating>::Call(this, Input(0));
+  }
 
   template <typename T>
   void DoRunWithType();

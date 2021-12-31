@@ -78,5 +78,4 @@ class RMSprop(Optimizer):
         defaults = dict(lr=lr, momentum=momentum, alpha=alpha, eps=eps,
                         centered=centered, weight_decay=weight_decay)
         super(RMSprop, self).__init__(params, defaults, **kwargs)
-        self._hyper['alpha'][0] = 'decay'
         self._hyper.pop('centered')  # Unsupported.

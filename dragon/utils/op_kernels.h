@@ -284,39 +284,6 @@ void BooleanMaskGrad(
     Context* ctx);
 
 template <typename T, class Context>
-void ChannelAffine(
-    const int N,
-    const int S,
-    const int C,
-    const T* x,
-    const T* scale,
-    const T* bias,
-    T* y,
-    Context* ctx);
-
-template <typename InputT, typename OutputT, class Context>
-void ChannelNormalize(
-    const int axis,
-    const int num_dims,
-    const int64_t* x_strides,
-    const int64_t* y_dims,
-    const InputT* x,
-    const float* mean,
-    const float* std,
-    OutputT* y,
-    Context* ctx);
-
-template <typename T, class Context>
-void ChannelShuffle(
-    const int N,
-    const int S,
-    const int C,
-    const int G,
-    const T* x,
-    T* y,
-    Context* ctx);
-
-template <typename T, class Context>
 void ConstPad(
     const int num_dims,
     const int64_t* x_dims,
@@ -813,6 +780,18 @@ void TopK(
  * NormalizationOp Kernels
  */
 
+template <typename InputT, typename OutputT, class Context>
+void ChannelNorm(
+    const int axis,
+    const int num_dims,
+    const int64_t* x_strides,
+    const int64_t* y_dims,
+    const InputT* x,
+    const float* mean,
+    const float* std,
+    OutputT* y,
+    Context* ctx);
+
 template <typename T, typename AccT, class Context>
 void BatchNormExpectation(
     const int N,
@@ -923,7 +902,7 @@ void GroupNormGrad(
     Context* ctx);
 
 template <typename T, class Context>
-void L1Normalize(
+void L1Norm(
     const int N,
     const int S,
     const int C,
@@ -934,7 +913,7 @@ void L1Normalize(
     Context* ctx);
 
 template <typename T, class Context>
-void L1NormalizeGrad(
+void L1NormGrad(
     const int N,
     const int S,
     const int C,
@@ -946,7 +925,7 @@ void L1NormalizeGrad(
     Context* ctx);
 
 template <typename T, class Context>
-void L2Normalize(
+void L2Norm(
     const int N,
     const int S,
     const int C,
@@ -957,7 +936,7 @@ void L2Normalize(
     Context* ctx);
 
 template <typename T, class Context>
-void L2NormalizeGrad(
+void L2NormGrad(
     const int N,
     const int S,
     const int C,
@@ -1012,19 +991,23 @@ void LSTMCellGrad(
  * TrainingOp Kernels
  */
 
-template <typename T, class Context>
+template <typename T, typename CopyT, class Context>
 void Adam(
     const int N,
     const float lr,
     const float beta1,
     const float beta2,
     const float eps,
-    T* g,
+    const float wd,
+    const T* x,
+    const T* g,
     T* m,
     T* v,
+    T* y,
+    CopyT* y_copy,
     Context* ctx);
 
-template <typename T, class Context>
+template <typename T, typename CopyT, class Context>
 void AdamW(
     const int N,
     const float lr,
@@ -1033,39 +1016,53 @@ void AdamW(
     const float eps,
     const float wd,
     const T* x,
-    T* g,
+    const T* g,
     T* m,
     T* v,
+    T* y,
+    CopyT* y_copy,
     Context* ctx);
 
-template <typename T, class Context>
+template <typename T, typename CopyT, class Context>
 void MomentumSGD(
     const int N,
     const float lr,
     const float momentum,
-    T* g,
+    const float wd,
+    const T* x,
+    const T* g,
     T* m,
+    T* y,
+    CopyT* y_copy,
     Context* ctx);
 
-template <typename T, class Context>
+template <typename T, typename CopyT, class Context>
 void NesterovSGD(
     const int N,
     const float lr,
     const float momentum,
-    T* g,
+    const float wd,
+    const T* x,
+    const T* g,
     T* m,
+    T* y,
+    CopyT* y_copy,
     Context* ctx);
 
-template <typename T, class Context>
+template <typename T, typename CopyT, class Context>
 void RMSprop(
     const int N,
     const float lr,
     const float momentum,
-    const float decay,
+    const float alpha,
     const float eps,
-    T* g,
+    const float wd,
+    const T* x,
+    const T* g,
     T* m,
     T* v,
+    T* y,
+    CopyT* y_copy,
     Context* ctx);
 
 /*

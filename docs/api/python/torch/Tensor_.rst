@@ -73,6 +73,10 @@ argsort
 #######
 .. automethod:: dragon.vm.torch.Tensor.argsort
 
+atan2
+#####
+.. automethod:: dragon.vm.torch.Tensor.atan2
+
 backward
 ########
 .. automethod:: dragon.vm.torch.Tensor.backward
@@ -699,6 +703,7 @@ zero\_
 .. _torch.argmax(...): argmax.html
 .. _torch.argmin(...): argmin.html
 .. _torch.argsort(...): argsort.html
+.. _torch.atan2(...): atan2.html
 .. _torch.baddbmm(...): baddbmm.html
 .. _torch.bitwise_and(...): bitwise_and.html
 .. _torch.bitwise_not(...): bitwise_not.html

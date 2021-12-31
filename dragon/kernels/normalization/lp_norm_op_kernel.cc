@@ -8,7 +8,7 @@ namespace kernels {
 namespace {
 
 template <typename T>
-void _L1Normalize(
+void _L1Norm(
     const int N,
     const int S,
     const int C,
@@ -28,7 +28,7 @@ void _L1Normalize(
 }
 
 template <typename T>
-void _L2Normalize(
+void _L2Norm(
     const int N,
     const int S,
     const int C,
@@ -48,7 +48,7 @@ void _L2Normalize(
 }
 
 template <typename T>
-void _L1NormalizeGrad(
+void _L1NormGrad(
     const int N,
     const int S,
     const int C,
@@ -73,7 +73,7 @@ void _L1NormalizeGrad(
 }
 
 template <typename T>
-void _L2NormalizeGrad(
+void _L2NormGrad(
     const int N,
     const int S,
     const int C,
@@ -101,7 +101,7 @@ void _L2NormalizeGrad(
 /* ------------------- Launcher Separator ------------------- */
 
 template <>
-void L1Normalize<float16, CPUContext>(
+void L1Norm<float16, CPUContext>(
     const int N,
     const int S,
     const int C,
@@ -114,7 +114,7 @@ void L1Normalize<float16, CPUContext>(
 }
 
 template <>
-void L2Normalize<float16, CPUContext>(
+void L2Norm<float16, CPUContext>(
     const int N,
     const int S,
     const int C,
@@ -127,7 +127,7 @@ void L2Normalize<float16, CPUContext>(
 }
 
 template <>
-void L1NormalizeGrad<float16, CPUContext>(
+void L1NormGrad<float16, CPUContext>(
     const int N,
     const int S,
     const int C,
@@ -138,10 +138,10 @@ void L1NormalizeGrad<float16, CPUContext>(
     float16* dx,
     CPUContext* ctx) {
   CPU_FP16_NOT_SUPPORTED;
-} // L1NormalizeGrad
+} // L1NormGrad
 
 template <>
-void L2NormalizeGrad<float16, CPUContext>(
+void L2NormGrad<float16, CPUContext>(
     const int N,
     const int S,
     const int C,
@@ -152,7 +152,7 @@ void L2NormalizeGrad<float16, CPUContext>(
     float16* dx,
     CPUContext* ctx) {
   CPU_FP16_NOT_SUPPORTED;
-} // L2NormalizeGrad
+} // L2NormGrad
 
 #define DEFINE_KERNEL_LAUNCHER(name, T)         \
   template <>                                   \
@@ -183,14 +183,14 @@ void L2NormalizeGrad<float16, CPUContext>(
     _##name<T>(N, S, C, normalizer, eps, dy, x, dx); \
   }
 
-DEFINE_KERNEL_LAUNCHER(L1Normalize, float);
-DEFINE_KERNEL_LAUNCHER(L1Normalize, double);
-DEFINE_KERNEL_LAUNCHER(L2Normalize, float);
-DEFINE_KERNEL_LAUNCHER(L2Normalize, double);
-DEFINE_GRAD_KERNEL_LAUNCHER(L1NormalizeGrad, float);
-DEFINE_GRAD_KERNEL_LAUNCHER(L1NormalizeGrad, double);
-DEFINE_GRAD_KERNEL_LAUNCHER(L2NormalizeGrad, float);
-DEFINE_GRAD_KERNEL_LAUNCHER(L2NormalizeGrad, double);
+DEFINE_KERNEL_LAUNCHER(L1Norm, float);
+DEFINE_KERNEL_LAUNCHER(L1Norm, double);
+DEFINE_KERNEL_LAUNCHER(L2Norm, float);
+DEFINE_KERNEL_LAUNCHER(L2Norm, double);
+DEFINE_GRAD_KERNEL_LAUNCHER(L1NormGrad, float);
+DEFINE_GRAD_KERNEL_LAUNCHER(L1NormGrad, double);
+DEFINE_GRAD_KERNEL_LAUNCHER(L2NormGrad, float);
+DEFINE_GRAD_KERNEL_LAUNCHER(L2NormGrad, double);
 #undef DEFINE_KERNEL_LAUNCHER
 #undef DEFINE_GRAD_KERNEL_LAUNCHER
 

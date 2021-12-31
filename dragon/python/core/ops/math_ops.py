@@ -82,6 +82,30 @@ def add(inputs, **kwargs):
     return OpLib.add('Add', inputs, **kwargs)
 
 
+@OpSchema.num_inputs(2, 3)
+def affine(inputs, axis=-1, **kwargs):
+    """Apply affine transformation to input.
+
+    Parameters
+    ----------
+    inputs : Sequence[dragon.Tensor]
+        The input, scale and bias tensor.
+    axis : Union[int, Sequence[int]], optional, default=-1
+        The axis to apply.
+
+    Returns
+    -------
+    dragon.Tensor
+        The output tensor.
+
+    """
+    axes = nest.flatten(axis)
+    outputs = kwargs.pop('outputs', [None])
+    if context.executing_eagerly():
+        return OpLib.execute('Affine', inputs, outputs=outputs, axes=axes)
+    return OpLib.add('Affine', inputs, axes=axes, **kwargs)
+
+
 @OpSchema.num_inputs(1)
 def argmax(inputs, axis=0, keepdims=False, **kwargs):
     """Compute the index of maximum elements along the given axis.
@@ -146,6 +170,37 @@ def argmin(inputs, axis=0, keepdims=False, **kwargs):
     if context.executing_eagerly():
         return OpLib.execute('ArgMin', inputs, axis=axis, keepdims=keepdims)
     return OpLib.add('ArgMin', inputs, axis=axis, keepdims=keepdims)
+
+
+@OpSchema.num_inputs(2)
+def atan2(inputs, **kwargs):
+    r"""Compute the element-wise arc-tangent of two arguments.
+
+    .. math:: \text{out} = \text{arctan}(\frac{\text{input1}}{\text{input2}})
+
+    Examples:
+
+    ```python
+    y = dragon.constant(1)
+    x = dragon.constant(2)
+    print(dragon.math.atan2([y, x]))  # 0.46364761
+    ```
+
+    Parameters
+    ----------
+    inputs : Sequence[dragon.Tensor]
+        The input1 and input2 tensor.
+
+    Returns
+    -------
+    dragon.Tensor
+        The output tensor.
+
+    """
+    inputs = constant_ops.remove_scalars(inputs)
+    if context.executing_eagerly():
+        return OpLib.execute('Atan2', inputs)
+    return OpLib.add('Atan2', inputs, **kwargs)
 
 
 @OpSchema.num_inputs(2)

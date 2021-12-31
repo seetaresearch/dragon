@@ -12,7 +12,7 @@ namespace kernels {
 namespace {
 
 template <typename T, typename AccT>
-__global__ void _L1Normalize(
+__global__ void _L1Norm(
     const int NxS,
     const int S,
     const int C,
@@ -41,7 +41,7 @@ __global__ void _L1Normalize(
 }
 
 template <typename T, typename AccT>
-__global__ void _L2Normalize(
+__global__ void _L2Norm(
     const int NxS,
     const int S,
     const int C,
@@ -70,7 +70,7 @@ __global__ void _L2Normalize(
 }
 
 template <typename T, typename AccT>
-__global__ void _L1NormalizeGrad(
+__global__ void _L1NormGrad(
     const int NxS,
     const int S,
     const int C,
@@ -107,7 +107,7 @@ __global__ void _L1NormalizeGrad(
 }
 
 template <typename T, typename AccT>
-__global__ void _L2NormalizeGrad(
+__global__ void _L2NormGrad(
     const int NxS,
     const int S,
     const int C,
@@ -195,18 +195,18 @@ __global__ void _L2NormalizeGrad(
             reinterpret_cast<math::ScalarType<T>::type*>(dx));      \
   }
 
-DEFINE_KERNEL_LAUNCHER(L1Normalize, float16, float);
-DEFINE_KERNEL_LAUNCHER(L1Normalize, float, float);
-DEFINE_KERNEL_LAUNCHER(L1Normalize, double, double);
-DEFINE_KERNEL_LAUNCHER(L2Normalize, float16, float);
-DEFINE_KERNEL_LAUNCHER(L2Normalize, float, float);
-DEFINE_KERNEL_LAUNCHER(L2Normalize, double, double);
-DEFINE_GRAD_KERNEL_LAUNCHER(L1NormalizeGrad, float16, float);
-DEFINE_GRAD_KERNEL_LAUNCHER(L1NormalizeGrad, float, float);
-DEFINE_GRAD_KERNEL_LAUNCHER(L1NormalizeGrad, double, double);
-DEFINE_GRAD_KERNEL_LAUNCHER(L2NormalizeGrad, float16, float);
-DEFINE_GRAD_KERNEL_LAUNCHER(L2NormalizeGrad, float, float);
-DEFINE_GRAD_KERNEL_LAUNCHER(L2NormalizeGrad, double, double);
+DEFINE_KERNEL_LAUNCHER(L1Norm, float16, float);
+DEFINE_KERNEL_LAUNCHER(L1Norm, float, float);
+DEFINE_KERNEL_LAUNCHER(L1Norm, double, double);
+DEFINE_KERNEL_LAUNCHER(L2Norm, float16, float);
+DEFINE_KERNEL_LAUNCHER(L2Norm, float, float);
+DEFINE_KERNEL_LAUNCHER(L2Norm, double, double);
+DEFINE_GRAD_KERNEL_LAUNCHER(L1NormGrad, float16, float);
+DEFINE_GRAD_KERNEL_LAUNCHER(L1NormGrad, float, float);
+DEFINE_GRAD_KERNEL_LAUNCHER(L1NormGrad, double, double);
+DEFINE_GRAD_KERNEL_LAUNCHER(L2NormGrad, float16, float);
+DEFINE_GRAD_KERNEL_LAUNCHER(L2NormGrad, float, float);
+DEFINE_GRAD_KERNEL_LAUNCHER(L2NormGrad, double, double);
 #undef DEFINE_KERNEL_LAUNCHER
 #undef DEFINE_GRAD_KERNEL_LAUNCHER
 

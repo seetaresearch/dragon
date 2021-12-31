@@ -13,7 +13,6 @@ void ONNXBackend::Prepare(
   ModelProto onnx_model;
   CHECK(ReadProtoFromBinaryFile(onnx_model_path.c_str(), &onnx_model))
       << "\nFailed to parse the onnx model.";
-
   int opset_version = -1;
   for (const auto& imp : onnx_model.opset_import()) {
     if ((!imp.has_domain()) || imp.domain().empty()) {
@@ -31,7 +30,6 @@ void ONNXBackend::Prepare(
       std::cout << "Unrecognized operator set " << opset_version << std::endl;
     }
   }
-
   if (opset_version < 0) {
     if (onnx_model.ir_version() >= 0x00000003) {
       LOG(FATAL) << "Model with IR version >= 3 "
@@ -40,7 +38,6 @@ void ONNXBackend::Prepare(
       opset_version = 1;
     }
   }
-
   ONNXToDragon(onnx_model, opset_version, true, init_graph, pred_graph);
 }
 
@@ -52,22 +49,23 @@ void ONNXBackend::ONNXToDragon(
     GraphDef* pred_graph) {
   ModelProto init_model = ModelProto();
   ModelProto pred_model = onnx_model;
-
   pred_graph->set_name(onnx_model.graph().name());
   init_graph->set_name(onnx_model.graph().name() + "/init");
-
   ValueInfoMap graph_value_infos{};
   InitializerMap graph_initializer{};
-
-  for (const auto& vi : onnx_model.graph().input())
-    graph_value_infos[vi.name()].CopyFrom(vi);
-
-  for (const auto& vi : onnx_model.graph().output())
-    graph_value_infos[vi.name()].CopyFrom(vi);
-
-  for (const auto& vi : onnx_model.graph().value_info())
-    graph_value_infos[vi.name()].CopyFrom(vi);
-
+  // Collect graph inputs.
+  for (const auto& v : onnx_model.graph().input()) {
+    graph_value_infos[v.name()].CopyFrom(v);
+  }
+  // Collect graph outputs.
+  for (const auto& v : onnx_model.graph().output()) {
+    graph_value_infos[v.name()].CopyFrom(v);
+  }
+  // Collect graph values.
+  for (const auto& v : onnx_model.graph().value_info()) {
+    graph_value_infos[v.name()].CopyFrom(v);
+  }
+  // Collect graph initializers.
   for (const auto& tensor : onnx_model.graph().initializer()) {
     if (include_initializers) {
       auto* op_def = init_graph->add_op();
@@ -76,16 +74,18 @@ void ONNXBackend::ONNXToDragon(
     }
     graph_initializer[tensor.name()] = &tensor;
   }
-
+  // Convert to graph defs.
   auto converter = [&](const ModelProto& model, GraphDef* graph) mutable {
     for (const auto& node : model.graph().node()) {
       ValueInfoMap value_infos{};
       InitializerMap initializer{};
       for (const auto& name : node.input()) {
-        if (graph_value_infos.count(name))
+        if (graph_value_infos.count(name)) {
           value_infos[name].CopyFrom(graph_value_infos[name]);
-        if (graph_initializer.count(name))
+        }
+        if (graph_initializer.count(name)) {
           initializer[name] = graph_initializer[name];
+        }
       }
       auto onnx_node = ONNXNode(node);
       auto returns = ONNXNodeToOps(
@@ -98,23 +98,18 @@ void ONNXBackend::ONNXToDragon(
       }
     }
   };
-
   converter(pred_model, pred_graph);
-
-  // Set(Initializer) + Set(Placehoders) = Set(Inputs)
+  // Add external inputs.
   Set<string> initializer;
-  for (const auto& e : onnx_model.graph().initializer()) {
-    initializer.insert(e.name());
+  for (const auto& v : onnx_model.graph().initializer()) {
+    initializer.insert(v.name());
   }
-
-  // Add External Inputs
   for (const auto& e : onnx_model.graph().input()) {
     if (initializer.count(e.name()) == 0) {
       pred_graph->add_input(e.name());
     }
   }
-
-  // Add External Outputs
+  // Add external outputs.
   for (const auto& e : onnx_model.graph().output()) {
     pred_graph->add_output(e.name());
   }

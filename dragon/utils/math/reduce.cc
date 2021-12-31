@@ -108,13 +108,11 @@ void _GenericReduce(
     }                                                                     \
     if (math::utils::IsRowwiseReduce(                                     \
             num_dims, dims, out_dims.data(), &rows, &cols)) {             \
-      _RowwiseReduce##name(rows, cols, scale, x, y);                      \
-      return;                                                             \
+      return _RowwiseReduce##name(rows, cols, scale, x, y);               \
     }                                                                     \
     if (math::utils::IsColwiseReduce(                                     \
             num_dims, dims, out_dims.data(), &rows, &cols)) {             \
-      _ColwiseReduce##name(rows, cols, scale, x, y);                      \
-      return;                                                             \
+      return _ColwiseReduce##name(rows, cols, scale, x, y);               \
     }                                                                     \
     vec64_t transpose_axes(num_dims);                                     \
     vec64_t transpose_strides(num_dims);                                  \

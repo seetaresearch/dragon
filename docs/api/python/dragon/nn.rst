@@ -28,6 +28,13 @@ dragon.nn
   `bias_add(...) <nn/bias_add.html>`_
   : Add the bias across channels to input.
 
+  `channel_norm(...) <nn/channel_norm.html>`_
+  : Apply the normalization to each channel of input.
+
+  `channel_shuffle(...) <nn/channel_shuffle.html>`_
+  : Apply the group shuffle to each channel of input.
+  `[Zhang et.al, 2017] <https://arxiv.org/abs/1707.01083>`_.
+
   `conv(...) <nn/conv.html>`_
   : Apply the n-dimension convolution.
 
@@ -107,6 +114,9 @@ dragon.nn
   `log_softmax(...) <nn/log_softmax.html>`_
   : Compute the composite of logarithm and softmax.
 
+  `lp_norm(...) <nn/lp_norm.html>`_
+  : Apply the lp normalization.
+
   `moments(...) <nn/moments.html>`_
   : Compute the mean and variance of input along the given axis.
 
@@ -157,6 +167,8 @@ dragon.nn
   nn/RNN
   nn/batch_norm
   nn/bias_add
+  nn/channel_norm
+  nn/channel_shuffle
   nn/conv
   nn/conv_transpose
   nn/conv1d
@@ -180,6 +192,7 @@ dragon.nn
   nn/leaky_relu
   nn/local_response_norm
   nn/log_softmax
+  nn/lp_norm
   nn/moments
   nn/pool
   nn/pool1d

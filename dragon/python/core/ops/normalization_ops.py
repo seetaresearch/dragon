@@ -72,6 +72,69 @@ def batch_norm(
     return OpLib.add('BatchNorm', **args)
 
 
+@OpSchema.num_inputs(1)
+@OpSchema.convert_arg('perm')
+def channel_norm(
+    inputs,
+    mean,
+    std,
+    axis=-1,
+    dtype='float32',
+    perm=None,
+    **kwargs
+):
+    """Apply the normalization to each channel of input.
+
+    :attr:`axis` can be negative:
+
+    ```python
+    m = s = (1., 1., 1.)
+    x = dragon.constant([1, 2, 3])
+    print(dragon.nn.channel_norm(x, m, s, axis=0))   # [0., 1., 2.]
+    print(dragon.nn.channel_norm(x, m, s, axis=-1))  # Equivalent
+    ```
+
+    If :attr:`perm` provided, :attr:`axis` is selected from the output layout:
+
+    ```python
+    m, s = (1., 2., 3.), (1., 1., 1.)
+    x = dragon.constant([[1, 2, 3]])
+    # Provided 3 values to normalize the last axis
+    # with length 1, only the first value will be taken
+    print(dragon.nn.channel_norm(x, m, s, perm=(1, 0)))  # [[0.], [1.], [2.]]
+    ```
+
+    Parameters
+    ----------
+    inputs : dragon.Tensor
+        The input tensor.
+    mean : Sequence[float], required
+        The mean to subtract.
+    std : Sequence[float], required
+        The standard deviation to divide.
+    axis : int, optional, default=-1
+        The channel axis.
+    dtype : str, optional, default='float32'
+        The output data type.
+    perm : Sequence[Union[int, dragon.Tensor]], optional
+        The output permutation.
+
+    Returns
+    -------
+    dragon.Tensor
+        The output tensor.
+
+    """
+    args = OpSchema.parse_args(locals())
+    if context.executing_eagerly():
+        return OpLib.execute(
+            'ChannelNorm', inputs,
+            axis=axis, mean=mean, std=std, dtype=dtype,
+            ndim=len(args['perm']) if perm is not None else 0,
+            perm=args['perm'])
+    return OpLib.add('ChannelNorm', **args)
+
+
 @OpSchema.num_inputs(3)
 def group_norm(inputs, axis=-1, group=0, epsilon=1e-5, **kwargs):
     r"""Apply the group normalization.
@@ -180,7 +243,7 @@ def layer_norm(inputs, axis=-1, epsilon=1e-5, **kwargs):
 
 
 @OpSchema.num_inputs(1)
-def lp_normalize(
+def lp_norm(
     inputs,
     axis=-1,
     end_axis=None,
@@ -200,15 +263,15 @@ def lp_normalize(
     ```python
     x = dragon.constant([[1, 2, 3], [4, 5, 6]], 'float32')
     # A negative axis is the last-k axis
-    print(dragon.math.lp_normalize(x, 1))
-    print(dragon.math.lp_normalize(x, -1))  # Equivalent
+    print(dragon.nn.lp_norm(x, 1))
+    print(dragon.nn.lp_norm(x, -1))  # Equivalent
     ```
 
     More than one axis could be specified to reduce:
 
     ```python
     # Along the continuous axes: [axis, end_axis]
-    print(dragon.math.lp_normalize(x, axis=0, end_axis=1))
+    print(dragon.nn.lp_norm(x, axis=0, end_axis=1))
     ```
 
     Parameters
@@ -236,9 +299,9 @@ def lp_normalize(
     reduction = reduction.upper()
     if context.executing_eagerly():
         return OpLib.execute(
-            'LpNormalize', inputs, p=p, axis=axis, end_axis=end_axis,
+            'LpNorm', inputs, p=p, axis=axis, end_axis=end_axis,
             epsilon=epsilon, reduction=reduction)
-    return OpLib.add('LpNormalize', inputs, p=p, axis=axis, end_axis=end_axis,
+    return OpLib.add('LpNorm', inputs, p=p, axis=axis, end_axis=end_axis,
                      epsilon=epsilon, reduction=reduction, **kwargs)
 
 

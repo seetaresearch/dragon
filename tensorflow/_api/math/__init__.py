@@ -18,6 +18,7 @@ from dragon.vm.tensorflow.core.ops.math_ops import add
 from dragon.vm.tensorflow.core.ops.math_ops import add_n
 from dragon.vm.tensorflow.core.ops.math_ops import argmax
 from dragon.vm.tensorflow.core.ops.math_ops import argmin
+from dragon.vm.tensorflow.core.ops.math_ops import atan2
 from dragon.vm.tensorflow.core.ops.math_ops import cast
 from dragon.vm.tensorflow.core.ops.math_ops import ceil
 from dragon.vm.tensorflow.core.ops.math_ops import cos

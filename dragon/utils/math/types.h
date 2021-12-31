@@ -27,6 +27,7 @@ template <typename T>
 class ScalarType {
  public:
   typedef T type;
+  typedef T type2;
 };
 
 #if defined(__CUDACC__)
@@ -34,6 +35,7 @@ template <>
 class ScalarType<float16> {
  public:
   typedef half type;
+  typedef half2 type2;
 };
 #endif
 

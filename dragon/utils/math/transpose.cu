@@ -141,8 +141,7 @@ void _TransposeImpl(
     CUDAContext* ctx) {
   auto aligned_size = sizeof(T);
   if (axes.back() == D - 1) {
-    const auto N = math::utils::Prod(D, dims.data());
-    aligned_size = utils::GetAlignedSize<T, 16>(N, x, y);
+    aligned_size = utils::GetAlignedSize<T, 16>(dims[D - 1], x, y);
   }
   SimpleArray<int, D> X_dims, X_strides, Y_dims;
   for (int i = 0; i < D; ++i) {

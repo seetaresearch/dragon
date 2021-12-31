@@ -572,51 +572,6 @@ class TestArrayOps(OpTestCase):
         with dragon.device('cuda'):
             self.test_cast()
 
-    def test_channel_affine(self):
-        for execution in ('EAGER_MODE', 'GRAPH_MODE'):
-            with execution_context().mode(execution):
-                data1 = arange((2, 3, 4, 5))
-                data2, data3 = arange((3, 4)), arange((3, 4))
-                data4 = arange(data1.shape)
-                grad1 = data4 * np.expand_dims(data2, -1)
-                grad2 = np.sum(data4 * data1, (0, 3))
-                grad3 = np.sum(data4, (0, 3))
-                x, w, b = new_tensor(data1), new_tensor(data2), new_tensor(data3)
-                with dragon.GradientTape() as tape:
-                    tape.watch([x, w, b])
-                    y = dragon.channel_affine([x, w, b], axis=1, end_axis=2)
-                dy = new_tensor(data4)
-                dx, dw, db = tape.gradient(y, [x, w, b], output_gradients=[dy])
-                self.assertEqual(
-                    [y, dx, dw, db],
-                    [data1 * np.expand_dims(data2, -1) +
-                     np.expand_dims(data3, -1),
-                     grad1, grad2, grad3])
-
-    @unittest.skipIf(not TEST_CUDA, 'CUDA unavailable')
-    def test_channel_affine_cuda(self):
-        with dragon.device('cuda'):
-            self.test_channel_affine()
-
-    def test_channel_normalize(self):
-        entries = [((2, 3, 4), [(1., 2., 3.), (3., 2., 1.), 1], {'perm': (0, 1, 2)}),
-                   ((2, 3, 4), [(1., 2., 3.), (3., 2., 1.), 2], {'perm': (0, 2, 1)})]
-        for execution in ('EAGER_MODE', 'GRAPH_MODE'):
-            with execution_context().mode(execution):
-                for shape, args, kwargs in entries:
-                    perm = kwargs['perm']
-                    data = np.ones(shape, dtype='uint8').transpose(perm)
-                    mean = np.array(args[0]).reshape((1, 3, 1)).transpose(perm)
-                    std = np.array(args[1]).reshape((1, 3, 1)).transpose(perm)
-                    x = dragon.ones(shape, dtype='uint8')
-                    y = dragon.channel_normalize(x, *args, **kwargs)
-                    self.assertEqual(y, (data - mean) / std)
-
-    @unittest.skipIf(not TEST_CUDA, 'CUDA unavailable')
-    def test_channel_normalize_cuda(self):
-        with dragon.device('cuda'):
-            self.test_channel_normalize()
-
     def test_channel_shuffle(self):
         entries = [(0, 2), (1, 4)]
         for execution in ('EAGER_MODE', 'GRAPH_MODE'):
@@ -630,7 +585,7 @@ class TestArrayOps(OpTestCase):
                     x, dy = new_tensor(data), new_tensor(data)
                     with dragon.GradientTape() as tape:
                         tape.watch(x)
-                        y = dragon.channel_shuffle(x, axis, group)
+                        y = dragon.nn.channel_shuffle(x, axis, group)
                     dx = tape.gradient(y, [x], output_gradients=[dy])[0]
                     self.assertEqual(
                         [y, dx], [data.reshape(shape1).transpose(perm).reshape(data.shape),
@@ -1676,6 +1631,32 @@ class TestMathOps(OpTestCase):
         with dragon.device('cuda'):
             self.test_add()
 
+    def test_affine(self):
+        for execution in ('EAGER_MODE', 'GRAPH_MODE'):
+            with execution_context().mode(execution):
+                data1 = arange((2, 3, 4, 5))
+                data2, data3 = arange((3, 4)), arange((3, 4))
+                data4 = arange(data1.shape)
+                grad1 = data4 * np.expand_dims(data2, -1)
+                grad2 = np.sum(data4 * data1, (0, 3))
+                grad3 = np.sum(data4, (0, 3))
+                x, w, b = new_tensor(data1), new_tensor(data2), new_tensor(data3)
+                with dragon.GradientTape() as tape:
+                    tape.watch([x, w, b])
+                    y = dragon.math.affine([x, w, b], axis=(1, 2))
+                dy = new_tensor(data4)
+                dx, dw, db = tape.gradient(y, [x, w, b], output_gradients=[dy])
+                self.assertEqual(
+                    [y, dx, dw, db],
+                    [data1 * np.expand_dims(data2, -1) +
+                     np.expand_dims(data3, -1),
+                     grad1, grad2, grad3])
+
+    @unittest.skipIf(not TEST_CUDA, 'CUDA unavailable')
+    def test_affine_cuda(self):
+        with dragon.device('cuda'):
+            self.test_affine()
+
     def test_argmax(self):
         entries = [(0, True), (0, False), (1, True), (1, False)]
         for execution in ('EAGER_MODE', 'GRAPH_MODE'):
@@ -1711,6 +1692,20 @@ class TestMathOps(OpTestCase):
     def test_argmin_cuda(self):
         with dragon.device('cuda'):
             self.test_argmin()
+
+    def test_atan2(self):
+        for execution in ('EAGER_MODE', 'GRAPH_MODE'):
+            with execution_context().mode(execution):
+                for a_shape, b_shape in self.binary_test_shapes:
+                    data1, data2 = arange(a_shape), arange(b_shape, 1)
+                    a, b = new_tensor(data1), new_tensor(data2)
+                    y = dragon.math.atan2([a, b])
+                    self.assertEqual(y, np.arctan2(data1, data2))
+
+    @unittest.skipIf(not TEST_CUDA, 'CUDA unavailable')
+    def test_atan2_cuda(self):
+        with dragon.device('cuda'):
+            self.test_atan2()
 
     def test_bitwise_and(self):
         for execution in ('EAGER_MODE', 'GRAPH_MODE'):
@@ -2738,6 +2733,25 @@ class TestNormalizationOps(OpTestCase):
         with dragon.device('cuda'), self.cudnn_ws.as_default():
             self.test_batch_norm()
 
+    def test_channel_norm(self):
+        entries = [((2, 3, 4), [(1., 2., 3.), (3., 2., 1.), 1], {'perm': (0, 1, 2)}),
+                   ((2, 3, 4), [(1., 2., 3.), (3., 2., 1.), 2], {'perm': (0, 2, 1)})]
+        for execution in ('EAGER_MODE', 'GRAPH_MODE'):
+            with execution_context().mode(execution):
+                for shape, args, kwargs in entries:
+                    perm = kwargs['perm']
+                    data = np.ones(shape, dtype='uint8').transpose(perm)
+                    mean = np.array(args[0]).reshape((1, 3, 1)).transpose(perm)
+                    std = np.array(args[1]).reshape((1, 3, 1)).transpose(perm)
+                    x = dragon.ones(shape, dtype='uint8')
+                    y = dragon.nn.channel_norm(x, *args, **kwargs)
+                    self.assertEqual(y, (data - mean) / std)
+
+    @unittest.skipIf(not TEST_CUDA, 'CUDA unavailable')
+    def test_channel_norm_cuda(self):
+        with dragon.device('cuda'):
+            self.test_channel_norm()
+
     def test_group_norm(self):
         eps = 1e-5
         entries = [((1, 4), (4,), -1, 2, (2,)),
@@ -2904,7 +2918,7 @@ class TestNormalizationOps(OpTestCase):
         with dragon.device('cuda'), self.cudnn_ws.as_default():
             self.test_local_response_norm(test_cudnn=True, prec=1e-2)
 
-    def test_lp_normalize(self):
+    def test_lp_norm(self):
         entries = [(0, 1, 1e-12, 'sum'),
                    (0, 1, 1e-12, 'mean'),
                    (0, 2, 1e-12, 'sum'),
@@ -2921,7 +2935,7 @@ class TestNormalizationOps(OpTestCase):
                     x, dy = new_tensor(data1), new_tensor(data2)
                     with dragon.GradientTape() as tape:
                         tape.watch(x)
-                        y = dragon.math.lp_normalize(
+                        y = dragon.nn.lp_norm(
                             x, axis, p=p, epsilon=eps, reduction=reduction)
                     dx = tape.gradient(y, [x], output_gradients=[dy])[0]
                     norm = np.abs(data1) if p == 1 else np.square(data1)
@@ -2930,9 +2944,9 @@ class TestNormalizationOps(OpTestCase):
                     self.assertEqual([y, dx], [data1 / max(norm, eps), grad])
 
     @unittest.skipIf(not TEST_CUDA, 'CUDA unavailable')
-    def test_lp_normalize_cuda(self):
+    def test_lp_norm_cuda(self):
         with dragon.device('cuda'):
-            self.test_lp_normalize()
+            self.test_lp_norm()
 
 
 class TestRNNOps(OpTestCase):
@@ -3028,7 +3042,7 @@ class TestTrainingOps(OpTestCase):
     def test_rmsprop_update(self):
         with execution_context().mode('EAGER_MODE'):
             momentum, lr = self.rmsprop.momentum, self.rmsprop.lr
-            decay, eps = self.rmsprop.decay, self.rmsprop.eps
+            alpha, eps = self.rmsprop.alpha, self.rmsprop.eps
             data1 = uniform((2, 3))
             data2, data3 = np.zeros((2, 3), 'float32'), np.zeros((2, 3), 'float32')
             param = new_tensor(data1)
@@ -3036,7 +3050,7 @@ class TestTrainingOps(OpTestCase):
                 data4 = uniform((2, 3))
                 grad = new_tensor(data4)
                 self.rmsprop.apply_gradients([[grad, param]])
-                data3 = decay * data3 + (1 - decay) * np.square(data4)
+                data3 = alpha * data3 + (1 - alpha) * np.square(data4)
                 data2 = momentum * data2 + (data4 / (np.sqrt(data3) + eps))
                 data1 -= lr * data2
                 self.assertEqual(param, data1)

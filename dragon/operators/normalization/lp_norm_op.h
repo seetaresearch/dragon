@@ -10,24 +10,26 @@
  * ------------------------------------------------------------
  */
 
-#ifndef DRAGON_OPERATORS_NORMALIZATION_LP_NORMALIZE_OP_H_
-#define DRAGON_OPERATORS_NORMALIZATION_LP_NORMALIZE_OP_H_
+#ifndef DRAGON_OPERATORS_NORMALIZATION_LP_NORM_OP_H_
+#define DRAGON_OPERATORS_NORMALIZATION_LP_NORM_OP_H_
 
 #include "dragon/core/operator.h"
 
 namespace dragon {
 
 template <class Context>
-class LpNormalizeOp final : public Operator<Context> {
+class LpNormOp final : public Operator<Context> {
  public:
-  LpNormalizeOp(const OperatorDef& def, Workspace* ws)
+  LpNormOp(const OperatorDef& def, Workspace* ws)
       : Operator<Context>(def, ws),
         p_(OP_SINGLE_ARG(int64_t, "p", 2)),
         epsilon_(OP_SINGLE_ARG(double, "epsilon", 1e-12)),
         reduction_(OP_SINGLE_ARG(string, "reduction", "SUM")) {}
   USE_OPERATOR_FUNCTIONS;
 
-  void RunOnDevice() override;
+  void RunOnDevice() override {
+    DispatchHelper<dtypes::Floating>::Call(this, Input(0));
+  }
 
   template <typename T>
   void DoRunWithType();
@@ -39,16 +41,18 @@ class LpNormalizeOp final : public Operator<Context> {
 };
 
 template <class Context>
-class LpNormalizeGradientOp final : public Operator<Context> {
+class LpNormGradientOp final : public Operator<Context> {
  public:
-  LpNormalizeGradientOp(const OperatorDef& def, Workspace* ws)
+  LpNormGradientOp(const OperatorDef& def, Workspace* ws)
       : Operator<Context>(def, ws),
         p_(OP_SINGLE_ARG(int64_t, "p", 2)),
         epsilon_(OP_SINGLE_ARG(double, "epsilon", 1e-12)),
         reduction_(OP_SINGLE_ARG(string, "reduction", "SUM")) {}
   USE_OPERATOR_FUNCTIONS;
 
-  void RunOnDevice() override;
+  void RunOnDevice() override {
+    DispatchHelper<dtypes::Floating>::Call(this, Input(0));
+  }
 
   template <typename T>
   void DoRunWithType();
@@ -61,4 +65,4 @@ class LpNormalizeGradientOp final : public Operator<Context> {
 
 } // namespace dragon
 
-#endif // DRAGON_OPERATORS_NORMALIZATION_LP_NORMALIZE_OP_H_
+#endif // DRAGON_OPERATORS_NORMALIZATION_LP_NORM_OP_H_

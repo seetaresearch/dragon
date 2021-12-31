@@ -5,16 +5,21 @@
 namespace dragon {
 
 template <class Context>
-void RMSpropOp<Context>::ComputeUpdate(Tensor* dX, Tensor* /* X */) {
+template <typename T, typename CopyT>
+void RMSpropOp<Context>::DoRunWithType(Tensor* dX, Tensor* X, Tensor* Y) {
   kernels::RMSprop(
       dX->count(),
       lr_,
       momentum_,
-      decay_,
+      alpha_,
       eps_,
-      dX->template mutable_data<float, Context>(),
-      Slot("m")->ReshapeLike(*dX)->template mutable_data<float, Context>(),
-      Slot("v")->ReshapeLike(*dX)->template mutable_data<float, Context>(),
+      this->weight_decay_,
+      X->template data<T, Context>(),
+      dX->template mutable_data<T, Context>(),
+      GetState("m")->ReshapeLike(*dX)->template mutable_data<T, Context>(),
+      GetState("v")->ReshapeLike(*dX)->template mutable_data<T, Context>(),
+      X->template mutable_data<T, Context>(),
+      Y ? Y->template mutable_data<CopyT, Context>() : (CopyT*)nullptr,
       ctx());
 }
 

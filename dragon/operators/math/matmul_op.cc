@@ -199,11 +199,6 @@ void MatMulOp<Context>::DoRunWithType() {
 }
 
 template <class Context>
-void MatMulOp<Context>::RunOnDevice() {
-  DispatchHelper<dtypes::Floating>::Call(this, Input(0));
-}
-
-template <class Context>
 template <typename T>
 void MatMulGradientOp<Context>::DoRunWithType() {
   auto &A = Input(0), &B = Input(1), &dY = Input(2);
@@ -588,11 +583,6 @@ void MatMulGradientOp<Context>::DoRunWithType() {
           ctx());
     }
   }
-}
-
-template <class Context>
-void MatMulGradientOp<Context>::RunOnDevice() {
-  DispatchHelper<dtypes::Floating>::Call(this, Input(0));
 }
 
 DEPLOY_CPU_OPERATOR(MatMul);

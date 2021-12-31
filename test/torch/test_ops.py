@@ -127,6 +127,12 @@ class TestTensorOps(OpTestCase):
                 result = np.expand_dims(result, axis)
             self.assertEqual(x.argmin(axis, keepdims), result)
 
+    def test_atan2(self):
+        for a_shape, b_shape in self.binary_test_shapes:
+            data1, data2 = arange(a_shape), arange(b_shape, 1)
+            a, b = new_tensor(data1, False), new_tensor(data2, False)
+            self.assertEqual(a.atan2(b), np.arctan2(data1, data2))
+
     def test_baddbmm(self):
         entries = [((2, 2, 3), (2, 3, 4), (2, 2, 4))]
         for a_shape, b_shape, c_shape in entries:
@@ -943,18 +949,6 @@ class TestTorchOps(OpTestCase):
             x = new_tensor(data)
             y = torch.cat([x, x], dim=axis)
             self.assertEqual(y, np.concatenate([data, data], axis=axis))
-
-    def test_channel_normalize(self):
-        entries = [((2, 3, 4), [(1., 2., 3.), (3., 2., 1.), 1], {'dims': (0, 1, 2)}),
-                   ((2, 3, 4), [(1., 2., 3.), (3., 2., 1.), 2], {'dims': (0, 2, 1)})]
-        for shape, args, kwargs in entries:
-            perm = kwargs['dims']
-            data = np.ones(shape, dtype='uint8').transpose(perm)
-            mean = np.array(args[0]).reshape((1, 3, 1)).transpose(perm)
-            std = np.array(args[1]).reshape((1, 3, 1)).transpose(perm)
-            x = torch.ones(shape, dtype='uint8')
-            y = torch.channel_normalize(x, *args, **kwargs)
-            self.assertEqual(y, (data - mean) / std)
 
     def test_linspace(self):
         entries = [([[0., 5.], [10., 40.], 5], {'dim': 0, 'dtype': 'float32'}),

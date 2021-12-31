@@ -51,41 +51,6 @@ def cast_exporter(op_def, context):
     return node, const_tensors
 
 
-@export_util.register('ChannelAffine')
-def channel_affine_exporter(op_def, context):
-    node, const_tensors = export_util.translate(**locals())
-    node.op_type = 'ATen'  # Currently not supported in ai.onnx
-    helper.add_attribute(node, 'op_type', 'ChannelAffine')
-    for arg in op_def.arg:
-        if arg.name == 'axis':
-            helper.add_attribute(node, 'axis', arg.i)
-        elif arg.name == 'end_axis':
-            helper.add_attribute(node, 'end_axis', arg.i)
-    return node, const_tensors
-
-
-@export_util.register('ChannelNormalize')
-def channel_normalize_exporter(op_def, context):
-    node, const_tensors = export_util.translate(**locals())
-    node.op_type = 'ATen'  # Currently not supported in ai.onnx
-    helper.add_attribute(node, 'op_type', 'ChannelNormalize')
-    for arg in op_def.arg:
-        if arg.name == 'mean':
-            helper.add_attribute(node, 'mean', arg.floats)
-        elif arg.name == 'std':
-            helper.add_attribute(node, 'std', arg.floats)
-        elif arg.name == 'axis':
-            helper.add_attribute(node, 'axis', arg.i)
-        elif arg.name == 'dtype':
-            helper.add_attribute(node, 'dtype', arg.s)
-        elif arg.name == 'perm':
-            helper.add_attribute(node, 'perm', arg.ints)
-        elif arg.name == 'perm_desc':
-            values = helper.fetch_argument(op_def, arg, context.ws)
-            helper.add_attribute(node, 'perm', values)
-    return node, const_tensors
-
-
 @export_util.register('Concat')
 def concat_exporter(op_def, context):
     node, const_tensors = export_util.translate(**locals())

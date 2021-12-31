@@ -24,6 +24,9 @@ vm.torch.nn.functional
   `adaptive_max_pool3d(...) <functional/adaptive_max_pool3d.html>`_
   : Apply the 3d adaptive max pooling to input.
 
+  `affine(...) <functional/affine.html>`_
+  : Apply the affine transformation to input.
+
   `avg_pool1d(...) <functional/avg_pool1d.html>`_
   : Apply the 1d average pooling to input.
 
@@ -40,8 +43,11 @@ vm.torch.nn.functional
   `binary_cross_entropy_with_logits(...) <functional/binary_cross_entropy_with_logits.html>`_
   : Compute the sigmoid cross entropy with contiguous target.
 
+  `channel_norm(...) <nn/channel_norm.html>`_
+  : Apply the normalization to each channel of input.
+
   `channel_shuffle(...) <functional/channel_shuffle.html>`_
-  : Apply group shuffle to each channel of input.
+  : Apply the group shuffle to each channel of input.
   `[Zhang et.al, 2017] <https://arxiv.org/abs/1707.01083>`_.
 
   `conv1d(...) <functional/conv1d.html>`_
@@ -229,11 +235,13 @@ vm.torch.nn.functional
   functional/adaptive_max_pool1d
   functional/adaptive_max_pool2d
   functional/adaptive_max_pool3d
+  functional/affine
   functional/avg_pool1d
   functional/avg_pool2d
   functional/avg_pool3d
   functional/batch_norm
   functional/binary_cross_entropy_with_logits
+  functional/channel_norm
   functional/channel_shuffle
   functional/conv1d
   functional/conv2d

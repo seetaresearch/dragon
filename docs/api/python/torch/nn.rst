@@ -24,8 +24,8 @@ vm.torch.nn
   `class AdaptiveMaxPool3d <nn/AdaptiveMaxPool3d.html>`_
   : Apply the 3d adaptive max pooling.
 
-  `class AffineChannel <nn/AffineChannel.html>`_
-  : Apply affine transformation along the channels.
+  `class Affine <nn/Affine.html>`_
+  : Apply the affine transformation.
 
   `class AvgPool1d <nn/AvgPool1d.html>`_
   : Apply the 1d average pooling.
@@ -312,7 +312,7 @@ vm.torch.nn
   nn/AdaptiveMaxPool1d
   nn/AdaptiveMaxPool2d
   nn/AdaptiveMaxPool3d
-  nn/AffineChannel
+  nn/Affine
   nn/AvgPool1d
   nn/AvgPool2d
   nn/AvgPool3d

@@ -61,8 +61,8 @@ class RMSprop(optimizer.Optimizer):
         super(RMSprop, self).__init__(name, **kwargs)
         self._set_hyper('lr', learning_rate)
         self._set_hyper('momentum', momentum)
-        self._set_hyper('decay', rho)
+        self._set_hyper('alpha', rho)
         self._set_hyper('eps', epsilon)
         self._hyper_aliases['learning_rate'] = 'lr'
-        self._hyper_aliases['rho'] = 'decay'
+        self._hyper_aliases['rho'] = 'alpha'
         self._hyper_aliases['eps'] = 'epsilon'

@@ -129,13 +129,8 @@ def l2_normalize(x, axis=None, epsilon=1e-12, name=None):
         The output tensor.
 
     """
-    return normalization_ops.lp_normalize(
-        x,
-        p=2,
-        axis=axis,
-        epsilon=epsilon,
-        name=name,
-    )
+    return normalization_ops.lp_norm(
+        x, p=2, axis=axis, epsilon=epsilon, name=name)
 
 
 def moments(x, axes=None, keepdims=False, name=None):

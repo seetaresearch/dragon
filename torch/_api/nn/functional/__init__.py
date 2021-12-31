@@ -20,11 +20,13 @@ from dragon.vm.torch.core.nn.functional import adaptive_avg_pool3d
 from dragon.vm.torch.core.nn.functional import adaptive_max_pool1d
 from dragon.vm.torch.core.nn.functional import adaptive_max_pool2d
 from dragon.vm.torch.core.nn.functional import adaptive_max_pool3d
+from dragon.vm.torch.core.nn.functional import affine
 from dragon.vm.torch.core.nn.functional import avg_pool1d
 from dragon.vm.torch.core.nn.functional import avg_pool2d
 from dragon.vm.torch.core.nn.functional import avg_pool3d
 from dragon.vm.torch.core.nn.functional import batch_norm
 from dragon.vm.torch.core.nn.functional import binary_cross_entropy_with_logits
+from dragon.vm.torch.core.nn.functional import channel_norm
 from dragon.vm.torch.core.nn.functional import channel_shuffle
 from dragon.vm.torch.core.nn.functional import conv1d
 from dragon.vm.torch.core.nn.functional import conv2d

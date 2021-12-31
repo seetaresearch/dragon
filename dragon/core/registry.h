@@ -20,32 +20,32 @@ namespace dragon {
 /*!
  * \brief Registry to create class instances.
  */
-template <class KeyType, class ObjectType, class... Args>
+template <class KeyT, class ClassT, class... Args>
 class Registry {
  public:
-  typedef std::function<ObjectType*(Args...)> Creator;
+  typedef std::function<ClassT*(Args...)> Creator;
 
   /*! \brief Create an instance of specified class */
-  ObjectType* Create(const KeyType& key, Args... args) {
+  ClassT* Create(const KeyT& key, Args... args) {
     CHECK(registry_.count(key)) << "\nKey(" << key << ") has not registered.";
     return registry_[key](args...);
   }
 
   /*! \brief Return whether the specified class is registered */
-  bool Has(const KeyType& key) {
+  bool Has(const KeyT& key) {
     return (registry_.count(key)) != 0;
   }
 
   /*! \brief Register a class with the creator */
-  void Register(const KeyType& key, Creator creator) {
+  void Register(const KeyT& key, Creator creator) {
     CHECK(!registry_.count(key))
         << "\nKey(" << key << ") has already registered.";
     registry_[key] = creator;
   }
 
   /*! \brief Return the key of registered classes */
-  vector<KeyType> keys() {
-    vector<KeyType> ret;
+  vector<KeyT> keys() {
+    vector<KeyT> ret;
     for (const auto& it : registry_) {
       ret.push_back(it.first);
     }
@@ -54,50 +54,49 @@ class Registry {
 
  private:
   /*! \brief The registry map */
-  Map<KeyType, Creator> registry_;
+  Map<KeyT, Creator> registry_;
 };
 
 /*!
  * \brief Register creator into the registry.
  */
-template <class KeyType, class ObjectType, class... Args>
+template <class KeyT, class ClassT, class... Args>
 class Registerer {
  public:
   /*! \brief Constructor with key and creator */
   Registerer(
-      const KeyType& key,
-      Registry<KeyType, ObjectType, Args...>* registry,
-      typename Registry<KeyType, ObjectType, Args...>::Creator creator,
+      const KeyT& key,
+      Registry<KeyT, ClassT, Args...>* registry,
+      typename Registry<KeyT, ClassT, Args...>::Creator creator,
       const string& help_msg = "") {
     registry->Register(key, creator);
   }
 
   /*! \brief Return the default creator */
-  template <class DerivedType>
-  static ObjectType* DefaultCreator(Args... args) {
-    return new DerivedType(args...);
+  template <class DerivedT>
+  static ClassT* DefaultCreator(Args... args) {
+    return new DerivedT(args...);
   }
 };
 
-// Used in *.h files
-#define DECLARE_TYPED_REGISTRY(RegistryName, KeyType, ObjectType, ...)     \
-  DRAGON_API Registry<KeyType, ObjectType, ##__VA_ARGS__>* RegistryName(); \
-  typedef Registerer<KeyType, ObjectType, ##__VA_ARGS__>                   \
-      Registerer##RegistryName;
+// Used in *.h files.
+#define DECLARE_TYPED_REGISTRY(RegistryName, KeyT, ClassT, ...)     \
+  DRAGON_API Registry<KeyT, ClassT, ##__VA_ARGS__>* RegistryName(); \
+  typedef Registerer<KeyT, ClassT, ##__VA_ARGS__> Registerer##RegistryName;
 
-// Used in *.cc files
-#define DEFINE_TYPED_REGISTRY(RegistryName, KeyType, ObjectType, ...) \
-  Registry<KeyType, ObjectType, ##__VA_ARGS__>* RegistryName() {      \
-    static Registry<KeyType, ObjectType, ##__VA_ARGS__>* registry =   \
-        new Registry<KeyType, ObjectType, ##__VA_ARGS__>();           \
-    return registry;                                                  \
+// Used in *.cc files.
+#define DEFINE_TYPED_REGISTRY(RegistryName, KeyT, ClassT, ...) \
+  Registry<KeyT, ClassT, ##__VA_ARGS__>* RegistryName() {      \
+    static Registry<KeyT, ClassT, ##__VA_ARGS__>* registry =   \
+        new Registry<KeyT, ClassT, ##__VA_ARGS__>();           \
+    return registry;                                           \
   }
 
-#define DECLARE_REGISTRY(RegistryName, ObjectType, ...) \
-  DECLARE_TYPED_REGISTRY(RegistryName, string, ObjectType, ##__VA_ARGS__)
+#define DECLARE_REGISTRY(RegistryName, ClassT, ...) \
+  DECLARE_TYPED_REGISTRY(RegistryName, string, ClassT, ##__VA_ARGS__)
 
-#define DEFINE_REGISTRY(RegistryName, ObjectType, ...) \
-  DEFINE_TYPED_REGISTRY(RegistryName, string, ObjectType, ##__VA_ARGS__)
+#define DEFINE_REGISTRY(RegistryName, ClassT, ...) \
+  DEFINE_TYPED_REGISTRY(RegistryName, string, ClassT, ##__VA_ARGS__)
 
 #define REGISTER_TYPED_CLASS(RegistryName, key, ...)                    \
   static Registerer##RegistryName ANONYMOUS_VARIABLE(g_##RegistryName)( \

@@ -501,8 +501,8 @@ class TestOpSpecWithTensorDesc(unittest.TestCase):
             self.assertEqual(dragon.broadcast_to(
                 self.sym2, shape=self.shape1).shape, (None,) * len(self.sym2.shape))
 
-    def test_channel_normalize(self):
-        func = functools.partial(dragon.channel_normalize,
+    def test_channel_norm(self):
+        func = functools.partial(dragon.nn.channel_norm,
                                  mean=(1., 1., 1.), std=(1., 1., 1.))
         with dragon.graph_mode():
             self.assertEqual(func(self.sym1).shape, None)

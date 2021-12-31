@@ -1,4 +1,4 @@
-#include "dragon/operators/array/channel_normalize_op.h"
+#include "dragon/operators/normalization/channel_norm_op.h"
 #include "dragon/core/workspace.h"
 #include "dragon/utils/op_kernels.h"
 
@@ -6,7 +6,7 @@ namespace dragon {
 
 template <class Context>
 template <typename InputT, typename OutputT>
-void ChannelNormalizeOp<Context>::DoRunWithTypeAndCast() {
+void ChannelNormOp<Context>::DoRunWithTypeAndCast() {
   auto &X = Input(0), *Y = Output(0);
   GET_OP_AXIS_ARG(axis, X.ndim(), -1);
 
@@ -30,7 +30,7 @@ void ChannelNormalizeOp<Context>::DoRunWithTypeAndCast() {
       << "\nProviding " << X_mean_.count() << " values to normalize Dimension("
       << Y_dims[axis] << ").";
 
-  kernels::ChannelNormalize(
+  kernels::ChannelNorm(
       axis,
       num_dims,
       X_strides.data(),
@@ -44,7 +44,7 @@ void ChannelNormalizeOp<Context>::DoRunWithTypeAndCast() {
 
 template <class Context>
 template <typename T>
-void ChannelNormalizeOp<Context>::DoRunWithType() {
+void ChannelNormOp<Context>::DoRunWithType() {
   if (data_type() == "float16") {
     DoRunWithTypeAndCast<T, float16>();
   } else if (data_type() == "float32") {
@@ -58,21 +58,21 @@ void ChannelNormalizeOp<Context>::DoRunWithType() {
 }
 
 template <class Context>
-void ChannelNormalizeOp<Context>::RunOnDevice() {
+void ChannelNormOp<Context>::RunOnDevice() {
   DispatchHelper<dtypes::Numerical>::Call(this, Input(0));
 }
 
-DEPLOY_CPU_OPERATOR(ChannelNormalize);
+DEPLOY_CPU_OPERATOR(ChannelNorm);
 #ifdef USE_CUDA
-DEPLOY_CUDA_OPERATOR(ChannelNormalize);
+DEPLOY_CUDA_OPERATOR(ChannelNorm);
 #endif
 
-OPERATOR_SCHEMA(ChannelNormalize)
+OPERATOR_SCHEMA(ChannelNorm)
     /* X */
     .NumInputs(1)
     /* Y */
     .NumOutputs(1);
 
-NO_GRADIENT(ChannelNormalize);
+NO_GRADIENT(ChannelNorm);
 
 } // namespace dragon
