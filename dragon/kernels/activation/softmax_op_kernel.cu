@@ -285,7 +285,7 @@ __global__ void _LogSoftmaxGradViaBlockReduce(
       const auto nblocks = math::utils::DivUp<int>(NxS, WARP_ITEMS); \
       _##name##ViaWarpReduce<                                        \
           math::ScalarType<T>::type,                                 \
-          math::AccmulatorType<T>::type>                             \
+          math::AccumulatorType<T>::type>                            \
           <<<nblocks,                                                \
              dim3(CUDA_WARP_SIZE, WARP_ITEMS),                       \
              0,                                                      \
@@ -299,7 +299,7 @@ __global__ void _LogSoftmaxGradViaBlockReduce(
     }                                                                \
     _##name##ViaBlockReduce<                                         \
         math::ScalarType<T>::type,                                   \
-        math::AccmulatorType<T>::type>                               \
+        math::AccumulatorType<T>::type>                              \
         <<<NxS, BLOCK_THREADS, 0, ctx->cuda_stream()>>>(             \
             NxS,                                                     \
             S,                                                       \
@@ -323,7 +323,7 @@ __global__ void _LogSoftmaxGradViaBlockReduce(
       const auto nblocks = math::utils::DivUp<int>(NxS, WARP_ITEMS);  \
       _##name##ViaWarpReduce<                                         \
           math::ScalarType<T>::type,                                  \
-          math::AccmulatorType<T>::type>                              \
+          math::AccumulatorType<T>::type>                             \
           <<<nblocks,                                                 \
              dim3(CUDA_WARP_SIZE, WARP_ITEMS),                        \
              0,                                                       \
@@ -338,7 +338,7 @@ __global__ void _LogSoftmaxGradViaBlockReduce(
     }                                                                 \
     _##name##ViaBlockReduce<                                          \
         math::ScalarType<T>::type,                                    \
-        math::AccmulatorType<T>::type>                                \
+        math::AccumulatorType<T>::type>                               \
         <<<NxS, BLOCK_THREADS, 0, ctx->cuda_stream()>>>(              \
             NxS,                                                      \
             S,                                                        \

@@ -117,20 +117,18 @@ def export(
         if input_names is not None:
             raise ValueError(
                 'Excepted the input names from <args>.\n'
-                'You should set the <input_names> to None.'
-            )
+                'You should set the <input_names> to None.')
         inputs, input_names, args = \
             list(args.values()), list(args.keys()), [args]
     else:
         inputs = args = nest.flatten(args)
 
     # Run the model to get the outputs.
-    execute_ws = workspace.Workspace()
-    execute_ws.merge_from(workspace.get_workspace())
-    with execute_ws.as_default():
-        with tapes.Tape() as model_tape:
-            model_tape._exporting = True
-            outputs = model(*args)
+    graph_tape = tapes.Tape()
+    graph_tape._tracing = True  # Enable tracing.
+    graph_tape._exporting = True  # Enable exporting.
+    with graph_tape:
+        outputs = model(*args)
 
     # Process the outputs
     if isinstance(outputs, dict):
@@ -159,7 +157,7 @@ def export(
             graph_def.output.extend([output_names[i]])
 
     # Add operators.
-    for op_def in model_tape.get_elements():
+    for op_def in graph_tape.get_elements():
         ops_def.append(dragon_pb2.OperatorDef())
         ops_def[-1].ParseFromString(op_def.SerializeAs())
     graph_def.op.extend(ops_def)
@@ -176,17 +174,16 @@ def export(
             constants[k] = v
 
     # Export.
-    with execute_ws.as_default():
-        model = graph_def_to_onnx_model(
-            graph_def=graph_def,
-            input_names=input_names,
-            output_names=output_names,
-            input_shapes=input_shapes,
-            constants=constants,
-            value_info=value_info,
-            opset_version=opset_version,
-            workspace=execute_ws,
-            verbose=verbose,
-            enable_onnx_checker=enable_onnx_checker,
-        )
-        serialization.save_bytes(serialization.serialize_proto(model), f)
+    model = graph_def_to_onnx_model(
+        graph_def=graph_def,
+        input_names=input_names,
+        output_names=output_names,
+        input_shapes=input_shapes,
+        constants=constants,
+        value_info=value_info,
+        opset_version=opset_version,
+        workspace=workspace.get_workspace(),
+        verbose=verbose,
+        enable_onnx_checker=enable_onnx_checker,
+    )
+    serialization.save_bytes(serialization.serialize_proto(model), f)

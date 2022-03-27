@@ -54,23 +54,22 @@ class NumpyWrapper {
       }
       return py::reinterpret_steal<py::object>(array);
     }
-    auto* array = PyArray_SimpleNewFromData(
+    return py::reinterpret_steal<py::object>(PyArray_SimpleNewFromData(
         dims.size(),
         dims.data(),
         dtypes::to_npy(meta),
-        const_cast<void*>(tensor_->raw_data<CPUContext>()));
-    return py::reinterpret_steal<py::object>(array);
+        const_cast<void*>(tensor_->raw_data<CPUContext>())));
   }
 
   Tensor* From(py::object obj, bool copy) {
-    auto* array =
-        PyArray_GETCONTIGUOUS(reinterpret_cast<PyArrayObject*>(obj.ptr()));
+    auto* array = PyArray_GETCONTIGUOUS((PyArrayObject*)obj.ptr());
     const auto& meta = dtypes::from_npy(PyArray_TYPE(array));
     CHECK(meta.id() != 0) << "\nUnsupported numpy array type.";
     auto* npy_dims = PyArray_DIMS(array);
     auto* data = static_cast<void*>(PyArray_DATA(array));
     vector<int64_t> dims(npy_dims, npy_dims + PyArray_NDIM(array));
-    auto* memory = tensor_->set_meta(meta)->Reshape(dims)->memory();
+    tensor_->set_meta(meta)->Reshape(dims);
+    auto* memory = tensor_->MapFrom(nullptr)->memory();
     if (copy) {
       auto device_type = memory ? memory->info()["device_type"] : "cpu";
       if (device_type == "cuda") {

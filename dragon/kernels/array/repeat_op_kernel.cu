@@ -69,26 +69,26 @@ __global__ void _RepeatGrad(
         NxCxS2, C, S, S2, x, y);                                           \
   }
 
-#define DEFINE_GRAD_KERNEL_LAUNCHER(T)                                    \
-  template <>                                                             \
-  void RepeatGrad<T, CUDAContext>(                                        \
-      const int N,                                                        \
-      const int S,                                                        \
-      const int C,                                                        \
-      const int repeats,                                                  \
-      const T* dy,                                                        \
-      T* dx,                                                              \
-      CUDAContext* ctx) {                                                 \
-    const auto S2 = S * repeats;                                          \
-    const auto NxCxS = N * C * S;                                         \
-    _RepeatGrad<math::ScalarType<T>::type, math::AccmulatorType<T>::type> \
-        <<<CUDA_BLOCKS(NxCxS), CUDA_THREADS, 0, ctx->cuda_stream()>>>(    \
-            NxCxS,                                                        \
-            C,                                                            \
-            S,                                                            \
-            S2,                                                           \
-            reinterpret_cast<const math::ScalarType<T>::type*>(dy),       \
-            reinterpret_cast<math::ScalarType<T>::type*>(dx));            \
+#define DEFINE_GRAD_KERNEL_LAUNCHER(T)                                     \
+  template <>                                                              \
+  void RepeatGrad<T, CUDAContext>(                                         \
+      const int N,                                                         \
+      const int S,                                                         \
+      const int C,                                                         \
+      const int repeats,                                                   \
+      const T* dy,                                                         \
+      T* dx,                                                               \
+      CUDAContext* ctx) {                                                  \
+    const auto S2 = S * repeats;                                           \
+    const auto NxCxS = N * C * S;                                          \
+    _RepeatGrad<math::ScalarType<T>::type, math::AccumulatorType<T>::type> \
+        <<<CUDA_BLOCKS(NxCxS), CUDA_THREADS, 0, ctx->cuda_stream()>>>(     \
+            NxCxS,                                                         \
+            C,                                                             \
+            S,                                                             \
+            S2,                                                            \
+            reinterpret_cast<const math::ScalarType<T>::type*>(dy),        \
+            reinterpret_cast<math::ScalarType<T>::type*>(dx));             \
   }
 
 DEFINE_KERNEL_LAUNCHER(bool);

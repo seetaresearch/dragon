@@ -26,10 +26,31 @@ class ClipOp : public Operator<Context> {
         high_(OP_SINGLE_ARG(float, "high", FLT_MAX)) {}
   USE_OPERATOR_FUNCTIONS;
 
-  void RunOnDevice() override;
+  void RunOnDevice() override {
+    DispatchHelper<dtypes::Numerical>::Call(this, Input(0));
+  }
 
   template <typename T>
-  pair<float, float> ComputeBoundsWithType();
+  std::pair<float, float> GetLimits() {
+    float type_min, type_max;
+    const auto meta = TypeMeta::Make<T>();
+    if (meta.template Match<uint8_t>()) {
+      type_min = float(std::numeric_limits<uint8_t>::min());
+      type_max = float(std::numeric_limits<uint8_t>::max());
+    } else if (meta.template Match<int8_t>()) {
+      type_min = float(std::numeric_limits<int8_t>::min());
+      type_max = float(std::numeric_limits<int8_t>::max());
+    } else if (meta.template Match<int>()) {
+      type_min = float(std::numeric_limits<int>::min());
+      type_max = float(std::numeric_limits<int>::max());
+    } else if (meta.template Match<float16>()) {
+      type_min = -65505.f, type_max = 65504.f;
+    } else {
+      type_min = std::numeric_limits<float>::min();
+      type_max = std::numeric_limits<float>::max();
+    }
+    return std::make_pair(std::max(low_, type_min), std::min(high_, type_max));
+  }
 
   template <typename T>
   void DoRunWithType();
@@ -45,7 +66,9 @@ class ClipGradientOp final : public ClipOp<Context> {
       : ClipOp<Context>(def, ws) {}
   USE_OPERATOR_FUNCTIONS;
 
-  void RunOnDevice() override;
+  void RunOnDevice() override {
+    DispatchHelper<dtypes::Floating>::Call(this, Input(0));
+  }
 
   template <typename T>
   void DoRunWithType();

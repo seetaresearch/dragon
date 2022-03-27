@@ -46,6 +46,10 @@ class TestBackend(unittest.TestCase):
         with group.as_default():
             self.assertEqual(dragon.distributed.get_rank(group), 0)
 
+    @unittest.skipIf(not TEST_MPI, 'MPI unavailable')
+    def test_finalize(self):
+        dragon.distributed.finalize()
+
 
 if __name__ == '__main__':
     run_tests()

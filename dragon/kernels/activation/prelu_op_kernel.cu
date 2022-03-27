@@ -138,7 +138,7 @@ __global__ void _PReluWGrad(
       DISPATCH_CWISE_PRELU_KERNEL(                                       \
           _PRelu,                                                        \
           math::ScalarType<T>::type,                                     \
-          math::AccmulatorType<T>::type,                                 \
+          math::AccumulatorType<T>::type,                                \
           CUDA_BLOCKS(NxCxS),                                            \
           CUDA_THREADS,                                                  \
           NxCxS,                                                         \
@@ -148,7 +148,7 @@ __global__ void _PReluWGrad(
           reinterpret_cast<const math::ScalarType<T>::type*>(w),         \
           reinterpret_cast<math::ScalarType<T>::type*>(y));              \
     } else {                                                             \
-      _PRelu<math::ScalarType<T>::type, math::AccmulatorType<T>::type>   \
+      _PRelu<math::ScalarType<T>::type, math::AccumulatorType<T>::type>  \
           <<<CUDA_BLOCKS(NxCxS), CUDA_THREADS, 0, ctx->cuda_stream()>>>( \
               NxCxS,                                                     \
               reinterpret_cast<const math::ScalarType<T>::type*>(x),     \
@@ -157,76 +157,76 @@ __global__ void _PReluWGrad(
     }                                                                    \
   }
 
-#define DEFINE_GRAD_KERNEL_LAUNCHER(T)                                      \
-  template <>                                                               \
-  void PReluGrad<T, CUDAContext>(                                           \
-      const int N,                                                          \
-      const int S,                                                          \
-      const int C,                                                          \
-      const string& data_format,                                            \
-      const T* dy,                                                          \
-      const T* x,                                                           \
-      const T* w,                                                           \
-      T* dx,                                                                \
-      CUDAContext* ctx) {                                                   \
-    const auto NxCxS = N * C * S;                                           \
-    if (C > 1) {                                                            \
-      DISPATCH_CWISE_PRELU_KERNEL(                                          \
-          _PReluGrad,                                                       \
-          math::ScalarType<T>::type,                                        \
-          math::AccmulatorType<T>::type,                                    \
-          CUDA_BLOCKS(NxCxS),                                               \
-          CUDA_THREADS,                                                     \
-          NxCxS,                                                            \
-          S,                                                                \
-          C,                                                                \
-          reinterpret_cast<const math::ScalarType<T>::type*>(dy),           \
-          reinterpret_cast<const math::ScalarType<T>::type*>(x),            \
-          reinterpret_cast<const math::ScalarType<T>::type*>(w),            \
-          reinterpret_cast<math::ScalarType<T>::type*>(dx));                \
-    } else {                                                                \
-      _PReluGrad<math::ScalarType<T>::type, math::AccmulatorType<T>::type>  \
-          <<<CUDA_BLOCKS(NxCxS), CUDA_THREADS, 0, ctx->cuda_stream()>>>(    \
-              NxCxS,                                                        \
-              reinterpret_cast<const math::ScalarType<T>::type*>(dy),       \
-              reinterpret_cast<const math::ScalarType<T>::type*>(x),        \
-              reinterpret_cast<const math::ScalarType<T>::type*>(w),        \
-              reinterpret_cast<math::ScalarType<T>::type*>(dx));            \
-    }                                                                       \
-  }                                                                         \
-  template <>                                                               \
-  void PReluWGrad<T, CUDAContext>(                                          \
-      const int N,                                                          \
-      const int S,                                                          \
-      const int C,                                                          \
-      const string& data_format,                                            \
-      const T* dy,                                                          \
-      const T* x,                                                           \
-      T* dw,                                                                \
-      CUDAContext* ctx) {                                                   \
-    const auto NxS = N * S;                                                 \
-    const auto NxCxS = NxS * C;                                             \
-    if (C > 1) {                                                            \
-      DISPATCH_CWISE_PRELU_KERNEL(                                          \
-          _PReluWGrad,                                                      \
-          math::ScalarType<T>::type,                                        \
-          math::AccmulatorType<T>::type,                                    \
-          C,                                                                \
-          CUDA_THREADS,                                                     \
-          NxS,                                                              \
-          S,                                                                \
-          C,                                                                \
-          reinterpret_cast<const math::ScalarType<T>::type*>(dy),           \
-          reinterpret_cast<const math::ScalarType<T>::type*>(x),            \
-          reinterpret_cast<math::ScalarType<T>::type*>(dw));                \
-    } else {                                                                \
-      _PReluWGrad<math::ScalarType<T>::type, math::AccmulatorType<T>::type> \
-          <<<1, CUDA_THREADS, 0, ctx->cuda_stream()>>>(                     \
-              NxCxS,                                                        \
-              reinterpret_cast<const math::ScalarType<T>::type*>(dy),       \
-              reinterpret_cast<const math::ScalarType<T>::type*>(x),        \
-              reinterpret_cast<math::ScalarType<T>::type*>(dw));            \
-    }                                                                       \
+#define DEFINE_GRAD_KERNEL_LAUNCHER(T)                                       \
+  template <>                                                                \
+  void PReluGrad<T, CUDAContext>(                                            \
+      const int N,                                                           \
+      const int S,                                                           \
+      const int C,                                                           \
+      const string& data_format,                                             \
+      const T* dy,                                                           \
+      const T* x,                                                            \
+      const T* w,                                                            \
+      T* dx,                                                                 \
+      CUDAContext* ctx) {                                                    \
+    const auto NxCxS = N * C * S;                                            \
+    if (C > 1) {                                                             \
+      DISPATCH_CWISE_PRELU_KERNEL(                                           \
+          _PReluGrad,                                                        \
+          math::ScalarType<T>::type,                                         \
+          math::AccumulatorType<T>::type,                                    \
+          CUDA_BLOCKS(NxCxS),                                                \
+          CUDA_THREADS,                                                      \
+          NxCxS,                                                             \
+          S,                                                                 \
+          C,                                                                 \
+          reinterpret_cast<const math::ScalarType<T>::type*>(dy),            \
+          reinterpret_cast<const math::ScalarType<T>::type*>(x),             \
+          reinterpret_cast<const math::ScalarType<T>::type*>(w),             \
+          reinterpret_cast<math::ScalarType<T>::type*>(dx));                 \
+    } else {                                                                 \
+      _PReluGrad<math::ScalarType<T>::type, math::AccumulatorType<T>::type>  \
+          <<<CUDA_BLOCKS(NxCxS), CUDA_THREADS, 0, ctx->cuda_stream()>>>(     \
+              NxCxS,                                                         \
+              reinterpret_cast<const math::ScalarType<T>::type*>(dy),        \
+              reinterpret_cast<const math::ScalarType<T>::type*>(x),         \
+              reinterpret_cast<const math::ScalarType<T>::type*>(w),         \
+              reinterpret_cast<math::ScalarType<T>::type*>(dx));             \
+    }                                                                        \
+  }                                                                          \
+  template <>                                                                \
+  void PReluWGrad<T, CUDAContext>(                                           \
+      const int N,                                                           \
+      const int S,                                                           \
+      const int C,                                                           \
+      const string& data_format,                                             \
+      const T* dy,                                                           \
+      const T* x,                                                            \
+      T* dw,                                                                 \
+      CUDAContext* ctx) {                                                    \
+    const auto NxS = N * S;                                                  \
+    const auto NxCxS = NxS * C;                                              \
+    if (C > 1) {                                                             \
+      DISPATCH_CWISE_PRELU_KERNEL(                                           \
+          _PReluWGrad,                                                       \
+          math::ScalarType<T>::type,                                         \
+          math::AccumulatorType<T>::type,                                    \
+          C,                                                                 \
+          CUDA_THREADS,                                                      \
+          NxS,                                                               \
+          S,                                                                 \
+          C,                                                                 \
+          reinterpret_cast<const math::ScalarType<T>::type*>(dy),            \
+          reinterpret_cast<const math::ScalarType<T>::type*>(x),             \
+          reinterpret_cast<math::ScalarType<T>::type*>(dw));                 \
+    } else {                                                                 \
+      _PReluWGrad<math::ScalarType<T>::type, math::AccumulatorType<T>::type> \
+          <<<1, CUDA_THREADS, 0, ctx->cuda_stream()>>>(                      \
+              NxCxS,                                                         \
+              reinterpret_cast<const math::ScalarType<T>::type*>(dy),        \
+              reinterpret_cast<const math::ScalarType<T>::type*>(x),         \
+              reinterpret_cast<math::ScalarType<T>::type*>(dw));             \
+    }                                                                        \
   }
 
 DEFINE_KERNEL_LAUNCHER(float16);

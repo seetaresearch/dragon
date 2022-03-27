@@ -64,7 +64,7 @@ __global__ void _ApproxGeluGrad(const int N, const T* dy, const T* x, T* dx) {
 #define DEFINE_KERNEL_LAUNCHER(name, T)                                        \
   template <>                                                                  \
   void name<T, CUDAContext>(const int N, const T* x, T* y, CUDAContext* ctx) { \
-    _##name<math::ScalarType<T>::type, math::AccmulatorType<T>::type>          \
+    _##name<math::ScalarType<T>::type, math::AccumulatorType<T>::type>         \
         <<<CUDA_BLOCKS(N), CUDA_THREADS, 0, ctx->cuda_stream()>>>(             \
             N,                                                                 \
             reinterpret_cast<const math::ScalarType<T>::type*>(x),             \
@@ -75,7 +75,7 @@ __global__ void _ApproxGeluGrad(const int N, const T* dy, const T* x, T* dx) {
   template <>                                                          \
   void name<T, CUDAContext>(                                           \
       const int N, const T* dy, const T* x, T* dx, CUDAContext* ctx) { \
-    _##name<math::ScalarType<T>::type, math::AccmulatorType<T>::type>  \
+    _##name<math::ScalarType<T>::type, math::AccumulatorType<T>::type> \
         <<<CUDA_BLOCKS(N), CUDA_THREADS, 0, ctx->cuda_stream()>>>(     \
             N,                                                         \
             reinterpret_cast<const math::ScalarType<T>::type*>(dy),    \

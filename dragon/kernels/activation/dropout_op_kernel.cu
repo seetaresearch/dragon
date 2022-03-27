@@ -43,7 +43,7 @@ __global__ void _Dropout(
     math::Random(N, r, ctx);                                           \
     _Dropout<<<CUDA_BLOCKS(N), CUDA_THREADS, 0, ctx->cuda_stream()>>>( \
         N,                                                             \
-        convert::To<math::AccmulatorType<T>::type>(scale),             \
+        convert::To<math::AccumulatorType<T>::type>(scale),            \
         static_cast<uint32_t>(UINT_MAX * ratio),                       \
         r,                                                             \
         reinterpret_cast<const math::ScalarType<T>::type*>(x),         \

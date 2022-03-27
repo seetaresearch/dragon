@@ -8,7 +8,7 @@ namespace dragon {
 template <class Context>
 template <typename T>
 void GroupNormOp<Context>::DoRunWithType() {
-  using ParamT = typename math::AccmulatorType<T>::type;
+  using ParamT = typename math::AccumulatorType<T>::type;
   auto &X = Input(0), *Y = Output(0);
   auto &W = Input(1), &B = Input(2);
   GetBaseArguments();
@@ -55,7 +55,7 @@ void GroupNormOp<Context>::DoRunWithType() {
 template <class Context>
 template <typename T>
 void GroupNormGradientOp<Context>::DoRunWithType() {
-  using ParamT = typename math::AccmulatorType<T>::type;
+  using ParamT = typename math::AccumulatorType<T>::type;
   auto &X = Input(0), &W = Input(1), &dY = Input(2);
   auto &X_mu = Input("X_mu"), &X_rsig = Input("X_rsig");
   auto *dX = Output(0), *dW = Output(1), *dB = Output(2);

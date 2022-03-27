@@ -36,27 +36,27 @@ __global__ void _HardSwishGrad(const int N, const T* dy, const T* x, T* dx) {
 
 /* ------------------- Launcher Separator ------------------- */
 
-#define DEFINE_KERNEL_LAUNCHER(T)                                        \
-  template <>                                                            \
-  void HardSwish<T, CUDAContext>(                                        \
-      const int N, const T* x, T* y, CUDAContext* ctx) {                 \
-    _HardSwish<math::ScalarType<T>::type, math::AccmulatorType<T>::type> \
-        <<<CUDA_BLOCKS(N), CUDA_THREADS, 0, ctx->cuda_stream()>>>(       \
-            N,                                                           \
-            reinterpret_cast<const math::ScalarType<T>::type*>(x),       \
-            reinterpret_cast<math::ScalarType<T>::type*>(y));            \
+#define DEFINE_KERNEL_LAUNCHER(T)                                         \
+  template <>                                                             \
+  void HardSwish<T, CUDAContext>(                                         \
+      const int N, const T* x, T* y, CUDAContext* ctx) {                  \
+    _HardSwish<math::ScalarType<T>::type, math::AccumulatorType<T>::type> \
+        <<<CUDA_BLOCKS(N), CUDA_THREADS, 0, ctx->cuda_stream()>>>(        \
+            N,                                                            \
+            reinterpret_cast<const math::ScalarType<T>::type*>(x),        \
+            reinterpret_cast<math::ScalarType<T>::type*>(y));             \
   }
 
-#define DEFINE_GRAD_KERNEL_LAUNCHER(T)                                       \
-  template <>                                                                \
-  void HardSwishGrad<T, CUDAContext>(                                        \
-      const int N, const T* dy, const T* x, T* dx, CUDAContext* ctx) {       \
-    _HardSwishGrad<math::ScalarType<T>::type, math::AccmulatorType<T>::type> \
-        <<<CUDA_BLOCKS(N), CUDA_THREADS, 0, ctx->cuda_stream()>>>(           \
-            N,                                                               \
-            reinterpret_cast<const math::ScalarType<T>::type*>(dy),          \
-            reinterpret_cast<const math::ScalarType<T>::type*>(x),           \
-            reinterpret_cast<math::ScalarType<T>::type*>(dx));               \
+#define DEFINE_GRAD_KERNEL_LAUNCHER(T)                                        \
+  template <>                                                                 \
+  void HardSwishGrad<T, CUDAContext>(                                         \
+      const int N, const T* dy, const T* x, T* dx, CUDAContext* ctx) {        \
+    _HardSwishGrad<math::ScalarType<T>::type, math::AccumulatorType<T>::type> \
+        <<<CUDA_BLOCKS(N), CUDA_THREADS, 0, ctx->cuda_stream()>>>(            \
+            N,                                                                \
+            reinterpret_cast<const math::ScalarType<T>::type*>(dy),           \
+            reinterpret_cast<const math::ScalarType<T>::type*>(x),            \
+            reinterpret_cast<math::ScalarType<T>::type*>(dx));                \
   }
 
 DEFINE_KERNEL_LAUNCHER(float16);

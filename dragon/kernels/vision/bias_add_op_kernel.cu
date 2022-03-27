@@ -37,35 +37,35 @@ __global__ void _BiasAdd(
 
 /* ------------------- Launcher Separator ------------------- */
 
-#define DEFINE_KERNEL_LAUNCHER(T)                                        \
-  template <>                                                            \
-  void BiasAdd<T, CUDAContext>(                                          \
-      const int N,                                                       \
-      const int S,                                                       \
-      const int C,                                                       \
-      const T* x,                                                        \
-      const T* bias,                                                     \
-      T* y,                                                              \
-      CUDAContext* ctx) {                                                \
-    const auto NxCxS = N * C * S;                                        \
-    if (S == 1) {                                                        \
-      _BiasAdd<math::ScalarType<T>::type, math::AccmulatorType<T>::type> \
-          <<<CUDA_BLOCKS(NxCxS), CUDA_THREADS, 0, ctx->cuda_stream()>>>( \
-              NxCxS,                                                     \
-              C,                                                         \
-              reinterpret_cast<const math::ScalarType<T>::type*>(x),     \
-              reinterpret_cast<const math::ScalarType<T>::type*>(bias),  \
-              reinterpret_cast<math::ScalarType<T>::type*>(y));          \
-    } else {                                                             \
-      _BiasAdd<math::ScalarType<T>::type, math::AccmulatorType<T>::type> \
-          <<<CUDA_BLOCKS(NxCxS), CUDA_THREADS, 0, ctx->cuda_stream()>>>( \
-              NxCxS,                                                     \
-              S,                                                         \
-              C,                                                         \
-              reinterpret_cast<const math::ScalarType<T>::type*>(x),     \
-              reinterpret_cast<const math::ScalarType<T>::type*>(bias),  \
-              reinterpret_cast<math::ScalarType<T>::type*>(y));          \
-    }                                                                    \
+#define DEFINE_KERNEL_LAUNCHER(T)                                         \
+  template <>                                                             \
+  void BiasAdd<T, CUDAContext>(                                           \
+      const int N,                                                        \
+      const int S,                                                        \
+      const int C,                                                        \
+      const T* x,                                                         \
+      const T* bias,                                                      \
+      T* y,                                                               \
+      CUDAContext* ctx) {                                                 \
+    const auto NxCxS = N * C * S;                                         \
+    if (S == 1) {                                                         \
+      _BiasAdd<math::ScalarType<T>::type, math::AccumulatorType<T>::type> \
+          <<<CUDA_BLOCKS(NxCxS), CUDA_THREADS, 0, ctx->cuda_stream()>>>(  \
+              NxCxS,                                                      \
+              C,                                                          \
+              reinterpret_cast<const math::ScalarType<T>::type*>(x),      \
+              reinterpret_cast<const math::ScalarType<T>::type*>(bias),   \
+              reinterpret_cast<math::ScalarType<T>::type*>(y));           \
+    } else {                                                              \
+      _BiasAdd<math::ScalarType<T>::type, math::AccumulatorType<T>::type> \
+          <<<CUDA_BLOCKS(NxCxS), CUDA_THREADS, 0, ctx->cuda_stream()>>>(  \
+              NxCxS,                                                      \
+              S,                                                          \
+              C,                                                          \
+              reinterpret_cast<const math::ScalarType<T>::type*>(x),      \
+              reinterpret_cast<const math::ScalarType<T>::type*>(bias),   \
+              reinterpret_cast<math::ScalarType<T>::type*>(y));           \
+    }                                                                     \
   }
 
 DEFINE_KERNEL_LAUNCHER(uint8_t);

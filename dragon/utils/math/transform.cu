@@ -65,12 +65,18 @@ void _AffineImpl(
     T* y,
     CUDAContext* ctx) {
   const auto N = math::utils::Prod(num_dims, dims);
-  if (num_dims == 2 && num_axes == 1 && axes[0] == 1) {
+  if (num_dims == 1 && num_axes == 1 && axes[0] == 0) {
     _AffineChannel<<<CUDA_BLOCKS(N), CUDA_THREADS, 0, ctx->cuda_stream()>>>(
-        N, dims[1], x, scale, bias, y);
+        N, dims[0], x, scale, bias, y); // [NxC]
+  } else if (num_dims == 2 && num_axes == 1 && axes[0] == 1) {
+    _AffineChannel<<<CUDA_BLOCKS(N), CUDA_THREADS, 0, ctx->cuda_stream()>>>(
+        N, dims[1], x, scale, bias, y); // [N, C]
+  } else if (num_dims == 2 && num_axes == 1 && axes[0] == 0) {
+    _AffineChannel<<<CUDA_BLOCKS(N), CUDA_THREADS, 0, ctx->cuda_stream()>>>(
+        N, dims[0], dims[1], x, scale, bias, y); // [NxC, S]
   } else if (num_dims == 3 && num_axes == 1 && axes[0] == 1) {
     _AffineChannel<<<CUDA_BLOCKS(N), CUDA_THREADS, 0, ctx->cuda_stream()>>>(
-        N, dims[1], dims[2], x, scale, bias, y);
+        N, dims[1], dims[2], x, scale, bias, y); // [N, C, S]
   } else {
     LOG(FATAL) << "Unsupported affine dimensions.";
   }

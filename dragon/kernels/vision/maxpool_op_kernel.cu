@@ -472,7 +472,7 @@ __global__ void _MaxPool3dGradNHWC(
     DISPATCH_POOL_KERNEL(                                      \
         _##name,                                               \
         math::ScalarType<T>::type,                             \
-        math::AccmulatorType<T>::type,                         \
+        math::AccumulatorType<T>::type,                        \
         CUDA_BLOCKS(nthreads),                                 \
         CUDA_THREADS,                                          \
         nthreads,                                              \
@@ -529,7 +529,7 @@ DEFINE_KERNEL_LAUNCHER(MaxPool2dGrad, double, (H * W)); // MaxPool2dGrad
     DISPATCH_POOL_KERNEL(                                      \
         _##name,                                               \
         math::ScalarType<T>::type,                             \
-        math::AccmulatorType<T>::type,                         \
+        math::AccumulatorType<T>::type,                        \
         CUDA_BLOCKS(nthreads),                                 \
         CUDA_THREADS,                                          \
         nthreads,                                              \

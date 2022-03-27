@@ -38,40 +38,40 @@ void _SeluGrad(
 
 /* ------------------- Launcher Separator ------------------- */
 
-#define DEFINE_KERNEL_LAUNCHER(T)                          \
-  template <>                                              \
-  void Selu<T, CPUContext>(                                \
-      const int N,                                         \
-      const float alpha,                                   \
-      const float gamma,                                   \
-      const T* x,                                          \
-      T* y,                                                \
-      CPUContext* ctx) {                                   \
-    _Selu(                                                 \
-        N,                                                 \
-        convert::To<math::AccmulatorType<T>::type>(alpha), \
-        convert::To<math::AccmulatorType<T>::type>(gamma), \
-        x,                                                 \
-        y);                                                \
+#define DEFINE_KERNEL_LAUNCHER(T)                           \
+  template <>                                               \
+  void Selu<T, CPUContext>(                                 \
+      const int N,                                          \
+      const float alpha,                                    \
+      const float gamma,                                    \
+      const T* x,                                           \
+      T* y,                                                 \
+      CPUContext* ctx) {                                    \
+    _Selu(                                                  \
+        N,                                                  \
+        convert::To<math::AccumulatorType<T>::type>(alpha), \
+        convert::To<math::AccumulatorType<T>::type>(gamma), \
+        x,                                                  \
+        y);                                                 \
   }
 
-#define DEFINE_GRAD_KERNEL_LAUNCHER(T)                     \
-  template <>                                              \
-  void SeluGrad<T, CPUContext>(                            \
-      const int N,                                         \
-      const float alpha,                                   \
-      const float gamma,                                   \
-      const T* dy,                                         \
-      const T* y,                                          \
-      T* dx,                                               \
-      CPUContext* ctx) {                                   \
-    _SeluGrad(                                             \
-        N,                                                 \
-        convert::To<math::AccmulatorType<T>::type>(alpha), \
-        convert::To<math::AccmulatorType<T>::type>(gamma), \
-        dy,                                                \
-        y,                                                 \
-        dx);                                               \
+#define DEFINE_GRAD_KERNEL_LAUNCHER(T)                      \
+  template <>                                               \
+  void SeluGrad<T, CPUContext>(                             \
+      const int N,                                          \
+      const float alpha,                                    \
+      const float gamma,                                    \
+      const T* dy,                                          \
+      const T* y,                                           \
+      T* dx,                                                \
+      CPUContext* ctx) {                                    \
+    _SeluGrad(                                              \
+        N,                                                  \
+        convert::To<math::AccumulatorType<T>::type>(alpha), \
+        convert::To<math::AccumulatorType<T>::type>(gamma), \
+        dy,                                                 \
+        y,                                                  \
+        dx);                                                \
   }
 
 DEFINE_KERNEL_LAUNCHER(float16);

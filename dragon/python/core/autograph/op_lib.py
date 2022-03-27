@@ -213,11 +213,6 @@ class OpLib(object):
                 for output in outputs:
                     output._requires_grad = False
 
-        # Ensure the named operator for the tracing graph.
-        if hasattr(graph_tape, '_tracing') and not op_name:
-            op_def.name = op_name = execute_ws.create_handle(op_def.type)
-            graph_tape.add_handle(op_name)
-
         # Emit to dispatch this execution.
         for feed_key, value_type in run_config['feed_dict'].items():
             dest = execute_ws.create_tensor(op_name + '/' + feed_key)

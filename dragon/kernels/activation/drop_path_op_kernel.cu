@@ -62,7 +62,7 @@ __global__ void _DropPathGrad(
     _DropPath<<<CUDA_BLOCKS(NxC), CUDA_THREADS, 0, ctx->cuda_stream()>>>( \
         NxC,                                                              \
         C,                                                                \
-        convert::To<math::AccmulatorType<T>::type>(scale),                \
+        convert::To<math::AccumulatorType<T>::type>(scale),               \
         static_cast<uint32_t>(UINT_MAX * ratio),                          \
         r,                                                                \
         reinterpret_cast<const math::ScalarType<T>::type*>(x),            \
@@ -84,7 +84,7 @@ __global__ void _DropPathGrad(
     _DropPathGrad<<<CUDA_BLOCKS(NxC), CUDA_THREADS, 0, ctx->cuda_stream()>>>( \
         NxC,                                                                  \
         C,                                                                    \
-        convert::To<math::AccmulatorType<T>::type>(scale),                    \
+        convert::To<math::AccumulatorType<T>::type>(scale),                   \
         mask,                                                                 \
         reinterpret_cast<const math::ScalarType<T>::type*>(dy),               \
         reinterpret_cast<math::ScalarType<T>::type*>(dx));                    \

@@ -7,7 +7,7 @@ namespace dragon {
 template <class Context>
 template <typename T>
 void MomentsOp<Context>::DoRunWithType() {
-  using OutputT = typename math::AccmulatorType<T>::type;
+  using OutputT = typename math::AccumulatorType<T>::type;
   auto &X = Input(0), *Y1 = Output(0), *Y2 = Output(1);
 
   // Compute reduce axes.

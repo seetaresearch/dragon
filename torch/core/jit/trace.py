@@ -39,13 +39,14 @@ class FunctionGuard(function_lib.FunctionGuard):
                 if not isinstance(input, Tensor) and input_spec is None:
                     inputs.append(input)
                     continue
-                shape = getattr(input, 'shape', None)
-                dtype = getattr(input, 'dtype', None)
-                device = getattr(input, 'device', None)
-                if input_spec is not None:
-                    device = input_spec['device']
-                    shape, dtype = input_spec['shape'], input_spec['dtype']
-                inputs.append(Tensor(*shape, dtype=dtype, device=device))
+                input_spec = input_spec or {}
+                for k in ('shape', 'dtype', 'device'):
+                    input_spec[k] = getattr(input, k, input_spec.get(k, None))
+                inputs.append(Tensor(*input_spec['shape'],
+                                     dtype=input_spec['dtype'],
+                                     device=input_spec['device']))
+                if isinstance(input, Tensor):
+                    inputs[-1].copy_(input)
             with tapes.Tape() as function_tape:
                 function_tape._tracing = True
                 attributes['inputs'] = inputs

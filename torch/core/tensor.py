@@ -3299,7 +3299,6 @@ class Tensor(object):
 
     def __del__(self):
         if self._deleter:
-            # print(self._impl.name)
             self._deleter.release(self._impl.name)
 
     def __eq__(self, other):

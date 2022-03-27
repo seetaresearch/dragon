@@ -40,19 +40,19 @@ class ScalarType<float16> {
 #endif
 
 template <typename T>
-class AccmulatorType {
+class AccumulatorType {
  public:
   typedef float type;
 };
 
 template <>
-class AccmulatorType<int64_t> {
+class AccumulatorType<int64_t> {
  public:
   typedef double type;
 };
 
 template <>
-class AccmulatorType<double> {
+class AccumulatorType<double> {
  public:
   typedef double type;
 };

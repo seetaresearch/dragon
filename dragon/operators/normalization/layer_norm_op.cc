@@ -7,7 +7,7 @@ namespace dragon {
 template <class Context>
 template <typename T>
 void LayerNormOp<Context>::DoRunWithType() {
-  using ParamT = typename math::AccmulatorType<T>::type;
+  using ParamT = typename math::AccumulatorType<T>::type;
   auto &X = Input(0), *Y = Output(0);
   auto &W = Input(1), &B = Input(2);
   GET_OP_AXIS_ARG(axis, X.ndim(), -1);

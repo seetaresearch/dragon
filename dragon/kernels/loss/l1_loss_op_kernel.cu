@@ -42,7 +42,7 @@ __global__ void _SmoothL1Grad(const int N, const AccT beta, const T* x, T* y) {
       const int N, const float beta, const T* x, T* y, CUDAContext* ctx) { \
     _##name<<<CUDA_BLOCKS(N), CUDA_THREADS, 0, ctx->cuda_stream()>>>(      \
         N,                                                                 \
-        convert::To<math::AccmulatorType<T>::type>(beta),                  \
+        convert::To<math::AccumulatorType<T>::type>(beta),                 \
         reinterpret_cast<const math::ScalarType<T>::type*>(x),             \
         reinterpret_cast<math::ScalarType<T>::type*>(y));                  \
   }

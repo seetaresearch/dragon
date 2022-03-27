@@ -169,6 +169,12 @@ def is_nccl_available():
     return _b.ncclIsAvailable()
 
 
+def finalize():
+    """Finalize the distributed environment."""
+    global _GLOBAL_MPI_CONTEXT
+    _GLOBAL_MPI_CONTEXT = None
+
+
 def get_backend(group):
     """Return the backend of given process group.
 

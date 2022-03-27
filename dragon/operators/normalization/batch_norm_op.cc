@@ -8,7 +8,7 @@ namespace dragon {
 template <class Context>
 template <typename T>
 void BatchNormOp<Context>::RunTraining() {
-  using ParamT = typename math::AccmulatorType<T>::type;
+  using ParamT = typename math::AccumulatorType<T>::type;
   INITIALIZE_TENSOR_VIA_SPEC(Input(1), vec64_t({C_}), ParamT);
   INITIALIZE_TENSOR_VIA_SPEC(Input(2), vec64_t({C_}), ParamT);
   INITIALIZE_TENSOR_VIA_SPEC(Input(3), vec64_t({C_}), ParamT);
@@ -99,7 +99,7 @@ void BatchNormOp<Context>::RunTraining() {
 template <class Context>
 template <typename T>
 void BatchNormOp<Context>::RunInference() {
-  using ParamT = typename math::AccmulatorType<T>::type;
+  using ParamT = typename math::AccumulatorType<T>::type;
   INITIALIZE_TENSOR_VIA_SPEC(Input(1), vec64_t({C_}), ParamT);
   INITIALIZE_TENSOR_VIA_SPEC(Input(2), vec64_t({C_}), ParamT);
   INITIALIZE_TENSOR_VIA_SPEC(Input(3), vec64_t({C_}), ParamT);
@@ -132,7 +132,7 @@ void BatchNormOp<Context>::RunInference() {
 template <class Context>
 template <typename T>
 void BatchNormGradientOp<Context>::RunTraining() {
-  using ParamT = typename math::AccmulatorType<T>::type;
+  using ParamT = typename math::AccumulatorType<T>::type;
   auto *dX = Output(0), *dW = Output(1), *dB = Output(2);
   auto &X_mu = Input("X_mu"), &X_rsig = Input("X_rsig");
   auto* X_params = Output("X_params")->Reshape({C_ * 2});
@@ -213,7 +213,7 @@ void BatchNormGradientOp<Context>::RunTraining() {
 template <class Context>
 template <typename T>
 void BatchNormGradientOp<Context>::RunInference() {
-  using ParamT = typename math::AccmulatorType<T>::type;
+  using ParamT = typename math::AccumulatorType<T>::type;
   auto *dX = Output(0), *dW = Output(1), *dB = Output(2);
   auto* X_params = Output("X_params")->Reshape({C_});
 

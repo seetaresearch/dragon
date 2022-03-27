@@ -54,10 +54,14 @@ void _AffineImpl(
     const T* scale,
     const T* bias,
     T* y) {
-  if (num_dims == 2 && num_axes == 1 && axes[0] == 1) {
-    _AffineChannel(dims[0], dims[1], x, scale, bias, y);
+  if (num_dims == 1 && num_dims == 1 && axes[0] == 0) {
+    _AffineChannel(1, dims[0], x, scale, bias, y); // [NxC]
+  } else if (num_dims == 2 && num_axes == 1 && axes[0] == 1) {
+    _AffineChannel(dims[0], dims[1], x, scale, bias, y); // [N, C]
+  } else if (num_dims == 2 && num_axes == 1 && axes[0] == 0) {
+    _AffineChannel(1, dims[0], dims[1], x, scale, bias, y); // [NxC, S]
   } else if (num_dims == 3 && num_axes == 1 && axes[0] == 1) {
-    _AffineChannel(dims[0], dims[1], dims[2], x, scale, bias, y);
+    _AffineChannel(dims[0], dims[1], dims[2], x, scale, bias, y); // [N, C, S]
   } else {
     LOG(FATAL) << "Unsupported affine dimensions.";
   }

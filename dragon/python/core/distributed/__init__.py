@@ -14,6 +14,7 @@ from __future__ import division
 from __future__ import print_function
 
 from dragon.core.distributed.backend import is_initialized
+from dragon.core.distributed.backend import finalize
 from dragon.core.distributed.backend import get_backend
 from dragon.core.distributed.backend import get_group
 from dragon.core.distributed.backend import get_rank

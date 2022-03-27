@@ -77,7 +77,7 @@ __global__ void _BroadcastLossGrad(
       T* dx,                                                           \
       CUDAContext* ctx) {                                              \
     using ScalarT = math::ScalarType<T>::type;                         \
-    using AccT = math::AccmulatorType<T>::type;                        \
+    using AccT = math::AccumulatorType<T>::type;                       \
     if (num_masks > 0 && normalizer < 0.f) {                           \
       auto* num_valid = const_cast<T*>(mask + num_masks);              \
       math::Sum(num_masks, 1.f, mask, num_valid, ctx);                 \
@@ -105,7 +105,7 @@ __global__ void _BroadcastLossGrad(
       T* dx,                                                           \
       CUDAContext* ctx) {                                              \
     using ScalarT = math::ScalarType<T>::type;                         \
-    using AccT = math::AccmulatorType<T>::type;                        \
+    using AccT = math::AccumulatorType<T>::type;                       \
     const auto CxS = C * S;                                            \
     const auto NxCxS = N * CxS;                                        \
     _BroadcastLossGrad<ScalarT, AccT>                                  \

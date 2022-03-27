@@ -147,7 +147,7 @@ class DRAGON_API Tensor {
     } else {
       auto* new_memory = other->memory();
       if (new_memory != nullptr) {
-        CHECK_LE(size_, new_memory->size())
+        CHECK_LE(size_ * meta_.itemsize(), new_memory->size())
             << "\nMap from a memory with smaller capacity.";
         mapped_memory_ = new_memory;
         capacity_ = new_memory->size();

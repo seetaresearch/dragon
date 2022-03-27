@@ -70,12 +70,12 @@ void _ReduceSumGradImpl(
     DISPATCH_FUNC_BY_VALUE_WITH_TYPE_2(                         \
         _ReduceSumGradImpl,                                     \
         math::ScalarType<T>::type,                              \
-        math::AccmulatorType<T>::type,                          \
+        math::AccumulatorType<T>::type,                         \
         num_dims,                                               \
         x_dims,                                                 \
         y_dims,                                                 \
         y_strides,                                              \
-        convert::To<math::AccmulatorType<T>::type>(scale),      \
+        convert::To<math::AccumulatorType<T>::type>(scale),     \
         reinterpret_cast<const math::ScalarType<T>::type*>(dy), \
         reinterpret_cast<math::ScalarType<T>::type*>(dx),       \
         ctx);                                                   \

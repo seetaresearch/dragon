@@ -49,8 +49,8 @@ __global__ void _HardSigmoidGrad(
       CUDAContext* ctx) {                                                  \
     _HardSigmoid<<<CUDA_BLOCKS(N), CUDA_THREADS, 0, ctx->cuda_stream()>>>( \
         N,                                                                 \
-        convert::To<math::AccmulatorType<T>::type>(alpha),                 \
-        convert::To<math::AccmulatorType<T>::type>(beta),                  \
+        convert::To<math::AccumulatorType<T>::type>(alpha),                \
+        convert::To<math::AccumulatorType<T>::type>(beta),                 \
         reinterpret_cast<const math::ScalarType<T>::type*>(x),             \
         reinterpret_cast<math::ScalarType<T>::type*>(y));                  \
   }
@@ -66,7 +66,7 @@ __global__ void _HardSigmoidGrad(
       CUDAContext* ctx) {                                                      \
     _HardSigmoidGrad<<<CUDA_BLOCKS(N), CUDA_THREADS, 0, ctx->cuda_stream()>>>( \
         N,                                                                     \
-        convert::To<math::AccmulatorType<T>::type>(alpha),                     \
+        convert::To<math::AccumulatorType<T>::type>(alpha),                    \
         reinterpret_cast<const math::ScalarType<T>::type*>(dy),                \
         reinterpret_cast<const math::ScalarType<T>::type*>(y),                 \
         reinterpret_cast<math::ScalarType<T>::type*>(dx));                     \

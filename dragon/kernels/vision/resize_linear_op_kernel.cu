@@ -49,7 +49,7 @@ __global__ void _ResizeLinear2dNCHW(
     const int w_out = yi % out_w;
     const int h_out = (yi / out_w) % out_h;
     const int c = (yi / out_w / out_h) % C;
-    const int n = yi / out_w / out_w / C;
+    const int n = yi / out_w / out_h / C;
 
     const float h = TransformCoordinate(h_out, scale_h, align_corners);
     const float w = TransformCoordinate(w_out, scale_w, align_corners);
@@ -129,7 +129,7 @@ __global__ void _ResizeLinear2dGradNCHW(
     const int w_out = yi % out_w;
     const int h_out = (yi / out_w) % out_h;
     const int c = (yi / out_w / out_h) % C;
-    const int n = yi / out_w / out_w / C;
+    const int n = yi / out_w / out_h / C;
 
     const float h = TransformCoordinate(h_out, scale_h, align_corners);
     const float w = TransformCoordinate(w_out, scale_w, align_corners);

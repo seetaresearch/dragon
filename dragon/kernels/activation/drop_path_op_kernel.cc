@@ -25,33 +25,33 @@ void _DropPath(
 
 /* ------------------- Launcher Separator ------------------- */
 
-#define DEFINE_KERNEL_LAUNCHER(T)                                      \
-  template <>                                                          \
-  void DropPath<T, CPUContext>(                                        \
-      const int N,                                                     \
-      const int C,                                                     \
-      const float ratio,                                               \
-      const float scale,                                               \
-      const T* x,                                                      \
-      T* y,                                                            \
-      uint8_t* mask,                                                   \
-      uint32_t* /* r */,                                               \
-      CPUContext* ctx) {                                               \
-    math::RandomBernoulli(N, 1.f - ratio, mask, ctx);                  \
-    _DropPath(N, C, math::AccmulatorType<T>::type(scale), mask, x, y); \
+#define DEFINE_KERNEL_LAUNCHER(T)                                       \
+  template <>                                                           \
+  void DropPath<T, CPUContext>(                                         \
+      const int N,                                                      \
+      const int C,                                                      \
+      const float ratio,                                                \
+      const float scale,                                                \
+      const T* x,                                                       \
+      T* y,                                                             \
+      uint8_t* mask,                                                    \
+      uint32_t* /* r */,                                                \
+      CPUContext* ctx) {                                                \
+    math::RandomBernoulli(N, 1.f - ratio, mask, ctx);                   \
+    _DropPath(N, C, math::AccumulatorType<T>::type(scale), mask, x, y); \
   }
 
-#define DEFINE_GRAD_KERNEL_LAUNCHER(T)                                   \
-  template <>                                                            \
-  void DropPathGrad<T, CPUContext>(                                      \
-      const int N,                                                       \
-      const int C,                                                       \
-      const float scale,                                                 \
-      const uint8_t* mask,                                               \
-      const T* dy,                                                       \
-      T* dx,                                                             \
-      CPUContext* ctx) {                                                 \
-    _DropPath(N, C, math::AccmulatorType<T>::type(scale), mask, dy, dx); \
+#define DEFINE_GRAD_KERNEL_LAUNCHER(T)                                    \
+  template <>                                                             \
+  void DropPathGrad<T, CPUContext>(                                       \
+      const int N,                                                        \
+      const int C,                                                        \
+      const float scale,                                                  \
+      const uint8_t* mask,                                                \
+      const T* dy,                                                        \
+      T* dx,                                                              \
+      CPUContext* ctx) {                                                  \
+    _DropPath(N, C, math::AccumulatorType<T>::type(scale), mask, dy, dx); \
   }
 
 DEFINE_KERNEL_LAUNCHER(float16);
