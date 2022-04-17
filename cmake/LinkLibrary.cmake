@@ -3,7 +3,7 @@
 
 # - Link the libraries according to the project suffix hint
 #
-# The following function are defined:
+# Following function are defined:
 #
 #  target_link_libraries_v2(<target> <item>...]) - Link the libraries to target
 #  target_get_libraries(<out_variable> <target> [<keyword>...]) - Query the libraries of target

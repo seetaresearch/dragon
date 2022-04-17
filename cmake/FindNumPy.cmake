@@ -1,5 +1,5 @@
 # - Find the NumPy libraries
-# This module finds if NumPy is installed, and sets the following variables
+# This module finds if NumPy is installed, and sets Following variables
 # indicating where it is.
 #
 # TODO: Update to provide the libraries and paths for linking npymath lib.

@@ -3,7 +3,7 @@
 
 # - Strip debug information from a c/c++ target
 #
-# The following function are defined:
+# Following function are defined:
 #
 #  strip_debug_symbol(<target>) - Strip the debug symbol in the target
 #

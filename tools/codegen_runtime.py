@@ -82,7 +82,6 @@ def path_remove_gradient(project_source_dir):
     FileWriter().apply_regex(
         glob_recurse(operators_dir, '.cc'), [
             r'DEPLOY_.+[(].*Gradient[)][;]',
-            r'OPERATOR_SCHEMA[(].+Gradient.*[)][\s\S]*?[;]',
             r'REGISTER_GRADIENT[(].+[)][;]',
             r'class GradientMaker[\s\S]*[;]',
         ]
@@ -90,14 +89,10 @@ def path_remove_gradient(project_source_dir):
 
 
 if __name__ == '__main__':
-    path_remove_gradient('/Users/neo/workspace/dragon/dragon')
-    while True:
-        pass
     if len(sys.argv) != 3:
         raise ValueError('Usage: codegen.py '
                          '<PROJECT_SOURCE_DIR> <PATH_NAME>')
     project_source_dir, path_name = sys.argv[1:]
-
     if path_name == 'REMOVE_GRADIENT':
         path_remove_gradient(project_source_dir)
     else:

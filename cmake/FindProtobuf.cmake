@@ -3,12 +3,12 @@
 
 # - Find the protobuf libraries
 #
-# The Following variables can be set and are optional:
+# Following variables can be set and are optional:
 #
 #  PROTOBUF_SDK_ROOT_DIR      - The root dir of protobuf sdk
 #  PROTOBUF_PROTOC_EXECUTABLE - The protoc compiler
 # 
-# The following function are defined:
+# Following function are defined:
 #
 #  protobuf_generate_cpp(<proto_file>...)    - Process the proto to C++ sources
 #  protobuf_generate_lite(<proto_file>...)   - Process the proto to Lite sources

@@ -1,7 +1,7 @@
 # - Find python libraries
 # This module finds the libraries corresponding to the Python interpreter
 # FindPythonInterp provides.
-# This code sets the following variables:
+# This code sets Following variables:
 #
 #  PYTHONLIBS_FOUND           - have the Python libs been found
 #  PYTHON_PREFIX              - path to the Python installation
@@ -22,14 +22,14 @@
 # All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without
-# modification, are permitted provided that the following conditions
+# modification, are permitted provided that Following conditions
 # are met:
 #
 # * Redistributions of source code must retain the above copyright
-# notice, this list of conditions and the following disclaimer.
+# notice, this list of conditions and Following disclaimer.
 #
 # * Redistributions in binary form must reproduce the above copyright
-# notice, this list of conditions and the following disclaimer in the
+# notice, this list of conditions and Following disclaimer in the
 # documentation and/or other materials provided with the distribution.
 #
 # * Neither the names of Kitware, Inc., the Insight Software Consortium,
