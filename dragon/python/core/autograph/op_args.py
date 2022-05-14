@@ -494,7 +494,8 @@ def roi_align_args(**kwargs):
         'pooled_h': kwargs.get('pooled_h', 7),
         'pooled_w': kwargs.get('pooled_w', 7),
         'spatial_scale': kwargs.get('spatial_scale', 1.0),
-        'sampling_ratio': kwargs.get('sampling_ratio', 2),
+        'sampling_ratio': kwargs.get('sampling_ratio', 0),
+        'aligned': kwargs.get('aligned', False),
     }
 
 

@@ -1384,7 +1384,8 @@ def roi_align(
     pooled_h,
     pooled_w,
     spatial_scale=1.0,
-    sampling_ratio=2,
+    sampling_ratio=-1,
+    aligned=False,
     **kwargs
 ):
     r"""Apply the average roi align.
@@ -1412,8 +1413,10 @@ def roi_align(
         The output width.
     spatial_scale : float, optional, default=1.0
         The input scale to the size of ``rois``.
-    sampling_ratio : int, optional, default=2
+    sampling_ratio : int, optional, default=-1
         The number of sampling grids for ``rois``.
+    aligned : bool, optional, default=False
+        Whether to shift the input coordinates by ``-0.5``.
 
     Returns
     -------
@@ -1429,12 +1432,14 @@ def roi_align(
             pooled_h=pooled_h,
             pooled_w=pooled_w,
             spatial_scale=spatial_scale,
-            sampling_ratio=sampling_ratio)
+            sampling_ratio=sampling_ratio,
+            aligned=aligned)
     return OpLib.add('RoiAlign', inputs,
                      pooled_h=pooled_h,
                      pooled_w=pooled_w,
                      spatial_scale=spatial_scale,
                      sampling_ratio=sampling_ratio,
+                     aligned=aligned,
                      **kwargs)
 
 

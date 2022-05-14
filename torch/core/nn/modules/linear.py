@@ -69,9 +69,9 @@ class Affine(Module):
         bias : bool, optional, default=True
             ``True`` to attach a bias.
         fix_weight : bool, optional, default=False
-            ``True`` to frozen the ``weight``.
+            ``True`` to freeze the ``weight``.
         fix_bias : bool, optional, default=False
-            ``True`` to frozen the ``bias``.
+            ``True`` to freeze the ``bias``.
         inplace : bool, optional, default=False
             Whether to do the operation in-place.
 

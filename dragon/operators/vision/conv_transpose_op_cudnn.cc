@@ -34,13 +34,19 @@ void CuDNNConvTransposeOp<Context>::SetOpDesc() {
     fwd_algo_ = ConvAlgoSearch<FwdAlgo>().get_deterministic();
     return;
   }
-  fwd_algo_ = ConvAlgoSearch<FwdAlgo>().get(
-      ctx()->cudnn_handle(),
-      filter_desc_,
-      input_desc_,
-      conv_desc_,
-      output_desc_,
-      scratch_max_size_);
+  auto fn = [&]() {
+    return std::tuple<FwdAlgo, float>(
+        ConvAlgoSearch<FwdAlgo>().get(
+            ctx()->cudnn_handle(),
+            filter_desc_,
+            input_desc_,
+            conv_desc_,
+            output_desc_,
+            scratch_max_size_),
+        0.f);
+  };
+  auto result = fwd_algo_cache_.get(X.dims(), W.dims(), compute_type_, fn);
+  fwd_algo_ = std::get<0>(result);
 }
 
 template <class Context>
@@ -154,20 +160,36 @@ void CuDNNConvTransposeGradientOp<Context>::SetOpDesc() {
     bwd_filter_algo_ = ConvAlgoSearch<BwdFilterAlgo>().get_deterministic();
     return;
   }
-  bwd_data_algo_ = ConvAlgoSearch<BwdDataAlgo>().get(
-      ctx()->cudnn_handle(),
-      input_desc_,
-      filter_desc_,
-      conv_desc_,
-      output_desc_,
-      scratch_max_size_);
-  bwd_filter_algo_ = ConvAlgoSearch<BwdFilterAlgo>().get(
-      ctx()->cudnn_handle(),
-      input_desc_,
-      output_desc_,
-      conv_desc_,
-      filter_desc_,
-      scratch_max_size_);
+  {
+    auto fn = [&]() {
+      return std::tuple<BwdDataAlgo, float>(
+          ConvAlgoSearch<BwdDataAlgo>().get(
+              ctx()->cudnn_handle(),
+              input_desc_,
+              filter_desc_,
+              conv_desc_,
+              output_desc_,
+              scratch_max_size_),
+          0.f);
+    };
+    auto result = data_algo_cache_.get(X.dims(), W.dims(), compute_type_, fn);
+    bwd_data_algo_ = std::get<0>(result);
+  }
+  {
+    auto fn = [&]() {
+      return std::tuple<BwdFilterAlgo, float>(
+          ConvAlgoSearch<BwdFilterAlgo>().get(
+              ctx()->cudnn_handle(),
+              input_desc_,
+              output_desc_,
+              conv_desc_,
+              filter_desc_,
+              scratch_max_size_),
+          0.f);
+    };
+    auto result = filter_algo_cache_.get(X.dims(), W.dims(), compute_type_, fn);
+    bwd_filter_algo_ = std::get<0>(result);
+  }
 }
 
 template <class Context>

@@ -21,15 +21,11 @@ void RoiAlignOp<Context>::DoRunWithType() {
       RoI.dim(0),
       spatial_scale_,
       sampling_ratio_,
+      aligned_ > 0,
       X.template data<T, Context>(),
       RoI.template data<float, Context>(),
       Y->template mutable_data<T, Context>(),
       ctx());
-}
-
-template <class Context>
-void RoiAlignOp<Context>::RunOnDevice() {
-  DispatchHelper<dtypes::Floating>::Call(this, Input(0));
 }
 
 template <class Context>
@@ -60,6 +56,7 @@ void RoiAlignGradientOp<Context>::DoRunWithType() {
       RoI.dim(0),
       spatial_scale_,
       sampling_ratio_,
+      aligned_ > 0,
       dY.template data<T, Context>(),
       RoI.template data<float, Context>(),
       dx_acc != nullptr ? dx_acc : reinterpret_cast<float*>(dx),
@@ -69,11 +66,6 @@ void RoiAlignGradientOp<Context>::DoRunWithType() {
   if (dx_acc != nullptr) {
     math::Cast(dX->count(), dx_acc, dx, ctx());
   }
-}
-
-template <class Context>
-void RoiAlignGradientOp<Context>::RunOnDevice() {
-  DispatchHelper<dtypes::Floating>::Call(this, Input(1));
 }
 
 DEPLOY_CPU_OPERATOR(RoiAlign);

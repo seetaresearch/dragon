@@ -28,12 +28,14 @@ void BatchNormOp<Context>::RunTraining() {
   // Compute moments.
   if (sync_stats_ > 0) {
 #ifdef USE_MPI
+    int64_t N = N_;
+    AllReduce(&N, &N, 1);
     // Compute E(X) and E(X^2)
     kernels::BatchNormExpectation(
         N_,
         C_,
         S_,
-        float(N_ * S_ * comm_size_),
+        float(N * S_),
         data_format(),
         x,
         params,
@@ -166,8 +168,10 @@ void BatchNormGradientOp<Context>::RunTraining() {
         ctx());
   }
 
+  int64_t N = N_; // Total batch size.
   if (sync_stats_ > 0) {
 #ifdef USE_MPI
+    AllReduce(&N, &N, 1);
     ctx()->FinishDeviceComputation();
     if (enable_nccl_) {
 #ifdef USE_NCCL
@@ -192,11 +196,7 @@ void BatchNormGradientOp<Context>::RunTraining() {
         N_,
         C_,
         S_,
-#ifdef USE_MPI
-        float(N_ * S_ * comm_size_),
-#else
-        float(N_ * S_),
-#endif
+        float(N * S_),
         data_format(),
         x,
         mu,

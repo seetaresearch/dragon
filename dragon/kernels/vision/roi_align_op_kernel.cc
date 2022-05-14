@@ -53,6 +53,7 @@ void _RoiAlign(
     const int num_rois,
     const float spatial_scale,
     const int sampling_ratio,
+    const bool aligned,
     const T* x,
     const float* rois,
     T* y) {
@@ -71,13 +72,16 @@ void _RoiAlign(
       continue;
     }
 
-    const float roi_wstart = roi[1] * spatial_scale;
-    const float roi_hstart = roi[2] * spatial_scale;
-    const float roi_wend = roi[3] * spatial_scale;
-    const float roi_hend = roi[4] * spatial_scale;
+    const float roi_offset = aligned ? 0.5f : 0.0f;
+    const float roi_wstart = roi[1] * spatial_scale - roi_offset;
+    const float roi_hstart = roi[2] * spatial_scale - roi_offset;
+    const float roi_wend = roi[3] * spatial_scale - roi_offset;
+    const float roi_hend = roi[4] * spatial_scale - roi_offset;
 
-    const float roi_w = std::max(roi_wend - roi_wstart, 1.f);
-    const float roi_h = std::max(roi_hend - roi_hstart, 1.f);
+    const float roi_w =
+        aligned ? roi_wend - roi_wstart : std::max(roi_wend - roi_wstart, 1.f);
+    const float roi_h =
+        aligned ? roi_hend - roi_hstart : std::max(roi_hend - roi_hstart, 1.f);
     const float bin_h = roi_h / float(out_h);
     const float bin_w = roi_w / float(out_w);
 
@@ -87,7 +91,7 @@ void _RoiAlign(
     const int grid_w = sampling_ratio > 0
         ? sampling_ratio
         : int(std::ceil(roi_w / float(out_w)));
-    const T num_grids = T(grid_h * grid_w);
+    const T num_grids = std::max(T(grid_h * grid_w), T(1));
 
     int yi;
     T val;
@@ -131,6 +135,7 @@ void RoiAlign<float16, CPUContext>(
     const int num_rois,
     const float spatial_scale,
     const int sampling_ratio,
+    const bool aligned,
     const float16* x,
     const float* rois,
     float16* y,
@@ -149,6 +154,7 @@ void RoiAlign<float16, CPUContext>(
       const int num_rois,         \
       const float spatial_scale,  \
       const int sampling_ratio,   \
+      const bool aligned,         \
       const T* x,                 \
       const float* rois,          \
       T* y,                       \
@@ -162,6 +168,7 @@ void RoiAlign<float16, CPUContext>(
         num_rois,                 \
         spatial_scale,            \
         sampling_ratio,           \
+        aligned,                  \
         x,                        \
         rois,                     \
         y);                       \
@@ -178,6 +185,7 @@ void RoiAlign<float16, CPUContext>(
       const int num_rois,              \
       const float spatial_scale,       \
       const int sampling_ratio,        \
+      const bool aligned,              \
       const T* dy,                     \
       const float* rois,               \
       float* dx,                       \

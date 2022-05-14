@@ -99,6 +99,7 @@ __global__ void _RoiAlign(
     const int out_w,
     const float spatial_scale,
     const int sampling_ratio,
+    const bool aligned,
     const T* x,
     const float* rois,
     T* y) {
@@ -116,13 +117,16 @@ __global__ void _RoiAlign(
       continue;
     }
 
-    const float roi_wstart = roi[1] * spatial_scale;
-    const float roi_hstart = roi[2] * spatial_scale;
-    const float roi_wend = roi[3] * spatial_scale;
-    const float roi_hend = roi[4] * spatial_scale;
+    const float roi_offset = aligned ? 0.5f : 0.0f;
+    const float roi_wstart = roi[1] * spatial_scale - roi_offset;
+    const float roi_hstart = roi[2] * spatial_scale - roi_offset;
+    const float roi_wend = roi[3] * spatial_scale - roi_offset;
+    const float roi_hend = roi[4] * spatial_scale - roi_offset;
 
-    const float roi_w = max(roi_wend - roi_wstart, 1.f);
-    const float roi_h = max(roi_hend - roi_hstart, 1.f);
+    const float roi_w =
+        aligned ? roi_wend - roi_wstart : max(roi_wend - roi_wstart, 1.f);
+    const float roi_h =
+        aligned ? roi_hend - roi_hstart : max(roi_hend - roi_hstart, 1.f);
     const float bin_h = roi_h / float(out_h);
     const float bin_w = roi_w / float(out_w);
 
@@ -143,7 +147,7 @@ __global__ void _RoiAlign(
         val += _RoiAlignIntp(H, W, h, w, offset_x);
       }
     }
-    y[yi] = convert::To<T>(val / AccT(grid_h * grid_w));
+    y[yi] = convert::To<T>(val / AccT(max(grid_h * grid_w, 1)));
   }
 }
 
@@ -157,6 +161,7 @@ __global__ void _RoiAlignGrad(
     const int out_w,
     const float spatial_scale,
     const int sampling_ratio,
+    const bool aligned,
     const T* dy,
     const float* rois,
     AccT* dx) {
@@ -171,13 +176,16 @@ __global__ void _RoiAlignGrad(
 
     if (batch_ind < 0) continue;
 
-    const float roi_wstart = roi[1] * spatial_scale;
-    const float roi_hstart = roi[2] * spatial_scale;
-    const float roi_wend = roi[3] * spatial_scale;
-    const float roi_hend = roi[4] * spatial_scale;
+    const float roi_offset = aligned ? 0.5f : 0.0f;
+    const float roi_wstart = roi[1] * spatial_scale - roi_offset;
+    const float roi_hstart = roi[2] * spatial_scale - roi_offset;
+    const float roi_wend = roi[3] * spatial_scale - roi_offset;
+    const float roi_hend = roi[4] * spatial_scale - roi_offset;
 
-    const float roi_w = max(roi_wend - roi_wstart, 1.f);
-    const float roi_h = max(roi_hend - roi_hstart, 1.f);
+    const float roi_w =
+        aligned ? roi_wend - roi_wstart : max(roi_wend - roi_wstart, 1.f);
+    const float roi_h =
+        aligned ? roi_hend - roi_hstart : max(roi_hend - roi_hstart, 1.f);
     const float bin_h = roi_h / float(out_h);
     const float bin_w = roi_w / float(out_w);
 
@@ -188,8 +196,9 @@ __global__ void _RoiAlignGrad(
         sampling_ratio > 0 ? sampling_ratio : int(ceil(roi_h / float(out_h)));
     const int grid_w =
         sampling_ratio > 0 ? sampling_ratio : int(ceil(roi_w / float(out_w)));
-    const float dyi = convert::To<float>(dy[yi]) / float(grid_h * grid_w);
+
     float* offset_dx = dx + (batch_ind * C + c) * H * W;
+    const float grad = convert::To<float>(dy[yi]) / float(grid_h * grid_w);
 
     for (int i = 0; i < grid_h; i++) {
       const float h = hstart + (i + .5f) * bin_h / grid_h;
@@ -199,8 +208,8 @@ __global__ void _RoiAlignGrad(
         float v, u;
         _RoiAlignIntpParam(H, W, h, w, ti, bi, li, ri, v, u);
         if (li >= 0 && ri >= 0 && ti >= 0 && bi >= 0) {
-          const float db = dyi * v;
-          const float dt = dyi * (1.f - v);
+          const float db = grad * v;
+          const float dt = grad * (1.f - v);
           math::utils::AtomicAdd(offset_dx + ti * W + li, (1.f - u) * dt);
           math::utils::AtomicAdd(offset_dx + ti * W + ri, u * dt);
           math::utils::AtomicAdd(offset_dx + bi * W + li, (1.f - u) * db);
@@ -226,6 +235,7 @@ __global__ void _RoiAlignGrad(
       const int num_rois,                                                 \
       const float spatial_scale,                                          \
       const int sampling_ratio,                                           \
+      const bool aligned,                                                 \
       const InputT* x,                                                    \
       const float* rois,                                                  \
       OutputT* y,                                                         \
@@ -241,6 +251,7 @@ __global__ void _RoiAlignGrad(
             out_w,                                                        \
             spatial_scale,                                                \
             sampling_ratio,                                               \
+            aligned,                                                      \
             reinterpret_cast<const math::ScalarType<InputT>::type*>(x),   \
             rois,                                                         \
             reinterpret_cast<math::ScalarType<OutputT>::type*>(y));       \

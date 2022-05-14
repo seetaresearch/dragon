@@ -51,6 +51,8 @@ def include_paths(cuda=False):
         cuda_home_include = _join_cuda_path('include')
         if cuda_home_include != '/usr/include':
             paths.append(cuda_home_include)
+            if not _os.path.exists(cuda_home_include + '/cub'):
+                paths.append(paths[0] + '/cub')
         if CUDNN_HOME is not None:
             paths.append(_os.path.join(CUDNN_HOME, 'include'))
     return paths

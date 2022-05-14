@@ -16,7 +16,14 @@ from __future__ import print_function
 from dragon.vm import torch
 
 
-def roi_align(input, boxes, output_size, spatial_scale=1.0, sampling_ratio=-1):
+def roi_align(
+    input,
+    boxes,
+    output_size,
+    spatial_scale=1.0,
+    sampling_ratio=-1,
+    aligned=False,
+):
     r"""Apply the average roi align to input.
     `[He et.al, 2017] <https://arxiv.org/abs/1703.06870>`_.
 
@@ -37,6 +44,8 @@ def roi_align(input, boxes, output_size, spatial_scale=1.0, sampling_ratio=-1):
         The input scale to the size of ``boxes``.
     sampling_ratio : int, optional, default=-1
         The number of sampling grids for ``boxes``.
+    aligned : bool, optional, default=False
+        Whether to shift the input coordinates by ``-0.5``.
 
     Returns
     -------
@@ -47,4 +56,5 @@ def roi_align(input, boxes, output_size, spatial_scale=1.0, sampling_ratio=-1):
     return torch.autograd.Function.apply(
         'RoiAlign', input.device, [input, boxes],
         pooled_h=output_size[0], pooled_w=output_size[1],
-        spatial_scale=spatial_scale, sampling_ratio=sampling_ratio)
+        spatial_scale=spatial_scale,
+        sampling_ratio=sampling_ratio, aligned=aligned)

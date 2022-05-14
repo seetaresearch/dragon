@@ -16,26 +16,28 @@ INSTALL_PATH=$(cd "$(dirname "$0")/..";pwd)
 
 if [ $USE_CUDA_AWARE -eq 1 ];then 
 echo "Build with cuda...."
+read -p "Press any key to continue." var
 ./configure CFLAGS=-fPIC \
             CXXFLAGS=-fPIC \
             --with-cuda \
             --with-pic=PIC \
             --without-verbs \
             --without-ucx \
+            --disable-libudev \
             --enable-shared \
             --enable-static \
-            --enable-mpi-thread-multiple \
             --prefix=$INSTALL_PATH
 else 
 echo "Build without cuda...."
+read -p "Press any key to continue." var
 ./configure CFLAGS=-fPIC \
             CXXFLAGS=-fPIC \
             --with-pic=PIC \
             --without-verbs \
             --without-ucx \
+            --disable-libudev \
             --enable-shared \
             --enable-static \
-            --enable-mpi-thread-multiple \
             --prefix=$INSTALL_PATH
 fi
 make install -j $(getconf _NPROCESSORS_ONLN)
