@@ -72,10 +72,14 @@ void RegisterModule_tensor(py::module& m) {
             intptr_t pointer = 0;
             if (device_type == "cpu") {
               pointer = (intptr_t)self->raw_data<CPUContext>();
-            } else if (device_type == "cuda") {
+            }
+#ifdef USE_CUDA
+            else if (device_type == "cuda") {
               pointer = (intptr_t)self->raw_data<CUDAContext>();
-            } else {
-              LOG(FATAL) << "Unknown device type: " << device_type;
+            }
+#endif
+            else {
+              LOG(FATAL) << "Unsupported device type: " << device_type;
             }
             return pointer;
           })
@@ -87,10 +91,14 @@ void RegisterModule_tensor(py::module& m) {
             intptr_t pointer = 0;
             if (device_type == "cpu") {
               pointer = (intptr_t)self->raw_mutable_data<CPUContext>();
-            } else if (device_type == "cuda") {
+            }
+#ifdef USE_CUDA
+            else if (device_type == "cuda") {
               pointer = (intptr_t)self->raw_mutable_data<CUDAContext>();
-            } else {
-              LOG(FATAL) << "Unknown device type: " << device_type;
+            }
+#endif
+            else {
+              LOG(FATAL) << "Unsupported device type: " << device_type;
             }
             return pointer;
           })
@@ -118,6 +126,7 @@ void RegisterModule_tensor(py::module& m) {
             dest_opt.ParseFromString(dest_dev);
             self->set_meta(other->meta())->ReshapeLike(*other);
             if (dest_opt.device_type() == PROTO_CUDA) {
+#ifdef USE_CUDA
               CUDADeviceGuard guard(dest_opt.device_id());
               if (src_opt.device_type() == PROTO_CUDA) {
                 // CUDA <- CUDA
@@ -134,8 +143,12 @@ void RegisterModule_tensor(py::module& m) {
                     other->raw_data<CPUContext>(),
                     dest_opt.device_id());
               }
+#else
+              CUDA_NOT_COMPILED;
+#endif
             } else {
               if (src_opt.device_type() == PROTO_CUDA) {
+#ifdef USE_CUDA
                 // CPU <- CUDA
                 CUDADeviceGuard guard(src_opt.device_id());
                 CUDAContext::Memcpy<CPUContext, CUDAContext>(
@@ -143,9 +156,12 @@ void RegisterModule_tensor(py::module& m) {
                     self->raw_mutable_data<CPUContext>(),
                     other->raw_data<CUDAContext>(),
                     src_opt.device_id());
+#else
+              CUDA_NOT_COMPILED;
+#endif
               } else {
                 // CPU <- CPU
-                CPUContext::Memcpy<CUDAContext, CUDAContext>(
+                CPUContext::Memcpy<CPUContext, CPUContext>(
                     other->nbytes(),
                     self->raw_mutable_data<CPUContext>(),
                     other->raw_data<CPUContext>());
@@ -190,7 +206,6 @@ void RegisterModule_tensor(py::module& m) {
               case PROTO_CUDA:
                 memory->set_cuda_data(data, nbytes, opt.device_id());
                 break;
-              case PROTO_CNML:
               default:
                 LOG(FATAL) << "Unsupported pointer device: "
                            << opt.device_type();
@@ -240,6 +255,20 @@ void RegisterModule_tensor(py::module& m) {
             self->memory()->SwitchToCUDADevice(device_id);
 #else
        CUDA_NOT_COMPILED;
+#endif
+          })
+
+      /*! \brief Switch memory to the cuda context */
+      .def(
+          "ToMPS",
+          [](Tensor* self, int device_id) {
+#ifdef USE_MPS
+            CHECK(self->has_memory())
+                << "\nTensor(" << self->name() << ") "
+                << "does not initialize or had been reset.";
+            self->memory()->SwitchToMPSDevice(device_id);
+#else
+       MPS_NOT_COMPILED;
 #endif
           })
 

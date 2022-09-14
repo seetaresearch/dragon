@@ -1,16 +1,22 @@
-# ---[ General sources
+# ---[ Sources
 file(GLOB INCLUDES *.h)
-file(GLOB SOURCES *.cc)
+file(GLOB SOURCES *.cc cpu/*.cc)
 set(MODULE_INCLUDES ${MODULE_INCLUDES} ${INCLUDES})
 set(MODULE_SOURCES ${MODULE_SOURCES} ${SOURCES})
 
-# ---[ CUDA sources
+# ---[ CUDA Sources
 if (USE_CUDA)
-  file(GLOB CUDA_SOURCES *.cu)
+  file(GLOB CUDA_SOURCES cuda/*.cu)
   set(MODULE_CUDA_SOURCES ${MODULE_CUDA_SOURCES} ${CUDA_SOURCES})
 endif()
 
-# ---[ Submit to the parent scope
+# ---[ MPS Sources
+if (USE_MPS)
+  file(GLOB MPS_SOURCES mps/*.mm)
+  set(MODULE_SOURCES ${MODULE_SOURCES} ${MPS_SOURCES})
+endif()
+
+# Submit to the parent scope.
 set(MODULE_INCLUDES ${MODULE_INCLUDES} PARENT_SCOPE)
 set(MODULE_SOURCES ${MODULE_SOURCES} PARENT_SCOPE)
 set(MODULE_CUDA_SOURCES ${MODULE_CUDA_SOURCES} PARENT_SCOPE)

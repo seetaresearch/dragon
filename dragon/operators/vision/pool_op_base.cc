@@ -1,7 +1,7 @@
 #include "dragon/operators/vision/pool_op_base.h"
 #include "dragon/core/workspace.h"
+#include "dragon/kernels/op_kernels.h"
 #include "dragon/utils/math_functions.h"
-#include "dragon/utils/op_kernels.h"
 
 namespace dragon {
 
@@ -20,7 +20,7 @@ void PoolOpBase<Context>::GetBaseArguments() {
   auto strides = OP_REPEATED_ARG(int64_t, "strides");
   auto pads = OP_REPEATED_ARG(int64_t, "pads");
 
-  // Infer the number of spatial axes from the kernel shape
+  // Infer the number of spatial axes from the kernel shape.
   num_axes_ = (int64_t)kshape.size();
   CHECK_GT(num_axes_, 0) << "\nInvalid size of <kernel_shape>.";
 
@@ -44,21 +44,21 @@ void PoolOpBase<Context>::GetBaseArguments() {
 
 template <class Context>
 void PoolOpBase<Context>::ComputeOutShape() {
-  // Align input dimensions
+  // Align input dimensions.
   in_dims_ = Input(0).dims();
   if (data_format() == "NHWC") {
     in_dims_.insert(in_dims_.begin() + 1, in_dims_.back());
-    in_dims_.pop_back(); // Store dimensions in NCHW order
+    in_dims_.pop_back(); // Store dimensions in NCHW order.
   }
 
-  // Adjust kernel shape for global pooling
+  // Adjust kernel shape for global pooling.
   if (global_pool_ > 0) {
     for (int i = 0; i < num_axes_; i++) {
       kshape_[i] = in_dims_[i + 2];
     }
   }
 
-  // Compute output dimensions
+  // Compute output dimensions.
   auto floor_or_ceil = ceil_mode_ > 0
       ? static_cast<float (*)(float)>(&std::ceil)
       : static_cast<float (*)(float)>(&std::floor);
@@ -68,11 +68,11 @@ void PoolOpBase<Context>::ComputeOutShape() {
   for (int i = 0; i < num_axes_; i++) {
     float out_size;
     in_size = in_dims_[i + 2], k_size = kshape_[i];
-    if (!str::find(padding_, "SAME")) { // Explicit pads
+    if (!str::find(padding_, "SAME")) { // Explicit pads.
       pad_size = pads_begin_[i] + pads_end_[i];
       out_size = float(in_size + pad_size - k_size) / float(strides_[i]) + 1.f;
       out_size = floor_or_ceil(out_size);
-    } else { // Auto pads
+    } else { // Auto pads.
       out_size = std::ceil(float(in_size) / float(strides_[i]));
       pad_size = ((int64_t)out_size - 1) * strides_[i] + k_size - in_size;
       pad_size = std::max(pad_size, int64_t(0));
@@ -85,6 +85,9 @@ void PoolOpBase<Context>::ComputeOutShape() {
 template class PoolOpBase<CPUContext>;
 #ifdef USE_CUDA
 template class PoolOpBase<CUDAContext>;
+#endif
+#ifdef USE_MPS
+template class PoolOpBase<MPSContext>;
 #endif
 
 #undef DETERMINE_SAME_PADDING

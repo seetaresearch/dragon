@@ -21,6 +21,7 @@ import numpy
 
 from dragon.core.framework import config
 from dragon.core.util import string
+from dragon.vm.torch.core import cpp
 from dragon.vm.torch.core.autograd import grad_mode
 from dragon.vm.torch.core.nn.parameter import Parameter
 from dragon.vm.torch.core.tensor import Tensor
@@ -154,7 +155,7 @@ class Module(object):
         """Switch the buffers and parameters to cuda device.
 
         If :attr:`device` is not provided, use the value
-        set by ``dragon.config.set_cuda_device()``.
+        set by ``dragon.cuda.set_default_device()``.
 
         Parameters
         ----------
@@ -237,7 +238,7 @@ class Module(object):
     def load_state_dict(self, state_dict, strict=True):
         """Load the state dict from other module.
 
-        Typically, states can only loaded from the same module class:
+        Typically, states can only be loaded from the same module class:
 
         ```python
         mm = type(m)()
@@ -307,6 +308,27 @@ class Module(object):
         """
         for name, module in self.named_modules():
             yield module
+
+    def mps(self, device=None):
+        """Switch the buffers and parameters to mps device.
+
+        If :attr:`device` is not provided, use the value
+        set by ``dragon.mps.set_default_device()``.
+
+        Parameters
+        ----------
+        device : int, optional
+            The optional device index.
+
+        Returns
+        -------
+        dragon.vm.torch.nn.Module
+            The self.
+
+        """
+        if device is None:
+            device = config.config().device_index
+        return self._apply(lambda t: t.mps(device))
 
     def named_buffers(self, prefix='', recurse=True):
         """Return an iterator over all buffers.
@@ -528,6 +550,39 @@ class Module(object):
             if module is not None:
                 module.state_dict(destination, prefix + name + '.', to_numpy=to_numpy)
         return destination
+
+    def to(self, *args, **kwargs):
+        """Convert states to the specified data type or device.
+
+        Returns
+        -------
+        dragon.vm.torch.nn.Module
+            The self.
+
+        """
+        dtype = kwargs.get('dtype', None)
+        device = kwargs.get('device', None)
+        for arg in args:
+            if isinstance(arg, cpp.dtype):
+                dtype = arg
+            elif isinstance(arg, cpp.device):
+                device = arg
+            elif isinstance(arg, Tensor):
+                dtype, device = arg.dtype, arg.device
+                break
+            else:
+                raise ValueError('Unsupported conversion target.')
+        if device is not None:
+            if device.type == 'cpu':
+                self.cpu()
+            else:
+                {'cuda': self.cuda,
+                 'mps': self.mps}[device.type](device.index)
+        if dtype is not None:
+            return {'float16': self.half,
+                    'float32': self.float,
+                    'float64': self.double}[dtype]()
+        return self
 
     def train(self, mode=True):
         """Set the training mode.

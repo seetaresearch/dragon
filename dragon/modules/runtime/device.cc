@@ -1,35 +1,37 @@
+#include <dragon/utils/logging.h>
+
 #include "dragon/modules/runtime/dragon_runtime.h"
-#include "dragon/utils/logging.h"
 
 namespace dragon {
 
 namespace {
 
-int type_from_string(const std::string& device_type) {
+inline std::string GetDeviceType(const std::string& device_type) {
   if (device_type == "CPU") {
-    return 0;
-  } else if (device_type == "GPU") {
-    return 1;
-  } else if (device_type == "CUDA") {
-    return 1;
+    return "CPU";
+  } else if (device_type == "GPU" || device_type == "CUDA") {
+    return "CUDA";
+  } else if (device_type == "MPS") {
+    return "MPS";
   }
   LOG(FATAL) << "Unsupported device type: " << device_type << "\n"
              << "Following device types are supported: {"
              << "  * CPU\n"
              << "  * GPU\n"
              << "  * CUDA\n"
+             << "  * MPS\n"
              << "}";
-  return -1;
+  return "";
 }
 
 } // namespace
 
-Device::Device() : device_type_(0), device_id_(0) {}
+Device::Device() : device_type_(0), device_index_(0) {}
 
-Device::Device(const std::string& device_type, int device_id)
-    : device_type_(type_from_string(device_type)), device_id_(device_id) {}
+Device::Device(const std::string& device_type, int device_index)
+    : device_type_(GetDeviceType(device_type)), device_index_(device_index) {}
 
 Device::Device(const std::string& device_type)
-    : device_type_(type_from_string(device_type)), device_id_(0) {}
+    : device_type_(GetDeviceType(device_type)), device_index_(0) {}
 
 } // namespace dragon

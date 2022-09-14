@@ -24,18 +24,26 @@
 #include <cub/iterator/transform_input_iterator.cuh>
 #include <cub/warp/warp_reduce.cuh>
 
+#include "dragon/utils/device/common_cuda.h"
+
 namespace dragon {
 
-template <typename T>
-using WarpReduce = cub::BlockReduce<T, CUDA_WARP_SIZE>;
-
+#if defined(__CUDACC__)
 template <typename T>
 using BlockReduce = cub::BlockReduce<T, CUDA_THREADS>;
 
-template <typename T, typename Reducer>
+template <typename T, typename Reducer, int kThreadsPerWarp>
+__inline__ __device__ T WarpReduce(T val) {
+  for (int offset = kThreadsPerWarp / 2; offset > 0; offset /= 2) {
+    val = Reducer()(val, __shfl_down_sync(0xffffffff, val, offset));
+  }
+  return val;
+}
+
+template <typename T, typename Reducer, int kThreadsPerWarp>
 __inline__ __device__ T WarpAllReduce(T val) {
-  for (int mask = CUDA_WARP_SIZE / 2; mask > 0; mask /= 2) {
-    val = Reducer()(val, __shfl_xor_sync(0xffffffff, val, mask));
+  for (int offset = kThreadsPerWarp / 2; offset > 0; offset /= 2) {
+    val = Reducer()(val, __shfl_xor_sync(0xffffffff, val, offset));
   }
   return val;
 }
@@ -50,6 +58,7 @@ __inline__ __device__ T BlockAllReduce(T val) {
   __syncthreads();
   return block_val;
 }
+#endif // defined(__CUDACC__)
 
 } // namespace dragon
 

@@ -23,18 +23,17 @@ from dragon._api import bitwise
 from dragon._api import cuda
 from dragon._api import distributed
 from dragon._api import dlpack
-from dragon._api import io
 from dragon._api import logging
 from dragon._api import losses
 from dragon._api import math
 from dragon._api import metrics
+from dragon._api import mps
 from dragon._api import nn
 from dragon._api import onnx
 from dragon._api import optimizers
 from dragon._api import random
 from dragon._api import sysconfig
 from dragon._api import vision
-from dragon import vm
 
 # Classes
 from dragon.core.autograph.backprop import GradientTape

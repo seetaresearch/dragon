@@ -13,10 +13,9 @@
 #ifndef DRAGON_MODULES_PYTHON_TYPES_H_
 #define DRAGON_MODULES_PYTHON_TYPES_H_
 
+#include <dragon/core/types.h>
+#include <dragon/utils/device/common_dlpack.h>
 #include <numpy/arrayobject.h>
-
-#include "dragon/core/types.h"
-#include "dragon/utils/dlpack.h"
 
 namespace dragon {
 

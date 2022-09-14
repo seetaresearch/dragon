@@ -47,11 +47,7 @@ New
 
 SwitchToDevice
 ##############
-.. doxygenfunction:: dragon::CPUContext::SwitchToDevice()
-
-SwitchToDevice
-##############
-.. doxygenfunction:: dragon::CPUContext::SwitchToDevice(int stream)
+.. doxygenfunction:: dragon::CPUContext::SwitchToDevice
 
 device
 ######

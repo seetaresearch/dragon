@@ -7,11 +7,8 @@
 #
 #     <https://opensource.org/licenses/BSD-2-Clause>
 #
-# Codes are based on:
-#
-#     <https://github.com/pytorch/pytorch/blob/master/caffe2/python/onnx/helper.py>
-#
 # ------------------------------------------------------------
+"""ONNX helpers."""
 
 from __future__ import absolute_import
 from __future__ import division
@@ -99,28 +96,17 @@ def make_model_from_node(node_proto, inputs, use_weights=True):
     """Make a model from the standalone node proto."""
     output_dtype = 'float32'  # Dummy value only
     output_shape = [-99]  # Dummy value only
-    graph_inputs = [
-        make_tensor_value_info(
-            name,
-            tensor_type(str(array.dtype)),
-            array.shape
-        ) for name, array in zip(node_proto.input, inputs)
-    ]
-    graph_outputs = [
-        make_tensor_value_info(
-            name,
-            tensor_type(output_dtype),
-            output_shape
-        ) for name in node_proto.output
-    ]
+    graph_inputs = [make_tensor_value_info(
+        name, tensor_type(str(array.dtype)), array.shape)
+        for name, array in zip(node_proto.input, inputs)]
+    graph_outputs = [make_tensor_value_info(
+        name, tensor_type(output_dtype), output_shape)
+        for name in node_proto.output]
     if use_weights:
-        initializers = [
-            make_tensor(
-                name,
-                tensor_type(str(array.dtype)),
-                array.shape, array.flatten().tolist()
-            ) for name, array in zip(node_proto.input[1:], inputs[1:])
-        ]
+        initializers = [make_tensor(
+            name, tensor_type(str(array.dtype)), array.shape,
+            array.flatten().tolist())
+            for name, array in zip(node_proto.input[1:], inputs[1:])]
     else:
         initializers = []
     graph = make_graph(

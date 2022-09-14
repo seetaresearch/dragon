@@ -44,8 +44,7 @@ def is_built():
         ``True`` if built otherwise ``False``.
 
     """
-    version = sysconfig.get_build_info().get('cuda_version', None)
-    return True if version is not None else False
+    return sysconfig.get_build_info()['is_cuda_build']
 
 
 # Module instances.

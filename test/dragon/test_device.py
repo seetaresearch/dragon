@@ -8,7 +8,7 @@
 #     <https://opensource.org/licenses/BSD-2-Clause>
 #
 # ------------------------------------------------------------
-"""Test the device module."""
+"""Test device module."""
 
 from __future__ import absolute_import
 from __future__ import division
@@ -20,10 +20,11 @@ import unittest
 from dragon.core.framework import config
 from dragon.core.testing.unittest.common_utils import run_tests
 from dragon.core.testing.unittest.common_utils import TEST_CUDA
+from dragon.core.testing.unittest.common_utils import TEST_MPS
 
 
 class TestCUDA(unittest.TestCase):
-    """Test the cuda utilities."""
+    """Test cuda utilities."""
 
     def test_stream(self):
         stream = dragon.cuda.Stream(device_index=0)
@@ -38,15 +39,37 @@ class TestCUDA(unittest.TestCase):
         dragon.cuda.set_cudnn_flags()
 
     def test_device(self):
-        major, minor = dragon.cuda.get_device_capability(0)
+        name = dragon.cuda.get_device_name(0)
+        major, _ = dragon.cuda.get_device_capability(0)
         self.assertGreaterEqual(major, 1 if TEST_CUDA else 0)
-        self.assertGreaterEqual(minor, 0)
+        self.assertGreaterEqual(len(name), 1 if TEST_CUDA else 0)
         dragon.cuda.set_device(0)
         self.assertEqual(dragon.cuda.current_device(), 0)
         dragon.cuda.set_default_device(1)
         self.assertEqual(config.config().device_type, 'cuda')
         self.assertEqual(config.config().device_index, 1)
         dragon.cuda.set_default_device(-1)
+        self.assertEqual(config.config().device_type, 'cpu')
+        self.assertEqual(config.config().device_index, 0)
+
+
+class TestMPS(unittest.TestCase):
+    """Test mps utilities."""
+
+    def test_stream(self):
+        dragon.mps.synchronize()
+
+    def test_device(self):
+        name = dragon.mps.get_device_name(0)
+        family = dragon.mps.get_device_family(0)
+        self.assertGreaterEqual(len(name), 1 if TEST_MPS else 0)
+        self.assertTrue('Mac2' in family if TEST_MPS else True)
+        dragon.mps.set_device(0)
+        self.assertEqual(dragon.mps.current_device(), 0)
+        dragon.mps.set_default_device(1)
+        self.assertEqual(config.config().device_type, 'mps')
+        self.assertEqual(config.config().device_index, 1)
+        dragon.mps.set_default_device(-1)
         self.assertEqual(config.config().device_type, 'cpu')
         self.assertEqual(config.config().device_index, 0)
 

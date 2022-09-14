@@ -13,8 +13,7 @@
 #ifndef DRAGON_CORE_MEMORY_H_
 #define DRAGON_CORE_MEMORY_H_
 
-#include "dragon/core/context.h"
-#include "dragon/core/context_cuda.h"
+#include "dragon/core/common.h"
 
 namespace dragon {
 
@@ -33,8 +32,10 @@ class DRAGON_API UnifiedMemory {
     STATE_AT_CPU = 1,
     /*! \brief Data is mutable to cuda */
     STATE_AT_CUDA = 2,
+    /*! \brief Data is mutable to mps */
+    STATE_AT_MPS = 3,
     /*! \brief Data is synced between host and device */
-    SYNCED = 3,
+    SYNCED = 4,
   };
 
   /*! \brief Constructor */
@@ -49,11 +50,17 @@ class DRAGON_API UnifiedMemory {
   /*! \brief Switch to the given cuda device */
   void SwitchToCUDADevice(int device);
 
+  /*! \brief Switch to the given mps device */
+  void SwitchToMPSDevice(int device);
+
   /*! \brief Set to the cpu state */
   void ToCPU(size_t size = 0);
 
   /*! \brief Set to the cuda state */
   void ToCUDA(size_t size = 0);
+
+  /*! \brief Set to the cuda state */
+  void ToMPS(size_t size = 0);
 
   /*! \brief Return the state */
   State state() const {
@@ -94,11 +101,17 @@ class DRAGON_API UnifiedMemory {
   /*! \brief Return the const cuda data */
   const void* cuda_data(size_t size = 0, size_t offset = 0);
 
+  /*! \brief Return the const mps data */
+  const void* mps_data(size_t size = 0);
+
   /*! \brief Return the mutable cpu data */
   void* mutable_cpu_data(size_t size = 0);
 
   /*! \brief Return the mutable cuda data */
   void* mutable_cuda_data(size_t size = 0);
+
+  /*! \brief Return the mutable mps data */
+  void* mutable_mps_data(size_t size = 0);
 
   /*! \brief Set the storage order */
   void set_order(StorageOrder order) {
@@ -106,7 +119,7 @@ class DRAGON_API UnifiedMemory {
   }
 
   /*! \brief Set to use an external block of cpu data */
-  void set_cpu_data(void* cpu_ptr, size_t size);
+  bool set_cpu_data(void* cpu_ptr, size_t size);
 
   /*! \brief Set to use an external block of cuda data */
   void set_cuda_data(void* cuda_ptr, size_t size, int device);
@@ -133,11 +146,17 @@ class DRAGON_API UnifiedMemory {
   /*! \brief The cuda data pointer */
   void* cuda_ptr_ = nullptr;
 
+  /*! \brief The mps data pointer */
+  void* mps_ptr_ = nullptr;
+
   /*! \brief The ownership of cpu data pointer */
   bool own_cpu_ptr_ = true;
 
   /*! \brief The ownership of cuda data pointer */
   bool own_cuda_ptr_ = true;
+
+  /*! \brief The ownership of cuda data pointer */
+  bool own_mps_ptr_ = true;
 
   DISABLE_COPY_AND_ASSIGN(UnifiedMemory);
 };

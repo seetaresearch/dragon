@@ -147,7 +147,7 @@ class BatchNorm1d(_BatchNorm):
         momentum : float, optional, default=0.1
             The value to :math:`\text{momentum}`.
         affine : bool, optional, default=True
-            ``True`` to apply a affine transformation.
+            ``True`` to apply an affine transformation.
         track_running_stats : bool, optional, default=True
             ``True`` to using stats when switching to ``eval``.
 
@@ -199,7 +199,7 @@ class BatchNorm2d(_BatchNorm):
         momentum : float, optional, default=0.1
             The value to :math:`\text{momentum}`.
         affine : bool, optional, default=True
-            ``True`` to apply a affine transformation.
+            ``True`` to apply an affine transformation.
         track_running_stats : bool, optional, default=True
             ``True`` to using stats when switching to ``eval``.
 
@@ -251,7 +251,7 @@ class BatchNorm3d(_BatchNorm):
         momentum : float, optional, default=0.1
             The value to :math:`\text{momentum}`.
         affine : bool, optional, default=True
-            ``True`` to apply a affine transformation.
+            ``True`` to apply an affine transformation.
         track_running_stats : bool, optional, default=True
             ``True`` to using stats when switching to ``eval``.
 
@@ -307,7 +307,7 @@ class SyncBatchNorm(_BatchNorm):
         momentum : float, optional, default=0.1
             The value to :math:`\text{momentum}`.
         affine : bool, optional, default=True
-            ``True`` to apply a affine transformation.
+            ``True`` to apply an affine transformation.
         track_running_stats : bool, optional, default=True
             ``True`` to using stats when switching to ``eval``.
         process_group : ProcessGroup, optional

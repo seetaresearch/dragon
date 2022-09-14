@@ -1,7 +1,7 @@
 #include "dragon/operators/array/gather_op.h"
 #include "dragon/core/workspace.h"
+#include "dragon/kernels/op_kernels.h"
 #include "dragon/utils/math_functions.h"
-#include "dragon/utils/op_kernels.h"
 
 namespace dragon {
 
@@ -28,11 +28,6 @@ void GatherOp<Context>::DoRunWithType() {
       X.template data<T, Context>(),
       Y->Reshape(Y_dims)->template mutable_data<T, Context>(),
       ctx());
-}
-
-template <class Context>
-void GatherOp<Context>::RunOnDevice() {
-  DispatchHelper<dtypes::Generic>::Call(this, Input(0));
 }
 
 template <class Context>
@@ -70,11 +65,6 @@ void GatherGradientOp<Context>::DoRunWithType() {
   if (dx_acc != nullptr) {
     math::Cast(dX->count(), dx_acc, dx, ctx());
   }
-}
-
-template <class Context>
-void GatherGradientOp<Context>::RunOnDevice() {
-  DispatchHelper<dtypes::Floating>::Call(this, Input(1));
 }
 
 DEPLOY_CPU_OPERATOR(Gather);

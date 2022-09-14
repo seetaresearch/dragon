@@ -82,7 +82,7 @@ bool Graph::Run(int stream, const string& include, const string& exclude) {
     if (regex_excl && regex_match(op_ptr->type(), *regex_excl)) continue;
     op_ptr->SwitchToPhase(phase());
     LOG(DEBUG) << "Run: " << op_ptr->name();
-    op_ptr->Run(stream);
+    op_ptr->Run(stream, op_index == operators_.size() - 1);
     LOG(DEBUG) << "Finish: " << op_ptr->name();
   }
   LOG(DEBUG) << "Finish: " << name();

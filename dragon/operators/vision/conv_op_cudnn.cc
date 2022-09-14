@@ -52,6 +52,7 @@ void CuDNNConvOp<Context>::SetOpDesc() {
 template <class Context>
 template <typename T>
 void CuDNNConvOp<Context>::DoRunWithType() {
+  ConvOpBase<Context>::Reshape();
   auto &X = Input(0), &W = Input(1), *Y = Output(0);
   INITIALIZE_TENSOR_VIA_SPEC(W, w_shape_, T);
   if (HasBias()) {
@@ -125,12 +126,6 @@ void CuDNNConvOp<Context>::DoRunWithType() {
 }
 
 template <class Context>
-void CuDNNConvOp<Context>::RunOnDevice() {
-  ConvOpBase<Context>::Reshape();
-  DispatchHelper<dtypes::Floating>::Call(this, Input(0));
-}
-
-template <class Context>
 template <typename T>
 void CuDNNConvGradientOp<Context>::SetOpDesc() {
   auto &X = Input(0), &W = Input(1), &dY = Input(-1);
@@ -195,6 +190,7 @@ void CuDNNConvGradientOp<Context>::SetOpDesc() {
 template <class Context>
 template <typename T>
 void CuDNNConvGradientOp<Context>::DoRunWithType() {
+  ConvOpBase<Context>::Reshape(true);
   auto &X = Input(0), &W = Input(1), &dY = Input(-1);
   auto *dX = Output(0), *dW = Output(1);
   SetOpDesc<T>();
@@ -314,12 +310,6 @@ void CuDNNConvGradientOp<Context>::DoRunWithType() {
         output_desc_,
         dX->template mutable_data<T, Context>()));
   }
-}
-
-template <class Context>
-void CuDNNConvGradientOp<Context>::RunOnDevice() {
-  ConvOpBase<Context>::Reshape(true);
-  DispatchHelper<dtypes::Floating>::Call(this, Input(-1));
 }
 
 DEPLOY_CUDNN_OPERATOR(Conv);

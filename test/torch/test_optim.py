@@ -8,7 +8,7 @@
 #     <https://opensource.org/licenses/BSD-2-Clause>
 #
 # ------------------------------------------------------------
-"""Test the optim module."""
+"""Test optim module."""
 
 from __future__ import absolute_import
 from __future__ import division
@@ -21,7 +21,7 @@ from dragon.vm import torch
 
 
 class TestOptimizer(unittest.TestCase):
-    """Test the optimizer class."""
+    """Test optimizer class."""
 
     def test_optimizer(self):
         buffer = torch.ones(1)

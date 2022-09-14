@@ -1,5 +1,5 @@
 #include "dragon/operators/activation/hardsigmoid_op.h"
-#include "dragon/utils/op_kernels.h"
+#include "dragon/kernels/op_kernels.h"
 
 namespace dragon {
 
@@ -30,13 +30,14 @@ void HardSigmoidGradientOp<Context>::DoRunWithType() {
 }
 
 DEPLOY_CPU_OPERATOR(HardSigmoid);
-#ifdef USE_CUDA
-DEPLOY_CUDA_OPERATOR(HardSigmoid);
-#endif
-
 DEPLOY_CPU_OPERATOR(HardSigmoidGradient);
 #ifdef USE_CUDA
+DEPLOY_CUDA_OPERATOR(HardSigmoid);
 DEPLOY_CUDA_OPERATOR(HardSigmoidGradient);
+#endif
+#ifdef USE_MPS
+DEPLOY_MPS_OPERATOR(HardSigmoid, HardSigmoid);
+DEPLOY_MPS_OPERATOR(HardSigmoidGradient, HardSigmoidGradient);
 #endif
 
 OPERATOR_SCHEMA(HardSigmoid)

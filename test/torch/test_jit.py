@@ -8,7 +8,7 @@
 #     <https://opensource.org/licenses/BSD-2-Clause>
 #
 # ------------------------------------------------------------
-"""Test the jit module."""
+"""Test jit module."""
 
 from __future__ import absolute_import
 from __future__ import division
@@ -21,7 +21,7 @@ from dragon.vm import torch
 
 
 class TestJit(unittest.TestCase):
-    """Test the jit component."""
+    """Test jit component."""
 
     @torch.jit.trace(example_inputs=[
         torch.Tensor(1, dtype=torch.int64),

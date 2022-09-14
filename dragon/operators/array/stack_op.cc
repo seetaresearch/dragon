@@ -27,12 +27,14 @@ void StackOp<Context>::DoRunWithType() {
     auto& X = Input(i);
     Output("X_spec:" + str::to(i))->ReshapeLike(X);
     math::CopyMatrix(
-        X.count(0, axis),
-        X.count(axis),
-        X.count(axis),
-        Y->count(axis),
+        X.count(0, axis), // M
+        X.count(axis), // N
+        X.count(axis), // ldx
+        Y->count(axis), // ldy
+        0, // x_offset
+        copy_offset, // y_offset
         X.template data<T, Context>(),
-        Y->template mutable_data<T, Context>() + copy_offset,
+        Y->template mutable_data<T, Context>(),
         ctx());
     copy_offset += X.count(axis);
   }
@@ -49,11 +51,13 @@ void StackGradientOp<Context>::DoRunWithType() {
     auto &X = Input("X_spec:" + str::to(i)), *dX = Output(i);
     if (dX->has_name()) {
       math::CopyMatrix(
-          dY.count(0, axis),
-          X.count(axis),
-          dY.count(axis),
-          X.count(axis),
-          dY.template data<T, Context>() + copy_offset,
+          dY.count(0, axis), // M
+          X.count(axis), // N
+          dY.count(axis), // ldx
+          X.count(axis), // ldy
+          copy_offset, // x_offset
+          0, // y_offset
+          dY.template data<T, Context>(),
           dX->ReshapeLike(X)->template mutable_data<T, Context>(),
           ctx());
     }
@@ -62,13 +66,14 @@ void StackGradientOp<Context>::DoRunWithType() {
 }
 
 DEPLOY_CPU_OPERATOR(Stack);
-#ifdef USE_CUDA
-DEPLOY_CUDA_OPERATOR(Stack);
-#endif
-
 DEPLOY_CPU_OPERATOR(StackGradient);
 #ifdef USE_CUDA
+DEPLOY_CUDA_OPERATOR(Stack);
 DEPLOY_CUDA_OPERATOR(StackGradient);
+#endif
+#ifdef USE_MPS
+DEPLOY_MPS_OPERATOR(Stack, Stack);
+DEPLOY_MPS_OPERATOR(StackGradient, StackGradient);
 #endif
 
 OPERATOR_SCHEMA(Stack)

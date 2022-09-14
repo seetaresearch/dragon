@@ -40,7 +40,7 @@ extensions = ['sphinx.ext.autodoc', 'sphinxcontrib.katex', 'breathe']
 project = 'dragon'
 copyright = 'Copyright (c) 2017-present, SeetaTech, Co.,Ltd'
 author = 'SeetaTech, Co.,Ltd'
-with open('../../../dragon/version.txt', 'r') as f:
+with open('../../../version.txt', 'r') as f:
     version = f.read().strip()
 
 # Sphinx

@@ -971,7 +971,7 @@ def _apply_binary_op(inputs, op_type, outputs=(None,)):
 
 
 def _apply_init_op(self, op_type, **kwargs):
-    """Apply the initialize operator."""
+    """Apply the initialization operator."""
     shape = self.shape
     if shape is None or None in shape:
         raise ValueError('Excepted the certain shape to initialize data.')

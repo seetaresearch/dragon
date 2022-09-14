@@ -19,7 +19,7 @@ import functools
 
 
 class Registry(object):
-    """The base registry class."""
+    """The base registry.py class."""
 
     def __init__(self, name):
         self._name = name

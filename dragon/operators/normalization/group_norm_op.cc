@@ -1,7 +1,7 @@
 #include "dragon/operators/normalization/group_norm_op.h"
 #include "dragon/core/workspace.h"
+#include "dragon/kernels/op_kernels.h"
 #include "dragon/utils/math_functions.h"
-#include "dragon/utils/op_kernels.h"
 
 namespace dragon {
 
@@ -77,7 +77,7 @@ void GroupNormGradientOp<Context>::DoRunWithType() {
       W.template data<ParamT, Context>(),
       dY.template data<T, Context>(),
       params,
-      params + N_ * G_,
+      params, /* params + N_ * G_ */
       dW->Reshape({C_})->template mutable_data<ParamT, Context>(),
       dB->Reshape({C_})->template mutable_data<ParamT, Context>(),
       dX->ReshapeLike(X)->template mutable_data<T, Context>(),
@@ -85,13 +85,14 @@ void GroupNormGradientOp<Context>::DoRunWithType() {
 }
 
 DEPLOY_CPU_OPERATOR(GroupNorm);
-#ifdef USE_CUDA
-DEPLOY_CUDA_OPERATOR(GroupNorm);
-#endif
-
 DEPLOY_CPU_OPERATOR(GroupNormGradient);
 #ifdef USE_CUDA
+DEPLOY_CUDA_OPERATOR(GroupNorm);
 DEPLOY_CUDA_OPERATOR(GroupNormGradient);
+#endif
+#ifdef USE_MPS
+DEPLOY_MPS_OPERATOR(GroupNorm, GroupNorm);
+DEPLOY_MPS_OPERATOR(GroupNormGradient, GroupNormGradient);
 #endif
 
 OPERATOR_SCHEMA(GroupNorm)

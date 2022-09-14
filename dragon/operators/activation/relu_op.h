@@ -26,7 +26,9 @@ class ReluOp : public Operator<Context> {
         max_value_(OP_SINGLE_ARG(float, "max_value", 0.f)) {}
   USE_OPERATOR_FUNCTIONS;
 
-  void RunOnDevice() override;
+  void RunOnDevice() override {
+    DispatchHelper<dtypes::Floating>::Call(this, Input(0));
+  }
 
   template <typename T>
   void DoRunWithType();
@@ -44,7 +46,9 @@ class ReluGradientOp : public Operator<Context> {
         max_value_(OP_SINGLE_ARG(float, "max_value", 0.f)) {}
   USE_OPERATOR_FUNCTIONS;
 
-  void RunOnDevice() override;
+  void RunOnDevice() override {
+    DispatchHelper<dtypes::Floating>::Call(this, Input(0));
+  }
 
   template <typename T>
   void DoRunWithType();
@@ -80,7 +84,13 @@ class CuDNNReluOp final : public ReluOp<Context> {
     CUDNN_CHECK(cudnnDestroyActivationDescriptor(act_desc_));
   }
 
-  void RunOnDevice() override;
+  void RunOnDevice() override {
+    // CuDNN does not support LeakyReLU.
+    if (this->alpha_ != 0.f) {
+      return ReluOp<Context>::RunOnDevice();
+    }
+    DispatchHelper<dtypes::Floating>::Call(this, Input(0));
+  }
 
   template <typename T>
   void DoRunWithType();
@@ -110,7 +120,13 @@ class CuDNNReluGradientOp final : public ReluGradientOp<Context> {
     CUDNN_CHECK(cudnnDestroyActivationDescriptor(act_desc_));
   }
 
-  void RunOnDevice() override;
+  void RunOnDevice() override {
+    // CuDNN does not support LeakyReLU and ClippedReLU.
+    if (this->alpha_ != 0.f || this->max_value_ > 0.f) {
+      return ReluGradientOp<Context>::RunOnDevice();
+    }
+    DispatchHelper<dtypes::Floating>::Call(this, Input(0));
+  }
 
   template <typename T>
   void DoRunWithType();
@@ -121,6 +137,56 @@ class CuDNNReluGradientOp final : public ReluGradientOp<Context> {
 };
 
 #endif // USE_CUDNN
+
+#ifdef USE_MPS
+
+template <class Context>
+class MPSReluOp final : public Operator<Context> {
+ public:
+  MPSReluOp(const OperatorDef& def, Workspace* ws)
+      : Operator<Context>(def, ws), graph_(MPSCreateGraph()) {}
+  USE_OPERATOR_FUNCTIONS;
+
+  ~MPSReluOp() {
+    NSReleaseObject(graph_);
+  }
+
+  void RunOnDevice() override {
+    DispatchHelper<dtypes::Floating>::Call(this, Input(0));
+  }
+
+  template <typename T>
+  void DoRunWithType();
+
+ protected:
+  MPSGraph_t graph_;
+  MPSGraphCache graph_cache_;
+};
+
+template <class Context>
+class MPSReluGradientOp final : public Operator<Context> {
+ public:
+  MPSReluGradientOp(const OperatorDef& def, Workspace* ws)
+      : Operator<Context>(def, ws), graph_(MPSCreateGraph()) {}
+  USE_OPERATOR_FUNCTIONS;
+
+  ~MPSReluGradientOp() {
+    NSReleaseObject(graph_);
+  }
+
+  void RunOnDevice() override {
+    DispatchHelper<dtypes::Floating>::Call(this, Input(0));
+  }
+
+  template <typename T>
+  void DoRunWithType();
+
+ protected:
+  MPSGraph_t graph_;
+  MPSGraphCache graph_cache_;
+};
+
+#endif
 
 } // namespace dragon
 

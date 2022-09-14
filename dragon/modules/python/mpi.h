@@ -17,6 +17,8 @@
 #include <mpi.h>
 #endif
 
+#include <dragon/core/common.h>
+
 #include "dragon/modules/python/common.h"
 
 namespace dragon {
@@ -54,7 +56,7 @@ void RegisterModule_mpi(py::module& m) {
       MPI_Init_thread(NULL, NULL, MPI_THREAD_SINGLE, &thread_type);
     }
 #else
-    LOG(FATAL) << "MPI was not compiled.";
+    LOG(FATAL) << "MPI library is not built with.";
 #endif
   });
 
@@ -65,7 +67,7 @@ void RegisterModule_mpi(py::module& m) {
     MPI_Comm_rank(MPI_COMM_WORLD, &world_rank);
     return world_rank;
 #else
-    LOG(FATAL) << "MPI was not compiled.";
+    LOG(FATAL) << "MPI library is not built with.";
 #endif
   });
 
@@ -76,7 +78,7 @@ void RegisterModule_mpi(py::module& m) {
     MPI_Comm_size(MPI_COMM_WORLD, &world_size);
     return world_size;
 #else
-    LOG(FATAL) << "MPI was not compiled.";
+    LOG(FATAL) << "MPI library is not built with.";
 #endif
   });
 
@@ -125,7 +127,7 @@ void RegisterModule_mpi(py::module& m) {
     }
     return vector<long>({(long)group_comm, (long)group});
 #else
-    LOG(FATAL) << "MPI was not compiled.";
+    LOG(FATAL) << "MPI library is not built with.";
     return vector<long>();
 #endif
   });
@@ -135,7 +137,7 @@ void RegisterModule_mpi(py::module& m) {
 #ifdef USE_MPI
     MPI_Finalize();
 #else
-    LOG(FATAL) << "MPI was not compiled.";
+    LOG(FATAL) << "MPI library is not built with.";
 #endif
   });
 }

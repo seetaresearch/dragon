@@ -44,4 +44,5 @@ def constant(value, dtype=None, shape=None, name='Const'):
         The output tensor.
 
     """
+    dtype = str(dtype) if dtype else dtype
     return constant_ops.constant(value, dtype=dtype, shape=shape, name=name)

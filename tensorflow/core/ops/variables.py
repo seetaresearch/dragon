@@ -16,12 +16,9 @@ from __future__ import print_function
 
 import numpy
 
-from dragon.core.autograph import context as eager_context
 from dragon.core.framework import context
 from dragon.core.framework import workspace
 from dragon.core.framework.tensor import Tensor
-from dragon.vm.tensorflow.core.framework import dtypes
-from dragon.vm.tensorflow.core.ops import init_ops
 
 
 class Variable(Tensor):
@@ -90,56 +87,3 @@ class Variable(Tensor):
             (',)' if len(shape) == 1 else ')')
         return '<tf.Variable {} shape={} dtype={}, numpy=\n{}>' \
             .format(self.name, shape_str, self.dtype, numpy_str)
-
-
-def get_default_initializer(name, shape=None, dtype=dtypes.float32):
-    # Defaults: float32.
-    if dtype is None:
-        dtype = dtypes.float32
-    # Xavier for float16, float32, float64.
-    if dtype.is_floating:
-        initializer = init_ops.glorot_uniform_initializer()
-    # Zeros for integers.
-    elif dtype.is_integer or \
-            dtype.is_unsigned or \
-            dtype.is_bool:
-        initializer = init_ops.zeros_initializer()(
-            shape=shape, dtype=dtype.base_dtype)
-    # Fail to match the DType.
-    else:
-        raise ValueError(
-            'An initializer for Variable({}) of {} is required.'
-            .format(name, dtype.base_dtype))
-    return initializer
-
-
-def get_variable(
-    name,
-    shape=None,
-    dtype=None,
-    initializer=None,
-    regularizer=None,
-    trainable=True,
-    use_resource=True,
-):
-    if shape is None:
-        raise ValueError('Must specific a shape to create a Variable.')
-    if initializer is None:
-        initializer = get_default_initializer(name, shape, dtype=dtype)
-    if use_resource or eager_context.executing_eagerly():
-        with eager_context.eager_mode():
-            if callable(initializer):
-                initial_value = initializer(shape, dtype=dtype)
-            else:
-                initial_value = initializer
-            variable = Variable(
-                initial_value=initial_value,
-                trainable=trainable,
-                name=name,
-                dtype=dtype,
-            )
-    else:
-        raise RuntimeError('VariableV1 has been removed.')
-    if regularizer is not None:
-        variable = regularizer(variable)
-    return variable

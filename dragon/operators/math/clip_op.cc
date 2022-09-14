@@ -1,5 +1,5 @@
 #include "dragon/operators/math/clip_op.h"
-#include "dragon/utils/op_kernels.h"
+#include "dragon/kernels/op_kernels.h"
 
 namespace dragon {
 
@@ -33,26 +33,18 @@ void ClipGradientOp<Context>::DoRunWithType() {
 }
 
 DEPLOY_CPU_OPERATOR(Clip);
-#ifdef USE_CUDA
-DEPLOY_CUDA_OPERATOR(Clip);
-#endif
-
 DEPLOY_CPU_OPERATOR(ClipGradient);
 #ifdef USE_CUDA
+DEPLOY_CUDA_OPERATOR(Clip);
 DEPLOY_CUDA_OPERATOR(ClipGradient);
 #endif
+#ifdef USE_MPS
+DEPLOY_MPS_OPERATOR(Clip, Clip);
+DEPLOY_MPS_OPERATOR(ClipGradient, ClipGradient);
+#endif
 
-OPERATOR_SCHEMA(Clip)
-    /* X */
-    .NumInputs(1)
-    /* Y */
-    .NumOutputs(1);
-
-OPERATOR_SCHEMA(ClipGradient)
-    /* X, dY */
-    .NumInputs(2)
-    /* dX */
-    .NumOutputs(1);
+OPERATOR_SCHEMA(Clip).NumInputs(1).NumOutputs(1);
+OPERATOR_SCHEMA(ClipGradient).NumInputs(2).NumOutputs(1);
 
 REGISTER_GRADIENT(Clip, GenericGradientMaker);
 

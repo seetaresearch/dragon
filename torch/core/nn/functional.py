@@ -1016,7 +1016,7 @@ def embedding(input, weight, padding_idx=None):
     return weight.index_select(0, input)
 
 
-def gelu(input):
+def gelu(input, approximate='none'):
     r"""Apply the gaussian error linear unit to input.
     `[Clevert et.al, 2015] <https://arxiv.org/abs/1511.07289>`_.
 
@@ -1028,6 +1028,8 @@ def gelu(input):
     ----------
     input : dragon.vm.torch.Tensor
         The input tensor.
+    approximate : str, optional, default='none'
+        The approximate algorithm.
 
     Returns
     -------
@@ -1039,7 +1041,8 @@ def gelu(input):
     `torch.nn.GELU(...)`_
 
     """
-    return Function.apply('Gelu', input.device, [input], approximate=False)
+    approximate = approximate == 'tanh'
+    return Function.apply('Gelu', input.device, [input], approximate=approximate)
 
 
 def group_norm(input, num_groups, weight, bias, eps=1e-5):
@@ -2121,7 +2124,7 @@ def sigmoid_focal_loss(
     size_average=None,
     start_index=0,
     reduce=None,
-    reduction='valid',
+    reduction='mean',
 ):
     """Compute the sigmoid focal loss.
     `[Lin et.al, 2017] <https://arxiv.org/abs/1708.02002>`__.

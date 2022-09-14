@@ -1,7 +1,7 @@
 #include "dragon/core/workspace.h"
+#include "dragon/kernels/op_kernels.h"
 #include "dragon/operators/training/update_op.h"
 #include "dragon/utils/math_functions.h"
-#include "dragon/utils/op_kernels.h"
 
 namespace dragon {
 
@@ -78,6 +78,10 @@ DEPLOY_CPU_OPERATOR(LARS);
 DEPLOY_CUDA_OPERATOR(MomentumSGD);
 DEPLOY_CUDA_OPERATOR(NesterovSGD);
 DEPLOY_CUDA_OPERATOR(LARS);
+#endif
+#ifdef USE_MPS
+DEPLOY_MPS_OPERATOR(MomentumSGD, MomentumSGD);
+DEPLOY_MPS_OPERATOR(NesterovSGD, NesterovSGD);
 #endif
 
 OPERATOR_SCHEMA(MomentumSGD).NumInputs(1, INT_MAX).NumOutputs(1, INT_MAX);

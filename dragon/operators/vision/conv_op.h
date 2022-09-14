@@ -85,7 +85,9 @@ class CuDNNConvOp final : public CuDNNConvOpBase<Context> {
     CUDNN_CHECK(cudnnDestroyConvolutionDescriptor(conv_desc_));
   }
 
-  void RunOnDevice() override;
+  void RunOnDevice() override {
+    DispatchHelper<dtypes::Floating>::Call(this, Input(0));
+  }
 
   template <typename T>
   void DoRunWithType();
@@ -131,7 +133,9 @@ class CuDNNConvGradientOp final : public CuDNNConvOpBase<Context> {
     CUDNN_CHECK(cudnnDestroyConvolutionDescriptor(conv_desc_));
   }
 
-  void RunOnDevice() override;
+  void RunOnDevice() override {
+    DispatchHelper<dtypes::Floating>::Call(this, Input(0));
+  }
 
   template <typename T>
   void DoRunWithType();
@@ -159,6 +163,74 @@ class CuDNNConvGradientOp final : public CuDNNConvOpBase<Context> {
 };
 
 #endif // USE_CUDNN
+
+#ifdef USE_MPS
+
+template <class Context>
+class MPSConvOp final : public MPSConvOpBase<Context> {
+ public:
+  MPSConvOp(const OperatorDef& def, Workspace* ws)
+      : MPSConvOpBase<Context>(def, ws) {
+    graph_ = MPSCreateGraph();
+    SetConvDesc();
+  }
+  USE_OPERATOR_FUNCTIONS;
+  USE_CONV_FUNCTIONS;
+  USE_MPS_CONV_FUNCTIONS;
+
+  ~MPSConvOp() {
+    NSReleaseObject(graph_);
+  }
+
+  void RunOnDevice() override {
+    DispatchHelper<dtypes::Floating>::Call(this, Input(0));
+  }
+
+  template <typename T>
+  void DoRunWithType();
+
+ protected:
+  bool HasBias() override {
+    return InputSize() > 2;
+  }
+
+  MPSGraph_t graph_;
+  MPSGraphCache graph_cache_;
+};
+
+template <class Context>
+class MPSConvGradientOp final : public MPSConvOpBase<Context> {
+ public:
+  MPSConvGradientOp(const OperatorDef& def, Workspace* ws)
+      : MPSConvOpBase<Context>(def, ws) {
+    graph_ = MPSCreateGraph();
+    SetConvDesc();
+  }
+  USE_OPERATOR_FUNCTIONS;
+  USE_CONV_FUNCTIONS;
+  USE_MPS_CONV_FUNCTIONS;
+
+  ~MPSConvGradientOp() {
+    NSReleaseObject(graph_);
+  }
+
+  void RunOnDevice() override {
+    DispatchHelper<dtypes::Floating>::Call(this, Input(0));
+  }
+
+  template <typename T>
+  void DoRunWithType();
+
+ protected:
+  bool HasBias() override {
+    return Output(2)->has_name();
+  }
+
+  MPSGraph_t graph_;
+  MPSGraphCache graph_cache_;
+};
+
+#endif // USE_MPS
 
 } // namespace dragon
 

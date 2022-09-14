@@ -210,6 +210,9 @@ template class ConvOpBase<CPUContext>;
 #ifdef USE_CUDA
 template class ConvOpBase<CUDAContext>;
 #endif
+#ifdef USE_MPS
+template class ConvOpBase<MPSContext>;
+#endif
 
 #undef DETERMINE_SAME_PADDING
 

@@ -13,9 +13,9 @@
 #ifndef DRAGON_OPERATORS_VISION_CONV_OP_IMPL_H_
 #define DRAGON_OPERATORS_VISION_CONV_OP_IMPL_H_
 
+#include "dragon/kernels/op_kernels.h"
 #include "dragon/operators/vision/conv_op_base.h"
 #include "dragon/utils/math_functions.h"
-#include "dragon/utils/op_kernels.h"
 
 namespace dragon {
 

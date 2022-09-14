@@ -47,7 +47,10 @@ class Workspace(object):
 
         def release(self, handle):
             """Release a created handle."""
-            key, index = handle.rsplit('_', 1)
+            try:
+                key, index = handle.rsplit('_', 1)
+            except ValueError:
+                return
             try:
                 heapq.heappush(self._handles[key], int(index))
             except AttributeError:

@@ -13,8 +13,8 @@ from __future__ import absolute_import as _absolute_import
 from __future__ import division as _division
 from __future__ import print_function as _print_function
 
-from dragon.vm.tensorflow.core import truncated_normal
-from dragon.vm.tensorflow.core import random_normal as normal
-from dragon.vm.tensorflow.core import random_uniform as uniform
+from dragon.vm.tensorflow.core.ops.random_ops import truncated_normal
+from dragon.vm.tensorflow.core.ops.random_ops import random_normal as normal
+from dragon.vm.tensorflow.core.ops.random_ops import random_uniform as uniform
 
 __all__ = [_s for _s in dir() if not _s.startswith('_')]

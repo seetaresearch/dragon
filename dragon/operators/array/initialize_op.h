@@ -50,9 +50,10 @@ class FillOp final : public InitializeOp<Context> {
 };
 
 template <class Context>
-class RangeOp final : public Operator<Context> {
+class RangeOp final : public InitializeOp<Context> {
  public:
-  RangeOp(const OperatorDef& def, Workspace* ws) : Operator<Context>(def, ws) {
+  RangeOp(const OperatorDef& def, Workspace* ws)
+      : InitializeOp<Context>(def, ws) {
     INITIALIZE_OP_REPEATED_ARG(double, slice);
   }
   USE_OPERATOR_FUNCTIONS;
@@ -87,10 +88,10 @@ class LinSpaceOp final : public InitializeOp<Context> {
 };
 
 template <class Context>
-class PermutationOp final : public Operator<Context> {
+class PermutationOp final : public InitializeOp<Context> {
  public:
   PermutationOp(const OperatorDef& def, Workspace* ws)
-      : Operator<Context>(def, ws) {
+      : InitializeOp<Context>(def, ws) {
     INITIALIZE_OP_SINGLE_ARG(int64_t, limit, 0);
   }
   USE_OPERATOR_FUNCTIONS;
@@ -215,8 +216,8 @@ class TruncatedNormalOp final : public InitializeOp<Context> {
       : InitializeOp<Context>(def, ws),
         mean_(OP_SINGLE_ARG(float, "mean", 0.f)),
         std_(OP_SINGLE_ARG(float, "std", 1.f)) {
-    low_ = mean_ - 2 * std_;
-    high_ = mean_ + 2 * std_;
+    low_ = OP_SINGLE_ARG(float, "low", mean_ - 2 * std_);
+    high_ = OP_SINGLE_ARG(float, "high", mean_ + 2 * std_);
   }
   USE_OPERATOR_FUNCTIONS;
 
@@ -272,6 +273,90 @@ DEFINE_OP_REPEATED_ARG(int64_t, InitializeOp, dims);
 DEFINE_OP_REPEATED_ARG(double, RangeOp, slice);
 DEFINE_OP_REPEATED_ARG(double, LinSpaceOp, start);
 DEFINE_OP_REPEATED_ARG(double, LinSpaceOp, stop);
+
+#ifdef USE_MPS
+
+template <class Context>
+class MPSRandomUniformOp final : public InitializeOp<Context> {
+ public:
+  MPSRandomUniformOp(const OperatorDef& def, Workspace* ws)
+      : InitializeOp<Context>(def, ws),
+        low_(OP_SINGLE_ARG(float, "low", 0.f)),
+        high_(OP_SINGLE_ARG(float, "high", 1.f)) {
+    graph_ = MPSCreateGraph();
+  }
+  USE_OPERATOR_FUNCTIONS;
+
+  ~MPSRandomUniformOp() {
+    NSReleaseObject(graph_);
+  }
+
+  void RunOnDevice() override;
+
+  template <typename T>
+  void DoRunWithType();
+
+ protected:
+  float low_, high_;
+  MPSGraph_t graph_;
+  MPSGraphCache graph_cache_;
+};
+
+template <class Context>
+class MPSRandomNormalOp final : public InitializeOp<Context> {
+ public:
+  MPSRandomNormalOp(const OperatorDef& def, Workspace* ws)
+      : InitializeOp<Context>(def, ws),
+        mean_(OP_SINGLE_ARG(float, "mean", 0.f)),
+        std_(OP_SINGLE_ARG(float, "std", 1.f)) {
+    graph_ = MPSCreateGraph();
+  }
+  USE_OPERATOR_FUNCTIONS;
+
+  ~MPSRandomNormalOp() {
+    NSReleaseObject(graph_);
+  }
+
+  void RunOnDevice() override;
+
+  template <typename T>
+  void DoRunWithType();
+
+ protected:
+  float mean_, std_;
+  MPSGraph_t graph_;
+  MPSGraphCache graph_cache_;
+};
+
+template <class Context>
+class MPSTruncatedNormalOp final : public InitializeOp<Context> {
+ public:
+  MPSTruncatedNormalOp(const OperatorDef& def, Workspace* ws)
+      : InitializeOp<Context>(def, ws),
+        mean_(OP_SINGLE_ARG(float, "mean", 0.f)),
+        std_(OP_SINGLE_ARG(float, "std", 1.f)) {
+    low_ = OP_SINGLE_ARG(float, "low", mean_ - 2 * std_);
+    high_ = OP_SINGLE_ARG(float, "high", mean_ + 2 * std_);
+    graph_ = MPSCreateGraph();
+  }
+  USE_OPERATOR_FUNCTIONS;
+
+  ~MPSTruncatedNormalOp() {
+    NSReleaseObject(graph_);
+  }
+
+  void RunOnDevice() override;
+
+  template <typename T>
+  void DoRunWithType();
+
+ protected:
+  float mean_, std_, low_, high_;
+  MPSGraph_t graph_;
+  MPSGraphCache graph_cache_;
+};
+
+#endif // USE_MPS
 
 } // namespace dragon
 

@@ -1,6 +1,6 @@
 #include "dragon/core/workspace.h"
+#include "dragon/kernels/op_kernels.h"
 #include "dragon/operators/training/update_op.h"
-#include "dragon/utils/op_kernels.h"
 
 namespace dragon {
 
@@ -47,6 +47,10 @@ DEPLOY_CPU_OPERATOR(AdamW);
 #ifdef USE_CUDA
 DEPLOY_CUDA_OPERATOR(Adam);
 DEPLOY_CUDA_OPERATOR(AdamW);
+#endif
+#ifdef USE_MPS
+DEPLOY_MPS_OPERATOR(Adam, Adam);
+DEPLOY_MPS_OPERATOR(AdamW, AdamW);
 #endif
 
 OPERATOR_SCHEMA(Adam).NumInputs(1, INT_MAX).NumOutputs(1, INT_MAX);

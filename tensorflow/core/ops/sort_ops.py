@@ -53,10 +53,8 @@ def argsort(values, axis=-1, direction='ASCENDING', name=None):
         The output tensor.
 
     """
-    if direction not in ('ASCENDING', 'DESCENDING'):
-        raise ValueError('Unknown direction: ' + direction)
-    value_and_index = sort_ops.sort(
-        values, axis=axis, descending=direction == 'DESCENDING', name=name)
+    descending = direction == 'DESCENDING'
+    value_and_index = sort_ops.sort(values, axis, descending, name=name)
     return value_and_index[1]
 
 
@@ -96,8 +94,6 @@ def sort(values, axis=-1, direction='ASCENDING', name=None):
         The output tensor.
 
     """
-    if direction not in ('ASCENDING', 'DESCENDING'):
-        raise ValueError('Unknown direction: ' + direction)
-    value_and_index = sort_ops.sort(
-        values, axis=axis, descending=direction == 'DESCENDING', name=name)
+    descending = direction == 'DESCENDING'
+    value_and_index = sort_ops.sort(values, axis, descending, name=name)
     return value_and_index[0]

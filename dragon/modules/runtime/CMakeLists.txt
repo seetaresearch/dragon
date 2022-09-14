@@ -1,85 +1,74 @@
-# ---[ Settings
+# ---[ Messages
 message(STATUS "Build module: ${CMAKE_CURRENT_LIST_DIR}")
-
-# ---[ Defines
-add_definitions(-DBUILD_RUNTIME)
-if (USE_MPI)
-  remove_definitions(-DUSE_MPI)
-endif()
 
 # ---[ Sources
 set(MODULE_INCLUDES "")
 file(GLOB MODULE_SOURCES *.cc)
-add_subdirectory(${PROJECT_SOURCE_DIR}/core core)
-add_subdirectory(${PROJECT_SOURCE_DIR}/onnx onnx)
-add_subdirectory(${PROJECT_SOURCE_DIR}/utils utils)
+add_subdirectory(${PROJECT_SOURCE_DIR}/dragon/core core)
+add_subdirectory(${PROJECT_SOURCE_DIR}/dragon/onnx onnx)
+add_subdirectory(${PROJECT_SOURCE_DIR}/dragon/proto proto)
+add_subdirectory(${PROJECT_SOURCE_DIR}/dragon/utils utils)
 
-file(REMOVE_RECURSE ${PROJECT_SOURCE_DIR}/proto_lite)
-file(COPY ${PROJECT_SOURCE_DIR}/proto DESTINATION ${PROJECT_SOURCE_DIR}/core)
-file(RENAME ${PROJECT_SOURCE_DIR}/core/proto ${PROJECT_SOURCE_DIR}/proto_lite)
-file(GLOB PROTO_FILES ${PROJECT_SOURCE_DIR}/proto_lite/*.proto)
-protobuf_generate_lite(${PROTO_FILES})
-add_subdirectory(${PROJECT_SOURCE_DIR}/proto_lite proto)
-
-if (HAS_RUNTIME_CODEGEN)
-  add_subdirectory(${PROJECT_SOURCE_DIR}/runtime/kernels kernels)
-  add_subdirectory(${PROJECT_SOURCE_DIR}/runtime/operators operators)
-else()
-  add_subdirectory(${PROJECT_SOURCE_DIR}/kernels kernels)
-  add_subdirectory(${PROJECT_SOURCE_DIR}/operators operators)
-endif()
-
-# ---[ Target
+# ---[ Targets
 if (USE_CUDA)
-  cuda_add_library(dragonrt ${MODULE_SOURCES} ${MODULE_CUDA_SOURCES})
+  cuda_add_library(dragon_runtime ${MODULE_SOURCES} ${MODULE_CUDA_SOURCES})
 else ()
-  add_library(dragonrt ${MODULE_SOURCES})
+  add_library(dragon_runtime ${MODULE_SOURCES})
 endif()
 
-# ---[ Target defines
+# ---[ Target Defines
 if (MSVC)
   if (BUILD_SHARED_LIBS)
-    target_compile_definitions(dragonrt PRIVATE "DRAGON_API=__declspec(dllexport)")
+    target_compile_definitions(dragon_runtime PRIVATE "DRAGON_API=__declspec(dllexport)")
   else()
-    target_compile_definitions(dragonrt PRIVATE "DRAGON_API=")
+    target_compile_definitions(dragon_runtime PRIVATE "DRAGON_API=")
   endif()
 else()
-  target_compile_definitions(dragonrt PRIVATE "DRAGON_API=")
+  target_compile_definitions(dragon_runtime PRIVATE "DRAGON_API=")
+endif()
+if (USE_MPS)
+  target_compile_definitions(dragon_runtime PRIVATE ${MPS_OSX_VERSION_DEFINES})
 endif()
 
-# ---[ Target settings
+# ---[ Target Properties
 set(_install_rpath ${RPATH_PORTABLE_ORIGIN})
 if (USE_SHARED_LIBS)
   set(_install_rpath ${_install_rpath} ${THIRD_PARTY_LIBRARY_DIRS})
 endif()
-set_target_properties(dragonrt PROPERTIES INSTALL_RPATH "${_install_rpath}")
+set_target_properties(dragon_runtime PROPERTIES INSTALL_RPATH "${_install_rpath}")
 
 # ---[ Linker
-target_link_libraries_v2(dragonrt protobuf-lite)
+target_link_libraries_v2(dragon_runtime protobuf)
 if (USE_OPENMP)
   if (CMAKE_CXX_COMPILER_ID MATCHES "Clang")
-    target_link_libraries_v2(dragonrt omp)
+    target_link_libraries_v2(dragon_runtime ${OPENMP_LIBRARIES})
   endif()
+endif()
+if (USE_BLAS)
+  target_link_libraries(dragon_runtime ${BLAS_LIBRARIES})
 endif()
 if (USE_CUDA)
   if (USE_SHARED_LIBS)
-    target_link_libraries_v2(dragonrt ${CUDA_LIBRARIES_SHARED})
+    target_link_libraries_v2(dragon_runtime ${CUDA_LIBRARIES_SHARED})
   else()
-    target_link_libraries_v2(dragonrt ${CUDA_LIBRARIES_STATIC})
+    target_link_libraries_v2(dragon_runtime ${CUDA_LIBRARIES_STATIC})
   endif()
 endif()
 if (USE_CUDNN)
   if (USE_SHARED_LIBS)
-    target_link_libraries_v2(dragonrt ${CUDNN_LIBRARIES_SHARED})
+    target_link_libraries_v2(dragon_runtime ${CUDNN_LIBRARIES_SHARED})
   else()
     target_link_libraries_v2(
-      dragonrt -Wl,--whole-archive
+      dragon_runtime -Wl,--whole-archive
       ${CUDNN_LIBRARIES_STATIC} -Wl,--no-whole-archive)
   endif()
 endif()
+if (USE_MPS)
+  target_link_libraries(dragon_runtime ${MPS_LIBRARIES})
+endif()
 
 # ---[ Command - Strip
-strip_debug_symbol(dragonrt)
+strip_debug_symbol(dragon_runtime)
 
 # ---[ Install - Headers
 set(_install_dir ${CMAKE_INSTALL_PREFIX}/include)
@@ -87,25 +76,24 @@ foreach(_file ${MODULE_INCLUDES})
   get_filename_component(_dir ${_file} DIRECTORY)
   get_filename_component(_ext ${_file} EXT)
   file(RELATIVE_PATH _dir ${PROJECT_SOURCE_DIR} ${_dir})
-  file(COPY ${_file} DESTINATION ${_install_dir}/dragon/${_dir})
+  file(COPY ${_file} DESTINATION ${_install_dir}/${_dir})
   if (${_ext} STREQUAL ".pb.h" AND WIN32)
     get_filename_component(_name ${_file} NAME)
-    protobuf_remove_constexpr(${_install_dir}/dragon/${_dir}/${_name})
+    protobuf_remove_constexpr(${_install_dir}/${_dir}/${_name})
   endif()
 endforeach()
 file(COPY dragon_runtime.h DESTINATION ${_install_dir}/dragon)
 file(COPY ${THIRD_PARTY_DIR}/cub/cub DESTINATION ${_install_dir}/cub)
 file(COPY ${THIRD_PARTY_DIR}/eigen/Eigen DESTINATION ${_install_dir})
 file(COPY ${THIRD_PARTY_DIR}/eigen/unsupported/Eigen DESTINATION ${_install_dir}/unsupported)
-file(COPY ${THIRD_PARTY_DIR}/pybind11/include/pybind11 DESTINATION ${_install_dir})
 if (EXISTS ${PROTOBUF_SDK_ROOT_DIR}/include/google)
   file(COPY ${PROTOBUF_SDK_ROOT_DIR}/include/google DESTINATION ${_install_dir})
 endif()
 
-# ---[ Install - Library
+# ---[ Install - Libraries
 set(_install_dir ${CMAKE_INSTALL_PREFIX}/lib)
-install(TARGETS dragonrt DESTINATION ${_install_dir}/${LIBRARY_INSTALL_PREFIX})
+install(TARGETS dragon_runtime DESTINATION ${_install_dir}/${LIBRARY_INSTALL_PREFIX})
 if (MSVC)
-  target_get_libraries(_files dragon "protobuf-lite.lib")
+  target_get_libraries(_files dragon "protobuf.lib")
   file(COPY ${_files} DESTINATION ${_install_dir})
 endif()

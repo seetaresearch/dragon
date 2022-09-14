@@ -28,7 +28,9 @@ def get_build_info():
     * cpu_features
     * cuda_version
     * cudnn_version
+    * mps_version
     * is_cuda_build
+    * is_mps_build
     * third_party
 
     Returns
@@ -44,6 +46,7 @@ def get_build_info():
         if len(v) > 0:
             build_info[k] = v[1:]
     build_info['is_cuda_build'] = 'cuda_version' in build_info
+    build_info['is_mps_build'] = 'mps_version' in build_info
     return build_info
 
 

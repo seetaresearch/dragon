@@ -38,10 +38,6 @@ class TensorSpec(object):
 
         """
         self._shape = tensor_shape.TensorShape(shape)
-        try:
-            self._shape_tuple = tuple(self._shape.as_list())
-        except ValueError:
-            self._shape_tuple = None
         self._dtype = dtypes.as_dtype(dtype)
         self._name = name
 
@@ -90,11 +86,11 @@ class TensorSpec(object):
             ``True`` if compatible otherwise ``False``.
 
         """
-        def dtype_is_compatible_with(spec_or_tensor):
-            return self.dtype == spec_or_tensor.dtype
+        def dtype_is_compatible_with(other):
+            return self.dtype == other.dtype
 
-        def shape_is_compatible_with(spec_or_tensor):
-            shape = spec_or_tensor.shape
+        def shape_is_compatible_with(other):
+            shape = other.shape
             if self._shape is not None and shape is not None:
                 if len(self.shape) != len(shape):
                     return False
@@ -103,6 +99,5 @@ class TensorSpec(object):
                     return False
             return True
 
-        return \
-            dtype_is_compatible_with(spec_or_tensor) and \
-            shape_is_compatible_with(spec_or_tensor)
+        return (dtype_is_compatible_with(spec_or_tensor) and
+                shape_is_compatible_with(spec_or_tensor))

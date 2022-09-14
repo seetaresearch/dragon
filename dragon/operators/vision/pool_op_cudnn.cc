@@ -1,8 +1,8 @@
 #ifdef USE_CUDNN
 
 #include "dragon/core/workspace.h"
+#include "dragon/kernels/op_kernels.h"
 #include "dragon/operators/vision/pool_op.h"
-#include "dragon/utils/op_kernels.h"
 
 namespace dragon {
 

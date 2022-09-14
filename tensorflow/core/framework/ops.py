@@ -104,12 +104,12 @@ def device(device_name):
     """
     if not isinstance(device_name, str):
         raise TypeError('The device function should be a str.')
-    device_and_id = device_name.split('/')[1]
-    device, id = device_and_id.split(':')
-    if device not in ['cpu', 'gpu']:
-        raise ValueError('The device should either be cpu or gpu.')
+    type_and_index = device_name.split('/')[-1]
+    device_type, device_index = type_and_index.split(':')
+    if device_type not in ['cpu', 'gpu', 'cuda', 'mps']:
+        raise ValueError('Unsupported device type: ' + device_type)
     try:
-        id = int(id)
+        device_index = int(device_index)
     except Exception:
-        raise ValueError('The device id should be a integer.')
-    return context.device(device, device_index=id)
+        raise ValueError('The device index should be an integer.')
+    return context.device(device_type, device_index)

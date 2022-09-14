@@ -1,5 +1,5 @@
 #include "dragon/operators/activation/gelu_op.h"
-#include "dragon/utils/op_kernels.h"
+#include "dragon/kernels/op_kernels.h"
 
 namespace dragon {
 
@@ -44,13 +44,14 @@ void GeluGradientOp<Context>::DoRunWithType() {
 }
 
 DEPLOY_CPU_OPERATOR(Gelu);
-#ifdef USE_CUDA
-DEPLOY_CUDA_OPERATOR(Gelu);
-#endif
-
 DEPLOY_CPU_OPERATOR(GeluGradient);
 #ifdef USE_CUDA
+DEPLOY_CUDA_OPERATOR(Gelu);
 DEPLOY_CUDA_OPERATOR(GeluGradient);
+#endif
+#ifdef USE_MPS
+DEPLOY_MPS_OPERATOR(Gelu, Gelu);
+DEPLOY_MPS_OPERATOR(GeluGradient, GeluGradient);
 #endif
 
 OPERATOR_SCHEMA(Gelu)

@@ -1,7 +1,7 @@
 #include "dragon/operators/loss/nll_loss_op.h"
 #include "dragon/core/workspace.h"
+#include "dragon/kernels/op_kernels.h"
 #include "dragon/utils/math_functions.h"
-#include "dragon/utils/op_kernels.h"
 
 namespace dragon {
 
@@ -108,13 +108,14 @@ void NLLLossGradientOp<Context>::DoRunWithType() {
 }
 
 DEPLOY_CPU_OPERATOR(NLLLoss);
-#ifdef USE_CUDA
-DEPLOY_CUDA_OPERATOR(NLLLoss);
-#endif
-
 DEPLOY_CPU_OPERATOR(NLLLossGradient);
 #ifdef USE_CUDA
+DEPLOY_CUDA_OPERATOR(NLLLoss);
 DEPLOY_CUDA_OPERATOR(NLLLossGradient);
+#endif
+#ifdef USE_MPS
+DEPLOY_MPS_OPERATOR(NLLLoss, NLLLoss);
+DEPLOY_MPS_OPERATOR(NLLLossGradient, NLLLossGradient);
 #endif
 
 OPERATOR_SCHEMA(NLLLoss)

@@ -1,7 +1,7 @@
 #include "dragon/core/workspace.h"
+#include "dragon/kernels/op_kernels.h"
 #include "dragon/operators/loss/focal_loss_op.h"
 #include "dragon/utils/math_functions.h"
-#include "dragon/utils/op_kernels.h"
 
 namespace dragon {
 
@@ -161,13 +161,14 @@ void SigmoidFocalLossGradientOp<Context>::RunOnDevice() {
 }
 
 DEPLOY_CPU_OPERATOR(SigmoidFocalLoss);
-#ifdef USE_CUDA
-DEPLOY_CUDA_OPERATOR(SigmoidFocalLoss);
-#endif
-
 DEPLOY_CPU_OPERATOR(SigmoidFocalLossGradient);
 #ifdef USE_CUDA
+DEPLOY_CUDA_OPERATOR(SigmoidFocalLoss);
 DEPLOY_CUDA_OPERATOR(SigmoidFocalLossGradient);
+#endif
+#ifdef USE_MPS
+DEPLOY_MPS_OPERATOR(SigmoidFocalLoss, SigmoidFocalLoss);
+DEPLOY_MPS_OPERATOR(SigmoidFocalLossGradient, SigmoidFocalLossGradient);
 #endif
 
 OPERATOR_SCHEMA(SigmoidFocalLoss)

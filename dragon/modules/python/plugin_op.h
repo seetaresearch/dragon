@@ -15,9 +15,8 @@
 
 #ifdef USE_PYTHON
 
+#include <dragon/core/operator.h>
 #include <pybind11/pybind11.h>
-
-#include "dragon/core/operator.h"
 
 namespace dragon {
 

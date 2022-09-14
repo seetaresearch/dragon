@@ -22,6 +22,7 @@ import math
 
 from dragon.core.util import math_util
 from dragon.vm.torch.core.autograd import grad_mode
+from dragon.vm.torch.core.autograd.function import Function
 from dragon.vm.torch.core.ops import constant_ops
 
 
@@ -257,6 +258,62 @@ def ones_(tensor):
     """
     with grad_mode.no_grad():
         return tensor.fill_(1)
+
+
+def normal_(tensor, mean=0, std=1):
+    r"""Fill tensor from a normal distribution.
+
+    .. math:: \text{tensor} \sim \mathcal{N}(\mu, \sigma^{2})
+
+    Parameters
+    ----------
+    tensor : dragon.vm.torch.Tensor
+        The input tensor.
+    mean : number, optional, default=0
+        The value to :math:`\mu`.
+    std : number, optional, default=1
+        The value to :math:`\sigma`.
+
+    Returns
+    -------
+    dragon.vm.torch.Tensor
+        The output tensor.
+
+    """
+    with grad_mode.no_grad():
+        return tensor.normal_(mean, std)
+
+
+def trunc_normal_(tensor, mean=0, std=1, a=-2, b=2):
+    r"""Fill tensor from a truncated normal distribution.
+
+    .. math:: \text{tensor} \sim \mathcal{TN}(\mu, \sigma^{2}, a, b)
+
+    Parameters
+    ----------
+    tensor : dragon.vm.torch.Tensor
+        The input tensor.
+    mean : number, optional, default=0
+        The value to :math:`\mu`.
+    std : number, optional, default=1
+        The value to :math:`\sigma`.
+    a : number, optional, default=-2
+        The value to :math:`a`.
+    b : number, optional, default=2
+        The value to :math:`b`.
+
+    Returns
+    -------
+    dragon.vm.torch.Tensor
+        The output tensor.
+
+    """
+    size = tensor.size()
+    with grad_mode.no_grad():
+        return Function.apply(
+            'TruncatedNormal', tensor.device, [], outputs=[tensor],
+            dtype=tensor.dtype, mean=float(mean), std=float(std),
+            low=float(a), high=float(b), ndim=len(size), dims=size)
 
 
 def uniform_(tensor, a=0, b=1):

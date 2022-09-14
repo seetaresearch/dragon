@@ -1,7 +1,7 @@
 #include "dragon/operators/array/tile_op.h"
 #include "dragon/core/workspace.h"
+#include "dragon/kernels/op_kernels.h"
 #include "dragon/utils/math_functions.h"
-#include "dragon/utils/op_kernels.h"
 
 namespace dragon {
 
@@ -79,26 +79,14 @@ void TileGradientOp<Context>::DoRunWithType() {
 }
 
 DEPLOY_CPU_OPERATOR(Tile);
-#ifdef USE_CUDA
-DEPLOY_CUDA_OPERATOR(Tile);
-#endif
-
 DEPLOY_CPU_OPERATOR(TileGradient);
 #ifdef USE_CUDA
+DEPLOY_CUDA_OPERATOR(Tile);
 DEPLOY_CUDA_OPERATOR(TileGradient);
 #endif
 
-OPERATOR_SCHEMA(Tile)
-    /* X */
-    .NumInputs(1)
-    /* Y */
-    .NumOutputs(1);
-
-OPERATOR_SCHEMA(TileGradient)
-    /* dY */
-    .NumInputs(1)
-    /* dX */
-    .NumOutputs(1);
+OPERATOR_SCHEMA(Tile).NumInputs(1).NumOutputs(1);
+OPERATOR_SCHEMA(TileGradient).NumInputs(1).NumOutputs(1);
 
 REGISTER_GRADIENT(Tile, SimpleGradientMaker);
 

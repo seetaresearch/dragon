@@ -19,6 +19,7 @@ from dragon.core.device.cuda import Stream
 # Functions
 from dragon.core.device.cuda import current_device
 from dragon.core.device.cuda import get_device_capability
+from dragon.core.device.cuda import get_device_name
 from dragon.core.device.cuda import is_available
 from dragon.core.device.cuda import memory_allocated
 from dragon.core.device.cuda import set_cublas_flags

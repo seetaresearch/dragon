@@ -1,9 +1,6 @@
 // Copyright (c) 2017-present, SeetaTech, Co.,Ltd.
 // Licensed under the BSD 2-Clause License.
 
-// Codes are based on:
-// https://github.com/pytorch/pytorch/blob/master/caffe2/proto/caffe2.proto
-
 syntax = "proto2";
 package dragon;
 
@@ -59,10 +56,10 @@ message TensorProtos {
 enum DeviceTypeProto {
   // The default device.
   PROTO_CPU = 0;
-  // NVIDIA's CUDA Environment.
+  // NVIDIA CUDA.
   PROTO_CUDA = 1;
-  // CAMBRICON's CNML Environment.
-  PROTO_CNML = 2;
+  // Apple MetalPerformanceShaders.
+  PROTO_MPS = 2;
 }
 
 // Device-specific options.

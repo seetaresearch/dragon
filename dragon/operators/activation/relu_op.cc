@@ -1,5 +1,5 @@
 #include "dragon/operators/activation/relu_op.h"
-#include "dragon/utils/op_kernels.h"
+#include "dragon/kernels/op_kernels.h"
 
 namespace dragon {
 
@@ -25,11 +25,6 @@ void ReluOp<Context>::DoRunWithType() {
 }
 
 template <class Context>
-void ReluOp<Context>::RunOnDevice() {
-  DispatchHelper<dtypes::Floating>::Call(this, Input(0));
-}
-
-template <class Context>
 template <typename T>
 void ReluGradientOp<Context>::DoRunWithType() {
   auto &Y = Input(0), &dY = Input(1), *dX = Output(0);
@@ -52,19 +47,15 @@ void ReluGradientOp<Context>::DoRunWithType() {
   }
 }
 
-template <class Context>
-void ReluGradientOp<Context>::RunOnDevice() {
-  DispatchHelper<dtypes::Floating>::Call(this, Input(0));
-}
-
 DEPLOY_CPU_OPERATOR(Relu);
-#ifdef USE_CUDA
-DEPLOY_CUDA_OPERATOR(Relu);
-#endif
-
 DEPLOY_CPU_OPERATOR(ReluGradient);
 #ifdef USE_CUDA
+DEPLOY_CUDA_OPERATOR(Relu);
 DEPLOY_CUDA_OPERATOR(ReluGradient);
+#endif
+#ifdef USE_MPS
+DEPLOY_MPS_OPERATOR(Relu, Relu);
+DEPLOY_MPS_OPERATOR(ReluGradient, ReluGradient);
 #endif
 
 OPERATOR_SCHEMA(Relu)

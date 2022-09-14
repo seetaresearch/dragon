@@ -58,8 +58,8 @@ def argsort(inputs, axis=-1, descending=False, **kwargs):
         return OpLib.execute(
             'Sort', inputs, outputs=[None, None], axis=axis,
             descending=descending)[1]
-    return OpLib.add('Sort', inputs, axis=axis,
-                     descending=descending, num_outputs=2)[1]
+    return OpLib.add('Sort', inputs, axis=axis, descending=descending,
+                     num_outputs=2, **kwargs)[1]
 
 
 @OpSchema.num_inputs(1)
@@ -102,13 +102,13 @@ def sort(inputs, axis=-1, descending=False, **kwargs):
         return OpLib.execute(
             'Sort', inputs, outputs=[None, None], axis=axis,
             descending=descending)
-    return OpLib.add('Sort', inputs, axis=axis,
-                     descending=descending, num_outputs=2)
+    return OpLib.add('Sort', inputs, axis=axis, descending=descending,
+                     num_outputs=2, **kwargs)
 
 
 @OpSchema.num_inputs(1)
 def top_k(inputs, k=1, axis=-1, largest=True, sorted=True, **kwargs):
-    """Return the top-K largest or smallest elements along the given axis.
+    """Return the top k-largest or k-smallest elements along the given axis.
 
     :attr:`axis` could be negative:
 
@@ -119,7 +119,7 @@ def top_k(inputs, k=1, axis=-1, largest=True, sorted=True, **kwargs):
     value2, index2 = dragon.math.top_k(x, k=2, axis=-1)  # Equivalent
     ```
 
-    If ``largest`` is ``False``, the k smallest elements are returned:
+    If ``largest`` is ``False``, the k-smallest elements are returned:
 
     ```python
     x = dragon.constant([1, 2, 3])
@@ -138,11 +138,11 @@ def top_k(inputs, k=1, axis=-1, largest=True, sorted=True, **kwargs):
     largest : bool, optional, default=True
         Return largest or smallest elements.
     sorted : bool, optional, default=True
-        Whether to return in the sorted order.
+        Whether to return elements in the sorted order.
 
     Returns
     -------
-    Sequence[dragon.vm.torch.Tensor]
+    Sequence[dragon.Tensor]
         The value and index tensor.
 
     """

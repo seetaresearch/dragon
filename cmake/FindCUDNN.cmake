@@ -58,6 +58,12 @@ elseif (EXISTS "${CUDNN_INCLUDE_DIR}/../lib")
 endif()
 set(CUDNN_LIBRARIES_SHARED cudnn)
 set(CUDNN_LIBRARIES_STATIC cudnn_static)
+if (CUDNN_VERSION VERSION_GREATER "7.6.5")
+  set(CUDNN_LIBRARIES_SHARED ${CUDNN_LIBRARIES_SHARED}
+                             cudnn_adv_infer cudnn_adv_train
+                             cudnn_cnn_infer cudnn_cnn_train
+                             cudnn_ops_infer cudnn_ops_train)
+endif()
 if (CUDNN_VERSION VERSION_GREATER "8.2.4")
   set(CUDNN_LIBRARIES_STATIC cudnn_adv_infer_static cudnn_adv_train_static
                              cudnn_cnn_infer_static cudnn_cnn_train_static

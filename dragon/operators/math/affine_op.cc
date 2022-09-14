@@ -10,13 +10,14 @@ void AffineOp<Context>::DoRunWithType() {
   auto &X = Input(0), &W = Input(1), *Y = Output(0, {0});
 
   // Compute affine dimensions.
-  vec64_t affine_dims;
+  vec64_t affine_dims, affine_axes;
   for (auto axis : axes_) {
     axis = axis < 0 ? axis + X.ndim() : axis;
     CHECK(axis >= 0 && axis < X.ndim())
         << "\nExcepted the axis in [-" << X.ndim() << ", " << X.ndim()
         << "), got " << axis << ".";
     affine_dims.push_back(X.dim(axis));
+    affine_axes.push_back(axis);
   }
   CHECK(W.dims() == affine_dims)
       << "\nExcepted the weight shape is " << Tensor::DimString(affine_dims)
@@ -30,8 +31,8 @@ void AffineOp<Context>::DoRunWithType() {
   math::Affine(
       X.ndim(),
       X.dims().data(),
-      axes_.size(),
-      axes_.data(),
+      affine_axes.size(),
+      affine_axes.data(),
       X.template data<T, Context>(),
       W.template data<T, Context>(),
       InputSize() <= 2 ? nullptr : Input(2).template data<T, Context>(),
@@ -45,13 +46,14 @@ void AffineGradientOp<Context>::DoRunWithType() {
   auto &X = Input(0), &W = Input(1), &dY = Input(2);
   auto *dX = Output(0), *dW = Output(1), *dB = Output(2);
 
-  // Compute reduce axes.
-  vec64_t reduce_axes;
+  // Compute axes.
+  vec64_t reduce_axes, affine_axes;
   for (int i = 0; i < X.ndim(); ++i) {
     bool keep = true;
     for (auto axis : axes_) {
       axis = axis < 0 ? axis + X.ndim() : axis;
       if (axis == i) keep = false;
+      if (i == 0) affine_axes.push_back(axis);
     }
     if (keep) reduce_axes.push_back(i);
   }
@@ -112,8 +114,8 @@ void AffineGradientOp<Context>::DoRunWithType() {
     math::Affine(
         X.ndim(),
         X.dims().data(),
-        axes_.size(),
-        axes_.data(),
+        affine_axes.size(),
+        affine_axes.data(),
         dY.template data<T, Context>(),
         W.template data<T, Context>(),
         (const T*)nullptr,
@@ -123,13 +125,14 @@ void AffineGradientOp<Context>::DoRunWithType() {
 }
 
 DEPLOY_CPU_OPERATOR(Affine);
-#ifdef USE_CUDA
-DEPLOY_CUDA_OPERATOR(Affine);
-#endif
-
 DEPLOY_CPU_OPERATOR(AffineGradient);
 #ifdef USE_CUDA
+DEPLOY_CUDA_OPERATOR(Affine);
 DEPLOY_CUDA_OPERATOR(AffineGradient);
+#endif
+#ifdef USE_MPS
+DEPLOY_MPS_OPERATOR(Affine, Affine);
+DEPLOY_MPS_OPERATOR(AffineGradient, AffineGradient);
 #endif
 
 OPERATOR_SCHEMA(Affine)

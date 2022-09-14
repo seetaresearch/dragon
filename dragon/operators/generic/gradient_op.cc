@@ -1,6 +1,6 @@
 #include "dragon/operators/generic/gradient_op.h"
+#include "dragon/kernels/op_kernels.h"
 #include "dragon/utils/math_functions.h"
-#include "dragon/utils/op_kernels.h"
 
 namespace dragon {
 
@@ -45,26 +45,27 @@ void GradientGatherOp<Context>::DoRunWithType() {
 }
 
 DEPLOY_CPU_OPERATOR(GradientFill);
+DEPLOY_CPU_OPERATOR(GradientGather);
+DEPLOY_CPU_OPERATOR(GradientStop);
+
 #ifdef USE_CUDA
 DEPLOY_CUDA_OPERATOR(GradientFill);
-#endif
-
-DEPLOY_CPU_OPERATOR(GradientGather);
-#ifdef USE_CUDA
 DEPLOY_CUDA_OPERATOR(GradientGather);
-#endif
-
-DEPLOY_CPU_OPERATOR(GradientStop);
-#ifdef USE_CUDA
 DEPLOY_CUDA_OPERATOR(GradientStop);
 #endif
 
+#ifdef USE_MPS
+DEPLOY_MPS_OPERATOR(GradientFill, GradientFill);
+DEPLOY_MPS_OPERATOR(GradientGather, GradientGather);
+DEPLOY_MPS_OPERATOR(GradientStop, GradientStop);
+#endif
+
 OPERATOR_SCHEMA(GradientFill).NumInputs(1, INT_MAX).NumOutputs(1, INT_MAX);
+OPERATOR_SCHEMA(StopGradient).NumInputs(1).NumOutputs(1).AllowInplace({{0, 0}});
 OPERATOR_SCHEMA(GradientGather)
     .NumInputs(1, INT_MAX)
     .NumOutputs(1)
     .AllowInplace([](int, int) -> bool { return true; });
-OPERATOR_SCHEMA(StopGradient).NumInputs(1).NumOutputs(1).AllowInplace({{0, 0}});
 
 NO_GRADIENT(GradientStop);
 

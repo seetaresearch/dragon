@@ -14,6 +14,8 @@
 #define DRAGON_UTILS_MATH_ELEMENTWISE_H_
 
 #include "dragon/core/context.h"
+#include "dragon/core/context_cuda.h"
+#include "dragon/core/context_mps.h"
 
 namespace dragon {
 
@@ -95,7 +97,7 @@ DRAGON_API void IsFinite(const int N, const T* x, bool* y, Context* ctx);
 
 template <typename T, class Context>
 DRAGON_API void
-ReplaceNaN(const int N, const T value, const T* x, T* y, Context* ctx);
+ReplaceNaN(const int N, const float value, const T* x, T* y, Context* ctx);
 
 template <typename T, class Context>
 DRAGON_API void ApplyMask(

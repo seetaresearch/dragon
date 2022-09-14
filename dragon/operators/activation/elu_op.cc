@@ -1,5 +1,5 @@
 #include "dragon/operators/activation/elu_op.h"
-#include "dragon/utils/op_kernels.h"
+#include "dragon/kernels/op_kernels.h"
 
 namespace dragon {
 
@@ -16,11 +16,6 @@ void EluOp<Context>::DoRunWithType() {
 }
 
 template <class Context>
-void EluOp<Context>::RunOnDevice() {
-  DispatchHelper<dtypes::Floating>::Call(this, Input(0));
-}
-
-template <class Context>
 template <typename T>
 void EluGradientOp<Context>::DoRunWithType() {
   auto &Y = Input(0), &dY = Input(1), *dX = Output(0);
@@ -33,19 +28,15 @@ void EluGradientOp<Context>::DoRunWithType() {
       ctx());
 }
 
-template <class Context>
-void EluGradientOp<Context>::RunOnDevice() {
-  DispatchHelper<dtypes::Floating>::Call(this, Input(0));
-}
-
 DEPLOY_CPU_OPERATOR(Elu);
-#ifdef USE_CUDA
-DEPLOY_CUDA_OPERATOR(Elu);
-#endif
-
 DEPLOY_CPU_OPERATOR(EluGradient);
 #ifdef USE_CUDA
+DEPLOY_CUDA_OPERATOR(Elu);
 DEPLOY_CUDA_OPERATOR(EluGradient);
+#endif
+#ifdef USE_MPS
+DEPLOY_MPS_OPERATOR(Elu, Elu);
+DEPLOY_MPS_OPERATOR(EluGradient, EluGradient);
 #endif
 
 OPERATOR_SCHEMA(Elu)

@@ -111,7 +111,7 @@ class BuildExtension(_build_ext):
             self.compiler.compiler_so.remove("-Wstrict-prototypes")
         except (AttributeError, ValueError):
             pass
-        self.compiler.src_extensions += ['.cu', '.cuh']
+        self.compiler.src_extensions += ['.cu', '.cuh', '.mm']
         if self.compiler.compiler_type == 'msvc':
             self.compiler._cpp_extensions += ['.cu', '.cuh']
             original_compile = self.compiler.compile
@@ -121,21 +121,21 @@ class BuildExtension(_build_ext):
         original_object_filenames = self.compiler.object_filenames
 
         def object_filenames(source_filenames, strip_dir, output_dir):
-            """Patch to make the cuda objects unique."""
+            """Patch to make the objects unique."""
             objects = original_object_filenames(source_filenames, strip_dir, output_dir)
             for i, src_name in enumerate(source_filenames):
-                if _is_cuda_file(src_name):
+                if _os.path.splitext(src_name)[1] in ['.cu', '.cuh', '.mm']:
                     _, src_ext = _os.path.splitext(src_name)
                     obj_base, obj_ext = _os.path.splitext(objects[i])
                     objects[i] = obj_base + src_ext + obj_ext
             return objects
 
         def unix_compile(obj, src, ext, cc_args, extra_postargs, pp_opts):
-            """Patch to support cuda sources."""
+            """Patch to support custom sources."""
             original_compiler = self.compiler.compiler_so
             try:
                 cflags = _copy.deepcopy(extra_postargs)
-                if _is_cuda_file(src):
+                if _os.path.splitext(src)[1] in ['.cu', '.cuh']:
                     nvcc = [_join_cuda_path('bin', 'nvcc')]
                     self.compiler.set_executable('compiler_so', nvcc)
                     if isinstance(cflags, dict):
@@ -163,44 +163,23 @@ class BuildExtension(_build_ext):
             extra_postargs=None,
             depends=None,
         ):
-            compile_info = \
-                self.compiler._setup_compile(
-                    output_dir,
-                    macros,
-                    include_dirs,
-                    sources,
-                    depends,
-                    extra_postargs,
-                )
+            compile_info = self.compiler._setup_compile(
+                output_dir, macros, include_dirs, sources, depends, extra_postargs)
             _, _, _, pp_opts, _ = compile_info
             self.cflags = _copy.deepcopy(extra_postargs)
-
             extra_postargs = None
 
             def spawn(cmd):
                 # Using regex to match src, obj and include files.
                 src_regex = _re.compile('/T(p|c)(.*)')
-                src_list = [
-                    m.group(2) for m in (src_regex.match(elem) for elem in cmd)
-                    if m
-                ]
-
+                src_list = [m.group(2) for m in (src_regex.match(elem) for elem in cmd) if m]
                 obj_regex = _re.compile('/Fo(.*)')
-                obj_list = [
-                    m.group(1) for m in (obj_regex.match(elem) for elem in cmd)
-                    if m
-                ]
-
+                obj_list = [m.group(1) for m in (obj_regex.match(elem) for elem in cmd) if m]
                 include_regex = _re.compile(r'((\-|\/)I.*)')
-                include_list = [
-                    m.group(1)
-                    for m in (include_regex.match(elem) for elem in cmd) if m
-                ]
-
+                include_list = [m.group(1) for m in (include_regex.match(elem) for elem in cmd) if m]
                 if len(src_list) >= 1 and len(obj_list) >= 1:
-                    src = src_list[0]
-                    obj = obj_list[0]
-                    if _is_cuda_file(src):
+                    src, obj = src_list[0], obj_list[0]
+                    if _os.path.splitext(src)[1] in ['.cu', '.cuh']:
                         nvcc = _join_cuda_path('bin', 'nvcc')
                         if isinstance(self.cflags, dict):
                             cflags = self.cflags['nvcc']
@@ -218,10 +197,8 @@ class BuildExtension(_build_ext):
                     elif isinstance(self.cflags, list):
                         cflags = COMMON_MSVC_FLAGS + self.cflags
                         cmd += cflags
-
                 if '/MD' in cmd:
                     cmd.remove('/MD')
-
                 return original_spawn(cmd)
 
             try:
@@ -236,7 +213,6 @@ class BuildExtension(_build_ext):
             self.compiler.compile = win_compile
         else:
             self.compiler._compile = unix_compile
-
         self.compiler.object_filenames = object_filenames
         _build_ext.build_extensions(self)
         self.compiler.object_filenames = original_object_filenames
@@ -288,6 +264,27 @@ class CUDAExtension(object):
         kwargs['libraries'] = libraries
         define_macros = kwargs.get('define_macros', [])
         define_macros.append(('USE_CUDA', None))
+        define_macros.append(('DRAGON_API=' + DLLIMPORT_STR, None))
+        kwargs['define_macros'] = define_macros
+        kwargs['language'] = 'c++'
+        return _Extension(name, sources, *args, **kwargs)
+
+
+class MPSExtension(object):
+    """Extension module for generic mps/objc sources."""
+
+    def __new__(cls, name, sources, *args, **kwargs):
+        include_dirs = kwargs.get('include_dirs', [])
+        include_dirs += include_paths()
+        kwargs['include_dirs'] = include_dirs
+        library_dirs = kwargs.get('library_dirs', [])
+        library_dirs += library_paths()
+        kwargs['library_dirs'] = library_dirs
+        libraries = kwargs.get('libraries', [])
+        libraries.extend(COMMON_LINK_LIBRARIES + ['dragon'])
+        kwargs['libraries'] = libraries
+        define_macros = kwargs.get('define_macros', [])
+        define_macros.append(('USE_MPS', None))
         define_macros.append(('DRAGON_API=' + DLLIMPORT_STR, None))
         kwargs['define_macros'] = define_macros
         kwargs['language'] = 'c++'
@@ -346,11 +343,6 @@ def _get_cuda_arch_flags(cflags=None):
                 flags.append('-gencode=arch=compute_{},code=compute_{}'.format(num, num))
 
     return list(set(flags))
-
-
-def _is_cuda_file(path):
-    """Predicate for cuda files."""
-    return _os.path.splitext(path)[1] in ['.cu', '.cuh']
 
 
 def _join_cuda_path(*paths):

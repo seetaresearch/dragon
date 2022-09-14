@@ -15,14 +15,11 @@ void PowGradientOp<Context>::DoRunWithType() {
   math::utils::ComputeBroadcastAxes(
       A.dims(), B.dims(), dY.dims(), A_broadcast_axes, B_broadcast_axes);
 
-  // Scratch to save the intermediates.
+  // Scratch to save the intermediate data.
   int64_t scratch_size = 0;
-  if (dB->has_name()) {
-    if (!A_broadcast_axes.empty()) scratch_size = A.count();
-    if (!B_broadcast_axes.empty()) scratch_size += Y.count();
-  }
-  if (dA->has_name() && !A_broadcast_axes.empty()) {
-    scratch_size = std::max(scratch_size, Y.count());
+  if ((dB->has_name() && !B_broadcast_axes.empty()) ||
+      (dA->has_name() && !A_broadcast_axes.empty())) {
+    scratch_size = Y.count();
   }
   T* data = ctx()->workspace()->template data<T, Context>(scratch_size);
 
@@ -63,14 +60,17 @@ void PowGradientOp<Context>::DoRunWithType() {
         math::Log(A.count(), A.template data<T, Context>(), data, ctx());
         math::Mul(Y.count(), data, Y.template data<T, Context>(), data, ctx());
       } else {
-        auto* data2 = data + Y.count();
-        math::Log(A.count(), A.template data<T, Context>(), data2, ctx());
+        math::Log(
+            A.count(),
+            A.template data<T, Context>(),
+            dA->ReshapeLike(A)->template mutable_data<T, Context>(),
+            ctx());
         math::Mul(
             A.ndim(),
             A.dims().data(),
             Y.ndim(),
             Y.dims().data(),
-            data2,
+            dA->template data<T, Context>(),
             Y.template data<T, Context>(),
             data,
             ctx());
@@ -98,7 +98,7 @@ void PowGradientOp<Context>::DoRunWithType() {
           ctx());
       math::ReplaceNaN(
           A.count(),
-          convert::To<T>(0.f),
+          0.f,
           dA->template data<T, Context>(),
           dA->template mutable_data<T, Context>(),
           ctx());
@@ -136,7 +136,7 @@ void PowGradientOp<Context>::DoRunWithType() {
           A.template data<T, Context>(),
           data,
           ctx());
-      math::ReplaceNaN(Y.count(), convert::To<T>(0.f), data, data, ctx());
+      math::ReplaceNaN(Y.count(), 0.f, data, data, ctx());
       if (B_broadcast_axes.empty()) {
         math::Mul(Y.count(), data, B.template data<T, Context>(), data, ctx());
       } else {
@@ -172,6 +172,9 @@ void PowGradientOp<Context>::RunOnDevice() {
 DEPLOY_CPU_OPERATOR(PowGradient);
 #ifdef USE_CUDA
 DEPLOY_CUDA_OPERATOR(PowGradient);
+#endif
+#ifdef USE_MPS
+DEPLOY_MPS_OPERATOR(PowGradient, PowGradient);
 #endif
 
 OPERATOR_SCHEMA(PowGradient)

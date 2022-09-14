@@ -21,7 +21,7 @@ DEVICE_STRING_TO_DEVICE_TYPE = {
     'cpu': 'cpu',
     'gpu': 'cuda',
     'cuda': 'cuda',
-    'cnml': 'cnml',
+    'mps': 'mps',
 }
 
 # Mapping to convert to the numpy type

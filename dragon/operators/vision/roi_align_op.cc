@@ -1,7 +1,7 @@
 #include "dragon/operators/vision/roi_align_op.h"
 #include "dragon/core/workspace.h"
+#include "dragon/kernels/op_kernels.h"
 #include "dragon/utils/math_functions.h"
-#include "dragon/utils/op_kernels.h"
 
 namespace dragon {
 
@@ -69,13 +69,13 @@ void RoiAlignGradientOp<Context>::DoRunWithType() {
 }
 
 DEPLOY_CPU_OPERATOR(RoiAlign);
-#ifdef USE_CUDA
-DEPLOY_CUDA_OPERATOR(RoiAlign);
-#endif
-
 DEPLOY_CPU_OPERATOR(RoiAlignGradient);
 #ifdef USE_CUDA
+DEPLOY_CUDA_OPERATOR(RoiAlign);
 DEPLOY_CUDA_OPERATOR(RoiAlignGradient);
+#endif
+#ifdef USE_MPS
+DEPLOY_MPS_OPERATOR(RoiAlign, RoiAlign);
 #endif
 
 OPERATOR_SCHEMA(RoiAlign)

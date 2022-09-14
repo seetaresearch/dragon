@@ -9,73 +9,14 @@
 #endif
 
 #include <google/protobuf/io/coded_stream.h>
-
-#ifdef BUILD_RUNTIME
-#include <google/protobuf/io/zero_copy_stream_impl_lite.h>
-#else
 #include <google/protobuf/io/zero_copy_stream_impl.h>
 #include <google/protobuf/text_format.h>
-#endif // BUILD_RUNTIME
 
 #include "dragon/utils/proto_utils.h"
 
 namespace dragon {
 
 using google::protobuf::io::CodedInputStream;
-
-#ifdef BUILD_RUNTIME
-
-using google::protobuf::MessageLite;
-using google::protobuf::io::CopyingInputStream;
-using google::protobuf::io::CopyingInputStreamAdaptor;
-
-namespace {
-
-// Use standard c++ input stream instead
-class IfstreamInputStream : public google::protobuf::io::CopyingInputStream {
- public:
-  explicit IfstreamInputStream(const string& filename)
-      : ifs_(filename.c_str(), std::ios::in | std::ios::binary) {}
-
-  ~IfstreamInputStream() {
-    ifs_.close();
-  }
-
-  int Read(void* buffer, int size) {
-    if (!ifs_) return -1;
-    ifs_.read(static_cast<char*>(buffer), size);
-    return ifs_.gcount();
-  }
-
- private:
-  std::ifstream ifs_;
-};
-
-} // namespace
-
-bool ParseProtoFromText(string text, MessageLite* proto) {
-  NOT_IMPLEMENTED;
-  return false;
-}
-
-bool ParseProtoFromLargeString(const string& str, MessageLite* proto) {
-  NOT_IMPLEMENTED;
-  return false;
-}
-
-bool ReadProtoFromBinaryFile(const char* filename, MessageLite* proto) {
-  CopyingInputStreamAdaptor raw_input(new IfstreamInputStream(filename));
-  raw_input.SetOwnsCopyingStream(true);
-  CodedInputStream coded_stream(&raw_input);
-  coded_stream.SetTotalBytesLimit(2147483647, -1);
-  return proto->ParseFromCodedStream(&coded_stream);
-}
-
-void WriteProtoToBinaryFile(const MessageLite& proto, const char* filename) {
-  NOT_IMPLEMENTED;
-}
-
-#else
 
 using google::protobuf::Message;
 using google::protobuf::TextFormat;
@@ -125,7 +66,5 @@ void WriteProtoToBinaryFile(const Message& proto, const char* filename) {
   delete raw_output;
   close(fd);
 }
-
-#endif // BUILD_RUNTIME
 
 } // namespace dragon

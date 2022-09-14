@@ -59,21 +59,15 @@ REGISTER_CPU_OPERATOR(TransposeGradient, TransposeOp<CPUContext>);
 DEPLOY_CUDA_OPERATOR(Transpose);
 REGISTER_CUDA_OPERATOR(TransposeGradient, TransposeOp<CUDAContext>);
 #endif
+#ifdef USE_MPS
+DEPLOY_MPS_OPERATOR(Transpose, Transpose);
+REGISTER_MPS_OPERATOR(TransposeGradient, TransposeOp<MPSContext>);
+#endif
 
-OPERATOR_SCHEMA(Transpose)
-    /* X */
-    .NumInputs(1)
-    /* Y */
-    .NumOutputs(1)
-    /* X => Y */
-    .AllowInplace({{0, 0}});
-
+OPERATOR_SCHEMA(Transpose).NumInputs(1).NumOutputs(1).AllowInplace({{0, 0}});
 OPERATOR_SCHEMA(TransposeGradient)
-    /* dY */
     .NumInputs(1)
-    /* dX */
     .NumOutputs(1)
-    /* dY => dX */
     .AllowInplace({{0, 0}});
 
 REGISTER_GRADIENT(Transpose, SimpleGradientMaker);

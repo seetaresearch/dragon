@@ -34,7 +34,7 @@ extensions = [
     'sphinx.ext.autodoc',
     'sphinx.ext.napoleon',
     'sphinxcontrib.katex',
-    # 'sphinx_seeta_theme.ext.viewcode',
+    'sphinx_seeta_theme.ext.viewcode',
 ]
 napoleon_use_rtype = False
 
@@ -42,7 +42,7 @@ napoleon_use_rtype = False
 project = 'dragon'
 copyright = 'Copyright (c) 2017-present, SeetaTech, Co.,Ltd'
 author = 'SeetaTech, Co.,Ltd'
-with open('../../../dragon/version.txt', 'r') as f:
+with open('../../../version.txt', 'r') as f:
     version = f.read().strip()
 
 # HTML
@@ -77,8 +77,6 @@ html_theme_options = {
 }
 html_sidebars = {
     'index': ['localtoc.html'],
-    'caffe': ['localtoc.html'],
-    'caffe/**': ['localtoc.html'],
     'dali': ['localtoc.html'],
     'dali/**': ['localtoc.html'],
     'dragon': ['localtoc.html'],
@@ -87,7 +85,6 @@ html_sidebars = {
     'onnx/**': ['localtoc.html'],
     'tensorflow': ['localtoc.html'],
     'tensorflow/**': ['localtoc.html'],
-    'tensorlayer/**': ['localtoc.html'],
     'tensorrt': ['localtoc.html'],
     'tensorrt/**': ['localtoc.html'],
     'torch': ['localtoc.html'],

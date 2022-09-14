@@ -38,6 +38,8 @@ def bias_add(inputs, data_format='NCHW', inplace=False, **kwargs):
         The ``x`` and ``bias``.
     data_format : str, optional, default='NCHW'
         ``'NCHW'`` or ``'NHWC'``.
+    inplace : bool, optional, default=False
+        Call in-place or return a new tensor.
 
     Returns
     -------
@@ -1138,7 +1140,7 @@ def pool1d(
         mode=mode,
         data_format=data_format,
         global_pool=global_pool,
-    )
+        **kwargs)
 
 
 @OpSchema.num_inputs(1)
@@ -1216,7 +1218,7 @@ def pool2d(
         mode=mode,
         data_format=data_format,
         global_pool=global_pool,
-    )
+        **kwargs)
 
 
 @OpSchema.num_inputs(1)
@@ -1294,7 +1296,7 @@ def pool3d(
         mode=mode,
         data_format=data_format,
         global_pool=global_pool,
-    )
+        **kwargs)
 
 
 @OpSchema.num_inputs(1)

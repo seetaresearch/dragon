@@ -35,11 +35,6 @@ void ExpandOp<Context>::DoRunWithType() {
 }
 
 template <class Context>
-void ExpandOp<Context>::RunOnDevice() {
-  DispatchHelper<dtypes::Generic>::Call(this, Input(0));
-}
-
-template <class Context>
 template <typename T>
 void ExpandGradientOp<Context>::DoRunWithType() {
   auto &dY = Input(0), *dX = Output(0)->ReshapeLike(Input("X_spec"));
@@ -69,26 +64,18 @@ void ExpandGradientOp<Context>::RunOnDevice() {
 }
 
 DEPLOY_CPU_OPERATOR(Expand);
-#ifdef USE_CUDA
-DEPLOY_CUDA_OPERATOR(Expand);
-#endif
-
 DEPLOY_CPU_OPERATOR(ExpandGradient);
 #ifdef USE_CUDA
+DEPLOY_CUDA_OPERATOR(Expand);
 DEPLOY_CUDA_OPERATOR(ExpandGradient);
 #endif
+#ifdef USE_MPS
+DEPLOY_MPS_OPERATOR(Expand, Expand);
+DEPLOY_MPS_OPERATOR(ExpandGradient, ExpandGradient);
+#endif
 
-OPERATOR_SCHEMA(Expand)
-    /* X */
-    .NumInputs(1)
-    /* Y */
-    .NumOutputs(1);
-
-OPERATOR_SCHEMA(ExpandGradient)
-    /* dY */
-    .NumInputs(1)
-    /* dX */
-    .NumOutputs(1);
+OPERATOR_SCHEMA(Expand).NumInputs(1).NumOutputs(1);
+OPERATOR_SCHEMA(ExpandGradient).NumInputs(1).NumOutputs(1);
 
 REGISTER_GRADIENT(Expand, SimpleGradientMaker);
 

@@ -1,6 +1,6 @@
 #include "dragon/operators/math/moments_op.h"
+#include "dragon/kernels/op_kernels.h"
 #include "dragon/utils/math_functions.h"
-#include "dragon/utils/op_kernels.h"
 
 namespace dragon {
 
@@ -61,6 +61,9 @@ void MomentsOp<Context>::DoRunWithType() {
 DEPLOY_CPU_OPERATOR(Moments);
 #ifdef USE_CUDA
 DEPLOY_CUDA_OPERATOR(Moments);
+#endif
+#ifdef USE_MPS
+DEPLOY_MPS_OPERATOR(Moments, Moments);
 #endif
 
 OPERATOR_SCHEMA(Moments)

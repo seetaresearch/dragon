@@ -1,7 +1,7 @@
 #include "dragon/operators/array/assign_op.h"
 #include "dragon/core/workspace.h"
+#include "dragon/kernels/op_kernels.h"
 #include "dragon/utils/math_functions.h"
-#include "dragon/utils/op_kernels.h"
 
 namespace dragon {
 
@@ -37,8 +37,8 @@ void AssignOp<Context>::DoRunWithType() {
     X_dims[i] = dim_end - dim_start;
   }
 
-  Tensor XRef(X_dims);
-  auto* new_data = X.template data<T, Context>();
+  Tensor X_ref(X_dims);
+  auto* data = X.template data<T, Context>();
   if (X.dims() != X_dims) {
     vec64_t dims1, dims2;
     if (math::utils::IsBinaryBroadcast(X.dims(), X_dims, dims1)) {
@@ -47,46 +47,44 @@ void AssignOp<Context>::DoRunWithType() {
           << Tensor::DimString(X_dims);
       math::utils::ComputeBroadcastDims(X.dims(), X_dims, dims1, dims2);
       if (dims1 != dims2) {
-        auto* scratch =
-            ctx()->workspace()->template data<T, Context>(XRef.count());
+        auto* new_data =
+            ctx()->workspace()->template data<T, Context>(X_ref.count());
         math::Set(
             X.ndim(),
             X.dims().data(),
-            XRef.ndim(),
-            XRef.dims().data(),
+            X_ref.ndim(),
+            X_ref.dims().data(),
+            data,
             new_data,
-            scratch,
             ctx());
-        new_data = scratch;
+        data = new_data;
       }
     } else {
-      LOG(FATAL) << "Could not broadcast together with shapes " << X.DimString()
-                 << " " << Tensor::DimString(X_dims);
+      LOG(FATAL) << "Could not broadcast with shapes " << X.DimString() << " "
+                 << Tensor::DimString(X_dims);
     }
   }
 
-  // Copy the reference data
+  // Copy the reference data.
   Y->ReshapeLike(Y_ref)->CopyFrom(Y_ref, ctx());
 
-  // Update with the new data
+  // Update with the new data.
   kernels::Assign(
       num_dims,
       X_dims.data(),
       Y->strides().data(),
       X_starts.data(),
-      new_data,
+      data,
       Y->template mutable_data<T, Context>(),
       ctx());
-}
-
-template <class Context>
-void AssignOp<Context>::RunOnDevice() {
-  DispatchHelper<dtypes::Generic>::Call(this, Input(0));
 }
 
 DEPLOY_CPU_OPERATOR(Assign);
 #ifdef USE_CUDA
 DEPLOY_CUDA_OPERATOR(Assign);
+#endif
+#ifdef USE_MPS
+DEPLOY_MPS_OPERATOR(Assign, Assign);
 #endif
 
 OPERATOR_SCHEMA(Assign)

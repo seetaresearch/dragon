@@ -13,7 +13,11 @@
 #ifndef DRAGON_MODULES_PYTHON_NUMPY_H_
 #define DRAGON_MODULES_PYTHON_NUMPY_H_
 
+#include <dragon/core/context_cuda.h>
+#include <dragon/core/tensor.h>
+
 #include "dragon/modules/python/common.h"
+#include "dragon/modules/python/types.h"
 
 namespace dragon {
 
@@ -40,12 +44,16 @@ class NumpyWrapper {
       auto* array =
           PyArray_SimpleNew(dims.size(), dims.data(), dtypes::to_npy(meta));
       if (device_type == "cuda") {
+#ifdef USE_CUDA
         CUDADeviceGuard guard(memory->device());
         CUDAContext::Memcpy<CPUContext, CUDAContext>(
             tensor_->nbytes(),
             PyArray_DATA(reinterpret_cast<PyArrayObject*>(array)),
             tensor_->raw_data<CUDAContext>(),
             memory->device());
+#else
+        CUDA_NOT_COMPILED;
+#endif
       } else {
         CPUContext::Memcpy<CPUContext, CPUContext>(
             tensor_->nbytes(),
@@ -70,15 +78,19 @@ class NumpyWrapper {
     vector<int64_t> dims(npy_dims, npy_dims + PyArray_NDIM(array));
     tensor_->set_meta(meta)->Reshape(dims);
     auto* memory = tensor_->MapFrom(nullptr)->memory();
+    auto device_type = memory ? memory->info()["device_type"] : "cpu";
     if (copy) {
-      auto device_type = memory ? memory->info()["device_type"] : "cpu";
       if (device_type == "cuda") {
+#ifdef USE_CUDA
         CUDADeviceGuard guard(memory->device());
         CUDAContext::Memcpy<CUDAContext, CPUContext>(
             tensor_->nbytes(),
             tensor_->raw_mutable_data<CUDAContext>(),
             data,
             memory->device());
+#else
+        CUDA_NOT_COMPILED;
+#endif
       } else {
         CPUContext::Memcpy<CPUContext, CPUContext>(
             tensor_->nbytes(), tensor_->raw_mutable_data<CPUContext>(), data);
@@ -86,10 +98,14 @@ class NumpyWrapper {
       Py_XDECREF(array);
     } else {
       memory = memory ? memory : new UnifiedMemory();
-      memory->set_cpu_data(data, tensor_->nbytes());
+      if (memory->set_cpu_data(data, tensor_->nbytes())) {
+        if (tensor_->ExternalDeleter) tensor_->ExternalDeleter();
+        tensor_->ExternalDeleter = [array]() -> void { Py_XDECREF(array); };
+      } else {
+        if (tensor_->ExternalDeleter) tensor_->ExternalDeleter();
+        tensor_->ExternalDeleter = nullptr;
+      }
       tensor_->set_memory(memory);
-      if (tensor_->ExternalDeleter) tensor_->ExternalDeleter();
-      tensor_->ExternalDeleter = [array]() -> void { Py_XDECREF(array); };
     }
     return tensor_;
   }

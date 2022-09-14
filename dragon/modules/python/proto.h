@@ -13,6 +13,8 @@
 #ifndef DRAGON_MODULES_PYTHON_PROTO_H_
 #define DRAGON_MODULES_PYTHON_PROTO_H_
 
+#include <dragon/core/common.h>
+
 #include "dragon/modules/python/common.h"
 
 namespace dragon {

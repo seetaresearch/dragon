@@ -1,6 +1,10 @@
+#include <dragon/core/workspace.h>
+#include <dragon/onnx/onnx_backend.h>
+
 #include "dragon/modules/python/cuda.h"
 #include "dragon/modules/python/gradient.h"
 #include "dragon/modules/python/mpi.h"
+#include "dragon/modules/python/mps.h"
 #include "dragon/modules/python/proto.h"
 #include "dragon/modules/python/sysconfig.h"
 #include "dragon/modules/python/tensor.h"
@@ -187,6 +191,7 @@ PYBIND11_MODULE(libdragon_python, m) {
   REGISTER_MODULE(cuda);
   REGISTER_MODULE(gradient);
   REGISTER_MODULE(mpi);
+  REGISTER_MODULE(mps);
   REGISTER_MODULE(proto);
   REGISTER_MODULE(sysconfig);
   REGISTER_MODULE(tensor);

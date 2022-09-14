@@ -30,6 +30,9 @@ vm.torch.nn.init
   `ones_(...) <init/ones_.html>`_
   : Fill tensor with ones.
 
+  `trunc_normal_(...) <init/trunc_normal_.html>`_
+  : Fill tensor from a truncated normal distribution.
+
   `uniform_(...) <init/uniform_.html>`_
   : Fill tensor from an uniform distribution.
 
@@ -53,6 +56,7 @@ vm.torch.nn.init
   init/kaiming_uniform_
   init/normal_
   init/ones_
+  init/trunc_normal_
   init/uniform_
   init/xavier_normal_
   init/xavier_uniform_

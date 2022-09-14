@@ -50,4 +50,5 @@ def eye(num_rows, num_columns=None, dtype='float32', name=None):
         The output tensor.
 
     """
+    dtype = str(dtype) if dtype else dtype
     return constant_ops.eye(num_rows, num_columns, dtype=dtype, name=name)

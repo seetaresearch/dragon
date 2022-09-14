@@ -258,6 +258,8 @@ def flatten(inputs, axis=0, end_axis=-1, copy=True, **kwargs):
         The first axis to flatten.
     end_axis : int, optional, default=-1
         The last axis to flatten.
+    copy : bool, optional, default=True
+        Return a new tensor or call in-place.
 
     Returns
     -------
@@ -501,9 +503,9 @@ def pad(inputs, pads, mode='constant', value=0, **kwargs):
     """
     value, mode = float(value), mode.upper()
     pads_begin, pads_end = [], []
-    for pad in pads:
-        pads_begin.append(pad[0])
-        pads_end.append(pad[1])
+    for v1, v2 in pads:
+        pads_begin.append(v1)
+        pads_end.append(v2)
     pads = pads_begin + pads_end
     if context.executing_eagerly():
         return OpLib.execute(
@@ -1175,7 +1177,7 @@ def unique(inputs, return_inverse=False, return_counts=False, **kwargs):
     dragon.Tensor, optional
         The inverse index tensor.
     dragon.Tensor, optional
-        The counts tensor.
+        The counting tensor.
 
     """
     num_outputs = 1 + return_inverse + return_counts

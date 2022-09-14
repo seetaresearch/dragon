@@ -14,6 +14,8 @@
 #define DRAGON_UTILS_MATH_BLAS_H_
 
 #include "dragon/core/context.h"
+#include "dragon/core/context_cuda.h"
+#include "dragon/core/context_mps.h"
 
 namespace dragon {
 
@@ -25,38 +27,40 @@ typedef enum CBLAS_TRANSPOSE {
 namespace math {
 
 template <typename T, class Context>
-DRAGON_API void
-Scale(const int n, const float alpha, const T* x, T* y, Context* ctx);
-
-template <typename T, class Context>
-DRAGON_API void Copy(const int n, const T* x, T* y, Context* ctx);
+DRAGON_API void Copy(const int N, const T* x, T* y, Context* ctx);
 
 template <typename T, class Context>
 DRAGON_API void Copy(
-    const int n,
-    const int incx,
-    const int incy,
+    const int N,
+    const int x_offset,
+    const int y_offset,
     const T* x,
     T* y,
     Context* ctx);
 
 template <typename T, class Context>
 DRAGON_API void CopyMatrix(
-    const int m,
-    const int n,
+    const int M,
+    const int N,
     const int ldx,
     const int ldy,
+    const int x_offset,
+    const int y_offset,
     const T* x,
     T* y,
     Context* ctx);
 
 template <typename T, class Context>
 DRAGON_API void
-Axpy(const int n, const float alpha, const T* x, T* y, Context* ctx);
+Scale(const int N, const float alpha, const T* x, T* y, Context* ctx);
+
+template <typename T, class Context>
+DRAGON_API void
+Axpy(const int N, const float alpha, const T* x, T* y, Context* ctx);
 
 template <typename T, class Context>
 DRAGON_API void Axpby(
-    const int n,
+    const int N,
     const float alpha,
     const T* x,
     const float beta,
@@ -64,16 +68,16 @@ DRAGON_API void Axpby(
     Context* ctx);
 
 template <typename T, class Context>
-DRAGON_API void Dot(const int n, const T* a, const T* b, T* y, Context* ctx);
+DRAGON_API void Dot(const int N, const T* a, const T* b, T* y, Context* ctx);
 
 template <typename T, class Context>
-DRAGON_API T Dot(const int n, const T* a, const T* b, Context* ctx);
+DRAGON_API T Dot(const int N, const T* a, const T* b, Context* ctx);
 
 template <typename T, class Context>
-DRAGON_API void ASum(const int n, const T* x, T* y, Context* ctx);
+DRAGON_API void ASum(const int N, const T* x, T* y, Context* ctx);
 
 template <typename T, class Context>
-DRAGON_API T ASum(const int n, const T* x, Context* ctx);
+DRAGON_API T ASum(const int N, const T* x, Context* ctx);
 
 template <typename T, class Context>
 DRAGON_API void Gemv(

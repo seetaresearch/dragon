@@ -693,6 +693,10 @@ where
 #####
 .. automethod:: dragon.vm.torch.Tensor.where
 
+var
+###
+.. automethod:: dragon.vm.torch.Tensor.var
+
 zero\_
 ######
 .. automethod:: dragon.vm.torch.Tensor.zero_
@@ -741,6 +745,7 @@ zero\_
 .. _torch.matmul(...): matmul.html
 .. _torch.max(...): max.html
 .. _torch.maximum(...): maximum.html
+.. _torch.mean(...): mean.html
 .. _torch.min(...): min.html
 .. _torch.minimum(...): minimum.html
 .. _torch.mm(...): mm.html
@@ -776,6 +781,7 @@ zero\_
 .. _torch.unique(...): unique.html
 .. _torch.unsqueeze(...): unsqueeze.html
 .. _torch.where(...): where.html
+.. _torch.var(...): var.html
 .. _torch.zeros(...): zeros.html
 
 .. raw:: html

@@ -79,18 +79,17 @@ def binary_shape_spec(inputs, outputs):
     return outputs
 
 
-@register([
-    'Add',
-    'Atan2',
-    'BitwiseAnd',
-    'BitwiseOr',
-    'BitwiseXor',
-    'Div',
-    'Maximum',
-    'Minimum',
-    'Mul',
-    'Pow',
-    'Sub'])
+@register(['Add',
+           'Atan2',
+           'BitwiseAnd',
+           'BitwiseOr',
+           'BitwiseXor',
+           'Div',
+           'Maximum',
+           'Minimum',
+           'Mul',
+           'Pow',
+           'Sub'])
 def binary_math_spec(args, inputs, outputs):
     outputs = binary_shape_spec(inputs, outputs)
     outputs[0]._dtype = inputs[0].dtype
@@ -99,16 +98,15 @@ def binary_math_spec(args, inputs, outputs):
     return outputs
 
 
-@register([
-    'And',
-    'Or',
-    'Xor',
-    'Equal',
-    'Greater',
-    'GreaterEqual',
-    'Less',
-    'LessEqual',
-    'NotEqual'])
+@register(['And',
+           'Or',
+           'Xor',
+           'Equal',
+           'Greater',
+           'GreaterEqual',
+           'Less',
+           'LessEqual',
+           'NotEqual'])
 def binary_compare_spec(args, inputs, outputs):
     outputs = binary_shape_spec(inputs, outputs)
     outputs[0]._dtype = 'bool'
@@ -267,13 +265,12 @@ def depth_to_space_spec(args, inputs, outputs):
     return outputs
 
 
-@register([
-    'CTCLoss',
-    'L1Loss',
-    'L2Loss',
-    'SigmoidCrossEntropyLoss',
-    'SigmoidFocalLoss',
-    'SmoothL1Loss'])
+@register(['CTCLoss',
+           'L1Loss',
+           'L2Loss',
+           'SigmoidCrossEntropyLoss',
+           'SigmoidFocalLoss',
+           'SmoothL1Loss'])
 def eltwise_loss_spec(args, inputs, outputs):
     outputs[0]._dtype, outputs[0]._shape = 'float32', ()
     if args['reduction'].upper() == 'NONE':
@@ -341,14 +338,13 @@ def im2col_spec(args, inputs, outputs):
     return outputs
 
 
-@register([
-    'Eye',
-    'Fill',
-    'GlorotNormal',
-    'GlorotUniform',
-    'RandomNormal',
-    'RandomUniform',
-    'TruncatedNormal'])
+@register(['Eye',
+           'Fill',
+           'GlorotNormal',
+           'GlorotUniform',
+           'RandomNormal',
+           'RandomUniform',
+           'TruncatedNormal'])
 def fill_spec(args, inputs, outputs):
     outputs[0]._dtype = args['dtype']
     try:
@@ -646,14 +642,13 @@ def range_spec(args, inputs, outputs):
     return outputs
 
 
-@register([
-    'ReduceMax',
-    'ReduceMean',
-    'ReduceMin',
-    'ReduceSum',
-    'ReduceL1',
-    'ReduceL2',
-])
+@register(['ReduceMax',
+           'ReduceMean',
+           'ReduceMin',
+           'ReduceSum',
+           'ReduceVar',
+           'ReduceL1',
+           'ReduceL2'])
 def reduce_spec(args, inputs, outputs):
     outputs[0]._dtype = inputs[0].dtype
     axes, keepdims = args['axes'], args['keepdims']

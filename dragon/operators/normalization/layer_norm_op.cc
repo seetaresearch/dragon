@@ -1,6 +1,6 @@
 #include "dragon/operators/normalization/layer_norm_op.h"
+#include "dragon/kernels/op_kernels.h"
 #include "dragon/utils/math_functions.h"
-#include "dragon/utils/op_kernels.h"
 
 namespace dragon {
 
@@ -33,13 +33,14 @@ void LayerNormOp<Context>::DoRunWithType() {
 }
 
 DEPLOY_CPU_OPERATOR(LayerNorm);
-#ifdef USE_CUDA
-DEPLOY_CUDA_OPERATOR(LayerNorm);
-#endif
-
 DEPLOY_CPU_OPERATOR(LayerNormGradient);
 #ifdef USE_CUDA
+DEPLOY_CUDA_OPERATOR(LayerNorm);
 DEPLOY_CUDA_OPERATOR(LayerNormGradient);
+#endif
+#ifdef USE_MPS
+DEPLOY_MPS_OPERATOR(LayerNorm, LayerNorm);
+DEPLOY_MPS_OPERATOR(LayerNormGradient, LayerNormGradient);
 #endif
 
 OPERATOR_SCHEMA(LayerNorm)

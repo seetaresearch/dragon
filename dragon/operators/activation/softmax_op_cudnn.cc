@@ -1,7 +1,7 @@
 #ifdef USE_CUDNN
 
+#include "dragon/kernels/op_kernels.h"
 #include "dragon/operators/activation/softmax_op.h"
-#include "dragon/utils/op_kernels.h"
 
 namespace dragon {
 

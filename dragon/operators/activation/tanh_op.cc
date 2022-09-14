@@ -1,5 +1,5 @@
 #include "dragon/operators/activation/tanh_op.h"
-#include "dragon/utils/op_kernels.h"
+#include "dragon/kernels/op_kernels.h"
 
 namespace dragon {
 
@@ -27,13 +27,14 @@ void TanhGradientOp<Context>::DoRunWithType() {
 }
 
 DEPLOY_CPU_OPERATOR(Tanh);
-#ifdef USE_CUDA
-DEPLOY_CUDA_OPERATOR(Tanh);
-#endif
-
 DEPLOY_CPU_OPERATOR(TanhGradient);
 #ifdef USE_CUDA
+DEPLOY_CUDA_OPERATOR(Tanh);
 DEPLOY_CUDA_OPERATOR(TanhGradient);
+#endif
+#ifdef USE_MPS
+DEPLOY_MPS_OPERATOR(Tanh, Tanh);
+DEPLOY_MPS_OPERATOR(TanhGradient, TanhGradient);
 #endif
 
 OPERATOR_SCHEMA(Tanh)

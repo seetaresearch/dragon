@@ -8,7 +8,7 @@
 #     <https://opensource.org/licenses/BSD-2-Clause>
 #
 # ------------------------------------------------------------
-"""Test the nn module."""
+"""Test nn module."""
 
 from __future__ import absolute_import
 from __future__ import division
@@ -77,12 +77,18 @@ class OpTestCase(unittest.TestCase):
 
 
 class TestModule(unittest.TestCase):
-    """Test the base module class."""
+    """Test base module class."""
 
     def test_properties(self):
         m = torch.nn.Module()
         m.add_module('sub1', torch.nn.Module().cuda().half())
-        m.sub2 = torch.nn.Module().double()
+        m.sub2 = torch.nn.Module().double().to(dtype='float16').to(torch.float32)
+        m.sub2 = m.sub2.to(device=torch.device('cpu')).to(torch.device('cpu'))
+        if torch.cuda.is_available():
+            m.sub2.to(device=torch.device('cuda'))
+        elif torch.backends.mps.is_available():
+            m.sub2.to(device=torch.device('mps'))
+        m.sub2 = m.sub2.to(torch.zeros(1))
         m.sub2.register_parameter('weight', torch.nn.Parameter(torch.tensor(1)))
         m.add_module('sub3', None)
         m.register_parameter('weight', torch.nn.Parameter(torch.tensor(1)))
@@ -167,7 +173,7 @@ class TestModule(unittest.TestCase):
 
 
 class TestModules(OpTestCase):
-    """Test the nn module class."""
+    """Test nn module class."""
 
     def test_affine(self):
         data1 = arange((2, 3, 4, 5))
@@ -917,7 +923,7 @@ class TestModules(OpTestCase):
 
 
 class TestNNInit(OpTestCase):
-    """Test the nn.init module."""
+    """Test nn.init module."""
 
     def test_constant(self):
         x = torch.Tensor(2, dtype=torch.float32)
@@ -972,7 +978,7 @@ class TestNNInit(OpTestCase):
 
 
 class TestReduction(unittest.TestCase):
-    """Test the reduction utility."""
+    """Test reduction utility."""
 
     def test_legacy_string(self):
         entries = [(None, None, 'mean'),

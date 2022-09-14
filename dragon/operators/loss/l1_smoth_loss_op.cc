@@ -1,7 +1,7 @@
 #include "dragon/core/workspace.h"
+#include "dragon/kernels/op_kernels.h"
 #include "dragon/operators/loss/l1_loss_op.h"
 #include "dragon/utils/math_functions.h"
-#include "dragon/utils/op_kernels.h"
 
 namespace dragon {
 
@@ -106,13 +106,14 @@ void SmoothL1LossGradientOp<Context>::DoRunWithType() {
 }
 
 DEPLOY_CPU_OPERATOR(SmoothL1Loss);
-#ifdef USE_CUDA
-DEPLOY_CUDA_OPERATOR(SmoothL1Loss);
-#endif
-
 DEPLOY_CPU_OPERATOR(SmoothL1LossGradient);
 #ifdef USE_CUDA
+DEPLOY_CUDA_OPERATOR(SmoothL1Loss);
 DEPLOY_CUDA_OPERATOR(SmoothL1LossGradient);
+#endif
+#ifdef USE_MPS
+DEPLOY_MPS_OPERATOR(SmoothL1Loss, SmoothL1Loss);
+DEPLOY_MPS_OPERATOR(SmoothL1LossGradient, SmoothL1LossGradient);
 #endif
 
 OPERATOR_SCHEMA(SmoothL1Loss)

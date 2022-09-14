@@ -641,7 +641,7 @@ def clamp(self, min=None, max=None):
 
 
 def clamp_(self, min=None, max=None):
-    """Clamp elements into the a range.
+    """Clamp elements into the given range.
 
     Parameters
     ----------
@@ -1162,7 +1162,7 @@ def half_(self):
 
 
 def index_select(self, dim, index):
-    """Select the elements along the dim dim using index.
+    """Select the elements along the dim using index.
 
     Parameters
     ----------
@@ -1624,6 +1624,10 @@ def mean(self, dim=None, keepdim=False):
     -------
     dragon.vm.torch.Tensor
         The output tensor.
+
+    See Also
+    --------
+    `torch.mean(...)`_
 
     """
     return math_ops.mean(self, dim, keepdim)
@@ -2681,7 +2685,7 @@ def sub_(self, other):
 
 
 def topk(self, k, dim=-1, largest=True, sorted=True):
-    """Return the top-K largest or smallest elements.
+    """Return the top k-largest or smallest elements.
 
     Parameters
     ----------
@@ -2692,7 +2696,7 @@ def topk(self, k, dim=-1, largest=True, sorted=True):
     largest : bool, optional, default=True
         Return largest or smallest elements.
     sorted : bool, optional, default=True
-        Whether to return in the sorted order.
+        Whether to return elements in the sorted order.
 
     Returns
     -------
@@ -2951,7 +2955,7 @@ def unique(self, return_inverse=False, return_counts=False, **kwargs):
     dragon.vm.torch.Tensor, optional
         The inverse index tensor.
     dragon.vm.torch.Tensor, optional
-        The counts tensor.
+        The counting tensor.
 
     See Also
     --------
@@ -3031,6 +3035,29 @@ def where(self, condition, y):
 
     """
     return array_ops.where(condition, self, y)
+
+
+def var(self, dim=None, keepdim=False):
+    """Compute the variance value of elements along the given dimension.
+
+    Parameters
+    ----------
+    dim : Union[int, Sequence[int]], optional
+        The dimension(s) to reduce.
+    keepdim : bool, optional, default=False
+        Keep the reduced dimensions or not.
+
+    Returns
+    -------
+    dragon.vm.torch.Tensor
+        The output tensor.
+
+    See Also
+    --------
+    `torch.var(...)`_
+
+    """
+    return math_ops.var(self, dim, keepdim)
 
 
 def _process_index(item):
@@ -3207,6 +3234,7 @@ Tensor.unique = unique
 Tensor.unsqueeze = unsqueeze
 Tensor.unsqueeze_ = unsqueeze_
 Tensor.where = where
+Tensor.var = var
 Tensor.__getitem__ = getitem
 Tensor.__radd__ = lambda self, value: math_ops._binary_func(value, self, 'Add')
 Tensor.__rmul__ = lambda self, value: math_ops._binary_func(value, self, 'Mul')

@@ -1,5 +1,5 @@
 #include "dragon/operators/activation/silu_op.h"
-#include "dragon/utils/op_kernels.h"
+#include "dragon/kernels/op_kernels.h"
 
 namespace dragon {
 
@@ -27,13 +27,14 @@ void SiluGradientOp<Context>::DoRunWithType() {
 }
 
 DEPLOY_CPU_OPERATOR(Silu);
-#ifdef USE_CUDA
-DEPLOY_CUDA_OPERATOR(Silu);
-#endif
-
 DEPLOY_CPU_OPERATOR(SiluGradient);
 #ifdef USE_CUDA
+DEPLOY_CUDA_OPERATOR(Silu);
 DEPLOY_CUDA_OPERATOR(SiluGradient);
+#endif
+#ifdef USE_MPS
+DEPLOY_MPS_OPERATOR(Silu, Silu);
+DEPLOY_MPS_OPERATOR(SiluGradient, SiluGradient);
 #endif
 
 OPERATOR_SCHEMA(Silu)

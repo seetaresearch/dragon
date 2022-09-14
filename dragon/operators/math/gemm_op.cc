@@ -50,7 +50,7 @@ void GemmOp<Context>::DoRunWithType() {
           Y->Reshape(Y_dims)->template mutable_data<T, Context>(),
           ctx());
     } else {
-      LOG(FATAL) << "Could not broadcast together with shapes: "
+      LOG(FATAL) << "Could not broadcast with shapes: "
                  << Tensor::DimString(Y_dims) << " " << C.DimString();
     }
   }
@@ -67,11 +67,6 @@ void GemmOp<Context>::DoRunWithType() {
       InputSize() > 2 ? beta_ : 0.f,
       Y->Reshape(Y_dims)->template mutable_data<T, Context>(),
       ctx());
-}
-
-template <class Context>
-void GemmOp<Context>::RunOnDevice() {
-  DispatchHelper<dtypes::Floating>::Call(this, Input(0));
 }
 
 template <class Context>
@@ -191,18 +186,10 @@ void GemmGradientOp<Context>::DoRunWithType() {
   }
 }
 
-template <class Context>
-void GemmGradientOp<Context>::RunOnDevice() {
-  DispatchHelper<dtypes::Floating>::Call(this, Input(0));
-}
-
 DEPLOY_CPU_OPERATOR(Gemm);
-#ifdef USE_CUDA
-DEPLOY_CUDA_OPERATOR(Gemm);
-#endif
-
 DEPLOY_CPU_OPERATOR(GemmGradient);
 #ifdef USE_CUDA
+DEPLOY_CUDA_OPERATOR(Gemm);
 DEPLOY_CUDA_OPERATOR(GemmGradient);
 #endif
 

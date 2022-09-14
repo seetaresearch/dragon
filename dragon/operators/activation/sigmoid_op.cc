@@ -1,5 +1,5 @@
 #include "dragon/operators/activation/sigmoid_op.h"
-#include "dragon/utils/op_kernels.h"
+#include "dragon/kernels/op_kernels.h"
 
 namespace dragon {
 
@@ -27,13 +27,14 @@ void SigmoidGradientOp<Context>::DoRunWithType() {
 }
 
 DEPLOY_CPU_OPERATOR(Sigmoid);
-#ifdef USE_CUDA
-DEPLOY_CUDA_OPERATOR(Sigmoid);
-#endif
-
 DEPLOY_CPU_OPERATOR(SigmoidGradient);
 #ifdef USE_CUDA
+DEPLOY_CUDA_OPERATOR(Sigmoid);
 DEPLOY_CUDA_OPERATOR(SigmoidGradient);
+#endif
+#ifdef USE_MPS
+DEPLOY_MPS_OPERATOR(Sigmoid, Sigmoid);
+DEPLOY_MPS_OPERATOR(SigmoidGradient, SigmoidGradient);
 #endif
 
 OPERATOR_SCHEMA(Sigmoid)

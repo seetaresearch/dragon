@@ -1,5 +1,5 @@
 #include "dragon/operators/math/reduce_op.h"
-#include "dragon/utils/op_kernels.h"
+#include "dragon/kernels/op_kernels.h"
 
 namespace dragon {
 
@@ -115,6 +115,15 @@ DEPLOY_CUDA_OPERATOR(ReduceL1);
 DEPLOY_CUDA_OPERATOR(ReduceL2);
 DEPLOY_CUDA_OPERATOR(ReduceSumGradient);
 DEPLOY_CUDA_OPERATOR(ReduceMeanGradient);
+#endif
+#ifdef USE_MPS
+DEPLOY_MPS_OPERATOR(ReduceMax, ReduceMax);
+DEPLOY_MPS_OPERATOR(ReduceMin, ReduceMin);
+DEPLOY_MPS_OPERATOR(ReduceSum, ReduceSum);
+DEPLOY_MPS_OPERATOR(ReduceMean, ReduceMean);
+DEPLOY_MPS_OPERATOR(ReduceVar, ReduceVar);
+DEPLOY_MPS_OPERATOR(ReduceSumGradient, ReduceSumGradient);
+DEPLOY_MPS_OPERATOR(ReduceMeanGradient, ReduceMeanGradient);
 #endif
 
 /* X -> Y */

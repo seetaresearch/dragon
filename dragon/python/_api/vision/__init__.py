@@ -13,9 +13,6 @@ from __future__ import absolute_import as _absolute_import
 from __future__ import division as _division
 from __future__ import print_function as _print_function
 
-# Classes
-from dragon.utils.vision import DataIterator
-
 # Functions
 from dragon.core.ops.vision_ops import extract_patches
 from dragon.core.ops.vision_ops import resize

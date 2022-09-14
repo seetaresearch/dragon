@@ -66,7 +66,7 @@ class GroupNorm(Module):
         eps : float, optional, default=1e-5
             The value to :math:`\epsilon`.
         affine : bool, optional, default=True
-            ``True`` to apply a affine transformation.
+            ``True`` to apply an affine transformation.
 
         """
         super(GroupNorm, self).__init__()
@@ -139,7 +139,7 @@ class LayerNorm(Module):
         eps : float, optional, default=1e-5
             The value to :math:`\epsilon`.
         elementwise_affine : bool, optional, default=True
-            ``True`` to apply a affine transformation.
+            ``True`` to apply an affine transformation.
 
         """
         super(LayerNorm, self).__init__()

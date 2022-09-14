@@ -13,6 +13,8 @@
 #ifndef DRAGON_MODULES_PYTHON_CUDA_H_
 #define DRAGON_MODULES_PYTHON_CUDA_H_
 
+#include <dragon/core/context_cuda.h>
+
 #include "dragon/modules/python/common.h"
 
 namespace dragon {
@@ -113,13 +115,30 @@ void RegisterModule_cuda(py::module& m) {
       });
 
   /*! \brief Return the index of current device */
-  m.def("cudaGetDevice", []() { return CUDAContext::current_device(); });
+  m.def("cudaGetDevice", []() {
+#ifdef USE_CUDA
+    return CUDAContext::current_device();
+#else
+    return 0;
+#endif
+  });
+
+  /*! \brief Return the name of specified device */
+  m.def("cudaGetDeviceName", [](int device_id) {
+#ifdef USE_CUDA
+    if (device_id < 0) device_id = CUDAContext::current_device();
+    auto& prop = CUDAGetDeviceProp(device_id);
+    return string(prop.name);
+#else
+    return string("");
+#endif
+  });
 
   /*! \brief Return the capability of specified device */
   m.def("cudaGetDeviceCapability", [](int device_id) {
 #ifdef USE_CUDA
     if (device_id < 0) device_id = CUDAContext::current_device();
-    auto& prop = GetCUDADeviceProp(device_id);
+    auto& prop = CUDAGetDeviceProp(device_id);
     return std::tuple<int, int>(prop.major, prop.minor);
 #else
     return std::tuple<int, int>(0, 0);
@@ -129,7 +148,7 @@ void RegisterModule_cuda(py::module& m) {
   /*! \brief Set the active cuda device */
   m.def("cudaSetDevice", [](int device_id) {
 #ifdef USE_CUDA
-    CUDA_CHECK(cudaSetDevice(device_id));
+    CUDAContext::objects().SetDevice(device_id);
 #endif
   });
 

@@ -37,11 +37,6 @@ void WhereOp<Context>::DoRunWithType() {
 }
 
 template <class Context>
-void WhereOp<Context>::RunOnDevice() {
-  DispatchHelper<dtypes::Generic>::Call(this, Input(1));
-}
-
-template <class Context>
 template <typename T>
 void WhereGradientOp<Context>::DoRunWithType() {
   auto &C = Input(0), &dY = Input(1);
@@ -152,17 +147,19 @@ void WhereGradientOp<Context>::DoRunWithType() {
 }
 
 template <class Context>
+void WhereOp<Context>::RunOnDevice() {
+  DispatchHelper<dtypes::Generic>::Call(this, Input(1));
+}
+
+template <class Context>
 void WhereGradientOp<Context>::RunOnDevice() {
   DispatchHelper<dtypes::Floating>::Call(this, Input(1));
 }
 
 DEPLOY_CPU_OPERATOR(Where);
-#ifdef USE_CUDA
-DEPLOY_CUDA_OPERATOR(Where);
-#endif
-
 DEPLOY_CPU_OPERATOR(WhereGradient);
 #ifdef USE_CUDA
+DEPLOY_CUDA_OPERATOR(Where);
 DEPLOY_CUDA_OPERATOR(WhereGradient);
 #endif
 

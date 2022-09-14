@@ -25,15 +25,17 @@ except ImportError:
     from dragon.core.util import deprecation
     ops = deprecation.NotInstalled('nvidia.dali')
     tfrecord = deprecation.NotInstalled('nvidia.dali')
+try:
+    import codewithgpu
+except ImportError:
+    codewithgpu = deprecation.NotInstalled('codewithgpu')
 
-from dragon.core.io import reader
-from dragon.core.io import kpl_record
 from dragon.vm.dali.core.framework import context
 from dragon.vm.dali.core.ops.builtin_ops import ExternalSource
 
 
-class KPLRecordReader(object):
-    """Read examples from the KPLRecord.
+class CGRecordReader(object):
+    """Read examples from the CGRecord.
 
     Examples:
 
@@ -42,20 +44,18 @@ class KPLRecordReader(object):
 
         def __init__():
             super(MyPipeline, self).__init__()
-            # Assume the we have the following data:
-            # /data/root.data
-            # /data/root.index
-            # /data/root.meta
-            self.reader = dali.ops.KPLRecordReader(
-                path='/data'
+            # Assume that we have the following files:
+            # /path/to/records/00000.data
+            # /path/to/records/00000.index
+            # /path/to/records/METADATA
+            self.reader = dali.ops.CGRecordReader(
+                path='/path/to/records'
                 features=('image', 'label'),
                 pipeline=self,
                 # Shuffle locally in the next ``initial_fill`` examples
                 # It turns to be weak with the decreasing of ``initial_fill``
                 # and disabled if ``initial_fill`` is set to **1**
-                random_shuffle=True,
-                initial_fill=1024,
-            )
+                random_shuffle=True, initial_fill=1024)
 
         def iter_step(self):
             self.reader.feed_inputs()
@@ -100,19 +100,12 @@ class KPLRecordReader(object):
         self._pipe = pipeline
         self._batch_size = pipeline.batch_size
         self._prefetch_depth = pipeline._prefetch_queue_depth
-        self._reader = reader.DataReader(
-            dataset=kpl_record.KPLRecordDataset,
-            source=path,
-            part_idx=shard_id,
-            num_parts=num_shards,
-            shuffle=random_shuffle,
-            initial_fill=initial_fill,
-            **kwargs
-        )
-        self._buffer = self._reader.q_out = mp.Queue(
-            self._prefetch_depth * self._batch_size)
-        self._reader.start()
-
+        self._buffer = mp.Queue(self._prefetch_depth * self._batch_size)
+        self._dataset_reader = codewithgpu.DatasetReader(
+            path=path, output_queue=self._buffer,
+            partition_idx=shard_id, num_partitions=num_shards,
+            shuffle=random_shuffle, initial_fill=initial_fill, **kwargs)
+        self._dataset_reader.start()
         with context.device('cpu'):
             self.features = dict((k, ExternalSource()) for k in features)
 
@@ -146,8 +139,8 @@ class KPLRecordReader(object):
 
     def terminate(self):
         """Terminate the reader."""
-        self._reader.terminate()
-        self._reader.join()
+        self._dataset_reader.terminate()
+        self._dataset_reader.join()
 
     def __call__(self, *args, **kwargs):
         """Create the edge references for features.
@@ -170,19 +163,16 @@ class TFRecordReader(object):
     Examples:
 
     ```python
-    # Assume the we have the following data:
-    # /data/00001.data
-    # /data/00001.index
-    # /data/FEATURES
-    database = '/data'
+    # Assume that we have the following files:
+    # /path/to/records/00000.data
+    # /path/to/records/00000.index
+    # /path/to/records/METADATA
     input = dali.ops.TFRecordReader(
-        path=database,
+        path='/path/to/records',
         # Shuffle locally in the next ``initial_fill`` examples
         # It turns to be weak with the decreasing of ``initial_fill``
         # and disabled if ``initial_fill`` is set to **1**
-        random_shuffle=True,
-        initial_fill=1024,
-    )
+        random_shuffle=True, initial_fill=1024)
     ```
 
     """
@@ -231,17 +221,17 @@ class TFRecordReader(object):
 
     @staticmethod
     def check_files(path):
-        data_files, index_files, features_file = [], [], None
+        data_files, index_files, meta_data_file = [], [], None
         for file in os.listdir(path):
             if file.endswith('.data'):
                 data_files.append(file)
             elif file.endswith('.index'):
                 index_files.append(file)
-            elif file == 'FEATURES':
-                features_file = file
-        if features_file is None:
-            raise FileNotFoundError('File <FEATURES> is missing.')
-        with open(os.path.join(path, features_file), 'r') as f:
+            elif file == 'METADATA':
+                meta_data_file = file
+        if meta_data_file is None:
+            raise FileNotFoundError('Excepted meta data file: %s' % meta_data_file)
+        with open(os.path.join(path, meta_data_file), 'r') as f:
             features = f.read()
             features = features.replace('tf.', 'tfrecord.')
             features = features.replace('tf.io.', 'tfrecord.')

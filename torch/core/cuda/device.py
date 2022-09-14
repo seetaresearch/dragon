@@ -50,6 +50,27 @@ def get_device_capability(device=None):
     return backend.cudaGetDeviceCapability(device_index)
 
 
+def get_device_name(device=None):
+    """Return the name of specified device.
+
+    If ``device`` is **None**, the current device will be selected.
+
+    Parameters
+    ----------
+    device : Union[dragon.vm.torch.device, int], optional
+        The device to query.
+
+    Returns
+    -------
+    str
+        The device name.
+
+    """
+    device = -1 if device is None else device
+    device_index = device.index if hasattr(device, 'index') else device
+    return backend.cudaGetDeviceName(device_index)
+
+
 def is_available():
     """Return a bool reporting if runtime is available.
 

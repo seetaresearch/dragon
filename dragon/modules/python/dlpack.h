@@ -13,7 +13,10 @@
 #ifndef DRAGON_MODULES_PYTHON_DLPACK_H_
 #define DRAGON_MODULES_PYTHON_DLPACK_H_
 
+#include <dragon/core/tensor.h>
+
 #include "dragon/modules/python/common.h"
+#include "dragon/modules/python/types.h"
 
 namespace dragon {
 
@@ -54,7 +57,7 @@ class DLPackWrapper {
         ctx.device_type = DLDeviceType::kDLGPU;
         break;
       }
-      case PROTO_CNML:
+      case PROTO_MPS:
       default:
         LOG(FATAL) << "Unsupported dlpack device.";
     }

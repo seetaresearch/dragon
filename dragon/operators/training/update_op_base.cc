@@ -1,7 +1,7 @@
 #include "dragon/core/workspace.h"
+#include "dragon/kernels/op_kernels.h"
 #include "dragon/operators/training/update_op.h"
 #include "dragon/utils/math_functions.h"
-#include "dragon/utils/op_kernels.h"
 
 namespace dragon {
 
@@ -79,6 +79,9 @@ void UpdateOpBase<Context>::RunOnDevice() {
 template class UpdateOpBase<CPUContext>;
 #ifdef USE_CUDA
 template class UpdateOpBase<CUDAContext>;
+#endif
+#ifdef USE_MPS
+template class UpdateOpBase<MPSContext>;
 #endif
 
 } // namespace dragon

@@ -8,7 +8,7 @@
 #     <https://opensource.org/licenses/BSD-2-Clause>
 #
 # ------------------------------------------------------------
-"""Test the autograph module."""
+"""Test autograph module."""
 
 from __future__ import absolute_import
 from __future__ import division
@@ -23,7 +23,7 @@ from dragon.core.testing.unittest.common_utils import run_tests
 
 
 class TestConfig(unittest.TestCase):
-    """Test the graph config."""
+    """Test graph config."""
 
     def test_optimization(self):
         dragon.autograph.set_optimization(1)
@@ -48,7 +48,7 @@ class TestConfig(unittest.TestCase):
 
 
 class TestFunction(unittest.TestCase):
-    """Test the graph function."""
+    """Test graph function."""
 
     @dragon.function(input_signature=[
         dragon.Tensor((1,), dtype='int32'),
@@ -94,7 +94,7 @@ class TestFunction(unittest.TestCase):
 
 
 class TestOpSpec(unittest.TestCase):
-    """Test the op spec."""
+    """Test op spec."""
 
     sym1 = dragon.Tensor(None, None, symbolic=True)
     sym2 = dragon.Tensor((1,), symbolic=True)
@@ -486,7 +486,7 @@ class TestOpSpec(unittest.TestCase):
 
 
 class TestOpSpecWithTensorDesc(unittest.TestCase):
-    """Test the op spec with tensor descriptors."""
+    """Test op spec with tensor descriptors."""
 
     sym1 = dragon.Tensor(None, symbolic=True)
     sym2 = dragon.Tensor((1, None), symbolic=True)

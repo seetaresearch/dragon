@@ -236,6 +236,46 @@ DEFINE_OP_SINGLE_ARG(float, CuDNNBatchNormOp, momentum);
 
 #endif // USE_CUDNN
 
+#ifdef USE_MPS
+
+template <class Context>
+class MPSBatchNormGradientOp : public BatchNormOpBase<Context> {
+ public:
+  MPSBatchNormGradientOp(const OperatorDef& def, Workspace* ws)
+      : BatchNormOpBase<Context>(def, ws) {}
+  USE_OPERATOR_FUNCTIONS;
+  USE_BATCHNORM_FUNCTIONS;
+#ifdef USE_MPI
+  USE_COLLECTIVE_FUNCTIONS;
+#endif
+
+  void Setup() override {
+    GetBaseArguments();
+    Output(0)->ReshapeLike(Input(0));
+  }
+
+  void RunOnDevice() override {
+    DispatchHelper<dtypes::Floating>::Call(this, Input(0));
+  }
+
+  template <typename T>
+  void RunTraining();
+
+  template <typename T>
+  void RunInference();
+
+  template <typename T>
+  void DoRunWithType() {
+    if (training_) {
+      RunTraining<T>();
+    } else {
+      RunInference<T>();
+    }
+  };
+};
+
+#endif
+
 DEFINE_OP_SINGLE_ARG(float, BatchNormOp, momentum);
 
 } // namespace dragon

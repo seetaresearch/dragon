@@ -1,7 +1,7 @@
 #include "dragon/operators/normalization/batch_norm_op.h"
 #include "dragon/core/workspace.h"
+#include "dragon/kernels/op_kernels.h"
 #include "dragon/utils/math_functions.h"
-#include "dragon/utils/op_kernels.h"
 
 namespace dragon {
 
@@ -93,7 +93,7 @@ void BatchNormOp<Context>::RunTraining() {
       Input(1).template data<ParamT, Context>(), // gamma
       Input(2).template data<ParamT, Context>(), // beta
       params,
-      params + C_,
+      params, /* params + C_ */
       Output(0)->template mutable_data<T, Context>(),
       ctx());
 }
@@ -125,8 +125,8 @@ void BatchNormOp<Context>::RunInference() {
       params,
       Input(1).template data<ParamT, Context>(), // gamma
       Input(2).template data<ParamT, Context>(), // beta
-      params + C_,
-      params + C_ * 2,
+      params, /* params + C_ */
+      params, /* params + C_ * 2 */
       Output(0)->template mutable_data<T, Context>(),
       ctx());
 }
@@ -148,7 +148,17 @@ void BatchNormGradientOp<Context>::RunTraining() {
 
   // Gradient w.r.t. affine transformation.
   kernels::BatchNormWGrad(
-      N_, C_, S_, data_format(), x, mu, rsig, dy, params, params + C_, ctx());
+      N_,
+      C_,
+      S_,
+      data_format(),
+      x,
+      mu,
+      rsig,
+      dy,
+      params,
+      params, /* params + C_ */
+      ctx());
 
   // Gradient w.r.t. gamma.
   if (dW->has_name()) {
@@ -163,7 +173,9 @@ void BatchNormGradientOp<Context>::RunTraining() {
   if (dB->has_name()) {
     math::Copy(
         C_,
-        params + C_,
+        C_, // x_offset
+        0, // y_offset
+        params,
         dB->Reshape({C_})->template mutable_data<ParamT, Context>(),
         ctx());
   }
@@ -203,7 +215,7 @@ void BatchNormGradientOp<Context>::RunTraining() {
         rsig,
         gamma,
         params,
-        params + C_,
+        params, /* params + C_ */
         dy,
         dX->template mutable_data<T, Context>(),
         ctx());
@@ -246,13 +258,14 @@ void BatchNormGradientOp<Context>::RunInference() {
 }
 
 DEPLOY_CPU_OPERATOR(BatchNorm);
-#ifdef USE_CUDA
-DEPLOY_CUDA_OPERATOR(BatchNorm);
-#endif
-
 DEPLOY_CPU_OPERATOR(BatchNormGradient);
 #ifdef USE_CUDA
+DEPLOY_CUDA_OPERATOR(BatchNorm);
 DEPLOY_CUDA_OPERATOR(BatchNormGradient);
+#endif
+#ifdef USE_MPS
+DEPLOY_MPS_OPERATOR(BatchNorm, BatchNorm);
+DEPLOY_MPS_OPERATOR(BatchNormGradient, BatchNormGradient);
 #endif
 
 OPERATOR_SCHEMA(BatchNorm)

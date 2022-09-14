@@ -15,7 +15,7 @@
 #
 
 find_package(CUDA REQUIRED)
-include(${PROJECT_SOURCE_DIR}/../cmake/SelectCudaArch.cmake)
+include(${PROJECT_SOURCE_DIR}/cmake/SelectCudaArch.cmake)
 
 # Set NVCC flags.
 CUDA_SELECT_NVCC_ARCH_FLAGS(CUDA_ARCH ${CUDA_ARCH})

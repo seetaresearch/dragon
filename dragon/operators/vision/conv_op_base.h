@@ -240,6 +240,34 @@ class CuDNNConvOpBase : public ConvOpBase<Context> {
 
 #endif // USE_CUDNN
 
+#ifdef USE_MPS
+
+#ifdef __OBJC__
+typedef MPSGraphConvolution2DOpDescriptor* MPSGraphConvolution2DOpDescriptor_t;
+#else
+struct MPSGraphConvolution2DOpDescriptor;
+typedef MPSGraphConvolution2DOpDescriptor* MPSGraphConvolution2DOpDescriptor_t;
+#endif
+
+template <class Context>
+class MPSConvOpBase : public ConvOpBase<Context> {
+ public:
+  MPSConvOpBase(const OperatorDef& def, Workspace* ws);
+  USE_OPERATOR_FUNCTIONS;
+  USE_CONV_FUNCTIONS;
+
+ protected:
+  void SetConvDesc();
+
+  MPSGraphConvolution2DOpDescriptor_t conv2d_desc_;
+};
+
+#define USE_MPS_CONV_FUNCTIONS               \
+  using MPSConvOpBase<Context>::SetConvDesc; \
+  using MPSConvOpBase<Context>::conv2d_desc_;
+
+#endif
+
 } // namespace dragon
 
 #endif // DRAGON_OPERATORS_VISION_CONV_OP_BASE_H_

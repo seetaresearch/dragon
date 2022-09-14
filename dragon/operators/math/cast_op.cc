@@ -73,13 +73,14 @@ void CastGradientOp<Context>::RunOnDevice() {
 }
 
 DEPLOY_CPU_OPERATOR(Cast);
-#ifdef USE_CUDA
-DEPLOY_CUDA_OPERATOR(Cast);
-#endif
-
 DEPLOY_CPU_OPERATOR(CastGradient);
 #ifdef USE_CUDA
+DEPLOY_CUDA_OPERATOR(Cast);
 DEPLOY_CUDA_OPERATOR(CastGradient);
+#endif
+#ifdef USE_MPS
+DEPLOY_MPS_OPERATOR(Cast, Cast);
+DEPLOY_MPS_OPERATOR(CastGradient, CastGradient);
 #endif
 
 OPERATOR_SCHEMA(Cast)

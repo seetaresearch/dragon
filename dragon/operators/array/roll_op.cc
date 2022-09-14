@@ -1,6 +1,6 @@
 #include "dragon/operators/array/roll_op.h"
 #include "dragon/core/workspace.h"
-#include "dragon/utils/op_kernels.h"
+#include "dragon/kernels/op_kernels.h"
 
 namespace dragon {
 

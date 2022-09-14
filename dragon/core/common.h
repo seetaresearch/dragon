@@ -21,6 +21,7 @@
 #include <cstring>
 #include <ctime>
 #include <functional>
+#include <limits>
 #include <map>
 #include <memory>
 #include <mutex>
@@ -35,15 +36,10 @@
 #include <vector>
 
 #include "dragon/core/types.h"
+#include "dragon/proto/dragon.pb.h"
 #include "dragon/utils/logging.h"
 #include "dragon/utils/macros.h"
 #include "dragon/utils/string_utils.h"
-
-#ifdef BUILD_RUNTIME
-#include "dragon/proto_lite/dragon.pb.h"
-#else
-#include "dragon/proto/dragon.pb.h"
-#endif
 
 namespace dragon {
 

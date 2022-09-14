@@ -25,7 +25,7 @@ namespace dragon {
 namespace str {
 
 template <typename T>
-inline std::string to(T val) {
+std::string to(T val) {
   return std::to_string(val);
 }
 

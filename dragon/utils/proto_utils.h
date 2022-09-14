@@ -13,11 +13,7 @@
 #ifndef DRAGON_UTILS_PROTO_UTILS_H_
 #define DRAGON_UTILS_PROTO_UTILS_H_
 
-#ifdef BUILD_RUNTIME
-#include <google/protobuf/message_lite.h>
-#else
 #include <google/protobuf/message.h>
-#endif // WITH_LITE_RUNTIME
 
 #include "dragon/core/common.h"
 
@@ -69,26 +65,6 @@ inline OperatorDef CreateOperatorDef(
       type, name, inputs, outputs, vector<Argument>(), DeviceOption());
 }
 
-#ifdef BUILD_RUNTIME
-
-DRAGON_API bool ParseProtoFromText(
-    string text,
-    google::protobuf::MessageLite* proto);
-
-DRAGON_API bool ParseProtoFromLargeString(
-    const string& str,
-    google::protobuf::MessageLite* proto);
-
-DRAGON_API bool ReadProtoFromBinaryFile(
-    const char* filename,
-    google::protobuf::MessageLite* proto);
-
-DRAGON_API void WriteProtoToBinaryFile(
-    const google::protobuf::MessageLite& proto,
-    const char* filename);
-
-#else
-
 DRAGON_API bool ParseProtoFromText(
     string text,
     google::protobuf::Message* proto);
@@ -104,8 +80,6 @@ DRAGON_API bool ReadProtoFromBinaryFile(
 DRAGON_API void WriteProtoToBinaryFile(
     const google::protobuf::Message& proto,
     const char* filename);
-
-#endif // BUILD_RUNTIME
 
 } // namespace dragon
 

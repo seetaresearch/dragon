@@ -52,6 +52,7 @@ void CuDNNConvTransposeOp<Context>::SetOpDesc() {
 template <class Context>
 template <typename T>
 void CuDNNConvTransposeOp<Context>::DoRunWithType() {
+  ConvOpBase<Context>::Reshape();
   auto &X = Input(0), &W = Input(1), *Y = Output(0);
   INITIALIZE_TENSOR_VIA_SPEC(W, w_shape_, T);
   if (HasBias()) {
@@ -122,12 +123,6 @@ void CuDNNConvTransposeOp<Context>::DoRunWithType() {
         output_desc_,
         Y->template mutable_data<T, Context>()));
   }
-}
-
-template <class Context>
-void CuDNNConvTransposeOp<Context>::RunOnDevice() {
-  ConvOpBase<Context>::Reshape();
-  DispatchHelper<dtypes::Floating>::Call(this, Input(0));
 }
 
 template <class Context>

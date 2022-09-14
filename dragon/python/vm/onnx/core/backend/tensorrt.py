@@ -185,7 +185,7 @@ class BackendRep(ONNXBackendRep):
 
     def _set_device(self, device):
         self.device = device
-        assert(device.type == DeviceType.CUDA)
+        assert device.type == DeviceType.CUDA
         cuda.set_device(device.device_id)
 
 

@@ -13,6 +13,8 @@
 #ifndef DRAGON_MODULES_PYTHON_GRADIENT_H_
 #define DRAGON_MODULES_PYTHON_GRADIENT_H_
 
+#include <dragon/core/gradient.h>
+
 #include "dragon/modules/python/common.h"
 
 namespace dragon {

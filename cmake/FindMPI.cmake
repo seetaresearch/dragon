@@ -1,6 +1,8 @@
 # Copyright (c) 2017-present, SeetaTech, Co.,Ltd.
 # Licensed under the BSD 2-Clause License.
 
+# - Find the MPI libraries
+#
 # Following variables can be set and are optional:
 #
 #  MPI_INCLUDE_DIR      - path to the MPI headers

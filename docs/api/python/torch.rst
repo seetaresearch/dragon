@@ -301,7 +301,7 @@ vm.torch
   : Repeat elements along each dimension of input.
 
   `topk(...) <torch/topk.html>`_
-  : Return the top-K largest or smallest elements along the given dimension.
+  : Return the top k-largest or k-smallest elements along the given dimension.
 
   `transpose(...) <torch/transpose.html>`_
   : Return a new tensor with two dimensions swapped.
@@ -323,6 +323,12 @@ vm.torch
 
   `where(...) <torch/where.html>`_
   : Select the elements from two branches under the condition.
+
+  `var(...) <torch/var.html>`_
+  : Compute the variance value of elements along the given dimension.
+
+  `var_mean(...) <torch/var_mean.html>`_
+  : Compute the variance and mean of elements along the given dimension.
 
   `zeros(...) <torch/zeros.html>`_
   : Return a tensor filled with zeros.
@@ -438,6 +444,8 @@ vm.torch
   torch/unique
   torch/unsqueeze
   torch/where
+  torch/var
+  torch/var_mean
   torch/zeros_like
   torch/zeros
 

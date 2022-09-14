@@ -1,5 +1,5 @@
 #include "dragon/operators/activation/hardswish_op.h"
-#include "dragon/utils/op_kernels.h"
+#include "dragon/kernels/op_kernels.h"
 
 namespace dragon {
 
@@ -27,13 +27,14 @@ void HardSwishGradientOp<Context>::DoRunWithType() {
 }
 
 DEPLOY_CPU_OPERATOR(HardSwish);
-#ifdef USE_CUDA
-DEPLOY_CUDA_OPERATOR(HardSwish);
-#endif
-
 DEPLOY_CPU_OPERATOR(HardSwishGradient);
 #ifdef USE_CUDA
+DEPLOY_CUDA_OPERATOR(HardSwish);
 DEPLOY_CUDA_OPERATOR(HardSwishGradient);
+#endif
+#ifdef USE_MPS
+DEPLOY_MPS_OPERATOR(HardSwish, HardSwish);
+DEPLOY_MPS_OPERATOR(HardSwishGradient, HardSwishGradient);
 #endif
 
 OPERATOR_SCHEMA(HardSwish)

@@ -8,7 +8,7 @@
 #     <https://opensource.org/licenses/BSD-2-Clause>
 #
 # ------------------------------------------------------------
-"""Test the torch module."""
+"""Test torch module."""
 
 from __future__ import absolute_import
 from __future__ import division
@@ -16,6 +16,8 @@ from __future__ import print_function
 
 import collections
 import io
+import os.path
+import tempfile
 import unittest
 
 import numpy as np
@@ -25,7 +27,7 @@ from dragon.vm import torch
 
 
 class TestDevice(unittest.TestCase):
-    """Test the size class."""
+    """Test size class."""
 
     def test_properties(self):
         self.assertEqual(str(torch.device()), "cpu:0")
@@ -33,7 +35,7 @@ class TestDevice(unittest.TestCase):
 
 
 class TestTensor(unittest.TestCase):
-    """Test the tensor class."""
+    """Test tensor class."""
 
     def test_properties(self):
         a = torch.tensor([0.]).cpu()
@@ -125,7 +127,7 @@ class TestTensor(unittest.TestCase):
 
 
 class TestSize(unittest.TestCase):
-    """Test the size class."""
+    """Test size class."""
 
     def test_properties(self):
         self.assertEqual(torch.Size().numel(), 1)
@@ -134,7 +136,7 @@ class TestSize(unittest.TestCase):
 
 
 class TestSerialization(unittest.TestCase):
-    """Test the serialization utility."""
+    """Test serialization utility."""
 
     def test_save_and_load(self):
         state_dict = collections.OrderedDict([
@@ -155,7 +157,7 @@ class TestSerialization(unittest.TestCase):
         torch.save(torch.Tensor(2, 3), f)
         f = io.BytesIO()
         torch.save([1, 2, 3], f)
-        f = '/tmp/test_dragon_vm_torch_save'
+        f = os.path.join(tempfile.gettempdir(), 'test_dragon_vm_torch_save')
         try:
             torch.save(state_dict, f)
             state_dict2 = torch.load(f)

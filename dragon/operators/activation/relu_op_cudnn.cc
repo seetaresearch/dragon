@@ -21,15 +21,6 @@ void CuDNNReluOp<Context>::DoRunWithType() {
 }
 
 template <class Context>
-void CuDNNReluOp<Context>::RunOnDevice() {
-  if (this->alpha_ != 0.f) {
-    // CuDNN does not support LeakyReLU
-    return ReluOp<Context>::RunOnDevice();
-  }
-  DispatchHelper<dtypes::Floating>::Call(this, Input(0));
-}
-
-template <class Context>
 template <typename T>
 void CuDNNReluGradientOp<Context>::DoRunWithType() {
   auto &Y = Input(0), &dY = Input(1), *dX = Output(0);
@@ -47,15 +38,6 @@ void CuDNNReluGradientOp<Context>::DoRunWithType() {
       CuDNNType<T>::zero,
       input_desc_,
       dX->ReshapeLike(Y)->template mutable_data<T, Context>()));
-}
-
-template <class Context>
-void CuDNNReluGradientOp<Context>::RunOnDevice() {
-  if (this->alpha_ != 0.f || this->max_value_ > 0.f) {
-    // CuDNN does not support LeakyReLU and ClippedReLU
-    return ReluGradientOp<Context>::RunOnDevice();
-  }
-  DispatchHelper<dtypes::Floating>::Call(this, Input(0));
 }
 
 DEPLOY_CUDNN_OPERATOR(Relu);

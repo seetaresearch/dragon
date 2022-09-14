@@ -775,7 +775,7 @@ class Tensor(object):
         """
 
     def clamp_(self, min=None, max=None):
-        """Clamp elements into the a range.
+        """Clamp elements into the given range.
 
         Parameters
         ----------
@@ -1763,6 +1763,10 @@ class Tensor(object):
         dragon.vm.torch.Tensor
             The output tensor.
 
+        See Also
+        --------
+        `torch.mean(...)`_
+
         """
 
     def min(self, dim=None, keepdim=False):
@@ -1827,6 +1831,31 @@ class Tensor(object):
         `torch.mm(...)`_
 
         """
+
+    def mps(self, device=None):
+        """Copy memory to the specified mps device.
+
+        Parameters
+        ----------
+        device : Union[int, dragon.vm.torch.device], optional
+            The device to copy to.
+
+        Returns
+        -------
+        dragon.vm.torch.Tensor
+            The output tensor.
+
+        """
+        if device is None:
+            cfg = config.config()
+            device = cfg.device_index
+        if isinstance(device, cpp.device):
+            if device.type != 'mps':
+                raise ValueError('Excepted mps device, got: ' + device.type)
+            device = device.index
+        self._impl.ToMPS(device)
+        self._device = cpp.device('mps', device)
+        return self
 
     def mul(self, other):
         r"""Compute the element-wise multiplication.
@@ -2032,7 +2061,7 @@ class Tensor(object):
         """
 
     def new_ones(self, *size, dtype=None, device=None, requires_grad=False):
-        """Return a tensor filled with with ones.
+        """Return a tensor filled with ones.
 
         Refer this tensor if ``dtype`` and ``device`` not provided.
 
@@ -2089,7 +2118,7 @@ class Tensor(object):
         """
 
     def new_zeros(self, *size, dtype=None, device=None, requires_grad=False):
-        """Return a tensor filled with with zeros.
+        """Return a tensor filled with zeros.
 
         Refer this tensor if ``dtype`` and ``device`` not provided.
 
@@ -2844,6 +2873,8 @@ class Tensor(object):
                 self.cpu()
             elif device.type == 'cuda':
                 self.cuda(device.index)
+            elif device.type == 'mps':
+                self.mps(device.index)
             else:
                 raise ValueError('Unsupported device type: ' + device.type)
         if dtype is not None:
@@ -2862,7 +2893,7 @@ class Tensor(object):
         return self.numpy().tolist()
 
     def topk(self, k, dim=-1, largest=True, sorted=True):
-        """Return the top-K largest or smallest elements.
+        """Return the top k-largest or k-smallest elements.
 
         Parameters
         ----------
@@ -2873,7 +2904,7 @@ class Tensor(object):
         largest : bool, optional
             Return largest or smallest elements.
         sorted : bool, optional
-            Whether to return in the sorted order.
+            Whether to return elements in the sorted order.
 
         Returns
         -------
@@ -3106,7 +3137,7 @@ class Tensor(object):
         dragon.vm.torch.Tensor, optional
             The inverse index tensor.
         dragon.vm.torch.Tensor, optional
-            The counts tensor.
+            The counting tensor.
 
         See Also
         --------
@@ -3233,6 +3264,27 @@ class Tensor(object):
         See Also
         --------
         `torch.where(...)`_
+
+        """
+
+    def var(self, dim=None, keepdim=False):
+        """Compute the variance value of elements along the given dimension.
+
+        Parameters
+        ----------
+        dim : Union[int, Sequence[int]], optional
+            The dimension(s) to reduce.
+        keepdim : bool, optional, default=False
+            Keep the reduced dimensions or not.
+
+        Returns
+        -------
+        dragon.vm.torch.Tensor
+            The output tensor.
+
+        See Also
+        --------
+        `torch.var(...)`_
 
         """
 

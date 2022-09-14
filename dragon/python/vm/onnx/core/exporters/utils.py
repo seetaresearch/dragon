@@ -16,7 +16,7 @@ from __future__ import print_function as _print_function
 from dragon.core.util.registry import Registry as _Registry
 from dragon.vm.onnx.core import helper
 
-# Global registry to store known exporters.
+# Global registry.py to store known exporters.
 _GLOBAL_REGISTERED_EXPORTERS = _Registry('exporters')
 register = _GLOBAL_REGISTERED_EXPORTERS.register
 

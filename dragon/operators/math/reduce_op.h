@@ -14,8 +14,8 @@
 #define DRAGON_OPERATORS_MATH_REDUCE_OP_H_
 
 #include "dragon/core/operator.h"
+#include "dragon/kernels/op_kernels.h"
 #include "dragon/utils/math_functions.h"
-#include "dragon/utils/op_kernels.h"
 
 namespace dragon {
 
@@ -55,7 +55,7 @@ struct VarReducer {
         axes.size(),
         axes.data(),
         x,
-        (T*)nullptr,
+        y, // Placeholder.
         y,
         ctx);
   }

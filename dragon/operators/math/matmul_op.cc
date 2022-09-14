@@ -95,20 +95,16 @@ void MatMulOp<Context>::DoRunWithType() {
   const auto N = B.dim(B_ndim - 1);
 
   // Check batching && broadcasting.
+  vec64_t A_batch_dims, B_batch_dims;
   vec64_t A_dims(A.dims().begin(), A.dims().end() - 2);
-  vec64_t B_dims(B.dims().begin(), B.dims().end() - 2);
-  vec64_t A_batch_dims, B_batch_dims, Y_dims;
-  if (math::utils::IsBinaryBroadcast(A_dims, B_dims, Y_dims)) {
-    math::utils::ComputeBroadcastDims(
-        A_dims, B_dims, A_batch_dims, B_batch_dims);
-  } else {
-    LOG(FATAL) << "Could not broadcast together with shapes " << A.DimString()
-               << " " << B.DimString();
-  }
+  vec64_t B_dims(B.dims().begin(), B.dims().end() - 2), Y_dims;
+  CHECK(math::utils::IsBinaryBroadcast(A_dims, B_dims, Y_dims))
+      << "\nCould not broadcast with " << A.DimString() << " " << B.DimString();
+  math::utils::ComputeBroadcastDims(A_dims, B_dims, A_batch_dims, B_batch_dims);
   Y_dims.push_back(M);
   Y_dims.push_back(N);
   const int64_t batch_ndim = A_batch_dims.size();
-  const bool broadcasting = A_batch_dims != B_batch_dims;
+  const auto broadcasting = A_batch_dims != B_batch_dims;
   const auto A_batch_size = math::utils::Prod(A_batch_dims);
   const auto B_batch_size = math::utils::Prod(B_batch_dims);
   const auto Y_batch_size = math::utils::Prod(batch_ndim, Y_dims.data());
@@ -359,21 +355,17 @@ void MatMulGradientOp<Context>::DoRunWithType() {
   const auto N = B.dim(B_ndim - 1);
 
   // Check batching && broadcasting.
+  vec64_t A_batch_axes, B_batch_axes;
+  vec64_t A_batch_dims, B_batch_dims, Y_batch_dims;
   vec64_t A_dims(A.dims().begin(), A.dims().end() - 2);
   vec64_t B_dims(B.dims().begin(), B.dims().end() - 2);
-  vec64_t A_batch_dims, B_batch_dims, Y_batch_dims;
-  vec64_t A_batch_axes, B_batch_axes;
-  if (math::utils::IsBinaryBroadcast(A_dims, B_dims, Y_batch_dims)) {
-    math::utils::ComputeBroadcastDims(
-        A_dims, B_dims, A_batch_dims, B_batch_dims);
-    math::utils::ComputeBroadcastAxes(
-        A_batch_dims, B_batch_dims, Y_batch_dims, A_batch_axes, B_batch_axes);
-  } else {
-    LOG(FATAL) << "Could not broadcast together with shapes " << A.DimString()
-               << " " << B.DimString();
-  }
+  CHECK(math::utils::IsBinaryBroadcast(A_dims, B_dims, Y_batch_dims))
+      << "\nCould not broadcast with " << A.DimString() << " " << B.DimString();
+  math::utils::ComputeBroadcastDims(A_dims, B_dims, A_batch_dims, B_batch_dims);
+  math::utils::ComputeBroadcastAxes(
+      A_batch_dims, B_batch_dims, Y_batch_dims, A_batch_axes, B_batch_axes);
   const int64_t batch_ndim = A_batch_dims.size();
-  const bool broadcasting = A_batch_dims != B_batch_dims;
+  const auto broadcasting = A_batch_dims != B_batch_dims;
   const auto A_batch_size = math::utils::Prod(A_batch_dims);
   const auto B_batch_size = math::utils::Prod(B_batch_dims);
   const auto Y_batch_size = math::utils::Prod(Y_batch_dims);

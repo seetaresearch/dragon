@@ -13,8 +13,12 @@
 #ifndef DRAGON_MODULES_PYTHON_SYSCONFIG_H_
 #define DRAGON_MODULES_PYTHON_SYSCONFIG_H_
 
+#include <dragon/core/common.h>
+#include <dragon/utils/device/common_cuda.h>
+#include <dragon/utils/device/common_cudnn.h>
+#include <dragon/utils/device/common_eigen.h>
+
 #include "dragon/modules/python/common.h"
-#include "dragon/utils/device/common_eigen.h"
 
 namespace dragon {
 
@@ -57,6 +61,10 @@ void RegisterModule_sysconfig(py::module& m) {
     build_info += " " + str::to(CUDNN_MAJOR) + "." + str::to(CUDNN_MINOR) +
         "." + str::to(CUDNN_PATCHLEVEL);
 #endif
+#if defined(USE_MPS) && defined(MPS_OSX_VERSION_MAJOR)
+    build_info += "\nmps_version: " + str::to(MPS_OSX_VERSION_MAJOR) + "." +
+        str::to(MPS_OSX_VERSION_MINOR);
+#endif
     build_info += "\nthird_party: eigen protobuf pybind11";
 #if defined(USE_OPENMP)
     build_info += " openmp";
@@ -69,6 +77,9 @@ void RegisterModule_sysconfig(py::module& m) {
 #endif
 #if defined(USE_CUDNN)
     build_info += " cudnn";
+#endif
+#if defined(USE_MPS)
+    build_info += " mps";
 #endif
     return build_info;
   });

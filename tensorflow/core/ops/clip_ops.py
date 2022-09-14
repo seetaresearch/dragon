@@ -21,12 +21,7 @@ from __future__ import print_function
 from dragon.core.ops import math_ops
 
 
-def clip_by_value(
-    t,
-    clip_value_min,
-    clip_value_max,
-    name=None,
-):
+def clip_by_value(t, clip_value_min, clip_value_max, name=None):
     r"""Compute the clipped input according to the given bounds.
 
     .. math:: \text{out} = \min(\max(x, \text{low}), \text{high})
@@ -55,9 +50,4 @@ def clip_by_value(
         The output tensor.
 
     """
-    return math_ops.clip(
-        t,
-        low=clip_value_min,
-        high=clip_value_max,
-        name=name,
-    )
+    return math_ops.clip(t, clip_value_min, clip_value_max, name=name)

@@ -38,12 +38,11 @@ class Module(object):
 
     """
 
-    # A blacklist to ignore some properties to be flatten.
+    # A blacklist to ignore some properties to flatten.
     _MODULE_IGNORED_PROPERTIES = frozenset(())
 
     def __init__(self, name=None):
         self._name = name
-        self._scope_name = None
 
     @property
     def name(self):
@@ -69,10 +68,7 @@ class Module(object):
             The context manager to apply the name scope.
 
         """
-        if self._scope_name is None:
-            with context.name_scope(self._name) as scope_name:
-                self._scope_name = scope_name
-        return context.name_scope(self._scope_name)
+        return context.name_scope(self.name)
 
     @property
     def submodules(self):
@@ -179,10 +175,8 @@ def flatten_module(
     """Flatten attributes according to the predicate."""
     if seen is None:
         seen = {id(module)}
-
     module_dict = vars(module)
     submodules = []
-
     for key in sorted(module_dict, key=attribute_traversal_key):
         if key in attributes_to_ignore:
             continue
@@ -200,7 +194,6 @@ def flatten_module(
                     yield leaf
             if recursive and _is_module(leaf):
                 submodules.append((module_path + leaf_path, leaf))
-
     for submodule_path, submodule in submodules:
         subvalues = flatten_module(
             submodule,

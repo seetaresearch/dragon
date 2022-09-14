@@ -81,7 +81,7 @@ using Integral = TypesBase<uint8_t, int8_t, int, int64_t>;
 using Floating = TypesBase<float16, float, double>;
 
 /*! \brief Accumulated types */
-using Accumulated = dtypes::TypesBase<int, int64_t, float16, float, double>;
+using Accumulated = TypesBase<int, int64_t, float16, float, double>;
 
 /*! \brief Convert the type string to meta */
 inline const TypeMeta& to_meta(const std::string& type) {

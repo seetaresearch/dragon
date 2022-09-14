@@ -97,7 +97,7 @@ def sort(input, dim=-1, descending=False, out=None):
 
 
 def topk(input, k, dim=-1, largest=True, sorted=True, out=None):
-    """Return the top-K largest or smallest elements along the given dimension.
+    """Return the top k-largest or k-smallest elements along the given dimension.
 
     :attr:`dim` could be negative:
 
@@ -108,7 +108,7 @@ def topk(input, k, dim=-1, largest=True, sorted=True, out=None):
     value2, index2 = torch.topk(x, k=2, dim=-1)  # Equivalent
     ```
 
-    If :attr:`largest` is ``False``, the k smallest elements are returned:
+    If :attr:`largest` is ``False``, the k-smallest elements are returned:
 
     ```python
     x = torch.tensor([1, 2, 3])
@@ -127,7 +127,7 @@ def topk(input, k, dim=-1, largest=True, sorted=True, out=None):
     largest : bool, optional
         Return largest or smallest elements.
     sorted : bool, optional
-        Whether to return in the sorted order.
+        Whether to return elements in the sorted order.
     out : Sequence[dragon.vm.torch.Tensor], optional
         The output value and index tensor.
 

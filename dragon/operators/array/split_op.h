@@ -28,7 +28,9 @@ class SplitOp final : public Operator<Context> {
   }
   USE_OPERATOR_FUNCTIONS;
 
-  void RunOnDevice() override;
+  void RunOnDevice() override {
+    DispatchHelper<dtypes::Generic>::Call(this, Input(0));
+  }
 
   template <typename T>
   void DoRunWithType();
@@ -47,7 +49,9 @@ class SplitGradientOp final : public Operator<Context> {
   }
   USE_OPERATOR_FUNCTIONS;
 
-  void RunOnDevice() override;
+  void RunOnDevice() override {
+    DispatchHelper<dtypes::Floating>::Call(this, Input("X_spec"));
+  }
 
   template <typename T>
   void DoRunWithType();

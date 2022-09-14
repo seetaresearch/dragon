@@ -1,15 +1,14 @@
-# ---[ Settings
-set(BUILD_RUNTIME OFF)
+# ---[ Messages
 message(STATUS "Build module: ${CMAKE_CURRENT_LIST_DIR}")
 
 # ---[ Sources
 file(GLOB PYBIND_SOURCES *.cc)
-add_subdirectory(${PROJECT_SOURCE_DIR}/core core)
-add_subdirectory(${PROJECT_SOURCE_DIR}/kernels kernels)
-add_subdirectory(${PROJECT_SOURCE_DIR}/onnx onnx)
-add_subdirectory(${PROJECT_SOURCE_DIR}/operators operators)
-add_subdirectory(${PROJECT_SOURCE_DIR}/proto proto)
-add_subdirectory(${PROJECT_SOURCE_DIR}/utils utils)
+add_subdirectory(${PROJECT_SOURCE_DIR}/dragon/core core)
+add_subdirectory(${PROJECT_SOURCE_DIR}/dragon/onnx onnx)
+add_subdirectory(${PROJECT_SOURCE_DIR}/dragon/proto proto)
+add_subdirectory(${PROJECT_SOURCE_DIR}/dragon/utils utils)
+add_subdirectory(${PROJECT_SOURCE_DIR}/dragon/kernels kernels)
+add_subdirectory(${PROJECT_SOURCE_DIR}/dragon/operators operators)
 
 # ---[ Targets
 if (USE_CUDA)
@@ -20,7 +19,7 @@ endif()
 add_library(dragon_python ${PYBIND_SOURCES})
 add_dependencies(dragon_python dragon)
 
-# ---[ Target defines
+# ---[ Target Defines
 if (MSVC)
   target_compile_definitions(dragon_python PRIVATE "DRAGON_API=__declspec(dllimport)")
   if (BUILD_SHARED_LIBS)
@@ -32,8 +31,12 @@ else()
   target_compile_definitions(dragon PRIVATE "DRAGON_API=")
   target_compile_definitions(dragon_python PRIVATE "DRAGON_API=")
 endif()
+if (USE_MPS)
+  target_compile_definitions(dragon PRIVATE ${MPS_OSX_VERSION_DEFINES})
+  target_compile_definitions(dragon_python PRIVATE ${MPS_OSX_VERSION_DEFINES})
+endif()
 
-# ---[ Target settings
+# ---[ Target Properties
 set(_install_rpath ${RPATH_PORTABLE_ORIGIN})
 if (USE_SHARED_LIBS)
   set(_install_rpath ${_install_rpath} ${THIRD_PARTY_LIBRARY_DIRS})
@@ -50,8 +53,11 @@ target_link_libraries(dragon_python dragon)
 target_link_libraries_v2(dragon protobuf)
 if (USE_OPENMP)
   if (CMAKE_CXX_COMPILER_ID MATCHES "Clang")
-    target_link_libraries_v2(dragon omp)
+    target_link_libraries_v2(dragon ${OPENMP_LIBRARIES})
   endif()
+endif()
+if (USE_BLAS)
+  target_link_libraries(dragon ${BLAS_LIBRARIES})
 endif()
 if (USE_CUDA)
   if (USE_SHARED_LIBS)
@@ -84,15 +90,12 @@ if (USE_MPI)
     target_link_libraries_v2(dragon ${MPI_LIBRARIES_STATIC})
   endif()
 endif()
+if (USE_MPS)
+  target_link_libraries(dragon ${MPS_LIBRARIES})
+endif()
 if (WIN32)
   target_link_libraries(dragon_python ${PYTHON_LIBRARIES})
 endif()
-
-# ---[ Command - Protobuf
-file(GLOB_RECURSE PROTO_FILES
-  ${PROJECT_SOURCE_DIR}/python/*.proto
-  ${PROJECT_SOURCE_DIR}/../caffe/*.proto)
-protobuf_generate_python(${PROTO_FILES})
 
 # ---[ Command - Strip
 strip_debug_symbol(dragon)
@@ -104,10 +107,10 @@ foreach(_file ${MODULE_INCLUDES})
   get_filename_component(_dir ${_file} DIRECTORY)
   get_filename_component(_ext ${_file} EXT)
   file(RELATIVE_PATH _dir ${PROJECT_SOURCE_DIR} ${_dir})
-  file(COPY ${_file} DESTINATION ${_install_dir}/dragon/${_dir})
+  file(COPY ${_file} DESTINATION ${_install_dir}/${_dir})
   if (${_ext} STREQUAL ".pb.h" AND WIN32)
     get_filename_component(_name ${_file} NAME)
-    protobuf_remove_constexpr(${_install_dir}/dragon/${_dir}/${_name})
+    protobuf_remove_constexpr(${_install_dir}/${_dir}/${_name})
   endif()
 endforeach()
 file(COPY ${THIRD_PARTY_DIR}/cub/cub DESTINATION ${_install_dir}/cub)
@@ -118,7 +121,7 @@ if (EXISTS ${PROTOBUF_SDK_ROOT_DIR}/include/google)
   file(COPY ${PROTOBUF_SDK_ROOT_DIR}/include/google DESTINATION ${_install_dir})
 endif()
 
-# ---[ Install - Library
+# ---[ Install - Libraries
 set(_install_dir ${CMAKE_INSTALL_PREFIX}/lib)
 install(TARGETS dragon DESTINATION ${_install_dir}/${LIBRARY_INSTALL_PREFIX})
 install(TARGETS dragon_python DESTINATION ${_install_dir}/${LIBRARY_INSTALL_PREFIX})

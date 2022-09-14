@@ -3,12 +3,6 @@ dragon.vision
 
 .. only:: html
 
-  Classes
-  -------
-
-  `class DataIterator <vision/DataIterator.html>`_
-  : Iterator to return the batch of data for image classification.
-
   Functions
   ---------
 
@@ -29,7 +23,6 @@ dragon.vision
 .. toctree::
   :hidden:
 
-  vision/DataIterator
   vision/extract_patches
   vision/resize
   vision/roi_align

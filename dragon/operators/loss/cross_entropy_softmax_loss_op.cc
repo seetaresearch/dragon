@@ -1,7 +1,7 @@
 #include "dragon/core/workspace.h"
+#include "dragon/kernels/op_kernels.h"
 #include "dragon/operators/loss/cross_entropy_loss_op.h"
 #include "dragon/utils/math_functions.h"
-#include "dragon/utils/op_kernels.h"
 
 namespace dragon {
 
@@ -142,13 +142,16 @@ void SoftmaxCrossEntropyLossGradientOp<Context>::DoRunWithType() {
 }
 
 DEPLOY_CPU_OPERATOR(SoftmaxCrossEntropyLoss);
-#ifdef USE_CUDA
-DEPLOY_CUDA_OPERATOR(SoftmaxCrossEntropyLoss);
-#endif
-
 DEPLOY_CPU_OPERATOR(SoftmaxCrossEntropyLossGradient);
 #ifdef USE_CUDA
+DEPLOY_CUDA_OPERATOR(SoftmaxCrossEntropyLoss);
 DEPLOY_CUDA_OPERATOR(SoftmaxCrossEntropyLossGradient);
+#endif
+#ifdef USE_MPS
+DEPLOY_MPS_OPERATOR(SoftmaxCrossEntropyLoss, SoftmaxCrossEntropyLoss);
+DEPLOY_MPS_OPERATOR(
+    SoftmaxCrossEntropyLossGradient,
+    SoftmaxCrossEntropyLossGradient);
 #endif
 
 OPERATOR_SCHEMA(SoftmaxCrossEntropyLoss)

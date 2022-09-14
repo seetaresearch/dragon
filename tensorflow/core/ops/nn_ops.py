@@ -18,9 +18,10 @@ import functools
 
 from dragon.core.framework import types
 from dragon.core.ops import activation_ops
-from dragon.core.ops import array_ops
 from dragon.core.ops import loss_ops
+from dragon.core.ops import math_ops
 from dragon.core.ops import normalization_ops
+from dragon.core.ops import sort_ops
 from dragon.core.ops import vision_ops
 from dragon.core.util import nest
 from dragon.core.util import six
@@ -980,6 +981,75 @@ def elu(features, alpha=1., name=None, **kwargs):
     return activation_ops.elu(features, alpha=alpha, name=name, **kwargs)
 
 
+def fused_batch_norm(
+    x,
+    scale,
+    offset,
+    mean,
+    variance,
+    epsilon=0.001,
+    data_format='NHWC',
+    is_training=True,
+    name=None,
+    exponential_avg_factor=1.0,
+):
+    r"""Apply the batch normalization.
+    `[Ioffe & Szegedy, 2015] <https://arxiv.org/abs/1502.03167>`_.
+
+    The normalization is defined as:
+
+    .. math:: y = \frac{x - \mathrm{E}[x]}
+                       {\sqrt{\mathrm{Var}[x] + \epsilon}}
+                  * \gamma + \beta
+
+    The moving average of stats are calculated as:
+
+    .. math:: x_{\text{moving}} = \text{momentum} * x_{\text{moving}} +
+                                  + (1 - \text{momentum}) * x_{\text{batch}}
+
+    Parameters
+    ----------
+    x : dragon.Tensor
+        The input tensor.
+    scale : dragon.Tensor
+        The :math:`\gamma` tensor.
+    offset : dragon.Tensor
+        The :math:`\beta` tensor.
+    mean : dragon.Tensor
+        The running mean tensor.
+    variance : dragon.Tensor
+        The running variance tensor.
+    epsilon : float, optional, default=1e-3
+        The value to :math:`\epsilon`.
+    data_format : str, optional, default='NHWC'
+        ``'NCHW'`` or ``'NHWC'``.
+    is_training : bool, optional, default=True
+        The value to indicate training or inference.
+    name : str, optional
+        The operation name.
+    exponential_avg_factor : float, optional, default=1.0
+        The value to :math:`1 - \text{momentum}`.
+
+    Returns
+    -------
+    dragon.Tensor
+        The output tensor.
+
+    """
+    return normalization_ops.batch_norm([
+        x,
+        scale,
+        offset,
+        mean,
+        variance],
+        axis=1 if data_format.startswith('NC') else -1,
+        momentum=1 - exponential_avg_factor,
+        epsilon=epsilon,
+        use_stats=not is_training,
+        name=name,
+    )
+
+
 def gelu(features, approximate=False, name=None):
     r"""Apply the gaussian error linear unit.
     `[Hendrycks & Gimpel, 2016] <https://arxiv.org/abs/1606.08415>`_.
@@ -1014,7 +1084,78 @@ def gelu(features, approximate=False, name=None):
 
 
 def l2_loss(t, name=None):
-    return loss_ops.l2_loss(t, normalization='NONE', name=name)
+    r"""Compute the loss of element-wise squared error.
+
+    The **L2Loss** function is defined as:
+
+    .. math:: \text{L2Loss}(t) = sum(0.5 * t^{2})
+
+    Examples:
+
+    ```python
+    t = tf.constant([-1., 2., -3.])
+    print(tf.nn.l2_loss(t))  # 7.0
+    ```
+
+    Parameters
+    ----------
+    t : dragon.Tensor
+        The input tensor.
+    name : str, optional
+        The operation name.
+
+    Returns
+    -------
+    dragon.Tensor
+        The output tensor.
+
+    """
+    return loss_ops.l2_loss(t, reduction='sum', name=name) * 0.5
+
+
+def l2_normalize(x, axis=None, epsilon=1e-12, name=None):
+    r"""Apply the l2 normalization.
+
+    The **L2-Normalization** is defined as:
+
+    .. math:: y = \frac{x}{\left\|x\right\|_{2} + \epsilon}
+
+    The argument ``axis`` could be negative or **None**:
+
+    ```python
+    x = tf.constant([[1, 2, 3], [4, 5, 6]], 'float32')
+
+    # A negative ``axis`` is the last-k axis
+    print(tf.math.l2_normalize(x, 1))
+    print(tf.math.l2_normalize(x, -1))  # Equivalent
+
+    # If ``axis`` is None, the vector-style reduction
+    # will be applied to compute a norm scalar
+    print(tf.math.l2_normalize(x))
+
+    # Also, ``axis`` could be a sequence of integers
+    print(tf.math.l2_normalize(x, [0, 1]))
+    ```
+
+    Parameters
+    ----------
+    x : dragon.Tensor
+        The tensor :math:`x`.
+    axis : Union[int, Sequence[int]], optional
+        The axis to compute norm.
+    epsilon : float, optional, default=1e-12
+        The value to :math:`\epsilon`.
+    name : str, optional
+        The operation name.
+
+    Returns
+    -------
+    dragon.Tensor
+        The output tensor.
+
+    """
+    return normalization_ops.lp_norm(
+        x, p=2, axis=axis, epsilon=epsilon, name=name)
 
 
 def leaky_relu(features, alpha=0.2, name=None, **kwargs):
@@ -1391,6 +1532,53 @@ def max_pool3d(
     )
 
 
+def moments(x, axes=None, keepdims=False, name=None):
+    r"""Compute the mean and variance of input along the given axis.
+
+    .. math::
+        \begin{cases}
+            \mathrm{E}[x] = \frac{1}{n}\sum(x) \\
+            \mathrm{Var}[x] = \frac{1}{n}\sum(x - \mathrm{E}[x])^{2}
+        \end{cases}
+
+    :attr:`axes` could be negative or ``None``:
+
+    ```python
+    x = tf.constant([[1, 2, 3], [4, 5, 6]])
+
+    # A negative axis is the last-k axis
+    print(tf.nn.moments(x, 1))
+    print(tf.nn.moments(x, -1))  # Equivalent
+
+    # If axes is None, reduce as a vector and return scalars
+    print(tf.nn.moments(x))  # mean is 3.5, var is 2.916667
+
+    # Also, axes could be a sequence of integers
+    print(tf.nn.moments(x, [0, 1]))  # mean is 3.5, var is 2.916667
+    ```
+
+    Parameters
+    ----------
+    x : dragon.Tensor
+        The input tensor.
+    axes : Union[int, Sequence[int]], optional
+        The axis to reduce.
+    keepdims : bool, optional, default=False
+        Keep the reduced dimensions or not.
+    name : str, optional
+        The operation name.
+
+    Returns
+    -------
+    dragon.Tensor
+        The mean tensor.
+    dragon.Tensor
+        The variance tensor.
+
+    """
+    return math_ops.moments(x, axis=axes, keepdims=keepdims, name=name)
+
+
 def relu(features, name=None, **kwargs):
     r"""Apply the rectified linear unit.
     `[Nair & Hinton, 2010] <http://www.csri.utoronto.ca/~hinton/absps/reluICML.pdf>`_.
@@ -1483,9 +1671,63 @@ def selu(features, name=None, **kwargs):
     return activation_ops.selu(features, name=name, **kwargs)
 
 
-def sigmoid_cross_entropy_with_logits(logits, targets, name=None):
+def sigmoid_cross_entropy_with_logits(labels=None, logits=None, name=None):
+    """Compute the loss of sigmoid cross entropy.
+
+    Examples:
+
+    ```python
+    x = tf.constant([0.1, 0.2])
+    y = tf.constant([0., 1.])
+    print(tf.nn.sigmoid_cross_entropy_with_logits(y, x))  # 0.744, 0.598
+    ```
+
+    Parameters
+    ----------
+    labels : dragon.Tensor
+        The target tensor.
+    logits : dragon.Tensor
+        The input tensor.
+    name : str, optional
+        The operation name.
+
+    Returns
+    -------
+    dragon.Tensor
+        The output tensor.
+
+    """
     return loss_ops.sigmoid_cross_entropy_loss(
-        [logits, targets], normalization='UNIT', name=name)
+        [logits, labels], reduction='none', name=name)
+
+
+def silu(features):
+    r"""Apply the sigmoid linear unit.
+    `[Hendrycks & Gimpel, 2016] <https://arxiv.org/abs/1606.08415>`_.
+
+    The **SiLU** function is defined as:
+
+    .. math:: \text{SiLU}(x) = x \cdot \frac{1}{1 + \exp(-x)}
+
+    Examples:
+
+    ```python
+    x = tf.constant([-2.5, -1.0, 0.0, 1.0, 2.5])
+    print(tf.nn.silu(x))
+    ```
+
+    Parameters
+    ----------
+    features : dragon.Tensor
+        The input tensor.
+
+    Returns
+    -------
+    dragon.Tensor
+        The output tensor.
+
+    """
+    return activation_ops.silu(features)
 
 
 def softmax(logits, axis=-1, name=None, **kwargs):
@@ -1522,7 +1764,7 @@ def softmax(logits, axis=-1, name=None, **kwargs):
 
 
 def softmax_cross_entropy_with_logits(labels, logits, name=None):
-    """Compute the softmax cross entropy with contiguous labels.
+    """Compute the loss of softmax cross entropy.
 
     Examples:
 
@@ -1548,15 +1790,11 @@ def softmax_cross_entropy_with_logits(labels, logits, name=None):
 
     """
     return loss_ops.softmax_cross_entropy_loss(
-        [logits, labels],
-        axis=-1,
-        reduction='none',
-        name=name,
-    )
+        [logits, labels], axis=-1, reduction='none', name=name)
 
 
 def sparse_softmax_cross_entropy_with_logits(labels, logits, name=None):
-    """Compute the softmax cross entropy with sparse labels.
+    """Compute the loss of softmax cross entropy with sparse labels.
 
     Examples:
 
@@ -1582,44 +1820,11 @@ def sparse_softmax_cross_entropy_with_logits(labels, logits, name=None):
 
     """
     return loss_ops.softmax_cross_entropy_loss(
-        [logits, labels],
-        axis=-1,
-        reduction='none',
-        name=name,
-    )
-
-
-def silu(features):
-    r"""Apply the sigmoid linear unit.
-    `[Hendrycks & Gimpel, 2016] <https://arxiv.org/abs/1606.08415>`_.
-
-    The **SiLU** function is defined as:
-
-    .. math:: \text{SiLU}(x) = x \cdot \frac{1}{1 + \exp(-x)}
-
-    Examples:
-
-    ```python
-    x = tf.constant([-2.5, -1.0, 0.0, 1.0, 2.5])
-    print(tf.nn.silu(x))
-    ```
-
-    Parameters
-    ----------
-    features : dragon.Tensor
-        The input tensor.
-
-    Returns
-    -------
-    dragon.Tensor
-        The output tensor.
-
-    """
-    return activation_ops.silu(features)
+        [logits, labels], axis=-1, reduction='none', name=name)
 
 
 def top_k(input, k=1, sorted=True, name=None):
-    """Return the top-K largest elements along the last axis.
+    """Return the top k-largest elements along the last axis.
 
     Parameters
     ----------
@@ -1628,7 +1833,7 @@ def top_k(input, k=1, sorted=True, name=None):
     k : int, optional, default=1
         The number of top elements to select.
     sorted : bool, optional
-        Whether to return in the sorted order.
+        Whether to return the elements in the sorted order.
     name : str, optional
         The operation name.
 
@@ -1638,7 +1843,7 @@ def top_k(input, k=1, sorted=True, name=None):
         The value and index tensor.
 
     """
-    return array_ops.top_k(input, k=k, sorted=sorted, name=name)
+    return sort_ops.top_k(input, k, sorted=sorted, name=name)
 
 
 def _normalize_spatial_args(
@@ -1677,7 +1882,7 @@ def _normalize_spatial_args(
                 pads = padding_tuple
             elif len(padding_tuple) == (num_spatial_dims * 2):
                 pads_l, pads_r = [], []
-                for i in range(start_axis, start_axis + num_spatial_dims):
+                for i in range(num_spatial_dims):
                     pads_l.append(padding_tuple[i * 2])
                     pads_r.append(padding_tuple[i * 2 + 1])
                 pads = pads_l + pads_r
@@ -1689,18 +1894,9 @@ def _normalize_spatial_args(
     elif name == 'output_shape':
         if values is not None:
             if types.is_tensor(values):
-                values_wide, is_eager = [], types.is_eager_tensor(values)
-                for i in range(start_axis, start_axis + num_spatial_dims):
-                    values_wide.append(int(values[i]) if is_eager else values[i])
-                return values_wide
-            else:
-                values = nest.flatten(values)
-                if len(values) == num_spatial_dims:
-                    return values
-                elif len(values) == num_total_dims:
-                    return values[start_axis:start_axis + start_axis + num_spatial_dims]
-                else:
-                    raise ValueError(
-                        'Except {} or {} values for <output_shape>.'
-                        .format(num_spatial_dims, num_spatial_dims * 2))
+                values = values.numpy().tolist()
+            values = nest.flatten(values)
+            if len(values) != num_spatial_dims:
+                raise ValueError('Except {} values for <output_shape>.'
+                                 .format(num_spatial_dims))
         return values

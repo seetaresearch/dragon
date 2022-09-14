@@ -95,12 +95,23 @@ class GELU(Module):
 
     """
 
-    def __init__(self):
-        """Create a ``GELU`` module."""
+    def __init__(self, approximate='none'):
+        """Create a ``GELU`` module.
+
+        Parameters
+        ----------
+        approximate : str, optional, default='none'
+            The approximate algorithm.
+
+        """
         super(GELU, self).__init__()
+        self.approximate = approximate
+
+    def extra_repr(self):
+        return 'approximate={}'.format(self.approximate)
 
     def forward(self, input):
-        return F.gelu(input)
+        return F.gelu(input, approximate=self.approximate)
 
 
 class GumbelSoftmax(Module):

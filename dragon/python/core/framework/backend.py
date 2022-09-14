@@ -24,7 +24,7 @@ _get_dlopen_flags = getattr(sys, 'getdlopenflags', None)
 _set_dlopen_flags = getattr(sys, 'setdlopenflags', None)
 
 if platform.system() == 'Windows':
-    package_root = os.path.dirname(__file__)
+    package_root = os.path.abspath(os.path.dirname(__file__) + '/../..')
     dll_paths = [os.path.join(package_root, 'lib')]
     dll_paths = list(filter(os.path.exists, dll_paths)) + [os.environ['PATH']]
     os.environ['PATH'] = ';'.join(dll_paths)
@@ -53,7 +53,7 @@ def load_library(library_location):
     """Load a shared library.
 
     The library should contain objects registered
-    in a registry, e.g., ``CPUOperatorRegistry``.
+    in a registry.py, e.g., ``CPUOperatorRegistry``.
 
     Parameters
     ----------

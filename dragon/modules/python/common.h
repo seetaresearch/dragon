@@ -15,15 +15,6 @@
 
 #define NPY_NO_DEPRECATED_API NPY_1_7_API_VERSION
 
-#include "dragon/core/common.h"
-#include "dragon/core/context.h"
-#include "dragon/core/context_cuda.h"
-#include "dragon/core/operator.h"
-#include "dragon/core/registry.h"
-#include "dragon/core/workspace.h"
-#include "dragon/modules/python/types.h"
-#include "dragon/onnx/onnx_backend.h"
-
 #include <pybind11/pybind11.h>
 #include <pybind11/stl.h>
 

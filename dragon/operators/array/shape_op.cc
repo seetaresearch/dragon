@@ -11,12 +11,11 @@ DEPLOY_CPU_OPERATOR(Shape);
 #ifdef USE_CUDA
 DEPLOY_CUDA_OPERATOR(Shape);
 #endif
+#ifdef USE_MPS
+DEPLOY_MPS_OPERATOR(Shape, Shape);
+#endif
 
-OPERATOR_SCHEMA(Shape)
-    /* X */
-    .NumInputs(1)
-    /* Y */
-    .NumOutputs(1);
+OPERATOR_SCHEMA(Shape).NumInputs(1).NumOutputs(1);
 
 NO_GRADIENT(Shape);
 

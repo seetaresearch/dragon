@@ -1,7 +1,7 @@
 #include "dragon/core/workspace.h"
+#include "dragon/kernels/op_kernels.h"
 #include "dragon/operators/array/scatter_op.h"
 #include "dragon/utils/math_functions.h"
-#include "dragon/utils/op_kernels.h"
 
 namespace dragon {
 
@@ -10,7 +10,6 @@ template <typename T>
 void ScatterAddOp<Context>::DoRunWithType() {
   auto &X = Input(0), *Y = Output(0);
   auto &X_index = Input(1), &X_value = Input(2);
-  Output("X_value_spec")->ReshapeLike(X_value);
   GET_OP_AXIS_ARG(axis, X.ndim(), 0);
 
   CHECK_GT(X_index.count(), 0) << "\nLength of index must > 0.";
@@ -44,7 +43,6 @@ template <typename T>
 void ScatterAddOp<Context>::DoRunWithTypeAndCast() {
   auto &X = Input(0), *Y = Output(0);
   auto &X_index = Input(1), &X_value = Input(2);
-  Output("X_value_spec")->ReshapeLike(X_value);
   GET_OP_AXIS_ARG(axis, X.ndim(), 0);
 
   CHECK_GT(X_index.count(), 0) << "\nLength of index must > 0.";
@@ -82,19 +80,6 @@ void ScatterAddOp<Context>::DoRunWithTypeAndCast() {
 }
 
 template <class Context>
-void ScatterAddOp<Context>::RunOnDevice() {
-  auto& X = Input(0);
-  if (X.template IsType<float16>()) {
-    DoRunWithTypeAndCast<float16>();
-  } else if (X.template IsType<double>()) {
-    DoRunWithTypeAndCast<double>();
-  } else {
-    using Types = dtypes::TypesBase<uint8_t, int8_t, int, int64_t, float>;
-    DispatchHelper<Types>::Call(this, X);
-  }
-}
-
-template <class Context>
 template <typename T>
 void ScatterAddGradientOp<Context>::DoRunWithType() {
   auto &X_index = Input(0), &dY = Input(1);
@@ -102,11 +87,6 @@ void ScatterAddGradientOp<Context>::DoRunWithType() {
   GET_OP_AXIS_ARG(axis, dY.ndim(), 0);
 
   if (dX_value->has_name()) {
-    auto& X_value_spec = Input("X_value_spec");
-    for (int i = 0; i < X_index.ndim(); ++i) {
-      CHECK_EQ(X_index.dim(i), X_value_spec.dim(i));
-      if (i != axis) CHECK_EQ(X_index.dim(i), dY.dim(i));
-    }
     kernels::GatherElements(
         axis,
         dY.ndim(),
@@ -124,12 +104,9 @@ void ScatterAddGradientOp<Context>::DoRunWithType() {
 }
 
 DEPLOY_CPU_OPERATOR(ScatterAdd);
-#ifdef USE_CUDA
-DEPLOY_CUDA_OPERATOR(ScatterAdd);
-#endif
-
 DEPLOY_CPU_OPERATOR(ScatterAddGradient);
 #ifdef USE_CUDA
+DEPLOY_CUDA_OPERATOR(ScatterAdd);
 DEPLOY_CUDA_OPERATOR(ScatterAddGradient);
 #endif
 

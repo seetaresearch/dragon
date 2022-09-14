@@ -136,7 +136,7 @@ def argmax(inputs, axis=0, keepdims=False, **kwargs):
     """
     if context.executing_eagerly():
         return OpLib.execute('ArgMax', inputs, axis=axis, keepdims=keepdims)
-    return OpLib.add('ArgMax', inputs, axis=axis, keepdims=keepdims)
+    return OpLib.add('ArgMax', inputs, axis=axis, keepdims=keepdims, **kwargs)
 
 
 @OpSchema.num_inputs(1)
@@ -169,7 +169,7 @@ def argmin(inputs, axis=0, keepdims=False, **kwargs):
     """
     if context.executing_eagerly():
         return OpLib.execute('ArgMin', inputs, axis=axis, keepdims=keepdims)
-    return OpLib.add('ArgMin', inputs, axis=axis, keepdims=keepdims)
+    return OpLib.add('ArgMin', inputs, axis=axis, keepdims=keepdims, **kwargs)
 
 
 @OpSchema.num_inputs(2)
@@ -470,10 +470,10 @@ def cumsum(inputs, axis=0, exclusive=False, reverse=False, **kwargs):
 
     """
     if context.executing_eagerly():
-        return OpLib.execute(
-            'CumSum', inputs, axis=axis, exclusive=exclusive, reverse=reverse)
+        return OpLib.execute('CumSum', inputs, axis=axis,
+                             exclusive=exclusive, reverse=reverse)
     return OpLib.add('CumSum', inputs, axis=axis,
-                     exclusive=exclusive, reverse=reverse)
+                     exclusive=exclusive, reverse=reverse, **kwargs)
 
 
 @OpSchema.num_inputs(2)
@@ -1783,4 +1783,47 @@ def sum(inputs, axis=None, keepdims=False, **kwargs):
     if context.executing_eagerly():
         return OpLib.execute('ReduceSum', inputs, axes=axes, keepdims=keepdims)
     return OpLib.add('ReduceSum', inputs,
+                     axes=axes, keepdims=keepdims, **kwargs)
+
+
+@OpSchema.num_inputs(1)
+def var(inputs, axis=None, keepdims=False, **kwargs):
+    """Compute the variance value of elements along the given axis.
+
+    :attr:`axis` could be negative or ``None``:
+
+    ```python
+    x = dragon.constant([[1, 2, 3], [4, 5, 6]], dtype='float32')
+
+    # A negative axis is the last-k axis
+    print(dragon.math.var(x, 1))
+    print(dragon.math.var(x, -1))  # Equivalent
+
+    # If axis is None, the vector-style reduction
+    # will be applied to return a scalar result
+    print(dragon.math.var(x))  # 3.5
+
+    # Also, axis could be a sequence of integers
+    print(dragon.math.var(x, (0, 1)))  # 3.5
+    ```
+
+    Parameters
+    ----------
+    inputs : dragon.Tensor
+        The input tensor.
+    axis : Union[int, Sequence[int]], optional
+        The axis to reduce.
+    keepdims : bool, optional, default=False
+        Keep the reduced dimensions or not.
+
+    Returns
+    -------
+    dragon.Tensor
+        The output tensor.
+
+    """
+    axes = None if axis is None else nest.flatten(axis)
+    if context.executing_eagerly():
+        return OpLib.execute('ReduceVar', inputs, axes=axes, keepdims=keepdims)
+    return OpLib.add('ReduceVar', inputs,
                      axes=axes, keepdims=keepdims, **kwargs)

@@ -154,7 +154,10 @@ dragon.math
   : Compute the tanh of input.
 
   `top_k(...) <math/top_k.html>`_
-  : Return the top-K largest or smallest elements along the given axis.
+  : Return the top k-largest or k-smallest elements along the given axis.
+
+  `var(...) <math/var.html>`_
+  : Compute the variance value of elements along the given axis.
 
 .. toctree::
   :hidden:
@@ -209,6 +212,7 @@ dragon.math
   math/sum
   math/tanh
   math/top_k
+  math/var
 
 .. raw:: html
 

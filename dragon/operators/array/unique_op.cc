@@ -1,5 +1,5 @@
 #include "dragon/operators/array/unique_op.h"
-#include "dragon/utils/op_kernels.h"
+#include "dragon/kernels/op_kernels.h"
 
 namespace dragon {
 

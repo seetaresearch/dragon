@@ -8,7 +8,7 @@
 #     <https://opensource.org/licenses/BSD-2-Clause>
 #
 # ------------------------------------------------------------
-"""Test the util module."""
+"""Test util module."""
 
 from __future__ import absolute_import
 from __future__ import division
@@ -32,7 +32,7 @@ from dragon.core.testing.unittest.common_utils import run_tests
 
 
 class TestDeprecation(unittest.TestCase):
-    """Test the deprecation utility."""
+    """Test deprecation utility."""
 
     try:
         @deprecation.deprecated('2077-01-01', 'Bad deprecated.')
@@ -78,7 +78,7 @@ class TestDeprecation(unittest.TestCase):
 
 
 class TestLogging(unittest.TestCase):
-    """Test the logging utility."""
+    """Test logging utility."""
 
     def test_message(self):
         dragon.logging.set_verbosity('FATAL')
@@ -96,7 +96,7 @@ class TestLogging(unittest.TestCase):
 
 
 class TestNest(unittest.TestCase):
-    """Test the nest utility."""
+    """Test nest utility."""
 
     def test_nested(self):
         self.assertTrue(nest.is_nested(list()))
@@ -117,7 +117,7 @@ class TestNest(unittest.TestCase):
 
 
 class TestRegistry(unittest.TestCase):
-    """Test the registry utility."""
+    """Test registry utility."""
 
     def test_register(self):
         reg = registry.Registry('test_registry')
@@ -132,7 +132,7 @@ class TestRegistry(unittest.TestCase):
 
 
 class TestSerialization(unittest.TestCase):
-    """Test the serialization utility."""
+    """Test serialization utility."""
 
     def test_bytes(self):
         f = io.BytesIO(b'123')
@@ -176,7 +176,7 @@ class TestSerialization(unittest.TestCase):
 
 
 class TestTLS(unittest.TestCase):
-    """Test the tls utility."""
+    """Test tls utility."""
 
     def test_constant(self):
         def write(i, q):

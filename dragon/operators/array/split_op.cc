@@ -49,22 +49,19 @@ void SplitOp<Context>::DoRunWithType() {
             ->set_version(0);
       } else {
         math::CopyMatrix(
-            X.count(0, axis),
-            X_splits[i] * X.count(axis + 1),
-            X.count(axis),
-            X_splits[i] * X.count(axis + 1),
-            X.template data<T, Context>() + copy_offset,
+            X.count(0, axis), // M
+            X_splits[i] * X.count(axis + 1), // N
+            X.count(axis), // ldx
+            X_splits[i] * X.count(axis + 1), // ldy
+            copy_offset, // x_offset
+            0, // y_offset
+            X.template data<T, Context>(),
             Y->Reshape(Y_dims)->template mutable_data<T, Context>(),
             ctx());
       }
     }
     copy_offset += X_splits[i] * X.count(axis + 1);
   }
-}
-
-template <class Context>
-void SplitOp<Context>::RunOnDevice() {
-  DispatchHelper<dtypes::Generic>::Call(this, Input(0));
 }
 
 template <class Context>
@@ -94,31 +91,29 @@ void SplitGradientOp<Context>::DoRunWithType() {
     auto& dY = Input(i);
     if (dY.has_name()) {
       math::CopyMatrix(
-          dX->count(0, axis),
-          X_splits[i] * dX->count(axis + 1),
-          X_splits[i] * dX->count(axis + 1),
-          dX->count(axis),
+          dX->count(0, axis), // M
+          X_splits[i] * dX->count(axis + 1), // N
+          X_splits[i] * dX->count(axis + 1), // ldx
+          dX->count(axis), // ldy
+          0, // x_offset,
+          copy_offset, // y_offset
           dY.template data<T, Context>(),
-          dX->template mutable_data<T, Context>() + copy_offset,
+          dX->template mutable_data<T, Context>(),
           ctx());
     }
     copy_offset += X_splits[i] * dX->count(axis + 1);
   }
 }
 
-template <class Context>
-void SplitGradientOp<Context>::RunOnDevice() {
-  DispatchHelper<dtypes::Floating>::Call(this, Input("X_spec"));
-}
-
 DEPLOY_CPU_OPERATOR(Split);
-#ifdef USE_CUDA
-DEPLOY_CUDA_OPERATOR(Split);
-#endif
-
 DEPLOY_CPU_OPERATOR(SplitGradient);
 #ifdef USE_CUDA
+DEPLOY_CUDA_OPERATOR(Split);
 DEPLOY_CUDA_OPERATOR(SplitGradient);
+#endif
+#ifdef USE_MPS
+DEPLOY_MPS_OPERATOR(Split, Split);
+DEPLOY_MPS_OPERATOR(SplitGradient, SplitGradient);
 #endif
 
 OPERATOR_SCHEMA(Split)

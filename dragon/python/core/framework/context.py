@@ -93,7 +93,7 @@ def name_scope(name):
     return _GLOBAL_NAME_SCOPE_STACK.get_controller(default)
 
 
-def get_device(use_default=True):
+def get_device():
     """Return the nesting or default device."""
     spec = _GLOBAL_DEVICE_STACK.get_default()
     if spec is None:

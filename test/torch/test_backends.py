@@ -8,7 +8,7 @@
 #     <https://opensource.org/licenses/BSD-2-Clause>
 #
 # ------------------------------------------------------------
-"""Test the backends module."""
+"""Test backends module."""
 
 from __future__ import absolute_import
 from __future__ import division
@@ -21,7 +21,7 @@ from dragon.vm import torch
 
 
 class TestCUDA(unittest.TestCase):
-    """Test the CUDA backend."""
+    """Test CUDA backend."""
 
     def test_library(self):
         _ = torch.backends.cuda.is_built()
@@ -32,7 +32,7 @@ class TestCUDA(unittest.TestCase):
 
 
 class TestCuDNN(unittest.TestCase):
-    """Test the CuDNN backend."""
+    """Test CuDNN backend."""
 
     def test_library(self):
         if torch.backends.cudnn.is_available():

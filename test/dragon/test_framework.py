@@ -8,7 +8,7 @@
 #     <https://opensource.org/licenses/BSD-2-Clause>
 #
 # ------------------------------------------------------------
-"""Test the framework module."""
+"""Test framework module."""
 
 from __future__ import absolute_import
 from __future__ import division
@@ -25,7 +25,7 @@ from dragon.core.testing.unittest.common_utils import TEST_CUDA
 
 
 class TestContext(unittest.TestCase):
-    """Test the framework context."""
+    """Test framework context."""
 
     def test_properties(self):
         dragon.random.set_seed(1337)
@@ -50,7 +50,7 @@ class TestContext(unittest.TestCase):
 
 
 class TestDeviceSpec(unittest.TestCase):
-    """Test the device spec."""
+    """Test device spec."""
 
     def test_properties(self):
         spec = dragon.DeviceSpec()
@@ -60,7 +60,7 @@ class TestDeviceSpec(unittest.TestCase):
 
 
 class TestGradientTape(unittest.TestCase):
-    """Test the gradient tape."""
+    """Test gradient tape."""
 
     def test_pop_push(self):
         with dragon.GradientTape() as tape:
@@ -95,7 +95,7 @@ class TestGradientTape(unittest.TestCase):
 
 
 class TestTensor(unittest.TestCase):
-    """Test the tensor class."""
+    """Test tensor class."""
 
     def test_properties(self):
         a, b = dragon.Tensor(()), dragon.Tensor(())
@@ -149,7 +149,7 @@ class TestTensor(unittest.TestCase):
 
 
 class TestWorkspace(unittest.TestCase):
-    """Test the workspace class."""
+    """Test workspace class."""
 
     def test_clear(self):
         w = dragon.Workspace()

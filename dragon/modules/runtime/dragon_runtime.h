@@ -19,13 +19,9 @@
 
 #ifndef DRAGON_API
 #define DRAGON_API
-
 namespace dragon {
-
 typedef struct float16* float16_t;
-
 } // namespace dragon
-
 #endif // DRAGON_API
 
 namespace dragon {
@@ -34,29 +30,30 @@ typedef class GraphDef* GraphDef_t;
 typedef class Workspace* Workspace_t;
 
 /*!
- * Device API
+ * Device API.
  */
 
 class DRAGON_API Device {
  public:
   Device();
   explicit Device(const std::string& device_type);
-  Device(const std::string& device_type, int device_id);
+  Device(const std::string& device_type, int device_index);
 
-  const int& device_type() const {
+  const std::string& device_type() const {
     return device_type_;
   }
 
-  const int device_id() const {
-    return device_id_;
+  const int device_index() const {
+    return device_index_;
   }
 
  private:
-  int device_type_, device_id_;
+  std::string device_type_;
+  int device_index_;
 };
 
 /*!
- * Workspace API
+ * Workspace API.
  */
 
 DRAGON_API Workspace_t CreateWorkspace(const std::string& name);
@@ -72,7 +69,7 @@ DRAGON_API void DestroyWorkspace(Workspace_t ws);
 DRAGON_API void DestroyWorkspace(const std::string& name);
 
 /*!
- * Graph API
+ * Graph API.
  */
 
 DRAGON_API std::string
@@ -85,7 +82,7 @@ DRAGON_API void
 RunGraph(const std::string& name, Workspace_t ws, int stream = 0);
 
 /*!
- * Tensor API
+ * Tensor API.
  */
 
 DRAGON_API void CreateTensor(const std::string& name, Workspace_t ws);
@@ -106,7 +103,7 @@ DRAGON_API T* FetchTensor(
     bool copy = false);
 
 /*!
- * Proto API
+ * Proto API.
  */
 
 DRAGON_API void CreateGraphDef(GraphDef_t* def);
@@ -114,7 +111,7 @@ DRAGON_API void CreateGraphDef(GraphDef_t* def);
 DRAGON_API void DestroyGraphDef(GraphDef_t def);
 
 /*!
- * Model API
+ * Model API.
  */
 
 DRAGON_API void LoadONNXModel(
@@ -125,7 +122,7 @@ DRAGON_API void LoadONNXModel(
     std::vector<std::string>& outputs);
 
 /*!
- * Config API
+ * Config API.
  */
 
 DRAGON_API void SetLoggingLevel(const std::string& level);

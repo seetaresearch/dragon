@@ -1,5 +1,5 @@
 #include "dragon/operators/normalization/lp_norm_op.h"
-#include "dragon/utils/op_kernels.h"
+#include "dragon/kernels/op_kernels.h"
 
 namespace dragon {
 
@@ -72,13 +72,14 @@ void LpNormGradientOp<Context>::DoRunWithType() {
 }
 
 DEPLOY_CPU_OPERATOR(LpNorm);
-#ifdef USE_CUDA
-DEPLOY_CUDA_OPERATOR(LpNorm);
-#endif
-
 DEPLOY_CPU_OPERATOR(LpNormGradient);
 #ifdef USE_CUDA
+DEPLOY_CUDA_OPERATOR(LpNorm);
 DEPLOY_CUDA_OPERATOR(LpNormGradient);
+#endif
+#ifdef USE_MPS
+DEPLOY_MPS_OPERATOR(LpNorm, LpNorm);
+DEPLOY_MPS_OPERATOR(LpNormGradient, LpNormGradient);
 #endif
 
 OPERATOR_SCHEMA(LpNorm)

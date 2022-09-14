@@ -150,17 +150,20 @@ void DepthToSpaceOp<Context>::DoRunWithType() {
 }
 
 DEPLOY_CPU_OPERATOR(SpaceToDepth);
-REGISTER_CPU_OPERATOR(SpaceToDepthGradient, DepthToSpaceOp<CPUContext>);
-#ifdef USE_CUDA
-DEPLOY_CUDA_OPERATOR(SpaceToDepth);
-REGISTER_CUDA_OPERATOR(SpaceToDepthGradient, DepthToSpaceOp<CUDAContext>);
-#endif
-
 DEPLOY_CPU_OPERATOR(DepthToSpace);
+REGISTER_CPU_OPERATOR(SpaceToDepthGradient, DepthToSpaceOp<CPUContext>);
 REGISTER_CPU_OPERATOR(DepthToSpaceGradient, SpaceToDepthOp<CPUContext>);
 #ifdef USE_CUDA
+DEPLOY_CUDA_OPERATOR(SpaceToDepth);
 DEPLOY_CUDA_OPERATOR(DepthToSpace);
+REGISTER_CUDA_OPERATOR(SpaceToDepthGradient, DepthToSpaceOp<CUDAContext>);
 REGISTER_CUDA_OPERATOR(DepthToSpaceGradient, SpaceToDepthOp<CUDAContext>);
+#endif
+#ifdef USE_MPS
+DEPLOY_MPS_OPERATOR(SpaceToDepth, SpaceToDepth);
+DEPLOY_MPS_OPERATOR(DepthToSpace, DepthToSpace);
+REGISTER_MPS_OPERATOR(SpaceToDepthGradient, DepthToSpaceOp<MPSContext>);
+REGISTER_MPS_OPERATOR(DepthToSpaceGradient, SpaceToDepthOp<MPSContext>);
 #endif
 
 OPERATOR_SCHEMA(SpaceToDepth).NumInputs(1).NumOutputs(1).AllowInplace({{0, 0}});

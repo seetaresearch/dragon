@@ -62,45 +62,6 @@ def current_device():
     return backend.cudaGetDevice()
 
 
-def set_cublas_flags(allow_tf32=None):
-    """Set the flags of cuBLAS library.
-
-    Parameters
-    ----------
-    allow_tf32 : bool, optional, default=False
-        Allow TF32 tensor core operation or not.
-
-    """
-    backend.cublasSetFlags(-1 if allow_tf32 is None else allow_tf32)
-
-
-def set_cudnn_flags(
-    enabled=None,
-    benchmark=None,
-    deterministic=None,
-    allow_tf32=None,
-):
-    """Set the flags of cuDNN library.
-
-    Parameters
-    ----------
-    enabled : bool, optional, default=True
-        Use cuDNN library or not.
-    benchmark : bool, optional, default=False
-        Select fastest algorithms via benchmark or heuristics.
-    deterministic : bool, optional, default=False
-        Select deterministic algorithms instead of fastest.
-    allow_tf32 : bool, optional, default=False
-        Allow TF32 tensor core operation or not.
-
-    """
-    backend.cudnnSetFlags(
-        -1 if enabled is None else enabled,
-        -1 if benchmark is None else benchmark,
-        -1 if deterministic is None else deterministic,
-        -1 if allow_tf32 is None else allow_tf32)
-
-
 def get_device_capability(device_index=None):
     """Return the capability of specified device.
 
@@ -119,6 +80,26 @@ def get_device_capability(device_index=None):
     """
     device_index = device_index if device_index else -1
     return backend.cudaGetDeviceCapability(device_index)
+
+
+def get_device_name(device_index=None):
+    """Return the name of specified device.
+
+    If ``device_index`` is **None**, the current device will be selected.
+
+    Parameters
+    ----------
+    device_index : int, optional
+        The device index.
+
+    Returns
+    -------
+    str
+        The device name.
+
+    """
+    device_index = device_index if device_index else -1
+    return backend.cudaGetDeviceName(device_index)
 
 
 def is_available():
@@ -157,6 +138,45 @@ def memory_allocated(device_index=None):
         device_index = current_device()
     current_ws = workspace.get_workspace()
     return current_ws.memory_allocated('cuda', device_index)
+
+
+def set_cublas_flags(allow_tf32=None):
+    """Set the flags of cuBLAS library.
+
+    Parameters
+    ----------
+    allow_tf32 : bool, optional, default=False
+        Allow TF32 tensor core operation or not.
+
+    """
+    backend.cublasSetFlags(-1 if allow_tf32 is None else allow_tf32)
+
+
+def set_cudnn_flags(
+    enabled=None,
+    benchmark=None,
+    deterministic=None,
+    allow_tf32=None,
+):
+    """Set the flags of cuDNN library.
+
+    Parameters
+    ----------
+    enabled : bool, optional, default=True
+        Use cuDNN library or not.
+    benchmark : bool, optional, default=False
+        Select fastest algorithms via benchmark or heuristics.
+    deterministic : bool, optional, default=False
+        Select deterministic algorithms instead of fastest.
+    allow_tf32 : bool, optional, default=False
+        Allow TF32 tensor core operation or not.
+
+    """
+    backend.cudnnSetFlags(
+        -1 if enabled is None else enabled,
+        -1 if benchmark is None else benchmark,
+        -1 if deterministic is None else deterministic,
+        -1 if allow_tf32 is None else allow_tf32)
 
 
 def set_default_device(device_index=0):

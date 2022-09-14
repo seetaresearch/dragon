@@ -114,7 +114,7 @@ def get_device_option(device_type, device_index=0, rng_seed=None):
 
 def get_default_device_option():
     """Return the default device option."""
-    spec = context.get_device(use_default=False)
+    spec = context.get_device()
     if spec is not None:
         return get_device_option(spec.type, spec.index)
     return None
@@ -128,7 +128,7 @@ def get_global_device_option():
 
 _MAX_NUM_OF_DEVICES = 16
 _ALL_DEVICE_OPTIONS = {}
-_DEVICE_TO_IDENTIFIER = {'cpu': 0, 'cuda': 1, 'cnml': 2}
+_DEVICE_TO_IDENTIFIER = {'cpu': 0, 'cuda': 1, 'mps': 2}
 
 for i in range(_MAX_NUM_OF_DEVICES):
     for device, identifier in _DEVICE_TO_IDENTIFIER.items():

@@ -17,5 +17,6 @@ from __future__ import print_function as _print_function
 # Modules
 from dragon.vm.torch.core.backends import cuda
 from dragon.vm.torch.core.backends import cudnn
+from dragon.vm.torch.core.backends import mps
 
 __all__ = [_s for _s in dir() if not _s.startswith('_')]

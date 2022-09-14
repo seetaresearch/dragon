@@ -14,6 +14,8 @@
 #define DRAGON_UTILS_MATH_BROADCAST_H_
 
 #include "dragon/core/context.h"
+#include "dragon/core/context_cuda.h"
+#include "dragon/core/context_mps.h"
 
 namespace dragon {
 

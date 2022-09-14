@@ -232,7 +232,7 @@ def gelu(inputs, approximate=False, **kwargs):
 
     """
     if context.executing_eagerly():
-        return OpLib.execute('Gelu', inputs)
+        return OpLib.execute('Gelu', inputs, approximate=approximate)
     return OpLib.add('Gelu', inputs, approximate=approximate, **kwargs)
 
 

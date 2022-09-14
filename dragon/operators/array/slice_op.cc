@@ -1,7 +1,7 @@
 #include "dragon/operators/array/slice_op.h"
 #include "dragon/core/workspace.h"
+#include "dragon/kernels/op_kernels.h"
 #include "dragon/utils/math_functions.h"
-#include "dragon/utils/op_kernels.h"
 
 namespace dragon {
 
@@ -59,11 +59,13 @@ void SliceOp<Context>::DoRunWithType() {
     const auto axis = axes[0];
     const auto copy_offset = X_starts[axis] * X.count(axis + 1);
     math::CopyMatrix(
-        X.count(0, axis),
-        Y_dims[axis] * X.count(axis + 1),
-        X.count(axis),
-        Y_dims[axis] * X.count(axis + 1),
-        X.template data<T, Context>() + copy_offset,
+        X.count(0, axis), // M
+        Y_dims[axis] * X.count(axis + 1), // N
+        X.count(axis), // ldx
+        Y_dims[axis] * X.count(axis + 1), // ldy
+        copy_offset, // x_offset
+        0, // y_offset
+        X.template data<T, Context>(),
         Y->template mutable_data<T, Context>(),
         ctx());
     return;
@@ -111,12 +113,14 @@ void SliceGradientOp<Context>::DoRunWithType() {
     const auto axis = axes[0];
     const auto copy_offset = X_starts[axis] * dX->count(axis + 1);
     math::CopyMatrix(
-        dY.count(0, axis),
-        dY.count(axis),
-        dY.count(axis),
-        dX->count(axis),
+        dY.count(0, axis), // M
+        dY.count(axis), // N
+        dY.count(axis), // ldx
+        dX->count(axis), // ldy
+        0, // x_offset
+        copy_offset, // y_offset
         dY.template data<T, Context>(),
-        dX->template mutable_data<T, Context>() + copy_offset,
+        dX->template mutable_data<T, Context>(),
         ctx());
     return;
   }
@@ -133,13 +137,14 @@ void SliceGradientOp<Context>::DoRunWithType() {
 }
 
 DEPLOY_CPU_OPERATOR(Slice);
-#ifdef USE_CUDA
-DEPLOY_CUDA_OPERATOR(Slice);
-#endif
-
 DEPLOY_CPU_OPERATOR(SliceGradient);
 #ifdef USE_CUDA
+DEPLOY_CUDA_OPERATOR(Slice);
 DEPLOY_CUDA_OPERATOR(SliceGradient);
+#endif
+#ifdef USE_MPS
+DEPLOY_MPS_OPERATOR(Slice, Slice);
+DEPLOY_MPS_OPERATOR(SliceGradient, SliceGradient);
 #endif
 
 OPERATOR_SCHEMA(Slice)

@@ -73,11 +73,8 @@ class DRAGON_API CPUContext {
     free(ptr);
   }
 
-  /*! \brief Switch to the device in current thread */
-  void SwitchToDevice() {}
-
   /*! \brief Switch to the device and select given stream in current thread */
-  void SwitchToDevice(int stream) {}
+  void SwitchToDevice(int stream_id = 0) {}
 
   /*! \brief Copy a typed memory block to the destination */
   template <typename T, class DestContext, class SrcContext>

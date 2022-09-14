@@ -8,7 +8,7 @@
 #     <https://opensource.org/licenses/BSD-2-Clause>
 #
 # ------------------------------------------------------------
-"""Test the ops module."""
+"""Test ops module."""
 
 from __future__ import absolute_import
 from __future__ import division
@@ -52,9 +52,9 @@ class OpTestCase(unittest.TestCase):
         num_first = len(inputs)
         inputs += nest.flatten(second)
         num_second = len(inputs) - num_first
-        for i, input in enumerate(inputs):
-            if isinstance(input, torch.Tensor):
-                inputs[i] = input.numpy()
+        for i, x in enumerate(inputs):
+            if isinstance(x, torch.Tensor):
+                inputs[i] = x.numpy()
         first = inputs[:num_first] if num_first > 1 else inputs[0]
         second = inputs[num_first:len(inputs)] if num_second > 1 else inputs[num_first]
         if isinstance(first, np.ndarray) and isinstance(second, np.ndarray):
@@ -75,7 +75,7 @@ class OpTestCase(unittest.TestCase):
 
 
 class TestTensorOps(OpTestCase):
-    """Test the tensor ops."""
+    """Test tensor ops."""
 
     # Testing shapes for binary ops
     unary_test_shapes = [(2,)]
@@ -313,7 +313,7 @@ class TestTensorOps(OpTestCase):
     def test_gather(self):
         for axis in range(0, 1):
             data1 = arange((2, 4))
-            data2 = np.array([[0, 1, 1, 0], [1, 1, 0, 0]])
+            data2 = np.array([[0, 1, 1, 0], [1, 1, 0, 0]], 'int64')
             x, index = new_tensor(data1), new_tensor(data2)
             y = x.gather(axis, index)
             result = np.zeros_like(data2)
@@ -367,7 +367,7 @@ class TestTensorOps(OpTestCase):
         entries = [1, (1, 2)]
         for axis in entries:
             data = arange((1, 2, 3, 4))
-            index = np.array([0, 1, 1], dtype='int64')
+            index = np.array([0, 1, 1], 'int64')
             axes = nest.flatten(axis)
             if len(axes) > 1:
                 flatten_shape = \
@@ -497,9 +497,9 @@ class TestTensorOps(OpTestCase):
     def test_mean(self):
         entries = [(0, True), (0, False),
                    (1, True), (1, False),
-                   ((0, 1), True), ((0, 1), False)]
+                   ((1, 2), True), ((1, 2), False)]
         for axis, keepdims in entries:
-            data = arange((2, 3))
+            data = arange((2, 3, 3))
             x = new_tensor(data)
             y = x.mean(axis, keepdim=keepdims)
             result = np.mean(data, axis, keepdims=keepdims)
@@ -574,17 +574,17 @@ class TestTensorOps(OpTestCase):
                    (1, True), (1, False),
                    ((0, 1), True), ((0, 1), False)]
         for axis, keepdims in entries:
-            for ord in (1, 2, 'fro', None):
+            for p in (1, 2, 'fro', None):
                 data = arange((2, 3))
                 x = new_tensor(data)
-                y = x.norm(ord, axis, keepdim=keepdims)
-                if ord == 1:
+                y = x.norm(p, axis, keepdim=keepdims)
+                if p == 1:
                     result = np.sum(np.abs(data), axis=axis, keepdims=keepdims)
-                elif ord == 2 or ord == 'fro':
+                elif p == 2 or p == 'fro':
                     result = np.sum(np.square(data), axis=axis, keepdims=keepdims)
                     result = np.sqrt(result)
                 else:
-                    result = np.linalg.norm(data, ord, axis, keepdims=keepdims)
+                    result = np.linalg.norm(data, p, axis, keepdims=keepdims)
                 self.assertEqual(y, result)
 
     def test_normal(self):
@@ -679,7 +679,7 @@ class TestTensorOps(OpTestCase):
         for axis in range(0, 1):
             data1 = arange((4, 4))
             data2 = np.array([[0, 1, 2, 3], [1, 2, 3, 0],
-                              [2, 3, 0, 1], [3, 0, 1, 2]])
+                              [2, 3, 0, 1], [3, 0, 1, 2]], 'int64')
             data3 = arange((4, 4), 100)
             x, index = new_tensor(data1), new_tensor(data2)
             v = new_tensor(data3)
@@ -697,7 +697,7 @@ class TestTensorOps(OpTestCase):
     def test_scatter_add(self):
         for axis in range(0, 1):
             data1 = arange((4, 4))
-            data2 = np.array([[0, 0], [0, 0]])
+            data2 = np.array([[0, 0], [0, 0]], 'int64')
             data3 = arange((4, 4), 100)
             x, index = new_tensor(data1), new_tensor(data2)
             v = new_tensor(data3)
@@ -716,7 +716,7 @@ class TestTensorOps(OpTestCase):
         for axis in range(0, 1):
             data1 = arange((4, 4))
             data2 = np.array([[0, 1, 2, 3], [1, 2, 3, 0],
-                              [2, 3, 0, 1], [3, 0, 1, 2]])
+                              [2, 3, 0, 1], [3, 0, 1, 2]], 'int64')
             x, index = new_tensor(data1), new_tensor(data2)
             result = data1.copy()
             for i, j in itertools.product(*[range(d) for d in data2.shape]):
@@ -819,6 +819,17 @@ class TestTensorOps(OpTestCase):
             self.assertEqual(a - b, data1 - data2)
             a -= b
             self.assertEqual(a, data1 - data2)
+
+    def test_sum(self):
+        entries = [(0, True), (0, False),
+                   (1, True), (1, False),
+                   ((1, 2), True), ((1, 2), False)]
+        for axis, keepdims in entries:
+            data = arange((2, 3, 3))
+            x = new_tensor(data)
+            y = x.sum(axis, keepdim=keepdims)
+            result = np.sum(data, axis, keepdims=keepdims)
+            self.assertEqual(y, result)
 
     def test_tril(self):
         entries = [(3, 3), (3, 4,), (4, 3), (2, 3, 3)]
@@ -928,9 +939,20 @@ class TestTensorOps(OpTestCase):
             c = new_tensor(data3, False)
             self.assertEqual(a.where(c, b), np.where(data3, data1, data2))
 
+    def test_var(self):
+        entries = [(0, True), (0, False),
+                   (1, True), (1, False),
+                   ((1, 2), True), ((1, 2), False)]
+        for axis, keepdims in entries:
+            data = arange((2, 3, 3))
+            x = new_tensor(data)
+            y = x.var(axis, keepdim=keepdims)
+            result = np.var(data, axis, keepdims=keepdims)
+            self.assertEqual(y, result)
+
 
 class TestTorchOps(OpTestCase):
-    """Test the builtin torch ops."""
+    """Test builtin torch ops."""
 
     def test_arange(self):
         entries = [([5], {'dtype': 'int64'}),
@@ -985,6 +1007,18 @@ class TestTorchOps(OpTestCase):
             x = new_tensor(data)
             y = torch.stack([x, x], dim=axis)
             self.assertEqual(y, np.stack([data, data], axis=axis))
+
+    def test_var_mean(self):
+        entries = [(0, True), (0, False),
+                   (1, True), (1, False),
+                   ((1, 2), True), ((1, 2), False)]
+        for axis, keepdims in entries:
+            data = arange((2, 3, 3))
+            x = new_tensor(data)
+            y = torch.var_mean(x, axis, keepdim=keepdims)
+            result1 = np.var(data, axis, keepdims=keepdims)
+            result2 = np.mean(data, axis, keepdims=keepdims)
+            self.assertEqual(y, [result1, result2])
 
     def test_zeros_like(self):
         data = np.zeros((2, 3), dtype='float32')

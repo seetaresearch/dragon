@@ -1,14 +1,9 @@
-# ---[ General sources
+# ---[ Sources
 file(GLOB INCLUDES *.h)
 file(GLOB SOURCES *.cc)
 set(MODULE_INCLUDES ${MODULE_INCLUDES} ${INCLUDES})
 set(MODULE_SOURCES ${MODULE_SOURCES} ${SOURCES})
 
-if (BUILD_RUNTIME)
-  # Remove gradient ops
-  list(REMOVE_ITEM MODULE_SOURCES ${CMAKE_CURRENT_SOURCE_DIR}/gradient_ops.cc)
-endif()
-
-# ---[ Submit to the parent scope
+# Submit to the parent scope.
 set(MODULE_INCLUDES ${MODULE_INCLUDES} PARENT_SCOPE)
 set(MODULE_SOURCES ${MODULE_SOURCES} PARENT_SCOPE)

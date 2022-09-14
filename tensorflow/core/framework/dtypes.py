@@ -360,7 +360,7 @@ class DType(str):
 
         Parameters
         ----------
-        other : dragon.vm.tensorflow.dtypes.DType
+        other : object
             The referring data type.
 
         Returns
@@ -374,8 +374,6 @@ class DType(str):
             other.as_datatype_enum, other.base_dtype.as_datatype_enum)
 
     def __eq__(self, other):
-        if other is None:
-            return False
         try:
             dtype = as_dtype(other).as_datatype_enum
             return self._type_enum == dtype

@@ -29,8 +29,8 @@ class CUDAObjects {
   /*! \brief Constructor */
   CUDAObjects() {
     for (int i = 0; i < CUDA_MAX_DEVICES; i++) {
-      cuda_streams_[i] = vector<cudaStream_t>();
-      cuda_workspaces_[i] = vector<Workspace*>();
+      streams_[i] = vector<cudaStream_t>();
+      workspaces_[i] = vector<Workspace*>();
       cublas_handles_[i] = vector<cublasHandle_t>();
 #ifdef USE_CUDNN
       cudnn_handles_[i] = vector<cudnnHandle_t>();
@@ -43,6 +43,18 @@ class CUDAObjects {
 
   /*! \brief Destructor */
   ~CUDAObjects();
+
+  /*! \brief Set the current cuda device */
+  void SetDevice(int device_id) {
+    CUDA_CHECK(cudaSetDevice(device_id));
+  }
+
+  /*! \brief Return the current cuda device */
+  int GetDevice() {
+    int device_id;
+    CUDA_CHECK(cudaGetDevice(&device_id));
+    return device_id;
+  }
 
   /*! \brief Return the specified cublas handle */
   cublasHandle_t cublas_handle(int device_id, int stream_id) {
@@ -106,7 +118,7 @@ class CUDAObjects {
 
   /*! \brief Return the default cuda stream of current device */
   cudaStream_t default_stream() {
-    return stream(GetCUDADevice(), 0);
+    return stream(GetDevice(), 0);
   }
 
   /*! \brief Return the default cuda stream of given device */
@@ -116,38 +128,37 @@ class CUDAObjects {
 
   /*! \brief Return the specified cuda stream */
   cudaStream_t stream(int device_id, int stream_id) {
-    auto& streams = cuda_streams_[device_id];
-    if (streams.size() <= (unsigned)stream_id) {
+    auto& streams = streams_[device_id];
+    if (streams.size() <= unsigned(stream_id)) {
       streams.resize(stream_id + 1, nullptr);
     }
     if (!streams[stream_id]) {
       CUDADeviceGuard guard(device_id);
-      unsigned int flags =
-          stream_id == 0 ? cudaStreamDefault : cudaStreamNonBlocking;
+      auto flags = stream_id == 0 ? cudaStreamDefault : cudaStreamNonBlocking;
       CUDA_CHECK(cudaStreamCreateWithFlags(&streams[stream_id], flags));
     }
     return streams[stream_id];
   }
 
-  /*! \brief Return the workspace for specified cuda stream */
+  /*! \brief Return the workspace of specified cuda stream */
   Workspace* workspace(int device_id, int stream_id);
 
-  /*! \brief The cached CUDA streams of each device */
-  vector<cudaStream_t> cuda_streams_[CUDA_MAX_DEVICES];
+  /*! \brief The created streams for all devices */
+  vector<cudaStream_t> streams_[CUDA_MAX_DEVICES];
 
-  /*! \brief The cached CUDA workspaces of each device */
-  vector<Workspace*> cuda_workspaces_[CUDA_MAX_DEVICES];
+  /*! \brief The created workspaces for all devices */
+  vector<Workspace*> workspaces_[CUDA_MAX_DEVICES];
 
-  /*! \brief The cached cuBLAS handles of each device */
+  /*! \brief The created cublas handles for all devices */
   vector<cublasHandle_t> cublas_handles_[CUDA_MAX_DEVICES];
 
 #ifdef USE_CUDNN
-  /*! \brief The cached cuDNN handles of each device */
+  /*! \brief The created cudnn handles for all devices */
   vector<cudnnHandle_t> cudnn_handles_[CUDA_MAX_DEVICES];
 #endif
 
 #ifdef USE_NCCL
-  /*! \brief The cached NCCL comms of each device */
+  /*! \brief The created nccl comms for all devices */
   Map<string, ncclComm_t> nccl_comms_[CUDA_MAX_DEVICES];
 #endif
 
@@ -255,15 +266,10 @@ class DRAGON_API CUDAContext {
     cudaFreeHost(ptr);
   }
 
-  /*! \brief Switch to the device in current thread */
-  void SwitchToDevice() {
-    SwitchToDevice(0);
-  }
-
   /*! \brief Switch to the device and select given stream in current thread */
-  void SwitchToDevice(int stream) {
-    CUDA_CHECK(cudaSetDevice(device_id_));
-    stream_id_ = stream;
+  void SwitchToDevice(int stream_id = 0) {
+    objects().SetDevice(device_id_);
+    stream_id_ = stream_id;
   }
 
   /*! \brief Copy a typed memory block to the destination */
@@ -335,7 +341,7 @@ class DRAGON_API CUDAContext {
 
   /*! \brief Return the device index of current thread */
   static int current_device() {
-    return GetCUDADevice();
+    return objects().GetDevice();
   }
 
   /*! \brief Return the shared context mutex */
@@ -361,107 +367,6 @@ class DRAGON_API CUDAContext {
   int device_id_, stream_id_ = 0, random_seed_;
   unique_ptr<std::mt19937> rand_generator_;
   curandGenerator_t curand_generator_ = nullptr;
-};
-
-#else // USE_CUDA
-
-class DRAGON_API CUDAContext {
- public:
-  /*! \brief Constructor */
-  explicit CUDAContext() {
-    CUDA_NOT_COMPILED;
-  }
-
-  /*! \brief Constructor with the device index */
-  explicit CUDAContext(int device) {
-    CUDA_NOT_COMPILED;
-  }
-
-  /*! \brief Constructor with the device option */
-  explicit CUDAContext(const DeviceOption& option) {
-    CUDA_NOT_COMPILED;
-  }
-
-  /*! \brief Allocate a block of device memory */
-  static void* New(size_t nbytes) {
-    CUDA_NOT_COMPILED;
-    return nullptr;
-  }
-
-  /*! \brief Allocate a block of host memory */
-  static void* NewHost(size_t nbytes) {
-    CUDA_NOT_COMPILED;
-    return nullptr;
-  }
-
-  /*! \brief Set a memory block to the given value */
-  static void Memset(size_t nbytes, void* ptr, int value = 0) {
-    CUDA_NOT_COMPILED;
-  }
-
-  /*! \brief Set a memory block to the given value asynchronously */
-  void MemsetAsync(size_t nbytes, void* ptr, int value = 0) {
-    CUDA_NOT_COMPILED;
-  }
-
-  /*! \brief Copy a memory block to the destination */
-  template <class DestContext, class SrcContext>
-  static void Memcpy(size_t nbytes, void* dest, const void* src) {
-    CUDA_NOT_COMPILED;
-  }
-
-  /*! \brief Copy a memory block to the destination using given device */
-  template <class DestContext, class SrcContext>
-  static void Memcpy(size_t nbytes, void* dst, const void* src, int device_id) {
-    CUDA_NOT_COMPILED;
-  }
-
-  /*! \brief Deallocate a device memory block */
-  static void Delete(void* ptr) {
-    CUDA_NOT_COMPILED;
-  }
-
-  /*! \brief Deallocate a host memory block */
-  static void DeleteHost(void* ptr) {
-    CUDA_NOT_COMPILED;
-  }
-
-  /*! \brief Copy the memory asynchronously */
-  template <class DestContext, class SrcContext>
-  void MemcpyAsync(size_t nbytes, void* dest, const void* src) {
-    CUDA_NOT_COMPILED;
-  }
-
-  /*! \brief Switch to the device in current thread */
-  void SwitchToDevice() {
-    CUDA_NOT_COMPILED;
-  }
-
-  /*! \brief Switch to the device and select given stream in current
-   * thread */
-  void SwitchToDevice(int stream_id) {
-    CUDA_NOT_COMPILED;
-  }
-
-  /*! \brief Wait for the dispatched computation to complete */
-  void FinishDeviceComputation() {
-    CUDA_NOT_COMPILED;
-  }
-
-  /*! \brief Return the device index */
-  int device() const {
-    return 0;
-  }
-
-  /*! \brief Return the device index of current thread */
-  static int current_device() {
-    return 0;
-  }
-
-  /*! \brief Return the stream index */
-  int stream() const {
-    return 0;
-  }
 };
 
 #endif // USE_CUDA

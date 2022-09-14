@@ -1,13 +1,13 @@
-# ---[ General sources
-file(GLOB SOURCES *.cc)
+# ---[ Sources
+file(GLOB SOURCES cpu/*.cc)
 set(MODULE_SOURCES ${MODULE_SOURCES} ${SOURCES})
 
-# ---[ CUDA sources
+# ---[ CUDA Sources
 if (USE_CUDA)
-  file(GLOB CUDA_SOURCES *.cu)
+  file(GLOB CUDA_SOURCES cuda/*.cu)
   set(KERNEL_CUDA_SOURCES ${KERNEL_CUDA_SOURCES} ${CUDA_SOURCES})
 endif()
 
-# ---[ Submit to the parent scope
+# Submit to the parent scope.
 set(MODULE_SOURCES ${MODULE_SOURCES} PARENT_SCOPE)
 set(KERNEL_CUDA_SOURCES ${KERNEL_CUDA_SOURCES} PARENT_SCOPE)

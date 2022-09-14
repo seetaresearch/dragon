@@ -93,7 +93,9 @@ class CuDNNConvTransposeOp final : public CuDNNConvOpBase<Context> {
     CUDNN_CHECK(cudnnDestroyConvolutionDescriptor(conv_desc_));
   }
 
-  void RunOnDevice() override;
+  void RunOnDevice() override {
+    DispatchHelper<dtypes::Floating>::Call(this, Input(0));
+  }
 
   template <typename T>
   void DoRunWithType();
@@ -175,6 +177,82 @@ class CuDNNConvTransposeGradientOp final : public CuDNNConvOpBase<Context> {
 };
 
 #endif // USE_CUDNN
+
+#ifdef USE_MPS
+
+template <class Context>
+class MPSConvTransposeOp final : public MPSConvOpBase<Context> {
+ public:
+  MPSConvTransposeOp(const OperatorDef& def, Workspace* ws)
+      : MPSConvOpBase<Context>(def, ws) {
+    graph_ = MPSCreateGraph();
+    SetConvDesc();
+  }
+  USE_OPERATOR_FUNCTIONS;
+  USE_CONV_FUNCTIONS;
+  USE_MPS_CONV_FUNCTIONS;
+
+  ~MPSConvTransposeOp() {
+    NSReleaseObject(graph_);
+  }
+
+  void RunOnDevice() override {
+    DispatchHelper<dtypes::Floating>::Call(this, Input(0));
+  }
+
+  template <typename T>
+  void DoRunWithType();
+
+ protected:
+  bool HasBias() override {
+    return InputSize() > 2;
+  }
+
+  bool Transposed() override {
+    return true;
+  }
+
+  MPSGraph_t graph_;
+  MPSGraphCache graph_cache_;
+};
+
+template <class Context>
+class MPSConvTransposeGradientOp final : public MPSConvOpBase<Context> {
+ public:
+  MPSConvTransposeGradientOp(const OperatorDef& def, Workspace* ws)
+      : MPSConvOpBase<Context>(def, ws) {
+    graph_ = MPSCreateGraph();
+    SetConvDesc();
+  }
+  USE_OPERATOR_FUNCTIONS;
+  USE_CONV_FUNCTIONS;
+  USE_MPS_CONV_FUNCTIONS;
+
+  ~MPSConvTransposeGradientOp() {
+    NSReleaseObject(graph_);
+  }
+
+  void RunOnDevice() override {
+    DispatchHelper<dtypes::Floating>::Call(this, Input(0));
+  }
+
+  template <typename T>
+  void DoRunWithType();
+
+ protected:
+  bool HasBias() override {
+    return Output(2)->has_name();
+  }
+
+  bool Transposed() override {
+    return true;
+  }
+
+  MPSGraph_t graph_;
+  MPSGraphCache graph_cache_;
+};
+
+#endif // USE_MPS
 
 } // namespace dragon
 

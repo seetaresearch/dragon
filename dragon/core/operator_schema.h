@@ -13,9 +13,6 @@
 #ifndef DRAGON_CORE_OPERATOR_SCHEMA_H_
 #define DRAGON_CORE_OPERATOR_SCHEMA_H_
 
-#include <functional>
-#include <limits>
-
 #include "dragon/core/common.h"
 
 namespace dragon {

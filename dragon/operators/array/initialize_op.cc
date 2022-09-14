@@ -1,7 +1,7 @@
 #include "dragon/operators/array/initialize_op.h"
 #include "dragon/core/workspace.h"
+#include "dragon/kernels/op_kernels.h"
 #include "dragon/utils/math_functions.h"
-#include "dragon/utils/op_kernels.h"
 
 namespace dragon {
 
@@ -34,6 +34,108 @@ void FillOp<Context>::DoRunWithType() {
   math::Set(
       Y->count(),
       convert::To<T>(value_),
+      Y->template mutable_data<T, Context>(),
+      ctx());
+}
+
+template <class Context>
+template <typename T>
+void GivenTensorFillOp<Context>::DoRunWithType() {
+  Extract<T>();
+  CHECK_EQ(Output(0)->count(), values_.count())
+      << "\nExcepted the size of output is " << values_.count()
+      << ", while got " << Output(0)->count();
+  auto* x = values_.template data<T, CPUContext>();
+  auto* y = Output(0)->template mutable_data<T, Context>();
+  ctx()->template Copy<T, Context, CPUContext>(values_.count(), y, x);
+}
+
+template <class Context>
+void GivenTensorFillOp<Context>::RunOnDevice() {
+  Output(0)->Reshape(shape_);
+  DispatchHelper<
+      dtypes::TypesBase<int, int64_t, float16, float, double, string>>::
+      Call(this, Tensor(dtypes::to_meta(data_type())));
+}
+
+template <class Context>
+template <typename T>
+void RangeOp<Context>::DoRunWithType() {
+  // Determine the slice arguments
+  int num_args;
+  double start = 0., limit, delta;
+  slice(0, &num_args);
+  if (num_args == 2) {
+    limit = slice(0), delta = slice(1);
+  } else if (num_args == 3) {
+    start = slice(0), limit = slice(1), delta = slice(2);
+  } else {
+    LOG(FATAL) << "Unexcepted number of slice arguments: " << num_args;
+  }
+
+  // Determine the generating range.
+  // Values are in a half-open interval: [start, stop)
+  auto count = (int64_t)std::ceil((limit - start) / delta);
+  CHECK_GT(count, 0) << "\nInvalid generating range: "
+                     << "[" << start << ", " << limit
+                     << ") with delta = " << delta << ".";
+
+  kernels::Range(
+      count,
+      start,
+      delta,
+      Output(0)->Reshape({count})->template mutable_data<T, Context>(),
+      ctx());
+}
+
+template <class Context>
+template <typename T>
+void LinSpaceOp<Context>::DoRunWithType() {
+  auto* Y = Output(0);
+  GET_OP_AXIS_ARG(axis, Y->ndim(), 0);
+
+  // Determine the generating range
+  // Values are in a interval: [start, stop]
+  int num_starts;
+  start(0, &num_starts);
+  vector<double> starts(num_starts), stops(num_starts);
+  for (int i = 0; i < num_starts; ++i) {
+    starts[i] = start(i);
+    stops[i] = stop(i);
+    CHECK_GT(stops[i], starts[i])
+        << "\nInvalid generating range: "
+        << "[" << starts[i] << ", " << stops[i] << "].";
+  }
+
+  kernels::LinSpace(
+      Y->dim(0),
+      Y->ndim() > 1 ? Y->dim(1) : 1,
+      axis,
+      starts.data(),
+      stops.data(),
+      Y->template mutable_data<T, Context>(),
+      ctx());
+}
+
+template <class Context>
+template <typename T>
+void PermutationOp<Context>::DoRunWithType() {
+  auto* Y = Output(0)->Reshape({limit()});
+  const auto N = Y->count();
+  auto* r = ctx()->workspace()->template data<uint32_t, Context>(N);
+  math::Random(Y->count(), r, ctx());
+  kernels::Permutation(N, r, Y->template mutable_data<T, Context>(), ctx());
+}
+
+template <class Context>
+template <typename T>
+void EyeOp<Context>::DoRunWithType() {
+  auto* Y = Output(0);
+  kernels::SetEye(
+      Y->count(0, Y->ndim() - 2),
+      Y->dim(-2),
+      Y->dim(-1),
+      k_,
       Y->template mutable_data<T, Context>(),
       ctx());
 }
@@ -110,51 +212,24 @@ void TruncatedNormalOp<Context>::DoRunWithType() {
   Y->template data<T, Context>();
 }
 
-template <class Context>
-template <typename T>
-void EyeOp<Context>::DoRunWithType() {
-  auto* Y = Output(0);
-  kernels::SetEye(
-      Y->count(0, Y->ndim() - 2),
-      Y->dim(-2),
-      Y->dim(-1),
-      k_,
-      Y->template mutable_data<T, Context>(),
-      ctx());
-}
-
-template <class Context>
-template <typename T>
-void GivenTensorFillOp<Context>::DoRunWithType() {
-  Extract<T>();
-  CHECK_EQ(Output(0)->count(), values_.count())
-      << "\nExcepted the size of output is " << values_.count()
-      << ", while got " << Output(0)->count();
-  auto* x = values_.template data<T, CPUContext>();
-  auto* y = Output(0)->template mutable_data<T, Context>();
-  ctx()->template Copy<T, Context, CPUContext>(values_.count(), y, x);
-}
-
-template <class Context>
-void GivenTensorFillOp<Context>::RunOnDevice() {
-  Output(0)->Reshape(shape_);
-  DispatchHelper<
-      dtypes::TypesBase<int, int64_t, float16, float, double, string>>::
-      Call(this, Tensor(dtypes::to_meta(data_type())));
-}
-
+DISPATCH_VIA_DTYPES(Fill, dtypes::Generic);
+DISPATCH_VIA_DTYPES(Range, dtypes::Numerical);
+DISPATCH_VIA_DTYPES(LinSpace, dtypes::Numerical);
+DISPATCH_VIA_DTYPES(Permutation, dtypes::Numerical);
+DISPATCH_VIA_DTYPES(Eye, dtypes::Generic);
 DISPATCH_VIA_DTYPES(RandomNormal, dtypes::Floating);
 DISPATCH_VIA_DTYPES(RandomUniform, dtypes::Floating);
 DISPATCH_VIA_DTYPES(TruncatedNormal, dtypes::Floating);
 DISPATCH_VIA_DTYPES(GlorotNormal, dtypes::Floating);
 DISPATCH_VIA_DTYPES(GlorotUniform, dtypes::Floating);
-DISPATCH_VIA_DTYPES(Fill, dtypes::Generic);
-DISPATCH_VIA_DTYPES(Eye, dtypes::Generic);
 #undef DISPATCH_VIA_DTYPES
 
 DEPLOY_CPU_OPERATOR(Fill);
-DEPLOY_CPU_OPERATOR(Eye);
 DEPLOY_CPU_OPERATOR(GivenTensorFill);
+DEPLOY_CPU_OPERATOR(Range);
+DEPLOY_CPU_OPERATOR(LinSpace);
+DEPLOY_CPU_OPERATOR(Permutation);
+DEPLOY_CPU_OPERATOR(Eye);
 DEPLOY_CPU_OPERATOR(RandomNormal);
 DEPLOY_CPU_OPERATOR(RandomUniform);
 DEPLOY_CPU_OPERATOR(GlorotNormal);
@@ -162,8 +237,11 @@ DEPLOY_CPU_OPERATOR(GlorotUniform);
 
 #ifdef USE_CUDA
 DEPLOY_CUDA_OPERATOR(Fill);
-DEPLOY_CUDA_OPERATOR(Eye);
 DEPLOY_CUDA_OPERATOR(GivenTensorFill);
+DEPLOY_CUDA_OPERATOR(Range);
+DEPLOY_CUDA_OPERATOR(LinSpace);
+DEPLOY_CUDA_OPERATOR(Permutation);
+DEPLOY_CUDA_OPERATOR(Eye);
 DEPLOY_CUDA_OPERATOR(RandomNormal);
 DEPLOY_CUDA_OPERATOR(RandomUniform);
 DEPLOY_CUDA_OPERATOR(GlorotNormal);
@@ -173,9 +251,18 @@ DEPLOY_CPU_CUDA_OPERATOR(TruncatedNormal);
 DEPLOY_CPU_OPERATOR(TruncatedNormal);
 #endif
 
+#ifdef USE_MPS
+DEPLOY_MPS_OPERATOR(Fill, Fill);
+DEPLOY_MPS_OPERATOR(Range, Range);
+DEPLOY_MPS_OPERATOR(Eye, Eye);
+#endif
+
 OPERATOR_SCHEMA(Fill).NumInputs(0, 1).NumOutputs(1);
-OPERATOR_SCHEMA(Eye).NumInputs(0, 1).NumOutputs(1);
 OPERATOR_SCHEMA(GivenTensorFill).NumInputs(0).NumOutputs(1);
+OPERATOR_SCHEMA(Range).NumInputs(0).NumOutputs(1);
+OPERATOR_SCHEMA(LinSpace).NumInputs(0).NumOutputs(1);
+OPERATOR_SCHEMA(Permutation).NumInputs(0).NumOutputs(1);
+OPERATOR_SCHEMA(Eye).NumInputs(0, 1).NumOutputs(1);
 OPERATOR_SCHEMA(RandomUniform).NumInputs(0, 1).NumOutputs(1);
 OPERATOR_SCHEMA(RandomNormal).NumInputs(0, 1).NumOutputs(1);
 OPERATOR_SCHEMA(GlorotUniform).NumInputs(0, 1).NumOutputs(1);
@@ -183,8 +270,11 @@ OPERATOR_SCHEMA(GlorotNormal).NumInputs(0, 1).NumOutputs(1);
 OPERATOR_SCHEMA(TruncatedNormal).NumInputs(0, 1).NumOutputs(1);
 
 NO_GRADIENT(Fill);
-NO_GRADIENT(Eye);
 NO_GRADIENT(GivenTensorFill);
+NO_GRADIENT(Range);
+NO_GRADIENT(LinSpace);
+NO_GRADIENT(Permutation);
+NO_GRADIENT(Eye);
 NO_GRADIENT(RandomUniform);
 NO_GRADIENT(RandomNormal);
 NO_GRADIENT(GlorotUniform);

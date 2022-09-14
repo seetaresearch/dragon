@@ -1089,7 +1089,7 @@ def mean(input, dim=None, keepdim=False, out=None):
     :attr:`dim` could be negative or ``None``:
 
     ```python
-    x = torch.tensor([[1., 2., 3.], [4., 5., 6.]])
+    x = torch.tensor([[1, 2, 3], [4, 5, 6]], dtype=torch.float32)
 
     # A negative dimension is the last-k dimension
     print(torch.mean(x, dim=1))
@@ -1641,6 +1641,95 @@ def sum(input, dim=None, keepdim=False, out=None):
         axes=dim, keepdims=keepdim)
 
 
+def var(input, dim=None, keepdim=False, out=None):
+    """Compute the variance value of elements along the given dimension.
+
+    :attr:`dim` could be negative or ``None``:
+
+    ```python
+    x = torch.tensor([[1, 2, 3], [4, 5, 6]], dtype=torch.float32)
+
+    # A negative dimension is the last-k dimension
+    print(torch.var(x, dim=1))
+    print(torch.var(x, dim=-1))  # Equivalent
+
+    # If dimension is None, reduce input as a vector
+    # and return a scalar result
+    print(torch.var(x))  # 2.917
+
+    # Also, dimension could be a sequence of integers
+    print(torch.var(x, (0, 1)))  # 2.917
+    ```
+
+    Parameters
+    ----------
+    input : dragon.vm.torch.Tensor
+        The input tensor.
+    dim : Union[int, Sequence[int]], optional
+        The dimension to reduce.
+    keepdim : bool, optional, default=False
+        Keep the reduced dimension or not.
+    out : dragon.vm.torch.Tensor, optional
+        The output tensor.
+
+    Returns
+    -------
+    dragon.vm.torch.Tensor
+        The output tensor.
+
+    """
+    keepdim = keepdim if dim is not None else False
+    dim = nest.flatten(dim) if dim is not None else dim
+    return Function.apply(
+        'ReduceVar', input.device, [input], outputs=[out],
+        axes=dim, keepdims=keepdim)
+
+
+def var_mean(input, dim=None, keepdim=False, out=None):
+    """Compute the variance and mean of elements along the given dimension.
+
+    :attr:`dim` could be negative or ``None``:
+
+    ```python
+    x = torch.tensor([[1, 2, 3], [4, 5, 6]], dtype=torch.float32)
+
+    # A negative dimension is the last-k dimension
+    print(torch.var_mean(x, dim=1))
+    print(torch.var_mean(x, dim=-1))  # Equivalent
+
+    # If dimension is None, reduce input as a vector
+    # and return a scalar result
+    print(torch.var_mean(x))  # (2.917, 3.5)
+
+    # Also, dimension could be a sequence of integers
+    print(torch.var_mean(x, (0, 1)))  # (2.917, 3.5)
+    ```
+
+    Parameters
+    ----------
+    input : dragon.vm.torch.Tensor
+        The input tensor.
+    dim : Union[int, Sequence[int]], optional
+        The dimension to reduce.
+    keepdim : bool, optional, default=False
+        Keep the reduced dimension or not.
+    out : Sequence[dragon.vm.torch.Tensor], optional
+        The optional output value and index.
+
+    Returns
+    -------
+    Sequence[dragon.vm.torch.Tensor]
+        The variance and mean tensor.
+
+    """
+    keepdim = keepdim if dim is not None else False
+    dim = nest.flatten(dim) if dim is not None else dim
+    return Function.apply(
+        'Moments', input.device, [input],
+        outputs=out if out else [None, None],
+        axes=dim, keepdims=keepdim)[::-1]
+
+
 def _binary_func(input, value, op_type, out=None):
     """Compute a binary function."""
     input, value = constant_ops.remove_scalars(input, value)
@@ -1649,6 +1738,6 @@ def _binary_func(input, value, op_type, out=None):
 
 
 def _unary_func(input, op_type, out=None):
-    """Compute an unary function."""
+    """Compute a unary function."""
     return Function.apply(
         op_type, input.device, [input], outputs=[out])

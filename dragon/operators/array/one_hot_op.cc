@@ -1,6 +1,6 @@
 #include "dragon/operators/array/one_hot_op.h"
+#include "dragon/kernels/op_kernels.h"
 #include "dragon/utils/math_functions.h"
-#include "dragon/utils/op_kernels.h"
 
 namespace dragon {
 
@@ -27,11 +27,6 @@ void OneHotOp<Context>::DoRunWithType() {
       X.template data<T, Context>(),
       Y->template mutable_data<T, Context>(),
       ctx());
-}
-
-template <class Context>
-void OneHotOp<Context>::RunOnDevice() {
-  DispatchHelper<dtypes::Numerical>::Call(this, Input(0));
 }
 
 DEPLOY_CPU_OPERATOR(OneHot);

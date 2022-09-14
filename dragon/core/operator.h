@@ -13,12 +13,11 @@
 #ifndef DRAGON_CORE_OPERATOR_H_
 #define DRAGON_CORE_OPERATOR_H_
 
-#include "dragon/core/context.h"
+#include "dragon/core/context_cuda.h"
+#include "dragon/core/context_mps.h"
 #include "dragon/core/gradient.h"
 #include "dragon/core/operator_schema.h"
-#include "dragon/core/registry.h"
 #include "dragon/core/tensor.h"
-#include "dragon/utils/conversions.h"
 
 namespace dragon {
 
@@ -44,7 +43,7 @@ class DRAGON_API OperatorBase {
   }
 
   /*! \brief Run operator on the given stream */
-  virtual void Run(int stream = 0) {
+  virtual void Run(int stream = 0, bool sync = false) {
     NOT_IMPLEMENTED;
   }
 
@@ -211,10 +210,11 @@ class DRAGON_API Operator : public OperatorBase {
   virtual void RunOnDevice() = 0;
 
   /*! \brief Run this operator */
-  void Run(int stream = 0) final {
+  void Run(int stream = 0, bool sync = false) final {
     Setup();
     ctx()->SwitchToDevice(stream);
     RunOnDevice();
+    if (sync) ctx()->FinishDeviceComputation();
   }
 
   /*! \brief Return the context */
@@ -402,10 +402,13 @@ DECLARE_REGISTRY(
     const OperatorDef&,
     Workspace*);
 
-#define INSTANTIATE_OPERATOR(name, context) template class name##Op<context>;
+DECLARE_REGISTRY(
+    MPSOperatorRegistry,
+    OperatorBase,
+    const OperatorDef&,
+    Workspace*);
 
-#define INSTANTIATE_CUDNN_OPERATOR(name) \
-  template class CuDNN##name##Op<CUDAContext>;
+#define INSTANTIATE_OPERATOR(name, context) template class name##Op<context>;
 
 #define REGISTER_CPU_OPERATOR(name, ...) \
   REGISTER_CLASS(CPUOperatorRegistry, name, __VA_ARGS__)
@@ -415,6 +418,9 @@ DECLARE_REGISTRY(
 
 #define REGISTER_CUDNN_OPERATOR(name, ...) \
   REGISTER_CLASS(CUDNNOperatorRegistry, name, __VA_ARGS__)
+
+#define REGISTER_MPS_OPERATOR(name, ...) \
+  REGISTER_CLASS(MPSOperatorRegistry, name, __VA_ARGS__)
 
 #define DEPLOY_CPU_OPERATOR(name)                    \
   REGISTER_CPU_OPERATOR(name, name##Op<CPUContext>); \
@@ -431,7 +437,11 @@ DECLARE_REGISTRY(
 
 #define DEPLOY_CUDNN_OPERATOR(name)                            \
   REGISTER_CUDNN_OPERATOR(name, CuDNN##name##Op<CUDAContext>); \
-  INSTANTIATE_CUDNN_OPERATOR(name);
+  INSTANTIATE_OPERATOR(CuDNN##name, CUDAContext)
+
+#define DEPLOY_MPS_OPERATOR(name, op_name)              \
+  REGISTER_MPS_OPERATOR(name, op_name##Op<MPSContext>); \
+  INSTANTIATE_OPERATOR(op_name, MPSContext);
 
 } // namespace dragon
 

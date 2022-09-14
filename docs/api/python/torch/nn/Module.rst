@@ -98,6 +98,10 @@ state_dict
 ##########
 .. automethod:: dragon.vm.torch.nn.Module.state_dict
 
+to
+##
+.. automethod:: dragon.vm.torch.nn.Module.to
+
 train
 #####
 .. automethod:: dragon.vm.torch.nn.Module.train

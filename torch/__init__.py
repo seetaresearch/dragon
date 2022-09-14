@@ -143,6 +143,8 @@ from dragon.vm.torch.core.ops.math_ops import sqrt
 from dragon.vm.torch.core.ops.math_ops import square
 from dragon.vm.torch.core.ops.math_ops import sub
 from dragon.vm.torch.core.ops.math_ops import sum
+from dragon.vm.torch.core.ops.math_ops import var
+from dragon.vm.torch.core.ops.math_ops import var_mean
 from dragon.vm.torch.core.ops.random_ops import normal
 from dragon.vm.torch.core.ops.random_ops import rand
 from dragon.vm.torch.core.ops.random_ops import randn

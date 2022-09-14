@@ -24,11 +24,19 @@ TESTS_AND_SOURCES = [
     ('dragon/test_device', 'dragon.core'),
     ('dragon/test_distributed', 'dragon.core'),
     ('dragon/test_framework', 'dragon.core'),
-    ('dragon/test_io', 'dragon.core'),
     ('dragon/test_ops', 'dragon.core'),
     ('dragon/test_util', 'dragon.core'),
+    ('keras/test_engine', 'dragon.vm.keras.core'),
+    ('keras/test_layers', 'dragon.vm.keras.core'),
+    ('keras/test_nn', 'dragon.vm.keras.core'),
+    ('keras/test_optimizer', 'dragon.vm.keras.core'),
+    ('tensorflow/test_eager', 'dragon.vm.tensorflow.core'),
+    ('tensorflow/test_framework', 'dragon.vm.tensorflow.core'),
+    ('tensorflow/test_module', 'dragon.vm.tensorflow.core'),
+    ('tensorflow/test_ops', 'dragon.vm.tensorflow.core'),
     ('torch/test_autograd', 'dragon.vm.torch.core'),
     ('torch/test_backends', 'dragon.vm.torch.core'),
+    ('torch/test_device', 'dragon.vm.torch.core'),
     ('torch/test_jit', 'dragon.vm.torch.core'),
     ('torch/test_nn', 'dragon.vm.torch.core'),
     ('torch/test_ops', 'dragon.vm.torch.core'),
@@ -72,7 +80,7 @@ def parse_args():
     parser.add_argument(
         '--ignore-distributed-blocklist',
         action='store_true',
-        help='always run blocklisted distributed tests')
+        help='always run block-listed distributed tests')
     return parser.parse_args()
 
 

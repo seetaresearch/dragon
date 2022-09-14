@@ -99,6 +99,9 @@ vm.tensorflow.math
   `reduce_sum(...) <math/reduce_sum.html>`_
   : Compute the sum value of elements along the given axis.
 
+  `reduce_variance(...) <math/reduce_variance.html>`_
+  : Compute the variance value of elements along the given axis.
+
   `round(...) <math/round.html>`_
   : Compute the nearest integer of input.
 
@@ -127,7 +130,7 @@ vm.tensorflow.math
   : Compute the tanh of input.
 
   `top_k(...) <math/top_k.html>`_
-  : Return the top-K largest elements along the last axis.
+  : Return the top k-largest elements along the last axis.
 
 .. toctree::
   :hidden:
@@ -163,6 +166,7 @@ vm.tensorflow.math
   math/reduce_mean
   math/reduce_min
   math/reduce_sum
+  math/reduce_variance
   math/round
   math/rsqrt
   math/sigmoid

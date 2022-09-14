@@ -94,7 +94,7 @@ inline int CUDA_BLOCKS(const int N) {
 #define __hdiv hdiv
 #endif
 
-inline int CUDA_NUM_DEVICES() {
+inline int CUDAGetDeviceCount() {
   static int count = -1;
   if (count < 0) {
     auto err = cudaGetDeviceCount(&count);
@@ -105,32 +105,32 @@ inline int CUDA_NUM_DEVICES() {
   return count;
 }
 
-inline int GetCUDADevice() {
+inline int CUDAGetDevice() {
   int device_id;
   CUDA_CHECK(cudaGetDevice(&device_id));
   return device_id;
 }
 
 struct CUDADeviceProps {
-  CUDADeviceProps() : props(CUDA_NUM_DEVICES()) {
-    for (int i = 0; i < CUDA_NUM_DEVICES(); ++i) {
+  CUDADeviceProps() : props(CUDAGetDeviceCount()) {
+    for (int i = 0; i < props.size(); ++i) {
       CUDA_CHECK(cudaGetDeviceProperties(&props[i], i));
     }
   }
   vector<cudaDeviceProp> props;
 };
 
-inline const cudaDeviceProp& GetCUDADeviceProp(int device_id) {
+inline const cudaDeviceProp& CUDAGetDeviceProp(int device_id) {
   static CUDADeviceProps props;
-  CHECK_LT(device_id, (int)props.props.size())
-      << "\nInvalid device id: " << device_id << "\nDetected "
+  CHECK_LT(device_id, int(props.props.size()))
+      << "\nInvalid device id: " << device_id << "\nFound "
       << props.props.size() << " devices.";
   return props.props[device_id];
 }
 
 inline bool CUDA_TRUE_FP16_AVAILABLE() {
-  int device = GetCUDADevice();
-  auto& prop = GetCUDADeviceProp(device);
+  int device = CUDAGetDevice();
+  auto& prop = CUDAGetDeviceProp(device);
   return prop.major >= 6;
 }
 
@@ -138,8 +138,8 @@ inline bool TENSOR_CORE_AVAILABLE() {
 #if CUDA_VERSION < 9000
   return false;
 #else
-  int device = GetCUDADevice();
-  auto& prop = GetCUDADeviceProp(device);
+  int device = CUDAGetDevice();
+  auto& prop = CUDAGetDeviceProp(device);
   return prop.major >= 7;
 #endif
 }
@@ -286,7 +286,7 @@ class CUDADeviceGuard {
 
 #else
 
-#define CUDA_NOT_COMPILED LOG(FATAL) << "CUDA library is not compiled with."
+#define CUDA_NOT_COMPILED LOG(FATAL) << "CUDA library is not built with."
 
 class CUDADeviceGuard {
  public:

@@ -119,6 +119,64 @@ class CuDNNPoolGradientOp final : public CuDNNPoolOpBase<Context> {
 
 #endif // USE_CUDNN
 
+#ifdef USE_MPS
+
+template <class Context>
+class MPSPoolOp final : public MPSPoolOpBase<Context> {
+ public:
+  MPSPoolOp(const OperatorDef& def, Workspace* ws)
+      : MPSPoolOpBase<Context>(def, ws) {
+    graph_ = MPSCreateGraph();
+  }
+  USE_OPERATOR_FUNCTIONS;
+  USE_POOL_FUNCTIONS;
+  USE_MPS_POOL_FUNCTIONS;
+
+  ~MPSPoolOp() {
+    NSReleaseObject(graph_);
+  }
+
+  void RunOnDevice() override {
+    DispatchHelper<dtypes::Floating>::Call(this, Input(0));
+  }
+
+  template <typename T>
+  void DoRunWithType();
+
+ protected:
+  MPSGraph_t graph_;
+  MPSGraphCache graph_cache_;
+};
+
+template <class Context>
+class MPSPoolGradientOp final : public MPSPoolOpBase<Context> {
+ public:
+  MPSPoolGradientOp(const OperatorDef& def, Workspace* ws)
+      : MPSPoolOpBase<Context>(def, ws) {
+    graph_ = MPSCreateGraph();
+  }
+  USE_OPERATOR_FUNCTIONS;
+  USE_POOL_FUNCTIONS;
+  USE_MPS_POOL_FUNCTIONS;
+
+  ~MPSPoolGradientOp() {
+    NSReleaseObject(graph_);
+  }
+
+  void RunOnDevice() override {
+    DispatchHelper<dtypes::Floating>::Call(this, Input(0));
+  }
+
+  template <typename T>
+  void DoRunWithType();
+
+ protected:
+  MPSGraph_t graph_;
+  MPSGraphCache graph_cache_;
+};
+
+#endif // USE_MPS
+
 } // namespace dragon
 
 #endif // DRAGON_OPERATORS_VISION_POOL_OP_H_

@@ -25,9 +25,9 @@ from dragon.vm.tensorflow._api import linalg
 from dragon.vm.tensorflow._api import math
 from dragon.vm.tensorflow._api import nn
 from dragon.vm.tensorflow._api import random
-from dragon.vm.tensorflow._api.keras import initializers
-from dragon.vm.tensorflow._api.keras import losses
-from dragon.vm.tensorflow._api.keras import optimizers
+from dragon.vm.keras._api import initializers
+from dragon.vm.keras._api import losses
+from dragon.vm.keras._api import optimizers
 
 # Classes
 from dragon.vm.tensorflow.core.eager.backprop import GradientTape

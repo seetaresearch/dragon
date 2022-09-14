@@ -1,6 +1,6 @@
 #include "dragon/operators/array/pad_op.h"
 #include "dragon/core/workspace.h"
-#include "dragon/utils/op_kernels.h"
+#include "dragon/kernels/op_kernels.h"
 
 namespace dragon {
 
@@ -80,15 +80,16 @@ void PadOp<Context>::DoRunWithType() {
 template <class Context>
 template <typename T>
 void PadGradientOp<Context>::DoRunWithType() {
-  auto &dY = Input(0), *dX = Output(0);
+  auto &dY = Input(1), *dX = Output(0);
 
   vec64_t X_dims(dY.dims()), X_pads;
   Input("X_pads").template CopyTo<int64_t>(X_pads);
 
   // Restore the input dimensions
   int num_dims = dY.ndim();
-  for (int i = 0; i < num_dims; ++i)
+  for (int i = 0; i < num_dims; ++i) {
     X_dims[i] -= (X_pads[i] + X_pads[i + num_dims]);
+  }
 
   if (dY.dims() == X_dims) {
     dX->Reshape(X_dims)->CopyFrom(dY, ctx());
@@ -105,36 +106,24 @@ void PadGradientOp<Context>::DoRunWithType() {
         dX->Reshape(X_dims)->template mutable_data<T, Context>(),
         ctx());
   } else if (mode_ == "REFLECT") {
-    LOG(FATAL) << "No implementation for <ReflectPadGrad>";
+    LOG(FATAL) << "No implementation for <ReflectPadGrad>.";
   } else if (mode_ == "EDGE") {
-    LOG(FATAL) << "No implementation for <EdgePadGrad>";
+    LOG(FATAL) << "No implementation for <EdgePadGrad>.";
   } else {
     LOG(FATAL) << "Unknown PadMode: " << mode_ << ".";
   }
 }
 
 DEPLOY_CPU_OPERATOR(Pad);
-#ifdef USE_CUDA
-DEPLOY_CUDA_OPERATOR(Pad);
-#endif
-
 DEPLOY_CPU_OPERATOR(PadGradient);
 #ifdef USE_CUDA
+DEPLOY_CUDA_OPERATOR(Pad);
 DEPLOY_CUDA_OPERATOR(PadGradient);
 #endif
 
-OPERATOR_SCHEMA(Pad)
-    /* X */
-    .NumInputs(1)
-    /* Y */
-    .NumOutputs(1);
+OPERATOR_SCHEMA(Pad).NumInputs(1).NumOutputs(1);
+OPERATOR_SCHEMA(PadGradient).NumInputs(2).NumOutputs(1);
 
-OPERATOR_SCHEMA(PadGradient)
-    /* dY */
-    .NumInputs(1)
-    /* dX */
-    .NumOutputs(1);
-
-REGISTER_GRADIENT(Pad, SimpleGradientMaker);
+REGISTER_GRADIENT(Pad, GenericGradientMaker);
 
 } // namespace dragon

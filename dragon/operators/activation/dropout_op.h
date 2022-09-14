@@ -26,7 +26,9 @@ class DropoutOp : public Operator<Context> {
   }
   USE_OPERATOR_FUNCTIONS;
 
-  void RunOnDevice() override;
+  void RunOnDevice() override {
+    DispatchHelper<dtypes::Floating>::Call(this, Input(0));
+  }
 
   template <typename T>
   void DoRunWithType();
@@ -44,7 +46,9 @@ class DropoutGradientOp : public Operator<Context> {
   }
   USE_OPERATOR_FUNCTIONS;
 
-  void RunOnDevice() override;
+  void RunOnDevice() override {
+    DispatchHelper<dtypes::Floating>::Call(this, Input(0));
+  }
 
   template <typename T>
   void DoRunWithType();
@@ -64,7 +68,7 @@ class CuDNNDropoutOp final : public DropoutOp<Context> {
   CuDNNDropoutOp(const OperatorDef& def, Workspace* ws)
       : DropoutOp<Context>(def, ws),
         states_initialized_(false),
-        rng_seed_(DEFAULT_RNG_SEED) {
+        seed_(DEFAULT_RNG_SEED) {
     CuDNNCreateTensorDesc(&input_desc_);
     CUDNN_CHECK(cudnnCreateDropoutDescriptor(&dropout_desc_));
   }
@@ -75,7 +79,9 @@ class CuDNNDropoutOp final : public DropoutOp<Context> {
     CUDNN_CHECK(cudnnDestroyDropoutDescriptor(dropout_desc_));
   }
 
-  void RunOnDevice() override;
+  void RunOnDevice() override {
+    DispatchHelper<dtypes::Floating>::Call(this, Input(0));
+  }
 
   template <typename T>
   void DoRunWithType();
@@ -84,7 +90,7 @@ class CuDNNDropoutOp final : public DropoutOp<Context> {
   bool states_initialized_;
   cudnnTensorDescriptor_t input_desc_;
   cudnnDropoutDescriptor_t dropout_desc_;
-  unsigned long long rng_seed_;
+  unsigned long long seed_;
 };
 
 template <class Context>
@@ -93,7 +99,7 @@ class CuDNNDropoutGradientOp final : public DropoutGradientOp<Context> {
   CuDNNDropoutGradientOp(const OperatorDef& def, Workspace* ws)
       : DropoutGradientOp<Context>(def, ws),
         states_initialized_(false),
-        rng_seed_(DEFAULT_RNG_SEED) {
+        seed_(DEFAULT_RNG_SEED) {
     CuDNNCreateTensorDesc(&input_desc_);
     CUDNN_CHECK(cudnnCreateDropoutDescriptor(&dropout_desc_));
   }
@@ -104,7 +110,9 @@ class CuDNNDropoutGradientOp final : public DropoutGradientOp<Context> {
     CUDNN_CHECK(cudnnDestroyDropoutDescriptor(dropout_desc_));
   }
 
-  void RunOnDevice() override;
+  void RunOnDevice() override {
+    DispatchHelper<dtypes::Floating>::Call(this, Input(0));
+  }
 
   template <typename T>
   void DoRunWithType();
@@ -113,10 +121,47 @@ class CuDNNDropoutGradientOp final : public DropoutGradientOp<Context> {
   bool states_initialized_;
   cudnnTensorDescriptor_t input_desc_;
   cudnnDropoutDescriptor_t dropout_desc_;
-  unsigned long long rng_seed_;
+  unsigned long long seed_;
 };
 
 #endif // USE_CUDNN
+
+#ifdef USE_MPS
+
+template <class Context>
+class MPSDropoutOp final : public Operator<Context> {
+ public:
+  MPSDropoutOp(const OperatorDef& def, Workspace* ws)
+      : Operator<Context>(def, ws) {
+    graph_ = MPSCreateGraph();
+    for (int i = 0; i < 50; ++i) {
+      graph_seeds_.push(int64_t((*ctx()->rand_generator())()));
+    }
+    INITIALIZE_OP_SINGLE_ARG(float, ratio, 0.5f);
+  }
+  USE_OPERATOR_FUNCTIONS;
+
+  ~MPSDropoutOp() {
+    NSReleaseObject(graph_);
+  }
+
+  void RunOnDevice() override {
+    DispatchHelper<dtypes::Floating>::Call(this, Input(0));
+  }
+
+  template <typename T>
+  void DoRunWithType();
+
+ protected:
+  DECLARE_OP_SINGLE_ARG(float, ratio);
+  MPSGraph_t graph_;
+  MPSGraphCache graph_cache_;
+  std::queue<int64_t> graph_seeds_;
+};
+
+DEFINE_OP_SINGLE_ARG(float, MPSDropoutOp, ratio);
+
+#endif // USE_MPS
 
 } // namespace dragon
 

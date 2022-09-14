@@ -124,7 +124,7 @@ class NLLLoss(_WeightedLoss):
         size_average=None,
         ignore_index=None,
         reduce=None,
-        reduction='valid',
+        reduction='mean',
     ):
         """Create a ``NLLLoss`` module.
 
@@ -175,7 +175,7 @@ class BCEWithLogitsLoss(_WeightedLoss):
         weight=None,
         size_average=None,
         reduce=None,
-        reduction='valid',
+        reduction='mean',
         pos_weight=None,
     ):
         """Create a ``BCEWithLogitsLoss`` module.
@@ -228,7 +228,7 @@ class CrossEntropyLoss(_WeightedLoss):
         size_average=None,
         ignore_index=None,
         reduce=None,
-        reduction='valid',
+        reduction='mean',
     ):
         """Create a ``CrossEntropyLoss`` module.
 
@@ -477,7 +477,7 @@ class SigmoidFocalLoss(_WeightedLoss):
         size_average=None,
         start_index=0,
         reduce=None,
-        reduction='valid',
+        reduction='mean',
     ):
         """Create a ``SigmoidFocalLoss`` module.
 

@@ -54,6 +54,7 @@ class PoolOpBase : public Operator<Context> {
   using PoolOpBase<Context>::GetBaseArguments; \
   using PoolOpBase<Context>::ComputeOutShape;  \
   using PoolOpBase<Context>::mode_;            \
+  using PoolOpBase<Context>::ceil_mode_;       \
   using PoolOpBase<Context>::kshape_;          \
   using PoolOpBase<Context>::strides_;         \
   using PoolOpBase<Context>::pads_begin_;      \
@@ -65,7 +66,6 @@ class PoolOpBase : public Operator<Context> {
   using PoolOpBase<Context>::out_shape_;
 
 #ifdef USE_CUDNN
-
 template <class Context>
 class CuDNNPoolOpBase : public PoolOpBase<Context> {
  public:
@@ -116,8 +116,39 @@ class CuDNNPoolOpBase : public PoolOpBase<Context> {
   using CuDNNPoolOpBase<Context>::SetPoolDesc; \
   using CuDNNPoolOpBase<Context>::pool_desc_;  \
   using CuDNNPoolOpBase<Context>::pool_mode_
+#endif // USE_CUDNN
 
+#ifdef USE_MPS
+
+#ifdef __OBJC__
+typedef MPSGraphPooling2DOpDescriptor* MPSGraphPooling2DOpDescriptor_t;
+#else
+struct MPSGraphPooling2DOpDescriptor;
+typedef MPSGraphPooling2DOpDescriptor* MPSGraphPooling2DOpDescriptor_t;
 #endif
+
+template <class Context>
+class MPSPoolOpBase : public PoolOpBase<Context> {
+ public:
+  MPSPoolOpBase(const OperatorDef& def, Workspace* ws);
+  USE_OPERATOR_FUNCTIONS;
+  USE_POOL_FUNCTIONS;
+
+  ~MPSPoolOpBase() {
+    NSReleaseObject(pool2d_desc_);
+  }
+
+ protected:
+  void SetPoolDesc();
+
+  MPSGraphPooling2DOpDescriptor_t pool2d_desc_;
+};
+
+#define USE_MPS_POOL_FUNCTIONS               \
+  using MPSPoolOpBase<Context>::SetPoolDesc; \
+  using MPSPoolOpBase<Context>::pool2d_desc_;
+
+#endif // USE_MPS
 
 } // namespace dragon
 

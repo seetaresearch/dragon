@@ -51,11 +51,7 @@ New
 
 SwitchToDevice
 ##############
-.. doxygenfunction:: dragon::CUDAContext::SwitchToDevice()
-
-SwitchToDevice
-##############
-.. doxygenfunction:: dragon::CUDAContext::SwitchToDevice(int stream)
+.. doxygenfunction:: dragon::CUDAContext::SwitchToDevice
 
 SynchronizeStream
 #################

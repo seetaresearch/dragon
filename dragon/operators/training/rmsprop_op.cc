@@ -1,6 +1,6 @@
 #include "dragon/core/workspace.h"
+#include "dragon/kernels/op_kernels.h"
 #include "dragon/operators/training/update_op.h"
-#include "dragon/utils/op_kernels.h"
 
 namespace dragon {
 
@@ -26,6 +26,9 @@ void RMSpropOp<Context>::DoRunWithType(Tensor* dX, Tensor* X, Tensor* Y) {
 DEPLOY_CPU_OPERATOR(RMSprop);
 #ifdef USE_CUDA
 DEPLOY_CUDA_OPERATOR(RMSprop);
+#endif
+#ifdef USE_MPS
+DEPLOY_MPS_OPERATOR(RMSprop, RMSprop);
 #endif
 
 OPERATOR_SCHEMA(RMSprop).NumInputs(1, INT_MAX).NumOutputs(1, INT_MAX);

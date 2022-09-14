@@ -14,6 +14,7 @@
 #define DRAGON_CORE_TENSOR_H_
 
 #include "dragon/core/common.h"
+#include "dragon/core/context.h"
 #include "dragon/core/memory.h"
 
 namespace dragon {
@@ -315,35 +316,11 @@ class DRAGON_API Tensor {
 
   /*! \brief Return the raw data pointer */
   template <class Context>
-  const void* raw_data() {
-    const auto context_type = TypeMeta::Id<Context>();
-    if (context_type == TypeMeta::Id<CPUContext>()) {
-      return memory(true)->cpu_data(nbytes(), offset_);
-    } else if (context_type == TypeMeta::Id<CUDAContext>()) {
-      return memory(true)->cuda_data(nbytes(), offset_);
-    } else {
-      LOG(FATAL) << "Unsupported context type.";
-      return nullptr;
-    }
-  }
+  const void* raw_data();
 
   /*! \brief Get the raw mutable data pointer */
   template <class Context>
-  void raw_mutable_data(void** data_ptr) {
-    auto* memory_ptr = memory();
-    if (memory_ptr == nullptr) {
-      *data_ptr = nullptr;
-    } else {
-      const auto context_type = TypeMeta::Id<Context>();
-      if (context_type == TypeMeta::Id<CPUContext>()) {
-        *data_ptr = memory_ptr->mutable_cpu_data(nbytes());
-      } else if (context_type == TypeMeta::Id<CUDAContext>()) {
-        *data_ptr = memory_ptr->mutable_cuda_data(nbytes());
-      } else {
-        LOG(FATAL) << "Unsupported context type.";
-      }
-    }
-  }
+  void raw_mutable_data(void** data_ptr);
 
   /*! \brief Return the raw mutable data pointer */
   template <class Context>

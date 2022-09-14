@@ -81,8 +81,10 @@ OperatorBase* OperatorBase::New(const OperatorDef& def, Workspace* ws) {
       }
 #endif
       return CUDAOperatorRegistry()->Create(op_type, def, ws);
+    case PROTO_MPS:
+      return MPSOperatorRegistry()->Create(op_type, def, ws);
     default:
-      LOG(FATAL) << "Unknown device: " << def.device_option().device_type();
+      LOG(FATAL) << "Unsupported device: " << def.device_option().device_type();
       return nullptr;
   }
 }
@@ -120,6 +122,12 @@ DEFINE_REGISTRY(
 
 DEFINE_REGISTRY(
     CUDNNOperatorRegistry,
+    OperatorBase,
+    const OperatorDef&,
+    Workspace*);
+
+DEFINE_REGISTRY(
+    MPSOperatorRegistry,
     OperatorBase,
     const OperatorDef&,
     Workspace*);
@@ -173,6 +181,11 @@ INSTANTIATE_GET_REPEATED_ARGUMENT(string, strings);
 #undef INSTANTIATE_GET_REPEATED_ARGUMENT
 
 template class Operator<CPUContext>;
+#ifdef USE_CUDA
 template class Operator<CUDAContext>;
+#endif
+#ifdef USE_MPS
+template class Operator<MPSContext>;
+#endif
 
 } // namespace dragon

@@ -44,6 +44,7 @@ from dragon.vm.tensorflow.core.ops.math_ops import reduce_max
 from dragon.vm.tensorflow.core.ops.math_ops import reduce_mean
 from dragon.vm.tensorflow.core.ops.math_ops import reduce_min
 from dragon.vm.tensorflow.core.ops.math_ops import reduce_sum
+from dragon.vm.tensorflow.core.ops.math_ops import reduce_variance
 from dragon.vm.tensorflow.core.ops.math_ops import round
 from dragon.vm.tensorflow.core.ops.math_ops import rsqrt
 from dragon.vm.tensorflow.core.ops.math_ops import sigmoid
@@ -53,7 +54,7 @@ from dragon.vm.tensorflow.core.ops.math_ops import sqrt
 from dragon.vm.tensorflow.core.ops.math_ops import square
 from dragon.vm.tensorflow.core.ops.math_ops import subtract
 from dragon.vm.tensorflow.core.ops.math_ops import tanh
-from dragon.vm.tensorflow.core.ops.nn import l2_normalize
-from dragon.vm.tensorflow.core.ops.nn import top_k
+from dragon.vm.tensorflow.core.ops.nn_ops import l2_normalize
+from dragon.vm.tensorflow.core.ops.nn_ops import top_k
 
 __all__ = [_s for _s in dir() if not _s.startswith('_')]

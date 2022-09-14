@@ -114,7 +114,7 @@ def add_n(inputs, name=None):
     return output
 
 
-def argmax(input, axis=None, name=None):
+def argmax(input, axis=None, name=None, **kwargs):
     """Compute the index of maximum elements along the given axis.
 
     The argument ``axis`` could be negative or **None**:
@@ -146,6 +146,7 @@ def argmax(input, axis=None, name=None):
         The index of maximum elements.
 
     """
+    kwargs.pop('output_type', None)
     return math_ops.argmax(input, axis=axis, name=name)
 
 
@@ -238,6 +239,7 @@ def cast(x, dtype, name=None):
         The output tensor.
 
     """
+    dtype = str(dtype) if dtype else dtype
     return math_ops.cast(x, dtype=dtype, name=name)
 
 
@@ -346,12 +348,7 @@ def cumsum(x, axis=0, exclusive=False, reverse=False, name=None):
 
     """
     return math_ops.cumsum(
-        x,
-        axis=axis,
-        exclusive=exclusive,
-        reverse=reverse,
-        name=name,
-    )
+        x, axis, exclusive=exclusive, reverse=reverse, name=name)
 
 
 def divide(x, y, name=None):
@@ -700,7 +697,7 @@ def linspace(start, stop, num, dtype='int64', name=None, axis=0):
     x = tf.linspace(2, 4, num=3)  # [2, 3, 4]
     ```
 
-    More than one intervals are accepted to generate N-d coordinates:
+    More intervals are accepted to generate N-d coordinates:
 
     ```python
     x = tf.linspace([1, 2], [3, 4], num=3, axis=0)  # [[1, 2], [2, 3], [3, 4]]
@@ -728,6 +725,7 @@ def linspace(start, stop, num, dtype='int64', name=None, axis=0):
         The output tensor.
 
     """
+    dtype = str(dtype) if dtype else dtype
     return constant_ops.linspace(
         start, stop, num, dtype=dtype, name=name, axis=axis)
 
@@ -936,7 +934,7 @@ def pow(x, y, name=None):
 
 
 def range(start, limit=None, delta=1, dtype='int64', name=None):
-    r"""Return a tensor of evenly spaced values within a interval.
+    r"""Return a tensor of evenly spaced values within an interval.
 
     Specify ``start`` and ``limit`` to determine an interval:
 
@@ -975,13 +973,8 @@ def range(start, limit=None, delta=1, dtype='int64', name=None):
         The output tensor.
 
     """
-    return constant_ops.range(
-        start=start,
-        limit=limit,
-        delta=delta,
-        dtype=dtype,
-        name=name,
-    )
+    dtype = str(dtype) if dtype else dtype
+    return constant_ops.range(start, limit, delta, dtype=dtype, name=name)
 
 
 def reciprocal(x, name=None):
@@ -1026,7 +1019,7 @@ def reduce_max(input_tensor, axis=None, keepdims=False, name=None):
 
     # If ``axis`` is None, the vector-style reduction
     # will be applied to return a scalar result
-    print(tf.math.reduce_max(x))  # Result is 6
+    print(tf.math.reduce_max(x))  # 6
     ```
 
     Parameters
@@ -1046,8 +1039,7 @@ def reduce_max(input_tensor, axis=None, keepdims=False, name=None):
         The output tensor.
 
     """
-    return math_ops.max(
-        input_tensor, axis=axis, keepdims=keepdims, name=name)
+    return math_ops.max(input_tensor, axis, keepdims=keepdims, name=name)
 
 
 def reduce_mean(input_tensor, axis=None, keepdims=False, name=None):
@@ -1056,7 +1048,7 @@ def reduce_mean(input_tensor, axis=None, keepdims=False, name=None):
     The argument ``axis`` could be negative or **None**:
 
     ```python
-    x = tf.constant([[1, 2, 3], [4, 5, 6]])
+    x = tf.constant([[1, 2, 3], [4, 5, 6]], dtype='float32')
 
     # A negative axis is the last-k axis
     print(tf.math.reduce_mean(x, 1))
@@ -1064,10 +1056,10 @@ def reduce_mean(input_tensor, axis=None, keepdims=False, name=None):
 
     # If ``axis`` is None, the vector-style reduction
     # will be applied to return a scalar result
-    print(tf.math.reduce_mean(x))  # Result is 3
+    print(tf.math.reduce_mean(x))  # 3.5
 
     # Also, ``axis`` could be a sequence of integers
-    print(tf.math.reduce_mean(x, [0, 1]))  # Result is 3
+    print(tf.math.reduce_mean(x, [0, 1]))  # 3.5
     ```
 
     Parameters
@@ -1087,8 +1079,7 @@ def reduce_mean(input_tensor, axis=None, keepdims=False, name=None):
         The output tensor.
 
     """
-    return math_ops.mean(
-        input_tensor, axis=axis, keepdims=keepdims, name=name)
+    return math_ops.mean(input_tensor, axis, keepdims=keepdims, name=name)
 
 
 def reduce_min(input_tensor, axis=None, keepdims=False, name=None):
@@ -1105,7 +1096,7 @@ def reduce_min(input_tensor, axis=None, keepdims=False, name=None):
 
     # If ``axis`` is None, the vector-style reduction
     # will be applied to return a scalar result
-    print(tf.math.reduce_min(x))  # Result is 1
+    print(tf.math.reduce_min(x))  # 1
     ```
 
     Parameters
@@ -1125,8 +1116,7 @@ def reduce_min(input_tensor, axis=None, keepdims=False, name=None):
         The output tensor.
 
     """
-    return math_ops.min(
-        input_tensor, axis=axis, keepdims=keepdims, name=name)
+    return math_ops.min(input_tensor, axis, keepdims=keepdims, name=name)
 
 
 def reduce_sum(input_tensor, axis=None, keepdims=False, name=None):
@@ -1143,10 +1133,10 @@ def reduce_sum(input_tensor, axis=None, keepdims=False, name=None):
 
     # If ``axis`` is None, the vector-style reduction
     # will be applied to return a scalar result
-    print(tf.math.reduce_sum(x))  # Result is 21
+    print(tf.math.reduce_sum(x))  # 21
 
     # Also, ``axis`` could be a sequence of integers
-    print(tf.math.reduce_sum(x, [0, 1]))  # Result is 21
+    print(tf.math.reduce_sum(x, [0, 1]))  # 21
     ```
 
     Parameters
@@ -1166,8 +1156,47 @@ def reduce_sum(input_tensor, axis=None, keepdims=False, name=None):
         The output tensor.
 
     """
-    return math_ops.sum(
-        input_tensor, axis=axis, keepdims=keepdims, name=name)
+    return math_ops.sum(input_tensor, axis, keepdims=keepdims, name=name)
+
+
+def reduce_variance(input_tensor, axis=None, keepdims=False, name=None):
+    """Compute the variance value of elements along the given axis.
+
+    The argument ``axis`` could be negative or **None**:
+
+    ```python
+    x = tf.constant([[1, 2, 3], [4, 5, 6]], dtype='float32')
+
+    # A negative axis is the last-k axis
+    print(tf.math.reduce_variance(x, 1))
+    print(tf.math.reduce_variance(x, -1))  # Equivalent
+
+    # If ``axis`` is None, the vector-style reduction
+    # will be applied to return a scalar result
+    print(tf.math.reduce_variance(x))  # 2.917
+
+    # Also, ``axis`` could be a sequence of integers
+    print(tf.math.reduce_variance(x, [0, 1]))  # 2.917
+    ```
+
+    Parameters
+    ----------
+    input_tensor : dragon.Tensor
+        The input tensor.
+    axis : Union[int, Sequence[int]], optional
+        The axis to reduce.
+    keepdims : bool, optional, default=False
+        Keep the reduced dimensions or not.
+    name : str, optional
+        The operation name.
+
+    Returns
+    -------
+    dragon.Tensor
+        The output tensor.
+
+    """
+    return math_ops.var(input_tensor, axis, keepdims=keepdims, name=name)
 
 
 def round(x, name=None):

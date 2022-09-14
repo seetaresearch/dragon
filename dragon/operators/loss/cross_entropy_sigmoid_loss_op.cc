@@ -1,7 +1,7 @@
 #include "dragon/core/workspace.h"
+#include "dragon/kernels/op_kernels.h"
 #include "dragon/operators/loss/cross_entropy_loss_op.h"
 #include "dragon/utils/math_functions.h"
-#include "dragon/utils/op_kernels.h"
 
 namespace dragon {
 
@@ -82,13 +82,16 @@ void SigmoidCrossEntropyLossGradientOp<Context>::DoRunWithType() {
 }
 
 DEPLOY_CPU_OPERATOR(SigmoidCrossEntropyLoss);
-#ifdef USE_CUDA
-DEPLOY_CUDA_OPERATOR(SigmoidCrossEntropyLoss);
-#endif
-
 DEPLOY_CPU_OPERATOR(SigmoidCrossEntropyLossGradient);
 #ifdef USE_CUDA
+DEPLOY_CUDA_OPERATOR(SigmoidCrossEntropyLoss);
 DEPLOY_CUDA_OPERATOR(SigmoidCrossEntropyLossGradient);
+#endif
+#ifdef USE_MPS
+DEPLOY_MPS_OPERATOR(SigmoidCrossEntropyLoss, SigmoidCrossEntropyLoss);
+DEPLOY_MPS_OPERATOR(
+    SigmoidCrossEntropyLossGradient,
+    SigmoidCrossEntropyLossGradient);
 #endif
 
 OPERATOR_SCHEMA(SigmoidCrossEntropyLoss)

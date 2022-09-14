@@ -32,31 +32,17 @@ Dragon
   * `dragon.cuda <dragon/cuda.html>`_
   * `dragon.distributed <dragon/distributed.html>`_
   * `dragon.dlpack <dragon/dlpack.html>`_
-  * `dragon.io <dragon/io.html>`_
   * `dragon.logging <dragon/logging.html>`_
   * `dragon.losses <dragon/losses.html>`_
   * `dragon.math <dragon/math.html>`_
   * `dragon.metrics <dragon/metrics.html>`_
+  * `dragon.mps <dragon/mps.html>`_
   * `dragon.nn <dragon/nn.html>`_
   * `dragon.onnx <dragon/onnx.html>`_
   * `dragon.optimizers <dragon/optimizers.html>`_
   * `dragon.random <dragon/random.html>`_
   * `dragon.sysconfig <dragon/sysconfig.html>`_
   * `dragon.vision <dragon/vision.html>`_
-
-Caffe
-#####
-
-  *Caffe* is the most famous framework for vision.
-
-  Our work is very different from the official python wrappers, a.k.a,
-  the *PyCaffe*, which comes from the exports of *BoostPython*
-  based on C++ language.
-
-  This style involves the following components:
-
-  * `caffe <caffe.html>`_
-  * `caffe.layers <caffe/layers.html>`_
 
 TensorFlow
 ##########
@@ -78,22 +64,6 @@ TensorFlow
   * `tensorflow.math <tensorflow/math.html>`_
   * `tensorflow.nn <tensorflow/nn.html>`_
   * `tensorflow.random <tensorflow/random.html>`_
-
-TensorLayer
-###########
-
-  *TensorLayer* takes a high-level layer abstraction to build complex models.
-
-  Original *TensorLayer* project is restricted to execute *TensorFlow* operations,
-  which is also known as a competitive tf-wrapper comparing to *tf.keras*.
-  We transplant and remake the abstractions to match our engine, while keeping
-  the compatibility with tf-based codes as possible.
-
-  This style involves the following components:
-
-  * `tensorlayer.initializers <tensorlayer/initializers.html>`_
-  * `tensorlayer.layers <tensorlayer/layers.html>`_
-  * `tensorlayer.models <tensorlayer/models.html>`_
 
 PyTorch
 #######
@@ -187,9 +157,6 @@ Modules
   `Module dlpack <dragon/dlpack.html>`_
   : Native API for ``dragon.dlpack`` namespace.
 
-  `Module io <dragon/io.html>`_
-  : Native API for ``dragon.io`` namespace.
-
   `Module logging <dragon/logging.html>`_
   : Native API for ``dragon.logging`` namespace.
 
@@ -201,6 +168,9 @@ Modules
 
   `Module metrics <dragon/metrics.html>`_
   : Native API for ``dragon.metrics`` namespace.
+
+  `Module mps <dragon/mps.html>`_
+  : Native API for ``dragon.mps`` namespace.
 
   `Module nn <dragon/nn.html>`_
   : Native API for ``dragon.nn`` namespace.
@@ -219,12 +189,6 @@ Modules
 
   `Module vision <dragon/vision.html>`_
   : Native API for ``dragon.vision`` namespace.
-
-  `Module vm.caffe <caffe.html>`_
-  : Virtual API for ``caffe`` namespace.
-
-  `Module vm.caffe.layers <caffe/layers.html>`_
-  : Virtual API for ``caffe.layers`` namespace.
 
   `Module vm.dali <dali.html>`_
   : Virtual API for ``dali`` namespace.
@@ -255,15 +219,6 @@ Modules
 
   `Module vm.tensorflow.random <tensorflow/random.html>`_
   : Virtual API for ``tensorflow.random`` namespace.
-
-  `Module vm.tensorlayer.initializers <tensorlayer/initializers.html>`_
-  : Virtual API for ``tensorlayer.initializers`` namespace.
-
-  `Module vm.tensorlayer.layers <tensorlayer/layers.html>`_
-  : Virtual API for ``tensorlayer.layers`` namespace.
-
-  `Module vm.tensorlayer.models <tensorlayer/models.html>`_
-  : Virtual API for ``tensorlayer.models`` namespace.
 
   `Module vm.tensorrt <tensorrt.html>`_
   : Virtual API for ``tensorrt`` namespace.
@@ -322,19 +277,17 @@ Modules
   dragon/cuda
   dragon/distributed
   dragon/dlpack
-  dragon/io
   dragon/logging
   dragon/losses
   dragon/math
   dragon/metrics
+  dragon/mps
   dragon/nn
   dragon/onnx
   dragon/optimizers
   dragon/random
   dragon/sysconfig
   dragon/vision
-  caffe
-  caffe/layers
   dali
   dali/ops
   tensorflow
@@ -345,9 +298,6 @@ Modules
   tensorflow/math
   tensorflow/nn
   tensorflow/random
-  tensorlayer/initializers
-  tensorlayer/layers
-  tensorlayer/models
   tensorrt
   tensorrt/onnx
   torch

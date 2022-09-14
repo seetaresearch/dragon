@@ -13,57 +13,97 @@
 #ifndef DRAGON_OPERATORS_VISION_RESIZE_OP_H_
 #define DRAGON_OPERATORS_VISION_RESIZE_OP_H_
 
-#include "dragon/core/operator.h"
+#include "dragon/operators/vision/resize_op_base.h"
 
 namespace dragon {
 
 template <class Context>
-class ResizeOp final : public Operator<Context> {
+class ResizeOp final : public ResizeOpBase<Context> {
  public:
   ResizeOp(const OperatorDef& def, Workspace* ws)
-      : Operator<Context>(def, ws),
-        mode_(str::upper(OP_SINGLE_ARG(string, "mode", "NEAREST"))),
-        align_corners_(OP_SINGLE_ARG(int64_t, "align_corners", 0)) {
-    INITIALIZE_OP_REPEATED_ARG(float, scales);
-    INITIALIZE_OP_REPEATED_ARG(int64_t, sizes);
-  }
+      : ResizeOpBase<Context>(def, ws) {}
   USE_OPERATOR_FUNCTIONS;
+  USE_RESIZE_FUNCTIONS;
 
-  void RunOnDevice() override;
+  void RunOnDevice() override {
+    DispatchHelper<dtypes::Numerical>::Call(this, Input(0));
+  }
 
   template <typename T>
   void DoRunWithType();
-
- protected:
-  string mode_;
-  int64_t align_corners_;
-  vec64_t in_dims_, out_dims_, out_shape_;
-  DECLARE_OP_REPEATED_ARG(float, scales);
-  DECLARE_OP_REPEATED_ARG(int64_t, sizes);
 };
 
 template <class Context>
-class ResizeGradientOp final : public Operator<Context> {
+class ResizeGradientOp final : public ResizeOpBase<Context> {
  public:
   ResizeGradientOp(const OperatorDef& def, Workspace* ws)
-      : Operator<Context>(def, ws),
-        mode_(str::upper(OP_SINGLE_ARG(string, "mode", "NEAREST"))),
-        align_corners_(OP_SINGLE_ARG(int64_t, "align_corners", 0)) {}
+      : ResizeOpBase<Context>(def, ws) {}
   USE_OPERATOR_FUNCTIONS;
+  USE_RESIZE_FUNCTIONS;
 
-  void RunOnDevice() override;
+  void RunOnDevice() override {
+    DispatchHelper<dtypes::Floating>::Call(this, Input(0));
+  }
+
+  template <typename T>
+  void DoRunWithType();
+};
+
+#ifdef USE_MPS
+
+template <class Context>
+class MPSResizeOp final : public ResizeOpBase<Context> {
+ public:
+  MPSResizeOp(const OperatorDef& def, Workspace* ws)
+      : ResizeOpBase<Context>(def, ws) {
+    graph_ = MPSCreateGraph();
+  }
+  USE_OPERATOR_FUNCTIONS;
+  USE_RESIZE_FUNCTIONS;
+
+  ~MPSResizeOp() {
+    NSReleaseObject(graph_);
+  }
+
+  void RunOnDevice() override {
+    DispatchHelper<dtypes::Numerical>::Call(this, Input(0));
+  }
 
   template <typename T>
   void DoRunWithType();
 
  protected:
-  string mode_;
-  int64_t align_corners_;
-  vec64_t in_dims_, out_dims_;
+  MPSGraph_t graph_;
+  MPSGraphCache graph_cache_;
 };
 
-DEFINE_OP_REPEATED_ARG(float, ResizeOp, scales);
-DEFINE_OP_REPEATED_ARG(int64_t, ResizeOp, sizes);
+template <class Context>
+class MPSResizeGradientOp final : public ResizeOpBase<Context> {
+ public:
+  MPSResizeGradientOp(const OperatorDef& def, Workspace* ws)
+      : ResizeOpBase<Context>(def, ws) {
+    graph_ = MPSCreateGraph();
+  }
+  USE_OPERATOR_FUNCTIONS;
+  USE_RESIZE_FUNCTIONS;
+
+  ~MPSResizeGradientOp() {
+    NSReleaseObject(graph_);
+  }
+
+  void RunOnDevice() override {
+    DispatchHelper<dtypes::Floating>::Call(this, Input(0));
+  }
+
+  template <typename T>
+  void DoRunWithType();
+
+ protected:
+  MPSGraph_t graph_;
+  MPSGraphCache graph_cache_;
+};
+
+#endif // USE_MPS
 
 } // namespace dragon
 

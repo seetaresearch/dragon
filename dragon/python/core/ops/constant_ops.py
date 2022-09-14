@@ -217,7 +217,7 @@ def linspace(start, stop, num, dtype='int64', axis=0, **kwargs):
     x = dragon.linspace(2, 4, num=3)  # [2, 3, 4]
     ```
 
-    More than one ranges are accepted to generate N-d coordinates:
+    More ranges are accepted to generate N-d coordinates:
 
     ```python
     x = dragon.linspace([1, 2], [3, 4], num=3, axis=0)  # [[1, 2], [2, 3], [3, 4]]
@@ -317,7 +317,7 @@ def ones_like(inputs, dtype='float32', **kwargs):
 
 
 def range(start, limit=None, delta=1, dtype='int64', **kwargs):
-    """Return a tensor of evenly spaced values within a interval.
+    """Return a tensor of evenly spaced values within an interval.
 
     Use :attr:`start` and :attr:`limit` for a simple range:
 

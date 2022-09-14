@@ -414,8 +414,14 @@ def range_args(**kwargs):
     return {'dtype': kwargs.get('dtype', 'int64'), 'slice_desc': 'float64'}
 
 
-@register(['ReduceMax', 'ReduceMin', 'ReduceMean', 'ReduceSum',
-           'ReduceL1', 'ReduceL2', 'Moments'])
+@register(['ReduceMax',
+           'ReduceMin',
+           'ReduceMean',
+           'ReduceSum',
+           'ReduceVar',
+           'ReduceL1',
+           'ReduceL2',
+           'Moments'])
 def reduce_args(**kwargs):
     return {
         'axes': kwargs.get('axes', None),
@@ -613,6 +619,19 @@ def transpose_args(**kwargs):
 @register('Trilu')
 def triangular_args(**kwargs):
     return {'k': kwargs.get('k', 0), 'upper': kwargs.get('upper', False)}
+
+
+@register('TruncatedNormal')
+def trucated_normal_args(**kwargs):
+    return {
+        'no_grad': True,
+        'mean': kwargs.get('mean', 0.0),
+        'std': kwargs.get('std', 1.0),
+        'low': kwargs.get('low', -2.0),
+        'high': kwargs.get('high', 2.0),
+        'dtype': kwargs.get('dtype', 'float32'),
+        'dims_desc': 'int64' if kwargs.get('ndim', 0) > 0 else None,
+    }
 
 
 @register('Unique')

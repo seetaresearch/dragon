@@ -8,7 +8,7 @@
 #     <https://opensource.org/licenses/BSD-2-Clause>
 #
 # ------------------------------------------------------------
-"""Test the distributed module."""
+"""Test distributed module."""
 
 from __future__ import absolute_import
 from __future__ import division
@@ -22,7 +22,7 @@ from dragon.core.testing.unittest.common_utils import TEST_MPI
 
 
 class TestBackend(unittest.TestCase):
-    """Test the backend components."""
+    """Test backend components."""
 
     def test_empty_group(self):
         for backend in (None, 'AUTO', 'NCCL', 'MPI', 'UNKNOWN', 0):

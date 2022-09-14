@@ -139,7 +139,7 @@ def nll_loss(inputs, axis=-1, ignore_index=None, reduction='valid', **kwargs):
     inputs : Sequence[dragon.Tensor]
         The tensor ``input`` and ``target``.
     axis : int, optional, default=-1
-        The reduce axis.
+        The reduction axis.
     ignore_index : int, optional
         The ignored value of target.
     reduction : {'none', 'sum', 'mean', 'valid'}, optional
@@ -219,7 +219,7 @@ def sigmoid_focal_loss(
     inputs : Sequence[dragon.Tensor]
         The tensor ``input`` and ``target``.
     axis : int, optional, default=-1
-        The reduce axis, can be negative.
+        The reduction axis, can be negative.
     alpha : float, optional, default=0.25
         The scale factor to the positive classes.
     gamma : float, optional, default=2.0

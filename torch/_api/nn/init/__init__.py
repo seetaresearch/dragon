@@ -22,6 +22,7 @@ from dragon.vm.torch.core.nn.init import kaiming_normal_
 from dragon.vm.torch.core.nn.init import kaiming_uniform_
 from dragon.vm.torch.core.nn.init import normal_
 from dragon.vm.torch.core.nn.init import ones_
+from dragon.vm.torch.core.nn.init import trunc_normal_
 from dragon.vm.torch.core.nn.init import uniform_
 from dragon.vm.torch.core.nn.init import xavier_normal_
 from dragon.vm.torch.core.nn.init import xavier_uniform_

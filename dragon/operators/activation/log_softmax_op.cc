@@ -1,5 +1,5 @@
 #include "dragon/operators/activation/log_softmax_op.h"
-#include "dragon/utils/op_kernels.h"
+#include "dragon/kernels/op_kernels.h"
 
 namespace dragon {
 
@@ -33,13 +33,14 @@ void LogSoftmaxGradientOp<Context>::DoRunWithType() {
 }
 
 DEPLOY_CPU_OPERATOR(LogSoftmax);
-#ifdef USE_CUDA
-DEPLOY_CUDA_OPERATOR(LogSoftmax);
-#endif
-
 DEPLOY_CPU_OPERATOR(LogSoftmaxGradient);
 #ifdef USE_CUDA
+DEPLOY_CUDA_OPERATOR(LogSoftmax);
 DEPLOY_CUDA_OPERATOR(LogSoftmaxGradient);
+#endif
+#ifdef USE_MPS
+DEPLOY_MPS_OPERATOR(LogSoftmax, LogSoftmax);
+DEPLOY_MPS_OPERATOR(LogSoftmaxGradient, LogSoftmaxGradient);
 #endif
 
 OPERATOR_SCHEMA(LogSoftmax)

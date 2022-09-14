@@ -14,7 +14,7 @@ from dragon.core.util import tls
 
 
 def _new_incrementer():
-    """Return a incrementer from 1."""
+    """Return an incrementer from 1."""
     i = 0  # Python returns big integer.
     while True:
         i += 1

@@ -30,6 +30,10 @@ REGISTER_CPU_OPERATOR(ChannelShuffleGradient, ChannelShuffleOp<CPUContext>);
 DEPLOY_CUDA_OPERATOR(ChannelShuffle);
 REGISTER_CUDA_OPERATOR(ChannelShuffleGradient, ChannelShuffleOp<CUDAContext>);
 #endif
+#ifdef USE_MPS
+DEPLOY_MPS_OPERATOR(ChannelShuffle, ChannelShuffle);
+REGISTER_MPS_OPERATOR(ChannelShuffleGradient, ChannelShuffleOp<MPSContext>);
+#endif
 
 OPERATOR_SCHEMA(ChannelShuffle).NumInputs(1).NumOutputs(1);
 OPERATOR_SCHEMA(ChannelShuffleGradient).NumInputs(1).NumOutputs(1);

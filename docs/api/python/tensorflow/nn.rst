@@ -68,6 +68,9 @@ vm.tensorflow.nn
   : Apply the gaussian error linear unit.
   `[Hendrycks & Gimpel, 2016] <https://arxiv.org/abs/1606.08415>`_.
 
+  `l2_loss(...) <nn/l2_loss.html>`_
+  : Compute the loss of element-wise squared error.
+
   `leaky_relu(...) <nn/leaky_relu.html>`_
   : Apply the leaky rectified linear unit.
 
@@ -105,6 +108,9 @@ vm.tensorflow.nn
   : Apply the scaled exponential linear unit.
   `[Klambauer et.al, 2017] <https://arxiv.org/abs/1706.02515>`_.
 
+  `sigmoid_cross_entropy_with_logits(...) <nn/sigmoid_cross_entropy_with_logits.html>`_
+  : Compute the loss of sigmoid cross entropy.
+
   `silu(...) <nn/silu.html>`_
   : Apply the sigmoid linear unit.
   `[Hendrycks & Gimpel, 2016] <https://arxiv.org/abs/1606.08415>`_.
@@ -113,13 +119,13 @@ vm.tensorflow.nn
   : Apply the softmax function.
 
   `softmax_cross_entropy_with_logits(...) <nn/softmax_cross_entropy_with_logits.html>`_
-  : Compute the softmax cross entropy with contiguous labels.
+  : Compute the loss of softmax cross entropy.
 
   `space_to_depth(...) <nn/space_to_depth.html>`_
   : Rearrange blocks of spatial data into depth.
 
   `sparse_softmax_cross_entropy_with_logits(...) <nn/sparse_softmax_cross_entropy_with_logits.html>`_
-  : Compute the softmax cross entropy with sparse labels.
+  : Compute the loss of softmax cross entropy with sparse labels.
 
 .. toctree::
   :hidden:
@@ -143,6 +149,7 @@ vm.tensorflow.nn
   nn/elu
   nn/fused_batch_norm
   nn/gelu
+  nn/l2_loss
   nn/leaky_relu
   nn/local_response_normalization
   nn/log_softmax
@@ -154,6 +161,7 @@ vm.tensorflow.nn
   nn/relu
   nn/relu6
   nn/selu
+  nn/sigmoid_cross_entropy_with_logits
   nn/silu
   nn/softmax
   nn/softmax_cross_entropy_with_logits

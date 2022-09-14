@@ -69,7 +69,7 @@ class RNNModule(object):
         return OpLib.add(
             'Recurrent', inputs, rnn_mode=self._mode,
             num_layers=self._num_layers, hidden_size=self._hidden_size,
-            bidirectional=self._bidirectional, dropout_ratio=self._dropout)
+            bidirectional=self._bidirectional, dropout_ratio=self._dropout, **kwargs)
 
     def _create_weights(self):
         """Create a flat weights."""

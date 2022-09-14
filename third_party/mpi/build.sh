@@ -1,7 +1,7 @@
 #!/bin/sh
 
 # See https://www.open-mpi.org/faq/?category=buildcuda
-USE_CUDA_AWARE=${1:-1}
+USE_CUDA_AWARE=${1:-0}
 
 if [ -f "openmpi-4.1.2.tar.gz" ];then echo "Skip downloading...."
 else wget https://download.open-mpi.org/release/open-mpi/v4.1/openmpi-4.1.2.tar.gz

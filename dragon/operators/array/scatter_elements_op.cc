@@ -1,6 +1,6 @@
+#include "dragon/kernels/op_kernels.h"
 #include "dragon/operators/array/scatter_op.h"
 #include "dragon/utils/math_functions.h"
-#include "dragon/utils/op_kernels.h"
 
 namespace dragon {
 
@@ -9,7 +9,6 @@ template <typename T>
 void ScatterElementsOp<Context>::DoRunWithType() {
   auto &X = Input(0), *Y = Output(0);
   auto &X_index = Input(1), &X_value = Input(2);
-  Output("X_value_spec")->ReshapeLike(X_value);
   GET_OP_AXIS_ARG(axis, X.ndim(), 0);
 
   CHECK_GT(X_index.count(), 0) << "\nLength of index must > 0.";
@@ -46,11 +45,6 @@ void ScatterElementsGradientOp<Context>::DoRunWithType() {
   GET_OP_AXIS_ARG(axis, dY.ndim(), 0);
 
   if (dX_value->has_name()) {
-    auto& X_value_spec = Input("X_value_spec");
-    for (int i = 0; i < X_index.ndim(); ++i) {
-      CHECK_EQ(X_index.dim(i), X_value_spec.dim(i));
-      if (i != axis) CHECK_EQ(X_index.dim(i), dY.dim(i));
-    }
     kernels::GatherElements(
         axis,
         dY.ndim(),
@@ -77,12 +71,9 @@ void ScatterElementsGradientOp<Context>::DoRunWithType() {
 }
 
 DEPLOY_CPU_OPERATOR(ScatterElements);
-#ifdef USE_CUDA
-DEPLOY_CUDA_OPERATOR(ScatterElements);
-#endif
-
 DEPLOY_CPU_OPERATOR(ScatterElementsGradient);
 #ifdef USE_CUDA
+DEPLOY_CUDA_OPERATOR(ScatterElements);
 DEPLOY_CUDA_OPERATOR(ScatterElementsGradient);
 #endif
 

@@ -208,12 +208,11 @@ def fill(dims, value=0, dtype=None, name=None):
         The output tensor.
 
     """
+    dtype = str(dtype) if dtype else dtype
     if dtype is None:
-        dtype = numpy.array(value).dtype
-        if dtype == numpy.int64:
-            dtype = 'int32'
-        elif dtype == numpy.float64:
-            dtype = 'float32'
+        dtype = str(numpy.array(value).dtype)
+        dtype = 'int32' if dtype == 'int64' else dtype
+        dtype = 'float32' if dtype == 'float64' else dtype
     return constant_ops.fill(shape=dims, value=value, dtype=dtype, name=name)
 
 
@@ -245,7 +244,7 @@ def gather(params, indices, axis=0, name=None):
         The output tensor.
 
     """
-    return array_ops.gather(params, indices, axis=axis, name=name)
+    return array_ops.gather([params, indices], axis=axis, name=name)
 
 
 def identity(input, name=None):
@@ -299,6 +298,7 @@ def ones(shape, dtype='float32', name=None):
         The operation name.
 
     """
+    dtype = str(dtype) if dtype else dtype
     return constant_ops.fill(shape, value=1, dtype=dtype, name=name)
 
 
@@ -324,6 +324,7 @@ def ones_like(input, dtype='float32', name=None):
         The operation name.
 
     """
+    dtype = str(dtype) if dtype else dtype
     return constant_ops.ones_like(input, dtype=dtype, name=name)
 
 
@@ -412,9 +413,6 @@ def pad(
 
     # ReflectPad
     print(tf.pad(x, [[0, 1], [1, 0]], 'REFLECT'))
-
-    # SymmetricPad (EdgePad)
-    print(tf.pad(x, [[0, 1], [1, 0]], 'SYMMETRIC'))
     ```
 
     Parameters
@@ -423,7 +421,7 @@ def pad(
         The input tensor.
     paddings : Sequence[Tuple[int]]
         The begins and ends of padding.
-    mode : {'CONSTANT', 'REFLECT', 'SYMMETRIC'}, optional
+    mode : {'CONSTANT', 'REFLECT'}, optional
         The padding mode.
     constant_values : int, optional, default=0
         The constant value in ``CONSTANT`` mode.
@@ -439,11 +437,8 @@ def pad(
     return array_ops.pad(
         tensor,
         pads=paddings,
-        mode={
-            'CONSTANT': 'CONSTANT',
-            'REFLECT': 'REFLECT',
-            'SYMMETRIC': 'EDGE',
-        }[mode.upper()],
+        mode={'CONSTANT': 'constant',
+              'REFLECT': 'reflect'}[mode.upper()],
         value=constant_values,
         name=name,
     )
@@ -467,6 +462,7 @@ def placeholder(dtype=None, shape=None, name=None):
         The output tensor.
 
     """
+    dtype = str(dtype) if dtype else dtype
     return Tensor(shape, dtype, name=name, symbolic=True)
 
 
@@ -730,7 +726,7 @@ def split(value, num_or_size_splits, axis=0, copy=True, name=None):
     return array_ops.split(value, num_or_size_splits, axis, name=name)
 
 
-def squeeze(input, axis=None, name=None):
+def squeeze(input, axis=None, copy=True, name=None):
     """Remove the dimensions of input with size 1.
 
     :attr:`axis` could be negative or ``None``:
@@ -757,6 +753,8 @@ def squeeze(input, axis=None, name=None):
         The input tensor.
     axis : Union[int, Sequence[int]], optional
         The axis to remove.
+    copy : bool, optional, default=True
+        Return a new tensor or call in-place.
     name : str, optional
         The operation name.
 
@@ -766,7 +764,7 @@ def squeeze(input, axis=None, name=None):
         The output tensor.
 
     """
-    return array_ops.squeeze(input, axis=axis, name=name)
+    return array_ops.squeeze(input, axis=axis, copy=copy, name=name)
 
 
 def tile(input, multiples, name=None):
@@ -849,8 +847,7 @@ def unique(x, name=None, **kwargs):
         The inverse index tensor.
 
     """
-    if 'out_idx' in kwargs:
-        kwargs.pop('out_idx')
+    kwargs.pop('out_idx', None)
     return array_ops.unique(x, return_inverse=True, name=name)
 
 
@@ -884,14 +881,9 @@ def unique_with_counts(x, name=None, **kwargs):
         The counts tensor.
 
     """
-    if 'out_idx' in kwargs:
-        kwargs.pop('out_idx')
+    kwargs.pop('out_idx', None)
     return array_ops.unique(
-        x,
-        return_inverse=True,
-        return_counts=True,
-        name=name,
-    )
+        x, return_inverse=True, return_counts=True, name=name)
 
 
 def unstack(value, num=None, axis=0, copy=True, name=None):
@@ -954,6 +946,7 @@ def zeros(shape, dtype='float32', name=None):
         The operation name.
 
     """
+    dtype = str(dtype) if dtype else dtype
     return constant_ops.fill(shape, value=0., dtype=dtype, name=name)
 
 
@@ -979,4 +972,5 @@ def zeros_like(input, dtype='float32', name=None):
         The operation name.
 
     """
+    dtype = str(dtype) if dtype else dtype
     return constant_ops.zeros_like(input, dtype=dtype, name=name)

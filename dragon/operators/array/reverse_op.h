@@ -35,6 +35,36 @@ class ReverseOp final : public Operator<Context> {
   vec64_t axes_;
 };
 
+#ifdef USE_MPS
+
+template <class Context>
+class MPSReverseOp final : public Operator<Context> {
+ public:
+  MPSReverseOp(const OperatorDef& def, Workspace* ws)
+      : Operator<Context>(def, ws), axes_(OP_REPEATED_ARG(int64_t, "axes")) {
+    graph_ = MPSCreateGraph();
+  }
+  USE_OPERATOR_FUNCTIONS;
+
+  ~MPSReverseOp() {
+    NSReleaseObject(graph_);
+  }
+
+  void RunOnDevice() override {
+    DispatchHelper<dtypes::Generic>::Call(this, Input(0));
+  }
+
+  template <typename T>
+  void DoRunWithType();
+
+ protected:
+  vec64_t axes_;
+  MPSGraph_t graph_;
+  MPSGraphCache graph_cache_;
+};
+
+#endif
+
 } // namespace dragon
 
 #endif // DRAGON_OPERATORS_ARRAY_REVERSE_OP_H_

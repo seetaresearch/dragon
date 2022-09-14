@@ -8,7 +8,7 @@
 #     <https://opensource.org/licenses/BSD-2-Clause>
 #
 # ------------------------------------------------------------
-"""Test the autograd module."""
+"""Test autograd module."""
 
 from __future__ import absolute_import
 from __future__ import division
@@ -21,7 +21,7 @@ from dragon.vm import torch
 
 
 class TestGradMode(unittest.TestCase):
-    """Test the grad mode."""
+    """Test grad mode."""
 
     def test_set_grad_enabled(self):
         a = torch.tensor(1., requires_grad=True)
@@ -41,7 +41,7 @@ class TestGradMode(unittest.TestCase):
 
 
 class TestBackProp(unittest.TestCase):
-    """Test the back-propagation."""
+    """Test back-propagation."""
 
     def test_backward(self):
         x = torch.tensor(1., dtype=torch.float32, requires_grad=True)

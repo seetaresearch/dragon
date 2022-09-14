@@ -25,9 +25,13 @@ class Registry {
  public:
   typedef std::function<ClassT*(Args...)> Creator;
 
+  /*! \brief Constructor with the name */
+  explicit Registry(const string& name) : name_(name) {}
+
   /*! \brief Create an instance of specified class */
   ClassT* Create(const KeyT& key, Args... args) {
-    CHECK(registry_.count(key)) << "\nKey(" << key << ") has not registered.";
+    CHECK(registry_.count(key))
+        << "\n'" << key << "' is not registered in " << name_ << ".";
     return registry_[key](args...);
   }
 
@@ -39,7 +43,7 @@ class Registry {
   /*! \brief Register a class with the creator */
   void Register(const KeyT& key, Creator creator) {
     CHECK(!registry_.count(key))
-        << "\nKey(" << key << ") has already registered.";
+        << "\n'" << key << "' has already registered in " << name_ << ".";
     registry_[key] = creator;
   }
 
@@ -53,6 +57,9 @@ class Registry {
   }
 
  private:
+  /*! \brief The registry name */
+  std::string name_;
+
   /*! \brief The registry map */
   Map<KeyT, Creator> registry_;
 };
@@ -85,11 +92,11 @@ class Registerer {
   typedef Registerer<KeyT, ClassT, ##__VA_ARGS__> Registerer##RegistryName;
 
 // Used in *.cc files.
-#define DEFINE_TYPED_REGISTRY(RegistryName, KeyT, ClassT, ...) \
-  Registry<KeyT, ClassT, ##__VA_ARGS__>* RegistryName() {      \
-    static Registry<KeyT, ClassT, ##__VA_ARGS__>* registry =   \
-        new Registry<KeyT, ClassT, ##__VA_ARGS__>();           \
-    return registry;                                           \
+#define DEFINE_TYPED_REGISTRY(RegistryName, KeyT, ClassT, ...)    \
+  Registry<KeyT, ClassT, ##__VA_ARGS__>* RegistryName() {         \
+    static Registry<KeyT, ClassT, ##__VA_ARGS__>* registry =      \
+        new Registry<KeyT, ClassT, ##__VA_ARGS__>(#RegistryName); \
+    return registry;                                              \
   }
 
 #define DECLARE_REGISTRY(RegistryName, ClassT, ...) \

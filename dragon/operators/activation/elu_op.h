@@ -25,10 +25,12 @@ class EluOp : public Operator<Context> {
         alpha_(OP_SINGLE_ARG(float, "alpha", 1.f)) {}
   USE_OPERATOR_FUNCTIONS;
 
+  void RunOnDevice() override {
+    DispatchHelper<dtypes::Floating>::Call(this, Input(0));
+  }
+
   template <typename T>
   void DoRunWithType();
-
-  void RunOnDevice() override;
 
  protected:
   float alpha_;
@@ -42,7 +44,9 @@ class EluGradientOp : public Operator<Context> {
         alpha_(OP_SINGLE_ARG(float, "alpha", 1.f)) {}
   USE_OPERATOR_FUNCTIONS;
 
-  void RunOnDevice() override;
+  void RunOnDevice() override {
+    DispatchHelper<dtypes::Floating>::Call(this, Input(0));
+  }
 
   template <typename T>
   void DoRunWithType();
@@ -69,7 +73,9 @@ class CuDNNEluOp final : public EluOp<Context> {
     CUDNN_CHECK(cudnnDestroyActivationDescriptor(act_desc_));
   }
 
-  void RunOnDevice() override;
+  void RunOnDevice() override {
+    DispatchHelper<dtypes::Floating>::Call(this, Input(0));
+  }
 
   template <typename T>
   void DoRunWithType();
@@ -96,7 +102,9 @@ class CuDNNEluGradientOp final : public EluGradientOp<Context> {
     CUDNN_CHECK(cudnnDestroyActivationDescriptor(act_desc_));
   }
 
-  void RunOnDevice() override;
+  void RunOnDevice() override {
+    DispatchHelper<dtypes::Floating>::Call(this, Input(0));
+  }
 
   template <typename T>
   void DoRunWithType();

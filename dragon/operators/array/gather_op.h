@@ -23,7 +23,9 @@ class GatherOp final : public Operator<Context> {
   SIMPLE_CTOR_DTOR(GatherOp);
   USE_OPERATOR_FUNCTIONS;
 
-  void RunOnDevice() override;
+  void RunOnDevice() override {
+    DispatchHelper<dtypes::Generic>::Call(this, Input(0));
+  }
 
   template <typename T>
   void DoRunWithType();
@@ -35,7 +37,9 @@ class GatherGradientOp final : public Operator<Context> {
   SIMPLE_CTOR_DTOR(GatherGradientOp);
   USE_OPERATOR_FUNCTIONS;
 
-  void RunOnDevice() override;
+  void RunOnDevice() override {
+    DispatchHelper<dtypes::Floating>::Call(this, Input(1));
+  }
 
   template <typename T>
   void DoRunWithType();
@@ -68,6 +72,110 @@ class GatherElementsGradientOp final : public Operator<Context> {
   template <typename T>
   void DoRunWithType();
 };
+
+#ifdef USE_MPS
+
+template <class Context>
+class MPSGatherOp final : public Operator<Context> {
+ public:
+  MPSGatherOp(const OperatorDef& def, Workspace* ws)
+      : Operator<Context>(def, ws) {
+    graph_ = MPSCreateGraph();
+  }
+  USE_OPERATOR_FUNCTIONS;
+
+  ~MPSGatherOp() {
+    NSReleaseObject(graph_);
+  }
+
+  void RunOnDevice() override {
+    DispatchHelper<dtypes::Generic>::Call(this, Input(0));
+  }
+
+  template <typename T>
+  void DoRunWithType();
+
+ protected:
+  MPSGraph_t graph_;
+  MPSGraphCache graph_cache_;
+};
+
+template <class Context>
+class MPSGatherGradientOp final : public Operator<Context> {
+ public:
+  MPSGatherGradientOp(const OperatorDef& def, Workspace* ws)
+      : Operator<Context>(def, ws) {
+    graph_ = MPSCreateGraph();
+  }
+  USE_OPERATOR_FUNCTIONS;
+
+  ~MPSGatherGradientOp() {
+    NSReleaseObject(graph_);
+  }
+
+  void RunOnDevice() override {
+    DispatchHelper<dtypes::Floating>::Call(this, Input(1));
+  }
+
+  template <typename T>
+  void DoRunWithType();
+
+ protected:
+  MPSGraph_t graph_;
+  MPSGraphCache graph_cache_;
+};
+
+template <class Context>
+class MPSGatherElementsOp final : public Operator<Context> {
+ public:
+  MPSGatherElementsOp(const OperatorDef& def, Workspace* ws)
+      : Operator<Context>(def, ws) {
+    graph_ = MPSCreateGraph();
+  }
+  USE_OPERATOR_FUNCTIONS;
+
+  ~MPSGatherElementsOp() {
+    NSReleaseObject(graph_);
+  }
+
+  void RunOnDevice() override {
+    DispatchHelper<dtypes::Generic>::Call(this, Input(0));
+  }
+
+  template <typename T>
+  void DoRunWithType();
+
+ protected:
+  MPSGraph_t graph_;
+  MPSGraphCache graph_cache_;
+};
+
+template <class Context>
+class MPSGatherElementsGradientOp final : public Operator<Context> {
+ public:
+  MPSGatherElementsGradientOp(const OperatorDef& def, Workspace* ws)
+      : Operator<Context>(def, ws) {
+    graph_ = MPSCreateGraph();
+  }
+  USE_OPERATOR_FUNCTIONS;
+
+  ~MPSGatherElementsGradientOp() {
+    NSReleaseObject(graph_);
+  }
+
+  void RunOnDevice() override {
+    DispatchHelper<dtypes::Floating>::Call(this, Input(1));
+  }
+
+  template <typename T>
+  void DoRunWithType();
+
+ protected:
+  MPSGraph_t graph_;
+  MPSGraphCache graph_cache_;
+};
+
+#endif // USE_MPS
 
 } // namespace dragon
 

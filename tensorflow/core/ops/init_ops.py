@@ -79,8 +79,9 @@ class Constant(Initializer):
             The output tensor.
 
         """
-        dtype = str(self.dtype) if dtype is None else dtype
-        return constant_ops.fill(shape, value=self.value, dtype=dtype)
+        dtype = dtype or self.dtype
+        dtype = str(dtype) if dtype else dtype
+        return constant_ops.fill(shape, self.value, dtype=dtype)
 
 
 class RandomNormal(Initializer):
@@ -121,12 +122,10 @@ class RandomNormal(Initializer):
             The output tensor.
 
         """
+        dtype = dtype or self.dtype
+        dtype = str(dtype) if dtype else dtype
         return random_ops.random_normal(
-            shape=shape,
-            mean=self.mean,
-            std=self.stddev,
-            dtype=str(self.dtype) if dtype is None else dtype,
-        )
+            shape, self.mean, self.stddev, dtype=dtype)
 
 
 class RandomUniform(Initializer):
@@ -167,13 +166,10 @@ class RandomUniform(Initializer):
             The output tensor.
 
         """
-        dtype = str(self.dtype) if dtype is None else dtype
+        dtype = dtype or self.dtype
+        dtype = str(dtype) if dtype else dtype
         return random_ops.random_uniform(
-            shape=shape,
-            low=self.minval,
-            high=self.maxval,
-            dtype=str(self.dtype) if dtype is None else dtype,
-        )
+            shape, self.minval, self.maxval, dtype=dtype)
 
 
 class TruncatedNormal(Initializer):
@@ -214,12 +210,10 @@ class TruncatedNormal(Initializer):
             The output tensor.
 
         """
+        dtype = dtype or self.dtype
+        dtype = str(dtype) if dtype else dtype
         return random_ops.truncated_normal(
-            shape=shape,
-            mean=self.mean,
-            std=self.stddev,
-            dtype=str(self.dtype) if dtype is None else dtype,
-        )
+            shape, self.mean, self.stddev, dtype=dtype)
 
 
 class VarianceScaling(Initializer):
@@ -275,18 +269,14 @@ class VarianceScaling(Initializer):
             The output tensor.
 
         """
+        dtype = dtype or self.dtype
+        dtype = str(dtype) if dtype else dtype
         if self.distribution == 'normal':
             return random_ops.glorot_normal(
-                shape=shape,
-                mode=self.mode,
-                scale=self.scale * 2.0,
-                dtype=str(self.dtype) if dtype is None else dtype)
+                shape, mode=self.mode, scale=self.scale * 2.0, dtype=dtype)
         else:
             return random_ops.glorot_uniform(
-                shape=shape,
-                mode=self.mode,
-                scale=self.scale * 3.0,
-                dtype=str(self.dtype) if dtype is None else dtype)
+                shape, mode=self.mode, scale=self.scale * 3.0, dtype=dtype)
 
 
 class GlorotNormal(VarianceScaling):
@@ -306,11 +296,7 @@ class GlorotNormal(VarianceScaling):
 
         """
         super(GlorotNormal, self).__init__(
-            scale=1.0,
-            mode='fan_out',
-            distribution='normal',
-            dtype=dtype,
-        )
+            scale=1.0, mode='fan_out', distribution='normal', dtype=dtype)
 
 
 class GlorotUniform(VarianceScaling):
@@ -331,11 +317,7 @@ class GlorotUniform(VarianceScaling):
 
         """
         super(GlorotUniform, self).__init__(
-            scale=1.,
-            mode='fan_out',
-            distribution='uniform',
-            dtype=dtype,
-        )
+            scale=1., mode='fan_out', distribution='uniform', dtype=dtype)
 
 
 class Ones(Initializer):
@@ -412,24 +394,6 @@ class Zeros(Initializer):
         """
         dtype = str(self.dtype) if dtype is None else dtype
         return constant_ops.fill(shape, value=0, dtype=dtype)
-
-
-def glorot_uniform_initializer(dtype='float32'):
-    return variance_scaling_initializer(
-        scale=1.0,
-        mode='fan_out',
-        distribution='uniform',
-        dtype=dtype,
-    )
-
-
-def glorot_normal_initializer(dtype='float32'):
-    return variance_scaling_initializer(
-        scale=1.0,
-        mode='fan_out',
-        distribution='normal',
-        dtype=dtype,
-    )
 
 
 # Aliases

@@ -32,7 +32,7 @@ def arange(
     device=None,
     requires_grad=False,
 ):
-    """Return a tensor of evenly spaced values within a interval.
+    """Return a tensor of evenly spaced values within an interval.
 
     Specify ``start`` and ``end`` to determine an interval:
 
@@ -290,7 +290,7 @@ def linspace(
     x = torch.linspace(2, 4, steps=3)  # [2, 3, 4]
     ```
 
-    More than one intervals are accepted to generate N-d coordinates:
+    More intervals are accepted to generate N-d coordinates:
 
     ```python
     x = torch.linspace([1, 2], [3, 4], steps=3, dim=0)  # [[1, 2], [2, 3], [3, 4]]

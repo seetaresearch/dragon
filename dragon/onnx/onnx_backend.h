@@ -7,10 +7,6 @@
  *
  *     <https://opensource.org/licenses/BSD-2-Clause>
  *
- * Codes are based on:
- *
- *     <https://github.com/pytorch/pytorch/blob/master/caffe2/onnx/backend.h>
- *
  * ------------------------------------------------------------
  */
 
@@ -18,12 +14,7 @@
 #define DRAGON_ONNX_ONNX_BACKEND_H_
 
 #include "dragon/core/common.h"
-
-#ifdef BUILD_RUNTIME
-#include "dragon/proto_lite/onnx.pb.h"
-#else
 #include "dragon/proto/onnx.pb.h"
-#endif
 
 #define ONNX_NAMESPACE onnx_dragon
 
