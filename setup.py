@@ -8,6 +8,7 @@
 #    <https://opensource.org/licenses/BSD-2-Clause>
 #
 # ------------------------------------------------------------
+"""Python setup script."""
 
 from __future__ import absolute_import
 from __future__ import division
@@ -81,7 +82,6 @@ class BuildPyCommand(setuptools.command.build_py.build_py):
     """Enhanced 'build_py' command."""
 
     def build_packages(self):
-        clean_builds()
         shutil.copytree('dragon/python', self.build_lib + '/dragon')
         shutil.copytree('dali', self.build_lib + '/dragon/vm/dali')
         shutil.copytree('keras', self.build_lib + '/dragon/vm/keras')

@@ -8,6 +8,29 @@ Constructors
 
 .. doxygenfunction:: dragon::Workspace::Workspace(const string &name)
 
+Public Properties
+-----------------
+
+data
+####
+.. doxygenfunction:: dragon::Workspace::data(size_t size, const string &name = "BufferShared")
+
+data
+####
+.. doxygenfunction:: dragon::Workspace::data(int64_t size, const string &name = "BufferShared")
+
+graphs
+######
+.. doxygenfunction:: dragon::Workspace::graphs
+
+name
+####
+.. doxygenfunction:: dragon::Workspace::name
+
+tensors
+#######
+.. doxygenfunction:: dragon::Workspace::tensors
+
 Public Functions
 ----------------
 
@@ -54,26 +77,6 @@ TryGetTensor
 UniqueName
 ##########
 .. doxygenfunction:: dragon::Workspace::UniqueName
-
-data
-####
-.. doxygenfunction:: dragon::Workspace::data(size_t size, const string &name = "BufferShared")
-
-data
-####
-.. doxygenfunction:: dragon::Workspace::data(int64_t size, const string &name = "BufferShared")
-
-graphs
-######
-.. doxygenfunction:: dragon::Workspace::graphs
-
-name
-####
-.. doxygenfunction:: dragon::Workspace::name
-
-tensors
-#######
-.. doxygenfunction:: dragon::Workspace::tensors
 
 .. raw:: html
 

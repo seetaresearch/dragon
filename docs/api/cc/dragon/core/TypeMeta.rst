@@ -9,6 +9,29 @@ Constructors
 .. doxygenfunction:: dragon::TypeMeta::TypeMeta()
 .. doxygenfunction:: dragon::TypeMeta::TypeMeta(const TypeMeta &src)
 
+Public Properties
+-----------------
+
+copy
+####
+.. doxygenfunction:: dragon::TypeMeta::copy
+
+ctor
+####
+.. doxygenfunction:: dragon::TypeMeta::ctor
+
+dtor
+####
+.. doxygenfunction:: dragon::TypeMeta::dtor
+
+id
+##
+.. doxygenfunction:: dragon::TypeMeta::id
+
+itemsize
+########
+.. doxygenfunction:: dragon::TypeMeta::itemsize
+
 Public Functions
 ----------------
 
@@ -39,26 +62,6 @@ Make
 Match
 #####
 .. doxygenfunction:: dragon::TypeMeta::Match
-
-copy
-####
-.. doxygenfunction:: dragon::TypeMeta::copy
-
-ctor
-####
-.. doxygenfunction:: dragon::TypeMeta::ctor
-
-dtor
-####
-.. doxygenfunction:: dragon::TypeMeta::dtor
-
-id
-##
-.. doxygenfunction:: dragon::TypeMeta::id
-
-itemsize
-########
-.. doxygenfunction:: dragon::TypeMeta::itemsize
 
 .. raw:: html
 

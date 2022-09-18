@@ -10,11 +10,11 @@ const static string METAL_SHADERS = R"(
 #include <metal_stdlib>
 using namespace metal;
 
-constant int int_arg1 [[function_constant(0)]];   // C
-constant int int_arg2 [[function_constant(1)]];   // H
-constant int int_arg3 [[function_constant(2)]];   // W
-constant int int_arg4 [[function_constant(3)]];   // out_h
-constant int int_arg5 [[function_constant(4)]];   // out_w
+constant int int_arg1 [[function_constant(0)]];     // C
+constant int int_arg2 [[function_constant(1)]];     // H
+constant int int_arg3 [[function_constant(2)]];     // W
+constant int int_arg4 [[function_constant(3)]];     // out_h
+constant int int_arg5 [[function_constant(4)]];     // out_w
 constant float float_arg1 [[function_constant(5)]]; // spatial_scale
 constant int int_arg6 [[function_constant(6)]];     // sampling_ratio
 constant bool bool_arg1 [[function_constant(7)]];   // aligned

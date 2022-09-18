@@ -16,20 +16,8 @@ State
 #####
 .. doxygenenum:: dragon::UnifiedMemory::State
 
-Public Functions
-----------------
-
-SwitchToCUDADevice
-##################
-.. doxygenfunction:: dragon::UnifiedMemory::SwitchToCUDADevice
-
-ToCPU
-#####
-.. doxygenfunction:: dragon::UnifiedMemory::ToCPU
-
-ToCUDA
-######
-.. doxygenfunction:: dragon::UnifiedMemory::ToCUDA
+Public Properties
+-----------------
 
 cpu_data
 ########
@@ -47,6 +35,26 @@ info
 ####
 .. doxygenfunction:: dragon::UnifiedMemory::info
 
+mps_data
+########
+.. doxygenfunction:: dragon::UnifiedMemory::mps_data
+
+order
+#####
+.. doxygenfunction:: dragon::UnifiedMemory::order
+
+size
+####
+.. doxygenfunction:: dragon::UnifiedMemory::size() const
+
+size
+####
+.. doxygenfunction:: dragon::UnifiedMemory::size(const string &device_type, int device_id) const
+
+state
+#####
+.. doxygenfunction:: dragon::UnifiedMemory::state
+
 mutable_cpu_data
 ################
 .. doxygenfunction:: dragon::UnifiedMemory::mutable_cpu_data
@@ -63,17 +71,32 @@ set_cuda_data
 #############
 .. doxygenfunction:: dragon::UnifiedMemory::set_cuda_data
 
-size
-####
-.. doxygenfunction:: dragon::UnifiedMemory::size() const
+set_order
+#########
+.. doxygenfunction:: dragon::UnifiedMemory::set_order
 
-size
-####
-.. doxygenfunction:: dragon::UnifiedMemory::size(const string &device_type, int device_id) const
+Public Functions
+----------------
 
-state
+SwitchToCUDADevice
+##################
+.. doxygenfunction:: dragon::UnifiedMemory::SwitchToCUDADevice
+
+SwitchToMPSDevice
+##################
+.. doxygenfunction:: dragon::UnifiedMemory::SwitchToMPSDevice
+
+ToCPU
 #####
-.. doxygenfunction:: dragon::UnifiedMemory::state
+.. doxygenfunction:: dragon::UnifiedMemory::ToCPU
+
+ToCUDA
+######
+.. doxygenfunction:: dragon::UnifiedMemory::ToCUDA
+
+ToMPS
+#####
+.. doxygenfunction:: dragon::UnifiedMemory::ToMPS
 
 .. raw:: html
 

@@ -51,5 +51,21 @@ class TestCuDNN(unittest.TestCase):
         self.assertEqual(torch.backends.cudnn.allow_tf32, False)
 
 
+class TestMPS(unittest.TestCase):
+    """Test MPS backend."""
+
+    def test_library(self):
+        _ = torch.backends.mps.is_built()
+        if torch.backends.mps.is_available():
+            self.assertEqual(torch.backends.mps.is_built(), True)
+
+
+class TestOpenMP(unittest.TestCase):
+    """Test OpenMP backend."""
+
+    def test_library(self):
+        _ = torch.backends.openmp.is_available()
+
+
 if __name__ == '__main__':
     run_tests()

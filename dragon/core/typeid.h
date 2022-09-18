@@ -32,7 +32,7 @@ struct DRAGON_API TypeRegister {
 };
 
 /*!
- * \brief Metaclass for all types.
+ * \brief The meta class for all types.
  *
  * TypeMeta is commonly used for type identification:
  *

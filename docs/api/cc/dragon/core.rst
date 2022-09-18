@@ -15,6 +15,9 @@ dragon/core
   `class Graph <core/Graph.html>`_
   : Graph to execute operators sequentially.
 
+  `class MPSContext <core/MPSContext.html>`_
+  : The mps device context.
+
   `class Operator <core/Operator.html>`_
   : The base operator class with context.
 
@@ -22,10 +25,10 @@ dragon/core
   : Class to record the schema of operator.
 
   `class Tensor <core/Tensor.html>`_
-  : The base tensor class, manage memory or not.
+  : The base tensor class.
 
   `class TypeMeta <core/TypeMeta.html>`_
-  : Metaclass for all types.
+  : The meta class for all types.
 
   `class UnifiedMemory <core/UnifiedMemory.html>`_
   : Memory to manage both the host and device data.
@@ -39,6 +42,7 @@ dragon/core
   core/CPUContext
   core/CUDAContext
   core/Graph
+  core/MPSContext
   core/Operator
   core/OpSchema
   core/Tensor

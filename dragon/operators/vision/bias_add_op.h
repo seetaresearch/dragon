@@ -23,7 +23,9 @@ class BiasAddOp final : public Operator<Context> {
   SIMPLE_CTOR_DTOR(BiasAddOp);
   USE_OPERATOR_FUNCTIONS;
 
-  void RunOnDevice() override;
+  void RunOnDevice() override {
+    DispatchHelper<dtypes::Floating>::Call(this, Input(0));
+  }
 
   template <typename T>
   void DoRunWithType();
@@ -35,7 +37,9 @@ class BiasAddGradientOp final : public Operator<Context> {
   SIMPLE_CTOR_DTOR(BiasAddGradientOp);
   USE_OPERATOR_FUNCTIONS;
 
-  void RunOnDevice() override;
+  void RunOnDevice() override {
+    DispatchHelper<dtypes::Floating>::Call(this, Input(0));
+  }
 
   template <typename T>
   void DoRunWithType();
@@ -58,7 +62,9 @@ class CuDNNBiasAddGradientOp final : public Operator<Context> {
     CuDNNDestroyTensorDesc(&input_desc_);
   }
 
-  void RunOnDevice() override;
+  void RunOnDevice() override {
+    DispatchHelper<dtypes::Floating>::Call(this, Input(0));
+  }
 
   template <typename T>
   void DoRunWithType();

@@ -12,6 +12,9 @@ vm.torch.cuda
   `get_device_capability(...) <cuda/get_device_capability.html>`_
   : Return the capability of specified device.
 
+  `get_device_name(...) <cuda/get_device_name.html>`_
+  : Return the name of specified device.
+
   `is_available(...) <cuda/is_available.html>`_
   : Return a bool reporting if runtime is available.
 
@@ -26,6 +29,7 @@ vm.torch.cuda
 
   cuda/current_device
   cuda/get_device_capability
+  cuda/get_device_name
   cuda/is_available
   cuda/set_device
   cuda/synchronize

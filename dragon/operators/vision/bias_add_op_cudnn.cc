@@ -39,11 +39,6 @@ void CuDNNBiasAddGradientOp<Context>::DoRunWithType() {
   }
 }
 
-template <class Context>
-void CuDNNBiasAddGradientOp<Context>::RunOnDevice() {
-  DispatchHelper<dtypes::Floating>::Call(this, Input(0));
-}
-
 DEPLOY_CUDNN_OPERATOR(BiasAddGradient);
 
 } // namespace dragon

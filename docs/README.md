@@ -16,10 +16,10 @@ Requirements
 pip install sphinx
 ```
 
-- sphinx_seeta_theme
+- sphinx-seeta-theme
 
 ```bash
-pip install sphinx_seeta_theme
+pip install sphinx-seeta-theme
 ```
 
 - doxygen (C++ API only)

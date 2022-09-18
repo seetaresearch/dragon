@@ -10,13 +10,21 @@ vm.torch.backends
   : The CUDA backend module.
 
   `Module cudnn <backends/cudnn.html>`_
-  : The cuDNN backend module.
+  : The CUDNN backend module.
+
+  `Module mps <backends/mps.html>`_
+  : The MPS backend module.
+
+  `Module openmp <backends/openmp.html>`_
+  : The OpenMP backend module.
 
 .. toctree::
   :hidden:
 
   backends/cuda
   backends/cudnn
+  backends/mps
+  backends/openmp
 
 .. raw:: html
 

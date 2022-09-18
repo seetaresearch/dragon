@@ -3988,6 +3988,11 @@ class TestVisionOps(OpTestCase):
         with dragon.device('cuda'):
             self.test_bias_add()
 
+    @unittest.skipIf(not TEST_MPS, 'MPS unavailable')
+    def test_bias_add_mps(self):
+        with dragon.device('mps'):
+            self.test_bias_add()
+
     def test_conv1d(self, prec=1e-3, test_nhwc=True):
         entries = [((2, 2, 2), (3, 2, 1), (3,), 1, 1, 0, 1, 1, 'NCHW'),
                    ((2, 2, 2), (3, 2, 3), (3,), 3, 1, 1, 1, 1, 'NCHW'),

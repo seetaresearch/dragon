@@ -8,16 +8,8 @@ Constructors
 
 .. doxygenfunction:: dragon::Graph::Graph(const GraphDef& def, Workspace* ws)
 
-Public Functions
-----------------
-
-Create
-######
-.. doxygenfunction:: dragon::Graph::Create
-
-Run
-###
-.. doxygenfunction:: dragon::Graph::Run
+Public Properties
+-----------------
 
 arg
 ###
@@ -31,13 +23,13 @@ def
 ###
 .. doxygenfunction:: dragon::Graph::def
 
-optimized_def
-#############
-.. doxygenfunction:: dragon::Graph::optimized_def
-
 name
 ####
 .. doxygenfunction:: dragon::Graph::name
+
+optimized_def
+#############
+.. doxygenfunction:: dragon::Graph::optimized_def
 
 phase
 #####
@@ -46,6 +38,17 @@ phase
 workspace
 #########
 .. doxygenfunction:: dragon::Graph::workspace
+
+Public Functions
+----------------
+
+Create
+######
+.. doxygenfunction:: dragon::Graph::Create
+
+Run
+###
+.. doxygenfunction:: dragon::Graph::Run
 
 .. raw:: html
 

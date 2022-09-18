@@ -18,6 +18,9 @@ dragon.cuda
   `get_device_capability(...) <cuda/get_device_capability.html>`_
   : Return the capability of specified device.
 
+  `get_device_name(...) <cuda/get_device_name.html>`_
+  : Return the name of specified device.
+
   `is_available(...) <cuda/is_available.html>`_
   : Return a bool reporting if runtime is available.
 
@@ -45,6 +48,7 @@ dragon.cuda
   cuda/Stream
   cuda/current_device
   cuda/get_device_capability
+  cuda/get_device_name
   cuda/is_available
   cuda/memory_allocated
   cuda/set_cublas_flags

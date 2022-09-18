@@ -22,6 +22,7 @@ try:
     import onnx
 except ImportError:
     onnx = None
+from packaging.version import parse as version_parse
 
 from dragon.core.autograph import context as eager_context
 from dragon.core.autograph.graph_lib import GraphLib
@@ -50,6 +51,9 @@ class DragonFrontend(object):
         (12, '1.7.0'),
         (13, '1.8.0'),
         (14, '1.9.0'),
+        (15, '1.10.0'),
+        (16, '1.11.0'),
+        (17, '1.12.0'),
     ])
 
     @classmethod
@@ -254,9 +258,9 @@ class DragonFrontend(object):
                     detail_msg += '  * Opset = %d, ONNX >= %s,\n' % (k, v)
                 raise ValueError(detail_msg + '}')
         onnx_version = cls.OPSET_VERSIONS[opset_version]
-        if onnx.__version__ < onnx_version:
+        if version_parse(onnx.__version__) < version_parse(onnx_version):
             raise RuntimeError(
-                'OpSet {} requires ONNX version >= {}. '
+                'OpSet {} requires ONNX version >= {} '
                 '({} currently installed.)'
                 .format(opset_version, onnx_version, onnx.__version__))
         return opset_version

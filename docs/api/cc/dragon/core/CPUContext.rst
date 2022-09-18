@@ -10,6 +10,29 @@ Constructors
 .. doxygenfunction:: dragon::CPUContext::CPUContext(unsigned int random_seed)
 .. doxygenfunction:: dragon::CPUContext::CPUContext(const DeviceOption &option)
 
+Public Properties
+-----------------
+
+device
+######
+.. doxygenfunction:: dragon::CPUContext::device
+
+rand_generator
+##############
+.. doxygenfunction:: dragon::CPUContext::rand_generator
+
+stream
+######
+.. doxygenfunction:: dragon::CPUContext::stream
+
+workspace
+#########
+.. doxygenfunction:: dragon::CPUContext::workspace
+
+set_stream
+##########
+.. doxygenfunction:: dragon::CPUContext::set_stream
+
 Public Functions
 ----------------
 
@@ -48,26 +71,6 @@ New
 SwitchToDevice
 ##############
 .. doxygenfunction:: dragon::CPUContext::SwitchToDevice
-
-device
-######
-.. doxygenfunction:: dragon::CPUContext::device
-
-rand_generator
-##############
-.. doxygenfunction:: dragon::CPUContext::rand_generator
-
-set_stream
-##########
-.. doxygenfunction:: dragon::CPUContext::set_stream
-
-stream
-######
-.. doxygenfunction:: dragon::CPUContext::stream
-
-workspace
-#########
-.. doxygenfunction:: dragon::CPUContext::workspace
 
 .. raw:: html
 

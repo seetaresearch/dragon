@@ -21,9 +21,6 @@ vm.dali.ops
   `class Cast <ops/Cast.html>`_
   : Cast the data type of input.
 
-  `class CGRecordReader <ops/CGRecordReader.html>`_
-  : Read examples from the cg-record file.
-
   `class CoinFlip <ops/CoinFlip.html>`_
   : Sample values from a bernoulli distribution.
 
@@ -101,7 +98,6 @@ vm.dali.ops
   ops/Brightness
   ops/BrightnessContrast
   ops/Cast
-  ops/CGRecordReader
   ops/CoinFlip
   ops/ColorSpaceConversion
   ops/ColorTwist

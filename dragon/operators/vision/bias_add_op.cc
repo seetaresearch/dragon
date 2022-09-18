@@ -31,11 +31,6 @@ void BiasAddOp<Context>::DoRunWithType() {
 }
 
 template <class Context>
-void BiasAddOp<Context>::RunOnDevice() {
-  DispatchHelper<dtypes::Floating>::Call(this, Input(0));
-}
-
-template <class Context>
 template <typename T>
 void BiasAddGradientOp<Context>::DoRunWithType() {
   auto &dY = Input(0), *dX = Output(0), *dB = Output(1);
@@ -67,19 +62,15 @@ void BiasAddGradientOp<Context>::DoRunWithType() {
   }
 }
 
-template <class Context>
-void BiasAddGradientOp<Context>::RunOnDevice() {
-  DispatchHelper<dtypes::Floating>::Call(this, Input(0));
-}
-
 DEPLOY_CPU_OPERATOR(BiasAdd);
-#ifdef USE_CUDA
-DEPLOY_CUDA_OPERATOR(BiasAdd);
-#endif
-
 DEPLOY_CPU_OPERATOR(BiasAddGradient);
 #ifdef USE_CUDA
+DEPLOY_CUDA_OPERATOR(BiasAdd);
 DEPLOY_CUDA_OPERATOR(BiasAddGradient);
+#endif
+#ifdef USE_MPS
+DEPLOY_MPS_OPERATOR(BiasAdd, BiasAdd);
+DEPLOY_MPS_OPERATOR(BiasAddGradient, BiasAddGradient);
 #endif
 
 OPERATOR_SCHEMA(BiasAdd)
