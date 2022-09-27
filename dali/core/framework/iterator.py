@@ -83,18 +83,18 @@ class Iterator(object):
     def copy_handler(self, tensors):
         """Handler to copy the data of tensors."""
         tensors = [t.as_tensor() for t in tensors]
-        # Prepare the collection if it not created.
+        # Prepare the collection if not created.
         if self._copies is None:
             self._copies = []
             for tensor in tensors:
                 self._copies.append(self.new_tensor(
                     shape=tensor.shape(),
-                    dtype=str(types.np_dtype(tensor.dtype())),
+                    dtype=types.np_dtype(tensor.dtype).__name__,
                     device=self.new_device(
                         device_type=('cuda' if isinstance(tensor, TensorGPU)
                                      else 'cpu'),
                         device_index=self._pipe.device_id)))
-        # Transfer the data: DALI => Storage
+        # Transfer the data: DALI -> Storage
         for i, tensor in enumerate(tensors):
             self._transfer_tensor(tensor, self._copies[i])
         return self._copies

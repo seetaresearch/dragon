@@ -13,7 +13,6 @@ from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
 
-import numpy
 try:
     from nvidia.dali import types as dali_types
 
@@ -59,8 +58,9 @@ try:
     NHWC = dali_types.NHWC
 
 except ImportError:
+    from dragon.core.util import deprecation
+    dali_types = deprecation.NotInstalled('nvidia.dali')
 
-    dali_types = None
     NO_DALI = -1
 
     # ConstantWrapper
@@ -107,4 +107,4 @@ except ImportError:
 
 def np_dtype(dali_dtype):
     """Convert the dali dtype into the numpy format."""
-    return numpy.dtype(dali_dtype)
+    return dali_types.to_numpy_type(dali_dtype)
