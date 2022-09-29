@@ -1,4 +1,5 @@
 #include "dragon/utils/math/transpose.h"
+#include "dragon/utils/math/types.h"
 #include "dragon/utils/math/utils.h"
 
 namespace dragon {
@@ -36,18 +37,21 @@ constant uint4 uint4_arg4 [[function_constant(5)]];
 constant SimpleArray<uint, 4, 2> uintarr_arg1 = {uint4_arg1, uint4_arg2};
 constant SimpleArray<uint, 4, 2> uintarr_arg2 = {uint4_arg3, uint4_arg4};
 
-template <typename T>
-kernel void Transpose(
-    device const T* x,
-    device T* y,
+template <typename T, int n>
+kernel void AlignedTranspose(
+    device const uint8_t* x,
+    device uint8_t* y,
     const uint yi [[thread_position_in_grid]]) {
+  typedef vec<T, n> ScalarT;
+  device const ScalarT* x_aligned = (device const ScalarT*)x;
+  device ScalarT* y_aligned = (device ScalarT*)y;
   uint xi = 0, tmp = yi, r;
   for (int d = uint_arg1 - 1; d >= 0; --d) {
     const int d1 = d / 4, d2 = d % 4;
     FIXED_DIVISOR_DIV_MOD(uintarr_arg2.data[d1][d2], tmp, &tmp, &r);
     xi += r * uintarr_arg1.data[d1][d2];
   }
-  y[yi] = x[xi];
+  y_aligned[yi] = x_aligned[xi];
 }
 
 template <typename T>
@@ -79,20 +83,16 @@ kernel void BatchTranspose(
   }
 }
 
-#define INSTANTIATE_KERNEL(T) \
-  template [[host_name("Transpose_"#T)]] \
-  kernel void Transpose(device const T*, device T*, uint);
+#define INSTANTIATE_KERNEL(T, n, L) \
+  template [[host_name("AlignedTranspose_"#L "B")]] \
+  kernel void AlignedTranspose<T, n>( \
+      device const uint8_t*, device uint8_t*, uint);
 
-INSTANTIATE_KERNEL(bool);
-INSTANTIATE_KERNEL(uint8_t);
-INSTANTIATE_KERNEL(int8_t);
-INSTANTIATE_KERNEL(int);
-INSTANTIATE_KERNEL(int64_t);
-INSTANTIATE_KERNEL(half);
-INSTANTIATE_KERNEL(float);
-#if defined(__HAVE_NATIVE_DOUBLE__)
-INSTANTIATE_KERNEL(double);
-#endif // defined(__HAVE_NATIVE_DOUBLE__)
+INSTANTIATE_KERNEL(uchar, 1, 1);
+INSTANTIATE_KERNEL(ushort, 1, 2);
+INSTANTIATE_KERNEL(uint, 1, 4);
+INSTANTIATE_KERNEL(uint, 2, 8);
+INSTANTIATE_KERNEL(uint, 4, 16);
 #undef INSTANTIATE_KERNEL
 
 #define INSTANTIATE_BATCH_KERNEL(T) \
@@ -123,21 +123,27 @@ void DispatchTranspose(
     T* y,
     MTLComputeCommandEncoder_t encoder,
     MPSContext* ctx) {
-  MPS_TENSOR_DIMS_CHECK(int(dims.size()));
-  vec64_t X_dims(dims.size()), X_strides(dims.size()), Y_dims(dims.size());
-  for (int i = 0; i < dims.size(); ++i) {
+  const int num_dims = dims.size();
+  MPS_TENSOR_DIMS_CHECK(num_dims);
+  auto aligned_size = sizeof(T);
+  if (axes.back() == num_dims - 1) {
+    aligned_size = utils::GetAlignedSize<T, 16>(dims.back());
+  }
+  vec64_t X_dims(num_dims), X_strides(num_dims), Y_dims(num_dims);
+  for (int i = 0; i < num_dims; ++i) {
     X_dims[i] = dims[i];
   }
+  X_dims[num_dims - 1] /= int64_t(aligned_size / sizeof(T));
   utils::ComputeTransposeStrides(
-      X_dims.size(), X_dims.data(), axes.data(), X_strides.data());
-  const uint arg1 = X_dims.size();
+      num_dims, X_dims.data(), axes.data(), X_strides.data());
+  const uint arg1 = num_dims;
   vector<uint32_t> arg2(MPS_TENSOR_MAX_DIMS, 0);
   vector<uint32_t> arg3(MPS_TENSOR_MAX_DIMS, 0);
-  for (int i = 0; i < dims.size(); ++i) {
+  for (int i = 0; i < num_dims; ++i) {
     arg2[i] = X_strides[i];
     arg3[i] = X_dims[axes[i]];
   }
-  auto kernel = MPSKernel::TypedString<T>("Transpose");
+  auto kernel = "AlignedTranspose_" + str::to(aligned_size) + "B";
   auto args = vector<MPSConstant>(
       {MPSConstant(&arg1, MTLDataTypeUInt, 0),
        MPSConstant(arg2.data(), MTLDataTypeUInt4, {2, 3}),

@@ -15,11 +15,11 @@ kernel void ApproxGelu(
     device const T* x,
     device T* y,
     const uint index [[thread_position_in_grid]]) {
-  const T val = x[index];
-  y[index] = fma(
+  const float val = float(x[index]);
+  y[index] = T(fma(
       val,
-      tanh(T(0.7978845608028654) * fma(T(0.044715), val * val * val, val)),
-      val) * T(0.5);
+      tanh(float(0.7978845608028654) * fma(float(0.044715), val * val * val, val)),
+      val) * 0.5f);
 }
 
 template <typename T>
@@ -28,13 +28,13 @@ kernel void ApproxGeluGrad(
     device const T* x,
     device T* dx, 
     const uint index [[thread_position_in_grid]]) {
-  const T val = x[index];
-  const T val2 = tanh(T(0.7978845608028654) *
-                      fma(T(0.044715), val * val * val, val));
-  dx[index] = dy[index] * T(0.5) * fma(
+  const float val = float(x[index]);
+  const float val2 = tanh(float(0.7978845608028654) *
+                          fma(float(0.044715), val * val * val, val));
+  dx[index] = T(float(dy[index]) * 0.5f * fma(
     fma(-val, val2 * val2, val),
-    fma(T(0.10703222440890037), val * val, T(0.7978845608028654)),
-    val2 + T(1));
+    fma(float(0.10703222440890037), val * val, float(0.7978845608028654)),
+    val2 + 1.f));
 }
 
 #define INSTANTIATE_KERNEL(name, T) \

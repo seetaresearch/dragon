@@ -39,13 +39,13 @@ void _TransposeImpl(
     T* y) {
   auto aligned_size = sizeof(T);
   if (axes.back() == num_dims - 1) {
-    aligned_size = utils::GetAlignedSize<T, 16>(dims.back(), x, y);
+    aligned_size = utils::GetAlignedSize<T, 16>(dims.back());
   }
   vec64_t X_dims(num_dims), X_strides(num_dims), Y_dims(num_dims);
   for (int i = 0; i < num_dims; ++i) {
     X_dims[i] = dims[i];
   }
-  X_dims[num_dims - 1] /= int(aligned_size / sizeof(T));
+  X_dims[num_dims - 1] /= int64_t(aligned_size / sizeof(T));
   utils::ComputeTransposeStrides(
       num_dims, X_dims.data(), axes.data(), X_strides.data());
   for (int i = 0; i < num_dims; ++i) {

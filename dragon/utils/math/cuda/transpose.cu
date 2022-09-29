@@ -123,13 +123,13 @@ void DispatchTranspose(
     CUDAContext* ctx) {
   auto aligned_size = sizeof(T);
   if (axes.back() == D - 1) {
-    aligned_size = utils::GetAlignedSize<T, 16>(dims[D - 1], x, y);
+    aligned_size = utils::GetAlignedSize<T, 16>(dims.back());
   }
   SimpleArray<int, D> X_dims, X_strides, Y_dims;
   for (int i = 0; i < D; ++i) {
     X_dims.data[i] = dims[i];
   }
-  X_dims.data[D - 1] /= int(aligned_size / sizeof(T));
+  X_dims.data[D - 1] /= int64_t(aligned_size / sizeof(T));
   utils::ComputeTransposeStrides(D, X_dims.data, axes.data(), X_strides.data);
   for (int i = 0; i < D; ++i) {
     Y_dims.data[i] = X_dims.data[axes[i]];
@@ -157,7 +157,7 @@ void DispatchBatchTranspose(
     CUDAContext* ctx) {
   const auto N = dims[0], H = dims[1], W = dims[2];
   if (sizeof(T) == 2 && H % 2 == 0 && W % 2 == 0) {
-    if (utils::GetAlignedSize<T, 4>(2, x, y) == 4) {
+    if (utils::GetAlignedSize<T, 4>(2) == 4) {
       const auto dh = utils::DivUp<int64_t>(H, kAlignedTileDim);
       const auto dw = utils::DivUp<int64_t>(W, kAlignedTileDim);
       _AlignedBatchTranspose<<<

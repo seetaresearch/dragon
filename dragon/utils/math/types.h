@@ -64,6 +64,15 @@ class AccumulatorType<double> {
 namespace utils {
 
 template <typename T, size_t kMaxAlignedSize>
+size_t GetAlignedSize(const int64_t N) {
+  size_t itemsize = sizeof(T), size = N * sizeof(T);
+  for (size_t v = kMaxAlignedSize; v > itemsize; v /= 2) {
+    if (size % v == 0) return v;
+  }
+  return itemsize;
+}
+
+template <typename T, size_t kMaxAlignedSize>
 size_t GetAlignedSize(const int64_t N, const T* x, T* y) {
   auto src = reinterpret_cast<std::uintptr_t>(x);
   auto dest = reinterpret_cast<std::uintptr_t>(y);
