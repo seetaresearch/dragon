@@ -561,6 +561,14 @@ scatter_add\_
 #############
 .. automethod:: dragon.vm.torch.Tensor.scatter_add_
 
+sigmoid
+#######
+.. automethod:: dragon.vm.torch.Tensor.sigmoid
+
+sigmoid\_
+#########
+.. automethod:: dragon.vm.torch.Tensor.sigmoid_
+
 sign
 ####
 .. automethod:: dragon.vm.torch.Tensor.sign
@@ -616,6 +624,14 @@ sub
 sub\_
 #####
 .. automethod:: dragon.vm.torch.Tensor.sub_
+
+tanh
+####
+.. automethod:: dragon.vm.torch.Tensor.tanh
+
+tanh\_
+######
+.. automethod:: dragon.vm.torch.Tensor.tanh_
 
 to
 ##
@@ -763,6 +779,7 @@ zero\_
 .. _torch.rsqrt(...): rsqrt.html
 .. _torch.scatter(...): scatter.html
 .. _torch.scatter_add(...): scatter_add.html
+.. _torch.sigmoid(...): sigmoid.html
 .. _torch.sign(...): sign.html
 .. _torch.sin(...): sin.html
 .. _torch.sort(...): sort.html
@@ -772,6 +789,7 @@ zero\_
 .. _torch.squeeze(...): squeeze.html
 .. _torch.sub(...): sub.html
 .. _torch.sum(...): sum.html
+.. _torch.tanh(...): tanh.html
 .. _torch.tensor(...): tensor.html
 .. _torch.topk(...): topk.html
 .. _torch.transpose(...): transpose.html

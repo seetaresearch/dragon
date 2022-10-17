@@ -231,6 +231,8 @@ DEPLOY_MPS_OPERATOR(AddGradient, AddGradient);
 DEPLOY_MPS_OPERATOR(SubGradient, SubGradient);
 DEPLOY_MPS_OPERATOR(MulGradient, MulGradient);
 DEPLOY_MPS_OPERATOR(DivGradient, DivGradient);
+DEPLOY_MPS_OPERATOR(MaximumGradient, MaximumGradient);
+DEPLOY_MPS_OPERATOR(MinimumGradient, MinimumGradient);
 #endif
 
 OPERATOR_SCHEMA(AbsGradient).NumInputs(2).NumOutputs(1);

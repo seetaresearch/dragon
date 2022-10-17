@@ -9,6 +9,9 @@ dragon.mps
   `current_device(...) <mps/current_device.html>`_
   : Return the index of current selected device.
 
+  `get_device_count(...) <mps/get_device_count.html>`_
+  : Return the number of available devices.
+
   `get_device_family(...) <mps/get_device_family.html>`_
   : Return the supported families of specified device.
 
@@ -28,6 +31,7 @@ dragon.mps
   :hidden:
 
   mps/current_device
+  mps/get_device_count
   mps/get_device_family
   mps/is_available
   mps/set_default_device

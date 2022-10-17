@@ -664,7 +664,7 @@ def clamp_(self, min=None, max=None):
 
 
 def cos(self):
-    r"""Compute the cos.
+    r"""Return a tensor taken the cos of elements.
 
     .. math:: \text{out} = \cos(\text{self})
 
@@ -796,7 +796,7 @@ def eq(self, other):
 
 
 def exp(self):
-    r"""Compute the exponential.
+    r"""Return a tensor taken the exponential of elements.
 
     .. math:: \text{out} = \exp(\text{self})
 
@@ -1282,7 +1282,7 @@ def le(self, other):
 
 
 def log(self):
-    r"""Compute the natural logarithm.
+    r"""Return a tensor taken the natural logarithm of elements.
 
     .. math:: \text{out} = \log(\text{self})
 
@@ -1565,7 +1565,7 @@ def matmul(self, tensor2):
 
 
 def max(self, dim=None, keepdim=False):
-    """Compute the max value of elements along the given dimension.
+    """Return the max of elements along the given dimension.
 
     Parameters
     ----------
@@ -1611,7 +1611,7 @@ def maximum(self, other):
 
 
 def mean(self, dim=None, keepdim=False):
-    """Compute the mean value of elements along the given dimension.
+    """Return the mean of elements along the given dimension.
 
     Parameters
     ----------
@@ -1634,7 +1634,7 @@ def mean(self, dim=None, keepdim=False):
 
 
 def min(self, dim=None, keepdim=False):
-    """Compute the min value of elements along the given dimension.
+    """Return the min of elements along the given dimension.
 
     Parameters
     ----------
@@ -1810,7 +1810,7 @@ def ne(self, other):
 
 
 def neg(self):
-    r"""Compute the element-wise negative.
+    r"""Return a tensor taken the negative of elements.
 
     .. math:: \text{out} = -\text{self}
 
@@ -1828,7 +1828,7 @@ def neg(self):
 
 
 def neg_(self):
-    r"""Compute the element-wise negative.
+    r"""Set to the negative of elements.
 
     .. math:: \text{self} = -\text{self}
 
@@ -1976,7 +1976,7 @@ def nonzero(self):
 
 
 def norm(self, p='fro', dim=None, keepdim=False, out=None, dtype=None):
-    """Compute the norm value of elements along the given dimension.
+    """Return the norm of elements along the given dimension.
 
     Parameters
     ----------
@@ -2062,12 +2062,14 @@ def permute_(self, *dims):
 
 
 def pow(self, exponent):
-    r"""Compute the power.
+    r"""Return a tensor taken the power of elements.
+
+    .. math:: \text{out} = \text{self}^{\text{exponent}}
 
     Parameters
     ----------
     exponent : Union[dragon.vm.torch.Tensor, number]
-            The exponent value.
+        The exponent value.
 
     Returns
     -------
@@ -2083,7 +2085,7 @@ def pow(self, exponent):
 
 
 def reciprocal(self):
-    r"""Compute the reciprocal.
+    r"""Return a tensor taken the reciprocal of elements.
 
     .. math:: \text{out} = \frac{1}{\text{self}}
 
@@ -2101,7 +2103,7 @@ def reciprocal(self):
 
 
 def reciprocal_(self):
-    r"""Compute the reciprocal.
+    r"""Set to the reciprocal of elements.
 
     .. math:: \text{self} = \frac{1}{\text{self}}
 
@@ -2237,7 +2239,7 @@ def round_(self):
 
 
 def rsqrt(self):
-    r"""Compute the reciprocal square root.
+    r"""Return a tensor taken the reciprocal square root of elements.
 
     .. math:: \text{out} = \frac{1}{\sqrt{\text{self}}}
 
@@ -2255,7 +2257,7 @@ def rsqrt(self):
 
 
 def rsqrt_(self):
-    r"""Compute the reciprocal square root.
+    r"""Set to the reciprocal square root of elements.
 
     .. math:: \text{self} = \frac{1}{\sqrt{\text{self}}}
 
@@ -2405,6 +2407,42 @@ def setitem(self, key, value):
             ndim=len(starts), starts=starts, sizes=sizes)
 
 
+def sigmoid(self):
+    r"""Return a tensor taken the sigmoid of elements.
+
+    .. math:: \text{out} = \frac{1}{1 + \exp(-\text{self})}
+
+    Returns
+    -------
+    dragon.vm.torch.Tensor
+        The output tensor.
+
+    See Also
+    --------
+    `torch.sigmoid(...)`_
+
+    """
+    return math_ops.sigmoid(self)
+
+
+def sigmoid_(self):
+    r"""Set to the sigmoid of elements.
+
+    .. math:: \text{self} = \frac{1}{1 + \exp(-\text{self})}
+
+    Returns
+    -------
+    dragon.vm.torch.Tensor
+        The output tensor.
+
+    See Also
+    --------
+    `torch.sigmoid(...)`_
+
+    """
+    return math_ops.sigmoid(self, self)
+
+
 def sign(self):
     r"""Return a tensor taken the sign indication of elements.
 
@@ -2454,7 +2492,7 @@ def sign_(self):
 
 
 def sin(self):
-    r"""Compute the sin.
+    r"""Return a tensor taken the sin of elements.
 
     .. math:: \text{out} = \sin(\text{self})
 
@@ -2520,7 +2558,7 @@ def split(self, split_size_or_sections, dim=0, copy=True):
 
 
 def sqrt(self):
-    r"""Compute the square root.
+    r"""Return a tensor taken the square root of elements.
 
     .. math:: \text{out} = \sqrt{\text{self}}
 
@@ -2538,7 +2576,7 @@ def sqrt(self):
 
 
 def sqrt_(self):
-    r"""Compute the square root.
+    r"""Set to the square root of elements.
 
     .. math:: \text{self} = \sqrt{\text{self}}
 
@@ -2556,7 +2594,7 @@ def sqrt_(self):
 
 
 def square(self):
-    r"""Compute the square of input.
+    r"""Return a tensor taken the square of elements.
 
     .. math:: \text{out} = \text{self}^{2}
 
@@ -2616,7 +2654,7 @@ def squeeze_(self, dim=None):
 
 
 def sum(self, dim=None, keepdim=False):
-    """Compute the sum value of elements along the given dimension.
+    """Return the sum value of elements along the given dimension.
 
     Parameters
     ----------
@@ -2682,6 +2720,44 @@ def sub_(self, other):
 
     """
     return math_ops.sub(self, other, self)
+
+
+def tanh(self):
+    r"""Return a tensor taken the tanh of elements.
+
+    .. math:: \text{out} = \frac{\exp(\text{self}) - \exp(-\text{self})}
+                                {\exp(\text{self}) + \exp(-\text{self})}
+
+    Returns
+    -------
+    dragon.vm.torch.Tensor
+        The output tensor.
+
+    See Also
+    --------
+    `torch.tanh(...)`_
+
+    """
+    return math_ops.tanh(self)
+
+
+def tanh_(self):
+    r"""Set to the tanh of elements.
+
+    .. math:: \text{self} = \frac{\exp(\text{self}) - \exp(-\text{self})}
+                                 {\exp(\text{self}) + \exp(-\text{self})}
+
+    Returns
+    -------
+    dragon.vm.torch.Tensor
+        The output tensor.
+
+    See Also
+    --------
+    `torch.tanh(...)`_
+
+    """
+    return math_ops.tanh(self, self)
 
 
 def topk(self, k, dim=-1, largest=True, sorted=True):
@@ -3038,7 +3114,7 @@ def where(self, condition, y):
 
 
 def var(self, dim=None, keepdim=False):
-    """Compute the variance value of elements along the given dimension.
+    """Return the variance of elements along the given dimension.
 
     Parameters
     ----------
@@ -3207,6 +3283,8 @@ Tensor.scatter = scatter
 Tensor.scatter_ = scatter_
 Tensor.scatter_add = scatter_add
 Tensor.scatter_add_ = scatter_add_
+Tensor.sigmoid = sigmoid
+Tensor.sigmoid_ = sigmoid_
 Tensor.sign = sign
 Tensor.sign_ = sign_
 Tensor.sin = sin
@@ -3220,6 +3298,8 @@ Tensor.squeeze_ = squeeze_
 Tensor.sum = sum
 Tensor.sub = sub
 Tensor.sub_ = sub_
+Tensor.tanh = tanh
+Tensor.tanh_ = tanh_
 Tensor.topk = topk
 Tensor.transpose = transpose
 Tensor.transpose_ = transpose_

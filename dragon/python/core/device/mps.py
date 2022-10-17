@@ -42,6 +42,18 @@ def is_available():
     return backend.mpsIsDriverSufficient()
 
 
+def get_device_count():
+    """Return the number of available devices.
+
+    Returns
+    -------
+    int
+        The number of devices.
+
+    """
+    return backend.mpsGetDeviceCount()
+
+
 def get_device_family(device_index=None):
     """Return the supported families of specified device.
 

@@ -749,6 +749,13 @@ class TestTensorOps(OpTestCase):
             except (NotImplementedError, ValueError, TypeError):
                 pass
 
+    def test_sigmoid(self):
+        data = np.array([0.2, 0.4, 0.6, 0.8, 1.], 'float32')
+        x = new_tensor(data)
+        self.assertEqual(x.sigmoid(), 1. / (1. + np.exp(-data)))
+        x.sigmoid_()
+        self.assertEqual(x, 1. / (1. + np.exp(-data)))
+
     def test_sign(self):
         data = np.array([-1., 0., 1.], 'float32')
         x = new_tensor(data)
@@ -830,6 +837,13 @@ class TestTensorOps(OpTestCase):
             y = x.sum(axis, keepdim=keepdims)
             result = np.sum(data, axis, keepdims=keepdims)
             self.assertEqual(y, result)
+
+    def test_tanh(self):
+        data = np.array([0.2, 0.4, 0.6, 0.8, 1.], 'float32')
+        x = new_tensor(data)
+        self.assertEqual(x.tanh(), np.tanh(data))
+        x.tanh_()
+        self.assertEqual(x, np.tanh(data))
 
     def test_tril(self):
         entries = [(3, 3), (3, 4,), (4, 3), (2, 3, 3)]

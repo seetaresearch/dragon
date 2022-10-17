@@ -88,7 +88,7 @@ class GroupNorm(Module):
             self.bias.data.zero_()
 
     def extra_repr(self):
-        return '{num_groups},' \
+        return '{num_groups}, ' \
                '{num_channels}, ' \
                'eps={eps}, ' \
                'affine={affine}' \

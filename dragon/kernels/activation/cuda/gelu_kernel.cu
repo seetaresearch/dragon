@@ -21,9 +21,7 @@ __global__ void _GeluGrad(const int N, const T* dy, const T* x, T* dx) {
     const AccT val = convert::To<AccT>(x[i]);
     dx[i] = convert::To<T>(
         convert::To<AccT>(dy[i]) *
-        fma(AccT(0.3989422804014327) * val,
-            exp(val * val * AccT(-0.5)),
-            normcdf(val)));
+        fma(AccT(0.398942) * val, exp(val * val * AccT(-0.5)), normcdf(val)));
   }
 }
 
@@ -32,9 +30,7 @@ __global__ void _ApproxGelu(const int N, const T* x, T* y) {
   CUDA_1D_KERNEL_LOOP(i, N) {
     const AccT val = convert::To<AccT>(x[i]);
     y[i] = fma(val,
-               tanh(
-                   AccT(0.7978845608028654) *
-                   fma(AccT(0.044715), val * val * val, val)),
+               tanh(AccT(0.797885) * fma(AccT(0.044715), val * val * val, val)),
                val) *
         AccT(0.5);
   }
@@ -44,12 +40,12 @@ template <typename T, typename AccT>
 __global__ void _ApproxGeluGrad(const int N, const T* dy, const T* x, T* dx) {
   CUDA_1D_KERNEL_LOOP(i, N) {
     const AccT val = convert::To<AccT>(x[i]);
-    const AccT val2 = tanh(
-        AccT(0.7978845608028654) * fma(AccT(0.044715), val * val * val, val));
+    const AccT val2 =
+        tanh(AccT(0.797885) * fma(AccT(0.044715), val * val * val, val));
     dx[i] = convert::To<T>(
         convert::To<AccT>(dy[i]) * AccT(0.5) *
         fma(fma(-val, val2 * val2, val),
-            fma(AccT(0.10703222440890037), val * val, AccT(0.7978845608028654)),
+            fma(AccT(0.107032), val * val, AccT(0.797885)),
             val2 + AccT(1)));
   }
 }

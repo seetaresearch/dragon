@@ -39,8 +39,10 @@ class TestCUDA(unittest.TestCase):
         dragon.cuda.set_cudnn_flags()
 
     def test_device(self):
+        count = dragon.cuda.get_device_count()
         name = dragon.cuda.get_device_name(0)
         major, _ = dragon.cuda.get_device_capability(0)
+        self.assertGreaterEqual(count, 1 if TEST_CUDA else 0)
         self.assertGreaterEqual(major, 1 if TEST_CUDA else 0)
         self.assertGreaterEqual(len(name), 1 if TEST_CUDA else 0)
         dragon.cuda.set_device(0)
@@ -60,8 +62,10 @@ class TestMPS(unittest.TestCase):
         dragon.mps.synchronize()
 
     def test_device(self):
+        count = dragon.mps.get_device_count()
         name = dragon.mps.get_device_name(0)
         family = dragon.mps.get_device_family(0)
+        self.assertGreaterEqual(count, 1 if TEST_MPS else 0)
         self.assertGreaterEqual(len(name), 1 if TEST_MPS else 0)
         self.assertTrue('Mac2' in family if TEST_MPS else True)
         dragon.mps.set_device(0)

@@ -1456,6 +1456,27 @@ def rsqrt(input, out=None):
     return _unary_func(input, 'Rsqrt', out)
 
 
+def sigmoid(input, out=None):
+    r"""Compute the sigmoid of input.
+
+    .. math:: \text{out} = \frac{1}{1 + \exp(-\text{input})}
+
+    Parameters
+    ----------
+    input : dragon.vm.torch.Tensor
+        The input tensor.
+    out : dragon.vm.torch.Tensor, optional
+        The output tensor.
+
+    Returns
+    -------
+    dragon.vm.torch.Tensor
+        The output tensor.
+
+    """
+    return _unary_func(input, 'Sigmoid', out)
+
+
 def sign(input, out=None):
     r"""Compute the sign indication of input.
 
@@ -1639,6 +1660,28 @@ def sum(input, dim=None, keepdim=False, out=None):
     return Function.apply(
         'ReduceSum', input.device, [input], outputs=[out],
         axes=dim, keepdims=keepdim)
+
+
+def tanh(input, out=None):
+    r"""Compute the tanh of input.
+
+    .. math:: \text{out} = \frac{\exp(\text{input}) - \exp(-\text{input})}
+                                {\exp(\text{input}) + \exp(-\text{input})}
+
+    Parameters
+    ----------
+    input : dragon.vm.torch.Tensor
+        The input tensor.
+    out : dragon.vm.torch.Tensor, optional
+        The output tensor.
+
+    Returns
+    -------
+    dragon.vm.torch.Tensor
+        The output tensor.
+
+    """
+    return _unary_func(input, 'Tanh', out)
 
 
 def var(input, dim=None, keepdim=False, out=None):

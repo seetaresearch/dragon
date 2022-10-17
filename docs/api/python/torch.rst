@@ -264,6 +264,9 @@ vm.torch
   `scatter_add(...) <torch/scatter_add.html>`_
   : Add elements along the given dimension of index.
 
+  `sigmoid(...) <torch/sigmoid.html>`_
+  : Compute the sigmoid of input.
+
   `sign(...) <torch/sign.html>`_
   : Compute the sign indication of input.
 
@@ -293,6 +296,9 @@ vm.torch
 
   `sum(...) <torch/sum.html>`_
   : Compute the sum value of elements along the given dimension.
+
+  `tanh(...) <torch/tanh.html>`_
+  : Compute the tanh of input.
 
   `tensor(...) <torch/tensor.html>`_
   : Create a tensor initializing from the given data.
@@ -424,6 +430,7 @@ vm.torch
   torch/scatter
   torch/scatter_add
   torch/set_grad_enabled
+  torch/sigmoid
   torch/sign
   torch/sin
   torch/sort
@@ -434,6 +441,7 @@ vm.torch
   torch/stack
   torch/sub
   torch/sum
+  torch/tanh
   torch/tensor
   torch/tile
   torch/topk

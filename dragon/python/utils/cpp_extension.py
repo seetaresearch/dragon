@@ -327,10 +327,17 @@ def _get_cuda_arch_flags(cflags=None):
                         '5.0', '5.2', '5.3',
                         '6.0', '6.1', '6.2',
                         '7.0', '7.2', '7.5',
-                        '8.0', '8.6']
+                        '8.0', '8.6',
+                        '8.9', '9.0']
     valid_arch_strings = supported_arches + [s + "+PTX" for s in supported_arches]
-    capability = _cuda.get_device_capability()
-    arch_list = ['{}.{}'.format(capability[0], capability[1])]
+    arch_list = []
+    for i in range(_cuda.get_device_count()):
+        capability = _cuda.get_device_capability(i)
+        arch = '{}.{}'.format(capability[0], capability[1])
+        if arch not in arch_list:
+            arch_list.append(arch)
+    arch_list = sorted(arch_list)
+    arch_list[-1] += '+PTX'
 
     flags = []
     for arch in arch_list:

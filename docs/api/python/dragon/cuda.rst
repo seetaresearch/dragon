@@ -18,6 +18,9 @@ dragon.cuda
   `get_device_capability(...) <cuda/get_device_capability.html>`_
   : Return the capability of specified device.
 
+  `get_device_count(...) <cuda/get_device_count.html>`_
+  : Return the number of available devices.
+
   `get_device_name(...) <cuda/get_device_name.html>`_
   : Return the name of specified device.
 
@@ -48,6 +51,7 @@ dragon.cuda
   cuda/Stream
   cuda/current_device
   cuda/get_device_capability
+  cuda/get_device_count
   cuda/get_device_name
   cuda/is_available
   cuda/memory_allocated

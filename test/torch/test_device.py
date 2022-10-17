@@ -25,8 +25,10 @@ class TestCUDA(unittest.TestCase):
     """Test cuda device."""
 
     def test_device(self):
+        count = torch.cuda.device_count()
         name = torch.cuda.get_device_name(0)
         major, _ = torch.cuda.get_device_capability(0)
+        self.assertGreaterEqual(count, 1 if TEST_CUDA else 0)
         self.assertGreaterEqual(major, 1 if TEST_CUDA else 0)
         self.assertGreaterEqual(len(name), 1 if TEST_CUDA else 0)
         torch.cuda.set_device(0)

@@ -41,6 +41,15 @@ void RegisterModule_mps(py::module& m) {
 #endif
   });
 
+  /*! \brief Return the number of available devices */
+  m.def("mpsGetDeviceCount", []() {
+#ifdef USE_MPS
+    return MTLGetDeviceCount();
+#else
+    return 0;
+#endif
+  });
+
   /*! \brief Return the capability of specified device */
   m.def("mpsGetDeviceName", [](int device_id) {
 #ifdef USE_MPS

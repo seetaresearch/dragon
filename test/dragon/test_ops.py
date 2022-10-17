@@ -2646,6 +2646,11 @@ class TestMathOps(OpTestCase):
         with dragon.device('cuda'):
             self.test_maximum()
 
+    @unittest.skipIf(not TEST_MPS, 'MPS unavailable')
+    def test_maximum_mps(self):
+        with dragon.device('mps'):
+            self.test_maximum()
+
     def test_mean(self):
         entries = [(0, True), (0, False),
                    (1, True), (1, False),
@@ -2718,6 +2723,11 @@ class TestMathOps(OpTestCase):
     @unittest.skipIf(not TEST_CUDA, 'CUDA unavailable')
     def test_minimum_cuda(self):
         with dragon.device('cuda'):
+            self.test_minimum()
+
+    @unittest.skipIf(not TEST_MPS, 'MPS unavailable')
+    def test_minimum_mps(self):
+        with dragon.device('mps'):
             self.test_minimum()
 
     def test_moments(self):

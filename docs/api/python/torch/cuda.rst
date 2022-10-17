@@ -9,6 +9,9 @@ vm.torch.cuda
   `current_device(...) <cuda/current_device.html>`_
   : Return the index of current selected device.
 
+  `device_count(...) <cuda/device_count.html>`_
+  : Return the number of available devices.
+
   `get_device_capability(...) <cuda/get_device_capability.html>`_
   : Return the capability of specified device.
 
@@ -28,6 +31,7 @@ vm.torch.cuda
   :hidden:
 
   cuda/current_device
+  cuda/device_count
   cuda/get_device_capability
   cuda/get_device_name
   cuda/is_available

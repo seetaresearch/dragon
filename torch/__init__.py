@@ -137,12 +137,14 @@ from dragon.vm.torch.core.ops.math_ops import pow
 from dragon.vm.torch.core.ops.math_ops import reciprocal
 from dragon.vm.torch.core.ops.math_ops import round
 from dragon.vm.torch.core.ops.math_ops import rsqrt
+from dragon.vm.torch.core.ops.math_ops import sigmoid
 from dragon.vm.torch.core.ops.math_ops import sign
 from dragon.vm.torch.core.ops.math_ops import sin
 from dragon.vm.torch.core.ops.math_ops import sqrt
 from dragon.vm.torch.core.ops.math_ops import square
 from dragon.vm.torch.core.ops.math_ops import sub
 from dragon.vm.torch.core.ops.math_ops import sum
+from dragon.vm.torch.core.ops.math_ops import tanh
 from dragon.vm.torch.core.ops.math_ops import var
 from dragon.vm.torch.core.ops.math_ops import var_mean
 from dragon.vm.torch.core.ops.random_ops import normal

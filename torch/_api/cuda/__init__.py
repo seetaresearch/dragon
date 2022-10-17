@@ -16,6 +16,7 @@ from __future__ import print_function as _print_function
 
 # Functions
 from dragon.vm.torch.core.cuda.device import current_device
+from dragon.vm.torch.core.cuda.device import device_count
 from dragon.vm.torch.core.cuda.device import get_device_capability
 from dragon.vm.torch.core.cuda.device import get_device_name
 from dragon.vm.torch.core.cuda.device import is_available

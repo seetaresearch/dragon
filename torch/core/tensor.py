@@ -825,7 +825,7 @@ class Tensor(object):
         return self
 
     def cos(self):
-        r"""Compute the cos.
+        r"""Return a tensor taken the cos of elements.
 
         .. math:: \text{out} = \cos(\text{self})
 
@@ -1003,7 +1003,7 @@ class Tensor(object):
         """
 
     def exp(self):
-        r"""Compute the exponential.
+        r"""Return a tensor taken the exponential of elements.
 
         .. math:: \text{out} = \exp(\text{self})
 
@@ -1448,7 +1448,7 @@ class Tensor(object):
         """
 
     def log(self):
-        r"""Compute the natural logarithm.
+        r"""Return a tensor taken the natural logarithm of elements.
 
         .. math:: \text{out} = \log(\text{self})
 
@@ -1692,7 +1692,7 @@ class Tensor(object):
         """
 
     def max(self, dim=None, keepdim=False):
-        """Compute the max value of elements along the given dimension.
+        """Return the max of elements along the given dimension.
 
         Parameters
         ----------
@@ -1749,7 +1749,7 @@ class Tensor(object):
         """
 
     def mean(self, dim=None, keepdim=False):
-        """Compute the mean value of elements along the given dimension.
+        """Return the mean of elements along the given dimension.
 
         Parameters
         ----------
@@ -1770,7 +1770,7 @@ class Tensor(object):
         """
 
     def min(self, dim=None, keepdim=False):
-        """Compute the min value of elements along the given dimension.
+        """Return the min of elements along the given dimension.
 
         Parameters
         ----------
@@ -1966,7 +1966,7 @@ class Tensor(object):
         """
 
     def neg(self):
-        r"""Compute the element-wise negative.
+        r"""Return a tensor taken the negative of elements.
 
         .. math:: \text{out} = -\text{self}
 
@@ -1982,7 +1982,7 @@ class Tensor(object):
         """
 
     def neg_(self):
-        r"""Compute the element-wise negative.
+        r"""Set to the negative of elements.
 
         .. math:: \text{self} = -\text{self}
 
@@ -2164,7 +2164,7 @@ class Tensor(object):
         """
 
     def norm(self, p='fro', dim=None, keepdim=False, out=None, dtype=None):
-        """Compute the norm value of elements along the given dimension.
+        """Return the norm of elements along the given dimension.
 
         Parameters
         ----------
@@ -2273,7 +2273,9 @@ class Tensor(object):
         """
 
     def pow(self, exponent):
-        """Compute the power.
+        r"""Return a tensor taken the power of elements.
+
+        .. math:: \text{out} = \text{self}^{\text{exponent}}
 
         Parameters
         ----------
@@ -2292,7 +2294,7 @@ class Tensor(object):
         """
 
     def reciprocal(self):
-        r"""Compute the reciprocal.
+        r"""Return a tensor taken the reciprocal of elements.
 
         .. math:: \text{out} = \frac{1}{\text{self}}
 
@@ -2308,7 +2310,7 @@ class Tensor(object):
         """
 
     def reciprocal_(self):
-        r"""Compute the reciprocal.
+        r"""Set to the reciprocal of elements.
 
         .. math:: \text{self} = \frac{1}{\text{self}}
 
@@ -2436,7 +2438,7 @@ class Tensor(object):
         """
 
     def rsqrt(self):
-        r"""Compute the reciprocal square root.
+        r"""Return a tensor taken the reciprocal square root of elements.
 
         .. math:: \text{out} = \frac{1}{\sqrt{\text{self}}}
 
@@ -2452,7 +2454,7 @@ class Tensor(object):
         """
 
     def rsqrt_(self):
-        r"""Compute the reciprocal square root.
+        r"""Set to the reciprocal square root of elements.
 
         .. math:: \text{self} = \frac{1}{\sqrt{\text{self}}}
 
@@ -2561,6 +2563,38 @@ class Tensor(object):
 
         """
 
+    def sigmoid(self):
+        r"""Return a tensor taken the sigmoid of elements.
+
+        .. math:: \text{out} = \frac{1}{1 + \exp(-self)}
+
+        Returns
+        -------
+        dragon.vm.torch.Tensor
+            The output tensor.
+
+        See Also
+        --------
+        `torch.sigmoid(...)`_
+
+        """
+
+    def sigmoid_(self):
+        r"""Set to the sigmoid of elements.
+
+        .. math:: \text{self} = \frac{1}{1 + \exp(-self)}
+
+        Returns
+        -------
+        dragon.vm.torch.Tensor
+            The output tensor.
+
+        See Also
+        --------
+        `torch.sigmoid(...)`_
+
+        """
+
     def sign(self):
         r"""Return a tensor taken the sign indication of elements.
 
@@ -2606,7 +2640,7 @@ class Tensor(object):
         """
 
     def sin(self):
-        r"""Compute the sin.
+        r"""Return a tensor taken the sin of elements.
 
         .. math:: \text{out} = \sin(\text{self})
 
@@ -2683,7 +2717,7 @@ class Tensor(object):
         """
 
     def sqrt(self):
-        r"""Compute the square root.
+        r"""Return a tensor taken the square root of elements.
 
         .. math:: \text{out} = \sqrt{\text{self}}
 
@@ -2699,7 +2733,7 @@ class Tensor(object):
         """
 
     def sqrt_(self):
-        r"""Compute the square root.
+        r"""Set to the square root of elements.
 
         .. math:: \text{self} = \sqrt{\text{self}}
 
@@ -2715,7 +2749,7 @@ class Tensor(object):
         """
 
     def square(self):
-        r"""Compute the square of input.
+        r"""Return a tensor taken the square of elements.
 
         .. math:: \text{out} = \text{self}^{2}
 
@@ -2769,7 +2803,7 @@ class Tensor(object):
         """
 
     def sum(self, dim=None, keepdim=False):
-        """Compute the sum value of elements along the given dimension.
+        """Return the sum of elements along the given dimension.
 
         Parameters
         ----------
@@ -2828,6 +2862,40 @@ class Tensor(object):
         See Also
         --------
         `torch.sub(...)`_
+
+        """
+
+    def tanh(self):
+        r"""Return a tensor taken the tanh of elements.
+
+        .. math:: \text{out} = \frac{\exp(\text{self}) - \exp(-\text{self})}
+                                    {\exp(\text{self}) + \exp(-\text{self})}
+
+        Returns
+        -------
+        dragon.vm.torch.Tensor
+            The output tensor.
+
+        See Also
+        --------
+        `torch.tanh(...)`_
+
+        """
+
+    def tanh_(self):
+        r"""Set to the tanh of elements.
+
+        .. math:: \text{self} = \frac{\exp(\text{self}) - \exp(-\text{self})}
+                                     {\exp(\text{self}) + \exp(-\text{self})}
+
+        Returns
+        -------
+        dragon.vm.torch.Tensor
+            The output tensor.
+
+        See Also
+        --------
+        `torch.tanh(...)`_
 
         """
 
@@ -3268,7 +3336,7 @@ class Tensor(object):
         """
 
     def var(self, dim=None, keepdim=False):
-        """Compute the variance value of elements along the given dimension.
+        """Return the variance of elements along the given dimension.
 
         Parameters
         ----------

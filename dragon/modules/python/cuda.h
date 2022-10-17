@@ -123,6 +123,15 @@ void RegisterModule_cuda(py::module& m) {
 #endif
   });
 
+  /*! \brief Return the number of available devices */
+  m.def("cudaGetDeviceCount", []() {
+#ifdef USE_CUDA
+    return CUDAGetDeviceCount();
+#else
+    return 0;
+#endif
+  });
+
   /*! \brief Return the name of specified device */
   m.def("cudaGetDeviceName", [](int device_id) {
 #ifdef USE_CUDA

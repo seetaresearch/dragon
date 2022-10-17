@@ -82,6 +82,18 @@ def get_device_capability(device_index=None):
     return backend.cudaGetDeviceCapability(device_index)
 
 
+def get_device_count():
+    """Return the number of available devices.
+
+    Returns
+    -------
+    int
+        The number of devices.
+
+    """
+    return backend.cudaGetDeviceCount()
+
+
 def get_device_name(device_index=None):
     """Return the name of specified device.
 

@@ -395,14 +395,15 @@ void MaximumGradientOp<Context>::DoRunWithType() {
       A.dims(), B.dims(), dY.dims(), A_broadcast_axes, B_broadcast_axes);
 
   // Scratch to save the intermediates.
-  size_t scratch_size = 0, scratch_offset = 0;
-  if (dA->has_name() || dB->has_name()) scratch_size += dY.size();
+  void *scratch, *mask;
+  if (dA->has_name() || dB->has_name()) {
+    mask = ctx()->workspace()->template data<bool, Context>(
+        dY.size(), "BufferShared2");
+  }
   if ((dA->has_name() && !A_broadcast_axes.empty()) ||
       (dB->has_name() && !B_broadcast_axes.empty())) {
-    scratch_size += (scratch_offset = dY.size() * sizeof(T));
+    scratch = ctx()->workspace()->template data<T, Context>(dY.size());
   }
-  void* scratch = ctx()->workspace()->template data<Context>(scratch_size);
-  auto* mask = (bool*)scratch + scratch_offset;
 
   if (dA->has_name()) {
     if (A_broadcast_axes.empty()) {
@@ -411,7 +412,7 @@ void MaximumGradientOp<Context>::DoRunWithType() {
             A.count(),
             A.template data<T, Context>(),
             B.template data<T, Context>(),
-            mask,
+            (bool*)mask,
             ctx());
       } else {
         math::Greater(
@@ -421,7 +422,7 @@ void MaximumGradientOp<Context>::DoRunWithType() {
             B.dims().data(),
             A.template data<T, Context>(),
             B.template data<T, Context>(),
-            mask,
+            (bool*)mask,
             ctx());
       }
       math::ApplyMask(
@@ -439,7 +440,7 @@ void MaximumGradientOp<Context>::DoRunWithType() {
           B.dims().data(),
           A.template data<T, Context>(),
           B.template data<T, Context>(),
-          mask,
+          (bool*)mask,
           ctx());
       math::ApplyMask(
           dY.count(),
@@ -467,7 +468,7 @@ void MaximumGradientOp<Context>::DoRunWithType() {
             A.count(),
             A.template data<T, Context>(),
             B.template data<T, Context>(),
-            mask,
+            (bool*)mask,
             ctx());
       } else {
         math::LessEqual(
@@ -477,7 +478,7 @@ void MaximumGradientOp<Context>::DoRunWithType() {
             B.dims().data(),
             A.template data<T, Context>(),
             B.template data<T, Context>(),
-            mask,
+            (bool*)mask,
             ctx());
       }
       math::ApplyMask(
@@ -495,7 +496,7 @@ void MaximumGradientOp<Context>::DoRunWithType() {
           B.dims().data(),
           A.template data<T, Context>(),
           B.template data<T, Context>(),
-          mask,
+          (bool*)mask,
           ctx());
       math::ApplyMask(
           dY.count(),
@@ -528,14 +529,15 @@ void MinimumGradientOp<Context>::DoRunWithType() {
       A.dims(), B.dims(), dY.dims(), A_broadcast_axes, B_broadcast_axes);
 
   // Scratch to save the intermediates.
-  size_t scratch_size = 0, scratch_offset = 0;
-  if (dA->has_name() || dB->has_name()) scratch_size += dY.size();
+  void *scratch, *mask;
+  if (dA->has_name() || dB->has_name()) {
+    const string buffer_name = "BufferShared2";
+    mask = ctx()->workspace()->template data<Context>(dY.size(), buffer_name);
+  }
   if ((dA->has_name() && !A_broadcast_axes.empty()) ||
       (dB->has_name() && !B_broadcast_axes.empty())) {
-    scratch_size += (scratch_offset = dY.size() * sizeof(T));
+    scratch = ctx()->workspace()->template data<T, Context>(dY.size());
   }
-  void* scratch = ctx()->workspace()->template data<Context>(scratch_size);
-  auto* mask = (bool*)scratch + scratch_offset;
 
   if (dA->has_name()) {
     if (A_broadcast_axes.empty()) {
@@ -544,7 +546,7 @@ void MinimumGradientOp<Context>::DoRunWithType() {
             A.count(),
             A.template data<T, Context>(),
             B.template data<T, Context>(),
-            mask,
+            (bool*)mask,
             ctx());
       } else {
         math::Less(
@@ -554,7 +556,7 @@ void MinimumGradientOp<Context>::DoRunWithType() {
             B.dims().data(),
             A.template data<T, Context>(),
             B.template data<T, Context>(),
-            mask,
+            (bool*)mask,
             ctx());
       }
       math::ApplyMask(
@@ -572,7 +574,7 @@ void MinimumGradientOp<Context>::DoRunWithType() {
           B.dims().data(),
           A.template data<T, Context>(),
           B.template data<T, Context>(),
-          mask,
+          (bool*)mask,
           ctx());
       math::ApplyMask(
           dY.count(),
@@ -600,7 +602,7 @@ void MinimumGradientOp<Context>::DoRunWithType() {
             A.count(),
             A.template data<T, Context>(),
             B.template data<T, Context>(),
-            mask,
+            (bool*)mask,
             ctx());
       } else {
         math::GreaterEqual(
@@ -610,7 +612,7 @@ void MinimumGradientOp<Context>::DoRunWithType() {
             B.dims().data(),
             A.template data<T, Context>(),
             B.template data<T, Context>(),
-            mask,
+            (bool*)mask,
             ctx());
       }
       math::ApplyMask(
@@ -628,7 +630,7 @@ void MinimumGradientOp<Context>::DoRunWithType() {
           B.dims().data(),
           A.template data<T, Context>(),
           B.template data<T, Context>(),
-          mask,
+          (bool*)mask,
           ctx());
       math::ApplyMask(
           dY.count(),
