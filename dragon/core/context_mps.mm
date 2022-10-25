@@ -54,6 +54,11 @@ vector<string> MPSObjects::GetDeviceFamily(int device_id) {
   if ([device supportsFamily:MTLGPUFamilyApple7]) {
     ret.push_back("Apple7"); // A14, M1
   }
+#if (MPS_OSX_VERSION_MAJOR >= 13)
+  if ([device supportsFamily:MTLGPUFamilyApple8]) {
+    ret.push_back("Apple8"); // A15, M2
+  }
+#endif
   return ret;
 }
 
@@ -101,6 +106,15 @@ void MPSStream::Encode(
               targetOperations:nil
              resultsDictionary:outputs
            executionDescriptor:execution_desc_];
+}
+
+void MPSStream::CreatePhiloxState(MPSGraph_t graph, uint32_t seed, int* state) {
+  @autoreleasepool {
+    auto* placeholder = [graph randomPhiloxStateTensorWithSeed:seed name:nil];
+    auto* outputs = @{placeholder : MPSCreateTensorData(state, placeholder)};
+    Encode(graph, @{}, outputs);
+  }
+  CommitAndWait();
 }
 
 MPSCommandBuffer_t MPSStream::command_buffer() {
@@ -256,7 +270,12 @@ MTLComputePipelineState_t MPSKernel::GetState(
       // Metal 2.0: function constant
       // Metal 2.2: host name attribute
       // Metal 2.3: int64 buffer
+      // Metal 3.0: float32 atomic
+#if (MPS_OSX_VERSION_MAJOR >= 13)
+      [options setLanguageVersion:MTLLanguageVersion3_0];
+#else
       [options setLanguageVersion:MTLLanguageVersion2_3];
+#endif
       [options setFastMathEnabled:YES];
       lib = [device newLibraryWithSource:source options:options error:&error];
       if (error) LOG(FATAL) << error.localizedDescription.UTF8String;
@@ -295,6 +314,9 @@ Workspace* MPSObjects::workspace(int device_id, int stream_id) {
   }
   if (!workspaces[stream_id]) {
     workspaces[stream_id] = new Workspace("");
+    workspaces[stream_id]
+        ->CreateTensor("MPSPhiloxStateInc")
+        ->template CopyFrom<int>(vec32_t({1, 1, 1, 1, 0, 0, 0}));
   }
   return workspaces[stream_id];
 }

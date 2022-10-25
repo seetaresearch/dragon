@@ -57,6 +57,9 @@ class DRAGON_API MPSStream {
   /*! \brief Encode the commands of given mps graph */
   void Encode(MPSGraph_t graph, NSDictionary_t inputs, NSDictionary_t outputs);
 
+  /*! \brief Create the philox state using given seed */
+  void CreatePhiloxState(MPSGraph_t graph, uint32_t seed, int* state);
+
   MTLCommandQueue_t command_queue() {
     return command_queue_;
   }

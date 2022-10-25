@@ -277,83 +277,76 @@ DEFINE_OP_REPEATED_ARG(double, LinSpaceOp, stop);
 #ifdef USE_MPS
 
 template <class Context>
-class MPSRandomUniformOp final : public InitializeOp<Context> {
+class MPSRandomOpBase : public InitializeOp<Context> {
  public:
-  MPSRandomUniformOp(const OperatorDef& def, Workspace* ws)
-      : InitializeOp<Context>(def, ws),
-        low_(OP_SINGLE_ARG(float, "low", 0.f)),
-        high_(OP_SINGLE_ARG(float, "high", 1.f)) {
+  MPSRandomOpBase(const OperatorDef& def, Workspace* ws)
+      : InitializeOp<Context>(def, ws) {
     graph_ = MPSCreateGraph();
   }
   USE_OPERATOR_FUNCTIONS;
 
-  ~MPSRandomUniformOp() {
+  ~MPSRandomOpBase() {
     NSReleaseObject(graph_);
   }
 
-  void RunOnDevice() override;
+  virtual void SetOpDesc(MPSGraphRandomOpDescriptor_t op_desc) {}
+
+  void RunOnDevice() override {
+    InitializeOp<Context>::RunOnDevice();
+    DispatchHelper<dtypes::Floating>::Call(this);
+  }
 
   template <typename T>
   void DoRunWithType();
+
+ protected:
+  MPSGraph_t graph_;
+  MPSGraphCache graph_cache_;
+};
+
+template <class Context>
+class MPSRandomUniformOp final : public MPSRandomOpBase<Context> {
+ public:
+  MPSRandomUniformOp(const OperatorDef& def, Workspace* ws)
+      : MPSRandomOpBase<Context>(def, ws),
+        low_(OP_SINGLE_ARG(float, "low", 0.f)),
+        high_(OP_SINGLE_ARG(float, "high", 1.f)) {}
+
+  void SetOpDesc(MPSGraphRandomOpDescriptor_t) override;
 
  protected:
   float low_, high_;
-  MPSGraph_t graph_;
-  MPSGraphCache graph_cache_;
 };
 
 template <class Context>
-class MPSRandomNormalOp final : public InitializeOp<Context> {
+class MPSRandomNormalOp final : public MPSRandomOpBase<Context> {
  public:
   MPSRandomNormalOp(const OperatorDef& def, Workspace* ws)
-      : InitializeOp<Context>(def, ws),
+      : MPSRandomOpBase<Context>(def, ws),
         mean_(OP_SINGLE_ARG(float, "mean", 0.f)),
-        std_(OP_SINGLE_ARG(float, "std", 1.f)) {
-    graph_ = MPSCreateGraph();
-  }
-  USE_OPERATOR_FUNCTIONS;
+        std_(OP_SINGLE_ARG(float, "std", 1.f)) {}
 
-  ~MPSRandomNormalOp() {
-    NSReleaseObject(graph_);
-  }
-
-  void RunOnDevice() override;
-
-  template <typename T>
-  void DoRunWithType();
+  void SetOpDesc(MPSGraphRandomOpDescriptor_t) override;
 
  protected:
   float mean_, std_;
-  MPSGraph_t graph_;
-  MPSGraphCache graph_cache_;
 };
 
 template <class Context>
-class MPSTruncatedNormalOp final : public InitializeOp<Context> {
+class MPSTruncatedNormalOp final : public MPSRandomOpBase<Context> {
  public:
   MPSTruncatedNormalOp(const OperatorDef& def, Workspace* ws)
-      : InitializeOp<Context>(def, ws),
+      : MPSRandomOpBase<Context>(def, ws),
         mean_(OP_SINGLE_ARG(float, "mean", 0.f)),
         std_(OP_SINGLE_ARG(float, "std", 1.f)) {
     low_ = OP_SINGLE_ARG(float, "low", mean_ - 2 * std_);
     high_ = OP_SINGLE_ARG(float, "high", mean_ + 2 * std_);
-    graph_ = MPSCreateGraph();
-  }
-  USE_OPERATOR_FUNCTIONS;
-
-  ~MPSTruncatedNormalOp() {
-    NSReleaseObject(graph_);
   }
 
-  void RunOnDevice() override;
-
-  template <typename T>
-  void DoRunWithType();
+  void SetOpDesc(MPSGraphRandomOpDescriptor_t) override;
 
  protected:
   float mean_, std_, low_, high_;
-  MPSGraph_t graph_;
-  MPSGraphCache graph_cache_;
 };
 
 #endif // USE_MPS

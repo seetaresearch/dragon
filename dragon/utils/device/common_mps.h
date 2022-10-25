@@ -34,6 +34,7 @@ typedef MPSGraph* MPSGraph_t;
 typedef MPSGraphTensor* MPSGraphTensor_t;
 typedef MPSGraphTensorData* MPSGraphTensorData_t;
 typedef MPSGraphExecutionDescriptor* MPSGraphExecutionDescriptor_t;
+typedef MPSGraphRandomOpDescriptor* MPSGraphRandomOpDescriptor_t;
 #else
 struct NSDictionary;
 struct MTLDevice;
@@ -49,6 +50,7 @@ struct MPSGraph;
 struct MPSGraphTensor;
 struct MPSGraphTensorData;
 struct MPSGraphExecutionDescriptor;
+struct MPSGraphRandomOpDescriptor;
 typedef NSDictionary* NSDictionary_t;
 typedef MTLDevice* MTLDevice_t;
 typedef MTLBuffer* MTLBuffer_t;
@@ -65,6 +67,7 @@ typedef MPSGraph* MPSGraph_t;
 typedef MPSGraphTensor* MPSGraphTensor_t;
 typedef MPSGraphTensorData* MPSGraphTensorData_t;
 typedef MPSGraphExecutionDescriptor* MPSGraphExecutionDescriptor_t;
+typedef MPSGraphRandomOpDescriptor* MPSGraphRandomOpDescriptor_t;
 #define nil NULL
 #endif
 

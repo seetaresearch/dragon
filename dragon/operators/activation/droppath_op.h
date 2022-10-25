@@ -68,9 +68,6 @@ class MPSDropPathOp final : public Operator<Context> {
   MPSDropPathOp(const OperatorDef& def, Workspace* ws)
       : Operator<Context>(def, ws) {
     graph_ = MPSCreateGraph();
-    for (int i = 0; i < 50; ++i) {
-      graph_seeds_.push(int64_t((*ctx()->rand_generator())()));
-    }
     INITIALIZE_OP_SINGLE_ARG(float, ratio, 0.2f);
   }
   USE_OPERATOR_FUNCTIONS;
@@ -90,7 +87,6 @@ class MPSDropPathOp final : public Operator<Context> {
   DECLARE_OP_SINGLE_ARG(float, ratio);
   MPSGraph_t graph_;
   MPSGraphCache graph_cache_;
-  std::queue<int64_t> graph_seeds_;
 };
 
 DEFINE_OP_SINGLE_ARG(float, MPSDropPathOp, ratio);

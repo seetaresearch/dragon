@@ -4,102 +4,80 @@
 
 namespace dragon {
 
-#define DISPATCH_FOR_DTYPES(name, dtypes) \
-  template <class Context>                \
-  void name##Op<Context>::RunOnDevice() { \
-    InitializeOp<Context>::RunOnDevice(); \
-    DispatchHelper<dtypes>::Call(this);   \
-  }
-
-DISPATCH_FOR_DTYPES(MPSRandomUniform, dtypes::Floating);
-DISPATCH_FOR_DTYPES(MPSRandomNormal, dtypes::Floating);
-DISPATCH_FOR_DTYPES(MPSTruncatedNormal, dtypes::Floating);
-#undef DISPATCH_FOR_DTYPES
-
 template <class Context>
 template <typename T>
-void MPSRandomUniformOp<Context>::DoRunWithType() {
+void MPSRandomOpBase<Context>::DoRunWithType() {
   auto* Y = Output(0);
   const auto N = Y->count();
-  const auto seed = static_cast<uint32_t>((*ctx()->rand_generator())());
-  auto* data = Y->template mutable_data<T, Context>();
-  if (@available(macOS 12.3, *)) {
-    @autoreleasepool {
-      auto* desc = [[MPSGraphRandomOpDescriptor new] autorelease];
-      desc.dataType = MPSGetDataType(Y->meta());
-      desc.distribution = MPSGraphRandomDistributionUniform;
-      desc.min = low_, desc.max = high_;
-      auto* placeholder = [graph_ randomTensorWithShape:MPSGetShape({N})
-                                             descriptor:desc
-                                                   seed:seed
-                                                   name:nil];
-      auto* outputs = @{
-        placeholder : MPSCreateTensorData(data, placeholder),
-      };
-      ctx()->mps_stream()->Encode(graph_, @{}, outputs);
-    }
-  } else {
-    auto* scratch = ctx()->workspace()->template data<float, Context>(N);
-    @autoreleasepool {
-      auto* placeholder = [graph_ randomUniformTensorWithShape:MPSGetShape({N})
-                                                          seed:seed
-                                                          name:nil];
-      auto* outputs = @{
-        placeholder : MPSCreateTensorData(scratch, placeholder),
-      };
-      ctx()->mps_stream()->Encode(graph_, @{}, outputs);
-    }
-    math::Cast(N, scratch, data, ctx());
-    math::Scale(N, high_ - low_, data, data, ctx());
-    math::Bias(N, low_, data, data, ctx());
+  const auto Y_dims = vec64_t({N});
+  const auto Y_meta = dtypes::to_meta(data_type());
+  const auto seed = def().device_option().random_seed();
+  const auto state_name = "MPSPhiloxState:" + str::to(seed);
+  auto* Y_state = ctx()->workspace()->CreateTensor(state_name);
+  auto* Y_state_inc = ctx()->workspace()->GetTensor("MPSPhiloxStateInc");
+
+  // Create philox state.
+  if (Y_state->empty()) {
+    ctx()->mps_stream()->CreatePhiloxState(
+        graph_,
+        seed,
+        Y_state->Reshape({7})->template mutable_data<int, Context>());
   }
+
+  auto placeholders = graph_cache_.GetPlaceholders(
+      {&Y_dims}, {&Y_meta}, [&](vector<MPSGraphTensor_t>& placeholders) {
+        auto* desc = [[MPSGraphRandomOpDescriptor new] autorelease];
+        desc.dataType = MPSGetDataType(Y_meta);
+        SetOpDesc(desc);
+        placeholders.emplace_back(MPSCreateTensor<int>(graph_, {7}));
+        auto* results = [graph_ randomTensorWithShape:MPSGetShape(Y_dims)
+                                           descriptor:desc
+                                          stateTensor:placeholders[0]
+                                                 name:nil];
+        placeholders.emplace_back(results[0]);
+      });
+
+  @autoreleasepool {
+    auto* inputs = @{
+      placeholders[0] : MPSCreateTensorData(
+          Y_state->template data<int, Context>(), placeholders[0]),
+    };
+    auto* outputs = @{
+      placeholders[1] : MPSCreateTensorData(
+          Y->template mutable_data<T, Context>(), placeholders[1]),
+    };
+    ctx()->mps_stream()->Encode(graph_, inputs, outputs);
+  }
+
+  // Update philox state.
+  math::Add(
+      4,
+      Y_state->template data<int, Context>(),
+      Y_state_inc->template data<int, Context>(),
+      Y_state->template mutable_data<int, Context>(),
+      ctx());
 }
 
 template <class Context>
-template <typename T>
-void MPSRandomNormalOp<Context>::DoRunWithType() {
-  auto* Y = Output(0);
-  const auto N = Y->count();
-  const auto seed = static_cast<uint32_t>((*ctx()->rand_generator())());
-  auto* data = Y->template mutable_data<T, Context>();
-  @autoreleasepool {
-    auto* desc = [[MPSGraphRandomOpDescriptor new] autorelease];
-    desc.dataType = MPSGetDataType(Y->meta());
-    desc.distribution = MPSGraphRandomDistributionNormal;
-    desc.mean = mean_, desc.standardDeviation = std_;
-    auto* placeholder = [graph_ randomTensorWithShape:MPSGetShape({N})
-                                           descriptor:desc
-                                                 seed:seed
-                                                 name:nil];
-    auto* outputs = @{
-      placeholder : MPSCreateTensorData(data, placeholder),
-    };
-    ctx()->mps_stream()->Encode(graph_, @{}, outputs);
-  }
+void MPSRandomUniformOp<Context>::SetOpDesc(
+    MPSGraphRandomOpDescriptor_t op_desc) {
+  op_desc.distribution = MPSGraphRandomDistributionUniform;
+  op_desc.min = low_, op_desc.max = high_;
 }
 
 template <class Context>
-template <typename T>
-void MPSTruncatedNormalOp<Context>::DoRunWithType() {
-  auto* Y = Output(0);
-  const auto N = Y->count();
-  const auto seed = static_cast<uint32_t>((*ctx()->rand_generator())());
-  auto* data = Y->template mutable_data<T, Context>();
-  @autoreleasepool {
-    auto* desc = [[MPSGraphRandomOpDescriptor new] autorelease];
-    desc.dataType = MPSGetDataType(Y->meta());
-    desc.distribution = MPSGraphRandomDistributionTruncatedNormal;
-    desc.min = low_, desc.max = high_;
-    desc.mean = mean_, desc.standardDeviation = std_;
-    auto* placeholder = [graph_ randomTensorWithShape:MPSGetShape({N})
-                                           descriptor:desc
-                                                 seed:seed
-                                                 name:nil];
-    auto* outputs = @{
-      placeholder : MPSCreateTensorData(data, placeholder),
-    };
-    ctx()->mps_stream()->Encode(graph_, @{}, outputs);
-  }
+void MPSRandomNormalOp<Context>::SetOpDesc(
+    MPSGraphRandomOpDescriptor_t op_desc) {
+  op_desc.distribution = MPSGraphRandomDistributionNormal;
+  op_desc.mean = mean_, op_desc.standardDeviation = std_;
+}
+
+template <class Context>
+void MPSTruncatedNormalOp<Context>::SetOpDesc(
+    MPSGraphRandomOpDescriptor_t op_desc) {
+  op_desc.distribution = MPSGraphRandomDistributionTruncatedNormal;
+  op_desc.min = low_, op_desc.max = high_;
+  op_desc.mean = mean_, op_desc.standardDeviation = std_;
 }
 
 DEPLOY_MPS_OPERATOR(RandomUniform, MPSRandomUniform);
