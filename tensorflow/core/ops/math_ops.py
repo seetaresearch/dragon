@@ -51,7 +51,7 @@ def abs(x, name=None):
 
 
 def add(x, y, name=None):
-    r"""Compute the element-wise addition.
+    r"""Compute element-wise addition.
 
     .. math:: \text{out} = \text{input1} + \text{input2}
 
@@ -81,7 +81,7 @@ def add(x, y, name=None):
 
 
 def add_n(inputs, name=None):
-    r"""Compute the element-wise sum on a sequence of inputs.
+    r"""Compute element-wise sum on a sequence of inputs.
 
     .. math:: \text{out} = \sum(\text{input}_{i})
 
@@ -186,7 +186,7 @@ def argmin(input, axis=None, name=None):
 
 
 def atan2(y, x, name=None):
-    r"""Compute the element-wise arc-tangent of two arguments.
+    r"""Compute element-wise arc-tangent of two arguments.
 
     .. math:: \text{out} = \text{arctan}(\frac{\text{input1}}{\text{input2}})
 
@@ -352,7 +352,7 @@ def cumsum(x, axis=0, exclusive=False, reverse=False, name=None):
 
 
 def divide(x, y, name=None):
-    r"""Compute the element-wise division.
+    r"""Compute element-wise division.
 
     .. math:: \text{out} = \text{input1} \div \text{input2}
 
@@ -384,7 +384,7 @@ def divide(x, y, name=None):
 
 
 def equal(x, y, name=None):
-    r"""Compute the element-wise equal comparison.
+    r"""Compute element-wise equal comparison.
 
     .. math:: \text{out} = (\text{input1} == \text{input2})
 
@@ -473,7 +473,7 @@ def floor(x, name=None):
 
 
 def greater(x, y, name=None):
-    r"""Compute the element-wise greater comparison.
+    r"""Compute element-wise greater comparison.
 
     .. math:: \text{out} = (\text{input1} > \text{input2})
 
@@ -506,7 +506,7 @@ def greater(x, y, name=None):
 
 
 def greater_equal(x, y, name=None):
-    r"""Compute the element-wise greater-equal comparison.
+    r"""Compute element-wise greater-equal comparison.
 
     .. math:: \text{out} = (\text{input1} >= \text{input2})
 
@@ -623,7 +623,7 @@ def is_nan(x, name=None):
 
 
 def less(x, y, name=None):
-    r"""Compute the element-wise less comparison.
+    r"""Compute element-wise less comparison.
 
     .. math:: \text{out} = (\text{input1} < \text{input2})
 
@@ -656,7 +656,7 @@ def less(x, y, name=None):
 
 
 def less_equal(x, y, name=None):
-    r"""Compute the element-wise less-equal comparison.
+    r"""Compute element-wise less-equal comparison.
 
     .. math:: \text{out} = (\text{input1} <= \text{input2})
 
@@ -759,7 +759,7 @@ def log(x, name=None):
 
 
 def matmul(a, b, name=None):
-    r"""Compute the matrix multiplication.
+    r"""Compute matrix multiplication.
 
     .. math:: \text{out} = a \times b
 
@@ -811,7 +811,7 @@ def matmul(a, b, name=None):
 
 
 def multiply(x, y, name=None):
-    r"""Compute the element-wise multiplication.
+    r"""Compute element-wise multiplication.
 
     .. math:: \text{out} = \text{input1} \times \text{input2}
 
@@ -843,7 +843,7 @@ def multiply(x, y, name=None):
 
 
 def negative(x, name=None):
-    r"""Compute the element-wise negative.
+    r"""Compute element-wise negative.
 
     .. math:: \text{out} = -\text{input}
 
@@ -869,7 +869,7 @@ def negative(x, name=None):
 
 
 def not_equal(x, y, name=None):
-    r"""Compute the element-wise not-equal comparison.
+    r"""Compute element-wise not-equal comparison.
 
     .. math:: \text{out} = (\text{input1} != \text{input2})
 
@@ -1402,7 +1402,7 @@ def square(x, name=None):
 
 
 def subtract(x, y, name=None):
-    r"""Compute the element-wise subtraction.
+    r"""Compute element-wise subtraction.
 
     .. math:: \text{out} = \text{input1} - \text{input2}
 

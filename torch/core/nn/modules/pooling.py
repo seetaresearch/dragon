@@ -14,12 +14,12 @@ from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
 
-from dragon.vm.torch.core.nn import functional as F
+from dragon.vm.torch.core.nn import functional
 from dragon.vm.torch.core.nn.modules.module import Module
 
 
 class _AdaptivePoolNd(Module):
-    """Apply the n-dimension adaptive pooling."""
+    """Apply n-dimension adaptive pooling."""
 
     def __init__(self, output_size):
         super(_AdaptivePoolNd, self).__init__()
@@ -30,7 +30,7 @@ class _AdaptivePoolNd(Module):
 
 
 class _PoolNd(Module):
-    """Apply the n-dimension pooling."""
+    """Apply n-dimension pooling."""
 
     def __init__(
         self,
@@ -54,7 +54,7 @@ class _PoolNd(Module):
 
 
 class AdaptiveAvgPool1d(_AdaptivePoolNd):
-    r"""Apply the 1d adaptive average pooling.
+    r"""Apply 1d adaptive average pooling.
 
     This module excepts the input size :math:`(N, C, H)`,
     and output size is :math:`(N, C, H_{\text{out}})`,
@@ -87,11 +87,11 @@ class AdaptiveAvgPool1d(_AdaptivePoolNd):
         super(AdaptiveAvgPool1d, self).__init__(output_size=output_size)
 
     def forward(self, input):
-        return F.adaptive_avg_pool1d(input, self.output_size)
+        return functional.adaptive_avg_pool1d(input, self.output_size)
 
 
 class AdaptiveAvgPool2d(_AdaptivePoolNd):
-    r"""Apply the 2d adaptive average pooling.
+    r"""Apply 2d adaptive average pooling.
 
     This module excepts the input size :math:`(N, C, H, W)`,
     and output size is :math:`(N, C, H_{\text{out}}, W_{\text{out}})`,
@@ -124,11 +124,11 @@ class AdaptiveAvgPool2d(_AdaptivePoolNd):
         super(AdaptiveAvgPool2d, self).__init__(output_size=output_size)
 
     def forward(self, input):
-        return F.adaptive_avg_pool2d(input, self.output_size)
+        return functional.adaptive_avg_pool2d(input, self.output_size)
 
 
 class AdaptiveAvgPool3d(_AdaptivePoolNd):
-    r"""Apply the 3d adaptive average pooling.
+    r"""Apply 3d adaptive average pooling.
 
     This module excepts the input size :math:`(N, C, D, H, W)`,
     and output size is :math:`(N, C, D_{\text{out}}, H_{\text{out}}, W_{\text{out}})`,
@@ -161,11 +161,11 @@ class AdaptiveAvgPool3d(_AdaptivePoolNd):
         super(AdaptiveAvgPool3d, self).__init__(output_size=output_size)
 
     def forward(self, input):
-        return F.adaptive_avg_pool3d(input, self.output_size)
+        return functional.adaptive_avg_pool3d(input, self.output_size)
 
 
 class AdaptiveMaxPool1d(_AdaptivePoolNd):
-    r"""Apply the 1d adaptive max pooling.
+    r"""Apply 1d adaptive max pooling.
 
     This module excepts the input size :math:`(N, C, H)`,
     and output size is :math:`(N, C, H_{\text{out}})`,
@@ -198,11 +198,11 @@ class AdaptiveMaxPool1d(_AdaptivePoolNd):
         super(AdaptiveMaxPool1d, self).__init__(output_size=output_size)
 
     def forward(self, input):
-        return F.adaptive_max_pool1d(input, self.output_size)
+        return functional.adaptive_max_pool1d(input, self.output_size)
 
 
 class AdaptiveMaxPool2d(_AdaptivePoolNd):
-    r"""Apply the 2d adaptive max pooling.
+    r"""Apply 2d adaptive max pooling.
 
     This module excepts the input size :math:`(N, C, H, W)`,
     and output size is :math:`(N, C, H_{\text{out}}, W_{\text{out}})`,
@@ -235,11 +235,11 @@ class AdaptiveMaxPool2d(_AdaptivePoolNd):
         super(AdaptiveMaxPool2d, self).__init__(output_size=output_size)
 
     def forward(self, input):
-        return F.adaptive_max_pool2d(input, self.output_size)
+        return functional.adaptive_max_pool2d(input, self.output_size)
 
 
 class AdaptiveMaxPool3d(_AdaptivePoolNd):
-    r"""Apply the 3d adaptive max pooling.
+    r"""Apply 3d adaptive max pooling.
 
     This module excepts the input size :math:`(N, C, D, H, W)`,
     and output size is :math:`(N, C, D_{\text{out}}, H_{\text{out}}, W_{\text{out}})`,
@@ -272,11 +272,11 @@ class AdaptiveMaxPool3d(_AdaptivePoolNd):
         super(AdaptiveMaxPool3d, self).__init__(output_size=output_size)
 
     def forward(self, input):
-        return F.adaptive_max_pool3d(input, self.output_size)
+        return functional.adaptive_max_pool3d(input, self.output_size)
 
 
 class AvgPool1d(_PoolNd):
-    r"""Apply the 1d average pooling.
+    r"""Apply 1d average pooling.
 
     This module excepts the input size :math:`(N, C, H)`,
     and output size is :math:`(N, C, H_{\text{out}})`,
@@ -326,7 +326,7 @@ class AvgPool1d(_PoolNd):
         )
 
     def forward(self, input):
-        return F.avg_pool1d(
+        return functional.avg_pool1d(
             input=input,
             kernel_size=self.kernel_size,
             stride=self.stride,
@@ -336,7 +336,7 @@ class AvgPool1d(_PoolNd):
 
 
 class AvgPool2d(_PoolNd):
-    r"""Apply the 2d average pooling.
+    r"""Apply 2d average pooling.
 
     This module excepts the input size :math:`(N, C, H, W)`,
     and output size is :math:`(N, C, H_{\text{out}}, W_{\text{out}})`,
@@ -386,7 +386,7 @@ class AvgPool2d(_PoolNd):
         )
 
     def forward(self, input):
-        return F.avg_pool2d(
+        return functional.avg_pool2d(
             input=input,
             kernel_size=self.kernel_size,
             stride=self.stride,
@@ -396,7 +396,7 @@ class AvgPool2d(_PoolNd):
 
 
 class AvgPool3d(_PoolNd):
-    r"""Apply the 3d average pooling.
+    r"""Apply 3d average pooling.
 
     This module excepts the input size :math:`(N, C, D, H, W)`,
     and output size is :math:`(N, C, D_{\text{out}}, H_{\text{out}}, W_{\text{out}})`,
@@ -446,7 +446,7 @@ class AvgPool3d(_PoolNd):
         )
 
     def forward(self, input):
-        return F.avg_pool3d(
+        return functional.avg_pool3d(
             input=input,
             kernel_size=self.kernel_size,
             stride=self.stride,
@@ -456,7 +456,7 @@ class AvgPool3d(_PoolNd):
 
 
 class MaxPool1d(_PoolNd):
-    r"""Apply the 1d max pooling.
+    r"""Apply 1d max pooling.
 
     This module excepts the input size :math:`(N, C, H)`,
     and output size is :math:`(N, C, H_{\text{out}})`,
@@ -506,7 +506,7 @@ class MaxPool1d(_PoolNd):
         )
 
     def forward(self, input):
-        return F.max_pool1d(
+        return functional.max_pool1d(
             input=input,
             kernel_size=self.kernel_size,
             stride=self.stride,
@@ -516,7 +516,7 @@ class MaxPool1d(_PoolNd):
 
 
 class MaxPool2d(_PoolNd):
-    r"""Apply the 2d max pooling.
+    r"""Apply 2d max pooling.
 
     This module excepts the input size :math:`(N, C, H, W)`,
     and output size is :math:`(N, C, H_{\text{out}}, W_{\text{out}})`,
@@ -566,7 +566,7 @@ class MaxPool2d(_PoolNd):
         )
 
     def forward(self, input):
-        return F.max_pool2d(
+        return functional.max_pool2d(
             input=input,
             kernel_size=self.kernel_size,
             stride=self.stride,
@@ -576,7 +576,7 @@ class MaxPool2d(_PoolNd):
 
 
 class MaxPool3d(_PoolNd):
-    r"""Apply the 3d max pooling.
+    r"""Apply 3d max pooling.
 
     This module excepts the input size :math:`(N, C, D, H, W)`,
     and output size is :math:`(N, C, D_{\text{out}}, H_{\text{out}}, W_{\text{out}})`,
@@ -626,7 +626,7 @@ class MaxPool3d(_PoolNd):
         )
 
     def forward(self, input):
-        return F.max_pool3d(
+        return functional.max_pool3d(
             input=input,
             kernel_size=self.kernel_size,
             stride=self.stride,

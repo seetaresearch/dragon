@@ -545,6 +545,16 @@ class TestTensorOps(OpTestCase):
         y = x.multinomial(2)
         self.assertEqual(y.shape, (2, 2))
 
+    def test_nan_to_num(self):
+        entries = [(0., None, None), (0., -1., None), (0., None, 1.), (0., -1., 1.)]
+        data = np.array([float('nan'), float('inf'), float('-inf'), 2.33], 'float32')
+        for nan, pos_inf, neg_inf in entries:
+            x = new_tensor(data)
+            self.assertEqual(x.nan_to_num(nan, pos_inf, neg_inf),
+                             np.nan_to_num(data, True, nan, pos_inf, neg_inf))
+            x.nan_to_num_(nan, pos_inf, neg_inf)
+            self.assertEqual(x, np.nan_to_num(data, True, nan, pos_inf, neg_inf))
+
     def test_narrow(self):
         data = arange((2, 3))
         x = new_tensor(data)

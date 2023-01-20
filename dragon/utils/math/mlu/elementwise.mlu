@@ -1,0 +1,520 @@
+#include "dragon/utils/math/elementwise.h"
+#include "dragon/utils/math/types.h"
+#include "dragon/utils/math/utils.h"
+
+namespace dragon {
+
+namespace math {
+
+#define BLOCK_THREADS 40960
+
+namespace {
+
+/*!
+ * Unary Function Kernels
+ */
+
+#define DEFINE_UNARY_KERNEL(name, VecFunc)                    \
+  template <typename T>                                       \
+  __mlu_entry__ void _##name(const int N, const T* x, T* y) { \
+    __nram__ T Y[BLOCK_THREADS];                              \
+    MLU_1D_KERNEL_LOOP(i, N, BLOCK_THREADS) {                 \
+      const int N_ram = std::min(N - i, BLOCK_THREADS);       \
+      __memcpy(Y, x + i, N_ram * sizeof(T), GDRAM2NRAM);      \
+      VecFunc(Y, Y, N_ram);                                   \
+      __memcpy(y + i, Y, N_ram * sizeof(T), NRAM2GDRAM);      \
+    }                                                         \
+  }
+
+DEFINE_UNARY_KERNEL(Abs, __bang_abs);
+DEFINE_UNARY_KERNEL(Square, __bang_square);
+DEFINE_UNARY_KERNEL(Floor, __bang_floor);
+DEFINE_UNARY_KERNEL(Round, __bang_round);
+DEFINE_UNARY_KERNEL(Exp, __bang_active_exp);
+DEFINE_UNARY_KERNEL(Log, __bang_active_log);
+DEFINE_UNARY_KERNEL(Sqrt, __bang_active_sqrt);
+DEFINE_UNARY_KERNEL(Rsqrt, __bang_active_rsqrt);
+DEFINE_UNARY_KERNEL(Inv, __bang_active_recip);
+DEFINE_UNARY_KERNEL(Sin, __bang_active_sin);
+DEFINE_UNARY_KERNEL(Cos, __bang_active_cos);
+DEFINE_UNARY_KERNEL(Not, __bang_not);
+DEFINE_UNARY_KERNEL(BitwiseNot, __bang_bnot);
+#undef DEFINE_UNARY_KERNEL
+
+template <typename T>
+__mlu_entry__ void _Neg(const int N, const T* x, T* y) {
+  __nram__ T Y[BLOCK_THREADS];
+  MLU_1D_KERNEL_LOOP(i, N, BLOCK_THREADS) {
+    const int N_ram = std::min(N - i, BLOCK_THREADS);
+    __memcpy(Y, x + i, N_ram * sizeof(T), GDRAM2NRAM);
+    __bang_mul_scalar(Y, Y, T(-1), N_ram);
+    __memcpy(y + i, Y, N_ram * sizeof(T), NRAM2GDRAM);
+  }
+}
+
+template <typename T>
+__mlu_entry__ void _Sign(const int N, const T* x, T* y) {
+  __nram__ T X[BLOCK_THREADS], Y[BLOCK_THREADS];
+  MLU_1D_KERNEL_LOOP(i, N, BLOCK_THREADS) {
+    const int N_ram = std::min(N - i, BLOCK_THREADS);
+    __memcpy(X, x + i, N_ram * sizeof(T), GDRAM2NRAM);
+    __bang_active_sign(Y, X, N_ram); // Miss zeros.
+    __bang_ne_scalar(X, X, T(0), N_ram);
+    __bang_mul(Y, Y, X, N_ram); // Restore zeros.
+    __memcpy(y + i, Y, N_ram * sizeof(T), NRAM2GDRAM);
+  }
+}
+
+template <typename T>
+__mlu_entry__ void _Set(const int N, const T value, T* y) {
+  __nram__ T Y[BLOCK_THREADS];
+  MLU_1D_KERNEL_LOOP(i, N, BLOCK_THREADS) {
+    const int N_ram = std::min(N - i, BLOCK_THREADS);
+    __bang_write_value(Y, N_ram, value);
+    __memcpy(y + i, Y, N_ram * sizeof(T), NRAM2GDRAM);
+  }
+}
+
+template <typename T>
+__mlu_entry__ void _Set_fallback(const int N, const T value, T* y) {
+  __nram__ T Y[BLOCK_THREADS];
+  MLU_1D_KERNEL_LOOP(i, N, BLOCK_THREADS) {
+    const int N_ram = std::min(N - i, BLOCK_THREADS); // clang-format off
+    for (int j = 0; j < N_ram; ++j) Y[j] = value; // clang-format on
+    __memcpy(y + i, Y, N_ram * sizeof(T), NRAM2GDRAM);
+  }
+}
+
+template <typename T>
+__mlu_entry__ void _ApplyMask(
+    const int N,
+    const float scale,
+    const uint8_t* mask,
+    const T* x,
+    T* y) {
+  __nram__ uint8_t M[BLOCK_THREADS];
+  __nram__ T X[BLOCK_THREADS], Y[BLOCK_THREADS];
+  MLU_1D_KERNEL_LOOP(i, N, BLOCK_THREADS) {
+    const int N_ram = std::min(N - i, BLOCK_THREADS);
+    __memcpy(Y, x + i, N_ram * sizeof(T), GDRAM2NRAM);
+    __memcpy(M, mask + i, N_ram * sizeof(uint8_t), GDRAM2NRAM);
+    math::utils::Convert(X, M, N_ram);
+    __bang_mul_scalar(X, X, T(scale), N_ram);
+    __bang_mul(Y, Y, X, N_ram);
+    __memcpy(y + i, Y, N_ram * sizeof(T), NRAM2GDRAM);
+  }
+}
+
+/*!
+ * Binary Function Kernels
+ */
+
+#define DEFINE_BINARY_KERNEL(name, Func, Expr)                            \
+  template <typename T>                                                   \
+  __mlu_entry__ void _##name(const int N, const T* a, const T* b, T* y) { \
+    __nram__ T X[BLOCK_THREADS], Y[BLOCK_THREADS];                        \
+    MLU_1D_KERNEL_LOOP(i, N, BLOCK_THREADS) {                             \
+      const int N_ram = std::min(N - i, BLOCK_THREADS);                   \
+      __memcpy(Y, a + i, N_ram * sizeof(T), GDRAM2NRAM);                  \
+      __memcpy(X, b + i, N_ram * sizeof(T), GDRAM2NRAM);                  \
+      Func(Y, Y, X, N_ram);                                               \
+      __memcpy(y + i, Y, N_ram * sizeof(T), NRAM2GDRAM);                  \
+    }                                                                     \
+  }                                                                       \
+  template <typename T>                                                   \
+  __mlu_entry__ void _##name##_fallback(                                  \
+      const int N, const T* a, const T* b, T* y) {                        \
+    __nram__ T X[BLOCK_THREADS], Y[BLOCK_THREADS];                        \
+    MLU_1D_KERNEL_LOOP(i, N, BLOCK_THREADS) {                             \
+      const int N_ram = std::min(N - i, BLOCK_THREADS);                   \
+      __memcpy(Y, a + i, N_ram * sizeof(T), GDRAM2NRAM);                  \
+      __memcpy(X, b + i, N_ram * sizeof(T), GDRAM2NRAM);                  \
+      for (int j = 0; j < N_ram; ++j) Y[j] Expr X[j];                     \
+      __memcpy(y + i, Y, N_ram * sizeof(T), NRAM2GDRAM);                  \
+    }                                                                     \
+  }
+
+DEFINE_BINARY_KERNEL(Add, __bang_add, +=);
+DEFINE_BINARY_KERNEL(Sub, __bang_sub, -=);
+DEFINE_BINARY_KERNEL(Mul, __bang_mul, *=);
+DEFINE_BINARY_KERNEL(Div, __bang_div, /=);
+DEFINE_BINARY_KERNEL(Maximum, __bang_nan_maximum, +=);
+DEFINE_BINARY_KERNEL(Minimum, __bang_nan_minimum, +=);
+#undef DEFINE_BINARY_KERNEL
+
+template <>
+__mlu_entry__ void
+_Div<half>(const int N, const half* a, const half* b, half* y) {
+  __nram__ half X[BLOCK_THREADS], Y[BLOCK_THREADS];
+  __nram__ float scratch[BLOCK_THREADS];
+  MLU_1D_KERNEL_LOOP(i, N, BLOCK_THREADS) {
+    const int N_ram = std::min(N - i, BLOCK_THREADS);
+    __memcpy(Y, a + i, N_ram * sizeof(half), GDRAM2NRAM);
+    __memcpy(X, b + i, N_ram * sizeof(half), GDRAM2NRAM);
+    __bang_half2float(scratch, X, N_ram);
+    __bang_recip(scratch, scratch, N_ram);
+    __bang_float2half_rn(X, scratch, N_ram);
+    __bang_mul(Y, Y, X, N_ram);
+    __memcpy(y + i, Y, N_ram * sizeof(half), NRAM2GDRAM);
+  }
+}
+
+template <>
+__mlu_entry__ void
+_Div<float>(const int N, const float* a, const float* b, float* y) {
+  __nram__ float X[BLOCK_THREADS], Y[BLOCK_THREADS];
+  MLU_1D_KERNEL_LOOP(i, N, BLOCK_THREADS) {
+    const int N_ram = std::min(N - i, BLOCK_THREADS);
+    __memcpy(Y, a + i, N_ram * sizeof(float), GDRAM2NRAM);
+    __memcpy(X, b + i, N_ram * sizeof(float), GDRAM2NRAM);
+    __bang_recip(X, X, N_ram);
+    __bang_mul(Y, Y, X, N_ram);
+    __memcpy(y + i, Y, N_ram * sizeof(float), NRAM2GDRAM);
+  }
+}
+
+/*
+ * Compare Kernels.
+ */
+
+#define DEFINE_BINARY_KERNEL(name, Func)                                     \
+  template <typename T>                                                      \
+  __mlu_entry__ void _##name(const int N, const T* a, const T* b, bool* y) { \
+    __nram__ T X[BLOCK_THREADS], Y[BLOCK_THREADS];                           \
+    __nram__ uint8_t Y_cast[BLOCK_THREADS];                                  \
+    MLU_1D_KERNEL_LOOP(i, N, BLOCK_THREADS) {                                \
+      const int N_ram = std::min(N - i, BLOCK_THREADS);                      \
+      __memcpy(Y, a + i, N_ram * sizeof(T), GDRAM2NRAM);                     \
+      __memcpy(X, b + i, N_ram * sizeof(T), GDRAM2NRAM);                     \
+      Func(Y, Y, X, N_ram);                                                  \
+      math::utils::Convert(Y_cast, Y, N_ram);                                \
+      __memcpy(y + i, Y_cast, N_ram, NRAM2GDRAM);                            \
+    }                                                                        \
+  }
+
+DEFINE_BINARY_KERNEL(Equal, __bang_eq);
+DEFINE_BINARY_KERNEL(NotEqual, __bang_ne);
+DEFINE_BINARY_KERNEL(Less, __bang_lt);
+DEFINE_BINARY_KERNEL(LessEqual, __bang_le);
+DEFINE_BINARY_KERNEL(Greater, __bang_gt);
+DEFINE_BINARY_KERNEL(GreaterEqual, __bang_ge);
+#undef DEFINE_BINARY_KERNEL
+
+} // namespace
+
+#define DEFINE_UNARY_FUNC(name, InputT, OutputT)                    \
+  template <>                                                       \
+  DRAGON_API void name<InputT, MLUContext>(                         \
+      const int N, const InputT* x, OutputT* y, MLUContext* ctx) {  \
+    _##name<<<                                                      \
+        MLU_BLOCKS(N, BLOCK_THREADS),                               \
+        CNRT_FUNC_TYPE_BLOCK,                                       \
+        ctx->mlu_stream()>>>(                                       \
+        N,                                                          \
+        reinterpret_cast<const math::ScalarType<InputT>::type*>(x), \
+        reinterpret_cast<math::ScalarType<OutputT>::type*>(y));     \
+  }
+
+DEFINE_UNARY_FUNC(Neg, int8_t, int8_t);
+DEFINE_UNARY_FUNC(Neg, int, int);
+DEFINE_UNARY_FUNC(Neg, float16, float16);
+DEFINE_UNARY_FUNC(Neg, float, float);
+DEFINE_UNARY_FUNC(Abs, int8_t, int8_t);
+DEFINE_UNARY_FUNC(Abs, int, int);
+DEFINE_UNARY_FUNC(Abs, float16, float16);
+DEFINE_UNARY_FUNC(Abs, float, float);
+DEFINE_UNARY_FUNC(Square, float16, float16);
+DEFINE_UNARY_FUNC(Square, float, float);
+DEFINE_UNARY_FUNC(Sign, float16, float16);
+DEFINE_UNARY_FUNC(Sign, float, float);
+DEFINE_UNARY_FUNC(Exp, float16, float16);
+DEFINE_UNARY_FUNC(Exp, float, float);
+DEFINE_UNARY_FUNC(Log, float16, float16);
+DEFINE_UNARY_FUNC(Log, float, float);
+DEFINE_UNARY_FUNC(Inv, float16, float16);
+DEFINE_UNARY_FUNC(Inv, float, float);
+DEFINE_UNARY_FUNC(Sqrt, float16, float16);
+DEFINE_UNARY_FUNC(Sqrt, float, float);
+DEFINE_UNARY_FUNC(Rsqrt, float16, float16);
+DEFINE_UNARY_FUNC(Rsqrt, float, float);
+DEFINE_UNARY_FUNC(Sin, float16, float16);
+DEFINE_UNARY_FUNC(Sin, float, float);
+DEFINE_UNARY_FUNC(Cos, float16, float16);
+DEFINE_UNARY_FUNC(Cos, float, float);
+DEFINE_UNARY_FUNC(Floor, float, float);
+DEFINE_UNARY_FUNC(Round, float, float);
+#undef DEFINE_UNARY_FUNC
+
+#define DEFINE_UNARY_FUNC(name, InputT, OutputT)                              \
+  template <>                                                                 \
+  DRAGON_API void name<InputT, MLUContext>(                                   \
+      const int N, const InputT* x, OutputT* y, MLUContext* ctx) {            \
+    LOG(FATAL) << "Unsupported BANG type for <" << #name                      \
+               << "Kernel>: " << dtypes::to_string(TypeMeta::Make<InputT>()); \
+  }
+
+DEFINE_UNARY_FUNC(Neg, int64_t, int64_t);
+DEFINE_UNARY_FUNC(Neg, double, double);
+DEFINE_UNARY_FUNC(Abs, int64_t, int64_t);
+DEFINE_UNARY_FUNC(Abs, double, double);
+DEFINE_UNARY_FUNC(Square, uint8_t, uint8_t);
+DEFINE_UNARY_FUNC(Square, int8_t, int8_t);
+DEFINE_UNARY_FUNC(Square, int, int);
+DEFINE_UNARY_FUNC(Square, int64_t, int64_t);
+DEFINE_UNARY_FUNC(Square, double, double);
+DEFINE_UNARY_FUNC(Sign, uint8_t, uint8_t);
+DEFINE_UNARY_FUNC(Sign, int8_t, int8_t);
+DEFINE_UNARY_FUNC(Sign, int, int);
+DEFINE_UNARY_FUNC(Sign, int64_t, int64_t);
+DEFINE_UNARY_FUNC(Sign, double, double);
+DEFINE_UNARY_FUNC(Exp, double, double);
+DEFINE_UNARY_FUNC(Log, double, double);
+DEFINE_UNARY_FUNC(Inv, double, double);
+DEFINE_UNARY_FUNC(Sqrt, double, double);
+DEFINE_UNARY_FUNC(Rsqrt, double, double);
+DEFINE_UNARY_FUNC(Sin, double, double);
+DEFINE_UNARY_FUNC(Cos, double, double);
+DEFINE_UNARY_FUNC(Ceil, float16, float16);
+DEFINE_UNARY_FUNC(Ceil, float, float);
+DEFINE_UNARY_FUNC(Ceil, double, double);
+DEFINE_UNARY_FUNC(Floor, float16, float16);
+DEFINE_UNARY_FUNC(Floor, double, double);
+DEFINE_UNARY_FUNC(Round, float16, float16);
+DEFINE_UNARY_FUNC(Round, double, double);
+#undef DEFINE_UNARY_FUNC
+
+#define DEFINE_SET_FUNC(T, ScalarT, Kernel)                                \
+  template <>                                                              \
+  DRAGON_API void Set<T, MLUContext>(                                      \
+      const int N, const T value, T* y, MLUContext* ctx) {                 \
+    if (value == T(0)) {                                                   \
+      CNRT_CHECK(cnrtMemsetAsync(y, 0, sizeof(T) * N, ctx->mlu_stream())); \
+    } else {                                                               \
+      Kernel<<<                                                            \
+          MLU_BLOCKS(N, BLOCK_THREADS),                                    \
+          CNRT_FUNC_TYPE_BLOCK,                                            \
+          ctx->mlu_stream()>>>(                                            \
+          N,                                                               \
+          (*reinterpret_cast<const ScalarT*>(&value)),                     \
+          reinterpret_cast<ScalarT*>(y));                                  \
+    }                                                                      \
+  }
+
+template <>
+DRAGON_API void Set<float16, MLUContext>(
+    const int N,
+    const float16 value,
+    float16* y,
+    MLUContext* ctx) {
+  if (value.x == (unsigned short)0) {
+    CNRT_CHECK(cnrtMemsetAsync(y, 0, sizeof(float16) * N, ctx->mlu_stream()));
+  } else {
+    _Set<<<
+        MLU_BLOCKS(N, BLOCK_THREADS),
+        CNRT_FUNC_TYPE_BLOCK,
+        ctx->mlu_stream()>>>(
+        N,
+        (*reinterpret_cast<const half*>(&value)),
+        reinterpret_cast<half*>(y));
+  }
+}
+
+DEFINE_SET_FUNC(bool, int8_t, _Set);
+DEFINE_SET_FUNC(uint8_t, int8_t, _Set);
+DEFINE_SET_FUNC(int8_t, int8_t, _Set);
+DEFINE_SET_FUNC(int, int, _Set);
+DEFINE_SET_FUNC(int64_t, int64_t, _Set_fallback);
+DEFINE_SET_FUNC(float, float, _Set);
+DEFINE_SET_FUNC(double, double, _Set_fallback);
+#undef DEFINE_SET_FUNC
+
+#define DEFINE_APPLY_MASK_FUNC(T)                              \
+  template <>                                                  \
+  DRAGON_API void ApplyMask<T, MLUContext>(                    \
+      const int N,                                             \
+      const float scale,                                       \
+      const uint8_t* mask,                                     \
+      const T* x,                                              \
+      T* y,                                                    \
+      MLUContext* ctx) {                                       \
+    _ApplyMask<<<                                              \
+        MLU_BLOCKS(N, BLOCK_THREADS),                          \
+        CNRT_FUNC_TYPE_BLOCK,                                  \
+        ctx->mlu_stream()>>>(                                  \
+        N,                                                     \
+        scale,                                                 \
+        mask,                                                  \
+        reinterpret_cast<const math::ScalarType<T>::type*>(x), \
+        reinterpret_cast<math::ScalarType<T>::type*>(y));      \
+  }
+
+DEFINE_APPLY_MASK_FUNC(int8_t);
+DEFINE_APPLY_MASK_FUNC(int);
+DEFINE_APPLY_MASK_FUNC(float16);
+DEFINE_APPLY_MASK_FUNC(float);
+#undef DEFINE_APPLY_MASK_FUNC
+
+#define DEFINE_APPLY_MASK_FUNC(T)                                 \
+  template <>                                                     \
+  DRAGON_API void ApplyMask<T, MLUContext>(                       \
+      const int N,                                                \
+      const float scale,                                          \
+      const uint8_t* mask,                                        \
+      const T* x,                                                 \
+      T* y,                                                       \
+      MLUContext* ctx) {                                          \
+    LOG(FATAL) << "Unsupported BANG type for <ApplyMaskKernel>: " \
+               << dtypes::to_string(TypeMeta::Make<T>());         \
+  }
+
+DEFINE_APPLY_MASK_FUNC(uint8_t);
+DEFINE_APPLY_MASK_FUNC(int64_t);
+DEFINE_APPLY_MASK_FUNC(double);
+#undef DEFINE_APPLY_MASK_FUNC
+
+#define DEFINE_BINARY_FUNC(name, InputT, OutputT, Kernel)           \
+  template <>                                                       \
+  DRAGON_API void name<InputT, MLUContext>(                         \
+      const int N,                                                  \
+      const InputT* a,                                              \
+      const InputT* b,                                              \
+      OutputT* y,                                                   \
+      MLUContext* ctx) {                                            \
+    Kernel<<<                                                       \
+        MLU_BLOCKS(N, BLOCK_THREADS),                               \
+        CNRT_FUNC_TYPE_BLOCK,                                       \
+        ctx->mlu_stream()>>>(                                       \
+        N,                                                          \
+        reinterpret_cast<const math::ScalarType<InputT>::type*>(a), \
+        reinterpret_cast<const math::ScalarType<InputT>::type*>(b), \
+        reinterpret_cast<math::ScalarType<OutputT>::type*>(y));     \
+  }
+
+DEFINE_BINARY_FUNC(Add, uint8_t, uint8_t, _Add_fallback);
+DEFINE_BINARY_FUNC(Add, int8_t, int8_t, _Add);
+DEFINE_BINARY_FUNC(Add, int, int, _Add);
+DEFINE_BINARY_FUNC(Add, int64_t, int64_t, _Add_fallback);
+DEFINE_BINARY_FUNC(Add, float16, float16, _Add);
+DEFINE_BINARY_FUNC(Add, float, float, _Add);
+DEFINE_BINARY_FUNC(Sub, uint8_t, uint8_t, _Sub_fallback);
+DEFINE_BINARY_FUNC(Sub, int8_t, int8_t, _Sub);
+DEFINE_BINARY_FUNC(Sub, int, int, _Sub);
+DEFINE_BINARY_FUNC(Sub, int64_t, int64_t, _Sub_fallback);
+DEFINE_BINARY_FUNC(Sub, float16, float16, _Sub);
+DEFINE_BINARY_FUNC(Sub, float, float, _Sub);
+DEFINE_BINARY_FUNC(Mul, uint8_t, uint8_t, _Mul_fallback);
+DEFINE_BINARY_FUNC(Mul, int8_t, int8_t, _Mul);
+DEFINE_BINARY_FUNC(Mul, int, int, _Mul);
+DEFINE_BINARY_FUNC(Mul, int64_t, int64_t, _Mul_fallback);
+DEFINE_BINARY_FUNC(Mul, float16, float16, _Mul);
+DEFINE_BINARY_FUNC(Mul, float, float, _Mul);
+DEFINE_BINARY_FUNC(Div, uint8_t, uint8_t, _Div_fallback);
+DEFINE_BINARY_FUNC(Div, int8_t, int8_t, _Div_fallback);
+DEFINE_BINARY_FUNC(Div, int, int, _Div_fallback);
+DEFINE_BINARY_FUNC(Div, int64_t, int64_t, _Div_fallback);
+DEFINE_BINARY_FUNC(Div, float16, float16, _Div);
+DEFINE_BINARY_FUNC(Div, float, float, _Div);
+DEFINE_BINARY_FUNC(Minimum, float16, float16, _Minimum);
+DEFINE_BINARY_FUNC(Minimum, float, float, _Minimum);
+DEFINE_BINARY_FUNC(Maximum, float16, float16, _Maximum);
+DEFINE_BINARY_FUNC(Maximum, float, float, _Maximum);
+DEFINE_BINARY_FUNC(Equal, int8_t, bool, _Equal);
+DEFINE_BINARY_FUNC(Equal, int, bool, _Equal);
+DEFINE_BINARY_FUNC(Equal, float16, bool, _Equal);
+DEFINE_BINARY_FUNC(Equal, float, bool, _Equal);
+DEFINE_BINARY_FUNC(NotEqual, int8_t, bool, _NotEqual);
+DEFINE_BINARY_FUNC(NotEqual, int, bool, _NotEqual);
+DEFINE_BINARY_FUNC(NotEqual, float16, bool, _NotEqual);
+DEFINE_BINARY_FUNC(NotEqual, float, bool, _NotEqual);
+DEFINE_BINARY_FUNC(Less, float16, bool, _Less);
+DEFINE_BINARY_FUNC(Less, float, bool, _Less);
+DEFINE_BINARY_FUNC(LessEqual, float16, bool, _LessEqual);
+DEFINE_BINARY_FUNC(LessEqual, float, bool, _LessEqual);
+DEFINE_BINARY_FUNC(Greater, float16, bool, _Greater);
+DEFINE_BINARY_FUNC(Greater, float, bool, _Greater);
+DEFINE_BINARY_FUNC(GreaterEqual, float16, bool, _GreaterEqual);
+DEFINE_BINARY_FUNC(GreaterEqual, float, bool, _GreaterEqual);
+#undef DEFINE_BINARY_FUNC
+
+#define DEFINE_BINARY_FUNC(name, InputT, OutputT, InputAliasT, OutputAliasT) \
+  template <>                                                                \
+  DRAGON_API void name<InputT, MLUContext>(                                  \
+      const int N,                                                           \
+      const InputT* a,                                                       \
+      const InputT* b,                                                       \
+      OutputT* y,                                                            \
+      MLUContext* ctx) {                                                     \
+    name(                                                                    \
+        N,                                                                   \
+        reinterpret_cast<const InputAliasT*>(a),                             \
+        reinterpret_cast<const InputAliasT*>(b),                             \
+        reinterpret_cast<OutputAliasT*>(y),                                  \
+        ctx);                                                                \
+  }
+
+DEFINE_BINARY_FUNC(Equal, bool, bool, int8_t, bool);
+DEFINE_BINARY_FUNC(Equal, uint8_t, bool, int8_t, bool);
+DEFINE_BINARY_FUNC(NotEqual, bool, bool, int8_t, bool);
+DEFINE_BINARY_FUNC(NotEqual, uint8_t, bool, int8_t, bool);
+#undef DEFINE_BINARY_FUNC
+
+#define DEFINE_BINARY_FUNC(name, InputT, OutputT)                             \
+  template <>                                                                 \
+  DRAGON_API void name<InputT, MLUContext>(                                   \
+      const int N,                                                            \
+      const InputT* a,                                                        \
+      const InputT* b,                                                        \
+      OutputT* y,                                                             \
+      MLUContext* ctx) {                                                      \
+    LOG(FATAL) << "Unsupported BANG type for <" << #name                      \
+               << "Kernel>: " << dtypes::to_string(TypeMeta::Make<InputT>()); \
+  }
+
+DEFINE_BINARY_FUNC(Add, double, double);
+DEFINE_BINARY_FUNC(Sub, double, double);
+DEFINE_BINARY_FUNC(Mul, double, double);
+DEFINE_BINARY_FUNC(Div, double, double);
+DEFINE_BINARY_FUNC(Minimum, uint8_t, uint8_t);
+DEFINE_BINARY_FUNC(Minimum, int8_t, int8_t);
+DEFINE_BINARY_FUNC(Minimum, int, int);
+DEFINE_BINARY_FUNC(Minimum, int64_t, int64_t);
+DEFINE_BINARY_FUNC(Minimum, double, double);
+DEFINE_BINARY_FUNC(Maximum, uint8_t, uint8_t);
+DEFINE_BINARY_FUNC(Maximum, int8_t, int8_t);
+DEFINE_BINARY_FUNC(Maximum, int, int);
+DEFINE_BINARY_FUNC(Maximum, int64_t, int64_t);
+DEFINE_BINARY_FUNC(Maximum, double, double);
+DEFINE_BINARY_FUNC(Equal, int64_t, bool);
+DEFINE_BINARY_FUNC(Equal, double, bool);
+DEFINE_BINARY_FUNC(NotEqual, int64_t, bool);
+DEFINE_BINARY_FUNC(NotEqual, double, bool);
+DEFINE_BINARY_FUNC(Less, bool, bool);
+DEFINE_BINARY_FUNC(Less, uint8_t, bool);
+DEFINE_BINARY_FUNC(Less, int8_t, bool);
+DEFINE_BINARY_FUNC(Less, int, bool);
+DEFINE_BINARY_FUNC(Less, int64_t, bool);
+DEFINE_BINARY_FUNC(Less, double, bool);
+DEFINE_BINARY_FUNC(LessEqual, bool, bool);
+DEFINE_BINARY_FUNC(LessEqual, uint8_t, bool);
+DEFINE_BINARY_FUNC(LessEqual, int8_t, bool);
+DEFINE_BINARY_FUNC(LessEqual, int, bool);
+DEFINE_BINARY_FUNC(LessEqual, int64_t, bool);
+DEFINE_BINARY_FUNC(LessEqual, double, bool);
+DEFINE_BINARY_FUNC(Greater, bool, bool);
+DEFINE_BINARY_FUNC(Greater, uint8_t, bool);
+DEFINE_BINARY_FUNC(Greater, int8_t, bool);
+DEFINE_BINARY_FUNC(Greater, int, bool);
+DEFINE_BINARY_FUNC(Greater, int64_t, bool);
+DEFINE_BINARY_FUNC(Greater, double, bool);
+DEFINE_BINARY_FUNC(GreaterEqual, bool, bool);
+DEFINE_BINARY_FUNC(GreaterEqual, uint8_t, bool);
+DEFINE_BINARY_FUNC(GreaterEqual, int8_t, bool);
+DEFINE_BINARY_FUNC(GreaterEqual, int, bool);
+DEFINE_BINARY_FUNC(GreaterEqual, int64_t, bool);
+DEFINE_BINARY_FUNC(GreaterEqual, double, bool);
+#undef DEFINE_BINARY_FUNC
+#undef BLOCK_THREADS
+
+} // namespace math
+
+} // namespace dragon

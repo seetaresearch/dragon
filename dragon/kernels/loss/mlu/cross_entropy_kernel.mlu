@@ -1,0 +1,66 @@
+#include "dragon/kernels/loss/op_kernels.h"
+#include "dragon/utils/math_functions.h"
+
+namespace dragon {
+
+namespace kernels {
+
+#define BLOCK_THREADS 40960
+
+namespace {
+
+template <typename T>
+__mlu_entry__ void
+_CrossEntropy(const int N, const T* input, const T* target, T* loss) {
+  __nram__ T X[BLOCK_THREADS], Y[BLOCK_THREADS];
+  MLU_1D_KERNEL_LOOP(i, N, BLOCK_THREADS) {
+    const int N_ram = std::min(N - i, BLOCK_THREADS);
+    __memcpy(Y, input + i, N_ram * sizeof(T), GDRAM2NRAM);
+    __bang_maxeq_scalar(Y, Y, FLT_MIN, N_ram);
+    __bang_active_loghp(Y, Y, N_ram);
+    if (target != nullptr) {
+      __memcpy(X, target + i, N_ram * sizeof(T), GDRAM2NRAM);
+      __bang_mul(Y, Y, X, N_ram);
+    }
+    __bang_mul_scalar(Y, Y, T(-1), N_ram);
+    __memcpy(loss + i, Y, N_ram * sizeof(T), NRAM2GDRAM);
+  }
+}
+
+} // namespace
+
+#define DEFINE_KERNEL_LAUNCHER(name, T)               \
+  template <>                                         \
+  void name<T, MLUContext>(                           \
+      const int N,                                    \
+      const T* input,                                 \
+      const T* target,                                \
+      T* loss,                                        \
+      MLUContext* ctx) {                              \
+    _##name<<<                                        \
+        MLU_BLOCKS(N, BLOCK_THREADS),                 \
+        CNRT_FUNC_TYPE_BLOCK,                         \
+        ctx->mlu_stream()>>>(N, input, target, loss); \
+  }
+
+DEFINE_KERNEL_LAUNCHER(CrossEntropy, float);
+#undef DEFINE_KERNEL_LAUNCHER
+
+#define DEFINE_KERNEL_LAUNCHER(name, T)                                  \
+  template <>                                                            \
+  void name<T, MLUContext>(                                              \
+      const int N,                                                       \
+      const T* input,                                                    \
+      const T* target,                                                   \
+      T* loss,                                                           \
+      MLUContext* ctx) {                                                 \
+    LOG(FATAL) << "Unsupported BANG type for <" << #name                 \
+               << "Kernel>: " << dtypes::to_string(TypeMeta::Make<T>()); \
+  }
+
+DEFINE_KERNEL_LAUNCHER(CrossEntropy, double);
+#undef DEFINE_KERNEL_LAUNCHER
+
+} // namespace kernels
+
+} // namespace dragon

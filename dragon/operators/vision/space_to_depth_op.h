@@ -14,6 +14,7 @@
 #define DRAGON_OPERATORS_VISION_SPACE_TO_DEPTH_OP_H_
 
 #include "dragon/core/operator.h"
+#include "dragon/operators/array/transpose_op_impl_cnnl.h"
 
 namespace dragon {
 
@@ -58,6 +59,52 @@ class DepthToSpaceOp final : public Operator<Context> {
   string mode_;
   int64_t block_size_;
 };
+
+#ifdef USE_MLU
+template <class Context>
+class CNNLSpaceToDepthOp final : public Operator<Context> {
+ public:
+  CNNLSpaceToDepthOp(const OperatorDef& def, Workspace* ws)
+      : Operator<Context>(def, ws),
+        block_size_(OP_SINGLE_ARG(int, "block_size", 2)),
+        mode_(OP_SINGLE_ARG(string, "mode", "DCR")) {}
+  USE_OPERATOR_FUNCTIONS;
+
+  void RunOnDevice() override {
+    DispatchHelper<dtypes::Generic>::Call(this, Input(0));
+  }
+
+  template <typename T>
+  void DoRunWithType();
+
+ protected:
+  string mode_;
+  int64_t block_size_;
+  CNNLTransposeOpImpl impl_;
+};
+
+template <class Context>
+class CNNLDepthToSpaceOp final : public Operator<Context> {
+ public:
+  CNNLDepthToSpaceOp(const OperatorDef& def, Workspace* ws)
+      : Operator<Context>(def, ws),
+        block_size_(OP_SINGLE_ARG(int, "block_size", 2)),
+        mode_(OP_SINGLE_ARG(string, "mode", "DCR")) {}
+  USE_OPERATOR_FUNCTIONS;
+
+  void RunOnDevice() override {
+    DispatchHelper<dtypes::Generic>::Call(this, Input(0));
+  }
+
+  template <typename T>
+  void DoRunWithType();
+
+ protected:
+  string mode_;
+  int64_t block_size_;
+  CNNLTransposeOpImpl impl_;
+};
+#endif // USE_MLU
 
 } // namespace dragon
 

@@ -30,7 +30,7 @@ class Parameter(Tensor):
     Typically, the gradient of a parameter should be computed,
     while you can set ``requires_grad`` to ``False`` to ignore.
     Froze a parameter from updating can be directly implemented
-    by ignoring the it's gradient:
+    by ignoring it's gradient:
 
     ```python
     param = torch.nn.Parameter(torch.ones(2, 3), requires_grad=False)
@@ -46,7 +46,7 @@ class Parameter(Tensor):
         tensor : dragon.vm.torch.Tensor
             The tensor to be wrapped.
         requires_grad : bool, optional, default=True
-            Whether to compute the gradient if necessary.
+            Whether to compute gradient if necessary.
 
         """
         super(Parameter, self).__init__(

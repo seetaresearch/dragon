@@ -47,7 +47,7 @@ class _Merge(Layer):
 
 
 class Add(_Merge):
-    """Layer to add a sequence of inputs.
+    """Add a sequence of inputs.
 
     Examples:
 
@@ -73,7 +73,7 @@ class Add(_Merge):
 
 
 class Concatenate(_Merge):
-    """Layer to concatenate a sequence of inputs.
+    """Concatenate a sequence of inputs.
 
     Examples:
 
@@ -101,7 +101,7 @@ class Concatenate(_Merge):
 
 
 class Maximum(_Merge):
-    """Layer to compute the minimum of a sequence of inputs.
+    """Compute the minimum of a sequence of inputs.
 
     Examples:
 
@@ -124,7 +124,7 @@ class Maximum(_Merge):
 
 
 class Minimum(_Merge):
-    """Layer to compute the minimum of a sequence of inputs.
+    """Compute the minimum of a sequence of inputs.
 
     Examples:
 
@@ -147,7 +147,7 @@ class Minimum(_Merge):
 
 
 class Multiply(_Merge):
-    """Layer to multiply a sequence of inputs.
+    """Multiply a sequence of inputs.
 
     Examples:
 
@@ -170,7 +170,7 @@ class Multiply(_Merge):
 
 
 class Subtract(_Merge):
-    """Layer to subtract two inputs.
+    """Subtract two inputs.
 
     Examples:
 

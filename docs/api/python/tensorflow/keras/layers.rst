@@ -10,7 +10,7 @@ layers
   : Activation layer.
 
   `class Add <layers/Add.html>`_
-  : Layer to add a sequence of inputs.
+  : Add a sequence of inputs.
 
   `class AveragePooling1D <layers/AveragePooling1D.html>`_
   : 1D average pooling layer.
@@ -26,7 +26,7 @@ layers
   `[Ioffe & Szegedy, 2015] <https://arxiv.org/abs/1502.03167>`_.
 
   `class Concatenate <layers/Concatenate.html>`_
-  : Layer to concatenate a sequence of inputs.
+  : Concatenate a sequence of inputs.
 
   `class Conv1D <layers/Conv1D.html>`_
   : 1D convolution layer.
@@ -54,15 +54,15 @@ layers
   `[Chollet, 2016] <https://arxiv.org/abs/1610.02357>`_.
 
   `class Dropout <layers/Dropout.html>`_
-  : Layer to apply the dropout function.
+  : Apply dropout function.
   `[Srivastava et.al, 2014] <http://jmlr.org/papers/v15/srivastava14a.html>`_.
 
   `class ELU <layers/ELU.html>`_
-  : Layer to apply the exponential linear unit.
+  : Apply exponential linear unit.
   `[Clevert et.al, 2015] <https://arxiv.org/abs/1511.07289>`_.
 
   `class Flatten <layers/Flatten.html>`_
-  : Layer to reshape input into a matrix.
+  : Reshape input into a matrix.
 
   `class GlobalAveragePooling1D <layers/GlobalAveragePooling1D.html>`_
   : 1D global average pooling layer.
@@ -90,10 +90,10 @@ layers
   `[Ba et.al, 2016] <https://arxiv.org/abs/1607.06450>`_
 
   `class LeakyReLU <layers/LeakyReLU.html>`_
-  : Layer to apply the leaky rectified linear unit.
+  : Apply leaky rectified linear unit.
 
   `class Maximum <layers/Maximum.html>`_
-  : Layer to compute the maximum of a sequence of inputs.
+  : Compute the maximum of a sequence of inputs.
 
   `class MaxPool1D <layers/MaxPool1D.html>`_
   : 1D max pooling layer.
@@ -105,30 +105,30 @@ layers
   : 3D max pooling layer.
 
   `class Minimum <layers/Minimum.html>`_
-  : Layer to compute the minimum of a sequence of inputs.
+  : Compute the minimum of a sequence of inputs.
 
   `class Multiply <layers/Multiply.html>`_
-  : Layer to multiply a sequence of inputs.
+  : Multiply a sequence of inputs.
 
   `class Permute <layers/Permute.html>`_
-  : Layer to permute the dimensions of input.
+  : Permute input dimensions.
 
   `class Reshape <layers/Reshape.html>`_
-  : Layer to change the dimensions of input.
+  : Change input dimensions.
 
   `class ReLU <layers/ReLU.html>`_
-  : Layer to apply the rectified linear unit.
+  : Apply rectified linear unit.
   `[Nair & Hinton, 2010] <http://www.csri.utoronto.ca/~hinton/absps/reluICML.pdf>`_.
 
   `class SELU <layers/SELU.html>`_
-  : Layer to apply the scaled exponential linear unit.
+  : Apply scaled exponential linear unit.
   `[Klambauer et.al, 2017] <https://arxiv.org/abs/1706.02515>`_.
 
   `class Softmax <layers/Softmax.html>`_
-  : Layer to apply the softmax function.
+  : Apply softmax function.
 
   `class Subtract <layers/Subtract.html>`_
-  : Layer to subtract two inputs.
+  : Subtract two inputs.
 
   `class UpSampling1D <layers/UpSampling1D.html>`_
   : 1D upsampling layer.

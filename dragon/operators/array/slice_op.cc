@@ -147,17 +147,11 @@ DEPLOY_MPS_OPERATOR(Slice, Slice);
 DEPLOY_MPS_OPERATOR(SliceGradient, SliceGradient);
 #endif
 
-OPERATOR_SCHEMA(Slice)
-    /* X */
-    .NumInputs(1)
-    /* Y */
-    .NumOutputs(1);
+DEFINE_OP_REPEATED_ARG(int64_t, SliceOp, starts);
+DEFINE_OP_REPEATED_ARG(int64_t, SliceOp, sizes);
 
-OPERATOR_SCHEMA(SliceGradient)
-    /* dY */
-    .NumInputs(1)
-    /* dX */
-    .NumOutputs(1);
+OPERATOR_SCHEMA(Slice).NumInputs(1).NumOutputs(1);
+OPERATOR_SCHEMA(SliceGradient).NumInputs(1).NumOutputs(1);
 
 REGISTER_GRADIENT(Slice, SimpleGradientMaker);
 

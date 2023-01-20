@@ -14,7 +14,7 @@ from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
 
-from dragon.vm.torch.core.nn import functional as F
+from dragon.vm.torch.core.nn import functional
 from dragon.vm.torch.core.nn.modules.module import Module
 from dragon.vm.torch.core.nn.modules.utils import _ntuple
 from dragon.vm.torch.core.nn.modules.utils import _pair
@@ -32,7 +32,7 @@ class _ConstantPadNd(Module):
         return 'padding={}, value={}'.format(self.padding, self.value)
 
     def forward(self, input):
-        return F.pad(input, self.padding, 'constant', self.value)
+        return functional.pad(input, self.padding, 'constant', self.value)
 
 
 class _ReflectionPadNd(Module):
@@ -42,7 +42,7 @@ class _ReflectionPadNd(Module):
         return 'padding={}'.format(self.padding)
 
     def forward(self, input):
-        return F.pad(input, self.padding, 'reflect')
+        return functional.pad(input, self.padding, 'reflect')
 
 
 class _ReplicationPadNd(Module):
@@ -52,7 +52,7 @@ class _ReplicationPadNd(Module):
         return 'padding{}'.format(self.padding)
 
     def forward(self, input):
-        return F.pad(input, self.padding, 'replicate')
+        return functional.pad(input, self.padding, 'replicate')
 
 
 class ConstantPad1d(_ConstantPadNd):

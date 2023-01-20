@@ -1,0 +1,70 @@
+#include "dragon/kernels/activation/op_kernels.h"
+#include "dragon/utils/math_functions.h"
+
+namespace dragon {
+
+namespace kernels {
+
+#define BLOCK_THREADS 40960
+
+namespace {
+
+template <typename T>
+__mlu_entry__ void
+_HardSigmoidGrad(const int N, const T alpha, const T* dy, const T* y, T* dx) {
+  __nram__ T Y[BLOCK_THREADS], dX[BLOCK_THREADS];
+  __nram__ T scratch[BLOCK_THREADS];
+  MLU_1D_KERNEL_LOOP(i, N, BLOCK_THREADS) {
+    const int N_ram = std::min(N - i, BLOCK_THREADS);
+    __memcpy(Y, y + i, N_ram * sizeof(T), GDRAM2NRAM);
+    __memcpy(dX, dy + i, N_ram * sizeof(T), GDRAM2NRAM);
+    __bang_mul_scalar(dX, dX, alpha, N_ram);
+    __bang_gt_scalar(scratch, Y, T(0), N_ram);
+    __bang_mul(dX, dX, scratch, N_ram);
+    __bang_lt_scalar(scratch, Y, T(1), N_ram);
+    __bang_mul(dX, dX, scratch, N_ram);
+    __memcpy(dx + i, dX, N_ram * sizeof(T), NRAM2GDRAM);
+  }
+}
+
+} // namespace
+
+#define DEFINE_GRAD_KERNEL_LAUNCHER(T)                          \
+  template <>                                                   \
+  void HardSigmoidGrad<T, MLUContext>(                          \
+      const int N,                                              \
+      const float alpha,                                        \
+      const T* dy,                                              \
+      const T* y,                                               \
+      T* dx,                                                    \
+      MLUContext* ctx) {                                        \
+    _HardSigmoidGrad<<<                                         \
+        MLU_BLOCKS(N, BLOCK_THREADS),                           \
+        CNRT_FUNC_TYPE_BLOCK,                                   \
+        ctx->mlu_stream()>>>(                                   \
+        N,                                                      \
+        convert::To<math::ScalarType<T>::type>(alpha),          \
+        reinterpret_cast<const math::ScalarType<T>::type*>(dy), \
+        reinterpret_cast<const math::ScalarType<T>::type*>(y),  \
+        reinterpret_cast<math::ScalarType<T>::type*>(dx));      \
+  }
+
+DEFINE_GRAD_KERNEL_LAUNCHER(float16);
+DEFINE_GRAD_KERNEL_LAUNCHER(float);
+#undef DEFINE_GRAD_KERNEL_LAUNCHER
+#undef BLOCK_THREADS
+
+template <>
+void HardSigmoidGrad<double, MLUContext>(
+    const int N,
+    const float alpha,
+    const double* dy,
+    const double* y,
+    double* dx,
+    MLUContext* ctx) {
+  LOG(FATAL) << "Unsupported BANG type for <HardSigmoidGradKernel>: double";
+}
+
+} // namespace kernels
+
+} // namespace dragon

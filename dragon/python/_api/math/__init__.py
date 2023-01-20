@@ -49,6 +49,7 @@ from dragon.core.ops.math_ops import mean
 from dragon.core.ops.math_ops import min
 from dragon.core.ops.math_ops import minimum
 from dragon.core.ops.math_ops import mul
+from dragon.core.ops.math_ops import nan_to_num
 from dragon.core.ops.math_ops import negative
 from dragon.core.ops.math_ops import norm
 from dragon.core.ops.math_ops import not_equal

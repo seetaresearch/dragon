@@ -83,6 +83,9 @@ using Floating = TypesBase<float16, float, double>;
 /*! \brief Accumulated types */
 using Accumulated = TypesBase<int, int64_t, float16, float, double>;
 
+/*! \brief Loss types */
+using Loss = TypesBase<float, double>;
+
 /*! \brief Convert the type string to meta */
 inline const TypeMeta& to_meta(const std::string& type) {
   static TypeMeta unknown_type;

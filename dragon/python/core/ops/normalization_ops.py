@@ -30,7 +30,7 @@ def batch_norm(
     use_stats=-1,
     **kwargs
 ):
-    r"""Apply the batch normalization.
+    r"""Apply batch normalization.
     `[Ioffe & Szegedy, 2015] <https://arxiv.org/abs/1502.03167>`_.
 
     The normalization is defined as:
@@ -83,7 +83,7 @@ def channel_norm(
     perm=None,
     **kwargs
 ):
-    """Apply the normalization to each channel of input.
+    """Apply normalization to each channel of input.
 
     :attr:`axis` can be negative:
 
@@ -137,7 +137,7 @@ def channel_norm(
 
 @OpSchema.num_inputs(3)
 def group_norm(inputs, axis=-1, group=0, epsilon=1e-5, **kwargs):
-    r"""Apply the group normalization.
+    r"""Apply group normalization.
     `[Wu & He, 2018] <https://arxiv.org/abs/1803.08494>`_.
 
     The normalization is defined as:
@@ -146,7 +146,7 @@ def group_norm(inputs, axis=-1, group=0, epsilon=1e-5, **kwargs):
                        {\sqrt{\mathrm{Var}[x] + \epsilon}}
                   * \gamma + \beta
 
-    :attr:`group` could be zero to apply the instance normalization:
+    :attr:`group` could be zero to apply instance normalization:
 
     ```python
     gamma, beta = dragon.ones((3,)), dragon.zeros((3,))
@@ -182,7 +182,7 @@ def group_norm(inputs, axis=-1, group=0, epsilon=1e-5, **kwargs):
 
 @OpSchema.num_inputs(3)
 def instance_norm(inputs, axis=-1, epsilon=1e-5, **kwargs):
-    r"""Apply the instance normalization.
+    r"""Apply instance normalization.
     `[Ulyanov et.al, 2016] <https://arxiv.org/abs/1607.08022>`_
 
     The normalization is defined as:
@@ -211,7 +211,7 @@ def instance_norm(inputs, axis=-1, epsilon=1e-5, **kwargs):
 
 @OpSchema.num_inputs(3)
 def layer_norm(inputs, axis=-1, epsilon=1e-5, **kwargs):
-    r"""Apply the layer normalization.
+    r"""Apply layer normalization.
     `[Ba et.al, 2016] <https://arxiv.org/abs/1607.06450>`_
 
     The normalization is defined as:
@@ -252,7 +252,7 @@ def lp_norm(
     reduction='sum',
     **kwargs
 ):
-    r"""Apply the lp normalization.
+    r"""Apply lp normalization.
 
     The normalization is defined as:
 
@@ -315,7 +315,7 @@ def local_response_norm(
     data_format='NCHW',
     **kwargs
 ):
-    r"""Apply the local response normalization.
+    r"""Apply local response normalization.
     `[Krizhevsky et.al, 2012] <http://www.cs.toronto.edu/~hinton/absps/imagenet.pdf>`_.
 
     The normalization is defined as:
@@ -368,7 +368,7 @@ def sync_batch_norm(
     process_group=None,
     **kwargs
 ):
-    r"""Apply the batch normalization with synced statistics.
+    r"""Apply batch normalization with synced statistics.
     `[Ioffe & Szegedy, 2015] <https://arxiv.org/abs/1502.03167>`_.
 
     The normalization is defined as:

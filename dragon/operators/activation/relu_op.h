@@ -58,7 +58,6 @@ class ReluGradientOp : public Operator<Context> {
 };
 
 #ifdef USE_CUDNN
-
 template <class Context>
 class CuDNNReluOp final : public ReluOp<Context> {
  public:
@@ -80,7 +79,7 @@ class CuDNNReluOp final : public ReluOp<Context> {
   USE_OPERATOR_FUNCTIONS;
 
   ~CuDNNReluOp() {
-    CuDNNDestroyTensorDesc(&input_desc_);
+    CuDNNDestroyTensorDesc(input_desc_);
     CUDNN_CHECK(cudnnDestroyActivationDescriptor(act_desc_));
   }
 
@@ -116,7 +115,7 @@ class CuDNNReluGradientOp final : public ReluGradientOp<Context> {
   USE_OPERATOR_FUNCTIONS;
 
   ~CuDNNReluGradientOp() {
-    CuDNNDestroyTensorDesc(&input_desc_);
+    CuDNNDestroyTensorDesc(input_desc_);
     CUDNN_CHECK(cudnnDestroyActivationDescriptor(act_desc_));
   }
 
@@ -135,11 +134,9 @@ class CuDNNReluGradientOp final : public ReluGradientOp<Context> {
   cudnnTensorDescriptor_t input_desc_;
   cudnnActivationDescriptor_t act_desc_;
 };
-
 #endif // USE_CUDNN
 
 #ifdef USE_MPS
-
 template <class Context>
 class MPSReluOp final : public Operator<Context> {
  public:
@@ -185,8 +182,73 @@ class MPSReluGradientOp final : public Operator<Context> {
   MPSGraph_t graph_;
   MPSGraphCache graph_cache_;
 };
+#endif // USE_MPS
 
-#endif
+#ifdef USE_MLU
+template <class Context>
+class CNNLReluOp : public Operator<Context> {
+ public:
+  CNNLReluOp(const OperatorDef& def, Workspace* ws)
+      : Operator<Context>(def, ws),
+        alpha_(OP_SINGLE_ARG(float, "alpha", 0.f)),
+        max_value_(OP_SINGLE_ARG(float, "max_value", 0.f)) {
+    CNNLCreateTensorDesc(&input_desc_);
+    CNNL_CHECK(cnnlCreateActivationDescriptor(&act_desc_));
+    auto mode = CNNL_ACTIVATION_RELU;
+    auto coef = max_value_ > 0.f ? max_value_ : alpha_;
+    if (max_value_ > 0.f) {
+      mode = max_value_ == 6.f ? CNNL_ACTIVATION_RELU6
+                               : CNNL_ACTIVATION_CLIPPED_RELU;
+    } else {
+      mode = alpha_ > 0.f ? CNNL_ACTIVATION_LEAKYRELU : CNNL_ACTIVATION_RELU;
+    }
+    CNNL_CHECK(cnnlSetActivationDescriptor_v6(
+        act_desc_,
+        mode,
+        CNNL_ACTIVATION_FAST,
+        CNNL_PROPAGATE_NAN,
+        coef,
+        0,
+        1.f, // gamma
+        1.f, // scale
+        true,
+        false));
+  }
+  USE_OPERATOR_FUNCTIONS;
+
+  ~CNNLReluOp() {
+    CNNLDestroyTensorDesc(input_desc_);
+    CNNL_CHECK(cnnlDestroyActivationDescriptor(act_desc_));
+  }
+
+  void RunOnDevice() override {
+    DispatchHelper<dtypes::Floating>::Call(this, Input(0));
+  }
+
+  template <typename T>
+  void DoRunWithType();
+
+ protected:
+  float alpha_, max_value_;
+  cnnlTensorDescriptor_t input_desc_;
+  cnnlActivationDescriptor_t act_desc_;
+};
+
+template <class Context>
+class CNNLReluGradientOp final : public CNNLReluOp<Context> {
+ public:
+  CNNLReluGradientOp(const OperatorDef& def, Workspace* ws)
+      : CNNLReluOp<Context>(def, ws) {}
+  USE_OPERATOR_FUNCTIONS;
+
+  void RunOnDevice() override {
+    DispatchHelper<dtypes::Floating>::Call(this, Input(0));
+  }
+
+  template <typename T>
+  void DoRunWithType();
+};
+#endif // USE_MLU
 
 } // namespace dragon
 

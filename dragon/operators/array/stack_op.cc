@@ -75,18 +75,13 @@ DEPLOY_CUDA_OPERATOR(StackGradient);
 DEPLOY_MPS_OPERATOR(Stack, Stack);
 DEPLOY_MPS_OPERATOR(StackGradient, StackGradient);
 #endif
+#ifdef USE_MLU
+DEPLOY_MLU_OPERATOR(Stack);
+DEPLOY_MLU_OPERATOR(StackGradient);
+#endif
 
-OPERATOR_SCHEMA(Stack)
-    /* X(0), ... */
-    .NumInputs(1, INT_MAX)
-    /* Y */
-    .NumOutputs(1);
-
-OPERATOR_SCHEMA(StackGradient)
-    /* dY */
-    .NumInputs(1)
-    /* dX(0), ... */
-    .NumOutputs(1, INT_MAX);
+OPERATOR_SCHEMA(Stack).NumInputs(1, INT_MAX).NumOutputs(1);
+OPERATOR_SCHEMA(StackGradient).NumInputs(1).NumOutputs(1, INT_MAX);
 
 REGISTER_GRADIENT(Stack, SimpleGradientMaker);
 

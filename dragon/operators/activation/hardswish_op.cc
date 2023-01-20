@@ -36,6 +36,9 @@ DEPLOY_CUDA_OPERATOR(HardSwishGradient);
 DEPLOY_MPS_OPERATOR(HardSwish, HardSwish);
 DEPLOY_MPS_OPERATOR(HardSwishGradient, HardSwishGradient);
 #endif
+#ifdef USE_MLU
+DEPLOY_MLU_OPERATOR(HardSwishGradient);
+#endif
 
 OPERATOR_SCHEMA(HardSwish)
     /* X */

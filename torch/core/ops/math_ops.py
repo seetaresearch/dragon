@@ -47,7 +47,7 @@ def abs(input, out=None):
 
 
 def add(input, other, out=None):
-    r"""Compute the element-wise addition.
+    r"""Compute element-wise addition.
 
     .. math:: \text{out} = \text{input} + \text{other}
 
@@ -169,7 +169,7 @@ def argmin(input, dim, keepdim=False, out=None):
 
 
 def atan2(input, other, out=None):
-    r"""Compute the element-wise arc-tangent of two arguments.
+    r"""Compute element-wise arc-tangent of two arguments.
 
     .. math:: \text{out} = \text{arctan}(\frac{\text{input}}{\text{other}})
 
@@ -234,7 +234,7 @@ def baddbmm(input, batch1, batch2, beta=1, alpha=1, out=None):
 
 
 def bitwise_and(input, other, out=None):
-    r"""Compute the element-wise AND bitwise operation.
+    r"""Compute element-wise AND bitwise operation.
 
     .. math:: \text{out} = \text{input} \mathbin{\&} \text{other}
 
@@ -265,7 +265,7 @@ def bitwise_and(input, other, out=None):
 
 
 def bitwise_not(input, out=None):
-    r"""Compute the element-wise NOT bitwise operation.
+    r"""Compute element-wise NOT bitwise operation.
 
     .. math:: \text{out} = \,\,\sim \text{input}
 
@@ -298,7 +298,7 @@ def bitwise_not(input, out=None):
 
 
 def bitwise_or(input, other, out=None):
-    r"""Compute the element-wise OR bitwise operation.
+    r"""Compute element-wise OR bitwise operation.
 
     .. math:: \text{out} = \text{input} \mathbin{|} \text{other}
 
@@ -329,7 +329,7 @@ def bitwise_or(input, other, out=None):
 
 
 def bitwise_xor(input, other, out=None):
-    r"""Compute the element-wise XOR bitwise operation.
+    r"""Compute element-wise XOR bitwise operation.
 
     .. math:: \text{out} = \text{input} \oplus \text{other}
 
@@ -360,7 +360,7 @@ def bitwise_xor(input, other, out=None):
 
 
 def bmm(input, mat2, out=None):
-    r"""Compute the batched matrix-matrix multiplication.
+    r"""Compute batched matrix-matrix multiplication.
 
     .. math:: \text{out}_{i} = \text{input}_{i} \times \text{mat2}_{i}
 
@@ -434,7 +434,7 @@ def ceil(input, out=None):
 
 
 def clamp(input, min=None, max=None, out=None):
-    r"""Compute the clipped input according to the given bounds.
+    r"""Clip input according to the given bounds.
 
     .. math:: \text{out} = \min(\max(\text{input}, low), high)
 
@@ -521,7 +521,7 @@ def cumsum(input, dim, out=None):
 
 
 def div(input, other, out=None):
-    r"""Compute the element-wise division.
+    r"""Compute element-wise division.
 
     .. math:: \text{out} = \text{input} \div \text{other}
 
@@ -544,7 +544,7 @@ def div(input, other, out=None):
 
 
 def eq(input, other, out=None):
-    r"""Compute the element-wise equal comparison.
+    r"""Compute element-wise equal comparison.
 
     .. math:: \text{out} = (\text{input} == \text{other})
 
@@ -616,7 +616,7 @@ def floor(input, out=None):
 
 
 def ge(input, other, out=None):
-    r"""Compute the element-wise greater-equal comparison.
+    r"""Compute element-wise greater-equal comparison.
 
     .. math:: \text{out} = (\text{input} \geq \text{other})
 
@@ -639,7 +639,7 @@ def ge(input, other, out=None):
 
 
 def gt(input, other, out=None):
-    r"""Compute the element-wise greater comparison.
+    r"""Compute element-wise greater comparison.
 
     .. math:: \text{out} = (\text{input} > \text{other})
 
@@ -740,7 +740,7 @@ def isnan(input):
 
 
 def le(input, other, out=None):
-    r"""Compute the element-wise less-equal comparison.
+    r"""Compute element-wise less-equal comparison.
 
     .. math:: \text{out} = (\text{input} \leq \text{other})
 
@@ -784,7 +784,7 @@ def log(input, out=None):
 
 
 def logical_and(input, other, out=None):
-    r"""Compute the element-wise AND logical operation.
+    r"""Compute element-wise AND logical operation.
 
     .. math:: \text{out} = \text{input} \mathbin{\&} \text{other}
 
@@ -818,7 +818,7 @@ def logical_and(input, other, out=None):
 
 
 def logical_not(input, out=None):
-    r"""Compute the element-wise NOT logical operation.
+    r"""Compute element-wise NOT logical operation.
 
     .. math:: \text{out} = \,\,\sim \text{input}
 
@@ -848,7 +848,7 @@ def logical_not(input, out=None):
 
 
 def logical_or(input, other, out=None):
-    r"""Compute the element-wise OR logical operation.
+    r"""Compute element-wise OR logical operation.
 
     .. math:: \text{out} = \text{input} \mathbin{|} \text{other}
 
@@ -882,7 +882,7 @@ def logical_or(input, other, out=None):
 
 
 def logical_xor(input, other, out=None):
-    r"""Compute the element-wise XOR logical operation.
+    r"""Compute element-wise XOR logical operation.
 
     .. math:: \text{out} = \text{input} \oplus \text{other}
 
@@ -941,7 +941,7 @@ def logsumexp(input, dim, keepdim=False, out=None):
 
 
 def lt(input, other, out=None):
-    r"""Compute the element-wise less comparison.
+    r"""Compute element-wise less comparison.
 
     .. math:: \text{out} = (\text{input} < \text{other})
 
@@ -964,7 +964,7 @@ def lt(input, other, out=None):
 
 
 def matmul(input, other, out=None):
-    r"""Compute the matrix multiplication.
+    r"""Compute matrix multiplication.
 
     .. math:: \text{out} = \text{input} \times \text{other}
 
@@ -1195,7 +1195,7 @@ def minimum(input, other, out=None):
 
 
 def mm(input, mat2, out=None):
-    r"""Compute the matrix-matrix multiplication.
+    r"""Compute matrix-matrix multiplication.
 
     .. math:: \text{out} = \text{input} \times \text{mat2}
 
@@ -1219,7 +1219,7 @@ def mm(input, mat2, out=None):
 
 
 def mul(input, other, out=None):
-    r"""Compute the element-wise multiplication.
+    r"""Compute element-wise multiplication.
 
     .. math:: \text{out} = \text{input} \times \text{other}
 
@@ -1241,8 +1241,44 @@ def mul(input, other, out=None):
     return _binary_func(input, other, 'Mul', out)
 
 
+def nan_to_num(input, nan=0.0, posinf=None, neginf=None, out=None):
+    """Replace NaN or infinity elements with given value.
+
+    Examples:
+
+    ```python
+    x = torch.tensor([float('nan'), float('inf'), float('-inf'), 2.33])
+    print(torch.nan_to_num(x))  # [0., 3.40282e+38, -3.40282e+38, 2.33]
+    ```
+
+    Parameters
+    ----------
+    input : dragon.vm.torch.Tensor
+        The input tensor.
+    nan : float, optional, default=0.0
+        The value to replace NaN elements.
+    posinf : float, optional
+        The value to replace positive infinity elements.
+    neginf : float, optional
+        The value to replace negative infinity elements.
+    out : dragon.vm.torch.Tensor, optional
+        The output tensor.
+
+    Returns
+    -------
+    dragon.vm.torch.Tensor
+        The output tensor.
+
+    """
+    return Function.apply(
+        'NaNToNum', input.device, [input], outputs=[out],
+        nan=float(nan) if nan is not None else nan,
+        pos_inf=float(posinf) if posinf is not None else posinf,
+        neg_inf=float(neginf) if neginf is not None else neginf)
+
+
 def ne(input, other, out=None):
-    r"""Compute the element-wise not-equal comparison.
+    r"""Compute element-wise not-equal comparison.
 
     .. math:: \text{out} = (\text{input} \neq \text{other})
 
@@ -1265,7 +1301,7 @@ def ne(input, other, out=None):
 
 
 def neg(input, out=None):
-    r"""Compute the element-wise negative.
+    r"""Compute element-wise negative.
 
     .. math:: \text{out} = -\text{input}
 
@@ -1596,7 +1632,7 @@ def square(input, out=None):
 
 
 def sub(input, other, out=None):
-    r"""Compute the element-wise subtraction.
+    r"""Compute element-wise subtraction.
 
     .. math:: \text{out} = \text{input} - \text{other}
 

@@ -6,6 +6,7 @@ template <class Context>
 MPSPoolOpBase<Context>::MPSPoolOpBase(const OperatorDef& def, Workspace* ws)
     : PoolOpBase<Context>(def, ws) {
   GetBaseArguments();
+  graph_ = MPSCreateGraph();
   pool2d_desc_ = [[MPSGraphPooling2DOpDescriptor new] autorelease];
 }
 

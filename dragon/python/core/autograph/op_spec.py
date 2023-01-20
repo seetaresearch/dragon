@@ -24,12 +24,6 @@ get = _GLOBAL_REGISTERED_SPECS.try_get
 register = _GLOBAL_REGISTERED_SPECS.register
 
 
-@register('Accuracy')
-def accuracy_spec(args, inputs, outputs):
-    outputs[0]._dtype, outputs[0]._shape = 'float32', ()
-    return outputs
-
-
 @register(['ArgMax', 'ArgMin'])
 def arg_reduce_spec(args, inputs, outputs):
     outputs[0]._dtype = 'int64'

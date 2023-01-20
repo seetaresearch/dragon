@@ -22,7 +22,7 @@ class Regularizer(object):
     """The base regularizer class."""
 
     def __call__(self, x):
-        """Apply the regularizer to input.
+        """Apply regularizer to input.
 
         Parameters
         ----------

@@ -39,70 +39,64 @@ class RNNModule(object):
         dropout=0,
         **kwargs
     ):
-        self._mode = mode.lower()
-        self._num_gates = {'lstm': 4, 'gru': 3}.get(self._mode, 1)
-        self._input_size = input_size
-        self._hidden_size = hidden_size
-        self._num_layers = num_layers
-        self._dropout = float(dropout) if dropout > 0 else None
-        self._bidirectional = bidirectional
+        self.mode = mode.upper()
+        self.input_size = input_size
+        self.hidden_size = hidden_size
+        self.num_layers = num_layers
+        self.dropout = float(dropout) if dropout > 0 else None
+        self.bidirectional = bidirectional
         self._num_directions = 2 if bidirectional else 1
-        self._weights_shapes = []
-        self._create_weights()
+        self._num_gates = {'LSTM': 4, 'GRU': 3}.get(self.mode, 1)
+        self._weight_shapes = []
+        self.weight = self._create_weights()
         self._initialize_weights()
-
-    @property
-    def weights(self):
-        """Return the flatten RNN weights."""
-        return self._weights
 
     def call(self, inputs, training=False, **kwargs):
         """Compute the output of RNN."""
         inputs = nest.flatten(inputs)
-        inputs.insert(1, self._weights)
+        inputs.insert(1, self.weight)
         if context.executing_eagerly():
             return OpLib.execute(
-                'Recurrent', inputs, rnn_mode=self._mode,
-                num_layers=self._num_layers, hidden_size=self._hidden_size,
-                bidirectional=self._bidirectional, dropout=self._dropout,
+                'RNN', inputs, rnn_mode=self.mode,
+                num_layers=self.num_layers, hidden_size=self.hidden_size,
+                bidirectional=self.bidirectional, dropout=self.dropout,
                 phase='TRAIN' if training else 'TEST')
         return OpLib.add(
-            'Recurrent', inputs, rnn_mode=self._mode,
-            num_layers=self._num_layers, hidden_size=self._hidden_size,
-            bidirectional=self._bidirectional, dropout_ratio=self._dropout, **kwargs)
+            'RNN', inputs, rnn_mode=self.mode,
+            num_layers=self.num_layers, hidden_size=self.hidden_size,
+            bidirectional=self.bidirectional, dropout=self.dropout, **kwargs)
 
     def _create_weights(self):
         """Create a flat weights."""
-        gate_size = self._hidden_size * self._num_gates
-        # Compute the shape of weight and bias.
+        gate_size = self.hidden_size * self._num_gates
         matrix_shapes, bias_shapes = [], []
-        for layer in range(self._num_layers):
+        for layer in range(self.num_layers):
             for direction in range(self._num_directions):
-                layer_input_size = self._input_size if layer == 0 \
-                    else self._hidden_size * self._num_directions
+                layer_input_size = self.input_size if layer == 0 \
+                    else self.hidden_size * self._num_directions
                 w_ih_shape = [gate_size, layer_input_size]
-                w_hh_shape = [gate_size, self._hidden_size]
+                w_hh_shape = [gate_size, self.hidden_size]
                 b_ih_shape, b_hh_shape = [gate_size], [gate_size]
                 matrix_shapes.extend([w_ih_shape, w_hh_shape])
                 bias_shapes.extend([b_ih_shape, b_hh_shape])
-        # Create single float32 weights.
-        weights_count = 0
-        self._weights_shapes = matrix_shapes + bias_shapes
-        for shape in self._weights_shapes:
-            weights_count += math_util.prod(shape)
-        self._weights = Tensor([weights_count])
-        self._weights.requires_grad = True
+        weight_count = 0
+        self._weight_shapes = matrix_shapes + bias_shapes
+        for shape in self._weight_shapes:
+            weight_count += math_util.prod(shape)
+        weight = Tensor([weight_count])
+        weight.requires_grad = True
+        return weight
 
     def _initialize_weights(self):
-        """Initialize the flatten weights."""
-        stddev = 1.0 / math.sqrt(self._hidden_size)
+        """Initialize the weights."""
+        stddev = 1.0 / math.sqrt(self.hidden_size)
         for layer_id, param_id in itertools.product(
-                range(self._num_layers * (self._bidirectional + 1)),
+                range(self.num_layers * (self.bidirectional + 1)),
                 range(self._num_gates * 2)):
             i = layer_id * 2 + (param_id // self._num_gates)
-            j = i + len(self._weights_shapes) // 2
-            matrix_shape = self._weights_shapes[i][:]
-            bias_shape = self._weights_shapes[j][:]
+            j = i + len(self._weight_shapes) // 2
+            matrix_shape = self._weight_shapes[i][:]
+            bias_shape = self._weight_shapes[j][:]
             matrix_shape[0] //= self._num_gates
             bias_shape[0] //= self._num_gates
             self._set_parameter(
@@ -115,9 +109,9 @@ class RNNModule(object):
     def _set_parameter(self, data, layer_id=0, param_id=0, param_type='matrix'):
         """Set the data of a parameter."""
         return OpLib.execute(
-            'RNNParamSet', [data], outputs=[self._weights],
-            rnn_mode=self._mode, bidirectional=self._bidirectional,
-            input_size=self._input_size, hidden_size=self._hidden_size,
+            'RNNParamSet', [data], outputs=[self.weight],
+            rnn_mode=self.mode, bidirectional=self.bidirectional,
+            input_size=self.input_size, hidden_size=self.hidden_size,
             layer_id=layer_id, param_id=param_id, param_type=param_type)
 
     def __call__(self, *args, **kwargs):
@@ -167,7 +161,7 @@ class RNN(RNNModule):
             The dropout ratio.
 
         """
-        mode = 'rnn_relu' if nonlinearity == 'relu' else 'rnn_tanh'
+        mode = 'RNN_RELU' if nonlinearity == 'relu' else 'RNN_TANH'
         super(RNN, self).__init__(
             mode, input_size, hidden_size,
             num_layers, bidirectional, dropout, **kwargs
@@ -215,7 +209,7 @@ class LSTM(RNNModule):
 
         """
         super(LSTM, self).__init__(
-            'lstm', input_size, hidden_size,
+            'LSTM', input_size, hidden_size,
             num_layers, bidirectional, dropout, **kwargs
         )
 
@@ -261,7 +255,7 @@ class GRU(RNNModule):
 
         """
         super(GRU, self).__init__(
-            'gru', input_size, hidden_size,
+            'GRU', input_size, hidden_size,
             num_layers, bidirectional, dropout, **kwargs
         )
 

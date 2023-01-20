@@ -17,8 +17,6 @@ __global__ void _Cast(const int N, const InputT* x, OutputT* y) {
 
 } // namespace
 
-/* ------------------- Launcher Separator ------------------- */
-
 #define DEFINE_CAST_FUNC(InputT, OutputT)                           \
   template <>                                                       \
   DRAGON_API void Cast<InputT, OutputT, CUDAContext>(               \

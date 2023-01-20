@@ -1,0 +1,113 @@
+#include "dragon/kernels/math/op_kernels.h"
+#include "dragon/utils/math_functions.h"
+
+namespace dragon {
+
+namespace kernels {
+
+#define BLOCK_THREADS 40960
+
+namespace {
+
+template <typename T>
+__mlu_entry__ void
+_ReciprocalGrad(const int N, const T* dy, const T* y, T* dx) {
+  __nram__ T dX[BLOCK_THREADS], scratch[BLOCK_THREADS];
+  MLU_1D_KERNEL_LOOP(i, N, BLOCK_THREADS) {
+    const int N_ram = std::min(N - i, BLOCK_THREADS);
+    dx[i] = -dy[i] * math::utils::Square(y[i]);
+    __memcpy(scratch, y + i, N_ram * sizeof(T), GDRAM2NRAM);
+    __bang_square(dX, scratch, N_ram);
+    __memcpy(scratch, dy + i, N_ram * sizeof(T), GDRAM2NRAM);
+    __bang_mul_scalar(scratch, scratch, T(-1), N_ram);
+    __bang_mul(dX, dX, scratch, N_ram);
+    __memcpy(dx + i, dX, N_ram * sizeof(T), NRAM2GDRAM);
+  }
+}
+
+template <typename T>
+__mlu_entry__ void _RsqrtGrad(const int N, const T* dy, const T* y, T* dx) {
+  __nram__ T dX[BLOCK_THREADS], scratch[BLOCK_THREADS];
+  MLU_1D_KERNEL_LOOP(i, N, BLOCK_THREADS) {
+    const int N_ram = std::min(N - i, BLOCK_THREADS);
+    __memcpy(scratch, y + i, N_ram * sizeof(T), GDRAM2NRAM);
+    __bang_square(dX, scratch, N_ram);
+    __bang_mul(dX, dX, scratch, N_ram);
+    __memcpy(scratch, dy + i, N_ram * sizeof(T), GDRAM2NRAM);
+    __bang_mul_scalar(scratch, scratch, T(-0.5), N_ram);
+    __bang_mul(dX, dX, scratch, N_ram);
+    __memcpy(dx + i, dX, N_ram * sizeof(T), NRAM2GDRAM);
+  }
+}
+
+template <typename T>
+__mlu_entry__ void _SinGrad(const int N, const T* dy, const T* x, T* dx) {
+  __nram__ T dX[BLOCK_THREADS], scratch[BLOCK_THREADS];
+  MLU_1D_KERNEL_LOOP(i, N, BLOCK_THREADS) {
+    const int N_ram = std::min(N - i, BLOCK_THREADS);
+    __memcpy(scratch, x + i, N_ram * sizeof(T), GDRAM2NRAM);
+    __bang_active_cos(dX, scratch, N_ram);
+    __memcpy(scratch, dy + i, N_ram * sizeof(T), GDRAM2NRAM);
+    __bang_mul(dX, dX, scratch, N_ram);
+    __memcpy(dx + i, dX, N_ram * sizeof(T), NRAM2GDRAM);
+  }
+}
+
+template <typename T>
+__mlu_entry__ void _CosGrad(const int N, const T* dy, const T* x, T* dx) {
+  __nram__ T dX[BLOCK_THREADS], scratch[BLOCK_THREADS];
+  MLU_1D_KERNEL_LOOP(i, N, BLOCK_THREADS) {
+    const int N_ram = std::min(N - i, BLOCK_THREADS);
+    __memcpy(scratch, x + i, N_ram * sizeof(T), GDRAM2NRAM);
+    __bang_active_sin(dX, scratch, N_ram);
+    __memcpy(scratch, dy + i, N_ram * sizeof(T), GDRAM2NRAM);
+    __bang_mul_scalar(scratch, scratch, T(-1), N_ram);
+    __bang_mul(dX, dX, scratch, N_ram);
+    __memcpy(dx + i, dX, N_ram * sizeof(T), NRAM2GDRAM);
+  }
+}
+
+} // namespace
+
+#define DEFINE_GRAD_KERNEL_LAUNCHER(name, T)                          \
+  template <>                                                         \
+  void name##Grad<T, MLUContext>(                                     \
+      const int N, const T* dy, const T* x, T* dx, MLUContext* ctx) { \
+    _##name##Grad<<<                                                  \
+        MLU_BLOCKS(N, BLOCK_THREADS),                                 \
+        CNRT_FUNC_TYPE_BLOCK,                                         \
+        ctx->mlu_stream()>>>(                                         \
+        N,                                                            \
+        reinterpret_cast<const math::ScalarType<T>::type*>(dy),       \
+        reinterpret_cast<const math::ScalarType<T>::type*>(x),        \
+        reinterpret_cast<math::ScalarType<T>::type*>(dx));            \
+  }
+
+DEFINE_GRAD_KERNEL_LAUNCHER(Reciprocal, float16);
+DEFINE_GRAD_KERNEL_LAUNCHER(Reciprocal, float);
+DEFINE_GRAD_KERNEL_LAUNCHER(Rsqrt, float16);
+DEFINE_GRAD_KERNEL_LAUNCHER(Rsqrt, float);
+DEFINE_GRAD_KERNEL_LAUNCHER(Sin, float16);
+DEFINE_GRAD_KERNEL_LAUNCHER(Sin, float);
+DEFINE_GRAD_KERNEL_LAUNCHER(Cos, float16);
+DEFINE_GRAD_KERNEL_LAUNCHER(Cos, float);
+#undef DEFINE_GRAD_KERNEL_LAUNCHER
+
+#define DEFINE_GRAD_KERNEL_LAUNCHER(name, T)                                 \
+  template <>                                                                \
+  void name##Grad<T, MLUContext>(                                            \
+      const int N, const T* dy, const T* x, T* dx, MLUContext* ctx) {        \
+    LOG(FATAL) << "Unsupported BANG type for <" << #name                     \
+               << "GradKernel>: " << dtypes::to_string(TypeMeta::Make<T>()); \
+  }
+
+DEFINE_GRAD_KERNEL_LAUNCHER(Reciprocal, double);
+DEFINE_GRAD_KERNEL_LAUNCHER(Rsqrt, double);
+DEFINE_GRAD_KERNEL_LAUNCHER(Sin, double);
+DEFINE_GRAD_KERNEL_LAUNCHER(Cos, double);
+#undef DEFINE_GRAD_KERNEL_LAUNCHER
+#undef BLOCK_THREADS
+
+} // namespace kernels
+
+} // namespace dragon

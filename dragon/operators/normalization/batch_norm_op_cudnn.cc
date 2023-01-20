@@ -1,7 +1,7 @@
+#ifdef USE_CUDNN
+
 #include "dragon/core/workspace.h"
 #include "dragon/operators/normalization/batch_norm_op.h"
-
-#ifdef USE_CUDNN
 
 namespace dragon {
 
@@ -17,10 +17,10 @@ void CuDNNBatchNormOp<Context>::DoRunWithType() {
   // Set descriptors.
   if (Input(0).ndim() == 2) {
     bn_mode_ = CUDNN_BATCHNORM_PER_ACTIVATION;
-    CuDNNSetTensorDesc<T>(&input_desc_, vec64_t({N_, C_, 1, 1}));
+    CuDNNSetTensorDesc<T>(input_desc_, vec64_t({N_, C_, 1, 1}));
   } else {
     bn_mode_ = CUDNN_BATCHNORM_SPATIAL;
-    CuDNNSetTensorDesc<T>(&input_desc_, Input(0).dims(), data_format());
+    CuDNNSetTensorDesc<T>(input_desc_, Input(0).dims(), data_format());
   }
   CUDNN_CHECK(cudnnDeriveBNTensorDescriptor(bn_desc_, input_desc_, bn_mode_));
 
@@ -75,10 +75,10 @@ void CuDNNBatchNormGradientOp<Context>::RunTraining() {
   // Set descriptors.
   if (Input(0).ndim() == 2) {
     bn_mode_ = CUDNN_BATCHNORM_PER_ACTIVATION;
-    CuDNNSetTensorDesc<T>(&input_desc_, vec64_t({N_, C_, 1, 1}));
+    CuDNNSetTensorDesc<T>(input_desc_, vec64_t({N_, C_, 1, 1}));
   } else {
     bn_mode_ = CUDNN_BATCHNORM_SPATIAL;
-    CuDNNSetTensorDesc<T>(&input_desc_, Input(0).dims(), data_format());
+    CuDNNSetTensorDesc<T>(input_desc_, Input(0).dims(), data_format());
   }
   CUDNN_CHECK(cudnnDeriveBNTensorDescriptor(bn_desc_, input_desc_, bn_mode_));
 
@@ -107,6 +107,7 @@ void CuDNNBatchNormGradientOp<Context>::RunTraining() {
 
 DEPLOY_CUDNN_OPERATOR(BatchNorm);
 DEPLOY_CUDNN_OPERATOR(BatchNormGradient);
+DEFINE_OP_SINGLE_ARG(float, CuDNNBatchNormOp, momentum);
 
 } // namespace dragon
 

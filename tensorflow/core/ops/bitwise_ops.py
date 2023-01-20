@@ -22,7 +22,7 @@ from dragon.core.ops import math_ops
 
 
 def bitwise_and(x, y, name=None):
-    r"""Compute the element-wise AND bitwise operation.
+    r"""Compute element-wise AND bitwise operation.
 
     .. math:: \text{out} = \text{input1} \mathbin{\&} \text{input2}
 
@@ -54,7 +54,7 @@ def bitwise_and(x, y, name=None):
 
 
 def bitwise_or(x, y, name=None):
-    r"""Compute the element-wise OR bitwise operation.
+    r"""Compute element-wise OR bitwise operation.
 
     .. math:: \text{out} = \text{input1} \mathbin{|} \text{input2}
 
@@ -86,7 +86,7 @@ def bitwise_or(x, y, name=None):
 
 
 def bitwise_xor(x, y, name=None):
-    r"""Compute the element-wise XOR bitwise operation.
+    r"""Compute element-wise XOR bitwise operation.
 
     .. math:: \text{out} = \text{input1} \oplus \text{input2}
 

@@ -42,6 +42,10 @@ DEPLOY_CUDA_OPERATOR(ClipGradient);
 DEPLOY_MPS_OPERATOR(Clip, Clip);
 DEPLOY_MPS_OPERATOR(ClipGradient, ClipGradient);
 #endif
+#ifdef USE_MLU
+DEPLOY_MLU_OPERATOR(Clip);
+DEPLOY_MLU_OPERATOR(ClipGradient);
+#endif
 
 OPERATOR_SCHEMA(Clip).NumInputs(1).NumOutputs(1);
 OPERATOR_SCHEMA(ClipGradient).NumInputs(2).NumOutputs(1);

@@ -21,6 +21,9 @@ CUDAObjects::~CUDAObjects() {
     for (auto& handle : cublas_handles_[device_id]) {
       if (handle) CUBLAS_CHECK(cublasDestroy(handle));
     }
+    for (auto& iter : curand_generators_[device_id]) {
+      if (iter.second) CURAND_CHECK(curandDestroyGenerator(iter.second));
+    }
     for (auto& stream : streams_[device_id]) {
       // Do not check the stream destroying.
       if (stream) cudaStreamDestroy(stream);

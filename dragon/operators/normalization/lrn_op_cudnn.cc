@@ -8,7 +8,7 @@ template <class Context>
 template <typename T>
 void CuDNNLRNOp<Context>::DoRunWithType() {
   auto &X = Input(0), *Y = Output(0);
-  CuDNNSetTensorDesc<T>(&input_desc_, X.dims(), data_format());
+  CuDNNSetTensorDesc<T>(input_desc_, X.dims(), data_format());
 
   CUDNN_CHECK(cudnnLRNCrossChannelForward(
       ctx()->cudnn_handle(),
@@ -31,7 +31,7 @@ template <class Context>
 template <typename T>
 void CuDNNLRNGradientOp<Context>::DoRunWithType() {
   auto &X = Input(0), &Y = Input(1), &dY = Input(2), *dX = Output(0);
-  CuDNNSetTensorDesc<T>(&input_desc_, X.dims(), data_format());
+  CuDNNSetTensorDesc<T>(input_desc_, X.dims(), data_format());
 
   CUDNN_CHECK(cudnnLRNCrossChannelBackward(
       ctx()->cudnn_handle(),

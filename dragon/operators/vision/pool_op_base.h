@@ -72,6 +72,9 @@ class CuDNNPoolOpBase : public PoolOpBase<Context> {
   CuDNNPoolOpBase(const OperatorDef& def, Workspace* ws)
       : PoolOpBase<Context>(def, ws) {
     GetBaseArguments();
+    CuDNNCreateTensorDesc(&input_desc_);
+    CuDNNCreateTensorDesc(&output_desc_);
+    CUDNN_CHECK(cudnnCreatePoolingDescriptor(&pool_desc_));
     if (mode_ == "MAX") {
       pool_mode_ = CUDNN_POOLING_MAX_DETERMINISTIC;
     } else if (mode_ == "AVG") {
@@ -82,6 +85,12 @@ class CuDNNPoolOpBase : public PoolOpBase<Context> {
   }
   USE_OPERATOR_FUNCTIONS;
   USE_POOL_FUNCTIONS;
+
+  ~CuDNNPoolOpBase() {
+    CuDNNDestroyTensorDesc(input_desc_);
+    CuDNNDestroyTensorDesc(output_desc_);
+    CUDNN_CHECK(cudnnDestroyPoolingDescriptor(pool_desc_));
+  }
 
  protected:
   void SetPoolDesc() {
@@ -108,18 +117,13 @@ class CuDNNPoolOpBase : public PoolOpBase<Context> {
     }
   }
 
-  cudnnPoolingDescriptor_t pool_desc_;
   cudnnPoolingMode_t pool_mode_;
+  cudnnPoolingDescriptor_t pool_desc_;
+  cudnnTensorDescriptor_t input_desc_, output_desc_;
 };
-
-#define USE_CUDNN_POOL_FUNCTIONS               \
-  using CuDNNPoolOpBase<Context>::SetPoolDesc; \
-  using CuDNNPoolOpBase<Context>::pool_desc_;  \
-  using CuDNNPoolOpBase<Context>::pool_mode_
 #endif // USE_CUDNN
 
 #ifdef USE_MPS
-
 #ifdef __OBJC__
 typedef MPSGraphPooling2DOpDescriptor* MPSGraphPooling2DOpDescriptor_t;
 #else
@@ -135,20 +139,90 @@ class MPSPoolOpBase : public PoolOpBase<Context> {
   USE_POOL_FUNCTIONS;
 
   ~MPSPoolOpBase() {
+    NSReleaseObject(graph_);
     NSReleaseObject(pool2d_desc_);
   }
 
  protected:
   void SetPoolDesc();
 
+  MPSGraph_t graph_;
+  MPSGraphCache graph_cache_;
   MPSGraphPooling2DOpDescriptor_t pool2d_desc_;
 };
-
-#define USE_MPS_POOL_FUNCTIONS               \
-  using MPSPoolOpBase<Context>::SetPoolDesc; \
-  using MPSPoolOpBase<Context>::pool2d_desc_;
-
 #endif // USE_MPS
+
+#ifdef USE_MLU
+template <class Context>
+class CNNLPoolOpBase : public PoolOpBase<Context> {
+ public:
+  CNNLPoolOpBase(const OperatorDef& def, Workspace* ws)
+      : PoolOpBase<Context>(def, ws) {
+    GetBaseArguments();
+    CNNLCreateTensorDesc(&input_desc_);
+    CNNLCreateTensorDesc(&output_desc_);
+    CNNLCreateTensorDesc(&index_desc_);
+    CNNL_CHECK(cnnlCreatePoolingDescriptor(&pool_desc_));
+    if (mode_ == "MAX") {
+      pool_mode_ = CNNL_POOLING_MAX;
+    } else if (mode_ == "AVG") {
+      pool_mode_ = CNNL_POOLING_AVERAGE_COUNT_INCLUDE_PADDING;
+    } else {
+      LOG(FATAL) << "Unknown Mode: " << mode_;
+    }
+  }
+  USE_OPERATOR_FUNCTIONS;
+  USE_POOL_FUNCTIONS;
+
+  ~CNNLPoolOpBase() {
+    CNNLDestroyTensorDesc(input_desc_);
+    CNNLDestroyTensorDesc(output_desc_);
+    CNNLDestroyTensorDesc(index_desc_);
+    CNNL_CHECK(cnnlDestroyPoolingDescriptor(pool_desc_));
+  }
+
+ protected:
+  void SetPoolDesc() {
+    if (num_axes_ == 1 || num_axes_ == 2) {
+      CNNL_CHECK(cnnlSetPooling2dDescriptor_v2(
+          pool_desc_,
+          pool_mode_,
+          CNNL_NOT_PROPAGATE_NAN,
+          kshape_[0],
+          num_axes_ == 1 ? 1 : kshape_[1],
+          pads_begin_[0],
+          pads_end_[0],
+          num_axes_ == 1 ? 0 : pads_begin_[1],
+          num_axes_ == 1 ? 0 : pads_end_[1],
+          strides_[0],
+          num_axes_ == 1 ? 1 : strides_[1],
+          1, // dilation_h
+          1, // dilation_w
+          ceil_mode_ > 0));
+    } else {
+      vec32_t pads(num_axes_ * 2, 0);
+      for (int i = 0; i < pads_begin_.size(); ++i) {
+        pads[i * 2] = pads_begin_[i];
+        pads[i * 2 + 1] = pads_end_[i];
+      }
+      CNNL_CHECK(cnnlSetPoolingNdDescriptor_v2(
+          pool_desc_,
+          pool_mode_,
+          CNNL_NOT_PROPAGATE_NAN,
+          num_axes_,
+          vec32_t({kshape_.begin(), kshape_.end()}).data(),
+          pads.data(),
+          vec32_t({strides_.begin(), strides_.end()}).data(),
+          vec32_t(num_axes_, 1).data(),
+          ceil_mode_ > 0));
+    }
+  }
+
+  cnnlPoolingMode_t pool_mode_;
+  cnnlPoolingDescriptor_t pool_desc_;
+  cnnlTensorDescriptor_t input_desc_, output_desc_, index_desc_;
+};
+#endif // USE_MLU
 
 } // namespace dragon
 

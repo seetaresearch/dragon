@@ -1,0 +1,134 @@
+#include "dragon/kernels/math/op_kernels.h"
+#include "dragon/utils/math_functions.h"
+
+namespace dragon {
+
+namespace kernels {
+
+#define BLOCK_THREADS 40960
+
+namespace {
+
+template <typename T>
+__mlu_entry__ void
+_Clip(const int N, const T low, const T high, const T* x, T* y) {
+  __nram__ T Y[BLOCK_THREADS];
+  MLU_1D_KERNEL_LOOP(i, N, BLOCK_THREADS) {
+    const int N_ram = std::min(N - i, BLOCK_THREADS);
+    __memcpy(Y, x + i, N_ram * sizeof(T), GDRAM2NRAM);
+    __bang_mineq_scalar(Y, Y, high, N_ram);
+    __bang_maxeq_scalar(Y, Y, low, N_ram);
+    __memcpy(y + i, Y, N_ram * sizeof(T), NRAM2GDRAM);
+  }
+}
+
+template <typename T>
+__mlu_entry__ void _ClipGrad(
+    const int N,
+    const T low,
+    const T high,
+    const T* dy,
+    const T* x,
+    T* dx) {
+  __nram__ T X[BLOCK_THREADS], dX[BLOCK_THREADS];
+  __nram__ T scratch[BLOCK_THREADS];
+  MLU_1D_KERNEL_LOOP(i, N, BLOCK_THREADS) {
+    const int N_ram = std::min(N - i, BLOCK_THREADS);
+    __memcpy(X, x + i, N_ram * sizeof(T), GDRAM2NRAM);
+    __memcpy(dX, dy + i, N_ram * sizeof(T), GDRAM2NRAM);
+    __bang_le_scalar(scratch, X, high, N_ram);
+    __bang_mul(dX, dX, scratch, N_ram);
+    __bang_ge_scalar(scratch, X, low, N_ram);
+    __bang_mul(dX, dX, scratch, N_ram);
+    __memcpy(dx + i, dX, N_ram * sizeof(T), NRAM2GDRAM);
+  }
+}
+
+} // namespace
+
+#define DEFINE_KERNEL_LAUNCHER(T)                              \
+  template <>                                                  \
+  void Clip<T, MLUContext>(                                    \
+      const int N,                                             \
+      const float low,                                         \
+      const float high,                                        \
+      const T* x,                                              \
+      T* y,                                                    \
+      MLUContext* ctx) {                                       \
+    _Clip<<<                                                   \
+        MLU_BLOCKS(N, BLOCK_THREADS),                          \
+        CNRT_FUNC_TYPE_BLOCK,                                  \
+        ctx->mlu_stream()>>>(                                  \
+        N,                                                     \
+        convert::To<math::ScalarType<T>::type>(low),           \
+        convert::To<math::ScalarType<T>::type>(high),          \
+        reinterpret_cast<const math::ScalarType<T>::type*>(x), \
+        reinterpret_cast<math::ScalarType<T>::type*>(y));      \
+  }
+
+DEFINE_KERNEL_LAUNCHER(uint8_t);
+DEFINE_KERNEL_LAUNCHER(int8_t);
+DEFINE_KERNEL_LAUNCHER(int);
+DEFINE_KERNEL_LAUNCHER(float16);
+DEFINE_KERNEL_LAUNCHER(float);
+#undef DEFINE_KERNEL_LAUNCHER
+
+#define DEFINE_KERNEL_LAUNCHER(T)                            \
+  template <>                                                \
+  void Clip<T, MLUContext>(                                  \
+      const int N,                                           \
+      const float low,                                       \
+      const float high,                                      \
+      const T* x,                                            \
+      T* y,                                                  \
+      MLUContext* ctx) {                                     \
+    LOG(FATAL) << "Unsupported BANG type for <ClipKernel>: " \
+               << dtypes::to_string(TypeMeta::Make<T>());    \
+  }
+
+DEFINE_KERNEL_LAUNCHER(int64_t);
+DEFINE_KERNEL_LAUNCHER(double);
+#undef DEFINE_KERNEL_LAUNCHER
+
+#define DEFINE_GRAD_KERNEL_LAUNCHER(T)                          \
+  template <>                                                   \
+  void ClipGrad<T, MLUContext>(                                 \
+      const int N,                                              \
+      const float low,                                          \
+      const float high,                                         \
+      const T* dy,                                              \
+      const T* x,                                               \
+      T* dx,                                                    \
+      MLUContext* ctx) {                                        \
+    _ClipGrad<<<                                                \
+        MLU_BLOCKS(N, BLOCK_THREADS),                           \
+        CNRT_FUNC_TYPE_BLOCK,                                   \
+        ctx->mlu_stream()>>>(                                   \
+        N,                                                      \
+        convert::To<math::ScalarType<T>::type>(low),            \
+        convert::To<math::ScalarType<T>::type>(high),           \
+        reinterpret_cast<const math::ScalarType<T>::type*>(dy), \
+        reinterpret_cast<const math::ScalarType<T>::type*>(x),  \
+        reinterpret_cast<math::ScalarType<T>::type*>(dx));      \
+  }
+
+template <>
+void ClipGrad<double, MLUContext>(
+    const int N,
+    const float low,
+    const float high,
+    const double* dy,
+    const double* x,
+    double* dx,
+    MLUContext* ctx) {
+  LOG(FATAL) << "Unsupported BANG type for <ClipGradKernel>: double";
+}
+
+DEFINE_GRAD_KERNEL_LAUNCHER(float16);
+DEFINE_GRAD_KERNEL_LAUNCHER(float);
+#undef DEFINE_GRAD_KERNEL_LAUNCHER
+#undef BLOCK_THREADS
+
+} // namespace kernels
+
+} // namespace dragon

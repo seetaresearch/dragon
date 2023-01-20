@@ -25,11 +25,19 @@ class CollectiveOp final : public CollectiveOpBase<Context> {
   CollectiveOp(const OperatorDef& def, Workspace* ws)
       : CollectiveOpBase<Context>(def, ws),
         operation_(OP_SINGLE_ARG(string, "operation", "")),
-        reduction_(OP_SINGLE_ARG(string, "reduction", "MEAN")) {}
+        reduction_(OP_SINGLE_ARG(string, "reduction", "MEAN")) {
+    buffer_size_ = 0;
+    char* env_var = nullptr;
+    env_var = getenv("DRAGON_COLL_BUFFER_SIZE");
+    if (env_var != nullptr) buffer_size_ = std::stoi(string(env_var));
+  }
   USE_OPERATOR_FUNCTIONS;
   USE_COLLECTIVE_FUNCTIONS;
 
   void RunOnDevice() override;
+
+  template <typename T>
+  void CopyTensors(bool done);
 
   template <typename T>
   void AllGatherMPI();
@@ -38,10 +46,16 @@ class CollectiveOp final : public CollectiveOpBase<Context> {
   void AllGatherNCCL();
 
   template <typename T>
+  void AllGatherCNCL();
+
+  template <typename T>
   void AllReduceMPI();
 
   template <typename T>
   void AllReduceNCCL();
+
+  template <typename T>
+  void AllReduceCNCL();
 
   template <typename T>
   void BroadcastMPI();
@@ -50,9 +64,14 @@ class CollectiveOp final : public CollectiveOpBase<Context> {
   void BroadcastNCCL();
 
   template <typename T>
+  void BroadcastCNCL();
+
+  template <typename T>
   void DoRunWithType();
 
  protected:
+  int src_index_;
+  size_t buffer_size_;
   string operation_, reduction_;
   Tensor *src_tensor_, *dest_tensor_;
 };

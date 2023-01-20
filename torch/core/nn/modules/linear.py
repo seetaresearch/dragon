@@ -16,7 +16,7 @@ from __future__ import print_function
 
 import math
 
-from dragon.vm.torch.core.nn import functional as F
+from dragon.vm.torch.core.nn import functional
 from dragon.vm.torch.core.nn.modules.module import Module
 from dragon.vm.torch.core.nn.parameter import Parameter
 from dragon.vm.torch.core.ops import constant_ops
@@ -101,17 +101,16 @@ class Affine(Module):
         return s
 
     def forward(self, input):
-        return F.affine(
+        return functional.affine(
             input,
             self.weight,
             self.bias,
             dim=1,
-            out=input if self.inplace else None,
-        )
+            out=input if self.inplace else None)
 
 
 class Identity(Module):
-    r"""Apply the identity transformation.
+    r"""Apply identity transformation.
 
     .. math:: y = x
 
@@ -134,7 +133,7 @@ class Identity(Module):
 
 
 class Linear(Module):
-    r"""Apply the linear transformation.
+    r"""Apply linear transformation.
 
     .. math:: \text{out} = \text{input} \times \text{weight}^{T} + \text{bias}
 
@@ -180,7 +179,7 @@ class Linear(Module):
                 .format(self.in_features, self.out_features, self.bias is not None))
 
     def forward(self, input):
-        return F.linear(input, self.weight, self.bias)
+        return functional.linear(input, self.weight, self.bias)
 
     def reset_parameters(self):
         stddev = 1. / math.sqrt(self.weight.size(1))

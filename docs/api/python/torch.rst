@@ -34,7 +34,7 @@ vm.torch
   : Compute the absolute value of input.
 
   `add(...) <torch/add.html>`_
-  : Compute the element-wise addition.
+  : Compute element-wise addition.
 
   `addmm(...) <torch/addmm.html>`_
   : Add input to the result of matrix-matrix multiplication.
@@ -52,25 +52,25 @@ vm.torch
   : Return the index of sorted elements along the given dimension.
 
   `atan2(...) <torch/atan2.html>`_
-  : Compute the element-wise arc-tangent of two arguments.
+  : Compute element-wise arc-tangent of two arguments.
 
   `baddbmm(...) <torch/baddbmm.html>`_
   : Add input to the result of batched matrix-matrix multiplication.
 
   `bitwise_and(...) <torch/bitwise_and.html>`_
-  : Compute the element-wise AND bitwise operation.
+  : Compute element-wise AND bitwise operation.
 
   `bitwise_not(...) <torch/bitwise_not.html>`_
-  : Compute the element-wise NOT bitwise operation.
+  : Compute element-wise NOT bitwise operation.
 
   `bitwise_or(...) <torch/bitwise_or.html>`_
-  : Compute the element-wise OR bitwise operation.
+  : Compute element-wise OR bitwise operation.
 
   `bitwise_xor(...) <torch/bitwise_xor.html>`_
-  : Compute the element-wise XOR bitwise operation.
+  : Compute element-wise XOR bitwise operation.
 
   `bmm(...) <torch/bmm.html>`_
-  : Compute the batched matrix-matrix multiplication.
+  : Compute batched matrix-matrix multiplication.
 
   `cat(...) <torch/cat.html>`_
   : Concatenate the inputs along the given dimension.
@@ -82,7 +82,7 @@ vm.torch
   : Split input into a specific number of chunks.
 
   `clamp(...) <torch/clamp.html>`_
-  : Compute the clipped input according to the given bounds.
+  : Clip input according to the given bounds.
 
   `cos(...) <torch/cos.html>`_
   : Compute the cos of input.
@@ -91,13 +91,13 @@ vm.torch
   : Compute the cumulative sum of elements along the given dimension.
 
   `div(...) <torch/div.html>`_
-  : Compute the element-wise division.
+  : Compute element-wise division.
 
   `empty(...) <torch/empty.html>`_
   : Return a tensor filled with uninitialized data.
 
   `eq(...) <torch/eq.html>`_
-  : Compute the element-wise equal comparison.
+  : Compute element-wise equal comparison.
 
   `exp(...) <torch/exp.html>`_
   : Compute the exponential of input.
@@ -133,10 +133,10 @@ vm.torch
   : Gather elements along the given dimension of index.
 
   `ge(...) <torch/ge.html>`_
-  : Compute the element-wise greater-equal comparison.
+  : Compute element-wise greater-equal comparison.
 
   `gt(...) <torch/gt.html>`_
-  : Compute the element-wise greater comparison.
+  : Compute element-wise greater comparison.
 
   `index_select(...) <torch/index_select.html>`_
   : Select elements along the given dimension using index.
@@ -151,7 +151,7 @@ vm.torch
   : Check if the elements of input are NaN.
 
   `le(...) <torch/le.html>`_
-  : Compute the element-wise less-equal comparison.
+  : Compute element-wise less-equal comparison.
 
   `linspace(...) <torch/linspace.html>`_
   : Generate evenly spaced values within intervals along the given dimension.
@@ -160,28 +160,28 @@ vm.torch
   : Compute the natural logarithm of input.
 
   `logical_and(...) <torch/logical_and.html>`_
-  : Compute the element-wise AND logical operation.
+  : Compute element-wise AND logical operation.
 
   `logical_not(...) <torch/logical_not.html>`_
-  : Compute the element-wise NOT logical operation.
+  : Compute element-wise NOT logical operation.
 
   `logical_or(...) <torch/logical_or.html>`_
-  : Compute the element-wise OR logical operation.
+  : Compute element-wise OR logical operation.
 
   `logical_xor(...) <torch/logical_xor.html>`_
-  : Compute the element-wise XOR logical operation.
+  : Compute element-wise XOR logical operation.
 
   `logsumexp(...) <torch/logsumexp.html>`_
   : Apply the composite of log, sum, and exp to input.
 
   `lt(...) <torch/lt.html>`_
-  : Compute the element-wise less comparison.
+  : Compute element-wise less comparison.
 
   `masked_select(...) <torch/logsumexp.html>`_
   : Select the input elements where mask is true.
 
   `matmul(...) <torch/matmul.html>`_
-  : Compute the matrix multiplication.
+  : Compute matrix multiplication.
 
   `max(...) <torch/max.html>`_
   : Compute the max value of elements along the given dimension.
@@ -199,22 +199,25 @@ vm.torch
   : Compute the minimum value of inputs.
 
   `mm(...) <torch/mm.html>`_
-  : Compute the matrix-matrix multiplication.
+  : Compute matrix-matrix multiplication.
 
   `mul(...) <torch/mul.html>`_
-  : Compute the element-wise multiplication.
+  : Compute element-wise multiplication.
 
   `multinomial(...) <torch/multinomial.html>`_
   : Return a tensor with index sampled from multinomial distribution.
+
+  `nan_to_num(...) <torch/nan_to_num.html>`_
+  : Replace NaN or infinity elements with given value.
 
   `narrow(...) <torch/narrow.html>`_
   : Return a new tensor that is a narrowed version of input tensor.
 
   `ne(...) <torch/ne.html>`_
-  : Compute the element-wise not-equal comparison.
+  : Compute lement-wise not-equal comparison.
 
   `neg(...) <torch/neg.html>`_
-  : Compute the element-wise negative.
+  : Compute element-wise negative.
 
   `nonzero(...) <torch/nonzero.html>`_
   : Return the index of non-zero elements.
@@ -292,7 +295,7 @@ vm.torch
   : Stack the inputs along the given dimension.
 
   `sub(...) <torch/sub.html>`_
-  : Compute the element-wise subtraction.
+  : Compute element-wise subtraction.
 
   `sum(...) <torch/sum.html>`_
   : Compute the sum value of elements along the given dimension.
@@ -409,6 +412,7 @@ vm.torch
   torch/mm
   torch/mul
   torch/multinomial
+  torch/nan_to_num
   torch/narrow
   torch/ne
   torch/neg

@@ -1,0 +1,66 @@
+#include "dragon/kernels/activation/op_kernels.h"
+#include "dragon/utils/math_functions.h"
+
+namespace dragon {
+
+namespace kernels {
+
+#define BLOCK_THREADS 40960
+
+namespace {
+
+template <typename T>
+__mlu_entry__ void _HardSwishGrad(const int N, const T* dy, const T* x, T* dx) {
+  __nram__ T X[BLOCK_THREADS], dX[BLOCK_THREADS];
+  __nram__ T scratch1[BLOCK_THREADS], scratch2[BLOCK_THREADS];
+  MLU_1D_KERNEL_LOOP(i, N, BLOCK_THREADS) {
+    const int N_ram = std::min(N - i, BLOCK_THREADS);
+    __memcpy(X, x + i, N_ram * sizeof(T), GDRAM2NRAM);
+    __memcpy(dX, dy + i, N_ram * sizeof(T), GDRAM2NRAM);
+    __bang_ge_scalar(scratch1, X, T(-3), N_ram);
+    __bang_mul(dX, dX, scratch1, N_ram);
+    __bang_fusion(FUSION_FMA, scratch2, X, T(0.333333333333333), T(0.5), N_ram);
+    __bang_mul(scratch2, scratch2, dX, N_ram);
+    __bang_lt_scalar(scratch1, X, T(3), N_ram);
+    __bang_mul(scratch2, scratch2, scratch1, N_ram);
+    __bang_ge_scalar(scratch1, X, T(3), N_ram);
+    __bang_mul(dX, dX, scratch1, N_ram);
+    __bang_add(dX, dX, scratch2, N_ram);
+    __memcpy(dx + i, dX, N_ram * sizeof(T), NRAM2GDRAM);
+  }
+}
+
+} // namespace
+
+#define DEFINE_GRAD_KERNEL_LAUNCHER(T)                                \
+  template <>                                                         \
+  void HardSwishGrad<T, MLUContext>(                                  \
+      const int N, const T* dy, const T* x, T* dx, MLUContext* ctx) { \
+    _HardSwishGrad<<<                                                 \
+        MLU_BLOCKS(N, BLOCK_THREADS),                                 \
+        CNRT_FUNC_TYPE_BLOCK,                                         \
+        ctx->mlu_stream()>>>(                                         \
+        N,                                                            \
+        reinterpret_cast<const math::ScalarType<T>::type*>(dy),       \
+        reinterpret_cast<const math::ScalarType<T>::type*>(x),        \
+        reinterpret_cast<math::ScalarType<T>::type*>(dx));            \
+  }
+
+DEFINE_GRAD_KERNEL_LAUNCHER(float16);
+DEFINE_GRAD_KERNEL_LAUNCHER(float);
+#undef DEFINE_GRAD_KERNEL_LAUNCHER
+#undef BLOCK_THREADS
+
+template <>
+void HardSwishGrad<double, MLUContext>(
+    const int N,
+    const double* dy,
+    const double* x,
+    double* dx,
+    MLUContext* ctx) {
+  LOG(FATAL) << "Unsupported BANG type for <HardSwishGradKernel>: double";
+}
+
+} // namespace kernels
+
+} // namespace dragon

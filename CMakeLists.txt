@@ -10,6 +10,7 @@ option(BUILD_SHARED_LIBS "Build shared libraries" ON)
 option(USE_CUDA "Use CUDA" ON)
 option(USE_CUDNN "Use CUDNN" ON)
 option(USE_MPS "Use MPS" OFF)
+option(USE_MLU "Use MLU" OFF)
 option(USE_BLAS "Use BLAS" OFF)
 option(USE_OPENMP "Use OpenMP" ON)
 option(USE_MPI "Use MPI" OFF)
@@ -28,8 +29,14 @@ endif()
 
 # Set the CUDA target architectures.
 # If not, common architectures (>= 5.0) will be used.
-if (NOT CUDA_ARCH)
+if (USE_CUDA AND NOT CUDA_ARCH)
   set(CUDA_ARCH Common)
+endif()
+
+# Set the MLU target architectures.
+# If not, common architectures (3.0) will be used.
+if (USE_MLU AND NOT MLU_ARCH)
+  set(MLU_ARCH --bang-arch=compute_30)
 endif()
 
 # Set the custom protobuf sdk if necessary.

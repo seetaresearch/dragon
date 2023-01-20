@@ -16,6 +16,7 @@
 #include <float.h>
 #include <algorithm>
 #include <array>
+#include <cfloat>
 #include <climits>
 #include <cmath>
 #include <cstring>

@@ -47,17 +47,20 @@ void GradientGatherOp<Context>::DoRunWithType() {
 DEPLOY_CPU_OPERATOR(GradientFill);
 DEPLOY_CPU_OPERATOR(GradientGather);
 DEPLOY_CPU_OPERATOR(GradientStop);
-
 #ifdef USE_CUDA
 DEPLOY_CUDA_OPERATOR(GradientFill);
 DEPLOY_CUDA_OPERATOR(GradientGather);
 DEPLOY_CUDA_OPERATOR(GradientStop);
 #endif
-
 #ifdef USE_MPS
 DEPLOY_MPS_OPERATOR(GradientFill, GradientFill);
 DEPLOY_MPS_OPERATOR(GradientGather, GradientGather);
 DEPLOY_MPS_OPERATOR(GradientStop, GradientStop);
+#endif
+#ifdef USE_MLU
+DEPLOY_MLU_OPERATOR(GradientFill);
+DEPLOY_MLU_OPERATOR(GradientGather);
+DEPLOY_MLU_OPERATOR(GradientStop);
 #endif
 
 OPERATOR_SCHEMA(GradientFill).NumInputs(1, INT_MAX).NumOutputs(1, INT_MAX);

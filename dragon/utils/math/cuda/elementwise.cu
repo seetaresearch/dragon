@@ -196,9 +196,9 @@ _Powx(const int N, const float exponent, const half2* x, half2* y) {
 }
 
 template <typename T>
-__global__ void _Set(const int N, const T alpha, T* x) {
+__global__ void _Set(const int N, const T value, T* y) {
   CUDA_1D_KERNEL_LOOP(i, N) {
-    x[i] = alpha;
+    y[i] = value;
   }
 }
 
@@ -275,9 +275,29 @@ __global__ void _IsFinite(const int N, const T* x, bool* y) {
 }
 
 template <typename T>
-__global__ void _ReplaceNaN(const int N, const T value, const T* x, T* y) {
+__global__ void _NaNToNum(const int N, const T nan, const T* x, T* y) {
   CUDA_1D_KERNEL_LOOP(i, N) {
-    y[i] = math::utils::IsNaN(__ldg(x + i)) ? value : __ldg(x + i);
+    y[i] = math::utils::IsNaN(__ldg(x + i)) ? nan : __ldg(x + i);
+  }
+}
+
+template <typename T>
+__global__ void _NaNToNum(
+    const int N,
+    const T nan,
+    const T pos_inf,
+    const T neg_inf,
+    const T* x,
+    T* y) {
+  const T kZero = convert::To<T>(0.f);
+  CUDA_1D_KERNEL_LOOP(i, N) {
+    if (math::utils::IsNaN(__ldg(x + i))) {
+      y[i] = nan;
+    } else if (math::utils::IsInf(__ldg(x + i))) {
+      y[i] = GreaterFunctor<T>()(__ldg(x + i), kZero) ? pos_inf : neg_inf;
+    } else {
+      y[i] = __ldg(x + i);
+    }
   }
 }
 
@@ -392,7 +412,6 @@ DEFINE_UNARY_FUNC(Cos, double, double, CosFunctor);
 
 DEFINE_UNARY_FUNC(Inv, float);
 DEFINE_UNARY_FUNC(Inv, double);
-DEFINE_UNARY_FUNC(Abs, uint8_t);
 DEFINE_UNARY_FUNC(Abs, int8_t);
 DEFINE_UNARY_FUNC(Abs, int);
 DEFINE_UNARY_FUNC(Abs, int64_t);
@@ -622,21 +641,40 @@ DEFINE_IS_FUNC(IsFinite, float);
 DEFINE_IS_FUNC(IsFinite, double);
 #undef DEFINE_IS_FUNC
 
-#define DEFINE_REPLACE_NAN_FUNC(T)                                          \
-  template <>                                                               \
-  DRAGON_API void ReplaceNaN<T, CUDAContext>(                               \
-      const int N, const float value, const T* x, T* y, CUDAContext* ctx) { \
-    _ReplaceNaN<<<CUDA_BLOCKS(N), CUDA_THREADS, 0, ctx->cuda_stream()>>>(   \
-        N,                                                                  \
-        convert::To<math::ScalarType<T>::type>(value),                      \
-        reinterpret_cast<const math::ScalarType<T>::type*>(x),              \
-        reinterpret_cast<math::ScalarType<T>::type*>(y));                   \
+#define DEFINE_NAN_TO_NUM_FUNC(T, kLowest, kMax)                          \
+  template <>                                                             \
+  DRAGON_API void NaNToNum<T, CUDAContext>(                               \
+      const int N, const float nan, const T* x, T* y, CUDAContext* ctx) { \
+    _NaNToNum<<<CUDA_BLOCKS(N), CUDA_THREADS, 0, ctx->cuda_stream()>>>(   \
+        N,                                                                \
+        convert::To<math::ScalarType<T>::type>(nan),                      \
+        reinterpret_cast<const math::ScalarType<T>::type*>(x),            \
+        reinterpret_cast<math::ScalarType<T>::type*>(y));                 \
+  }                                                                       \
+  template <>                                                             \
+  DRAGON_API void NaNToNum<T, CUDAContext>(                               \
+      const int N,                                                        \
+      const float nan,                                                    \
+      const float pos_inf,                                                \
+      const float neg_inf,                                                \
+      const T* x,                                                         \
+      T* y,                                                               \
+      CUDAContext* ctx) {                                                 \
+    const float pos_inf_fpcast = std::min(pos_inf, kMax);                 \
+    const float neg_inf_fpcast = std::max(neg_inf, kLowest);              \
+    _NaNToNum<<<CUDA_BLOCKS(N), CUDA_THREADS, 0, ctx->cuda_stream()>>>(   \
+        N,                                                                \
+        convert::To<math::ScalarType<T>::type>(nan),                      \
+        convert::To<math::ScalarType<T>::type>(pos_inf_fpcast),           \
+        convert::To<math::ScalarType<T>::type>(neg_inf_fpcast),           \
+        reinterpret_cast<const math::ScalarType<T>::type*>(x),            \
+        reinterpret_cast<math::ScalarType<T>::type*>(y));                 \
   }
 
-DEFINE_REPLACE_NAN_FUNC(float16);
-DEFINE_REPLACE_NAN_FUNC(float);
-DEFINE_REPLACE_NAN_FUNC(double);
-#undef DEFINE_REPLACE_NAN_FUNC
+DEFINE_NAN_TO_NUM_FUNC(float16, -65505.f, 65504.f);
+DEFINE_NAN_TO_NUM_FUNC(float, -FLT_MAX, FLT_MAX);
+DEFINE_NAN_TO_NUM_FUNC(double, -FLT_MAX, FLT_MAX);
+#undef DEFINE_NAN_TO_NUM_FUNC
 
 #define DEFINE_BIAS_FUNC(T)                                                \
   template <>                                                              \

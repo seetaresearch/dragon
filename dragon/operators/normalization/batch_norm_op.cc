@@ -267,6 +267,7 @@ DEPLOY_CUDA_OPERATOR(BatchNormGradient);
 DEPLOY_MPS_OPERATOR(BatchNorm, BatchNorm);
 DEPLOY_MPS_OPERATOR(BatchNormGradient, BatchNormGradient);
 #endif
+DEFINE_OP_SINGLE_ARG(float, BatchNormOp, momentum);
 
 OPERATOR_SCHEMA(BatchNorm)
     /* X, W, B, M, V */

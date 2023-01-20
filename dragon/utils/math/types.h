@@ -39,6 +39,22 @@ class ScalarType<float16> {
 };
 #endif
 
+#if defined(__mlu_host__)
+template <>
+class ScalarType<int8_t> {
+ public:
+  typedef char type;
+  typedef char type2;
+};
+
+template <>
+class ScalarType<float16> {
+ public:
+  typedef half type;
+  typedef half type2;
+};
+#endif
+
 template <typename T>
 class AccumulatorType {
  public:

@@ -60,22 +60,6 @@ class Module(object):
         self._forward_hooks = collections.OrderedDict()
         self.training = True
 
-    def __getattr__(self, item):
-        if '_parameters' in self.__dict__:
-            _parameters = self.__dict__['_parameters']
-            if item in _parameters:
-                return _parameters[item]
-        if '_buffers' in self.__dict__:
-            _buffers = self.__dict__['_buffers']
-            if item in _buffers:
-                return _buffers[item]
-        if '_modules' in self.__dict__:
-            modules = self.__dict__['_modules']
-            if item in modules:
-                return modules[item]
-        raise AttributeError("'{}' object has no attribute '{}'".format(
-            type(self).__name__, item))
-
     def add_module(self, name, module):
         """Add a submodule to the module.
 
@@ -94,7 +78,7 @@ class Module(object):
         self._modules[name] = module
 
     def apply(self, fn):
-        """Apply the function over submodules.
+        """Apply function over submodules.
 
         Parameters
         ----------
@@ -329,6 +313,27 @@ class Module(object):
                 .format(self.__class__.__name__, "\n\t".join(error_msgs)))
 
         return self._IncompatibleKeys(missing_keys, unexpected_keys)
+
+    def mlu(self, device=None):
+        """Switch the buffers and parameters to mlu device.
+
+        If :attr:`device` is not provided, use the value
+        set by ``dragon.mlu.set_default_device()``.
+
+        Parameters
+        ----------
+        device : int, optional
+            The optional device index.
+
+        Returns
+        -------
+        dragon.vm.torch.nn.Module
+            The self.
+
+        """
+        if device is None:
+            device = config.config().device_index
+        return self._apply(lambda t: t.mlu(device))
 
     def modules(self):
         """Return an iterator over all modules.
@@ -610,7 +615,8 @@ class Module(object):
                 self.cpu()
             else:
                 {'cuda': self.cuda,
-                 'mps': self.mps}[device.type](device.index)
+                 'mps': self.mps,
+                 'mlu': self.mlu}[device.type](device.index)
         if dtype is not None:
             return {'float16': self.half,
                     'float32': self.float,
@@ -725,6 +731,22 @@ class Module(object):
             if hook_outputs is not None:
                 outputs = hook_outputs
         return outputs
+
+    def __getattr__(self, item):
+        if '_parameters' in self.__dict__:
+            _parameters = self.__dict__['_parameters']
+            if item in _parameters:
+                return _parameters[item]
+        if '_buffers' in self.__dict__:
+            _buffers = self.__dict__['_buffers']
+            if item in _buffers:
+                return _buffers[item]
+        if '_modules' in self.__dict__:
+            modules = self.__dict__['_modules']
+            if item in modules:
+                return modules[item]
+        raise AttributeError("'{}' object has no attribute '{}'"
+                             .format(type(self).__name__, item))
 
     def __repr__(self):
         """Return a debug string."""

@@ -1,0 +1,228 @@
+#include "dragon/kernels/activation/op_kernels.h"
+#include "dragon/utils/math_functions.h"
+
+namespace dragon {
+
+namespace kernels {
+
+#define BLOCK_THREADS 40960
+
+namespace {
+
+__mlu_entry__ void _Dropout(
+    const int N,
+    const float ratio,
+    const float scale,
+    const float* r,
+    const half* x,
+    half* y,
+    uint8_t* mask) {
+  __nram__ half Y[BLOCK_THREADS], R[BLOCK_THREADS];
+  __nram__ float scratch[BLOCK_THREADS];
+  __nram__ uint8_t M[BLOCK_THREADS];
+  MLU_1D_KERNEL_LOOP(i, N, BLOCK_THREADS) {
+    const int N_ram = std::min(N - i, BLOCK_THREADS);
+    __memcpy(Y, x + i, N_ram * sizeof(half), GDRAM2NRAM);
+    __memcpy(scratch, r + i, N_ram * sizeof(float), GDRAM2NRAM);
+    math::utils::Convert(R, scratch, N_ram);
+    __bang_gt_scalar(R, R, half(ratio), N_ram);
+    math::utils::Convert(M, R, N_ram);
+    __bang_mul_scalar(R, R, half(scale), N_ram);
+    __bang_mul(Y, Y, R, N_ram);
+    __memcpy(y + i, Y, N_ram * sizeof(half), NRAM2GDRAM);
+    __memcpy(mask + i, M, N_ram * sizeof(uint8_t), NRAM2GDRAM);
+  }
+}
+
+__mlu_entry__ void _Dropout(
+    const int N,
+    const float ratio,
+    const float scale,
+    const float* r,
+    const float* x,
+    float* y,
+    uint8_t* mask) {
+  __nram__ float Y[BLOCK_THREADS], R[BLOCK_THREADS];
+  __nram__ uint8_t M[BLOCK_THREADS];
+  MLU_1D_KERNEL_LOOP(i, N, BLOCK_THREADS) {
+    const int N_ram = std::min(N - i, BLOCK_THREADS);
+    __memcpy(Y, x + i, N_ram * sizeof(float), GDRAM2NRAM);
+    __memcpy(R, r + i, N_ram * sizeof(float), GDRAM2NRAM);
+    __bang_gt_scalar(R, R, ratio, N_ram);
+    math::utils::Convert(M, R, N_ram);
+    __bang_mul_scalar(R, R, scale, N_ram);
+    __bang_mul(Y, Y, R, N_ram);
+    __memcpy(y + i, Y, N_ram * sizeof(float), NRAM2GDRAM);
+    __memcpy(mask + i, M, N_ram * sizeof(uint8_t), NRAM2GDRAM);
+  }
+}
+
+template <typename T>
+__mlu_entry__ void _DropPath(
+    const int N,
+    const int C,
+    const float ratio,
+    const float scale,
+    const float* r,
+    const T* x,
+    T* y,
+    uint8_t* mask) {
+  __nram__ T Y[BLOCK_THREADS];
+  for (int i = taskId; i < N; i += taskDim) {
+    T* offset_y = y + i * C;
+    const T* offset_x = x + i * C;
+    const T alpha = float(mask[i] = (r[i] > ratio)) * scale;
+    for (int j = 0; j < C; j += BLOCK_THREADS) {
+      const int C_ram = std::min(C - j, BLOCK_THREADS);
+      __memcpy(Y, offset_x + j, C_ram * sizeof(T), GDRAM2NRAM);
+      __bang_mul_scalar(Y, Y, alpha, C_ram);
+      __memcpy(offset_y + j, Y, C_ram * sizeof(T), NRAM2GDRAM);
+    }
+  }
+}
+
+template <typename T>
+__mlu_entry__ void _DropPathGrad(
+    const int N,
+    const int C,
+    const float scale,
+    const uint8_t* mask,
+    const T* dy,
+    T* dx) {
+  __nram__ T dX[BLOCK_THREADS];
+  for (int i = taskId; i < N; i += taskDim) {
+    T* offset_dx = dx + i * C;
+    const T* offset_dy = dy + i * C;
+    const T alpha = float(mask[i]) * scale;
+    for (int j = 0; j < C; j += BLOCK_THREADS) {
+      const int C_ram = std::min(C - j, BLOCK_THREADS);
+      __memcpy(dX, offset_dy + j, C_ram * sizeof(T), GDRAM2NRAM);
+      __bang_mul_scalar(dX, dX, alpha, C_ram);
+      __memcpy(offset_dx + j, dX, C_ram * sizeof(T), NRAM2GDRAM);
+    }
+  }
+}
+
+} // namespace
+
+#define DEFINE_KERNEL_LAUNCHER(T)                              \
+  template <>                                                  \
+  void Dropout<T, MLUContext>(                                 \
+      const int N,                                             \
+      const float ratio,                                       \
+      const float scale,                                       \
+      const float* r,                                          \
+      const T* x,                                              \
+      T* y,                                                    \
+      uint8_t* mask,                                           \
+      MLUContext* ctx) {                                       \
+    _Dropout<<<                                                \
+        MLU_BLOCKS(N, BLOCK_THREADS),                          \
+        CNRT_FUNC_TYPE_BLOCK,                                  \
+        ctx->mlu_stream()>>>(                                  \
+        N,                                                     \
+        ratio,                                                 \
+        scale,                                                 \
+        r,                                                     \
+        reinterpret_cast<const math::ScalarType<T>::type*>(x), \
+        reinterpret_cast<math::ScalarType<T>::type*>(y),       \
+        mask);                                                 \
+  }
+
+template <>
+void Dropout<double, MLUContext>(
+    const int N,
+    const float ratio,
+    const float scale,
+    const float* r,
+    const double* x,
+    double* y,
+    uint8_t* mask,
+    MLUContext* ctx) {
+  LOG(FATAL) << "Unsupported BANG type for <DropoutKernel>: double";
+}
+
+DEFINE_KERNEL_LAUNCHER(float16);
+DEFINE_KERNEL_LAUNCHER(float);
+#undef DEFINE_KERNEL_LAUNCHER
+
+#define DEFINE_KERNEL_LAUNCHER(T)                                         \
+  template <>                                                             \
+  void DropPath<T, MLUContext>(                                           \
+      const int N,                                                        \
+      const int C,                                                        \
+      const float ratio,                                                  \
+      const float scale,                                                  \
+      const float* r,                                                     \
+      const T* x,                                                         \
+      T* y,                                                               \
+      uint8_t* mask,                                                      \
+      MLUContext* ctx) {                                                  \
+    _DropPath<<<MLU_BLOCKS(), CNRT_FUNC_TYPE_BLOCK, ctx->mlu_stream()>>>( \
+        N,                                                                \
+        C,                                                                \
+        ratio,                                                            \
+        scale,                                                            \
+        r,                                                                \
+        reinterpret_cast<const math::ScalarType<T>::type*>(x),            \
+        reinterpret_cast<math::ScalarType<T>::type*>(y),                  \
+        mask);                                                            \
+  }
+
+template <>
+void DropPath<double, MLUContext>(
+    const int N,
+    const int C,
+    const float ratio,
+    const float scale,
+    const float* r,
+    const double* x,
+    double* y,
+    uint8_t* mask,
+    MLUContext* ctx) {
+  LOG(FATAL) << "Unsupported BANG type for <DropPathKernel>: double";
+}
+
+DEFINE_KERNEL_LAUNCHER(float16);
+DEFINE_KERNEL_LAUNCHER(float);
+#undef DEFINE_KERNEL_LAUNCHER
+
+#define DEFINE_GRAD_KERNEL_LAUNCHER(T)                                        \
+  template <>                                                                 \
+  void DropPathGrad<T, MLUContext>(                                           \
+      const int N,                                                            \
+      const int C,                                                            \
+      const float scale,                                                      \
+      const uint8_t* mask,                                                    \
+      const T* dy,                                                            \
+      T* dx,                                                                  \
+      MLUContext* ctx) {                                                      \
+    _DropPathGrad<<<MLU_BLOCKS(), CNRT_FUNC_TYPE_BLOCK, ctx->mlu_stream()>>>( \
+        N,                                                                    \
+        C,                                                                    \
+        scale,                                                                \
+        mask,                                                                 \
+        reinterpret_cast<const math::ScalarType<T>::type*>(dy),               \
+        reinterpret_cast<math::ScalarType<T>::type*>(dx));                    \
+  }
+
+template <>
+void DropPathGrad<double, MLUContext>(
+    const int N,
+    const int C,
+    const float scale,
+    const uint8_t* mask,
+    const double* dy,
+    double* dx,
+    MLUContext* ctx) {
+  LOG(FATAL) << "Unsupported BANG type for <DropPathGradKernel>: double";
+}
+
+DEFINE_GRAD_KERNEL_LAUNCHER(float16);
+DEFINE_GRAD_KERNEL_LAUNCHER(float);
+#undef DEFINE_GRAD_KERNEL_LAUNCHER
+#undef BLOCK_THREADS
+
+} // namespace kernels
+
+} // namespace dragon

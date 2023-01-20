@@ -10,10 +10,10 @@ vm.tensorflow.math
   : Compute the absolute value of input.
 
   `add(...) <math/add.html>`_
-  : Compute the element-wise addition.
+  : Compute element-wise addition.
 
   `add_n(...) <math/add_n.html>`_
-  : Compute the element-wise sum on a sequence of inputs.
+  : Compute element-wise sum on a sequence of inputs.
 
   `argmax(...) <math/argmax.html>`_
   : Compute the index of maximum elements along the given axis.
@@ -22,7 +22,7 @@ vm.tensorflow.math
   : Compute the index of minimum elements along the given axis.
 
   `atan2(...) <math/atan2.html>`_
-  : Compute the element-wise arc-tangent of two arguments.
+  : Compute element-wise arc-tangent of two arguments.
 
   `ceil(...) <math/ceil.html>`_
   : Compute the smallest integer not less than input.
@@ -34,10 +34,10 @@ vm.tensorflow.math
   : Compute the cumulative sum of elements along the given axis.
 
   `divide(...) <math/divide.html>`_
-  : Compute the element-wise division.
+  : Compute element-wise division.
 
   `equal(...) <math/equal.html>`_
-  : Compute the element-wise equal comparison.
+  : Compute element-wise equal comparison.
 
   `exp(...) <math/exp.html>`_
   : Compute the exponential of input.
@@ -46,10 +46,10 @@ vm.tensorflow.math
   : Compute the largest integer not greater than input.
 
   `greater(...) <math/greater.html>`_
-  : Compute the element-wise greater comparison.
+  : Compute element-wise greater comparison.
 
   `greater_equal(...) <math/greater_equal.html>`_
-  : Compute the element-wise greater-equal comparison.
+  : Compute element-wise greater-equal comparison.
 
   `is_finite(...) <math/is_finite.html>`_
   : Check if the elements of input are finite.
@@ -61,25 +61,25 @@ vm.tensorflow.math
   : Check if the elements of input are NaN.
 
   `l2_normalize(...) <math/l2_normalize.html>`_
-  : Apply the l2 normalization.
+  : Apply l2 normalization.
 
   `less(...) <math/less.html>`_
-  : Compute the element-wise less comparison.
+  : Compute element-wise less comparison.
 
   `less_equal(...) <math/less_equal.html>`_
-  : Compute the element-wise less-equal comparison.
+  : Compute element-wise less-equal comparison.
 
   `log(...) <math/log.html>`_
   : Compute the logarithm of input.
 
   `multiply(...) <math/multiply.html>`_
-  : Compute the element-wise multiplication.
+  : Compute element-wise multiplication.
 
   `negative(...) <math/negative.html>`_
-  : Compute the element-wise negative.
+  : Compute element-wise negative.
 
   `not_equal(...) <math/not_equal.html>`_
-  : Compute the element-wise not-equal comparison.
+  : Compute element-wise not-equal comparison.
 
   `pow(...) <math/pow.html>`_
   : Compute the power of input.
@@ -124,7 +124,7 @@ vm.tensorflow.math
   : Compute the square of input.
 
   `subtract(...) <math/subtract.html>`_
-  : Compute the element-wise subtraction.
+  : Compute element-wise subtraction.
 
   `tanh(...) <math/tanh.html>`_
   : Compute the tanh of input.

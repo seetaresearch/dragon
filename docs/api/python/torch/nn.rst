@@ -7,49 +7,49 @@ vm.torch.nn
   -------
 
   `class AdaptiveAvgPool1d <nn/AdaptiveAvgPool1d.html>`_
-  : Apply the 1d adaptive average pooling.
+  : Apply 1d adaptive average pooling.
 
   `class AdaptiveAvgPool2d <nn/AdaptiveAvgPool2d.html>`_
-  : Apply the 2d adaptive average pooling.
+  : Apply 2d adaptive average pooling.
 
   `class AdaptiveAvgPool3d <nn/AdaptiveAvgPool3d.html>`_
-  : Apply the 3d adaptive average pooling.
+  : Apply 3d adaptive average pooling.
 
   `class AdaptiveMaxPool1d <nn/AdaptiveMaxPool1d.html>`_
-  : Apply the 1d adaptive max pooling.
+  : Apply 1d adaptive max pooling.
 
   `class AdaptiveMaxPool2d <nn/AdaptiveMaxPool2d.html>`_
-  : Apply the 2d adaptive max pooling.
+  : Apply 2d adaptive max pooling.
 
   `class AdaptiveMaxPool3d <nn/AdaptiveMaxPool3d.html>`_
-  : Apply the 3d adaptive max pooling.
+  : Apply 3d adaptive max pooling.
 
   `class Affine <nn/Affine.html>`_
-  : Apply the affine transformation.
+  : Apply affine transformation.
 
   `class AvgPool1d <nn/AvgPool1d.html>`_
-  : Apply the 1d average pooling.
+  : Apply 1d average pooling.
 
   `class AvgPool2d <nn/AvgPool2d.html>`_
-  : Apply the 2d average pooling.
+  : Apply 2d average pooling.
 
   `class AvgPool3d <nn/AvgPool3d.html>`_
-  : Apply the 3d average pooling.
+  : Apply 3d average pooling.
 
   `class BatchNorm1d <nn/BatchNorm1d.html>`_
-  : Apply the batch normalization over 2d input.
+  : Apply batch normalization over 2d input.
   `[Ioffe & Szegedy, 2015] <https://arxiv.org/abs/1502.03167>`_.
 
   `class BatchNorm2d <nn/BatchNorm2d.html>`_
-  : Apply the batch normalization over 3d input.
+  : Apply batch normalization over 3d input.
   `[Ioffe & Szegedy, 2015] <https://arxiv.org/abs/1502.03167>`_.
 
   `class BatchNorm3d <nn/BatchNorm3d.html>`_
-  : Apply the batch normalization over 4d input.
+  : Apply batch normalization over 4d input.
   `[Ioffe & Szegedy, 2015] <https://arxiv.org/abs/1502.03167>`_.
 
   `class BCEWithLogitsLoss <nn/BCEWithLogitsLoss.html>`_
-  : Compute the sigmoid cross entropy with contiguous targets.
+  : Compute sigmoid cross entropy.
 
   `class ChannelShuffle <nn/ChannelShuffle.html>`_
   : Apply group shuffle to each channel.
@@ -65,62 +65,62 @@ vm.torch.nn
   : Pad input according to the last 3-dimensions with a constant.
 
   `class Conv1d <nn/Conv1d.html>`_
-  : Apply the 1d convolution.
+  : Apply 1d convolution.
 
   `class Conv2d <nn/Conv2d.html>`_
-  : Apply the 2d convolution.
+  : Apply 2d convolution.
 
   `class Conv3d <nn/Conv3d.html>`_
-  : Apply the 3d convolution.
+  : Apply 3d convolution.
 
   `class ConvTranspose1d <nn/ConvTranspose1d.html>`_
-  : Apply the 1d deconvolution.
+  : Apply 1d deconvolution.
 
   `class ConvTranspose2d <nn/ConvTranspose2d.html>`_
-  : Apply the 2d deconvolution.
+  : Apply 2d deconvolution.
 
   `class ConvTranspose3d <nn/ConvTranspose3d.html>`_
-  : Apply the 3d deconvolution.
+  : Apply 3d deconvolution.
 
   `class CosineSimilarity <nn/CosineSimilarity.html>`_
-  : Compute the softmax cross entropy.
+  : Compute softmax cross entropy.
 
   `class CrossEntropyLoss <nn/CrossEntropyLoss.html>`_
-  : Compute the softmax cross entropy.
+  : Compute softmax cross entropy.
 
   `class CTCLoss <nn/CTCLoss.html>`_
-  : Compute the ctc loss.
+  : Compute ctc loss.
   `[Graves & Gomez, 2006] <http://www.cs.utoronto.ca/~graves/icml_2006.pdf>`_.
 
   `class DepthwiseConv2d <nn/DepthwiseConv2d.html>`_
-  : Apply the 2d depthwise convolution.
+  : Apply 2d depthwise convolution.
   `[Chollet, 2016] <https://arxiv.org/abs/1610.02357>`_.
 
   `class DropBlock2d <nn/DropBlock2d.html>`_
-  : Set the spatial blocks to zero randomly.
+  : Set blocks to zero randomly.
   `[Ghiasi et.al, 2018] <https://arxiv.org/abs/1810.12890>`_.
 
   `class Dropout <nn/Dropout.html>`_
-  : Set the elements to zero randomly.
+  : Set elements to zero randomly.
   `[Srivastava et.al, 2014] <http://jmlr.org/papers/v15/srivastava14a.html>`_.
 
   `class DropPath <nn/DropPath.html>`_
-  : Set the examples over input to zero randomly.
+  : Set examples to zero randomly.
   `[Larsson et.al, 2016] <https://arxiv.org/abs/1605.07648>`_.
 
   `class ELU <nn/ELU.html>`_
-  : Apply the exponential linear unit.
+  : Apply exponential linear unit.
   `[Clevert et.al, 2015] <https://arxiv.org/abs/1511.07289>`_.
 
   `class Flatten <nn/Flatten.html>`_
-  : Flatten the dimensions of input.
+  : Flatten input dimensions.
 
   `class GELU <nn/GELU.html>`_
-  : Apply the gaussian error linear unit.
+  : Apply gaussian error linear unit.
   `[Hendrycks & Gimpel, 2016] <https://arxiv.org/abs/1606.08415>`_.
 
   `class GroupNorm <nn/GroupNorm.html>`_
-  : Apply the group normalization.
+  : Apply group normalization.
   `[Wu & He, 2018] <https://arxiv.org/abs/1803.08494>`_.
 
   `class GRU <nn/RNN.html>`_
@@ -128,41 +128,41 @@ vm.torch.nn
   `[Cho et.al, 2014] <https://arxiv.org/abs/1406.1078>`_.
 
   `class GumbelSoftmax <nn/GumbelSoftmax.html>`_
-  : Apply the gumbel softmax with a temperature.
+  : Apply gumbel softmax with a temperature.
   `[Jang et.al, 2016] <https://arxiv.org/abs/1611.01144>`_.
 
   `class Hardsigmoid <nn/Hardsigmoid.html>`_
-  : Apply the hard sigmoid function.
+  : Apply hard sigmoid function.
 
   `class Hardswish <nn/Hardswish.html>`_
-  : Apply the hard swish function.
+  : Apply hard swish function.
   `[Howard et.al, 2019] <https://arxiv.org/abs/1905.02244>`_.
 
   `class Identity <nn/Identity.html>`_
-  : Apply the identity transformation.
+  : Apply identity transformation.
 
   `class KLDivLoss <nn/KLDivLoss.html>`_
-  : Compute the Kullback-Leibler divergence.
+  : Compute Kullback-Leibler divergence.
 
   `class L1Loss <nn/L1Loss.html>`_
-  : Compute the element-wise absolute value difference.
+  : Compute element-wise absolute value difference.
 
   `class LeakyReLU <nn/LeakyReLU.html>`_
-  : Apply the leaky rectified linear unit.
+  : Apply leaky rectified linear unit.
 
   `class Linear <nn/Linear.html>`_
-  : Apply the linear transformation.
+  : Apply linear transformation.
 
   `class LayerNorm <nn/LayerNorm.html>`_
-  : Apply the layer normalization.
+  : Apply layer normalization.
   `[Ba et.al, 2016] <https://arxiv.org/abs/1607.06450>`_
 
   `class LocalResponseNorm <nn/LocalResponseNorm.html>`_
-  : Apply the local response normalization.
+  : Apply local response normalization.
   `[Krizhevsky et.al, 2012] <http://www.cs.toronto.edu/~hinton/absps/imagenet.pdf>`_.
 
   `class LogSoftmax <nn/LogSoftmax.html>`_
-  : Apply the composite of logarithm and softmax.
+  : Apply logarithm softmax function.
 
   `class LSTM <nn/LSTM.html>`_
   : Apply a multi-layer long short-term memory (LSTM) RNN.
@@ -173,13 +173,13 @@ vm.torch.nn
   `[Hochreiter & Schmidhuber, 1997] <https://doi.org/10.1162>`_.
 
   `class MaxPool1d <nn/MaxPool1d.html>`_
-  : Apply the 1d max pooling.
+  : Apply 1d max pooling.
 
   `class MaxPool2d <nn/MaxPool2d.html>`_
-  : Apply the 2d max pooling.
+  : Apply 2d max pooling.
 
   `class MaxPool3d <nn/MaxPool3d.html>`_
-  : Apply the 3d max pooling.
+  : Apply 3d max pooling.
 
   `class Module <nn/Module.html>`_
   : The base class of modules.
@@ -188,14 +188,14 @@ vm.torch.nn
   : The list module container.
 
   `class MSELoss <nn/MSELoss.html>`_
-  : Compute the element-wise squared error.
+  : Compute element-wise squared error.
 
   `class MultiheadAttention <nn/MultiheadAttention.html>`_
-  : Apply the multihead attention.
+  : Apply multihead attention.
   `[Vaswani et.al, 2017] <https://arxiv.org/abs/1706.03762>`_.
 
   `class NLLLoss <nn/NLLLoss.html>`_
-  : Compute the negative likelihood loss.
+  : Compute negative likelihood loss.
 
   `class Parameter <nn/Parameter.html>`_
   : A wrapped tensor considered to be a module parameter.
@@ -207,7 +207,7 @@ vm.torch.nn
   : Rearrange pixels into depth elements.
 
   `class PReLU <nn/PReLU.html>`_
-  : Apply the parametric rectified linear unit.
+  : Apply parametric rectified linear unit.
   `[He et.al, 2015] <https://arxiv.org/abs/1502.01852>`_.
 
   `class ReflectionPad1d <nn/ReflectionPad1d.html>`_
@@ -220,11 +220,11 @@ vm.torch.nn
   : Pad input according to the last 3-dimensions by reflecting boundary.
 
   `class ReLU <nn/ReLU.html>`_
-  : Apply the rectified linear unit.
+  : Apply rectified linear unit.
   `[Nair & Hinton, 2010] <http://www.csri.utoronto.ca/~hinton/absps/reluICML.pdf>`_.
 
   `class ReLU6 <nn/ReLU.html>`_
-  : Apply the clipped-6 rectified linear unit.
+  : Apply clipped-6 rectified linear unit.
   `[Krizhevsky, 2010] <http://www.cs.utoronto.ca/~kriz/conv-cifar10-aug2010.pdf>`_.
 
   `class ReplicationPad1d <nn/ReplicationPad1d.html>`_
@@ -241,32 +241,32 @@ vm.torch.nn
   `[Elman, 1990] <https://doi.org/10.1016>`_.
 
   `class SELU <nn/SELU.html>`_
-  : Apply the scaled exponential linear unit.
+  : Apply scaled exponential linear unit.
   `[Klambauer et.al, 2017] <https://arxiv.org/abs/1706.02515>`_.
 
   `class Sequential <nn/Sequential.html>`_
   : The sequential module container.
 
   `class Sigmoid <nn/Sigmoid.html>`_
-  : Apply the sigmoid function.
+  : Apply sigmoid function.
 
   `class SigmoidFocalLoss <nn/SigmoidFocalLoss.html>`_
-  : Compute the sigmoid focal loss.
+  : Compute sigmoid focal loss.
   `[Lin et.al, 2017] <https://arxiv.org/abs/1708.02002>`__.
 
   `class SiLU <nn/SiLU.html>`_
-  : Apply the sigmoid linear unit.
+  : Apply sigmoid linear unit.
   `[Hendrycks & Gimpel, 2016] <https://arxiv.org/abs/1606.08415>`_.
 
   `class SmoothL1Loss <nn/SmoothL1Loss.html>`_
-  : Compute the element-wise error transited from L1 and L2.
+  : Compute element-wise error transited from L1 and L2.
   `[Girshick, 2015] <https://arxiv.org/abs/1504.08083>`_.
 
   `class Softmax <nn/Softmax.html>`_
-  : Apply the softmax function.
+  : Apply softmax function.
 
   `class Tanh <nn/Tanh.html>`_
-  : Apply the tanh function.
+  : Apply tanh function.
 
   `class TransformerDecoder <nn/TransformerDecoder.html>`_
   : Standard transformer decoder.
@@ -285,11 +285,11 @@ vm.torch.nn
   `[Vaswani et.al, 2017] <https://arxiv.org/abs/1706.03762>`_.
 
   `class SyncBatchNorm <nn/SyncBatchNorm.html>`_
-  : Apply the sync batch normalization over input.
+  : Apply sync batch normalization over input.
   `[Ioffe & Szegedy, 2015] <https://arxiv.org/abs/1502.03167>`_.
 
   `class Unfold <nn/Unfold.html>`_
-  : Extract the sliding blocks.
+  : Extract sliding blocks.
 
   `class Upsample <nn/Upsample.html>`_
   : Upsample input via interpolating neighborhoods.

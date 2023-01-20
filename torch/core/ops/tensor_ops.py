@@ -43,7 +43,7 @@ def abs(self):
 
 
 def add(self, other):
-    r"""Compute the element-wise addition.
+    r"""Compute element-wise addition.
 
     .. math:: \text{out} = \text{self} + \text{other}
 
@@ -66,7 +66,7 @@ def add(self, other):
 
 
 def add_(self, other):
-    r"""Compute the element-wise addition.
+    r"""Compute element-wise addition.
 
     .. math:: \text{self} \mathrel{+}= \text{other}
 
@@ -187,7 +187,7 @@ def argsort(self, dim=-1, descending=False):
 
 
 def atan2(self, other):
-    r"""Compute the element-wise arc-tangent of two arguments.
+    r"""Compute element-wise arc-tangent of two arguments.
 
     .. math:: \text{out} = \text{arctan}(\frac{\text{self}}{\text{other}})
 
@@ -292,7 +292,7 @@ def backward(self, gradient=None, retain_graph=False):
 
 
 def bitwise_and(self, other):
-    r"""Compute the element-wise AND bitwise operation.
+    r"""Compute element-wise AND bitwise operation.
 
     .. math:: \text{out} = \text{self} \mathbin{\&} \text{other}
 
@@ -315,7 +315,7 @@ def bitwise_and(self, other):
 
 
 def bitwise_and_(self, other):
-    r"""Compute the element-wise AND bitwise operation.
+    r"""Compute element-wise AND bitwise operation.
 
     .. math:: \text{self} = \text{self} \mathbin{\&} \text{other}
 
@@ -338,7 +338,7 @@ def bitwise_and_(self, other):
 
 
 def bitwise_not(self):
-    r"""Compute the element-wise NOT bitwise operation.
+    r"""Compute element-wise NOT bitwise operation.
 
     .. math:: \text{out} = \,\,\sim \text{self}
 
@@ -356,7 +356,7 @@ def bitwise_not(self):
 
 
 def bitwise_not_(self):
-    r"""Compute the element-wise NOT bitwise operation.
+    r"""Compute element-wise NOT bitwise operation.
 
     .. math:: \text{self} = \,\,\sim \text{self}
 
@@ -374,7 +374,7 @@ def bitwise_not_(self):
 
 
 def bitwise_or(self, other):
-    r"""Compute the element-wise OR bitwise operation.
+    r"""Compute element-wise OR bitwise operation.
 
     .. math:: \text{out} = \text{self} \mathbin{|} \text{other}
 
@@ -397,7 +397,7 @@ def bitwise_or(self, other):
 
 
 def bitwise_or_(self, other):
-    r"""Compute the element-wise OR bitwise operation.
+    r"""Compute element-wise OR bitwise operation.
 
     .. math:: \text{self} = \text{self} \mathbin{|} \text{other}
 
@@ -420,7 +420,7 @@ def bitwise_or_(self, other):
 
 
 def bitwise_xor(self, other):
-    r"""Compute the element-wise XOR bitwise operation.
+    r"""Compute element-wise XOR bitwise operation.
 
     .. math:: \text{out} = \text{self} \oplus \text{other}
 
@@ -443,7 +443,7 @@ def bitwise_xor(self, other):
 
 
 def bitwise_xor_(self, other):
-    r"""Compute the element-wise XOR bitwise operation.
+    r"""Compute element-wise XOR bitwise operation.
 
     .. math:: \text{self} = \text{self} \oplus \text{other}
 
@@ -466,7 +466,7 @@ def bitwise_xor_(self, other):
 
 
 def bmm(self, batch2):
-    r"""Compute the batched matrix multiplication.
+    r"""Compute batched matrix multiplication.
 
     .. math:: \text{out}_{i} = \text{self}_{i} \times \text{batch2}_{i}
 
@@ -703,7 +703,7 @@ def cumsum(self, dim):
 
 
 def div(self, other):
-    r"""Compute the element-wise division.
+    r"""Compute element-wise division.
 
     .. math:: \text{out} = \text{self} \div \text{other}
 
@@ -726,7 +726,7 @@ def div(self, other):
 
 
 def div_(self, other):
-    r"""Compute the element-wise division.
+    r"""Compute element-wise division.
 
     .. math:: \text{self} \mathrel{\div}= \text{other}
 
@@ -773,7 +773,7 @@ def double_(self):
 
 
 def eq(self, other):
-    r"""Compute the element-wise equal comparison.
+    r"""Compute element-wise equal comparison.
 
     .. math:: \text{out} = (\text{self} = \text{other})
 
@@ -1053,7 +1053,7 @@ def gather(self, dim, index):
 
 
 def ge(self, other):
-    r"""Compute the element-wise greater-equal comparison.
+    r"""Compute element-wise greater-equal comparison.
 
     .. math:: \text{out} = (\text{self} \geq \text{other})
 
@@ -1093,14 +1093,14 @@ def getitem(self, item):
     if isinstance(item, Tensor):
         if item.dtype == 'bool' or item.dtype == 'uint8':
             return self.masked_select(item)
-        elif item.dtype == 'int64':
+        elif item.dtype in ('int32', 'int64'):
             gather_args.append((0, item))
         else:
             raise TypeError('Unsupported index type: ' + item.dtype)
     if isinstance(item, tuple):
         for i, elem in enumerate(item):
             if isinstance(elem, Tensor):
-                if elem.dtype == 'int64':
+                if elem.dtype in ('int32', 'int64'):
                     gather_args.append((i, elem))
                 else:
                     raise TypeError('Unsupported index type: ' + elem.dtype)
@@ -1115,7 +1115,7 @@ def getitem(self, item):
 
 
 def gt(self, other):
-    r"""Compute the element-wise greater comparison.
+    r"""Compute element-wise greater comparison.
 
     .. math:: \text{out} = (\text{self} > \text{other})
 
@@ -1259,7 +1259,7 @@ def isnan(self):
 
 
 def le(self, other):
-    r"""Compute the element-wise less-equal comparison.
+    r"""Compute element-wise less-equal comparison.
 
     .. math:: \text{out} = (\text{self} \leq \text{other})
 
@@ -1314,7 +1314,7 @@ def log_(self):
 
 
 def logical_and(self, other):
-    r"""Compute the element-wise AND logical operation.
+    r"""Compute element-wise AND logical operation.
 
     .. math:: \text{out} = \text{self} \mathbin{\&} \text{other}
 
@@ -1337,7 +1337,7 @@ def logical_and(self, other):
 
 
 def logical_not(self):
-    r"""Compute the element-wise NOT logical operation.
+    r"""Compute element-wise NOT logical operation.
 
     .. math:: \text{out} = \,\,\sim \text{self}
 
@@ -1355,7 +1355,7 @@ def logical_not(self):
 
 
 def logical_or(self, other):
-    r"""Compute the element-wise OR logical operation.
+    r"""Compute element-wise OR logical operation.
 
     .. math:: \text{out} = \text{self} \mathbin{|} \text{other}
 
@@ -1378,7 +1378,7 @@ def logical_or(self, other):
 
 
 def logical_xor(self, other):
-    r"""Compute the element-wise XOR logical operation.
+    r"""Compute element-wise XOR logical operation.
 
     .. math:: \text{out} = \text{self} \oplus \text{other}
 
@@ -1450,7 +1450,7 @@ def long_(self):
 
 
 def lt(self, other):
-    r"""Compute the element-wise less comparison.
+    r"""Compute element-wise less comparison.
 
     .. math:: \text{out} = (\text{self} < \text{other})
 
@@ -1542,7 +1542,7 @@ def masked_select(self, mask):
 
 
 def matmul(self, tensor2):
-    r"""Compute the matrix multiplication.
+    r"""Compute matrix multiplication.
 
     .. math:: \text{out} = \text{self} \times \text{tensor2}
 
@@ -1680,7 +1680,7 @@ def minimum(self, other):
 
 
 def mm(self, mat2):
-    r"""Compute the matrix-matrix multiplication.
+    r"""Compute matrix-matrix multiplication.
 
     .. math:: \text{out} = \text{self} \times \text{mat2}
 
@@ -1703,7 +1703,7 @@ def mm(self, mat2):
 
 
 def mul(self, other):
-    r"""Compute the element-wise multiplication.
+    r"""Compute element-wise multiplication.
 
     .. math:: \text{out} = \text{self} \times \text{other}
 
@@ -1726,7 +1726,7 @@ def mul(self, other):
 
 
 def mul_(self, other):
-    r"""Compute the element-wise multiplication.
+    r"""Compute element-wise multiplication.
 
     .. math:: \text{self} \mathrel{\times}= \text{other}
 
@@ -1765,6 +1765,56 @@ def multinomial(self, num_samples):
     return array_ops.multinomial(self, num_samples)
 
 
+def nan_to_num(self, nan=0.0, posinf=None, neginf=None):
+    """Return a tensor with NaN or infinity elements replaced with given value.
+
+    Parameters
+    ----------
+    nan : float, optional, default=0.0
+        The value to replace NaN elements.
+    posinf : float, optional
+        The value to replace positive infinity elements.
+    neginf : float, optional
+        The value to replace negative infinity elements.
+
+    Returns
+    -------
+    dragon.vm.torch.Tensor
+        The output tensor.
+
+    See Also
+    --------
+    `torch.nan_to_num(...)`_
+
+    """
+    return math_ops.nan_to_num(self, nan, posinf, neginf)
+
+
+def nan_to_num_(self, nan=0.0, posinf=None, neginf=None):
+    """Replace NaN or infinity elements with given value.
+
+    Parameters
+    ----------
+    nan : float, optional, default=0.0
+        The value to replace NaN elements.
+    posinf : float, optional
+        The value to replace positive infinity elements.
+    neginf : float, optional
+        The value to replace negative infinity elements.
+
+    Returns
+    -------
+    dragon.vm.torch.Tensor
+        The output tensor.
+
+    See Also
+    --------
+    `torch.nan_to_num(...)`_
+
+    """
+    return math_ops.nan_to_num(self, nan, posinf, neginf, self)
+
+
 def narrow(self, dimension, start, length):
     """Return a narrowed tensor.
 
@@ -1787,7 +1837,7 @@ def narrow(self, dimension, start, length):
 
 
 def ne(self, other):
-    r"""Compute the element-wise not-equal comparison.
+    r"""Compute element-wise not-equal comparison.
 
     .. math:: \text{out} = (\text{self} \neq \text{other})
 
@@ -2677,7 +2727,7 @@ def sum(self, dim=None, keepdim=False):
 
 
 def sub(self, other):
-    r"""Compute the element-wise subtraction.
+    r"""Compute element-wise subtraction.
 
     .. math:: \text{out} = \text{self} - \text{other}
 
@@ -2700,7 +2750,7 @@ def sub(self, other):
 
 
 def sub_(self, other):
-    r"""Compute the element-wise subtraction.
+    r"""Compute element-wise subtraction.
 
     .. math:: \text{self} \mathrel{-}= \text{other}
 
@@ -3256,6 +3306,8 @@ Tensor.mm = mm
 Tensor.mul = mul
 Tensor.mul_ = mul_
 Tensor.multinomial = multinomial
+Tensor.nan_to_num = nan_to_num
+Tensor.nan_to_num_ = nan_to_num_
 Tensor.narrow = narrow
 Tensor.ne = ne
 Tensor.neg = neg

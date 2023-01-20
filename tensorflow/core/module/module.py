@@ -65,7 +65,7 @@ class Module(object):
         Returns
         -------
         ContextManger
-            The context manager to apply the name scope.
+            The context manager to apply name scope.
 
         """
         return context.name_scope(self.name)

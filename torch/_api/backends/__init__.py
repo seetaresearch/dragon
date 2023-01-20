@@ -15,8 +15,10 @@ from __future__ import division as _division
 from __future__ import print_function as _print_function
 
 # Modules
+from dragon.vm.torch.core.backends import cnnl
 from dragon.vm.torch.core.backends import cuda
 from dragon.vm.torch.core.backends import cudnn
+from dragon.vm.torch.core.backends import mlu
 from dragon.vm.torch.core.backends import mps
 from dragon.vm.torch.core.backends import openmp
 

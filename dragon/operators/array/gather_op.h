@@ -74,7 +74,6 @@ class GatherElementsGradientOp final : public Operator<Context> {
 };
 
 #ifdef USE_MPS
-
 template <class Context>
 class MPSGatherOp final : public Operator<Context> {
  public:
@@ -174,8 +173,96 @@ class MPSGatherElementsGradientOp final : public Operator<Context> {
   MPSGraph_t graph_;
   MPSGraphCache graph_cache_;
 };
-
 #endif // USE_MPS
+
+#ifdef USE_MLU
+template <class Context>
+class CNNLGatherOp : public Operator<Context> {
+ public:
+  CNNLGatherOp(const OperatorDef& def, Workspace* ws)
+      : Operator<Context>(def, ws) {
+    CNNLCreateTensorDesc(&input_desc_);
+    CNNLCreateTensorDesc(&index_desc_);
+    CNNLCreateTensorDesc(&output_desc_);
+  }
+  USE_OPERATOR_FUNCTIONS;
+
+  ~CNNLGatherOp() {
+    CNNLDestroyTensorDesc(input_desc_);
+    CNNLDestroyTensorDesc(index_desc_);
+    CNNLDestroyTensorDesc(output_desc_);
+  }
+
+  void RunOnDevice() override {
+    DispatchHelper<dtypes::Generic>::Call(this, Input(0));
+  }
+
+  template <typename T>
+  void DoRunWithType();
+
+ protected:
+  cnnlTensorDescriptor_t input_desc_, index_desc_, output_desc_;
+};
+
+template <class Context>
+class CNNLGatherGradientOp final : public CNNLGatherOp<Context> {
+ public:
+  CNNLGatherGradientOp(const OperatorDef& def, Workspace* ws)
+      : CNNLGatherOp<Context>(def, ws) {}
+  USE_OPERATOR_FUNCTIONS;
+
+  void RunOnDevice() override {
+    DispatchHelper<dtypes::Floating>::Call(this, Input(1));
+  }
+
+  template <typename T>
+  void DoRunWithType();
+};
+
+template <class Context>
+class CNNLGatherElementsOp : public Operator<Context> {
+ public:
+  CNNLGatherElementsOp(const OperatorDef& def, Workspace* ws)
+      : Operator<Context>(def, ws) {
+    CNNLCreateTensorDesc(&input_desc_);
+    CNNLCreateTensorDesc(&index_desc_);
+    CNNLCreateTensorDesc(&output_desc_);
+  }
+  USE_OPERATOR_FUNCTIONS;
+
+  ~CNNLGatherElementsOp() {
+    CNNLDestroyTensorDesc(input_desc_);
+    CNNLDestroyTensorDesc(index_desc_);
+    CNNLDestroyTensorDesc(output_desc_);
+  }
+
+  void RunOnDevice() override {
+    DispatchHelper<dtypes::Generic>::Call(this, Input(0));
+  }
+
+  template <typename T>
+  void DoRunWithType();
+
+ protected:
+  cnnlTensorDescriptor_t input_desc_, index_desc_, output_desc_;
+};
+
+template <class Context>
+class CNNLGatherElementsGradientOp final
+    : public CNNLGatherElementsOp<Context> {
+ public:
+  CNNLGatherElementsGradientOp(const OperatorDef& def, Workspace* ws)
+      : CNNLGatherElementsOp<Context>(def, ws) {}
+  USE_OPERATOR_FUNCTIONS;
+
+  void RunOnDevice() override {
+    DispatchHelper<dtypes::Floating>::Call(this, Input(1));
+  }
+
+  template <typename T>
+  void DoRunWithType();
+};
+#endif
 
 } // namespace dragon
 

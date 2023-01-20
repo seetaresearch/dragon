@@ -102,11 +102,6 @@ class TestOpSpec(unittest.TestCase):
     sym4 = dragon.Tensor((1, None, None, None), symbolic=True)
     sym5 = dragon.Tensor((1, None, None, None, None), symbolic=True)
 
-    def test_accuracy(self):
-        with dragon.graph_mode():
-            self.assertEqual(dragon.metrics.accuracy(
-                [self.sym1, self.sym1]).shape, ())
-
     def test_arg_reduce(self):
         with dragon.graph_mode():
             self.assertEqual(dragon.math.argmax(

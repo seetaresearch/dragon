@@ -15,6 +15,7 @@
 
 #include "dragon/core/context.h"
 #include "dragon/core/context_cuda.h"
+#include "dragon/core/context_mlu.h"
 #include "dragon/core/context_mps.h"
 
 namespace dragon {
@@ -97,7 +98,17 @@ DRAGON_API void IsFinite(const int N, const T* x, bool* y, Context* ctx);
 
 template <typename T, class Context>
 DRAGON_API void
-ReplaceNaN(const int N, const float value, const T* x, T* y, Context* ctx);
+NaNToNum(const int N, const float nan, const T* x, T* y, Context* ctx);
+
+template <typename T, class Context>
+DRAGON_API void NaNToNum(
+    const int N,
+    const float nan,
+    const float pos_inf,
+    const float neg_inf,
+    const T* x,
+    T* y,
+    Context* ctx);
 
 template <typename T, class Context>
 DRAGON_API void ApplyMask(

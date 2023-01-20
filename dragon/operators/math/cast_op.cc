@@ -82,6 +82,10 @@ DEPLOY_CUDA_OPERATOR(CastGradient);
 DEPLOY_MPS_OPERATOR(Cast, Cast);
 DEPLOY_MPS_OPERATOR(CastGradient, CastGradient);
 #endif
+#ifdef USE_MLU
+DEPLOY_MLU_OPERATOR(Cast);
+DEPLOY_MLU_OPERATOR(CastGradient);
+#endif
 
 OPERATOR_SCHEMA(Cast)
     /* X */

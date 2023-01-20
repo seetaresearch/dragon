@@ -107,4 +107,6 @@ void MPSTileGradientOp<Context>::DoRunWithType() {
 DEPLOY_MPS_OPERATOR(Tile, MPSTile);
 DEPLOY_MPS_OPERATOR(TileGradient, MPSTileGradient);
 
+DEFINE_OP_REPEATED_ARG(int64_t, MPSTileOp, repeats);
+
 } // namespace dragon

@@ -578,12 +578,9 @@ void MatMulGradientOp<Context>::DoRunWithType() {
 }
 
 DEPLOY_CPU_OPERATOR(MatMul);
-#ifdef USE_CUDA
-DEPLOY_CUDA_OPERATOR(MatMul);
-#endif
-
 DEPLOY_CPU_OPERATOR(MatMulGradient);
 #ifdef USE_CUDA
+DEPLOY_CUDA_OPERATOR(MatMul);
 DEPLOY_CUDA_OPERATOR(MatMulGradient);
 #endif
 

@@ -15,7 +15,7 @@ void MPSDropoutOp<Context>::DoRunWithType() {
     const auto N = X.count();
     const auto X_dims = vec64_t({N});
     const auto seed = def().device_option().random_seed();
-    const auto drop_ratio = ratio();
+    const auto drop_ratio = this->ratio();
     const auto state_name = "MPSPhiloxState:" + str::to(seed);
     auto* X_mask = Output("X_mask")->ReshapeLike(X);
     auto* Y_state = ctx()->workspace()->CreateTensor(state_name);
@@ -75,5 +75,7 @@ void MPSDropoutOp<Context>::DoRunWithType() {
 }
 
 DEPLOY_MPS_OPERATOR(Dropout, MPSDropout);
+
+DEFINE_OP_SINGLE_ARG(float, MPSDropoutOp, ratio);
 
 } // namespace dragon

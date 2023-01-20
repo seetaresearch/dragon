@@ -18,7 +18,7 @@
 #include "dragon/kernels/loss/op_kernels.h"
 #include "dragon/kernels/math/op_kernels.h"
 #include "dragon/kernels/normalization/op_kernels.h"
-#include "dragon/kernels/recurrent/op_kernels.h"
+#include "dragon/kernels/sequence/op_kernels.h"
 #include "dragon/kernels/training/op_kernels.h"
 #include "dragon/kernels/vision/op_kernels.h"
 

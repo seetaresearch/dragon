@@ -20,7 +20,7 @@ from dragon.vm.keras.core.utils import generic_utils
 
 
 def elu(x, alpha=1., **kwargs):
-    r"""Apply the exponential linear unit to input.
+    r"""Apply exponential linear unit to input.
     `[Clevert et.al, 2015] <https://arxiv.org/abs/1511.07289>`_.
 
     The **ELU** function is defined as:
@@ -56,7 +56,7 @@ def elu(x, alpha=1., **kwargs):
 
 
 def exponential(x):
-    r"""Apply the exponential activation to input.
+    r"""Apply exponential activation to input.
 
     The **Exponential** function is defined as:
 
@@ -84,7 +84,7 @@ def exponential(x):
 
 
 def hard_sigmoid(x, **kwargs):
-    r"""Apply the hard sigmoid function to input.
+    r"""Apply hard sigmoid function to input.
 
     The **HardSigmoid** function is defined as:
 
@@ -112,7 +112,7 @@ def hard_sigmoid(x, **kwargs):
 
 
 def linear(x):
-    r"""Apply the linear activation to input.
+    r"""Apply linear activation to input.
 
     The **Linear** function is defined as:
 
@@ -140,7 +140,7 @@ def linear(x):
 
 
 def relu(x, alpha=0, max_value=None, **kwargs):
-    r"""Apply the rectified linear unit to input.
+    r"""Apply rectified linear unit to input.
     `[Nair & Hinton, 2010] <http://www.csri.utoronto.ca/~hinton/absps/reluICML.pdf>`_.
 
     The **ReLU** function is defined as:
@@ -179,7 +179,7 @@ def relu(x, alpha=0, max_value=None, **kwargs):
 
 
 def selu(x, **kwargs):
-    r"""Apply the scaled exponential linear unit to input.
+    r"""Apply scaled exponential linear unit to input.
     `[Klambauer et.al, 2017] <https://arxiv.org/abs/1706.02515>`_.
 
     .. math::
@@ -211,7 +211,7 @@ def selu(x, **kwargs):
 
 
 def sigmoid(x, **kwargs):
-    r"""Apply the sigmoid function to input.
+    r"""Apply sigmoid function to input.
 
     The **Sigmoid** function is defined as:
 
@@ -239,7 +239,7 @@ def sigmoid(x, **kwargs):
 
 
 def softmax(x, axis=-1, **kwargs):
-    r"""Apply the softmax function to input.
+    r"""Apply softmax function to input.
 
     The **Softmax** function is defined as:
 
@@ -269,7 +269,7 @@ def softmax(x, axis=-1, **kwargs):
 
 
 def swish(x):
-    r"""Apply the swish function.
+    r"""Apply swish function to input.
     `[Ramachandran et.al, 2017] <https://arxiv.org/abs/1710.05941>`_.
 
     The **Swish** function is defined as:
@@ -298,7 +298,7 @@ def swish(x):
 
 
 def tanh(x, **kwargs):
-    r"""Apply the tanh function to input.
+    r"""Apply tanh function to input.
 
     The **Tanh** function is defined as:
 

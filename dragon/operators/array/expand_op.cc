@@ -39,28 +39,23 @@ template <typename T>
 void ExpandGradientOp<Context>::DoRunWithType() {
   auto &dY = Input(0), *dX = Output(0)->ReshapeLike(Input("X_spec"));
 
-  vec64_t X_broadcast_axes, _;
+  vec64_t broadcast_axes, _;
   math::utils::ComputeBroadcastAxes(
-      dX->dims(), dY.dims(), dY.dims(), X_broadcast_axes, _);
+      dX->dims(), dY.dims(), dY.dims(), broadcast_axes, _);
 
-  if (X_broadcast_axes.empty()) {
+  if (broadcast_axes.empty()) {
     dX->CopyFrom(dY, ctx());
   } else {
     math::ReduceSum(
         dY.ndim(),
         dY.dims().data(),
-        X_broadcast_axes.size(),
-        X_broadcast_axes.data(),
+        broadcast_axes.size(),
+        broadcast_axes.data(),
         1.f,
         dY.template data<T, Context>(),
         dX->template mutable_data<T, Context>(),
         ctx());
   }
-}
-
-template <class Context>
-void ExpandGradientOp<Context>::RunOnDevice() {
-  DispatchHelper<dtypes::Floating>::Call(this, Input(0));
 }
 
 DEPLOY_CPU_OPERATOR(Expand);
@@ -73,6 +68,8 @@ DEPLOY_CUDA_OPERATOR(ExpandGradient);
 DEPLOY_MPS_OPERATOR(Expand, Expand);
 DEPLOY_MPS_OPERATOR(ExpandGradient, ExpandGradient);
 #endif
+
+DEFINE_OP_REPEATED_ARG(int64_t, ExpandOp, dims);
 
 OPERATOR_SCHEMA(Expand).NumInputs(1).NumOutputs(1);
 OPERATOR_SCHEMA(ExpandGradient).NumInputs(1).NumOutputs(1);

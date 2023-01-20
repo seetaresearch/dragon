@@ -32,6 +32,7 @@ class CUDAObjects {
       streams_[i] = vector<cudaStream_t>();
       workspaces_[i] = vector<Workspace*>();
       cublas_handles_[i] = vector<cublasHandle_t>();
+      curand_generators_[i] = Map<string, curandGenerator_t>();
 #ifdef USE_CUDNN
       cudnn_handles_[i] = vector<cudnnHandle_t>();
 #endif
@@ -78,6 +79,21 @@ class CUDAObjects {
     }
 #endif
     return handle;
+  }
+
+  /*! \brief Return the specified curand generator */
+  curandGenerator_t curand_generator(int device_id, int stream_id, int seed) {
+    auto& generators = curand_generators_[device_id];
+    const string key = str::to(stream_id) + "/RNGState:" + str::to(seed);
+    auto find_iter = generators.find(key);
+    if (find_iter != generators.end()) return find_iter->second;
+    CUDADeviceGuard guard(device_id);
+    CURAND_CHECK(
+        curandCreateGenerator(&generators[key], CURAND_RNG_PSEUDO_DEFAULT));
+    auto& generator = generators[key];
+    CURAND_CHECK(curandSetPseudoRandomGeneratorSeed(generator, seed));
+    CURAND_CHECK(curandSetStream(generator, stream(device_id, stream_id)));
+    return generator;
   }
 
   /*! \brief Return the specified cudnn handle */
@@ -151,6 +167,9 @@ class CUDAObjects {
 
   /*! \brief The created cublas handles for all devices */
   vector<cublasHandle_t> cublas_handles_[CUDA_MAX_DEVICES];
+
+  /*! \brief The created curand generators for all devices */
+  Map<string, curandGenerator_t> curand_generators_[CUDA_MAX_DEVICES];
 
 #ifdef USE_CUDNN
   /*! \brief The created cudnn handles for all devices */
@@ -310,16 +329,8 @@ class DRAGON_API CUDAContext {
   }
 
   /*! \brief Return the curand generator */
-  curandGenerator_t& curand_generator() {
-    if (!curand_generator_) {
-      CUDADeviceGuard guard(device_id_);
-      CURAND_CHECK(
-          curandCreateGenerator(&curand_generator_, CURAND_RNG_PSEUDO_DEFAULT));
-      CURAND_CHECK(
-          curandSetPseudoRandomGeneratorSeed(curand_generator_, random_seed_));
-    }
-    CURAND_CHECK(curandSetStream(curand_generator_, cuda_stream()));
-    return curand_generator_;
+  curandGenerator_t curand_generator() {
+    return objects().curand_generator(device_id_, stream_id_, random_seed_);
   }
 
   /*! \brief Return the cudnn handle */
@@ -337,6 +348,11 @@ class DRAGON_API CUDAContext {
   /*! \brief Return the stream index */
   int stream() const {
     return stream_id_;
+  }
+
+  /*! \brief Return the random seed */
+  int random_seed() const {
+    return random_seed_;
   }
 
   /*! \brief Return the device index of current thread */
@@ -366,7 +382,6 @@ class DRAGON_API CUDAContext {
  private:
   int device_id_, stream_id_ = 0, random_seed_;
   unique_ptr<std::mt19937> rand_generator_;
-  curandGenerator_t curand_generator_ = nullptr;
 };
 
 #endif // USE_CUDA

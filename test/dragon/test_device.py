@@ -21,6 +21,7 @@ from dragon.core.framework import config
 from dragon.core.testing.unittest.common_utils import run_tests
 from dragon.core.testing.unittest.common_utils import TEST_CUDA
 from dragon.core.testing.unittest.common_utils import TEST_MPS
+from dragon.core.testing.unittest.common_utils import TEST_MLU
 
 
 class TestCUDA(unittest.TestCase):
@@ -74,6 +75,29 @@ class TestMPS(unittest.TestCase):
         self.assertEqual(config.config().device_type, 'mps')
         self.assertEqual(config.config().device_index, 1)
         dragon.mps.set_default_device(-1)
+        self.assertEqual(config.config().device_type, 'cpu')
+        self.assertEqual(config.config().device_index, 0)
+
+
+class TestMLU(unittest.TestCase):
+    """Test mlu utilities."""
+
+    def test_stream(self):
+        dragon.mlu.synchronize()
+
+    def test_device(self):
+        count = dragon.mlu.get_device_count()
+        name = dragon.mlu.get_device_name(0)
+        major, _ = dragon.mlu.get_device_capability(0)
+        self.assertGreaterEqual(count, 1 if TEST_MLU else 0)
+        self.assertGreaterEqual(major, 1 if TEST_MLU else 0)
+        self.assertGreaterEqual(len(name), 1 if TEST_MLU else 0)
+        dragon.mlu.set_device(0)
+        self.assertEqual(dragon.mlu.current_device(), 0)
+        dragon.mlu.set_default_device(1)
+        self.assertEqual(config.config().device_type, 'mlu')
+        self.assertEqual(config.config().device_index, 1)
+        dragon.mlu.set_default_device(-1)
         self.assertEqual(config.config().device_type, 'cpu')
         self.assertEqual(config.config().device_index, 0)
 

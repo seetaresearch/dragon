@@ -47,7 +47,7 @@ void AssignOp<Context>::DoRunWithType() {
           << Tensor::DimString(X_dims);
       math::utils::ComputeBroadcastDims(X.dims(), X_dims, dims1, dims2);
       if (dims1 != dims2) {
-        auto* new_data =
+        auto* scratch =
             ctx()->workspace()->template data<T, Context>(X_ref.count());
         math::Set(
             X.ndim(),
@@ -55,9 +55,9 @@ void AssignOp<Context>::DoRunWithType() {
             X_ref.ndim(),
             X_ref.dims().data(),
             data,
-            new_data,
+            scratch,
             ctx());
-        data = new_data;
+        data = scratch;
       }
     } else {
       LOG(FATAL) << "Could not broadcast with shapes " << X.DimString() << " "
@@ -86,6 +86,9 @@ DEPLOY_CUDA_OPERATOR(Assign);
 #ifdef USE_MPS
 DEPLOY_MPS_OPERATOR(Assign, Assign);
 #endif
+
+DEFINE_OP_REPEATED_ARG(int64_t, AssignOp, starts);
+DEFINE_OP_REPEATED_ARG(int64_t, AssignOp, sizes);
 
 OPERATOR_SCHEMA(Assign)
     /* Y_ref, X */

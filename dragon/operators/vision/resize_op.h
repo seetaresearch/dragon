@@ -50,7 +50,6 @@ class ResizeGradientOp final : public ResizeOpBase<Context> {
 };
 
 #ifdef USE_MPS
-
 template <class Context>
 class MPSResizeOp final : public ResizeOpBase<Context> {
  public:
@@ -102,8 +101,71 @@ class MPSResizeGradientOp final : public ResizeOpBase<Context> {
   MPSGraph_t graph_;
   MPSGraphCache graph_cache_;
 };
-
 #endif // USE_MPS
+
+#ifdef USE_MLU
+template <class Context>
+class CNNLResizeOp final : public ResizeOpBase<Context> {
+ public:
+  CNNLResizeOp(const OperatorDef& def, Workspace* ws)
+      : ResizeOpBase<Context>(def, ws) {
+    CHECK_EQ(data_format(), "NHWC");
+    CNNLCreateTensorDesc(&input_desc_);
+    CNNLCreateTensorDesc(&output_desc_);
+    CNNL_CHECK(cnnlCreateInterpDescriptor(&resize_desc_));
+  }
+  USE_OPERATOR_FUNCTIONS;
+  USE_RESIZE_FUNCTIONS;
+
+  ~CNNLResizeOp() {
+    CNNLDestroyTensorDesc(input_desc_);
+    CNNLDestroyTensorDesc(output_desc_);
+    CNNL_CHECK(cnnlDestroyInterpDescriptor(resize_desc_));
+  }
+
+  void RunOnDevice() override {
+    DispatchHelper<dtypes::Numerical>::Call(this, Input(0));
+  }
+
+  template <typename T>
+  void DoRunWithType();
+
+ protected:
+  cnnlInterpDescriptor_t resize_desc_;
+  cnnlTensorDescriptor_t input_desc_, output_desc_;
+};
+
+template <class Context>
+class CNNLResizeGradientOp final : public ResizeOpBase<Context> {
+ public:
+  CNNLResizeGradientOp(const OperatorDef& def, Workspace* ws)
+      : ResizeOpBase<Context>(def, ws) {
+    CHECK_EQ(data_format(), "NHWC");
+    CNNLCreateTensorDesc(&input_desc_);
+    CNNLCreateTensorDesc(&output_desc_);
+    CNNL_CHECK(cnnlCreateInterpDescriptor(&resize_desc_));
+  }
+  USE_OPERATOR_FUNCTIONS;
+  USE_RESIZE_FUNCTIONS;
+
+  ~CNNLResizeGradientOp() {
+    CNNLDestroyTensorDesc(input_desc_);
+    CNNLDestroyTensorDesc(output_desc_);
+    CNNL_CHECK(cnnlDestroyInterpDescriptor(resize_desc_));
+  }
+
+  void RunOnDevice() override {
+    DispatchHelper<dtypes::Floating>::Call(this, Input(0));
+  }
+
+  template <typename T>
+  void DoRunWithType();
+
+ protected:
+  cnnlInterpDescriptor_t resize_desc_;
+  cnnlTensorDescriptor_t input_desc_, output_desc_;
+};
+#endif // USE_MLU
 
 } // namespace dragon
 

@@ -10,12 +10,12 @@
 # ------------------------------------------------------------
 """Distance modules."""
 
-from dragon.vm.torch.core.nn import functional as F
+from dragon.vm.torch.core.nn import functional
 from dragon.vm.torch.core.nn.modules.module import Module
 
 
 class CosineSimilarity(Module):
-    r"""Compute the cosine similarity.
+    r"""Compute cosine similarity.
 
     The ``CosineSimilarity`` function is defined as:
 
@@ -53,4 +53,4 @@ class CosineSimilarity(Module):
         self.eps = eps
 
     def forward(self, x1, x2):
-        return F.cosine_similarity(x1, x2, self.dim, self.eps)
+        return functional.cosine_similarity(x1, x2, self.dim, self.eps)

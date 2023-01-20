@@ -78,6 +78,16 @@ void RegisterModule_tensor(py::module& m) {
               pointer = (intptr_t)self->raw_data<CUDAContext>();
             }
 #endif
+#ifdef USE_MPS
+            else if (device_type == "mps") {
+              pointer = (intptr_t)self->raw_data<MPSContext>();
+            }
+#endif
+#ifdef USE_MLU
+            else if (device_type == "mlu") {
+              pointer = (intptr_t)self->raw_data<MLUContext>();
+            }
+#endif
             else {
               LOG(FATAL) << "Unsupported device type: " << device_type;
             }
@@ -95,6 +105,16 @@ void RegisterModule_tensor(py::module& m) {
 #ifdef USE_CUDA
             else if (device_type == "cuda") {
               pointer = (intptr_t)self->raw_mutable_data<CUDAContext>();
+            }
+#endif
+#ifdef USE_MPS
+            else if (device_type == "mps") {
+              pointer = (intptr_t)self->raw_mutable_data<MPSContext>();
+            }
+#endif
+#ifdef USE_MLU
+            else if (device_type == "mlu") {
+              pointer = (intptr_t)self->raw_mutable_data<MLUContext>();
             }
 #endif
             else {
@@ -258,7 +278,7 @@ void RegisterModule_tensor(py::module& m) {
 #endif
           })
 
-      /*! \brief Switch memory to the cuda context */
+      /*! \brief Switch memory to the mps context */
       .def(
           "ToMPS",
           [](Tensor* self, int device_id) {
@@ -269,6 +289,20 @@ void RegisterModule_tensor(py::module& m) {
             self->memory()->SwitchToMPSDevice(device_id);
 #else
        MPS_NOT_COMPILED;
+#endif
+          })
+
+      /*! \brief Switch memory to the mlu context */
+      .def(
+          "ToMLU",
+          [](Tensor* self, int device_id) {
+#ifdef USE_MLU
+            CHECK(self->has_memory())
+                << "\nTensor(" << self->name() << ") "
+                << "does not initialize or had been reset.";
+            self->memory()->SwitchToMLUDevice(device_id);
+#else
+       MLU_NOT_COMPILED;
 #endif
           })
 

@@ -28,6 +28,7 @@ from dragon.core.util import nest
 from dragon.core.testing.unittest.common_utils import run_tests
 from dragon.core.testing.unittest.common_utils import TEST_CUDA
 from dragon.core.testing.unittest.common_utils import TEST_CUDNN_CONV3D_NHWC
+from dragon.core.testing.unittest.common_utils import TEST_MLU
 from dragon.core.testing.unittest.common_utils import TEST_MPS
 
 # Fix the duplicate linked omp runtime
@@ -97,6 +98,7 @@ class TestActivationOps(OpTestCase):
     def __init__(self, method_name='runTest'):
         super(TestActivationOps, self).__init__(method_name)
         self.cudnn_ws = dragon.Workspace()
+        self.cnnl_ws = dragon.Workspace()
 
     def test_dropout(self):
         for execution in ('EAGER_MODE', 'GRAPH_MODE'):
@@ -124,6 +126,11 @@ class TestActivationOps(OpTestCase):
     @unittest.skipIf(not TEST_MPS, 'MPS unavailable')
     def test_dropout_mps(self):
         with dragon.device('mps'):
+            self.test_dropout()
+
+    @unittest.skipIf(not TEST_MLU, 'MLU unavailable')
+    def test_dropout_mlu(self):
+        with dragon.device('mlu'):
             self.test_dropout()
 
     def test_drop_block(self):
@@ -167,7 +174,12 @@ class TestActivationOps(OpTestCase):
         with dragon.device('mps'):
             self.test_drop_path()
 
-    def test_elu(self):
+    @unittest.skipIf(not TEST_MLU, 'MLU unavailable')
+    def test_drop_path_mlu(self):
+        with dragon.device('mlu'):
+            self.test_drop_path()
+
+    def test_elu(self, prec=None):
         alpha = 1.
         for execution in ('EAGER_MODE', 'GRAPH_MODE'):
             with execution_context().mode(execution):
@@ -179,7 +191,8 @@ class TestActivationOps(OpTestCase):
                 dx = tape.gradient(y, [x], output_gradients=[x])[0]
                 result = np.maximum(data, 0.) + alpha * (np.exp(np.minimum(data, 0.)) - 1.)
                 self.assertEqual(
-                    [y, dx], [result, data * ((data > 0.) + (data < 0.) * (alpha + result))])
+                    [y, dx], [result, data * ((data > 0.) + (data < 0.) * (alpha + result))],
+                    prec=prec)
 
     @unittest.skipIf(not TEST_CUDA, 'CUDA unavailable')
     def test_elu_cuda(self):
@@ -198,7 +211,13 @@ class TestActivationOps(OpTestCase):
         with dragon.device('mps'):
             self.test_elu()
 
-    def test_gelu(self, approx_only=False):
+    @unittest.skipIf(not TEST_MLU, 'MLU unavailable')
+    def test_elu_cnnl(self):
+        dragon.mlu.set_cnnl_flags(True)
+        with dragon.device('mlu'), self.cnnl_ws.as_default():
+            self.test_elu(prec=1e-3)
+
+    def test_gelu(self, approx_only=False, prec=None):
         for execution in ('EAGER_MODE', 'GRAPH_MODE'):
             with execution_context().mode(execution):
                 data = np.array([-1., 0., 1.], 'float32')
@@ -214,7 +233,7 @@ class TestActivationOps(OpTestCase):
                     dx = tape.gradient(y, [x], output_gradients=[x])[0]
                     self.assertEqual(
                         [y, dx], [data * cdf, data * (cdf + data * pdf)],
-                        prec=0.001 if approximate else None)
+                        prec=0.001 if approximate else prec)
 
     @unittest.skipIf(not TEST_CUDA, 'CUDA unavailable')
     def test_gelu_cuda(self):
@@ -225,6 +244,12 @@ class TestActivationOps(OpTestCase):
     def test_gelu_mps(self):
         with dragon.device('mps'):
             self.test_gelu(approx_only=True)  # Missing "normcdf".
+
+    @unittest.skipIf(not TEST_MLU, 'MLU unavailable')
+    def test_gelu_cnnl(self):
+        dragon.mlu.set_cnnl_flags(True)
+        with dragon.device('mlu'), self.cnnl_ws.as_default():
+            self.test_gelu(prec=1e-4)
 
     def test_hardsigmoid(self):
         alpha, beta = 0.2, 0.5
@@ -250,12 +275,18 @@ class TestActivationOps(OpTestCase):
         with dragon.device('mps'):
             self.test_hardsigmoid()
 
+    @unittest.skipIf(not TEST_MLU, 'MLU unavailable')
+    def test_hardsigmoid_cnnl(self):
+        dragon.mlu.set_cnnl_flags(True)
+        with dragon.device('mlu'), self.cnnl_ws.as_default():
+            self.test_hardsigmoid()
+
     def test_hardswish(self):
         alpha, beta = 1. / 6., 0.5
         bound = beta / alpha
         for execution in ('EAGER_MODE', 'GRAPH_MODE'):
             with execution_context().mode(execution):
-                data = np.array([-3., -2., -1., 0., 1., 2., 3.], 'float32')
+                data = np.array([-4., -3., -2., -1., 0., 1., 2., 3., 4.], 'float32')
                 x = new_tensor(data)
                 with dragon.GradientTape() as tape:
                     tape.watch(x)
@@ -276,6 +307,12 @@ class TestActivationOps(OpTestCase):
     @unittest.skipIf(not TEST_MPS, 'MPS unavailable')
     def test_hardswish_mps(self):
         with dragon.device('mps'):
+            self.test_hardswish()
+
+    @unittest.skipIf(not TEST_MLU, 'MLU unavailable')
+    def test_hardswish_cnnl(self):
+        dragon.mlu.set_cnnl_flags(True)
+        with dragon.device('mlu'), self.cnnl_ws.as_default():
             self.test_hardswish()
 
     def test_leaky_relu(self):
@@ -301,6 +338,12 @@ class TestActivationOps(OpTestCase):
         with dragon.device('mps'):
             self.test_leaky_relu()
 
+    @unittest.skipIf(not TEST_MLU, 'MLU unavailable')
+    def test_leaky_relu_cnnl(self):
+        dragon.mlu.set_cnnl_flags(True)
+        with dragon.device('mlu'), self.cnnl_ws.as_default():
+            self.test_leaky_relu()
+
     def test_log_softmax(self):
         grad = np.array([[-0.90813, -0.15201, 1.06013],
                          [-1.87572, 2.63141, -0.7557]], dtype='float32')
@@ -323,6 +366,12 @@ class TestActivationOps(OpTestCase):
     @unittest.skipIf(not TEST_MPS, 'MPS unavailable')
     def test_log_softmax_mps(self):
         with dragon.device('mps'):
+            self.test_log_softmax()
+
+    @unittest.skipIf(not TEST_MLU, 'MLU unavailable')
+    def test_log_softmax_cnnl(self):
+        dragon.mlu.set_cnnl_flags(True)
+        with dragon.device('mlu'), self.cnnl_ws.as_default():
             self.test_log_softmax()
 
     def test_prelu(self):
@@ -383,6 +432,12 @@ class TestActivationOps(OpTestCase):
         with dragon.device('mps'):
             self.test_relu()
 
+    @unittest.skipIf(not TEST_MLU, 'MLU unavailable')
+    def test_relu_cnnl(self):
+        dragon.mlu.set_cnnl_flags(True)
+        with dragon.device('mlu'), self.cnnl_ws.as_default():
+            self.test_relu()
+
     def test_relu6(self):
         for execution in ('EAGER_MODE', 'GRAPH_MODE'):
             with execution_context().mode(execution):
@@ -404,6 +459,12 @@ class TestActivationOps(OpTestCase):
     @unittest.skipIf(not TEST_MPS, 'MPS unavailable')
     def test_relu6_mps(self):
         with dragon.device('mps'):
+            self.test_relu6()
+
+    @unittest.skipIf(not TEST_MLU, 'MLU unavailable')
+    def test_relu6_cnnl(self):
+        dragon.mlu.set_cnnl_flags(True)
+        with dragon.device('mlu'), self.cnnl_ws.as_default():
             self.test_relu6()
 
     def test_selu(self):
@@ -429,7 +490,7 @@ class TestActivationOps(OpTestCase):
         with dragon.device('cuda'):
             self.test_selu()
 
-    def test_sigmoid(self):
+    def test_sigmoid(self, prec=None):
         for execution in ('EAGER_MODE', 'GRAPH_MODE'):
             with execution_context().mode(execution):
                 data = np.array([0.2, 0.4, 0.6, 0.8, 1.], 'float32')
@@ -439,7 +500,7 @@ class TestActivationOps(OpTestCase):
                     y = dragon.math.sigmoid(x)
                 dx = tape.gradient(y, [x], output_gradients=[x])[0]
                 result = 1. / (1. + np.exp(-data))
-                self.assertEqual([y, dx], [result, data * result * (1. - result)])
+                self.assertEqual([y, dx], [result, data * result * (1. - result)], prec=prec)
 
     @unittest.skipIf(not TEST_CUDA, 'CUDA unavailable')
     def test_sigmoid_cuda(self):
@@ -457,6 +518,12 @@ class TestActivationOps(OpTestCase):
     def test_sigmoid_mps(self):
         with dragon.device('mps'):
             self.test_sigmoid()
+
+    @unittest.skipIf(not TEST_MLU, 'MLU unavailable')
+    def test_sigmoid_cnnl(self):
+        dragon.mlu.set_cnnl_flags(True)
+        with dragon.device('mlu'), self.cnnl_ws.as_default():
+            self.test_sigmoid(prec=1e-3)
 
     def test_silu(self):
         for execution in ('EAGER_MODE', 'GRAPH_MODE'):
@@ -479,6 +546,12 @@ class TestActivationOps(OpTestCase):
     @unittest.skipIf(not TEST_MPS, 'MPS unavailable')
     def test_silu_mps(self):
         with dragon.device('mps'):
+            self.test_silu()
+
+    @unittest.skipIf(not TEST_MLU, 'MLU unavailable')
+    def test_silu_cnnl(self):
+        dragon.mlu.set_cnnl_flags(True)
+        with dragon.device('mlu'), self.cnnl_ws.as_default():
             self.test_silu()
 
     def test_softmax(self):
@@ -511,7 +584,13 @@ class TestActivationOps(OpTestCase):
         with dragon.device('mps'):
             self.test_softmax()
 
-    def test_tanh(self):
+    @unittest.skipIf(not TEST_MLU, 'MLU unavailable')
+    def test_softmax_cnnl(self):
+        dragon.mlu.set_cnnl_flags(True)
+        with dragon.device('mlu'), self.cnnl_ws.as_default():
+            self.test_softmax()
+
+    def test_tanh(self, prec=None):
         for execution in ('EAGER_MODE', 'GRAPH_MODE'):
             with execution_context().mode(execution):
                 data = np.array([0.2, 0.4, 0.6, 0.8, 1.], 'float32')
@@ -521,7 +600,7 @@ class TestActivationOps(OpTestCase):
                     y = dragon.math.tanh(x)
                 dx = tape.gradient(y, [x], output_gradients=[x])[0]
                 result = np.tanh(data)
-                self.assertEqual([y, dx], [result, data * (1. - np.square(result))])
+                self.assertEqual([y, dx], [result, data * (1. - np.square(result))], prec=prec)
 
     @unittest.skipIf(not TEST_CUDA, 'CUDA unavailable')
     def test_tanh_cuda(self):
@@ -540,9 +619,19 @@ class TestActivationOps(OpTestCase):
         with dragon.device('mps'):
             self.test_tanh()
 
+    @unittest.skipIf(not TEST_MLU, 'MLU unavailable')
+    def test_tanh_cnnl(self):
+        dragon.mlu.set_cnnl_flags(True)
+        with dragon.device('mlu'), self.cnnl_ws.as_default():
+            self.test_tanh(prec=1e-2)
+
 
 class TestArrayOps(OpTestCase):
     """Test array ops."""
+
+    def __init__(self, method_name='runTest'):
+        super(TestArrayOps, self).__init__(method_name)
+        self.cnnl_ws = dragon.Workspace()
 
     def test_assign(self):
         entries = [0,
@@ -552,10 +641,10 @@ class TestArrayOps(OpTestCase):
         for execution in ('EAGER_MODE', 'GRAPH_MODE'):
             with execution_context().mode(execution):
                 for item in entries:
-                    data = np.zeros((1, 2, 3), dtype='float32')
-                    data.__setitem__(item, 1.)
+                    data = np.ones((1, 2, 3), dtype='float32')
+                    data.__setitem__(item, 0.)
                     x = new_tensor(data)
-                    dragon.assign([x, 1.], *process_index(item))
+                    dragon.assign([x, 0.], *process_index(item))
                     self.assertEqual(x, data)
 
     @unittest.skipIf(not TEST_CUDA, 'CUDA unavailable')
@@ -566,6 +655,12 @@ class TestArrayOps(OpTestCase):
     @unittest.skipIf(not TEST_MPS, 'MPS unavailable')
     def test_assign_mps(self):
         with dragon.device('mps'):
+            self.test_assign()
+
+    @unittest.skipIf(not TEST_MLU, 'MLU unavailable')
+    def test_assign_cnnl(self):
+        dragon.mlu.set_cnnl_flags(True)
+        with dragon.device('mlu'), self.cnnl_ws.as_default():
             self.test_assign()
 
     def test_boolean_mask(self):
@@ -618,6 +713,12 @@ class TestArrayOps(OpTestCase):
         with dragon.device('mps'):
             self.test_broadcast_to()
 
+    @unittest.skipIf(not TEST_MLU, 'MLU unavailable')
+    def test_broadcast_to_cnnl(self):
+        dragon.mlu.set_cnnl_flags(True)
+        with dragon.device('mlu'), self.cnnl_ws.as_default():
+            self.test_broadcast_to()
+
     def test_cast(self, test_float64=True):
         entries = [('float16', 'float32'), ('float32', 'float16'),
                    ('float32', 'float32'), ('float32', 'float64')]
@@ -649,6 +750,11 @@ class TestArrayOps(OpTestCase):
         with dragon.device('mps'):
             self.test_cast(test_float64=False)
 
+    @unittest.skipIf(not TEST_MLU, 'MLU unavailable')
+    def test_cast_mlu(self):
+        with dragon.device('mlu'):
+            self.test_cast(test_float64=False)
+
     def test_channel_shuffle(self):
         entries = [(0, 2), (1, 4)]
         for execution in ('EAGER_MODE', 'GRAPH_MODE'):
@@ -678,6 +784,12 @@ class TestArrayOps(OpTestCase):
         with dragon.device('mps'):
             self.test_channel_shuffle()
 
+    @unittest.skipIf(not TEST_MLU, 'MLU unavailable')
+    def test_channel_shuffle_cnnl(self):
+        dragon.mlu.set_cnnl_flags(True)
+        with dragon.device('mlu'), self.cnnl_ws.as_default():
+            self.test_channel_shuffle()
+
     def test_concat(self):
         entries = [0, 1]
         for execution in ('EAGER_MODE', 'GRAPH_MODE'):
@@ -705,6 +817,11 @@ class TestArrayOps(OpTestCase):
         with dragon.device('mps'):
             self.test_concat()
 
+    @unittest.skipIf(not TEST_MLU, 'MLU unavailable')
+    def test_concat_mlu(self):
+        with dragon.device('mlu'):
+            self.test_concat()
+
     def test_expand_dims(self):
         entries = [1, -1]
         for execution in ('EAGER_MODE', 'GRAPH_MODE'):
@@ -728,6 +845,11 @@ class TestArrayOps(OpTestCase):
     @unittest.skipIf(not TEST_MPS, 'MPS unavailable')
     def test_expand_dims_mps(self):
         with dragon.device('mps'):
+            self.test_expand_dims()
+
+    @unittest.skipIf(not TEST_MLU, 'MLU unavailable')
+    def test_expand_dims_mlu(self):
+        with dragon.device('mlu'):
             self.test_expand_dims()
 
     def test_flatten(self):
@@ -764,13 +886,18 @@ class TestArrayOps(OpTestCase):
         with dragon.device('mps'):
             self.test_flatten()
 
-    def test_gather(self):
+    @unittest.skipIf(not TEST_MLU, 'MLU unavailable')
+    def test_flatten_mlu(self):
+        with dragon.device('mlu'):
+            self.test_flatten()
+
+    def test_gather(self, index_type='int64'):
         entries = [1, (1, 2), (1, -2)]
         for execution in ('EAGER_MODE', 'GRAPH_MODE'):
             with execution_context().mode(execution):
                 for axis in entries:
                     data = arange((1, 2, 3, 4))
-                    index = np.array([0, 1, 1], 'int64')
+                    index = np.array([0, 1, 1], index_type)
                     axes = nest.flatten(axis)
                     if len(axes) > 1:
                         flatten_shape = \
@@ -806,12 +933,18 @@ class TestArrayOps(OpTestCase):
         with dragon.device('mps'):
             self.test_gather()
 
-    def test_gather_elements(self):
+    @unittest.skipIf(not TEST_MLU, 'MLU unavailable')
+    def test_gather_cnnl(self):
+        dragon.mlu.set_cnnl_flags(True)
+        with dragon.device('mlu'), self.cnnl_ws.as_default():
+            self.test_gather(index_type='int32')
+
+    def test_gather_elements(self, index_type='int64'):
         for execution in ('EAGER_MODE', 'GRAPH_MODE'):
             with execution_context().mode(execution):
                 for axis in range(0, 1):
                     data1 = arange((2, 4))
-                    data2 = np.array([[0, 1, 1, 0], [1, 1, 0, 0]], 'int64')
+                    data2 = np.array([[0, 1, 1, 0], [1, 1, 0, 0]], index_type)
                     x, index = new_tensor(data1), new_tensor(data2)
                     with dragon.GradientTape() as tape:
                         tape.watch(x)
@@ -839,6 +972,12 @@ class TestArrayOps(OpTestCase):
         with dragon.device('mps'):
             self.test_gather_elements()
 
+    @unittest.skipIf(not TEST_MLU, 'MLU unavailable')
+    def test_gather_elements_cnnl(self):
+        dragon.mlu.set_cnnl_flags(True)
+        with dragon.device('mlu'), self.cnnl_ws.as_default():
+            self.test_gather_elements(index_type='int32')
+
     def test_identity(self):
         for execution in ('EAGER_MODE', 'GRAPH_MODE'):
             with execution_context().mode(execution):
@@ -858,6 +997,11 @@ class TestArrayOps(OpTestCase):
     @unittest.skipIf(not TEST_MPS, 'MPS unavailable')
     def test_identity_mps(self):
         with dragon.device('mps'):
+            self.test_identity()
+
+    @unittest.skipIf(not TEST_MLU, 'MLU unavailable')
+    def test_identity_mlu(self):
+        with dragon.device('mlu'):
             self.test_identity()
 
     def test_linspace(self):
@@ -899,10 +1043,11 @@ class TestArrayOps(OpTestCase):
         for execution in ('EAGER_MODE', 'GRAPH_MODE'):
             with execution_context().mode(execution):
                 for index in entries:
-                    index = np.array(index, 'int64')
+                    index = np.array(index, 'float32')
                     x = new_tensor(index)
                     y = dragon.one_hot(x, depth=10)
-                    self.assertEqual(y, np.eye(10, dtype='int64')[index])
+                    result = np.eye(10, dtype='float32')[index.astype('int32')]
+                    self.assertEqual(y, result)
 
     @unittest.skipIf(not TEST_CUDA, 'CUDA unavailable')
     def test_one_hot_cuda(self):
@@ -914,13 +1059,21 @@ class TestArrayOps(OpTestCase):
         with dragon.device('mps'):
             self.test_one_hot()
 
-    def test_pad(self):
+    @unittest.skipIf(not TEST_MLU, 'MLU unavailable')
+    def test_one_hot_cnnl(self):
+        dragon.mlu.set_cnnl_flags(True)
+        with dragon.device('mlu'), self.cnnl_ws.as_default():
+            self.test_one_hot()
+
+    def test_pad(self, constant_only=False):
         entries = [([(0, 1)], 'constant'),
                    ([(1, 1)], 'reflect'),
                    ([(2, 1)], 'edge')]
         for execution in ('EAGER_MODE', 'GRAPH_MODE'):
             with execution_context().mode(execution):
                 for pads, mode in entries:
+                    if constant_only and mode != 'constant':
+                        continue
                     data = arange((6,))
                     grad = np.ones((6,), 'float32') if (mode == 'constant') else None
                     x = new_tensor(data)
@@ -940,6 +1093,12 @@ class TestArrayOps(OpTestCase):
         with dragon.device('mps'):
             self.test_pad()
 
+    @unittest.skipIf(not TEST_MLU, 'MLU unavailable')
+    def test_pad_cnnl(self):
+        dragon.mlu.set_cnnl_flags(True)
+        with dragon.device('mlu'), self.cnnl_ws.as_default():
+            self.test_pad(constant_only=True)
+
     def test_permutation(self):
         entries = [([4], {'dtype': 'int64'}),
                    ([4], {'dtype': 'float32'})]
@@ -955,9 +1114,9 @@ class TestArrayOps(OpTestCase):
             self.test_permutation()
 
     def test_range(self):
-        entries = [([5], {'dtype': 'int64'}),
-                   ([0, 5], {'dtype': 'int64'}),
-                   ([0, 5, 2], {'dtype': 'int64'}),
+        entries = [([5], {'dtype': 'int32'}),
+                   ([0, 5], {'dtype': 'int32'}),
+                   ([0, 5, 2], {'dtype': 'int32'}),
                    ([0., 1., 0.2], {'dtype': 'float32'})]
         for execution in ('EAGER_MODE', 'GRAPH_MODE'):
             with execution_context().mode(execution):
@@ -974,6 +1133,12 @@ class TestArrayOps(OpTestCase):
     @unittest.skipIf(not TEST_MPS, 'MPS unavailable')
     def test_range_mps(self):
         with dragon.device('mps'):
+            self.test_range()
+
+    @unittest.skipIf(not TEST_MLU, 'MLU unavailable')
+    def test_range_cnnl(self):
+        dragon.mlu.set_cnnl_flags(True)
+        with dragon.device('mlu'), self.cnnl_ws.as_default():
             self.test_range()
 
     def test_repeat(self):
@@ -1024,6 +1189,11 @@ class TestArrayOps(OpTestCase):
         with dragon.device('mps'):
             self.test_reshape()
 
+    @unittest.skipIf(not TEST_MLU, 'MLU unavailable')
+    def test_reshape_mlu(self):
+        with dragon.device('mlu'):
+            self.test_reshape()
+
     def test_reverse(self):
         entries = [0, 1, (1, 2)]
         for execution in ('EAGER_MODE', 'GRAPH_MODE'):
@@ -1047,6 +1217,12 @@ class TestArrayOps(OpTestCase):
         with dragon.device('mps'):
             self.test_reverse()
 
+    @unittest.skipIf(not TEST_MLU, 'MLU unavailable')
+    def test_reverse_cnnl(self):
+        dragon.mlu.set_cnnl_flags(True)
+        with dragon.device('mlu'), self.cnnl_ws.as_default():
+            self.test_reverse()
+
     def test_shape(self):
         entries = [(2, 3), (2, 3, 3)]
         for execution in ('EAGER_MODE', 'GRAPH_MODE'):
@@ -1063,6 +1239,11 @@ class TestArrayOps(OpTestCase):
     @unittest.skipIf(not TEST_MPS, 'MPS unavailable')
     def test_shape_mps(self):
         with dragon.device('mps'):
+            self.test_shape()
+
+    @unittest.skipIf(not TEST_MLU, 'MLU unavailable')
+    def test_shape_mlu(self):
+        with dragon.device('mlu'):
             self.test_shape()
 
     def test_slice(self):
@@ -1092,6 +1273,12 @@ class TestArrayOps(OpTestCase):
     @unittest.skipIf(not TEST_MPS, 'MPS unavailable')
     def test_slice_mps(self):
         with dragon.device('mps'):
+            self.test_slice()
+
+    @unittest.skipIf(not TEST_MLU, 'MLU unavailable')
+    def test_slice_cnnl(self):
+        dragon.mlu.set_cnnl_flags(True)
+        with dragon.device('mlu'), self.cnnl_ws.as_default():
             self.test_slice()
 
     def test_sort(self):
@@ -1147,6 +1334,11 @@ class TestArrayOps(OpTestCase):
         with dragon.device('mps'):
             self.test_split()
 
+    @unittest.skipIf(not TEST_MLU, 'MLU unavailable')
+    def test_split_mlu(self):
+        with dragon.device('mlu'):
+            self.test_split()
+
     def test_squeeze(self):
         entries = [((2, 1, 3), 1), ((1, 2, 1, 3), (0, 2)), ((3, 1, 2, 1), (1,))]
         for execution in ('EAGER_MODE', 'GRAPH_MODE'):
@@ -1170,6 +1362,11 @@ class TestArrayOps(OpTestCase):
     @unittest.skipIf(not TEST_MPS, 'MPS unavailable')
     def test_squeeze_mps(self):
         with dragon.device('mps'):
+            self.test_squeeze()
+
+    @unittest.skipIf(not TEST_MLU, 'MLU unavailable')
+    def test_squeeze_mlu(self):
+        with dragon.device('mlu'):
             self.test_squeeze()
 
     def test_stack(self):
@@ -1199,6 +1396,11 @@ class TestArrayOps(OpTestCase):
         with dragon.device('mps'):
             self.test_stack()
 
+    @unittest.skipIf(not TEST_MLU, 'MLU unavailable')
+    def test_stack_mlu(self):
+        with dragon.device('mlu'):
+            self.test_stack()
+
     def test_tile(self):
         entries = [(2,), (1, 1), (1, 2), (2, 1), (2, 2)]
         for execution in ('EAGER_MODE', 'GRAPH_MODE'):
@@ -1225,6 +1427,12 @@ class TestArrayOps(OpTestCase):
         with dragon.device('mps'):
             self.test_tile()
 
+    @unittest.skipIf(not TEST_MLU, 'MLU unavailable')
+    def test_tile_cnnl(self):
+        dragon.mlu.set_cnnl_flags(True)
+        with dragon.device('mlu'), self.cnnl_ws.as_default():
+            self.test_tile()
+
     def test_transpose(self):
         entries = [(0, 2, 1), None]
         for execution in ('EAGER_MODE', 'GRAPH_MODE'):
@@ -1247,6 +1455,12 @@ class TestArrayOps(OpTestCase):
     @unittest.skipIf(not TEST_MPS, 'MPS unavailable')
     def test_transpose_mps(self):
         with dragon.device('mps'):
+            self.test_transpose()
+
+    @unittest.skipIf(not TEST_MLU, 'MLU unavailable')
+    def test_transpose_cnnl(self):
+        dragon.mlu.set_cnnl_flags(True)
+        with dragon.device('mlu'), self.cnnl_ws.as_default():
             self.test_transpose()
 
     def test_tril(self):
@@ -1302,7 +1516,7 @@ class TestArrayOps(OpTestCase):
                     axis = axis if axis is not None else -1
                     result = np.argsort(-data if largest else data, axis=axis)
                     result = np.take(result, np.arange(k), axis=axis)
-                    self.assertEqual(y[1], result)
+                    self.assertEqual(y[1].astype('int64'), result)
 
     @unittest.skipIf(not TEST_CUDA, 'CUDA unavailable')
     def test_top_k_cuda(self):
@@ -1312,6 +1526,12 @@ class TestArrayOps(OpTestCase):
     @unittest.skipIf(not TEST_MPS, 'MPS unavailable')
     def test_top_k_mps(self):
         with dragon.device('mps'):
+            self.test_top_k()
+
+    @unittest.skipIf(not TEST_MLU, 'MLU unavailable')
+    def test_top_k_cnnl(self):
+        dragon.mlu.set_cnnl_flags(True)
+        with dragon.device('mlu'), self.cnnl_ws.as_default():
             self.test_top_k()
 
     def test_unstack(self):
@@ -1340,6 +1560,11 @@ class TestArrayOps(OpTestCase):
     @unittest.skipIf(not TEST_MPS, 'MPS unavailable')
     def test_unstack_mps(self):
         with dragon.device('mps'):
+            self.test_unstack()
+
+    @unittest.skipIf(not TEST_MLU, 'MLU unavailable')
+    def test_unstack_mlu(self):
+        with dragon.device('mlu'):
             self.test_unstack()
 
     def test_unique(self):
@@ -1456,6 +1681,11 @@ class TestInitOps(OpTestCase):
         with dragon.device('mps'):
             self.test_fill()
 
+    @unittest.skipIf(not TEST_MLU, 'MLU unavailable')
+    def test_fill_mlu(self):
+        with dragon.device('mlu'):
+            self.test_fill()
+
     def test_glorot_normal(self):
         for execution in ('EAGER_MODE', 'GRAPH_MODE'):
             with execution_context().mode(execution):
@@ -1466,6 +1696,11 @@ class TestInitOps(OpTestCase):
         with dragon.device('cuda'):
             self.test_glorot_normal()
 
+    @unittest.skipIf(not TEST_MLU, 'MLU unavailable')
+    def test_glorot_normal_mlu(self):
+        with dragon.device('mlu'):
+            self.test_glorot_normal()
+
     def test_glorot_uniform(self):
         for execution in ('EAGER_MODE', 'GRAPH_MODE'):
             with execution_context().mode(execution):
@@ -1474,6 +1709,11 @@ class TestInitOps(OpTestCase):
     @unittest.skipIf(not TEST_CUDA, 'CUDA unavailable')
     def test_glorot_uniform_cuda(self):
         with dragon.device('cuda'):
+            self.test_glorot_uniform()
+
+    @unittest.skipIf(not TEST_MLU, 'MLU unavailable')
+    def test_glorot_uniform_mlu(self):
+        with dragon.device('mlu'):
             self.test_glorot_uniform()
 
     def test_ones(self):
@@ -1490,6 +1730,11 @@ class TestInitOps(OpTestCase):
     @unittest.skipIf(not TEST_MPS, 'MPS unavailable')
     def test_ones_mps(self):
         with dragon.device('mps'):
+            self.test_ones()
+
+    @unittest.skipIf(not TEST_MLU, 'MLU unavailable')
+    def test_ones_mlu(self):
+        with dragon.device('mlu'):
             self.test_ones()
 
     def test_ones_like(self):
@@ -1510,6 +1755,11 @@ class TestInitOps(OpTestCase):
         with dragon.device('mps'):
             self.test_ones_like()
 
+    @unittest.skipIf(not TEST_MLU, 'MLU unavailable')
+    def test_ones_like_mlu(self):
+        with dragon.device('mlu'):
+            self.test_ones_like()
+
     def test_random_normal(self):
         for execution in ('EAGER_MODE', 'GRAPH_MODE'):
             with execution_context().mode(execution):
@@ -1523,6 +1773,11 @@ class TestInitOps(OpTestCase):
     @unittest.skipIf(not TEST_MPS, 'MPS unavailable')
     def test_random_normal_mps(self):
         with dragon.device('mps'):
+            self.test_random_normal()
+
+    @unittest.skipIf(not TEST_MLU, 'MLU unavailable')
+    def test_random_normal_mlu(self):
+        with dragon.device('mlu'):
             self.test_random_normal()
 
     def test_random_normal_like(self):
@@ -1542,6 +1797,11 @@ class TestInitOps(OpTestCase):
         with dragon.device('mps'):
             self.test_random_normal_like()
 
+    @unittest.skipIf(not TEST_MLU, 'MLU unavailable')
+    def test_random_normal_like_mlu(self):
+        with dragon.device('mlu'):
+            self.test_random_normal_like()
+
     def test_random_uniform(self):
         for execution in ('EAGER_MODE', 'GRAPH_MODE'):
             with execution_context().mode(execution):
@@ -1555,6 +1815,11 @@ class TestInitOps(OpTestCase):
     @unittest.skipIf(not TEST_MPS, 'MPS unavailable')
     def test_random_uniform_mps(self):
         with dragon.device('mps'):
+            self.test_random_uniform()
+
+    @unittest.skipIf(not TEST_MLU, 'MLU unavailable')
+    def test_random_uniform_mlu(self):
+        with dragon.device('mlu'):
             self.test_random_uniform()
 
     def test_random_uniform_like(self):
@@ -1574,6 +1839,11 @@ class TestInitOps(OpTestCase):
         with dragon.device('mps'):
             self.test_random_uniform_like()
 
+    @unittest.skipIf(not TEST_MLU, 'MLU unavailable')
+    def test_random_uniform_like_mlu(self):
+        with dragon.device('mlu'):
+            self.test_random_uniform_like()
+
     def test_truncated_normal(self):
         for execution in ('EAGER_MODE', 'GRAPH_MODE'):
             with execution_context().mode(execution):
@@ -1582,6 +1852,11 @@ class TestInitOps(OpTestCase):
     @unittest.skipIf(not TEST_MPS, 'MPS unavailable')
     def test_truncated_normal_mps(self):
         with dragon.device('mps'):
+            self.test_truncated_normal()
+
+    @unittest.skipIf(not TEST_MLU, 'MLU unavailable')
+    def test_truncated_normal_mlu(self):
+        with dragon.device('mlu'):
             self.test_truncated_normal()
 
     def test_zeros(self):
@@ -1598,6 +1873,11 @@ class TestInitOps(OpTestCase):
     @unittest.skipIf(not TEST_MPS, 'MPS unavailable')
     def test_zeros_mps(self):
         with dragon.device('mps'):
+            self.test_zeros()
+
+    @unittest.skipIf(not TEST_MLU, 'MLU unavailable')
+    def test_zeros_mlu(self):
+        with dragon.device('mlu'):
             self.test_zeros()
 
     def test_zeros_like(self):
@@ -1618,9 +1898,18 @@ class TestInitOps(OpTestCase):
         with dragon.device('mps'):
             self.test_zeros_like()
 
+    @unittest.skipIf(not TEST_MLU, 'MLU unavailable')
+    def test_zeros_like_mlu(self):
+        with dragon.device('mlu'):
+            self.test_zeros_like()
+
 
 class TestLossOps(OpTestCase):
     """Test loss ops."""
+
+    def __init__(self, method_name='runTest'):
+        super(TestLossOps, self).__init__(method_name)
+        self.cnnl_ws = dragon.Workspace()
 
     def test_l1_loss(self):
         for execution in ('EAGER_MODE', 'GRAPH_MODE'):
@@ -1648,6 +1937,12 @@ class TestLossOps(OpTestCase):
     @unittest.skipIf(not TEST_MPS, 'MPS unavailable')
     def test_l1_loss_mps(self):
         with dragon.device('mps'):
+            self.test_l1_loss()
+
+    @unittest.skipIf(not TEST_MLU, 'MLU unavailable')
+    def test_l1_loss_cnnl(self):
+        dragon.mlu.set_cnnl_flags(True)
+        with dragon.device('mlu'), self.cnnl_ws.as_default():
             self.test_l1_loss()
 
     def test_l2_loss(self):
@@ -1678,13 +1973,19 @@ class TestLossOps(OpTestCase):
         with dragon.device('mps'):
             self.test_l2_loss()
 
-    def test_nll_loss(self):
+    @unittest.skipIf(not TEST_MLU, 'MLU unavailable')
+    def test_l2_loss_cnnl(self):
+        dragon.mlu.set_cnnl_flags(True)
+        with dragon.device('mlu'), self.cnnl_ws.as_default():
+            self.test_l2_loss()
+
+    def test_nll_loss(self, index_type='int64'):
         for execution in ('EAGER_MODE', 'GRAPH_MODE'):
             with execution_context().mode(execution):
                 for reduction in ('mean', 'sum', 'none'):
                     data1 = np.log(np.array(
                         [[0.2, 0.3, 0.5], [0.1, 0.7, 0.2]], 'float32'))
-                    data2 = np.array([0, 1], 'int64')
+                    data2 = np.array([0, 1], index_type)
                     a, b = new_tensor(data1), new_tensor(data2)
                     with dragon.GradientTape() as tape:
                         tape.watch(a)
@@ -1706,6 +2007,12 @@ class TestLossOps(OpTestCase):
     def test_nll_loss_mps(self):
         with dragon.device('mps'):
             self.test_nll_loss()
+
+    @unittest.skipIf(not TEST_MLU, 'MLU unavailable')
+    def test_nll_loss_cnnl(self):
+        dragon.mlu.set_cnnl_flags(True)
+        with dragon.device('mlu'), self.cnnl_ws.as_default():
+            self.test_nll_loss(index_type='int32')
 
     def test_sigmoid_cross_entropy_loss(self):
         for execution in ('EAGER_MODE', 'GRAPH_MODE'):
@@ -1814,13 +2121,19 @@ class TestLossOps(OpTestCase):
         with dragon.device('mps'):
             self.test_smooth_l1_loss()
 
+    @unittest.skipIf(not TEST_MLU, 'MLU unavailable')
+    def test_smooth_l1_loss_cnnl(self):
+        dragon.mlu.set_cnnl_flags(True)
+        with dragon.device('mlu'), self.cnnl_ws.as_default():
+            self.test_smooth_l1_loss()
+
     def test_softmax_cross_entropy_loss(self):
         for execution in ('EAGER_MODE', 'GRAPH_MODE'):
             with execution_context().mode(execution):
                 for reduction in ('mean', 'sum', 'none'):
                     data1 = np.log(np.array(
                         [[0.2, 0.3, 0.5], [0.1, 0.7, 0.2]], 'float32'))
-                    data2 = np.array([0, 1], 'int64')
+                    data2 = np.array([0, 1], 'int32')
                     data3 = np.eye(3, dtype='float32')[data2]
                     scale = (np.exp(data1) - data3) / \
                             (data1.shape[0] if reduction == 'mean' else 1)
@@ -1853,6 +2166,12 @@ class TestLossOps(OpTestCase):
         with dragon.device('mps'):
             self.test_softmax_cross_entropy_loss()
 
+    @unittest.skipIf(not TEST_MLU, 'MLU unavailable')
+    def test_softmax_cross_entropy_loss_cnnl(self):
+        dragon.mlu.set_cnnl_flags(True)
+        with dragon.device('mlu'), self.cnnl_ws.as_default():
+            self.test_softmax_cross_entropy_loss()
+
 
 class TestMathOps(OpTestCase):
     """Test math ops."""
@@ -1867,6 +2186,10 @@ class TestMathOps(OpTestCase):
                           ((3,), (2, 3)),
                           ((2, 3), (2, 1)),
                           ((2, 1), (1, 3))]
+
+    def __init__(self, method_name='runTest'):
+        super(TestMathOps, self).__init__(method_name)
+        self.cnnl_ws = dragon.Workspace()
 
     def test_abs(self):
         for execution in ('EAGER_MODE', 'GRAPH_MODE'):
@@ -1889,10 +2212,16 @@ class TestMathOps(OpTestCase):
         with dragon.device('mps'):
             self.test_abs()
 
-    def test_add(self):
+    @unittest.skipIf(not TEST_MLU, 'MLU unavailable')
+    def test_abs_mlu(self):
+        with dragon.device('mlu'):
+            self.test_abs()
+
+    def test_add(self, test_shapes=None):
+        test_shapes = test_shapes or self.binary_test_shapes
         for execution in ('EAGER_MODE', 'GRAPH_MODE'):
             with execution_context().mode(execution):
-                for a_shape, b_shape in self.binary_test_shapes:
+                for a_shape, b_shape in test_shapes:
                     data1, data2 = arange(a_shape), arange(b_shape, 1)
                     a, b = new_tensor(data1), new_tensor(data2)
                     with dragon.GradientTape() as tape:
@@ -1916,6 +2245,12 @@ class TestMathOps(OpTestCase):
     def test_add_mps(self):
         with dragon.device('mps'):
             self.test_add()
+
+    @unittest.skipIf(not TEST_MLU, 'MLU unavailable')
+    def test_add_cnnl(self):
+        dragon.mlu.set_cnnl_flags(True)
+        with dragon.device('mlu'), self.cnnl_ws.as_default():
+            self.test_add(self.binary_test_shapes[:-1])
 
     def test_affine(self):
         for execution in ('EAGER_MODE', 'GRAPH_MODE'):
@@ -1948,7 +2283,7 @@ class TestMathOps(OpTestCase):
         with dragon.device('mps'):
             self.test_affine()
 
-    def test_argmax(self):
+    def test_argmax(self, index_type='int64'):
         entries = [(0, True), (0, False), (1, True), (1, False)]
         for execution in ('EAGER_MODE', 'GRAPH_MODE'):
             with execution_context().mode(execution):
@@ -1956,9 +2291,11 @@ class TestMathOps(OpTestCase):
                     data = arange((2, 3))
                     x = new_tensor(data)
                     y = dragon.math.argmax(x, axis, keepdims=keepdims)
-                    result = np.argmax(data, axis)
+                    result = np.argmax(data, axis).astype(index_type)
                     if keepdims:
                         result = np.expand_dims(result, axis)
+                    if y.dtype != index_type:
+                        y._dtype = index_type
                     self.assertEqual(y, result)
 
     @unittest.skipIf(not TEST_CUDA, 'CUDA unavailable')
@@ -1971,7 +2308,13 @@ class TestMathOps(OpTestCase):
         with dragon.device('mps'):
             self.test_argmax()
 
-    def test_argmin(self):
+    @unittest.skipIf(not TEST_MLU, 'MLU unavailable')
+    def test_argmax_cnnl(self):
+        dragon.mlu.set_cnnl_flags(True)
+        with dragon.device('mlu'), self.cnnl_ws.as_default():
+            self.test_argmax(index_type='int32')
+
+    def test_argmin(self, index_type='int64'):
         entries = [(0, True), (0, False), (1, True), (1, False)]
         for execution in ('EAGER_MODE', 'GRAPH_MODE'):
             with execution_context().mode(execution):
@@ -1979,9 +2322,11 @@ class TestMathOps(OpTestCase):
                     data = arange((2, 3))
                     x = new_tensor(data)
                     y = dragon.math.argmin(x, axis, keepdims=keepdims)
-                    result = np.argmin(data, axis)
+                    result = np.argmin(data, axis).astype(index_type)
                     if keepdims:
                         result = np.expand_dims(result, axis)
+                    if y.dtype != index_type:
+                        y._dtype = index_type
                     self.assertEqual(y, result)
 
     @unittest.skipIf(not TEST_CUDA, 'CUDA unavailable')
@@ -1993,6 +2338,12 @@ class TestMathOps(OpTestCase):
     def test_argmin_mps(self):
         with dragon.device('mps'):
             self.test_argmin()
+
+    @unittest.skipIf(not TEST_MLU, 'MLU unavailable')
+    def test_argmin_cnnl(self):
+        dragon.mlu.set_cnnl_flags(True)
+        with dragon.device('mlu'), self.cnnl_ws.as_default():
+            self.test_argmin(index_type='int32')
 
     def test_atan2(self):
         for execution in ('EAGER_MODE', 'GRAPH_MODE'):
@@ -2111,7 +2462,12 @@ class TestMathOps(OpTestCase):
         with dragon.device('mps'):
             self.test_clip()
 
-    def test_cos(self):
+    @unittest.skipIf(not TEST_MLU, 'MLU unavailable')
+    def test_clip_mlu(self):
+        with dragon.device('mlu'):
+            self.test_clip()
+
+    def test_cos(self, prec=None):
         for execution in ('EAGER_MODE', 'GRAPH_MODE'):
             with execution_context().mode(execution):
                 data = np.array([0., math.pi * 0.5, math.pi], 'float32')
@@ -2120,7 +2476,7 @@ class TestMathOps(OpTestCase):
                     tape.watch(x)
                     y = dragon.math.cos(x)
                 dx = tape.gradient(y, [x], output_gradients=[x])[0]
-                self.assertEqual([y, dx], [np.cos(data), data * (-np.sin(data))])
+                self.assertEqual([y, dx], [np.cos(data), data * (-np.sin(data))], prec=prec)
 
     @unittest.skipIf(not TEST_CUDA, 'CUDA unavailable')
     def test_cos_cuda(self):
@@ -2131,6 +2487,11 @@ class TestMathOps(OpTestCase):
     def test_cos_mps(self):
         with dragon.device('mps'):
             self.test_cos()
+
+    @unittest.skipIf(not TEST_MLU, 'MLU unavailable')
+    def test_cos_mlu(self):
+        with dragon.device('mlu'):
+            self.test_cos(prec=1e-2)
 
     def test_cumsum(self):
         entries = [(0, False, False),
@@ -2166,10 +2527,11 @@ class TestMathOps(OpTestCase):
         with dragon.device('cuda'):
             self.test_cumsum()
 
-    def test_div(self):
+    def test_div(self, test_shapes=None):
+        test_shapes = test_shapes or self.binary_test_shapes
         for execution in ('EAGER_MODE', 'GRAPH_MODE'):
             with execution_context().mode(execution):
-                for a_shape, b_shape in self.binary_test_shapes:
+                for a_shape, b_shape in test_shapes:
                     data1, data2 = arange(a_shape), arange(b_shape, 1)
                     a, b = new_tensor(data1), new_tensor(data2)
                     with dragon.GradientTape() as tape:
@@ -2194,12 +2556,19 @@ class TestMathOps(OpTestCase):
         with dragon.device('mps'):
             self.test_div()
 
-    def test_equal(self):
+    @unittest.skipIf(not TEST_MLU, 'MLU unavailable')
+    def test_div_cnnl(self):
+        dragon.mlu.set_cnnl_flags(True)
+        with dragon.device('mlu'), self.cnnl_ws.as_default():
+            self.test_div(self.binary_test_shapes[:-1])
+
+    def test_equal(self, test_shapes=None):
+        test_shapes = test_shapes or self.binary_test_shapes
         for execution in ('EAGER_MODE', 'GRAPH_MODE'):
             with execution_context().mode(execution):
-                for a_shape, b_shape in self.binary_test_shapes:
-                    data1 = uniform(a_shape)
-                    data2 = dropout(data1, drop_ratio=0.5)
+                for a_shape, b_shape in test_shapes:
+                    data1, data2 = uniform(a_shape), uniform(b_shape)
+                    data2 = dropout(data2, drop_ratio=0.5)
                     a, b = new_tensor(data1), new_tensor(data2)
                     y = dragon.math.equal([a, b])
                     self.assertEqual(y, np.equal(data1, data2))
@@ -2214,7 +2583,12 @@ class TestMathOps(OpTestCase):
         with dragon.device('mps'):
             self.test_equal()
 
-    def test_exp(self):
+    @unittest.skipIf(not TEST_MLU, 'MLU unavailable')
+    def test_equal_mlu(self):
+        with dragon.device('mlu'):
+            self.test_equal(self.binary_test_shapes[:-1])
+
+    def test_exp(self, prec=None):
         for execution in ('EAGER_MODE', 'GRAPH_MODE'):
             with execution_context().mode(execution):
                 data = np.array([0., 1., 2.], 'float32')
@@ -2223,7 +2597,7 @@ class TestMathOps(OpTestCase):
                     tape.watch(x)
                     y = dragon.math.exp(x)
                 dx = tape.gradient(y, [x], output_gradients=[x])[0]
-                self.assertEqual([y, dx], [np.exp(data), data * np.exp(data)])
+                self.assertEqual([y, dx], [np.exp(data), data * np.exp(data)], prec=prec)
 
     @unittest.skipIf(not TEST_CUDA, 'CUDA unavailable')
     def test_exp_cuda(self):
@@ -2234,6 +2608,11 @@ class TestMathOps(OpTestCase):
     def test_exp_mps(self):
         with dragon.device('mps'):
             self.test_exp()
+
+    @unittest.skipIf(not TEST_MLU, 'MLU unavailable')
+    def test_exp_mlu(self):
+        with dragon.device('mlu'):
+            self.test_exp(1e-2)
 
     def test_floor(self):
         for execution in ('EAGER_MODE', 'GRAPH_MODE'):
@@ -2251,6 +2630,11 @@ class TestMathOps(OpTestCase):
     @unittest.skipIf(not TEST_MPS, 'MPS unavailable')
     def test_floor_mps(self):
         with dragon.device('mps'):
+            self.test_floor()
+
+    @unittest.skipIf(not TEST_MLU, 'MLU unavailable')
+    def test_floor_mlu(self):
+        with dragon.device('mlu'):
             self.test_floor()
 
     def test_gemm(self):
@@ -2288,10 +2672,17 @@ class TestMathOps(OpTestCase):
         with dragon.device('mps'):
             self.test_gemm()
 
-    def test_greater(self):
+    @unittest.skipIf(not TEST_MLU, 'MLU unavailable')
+    def test_gemm_cnnl(self):
+        dragon.mlu.set_cnnl_flags(True)
+        with dragon.device('mlu'), self.cnnl_ws.as_default():
+            self.test_gemm()
+
+    def test_greater(self, test_shapes=None):
+        test_shapes = test_shapes or self.binary_test_shapes
         for execution in ('EAGER_MODE', 'GRAPH_MODE'):
             with execution_context().mode(execution):
-                for a_shape, b_shape in self.binary_test_shapes:
+                for a_shape, b_shape in test_shapes:
                     data1, data2 = uniform(a_shape), uniform(b_shape)
                     a, b = new_tensor(data1), new_tensor(data2)
                     y = dragon.math.greater([a, b])
@@ -2307,10 +2698,16 @@ class TestMathOps(OpTestCase):
         with dragon.device('mps'):
             self.test_greater()
 
-    def test_greater_equal(self):
+    @unittest.skipIf(not TEST_MLU, 'MLU unavailable')
+    def test_greater_mlu(self):
+        with dragon.device('mlu'):
+            self.test_greater(self.binary_test_shapes[:-1])
+
+    def test_greater_equal(self, test_shapes=None):
+        test_shapes = test_shapes or self.binary_test_shapes
         for execution in ('EAGER_MODE', 'GRAPH_MODE'):
             with execution_context().mode(execution):
-                for a_shape, b_shape in self.binary_test_shapes:
+                for a_shape, b_shape in test_shapes:
                     data1, data2 = uniform(a_shape), uniform(b_shape)
                     a, b = new_tensor(data1), new_tensor(data2)
                     y = dragon.math.greater_equal([a, b])
@@ -2325,6 +2722,11 @@ class TestMathOps(OpTestCase):
     def test_greater_equal_mps(self):
         with dragon.device('mps'):
             self.test_greater_equal()
+
+    @unittest.skipIf(not TEST_MLU, 'MLU unavailable')
+    def test_greater_equal_mlu(self):
+        with dragon.device('mlu'):
+            self.test_greater_equal(self.binary_test_shapes[:-1])
 
     def test_invert(self):
         for execution in ('EAGER_MODE', 'GRAPH_MODE'):
@@ -2362,6 +2764,12 @@ class TestMathOps(OpTestCase):
         with dragon.device('mps'):
             self.test_is_finite()
 
+    @unittest.skipIf(not TEST_MLU, 'MLU unavailable')
+    def test_is_finite_cnnl(self):
+        dragon.mlu.set_cnnl_flags(True)
+        with dragon.device('mlu'), self.cnnl_ws.as_default():
+            self.test_is_finite()
+
     def test_is_inf(self):
         for execution in ('EAGER_MODE', 'GRAPH_MODE'):
             with execution_context().mode(execution):
@@ -2378,6 +2786,12 @@ class TestMathOps(OpTestCase):
     @unittest.skipIf(not TEST_MPS, 'MPS unavailable')
     def test_is_inf_mps(self):
         with dragon.device('mps'):
+            self.test_is_inf()
+
+    @unittest.skipIf(not TEST_MLU, 'MLU unavailable')
+    def test_is_inf_cnnl(self):
+        dragon.mlu.set_cnnl_flags(True)
+        with dragon.device('mlu'), self.cnnl_ws.as_default():
             self.test_is_inf()
 
     def test_is_nan(self):
@@ -2398,10 +2812,17 @@ class TestMathOps(OpTestCase):
         with dragon.device('mps'):
             self.test_is_nan()
 
-    def test_less(self):
+    @unittest.skipIf(not TEST_MLU, 'MLU unavailable')
+    def test_is_nan_cnnl(self):
+        dragon.mlu.set_cnnl_flags(True)
+        with dragon.device('mlu'), self.cnnl_ws.as_default():
+            self.test_is_nan()
+
+    def test_less(self, test_shapes=None):
+        test_shapes = test_shapes or self.binary_test_shapes
         for execution in ('EAGER_MODE', 'GRAPH_MODE'):
             with execution_context().mode(execution):
-                for a_shape, b_shape in self.binary_test_shapes:
+                for a_shape, b_shape in test_shapes:
                     data1, data2 = uniform(a_shape), uniform(b_shape)
                     a, b = new_tensor(data1), new_tensor(data2)
                     y = dragon.math.less([a, b])
@@ -2417,10 +2838,16 @@ class TestMathOps(OpTestCase):
         with dragon.device('mps'):
             self.test_less()
 
-    def test_less_equal(self):
+    @unittest.skipIf(not TEST_MLU, 'MLU unavailable')
+    def test_less_mlu(self):
+        with dragon.device('mlu'):
+            self.test_less(self.binary_test_shapes[:-1])
+
+    def test_less_equal(self, test_shapes=None):
+        test_shapes = test_shapes or self.binary_test_shapes
         for execution in ('EAGER_MODE', 'GRAPH_MODE'):
             with execution_context().mode(execution):
-                for a_shape, b_shape in self.binary_test_shapes:
+                for a_shape, b_shape in test_shapes:
                     data1, data2 = uniform(a_shape), uniform(b_shape)
                     a, b = new_tensor(data1), new_tensor(data2)
                     y = dragon.math.less_equal([a, b])
@@ -2436,7 +2863,12 @@ class TestMathOps(OpTestCase):
         with dragon.device('mps'):
             self.test_less_equal()
 
-    def test_log(self):
+    @unittest.skipIf(not TEST_MLU, 'MLU unavailable')
+    def test_less_equal_mlu(self):
+        with dragon.device('mlu'):
+            self.test_less_equal(self.binary_test_shapes[:-1])
+
+    def test_log(self, prec=None):
         for execution in ('EAGER_MODE', 'GRAPH_MODE'):
             with execution_context().mode(execution):
                 data = np.array([1., 2., 3.], 'float32')
@@ -2445,7 +2877,7 @@ class TestMathOps(OpTestCase):
                     tape.watch(x)
                     y = dragon.math.log(x)
                 dx = tape.gradient(y, [x], output_gradients=[x])[0]
-                self.assertEqual([y, dx], [np.log(data), (1. / data) * data])
+                self.assertEqual([y, dx], [np.log(data), (1. / data) * data], prec=prec)
 
     @unittest.skipIf(not TEST_CUDA, 'CUDA unavailable')
     def test_log_cuda(self):
@@ -2456,6 +2888,11 @@ class TestMathOps(OpTestCase):
     def test_log_mps(self):
         with dragon.device('mps'):
             self.test_log()
+
+    @unittest.skipIf(not TEST_MLU, 'MLU unavailable')
+    def test_log_mlu(self):
+        with dragon.device('mlu'):
+            self.test_log(prec=1e-3)
 
     def test_logical_and(self):
         for execution in ('EAGER_MODE', 'GRAPH_MODE'):
@@ -2536,7 +2973,7 @@ class TestMathOps(OpTestCase):
         with dragon.device('mps'):
             self.test_logical_xor()
 
-    def test_matmul(self, test_gemv_grad=True):
+    def test_matmul(self, test_gemv=True, test_gemv_grad=True):
         entries = [((2, 3), (3, 4)),
                    ((1, 2, 3), (2, 3, 4)),
                    ((2, 2, 3), (1, 3, 4)),
@@ -2562,6 +2999,8 @@ class TestMathOps(OpTestCase):
                         [np.matmul(data1, data2),
                          reduce_like(grad1, data1),
                          reduce_like(grad2, data2)])
+        if not test_gemv:
+            return
         entries = [((2,), (2,), (2, 1), (2, 1), (1, 1)),
                    ((2,), (2, 3), (2, 1), (2, 3), (1, 3)),
                    ((2, 3), (3,), (2, 3), (1, 3), (2, 1)),
@@ -2605,6 +3044,12 @@ class TestMathOps(OpTestCase):
         with dragon.device('mps'):
             self.test_matmul(test_gemv_grad=False)
 
+    @unittest.skipIf(not TEST_MLU, 'MLU unavailable')
+    def test_matmul_cnnl(self):
+        dragon.mlu.set_cnnl_flags(True)
+        with dragon.device('mlu'), self.cnnl_ws.as_default():
+            self.test_matmul(test_gemv=False)
+
     def test_max(self):
         entries = [(0, True), (0, False),
                    (1, True), (1, False),
@@ -2623,10 +3068,17 @@ class TestMathOps(OpTestCase):
         with dragon.device('cuda'):
             self.test_max()
 
-    def test_maximum(self):
+    @unittest.skipIf(not TEST_MLU, 'MLU unavailable')
+    def test_max_cnnl(self):
+        dragon.mlu.set_cnnl_flags(True)
+        with dragon.device('mlu'), self.cnnl_ws.as_default():
+            self.test_max()
+
+    def test_maximum(self, test_shapes=None):
+        test_shapes = test_shapes or self.binary_test_shapes
         for execution in ('EAGER_MODE', 'GRAPH_MODE'):
             with execution_context().mode(execution):
-                for a_shape, b_shape in self.binary_test_shapes:
+                for a_shape, b_shape in test_shapes:
                     data1, data2 = uniform(a_shape), uniform(b_shape)
                     a, b = new_tensor(data1), new_tensor(data2)
                     with dragon.GradientTape() as tape:
@@ -2650,6 +3102,12 @@ class TestMathOps(OpTestCase):
     def test_maximum_mps(self):
         with dragon.device('mps'):
             self.test_maximum()
+
+    @unittest.skipIf(not TEST_MLU, 'MLU unavailable')
+    def test_maximum_cnnl(self):
+        dragon.mlu.set_cnnl_flags(True)
+        with dragon.device('mlu'), self.cnnl_ws.as_default():
+            self.test_maximum(self.binary_test_shapes[:-1])
 
     def test_mean(self):
         entries = [(0, True), (0, False),
@@ -2684,6 +3142,12 @@ class TestMathOps(OpTestCase):
         with dragon.device('mps'):
             self.test_mean()
 
+    @unittest.skipIf(not TEST_MLU, 'MLU unavailable')
+    def test_mean_cnnl(self):
+        dragon.mlu.set_cnnl_flags(True)
+        with dragon.device('mlu'), self.cnnl_ws.as_default():
+            self.test_mean()
+
     def test_min(self):
         entries = [(0, True), (0, False),
                    (1, True), (1, False),
@@ -2702,10 +3166,17 @@ class TestMathOps(OpTestCase):
         with dragon.device('cuda'):
             self.test_min()
 
-    def test_minimum(self):
+    @unittest.skipIf(not TEST_MLU, 'MLU unavailable')
+    def test_min_cnnl(self):
+        dragon.mlu.set_cnnl_flags(True)
+        with dragon.device('mlu'), self.cnnl_ws.as_default():
+            self.test_min()
+
+    def test_minimum(self, test_shapes=None):
+        test_shapes = test_shapes or self.binary_test_shapes
         for execution in ('EAGER_MODE', 'GRAPH_MODE'):
             with execution_context().mode(execution):
-                for a_shape, b_shape in self.binary_test_shapes:
+                for a_shape, b_shape in test_shapes:
                     data1, data2 = uniform(a_shape), uniform(b_shape)
                     a, b = new_tensor(data1), new_tensor(data2)
                     with dragon.GradientTape() as tape:
@@ -2729,6 +3200,12 @@ class TestMathOps(OpTestCase):
     def test_minimum_mps(self):
         with dragon.device('mps'):
             self.test_minimum()
+
+    @unittest.skipIf(not TEST_MLU, 'MLU unavailable')
+    def test_minimum_cnnl(self):
+        dragon.mlu.set_cnnl_flags(True)
+        with dragon.device('mlu'), self.cnnl_ws.as_default():
+            self.test_minimum(self.binary_test_shapes[:-1])
 
     def test_moments(self):
         entries = [(0, True), (0, False),
@@ -2755,10 +3232,11 @@ class TestMathOps(OpTestCase):
         with dragon.device('mps'):
             self.test_moments()
 
-    def test_mul(self):
+    def test_mul(self, test_shapes=None):
+        test_shapes = test_shapes or self.binary_test_shapes
         for execution in ('EAGER_MODE', 'GRAPH_MODE'):
             with execution_context().mode(execution):
-                for a_shape, b_shape in self.binary_test_shapes:
+                for a_shape, b_shape in test_shapes:
                     data1, data2 = arange(a_shape), arange(b_shape, 10)
                     a, b = new_tensor(data1), new_tensor(data2)
                     with dragon.GradientTape() as tape:
@@ -2783,6 +3261,33 @@ class TestMathOps(OpTestCase):
         with dragon.device('mps'):
             self.test_mul()
 
+    @unittest.skipIf(not TEST_MLU, 'MLU unavailable')
+    def test_mul_cnnl(self):
+        dragon.mlu.set_cnnl_flags(True)
+        with dragon.device('mlu'), self.cnnl_ws.as_default():
+            self.test_mul(self.binary_test_shapes[:-1])
+
+    def test_nan_to_num(self):
+        entries = [(0., None, None), (0., -1., None), (0., None, 1.), (0., -1., 1.)]
+        data = np.array([float('nan'), float('inf'), float('-inf'), 2.33], 'float32')
+        x = new_tensor(data)
+        for execution in ('EAGER_MODE', 'GRAPH_MODE'):
+            with execution_context().mode(execution):
+                for nan, pos_inf, neg_inf in entries:
+                    self.assertEqual(dragon.math.nan_to_num(x, nan, pos_inf, neg_inf),
+                                     np.nan_to_num(data, True, nan, pos_inf, neg_inf))
+
+    @unittest.skipIf(not TEST_CUDA, 'CUDA unavailable')
+    def test_nan_to_num_cuda(self):
+        with dragon.device('cuda'):
+            self.test_nan_to_num()
+
+    @unittest.skipIf(not TEST_MLU, 'MLU unavailable')
+    def test_nan_to_num_cnnl(self):
+        dragon.mlu.set_cnnl_flags(True)
+        with dragon.device('mlu'), self.cnnl_ws.as_default():
+            self.test_nan_to_num()
+
     def test_negative(self):
         for execution in ('EAGER_MODE', 'GRAPH_MODE'):
             with execution_context().mode(execution):
@@ -2802,6 +3307,11 @@ class TestMathOps(OpTestCase):
     @unittest.skipIf(not TEST_MPS, 'MPS unavailable')
     def test_negative_mps(self):
         with dragon.device('mps'):
+            self.test_negative()
+
+    @unittest.skipIf(not TEST_MLU, 'MLU unavailable')
+    def test_negative_mlu(self):
+        with dragon.device('mlu'):
             self.test_negative()
 
     def test_norm(self):
@@ -2829,10 +3339,11 @@ class TestMathOps(OpTestCase):
         with dragon.device('cuda'):
             self.test_norm()
 
-    def test_not_equal(self):
+    def test_not_equal(self, test_shapes=None):
+        test_shapes = test_shapes or self.binary_test_shapes
         for execution in ('EAGER_MODE', 'GRAPH_MODE'):
             with execution_context().mode(execution):
-                for a_shape, b_shape in self.binary_test_shapes:
+                for a_shape, b_shape in test_shapes:
                     data1 = uniform(a_shape)
                     data2 = dropout(data1, drop_ratio=0.5)
                     a, b = new_tensor(data1), new_tensor(data2)
@@ -2848,6 +3359,11 @@ class TestMathOps(OpTestCase):
     def test_not_equal_mps(self):
         with dragon.device('mps'):
             self.test_not_equal()
+
+    @unittest.skipIf(not TEST_MLU, 'MLU unavailable')
+    def test_not_equal_mlu(self):
+        with dragon.device('mlu'):
+            self.test_not_equal(self.binary_test_shapes[:-1])
 
     def test_pow(self, prec=None):
         for execution in ('EAGER_MODE', 'GRAPH_MODE'):
@@ -2878,7 +3394,7 @@ class TestMathOps(OpTestCase):
         with dragon.device('mps'):
             self.test_pow(prec=1e-3)
 
-    def test_reciprocal(self):
+    def test_reciprocal(self, prec=None):
         for execution in ('EAGER_MODE', 'GRAPH_MODE'):
             with execution_context().mode(execution):
                 data = np.array([1., 2., 3.], 'float32')
@@ -2888,7 +3404,7 @@ class TestMathOps(OpTestCase):
                     y = dragon.math.reciprocal(x)
                 dx = tape.gradient(y, [x], output_gradients=[x])[0]
                 result = np.reciprocal(data)
-                self.assertEqual([y, dx], [result, data * (-np.square(result))])
+                self.assertEqual([y, dx], [result, data * (-np.square(result))], prec=prec)
 
     @unittest.skipIf(not TEST_CUDA, 'CUDA unavailable')
     def test_reciprocal_cuda(self):
@@ -2899,6 +3415,11 @@ class TestMathOps(OpTestCase):
     def test_reciprocal_mps(self):
         with dragon.device('mps'):
             self.test_reciprocal()
+
+    @unittest.skipIf(not TEST_MLU, 'MLU unavailable')
+    def test_reciprocal_mlu(self):
+        with dragon.device('mlu'):
+            self.test_reciprocal(prec=1e-4)
 
     def test_roll(self):
         entries = [(0, 0), ((0, 0), (0, 1)), ((-1, 1), (0, 1)), (1, None)]
@@ -2920,6 +3441,12 @@ class TestMathOps(OpTestCase):
         with dragon.device('cuda'):
             self.test_roll()
 
+    @unittest.skipIf(not TEST_MLU, 'MLU unavailable')
+    def test_roll_cnnl(self):
+        dragon.mlu.set_cnnl_flags(True)
+        with dragon.device('mlu'), self.cnnl_ws.as_default():
+            self.test_roll()
+
     def test_round(self):
         for execution in ('EAGER_MODE', 'GRAPH_MODE'):
             with execution_context().mode(execution):
@@ -2938,7 +3465,12 @@ class TestMathOps(OpTestCase):
         with dragon.device('mps'):
             self.test_round()
 
-    def test_rsqrt(self):
+    @unittest.skipIf(not TEST_MLU, 'MLU unavailable')
+    def test_round_mlu(self):
+        with dragon.device('mlu'):
+            self.test_round()
+
+    def test_rsqrt(self, prec=None):
         for execution in ('EAGER_MODE', 'GRAPH_MODE'):
             with execution_context().mode(execution):
                 data = np.array([4., 9., 16], 'float32')
@@ -2948,7 +3480,9 @@ class TestMathOps(OpTestCase):
                     y = dragon.math.rsqrt(x)
                 dx = tape.gradient(y, [x], output_gradients=[x])[0]
                 result = 1. / np.sqrt(data)
-                self.assertEqual([y, dx], [result, data * (-0.5 * (result * result * result))])
+                self.assertEqual(
+                    [y, dx], [result, data * (-0.5 * (result * result * result))],
+                    prec=prec)
 
     @unittest.skipIf(not TEST_CUDA, 'CUDA unavailable')
     def test_rsqrt_cuda(self):
@@ -2959,6 +3493,11 @@ class TestMathOps(OpTestCase):
     def test_rsqrt_mps(self):
         with dragon.device('mps'):
             self.test_rsqrt()
+
+    @unittest.skipIf(not TEST_MLU, 'MLU unavailable')
+    def test_rsqrt_mlu(self):
+        with dragon.device('mlu'):
+            self.test_rsqrt(prec=1e-4)
 
     def test_scatter_add(self):
         for execution in ('EAGER_MODE', 'GRAPH_MODE'):
@@ -2995,13 +3534,13 @@ class TestMathOps(OpTestCase):
         with dragon.device('mps'):
             self.test_scatter_add()
 
-    def test_scatter_elements(self):
+    def test_scatter_elements(self, index_type='int64'):
         for execution in ('EAGER_MODE', 'GRAPH_MODE'):
             with execution_context().mode(execution):
                 for axis in range(0, 1):
                     data1 = arange((4, 4))
                     data2 = np.array([[0, 1, 2, 3], [1, 2, 3, 0],
-                                      [2, 3, 0, 1], [3, 0, 1, 2]], 'int64')
+                                      [2, 3, 0, 1], [3, 0, 1, 2]], index_type)
                     data3 = arange((4, 4), 100)
                     x, index = new_tensor(data1), new_tensor(data2)
                     v = new_tensor(data3)
@@ -3032,6 +3571,12 @@ class TestMathOps(OpTestCase):
         with dragon.device('mps'):
             self.test_scatter_elements()
 
+    @unittest.skipIf(not TEST_MLU, 'MLU unavailable')
+    def test_scatter_elements_cnnl(self):
+        dragon.mlu.set_cnnl_flags(True)
+        with dragon.device('mlu'), self.cnnl_ws.as_default():
+            self.test_scatter_elements(index_type='int32')
+
     def test_sign(self):
         for execution in ('EAGER_MODE', 'GRAPH_MODE'):
             with execution_context().mode(execution):
@@ -3055,7 +3600,12 @@ class TestMathOps(OpTestCase):
         with dragon.device('mps'):
             self.test_sign()
 
-    def test_sin(self):
+    @unittest.skipIf(not TEST_MLU, 'MLU unavailable')
+    def test_sign_mlu(self):
+        with dragon.device('mlu'):
+            self.test_sign()
+
+    def test_sin(self, prec=None):
         for execution in ('EAGER_MODE', 'GRAPH_MODE'):
             with execution_context().mode(execution):
                 data = np.array([0., math.pi * 0.5, math.pi], 'float32')
@@ -3064,7 +3614,7 @@ class TestMathOps(OpTestCase):
                     tape.watch(x)
                     y = dragon.math.sin(x)
                 dx = tape.gradient(y, [x], output_gradients=[x])[0]
-                self.assertEqual([y, dx], [np.sin(data), data * np.cos(data)])
+                self.assertEqual([y, dx], [np.sin(data), data * np.cos(data)], prec=prec)
 
     @unittest.skipIf(not TEST_CUDA, 'CUDA unavailable')
     def test_sin_cuda(self):
@@ -3076,7 +3626,12 @@ class TestMathOps(OpTestCase):
         with dragon.device('mps'):
             self.test_sin()
 
-    def test_sqrt(self):
+    @unittest.skipIf(not TEST_MLU, 'MLU unavailable')
+    def test_sin_mlu(self):
+        with dragon.device('mlu'):
+            self.test_sin(prec=1e-2)
+
+    def test_sqrt(self, prec=None):
         for execution in ('EAGER_MODE', 'GRAPH_MODE'):
             with execution_context().mode(execution):
                 data = np.array([4., 9., 16], 'float32')
@@ -3086,7 +3641,7 @@ class TestMathOps(OpTestCase):
                     y = dragon.math.sqrt(x)
                 dx = tape.gradient(y, [x], output_gradients=[x])[0]
                 result = np.sqrt(data)
-                self.assertEqual([y, dx], [result, data * 0.5 / result])
+                self.assertEqual([y, dx], [result, data * 0.5 / result], prec=prec)
 
     @unittest.skipIf(not TEST_CUDA, 'CUDA unavailable')
     def test_sqrt_cuda(self):
@@ -3097,6 +3652,11 @@ class TestMathOps(OpTestCase):
     def test_sqrt_mps(self):
         with dragon.device('mps'):
             self.test_sqrt()
+
+    @unittest.skipIf(not TEST_MLU, 'MLU unavailable')
+    def test_sqrt_mlu(self):
+        with dragon.device('mlu'):
+            self.test_sqrt(prec=1e-4)
 
     def test_square(self):
         for execution in ('EAGER_MODE', 'GRAPH_MODE'):
@@ -3119,10 +3679,16 @@ class TestMathOps(OpTestCase):
         with dragon.device('mps'):
             self.test_square()
 
-    def test_sub(self):
+    @unittest.skipIf(not TEST_MLU, 'MLU unavailable')
+    def test_square_mlu(self):
+        with dragon.device('mlu'):
+            self.test_square()
+
+    def test_sub(self, test_shapes=None):
+        test_shapes = test_shapes or self.binary_test_shapes
         for execution in ('EAGER_MODE', 'GRAPH_MODE'):
             with execution_context().mode(execution):
-                for a_shape, b_shape in self.binary_test_shapes:
+                for a_shape, b_shape in test_shapes:
                     data1, data2 = uniform(a_shape), uniform(b_shape)
                     a, b = new_tensor(data1), new_tensor(data2)
                     with dragon.GradientTape() as tape:
@@ -3146,6 +3712,12 @@ class TestMathOps(OpTestCase):
     def test_sub_mps(self):
         with dragon.device('mps'):
             self.test_sub()
+
+    @unittest.skipIf(not TEST_MLU, 'MLU unavailable')
+    def test_sub_cnnl(self):
+        dragon.mlu.set_cnnl_flags(True)
+        with dragon.device('mlu'), self.cnnl_ws.as_default():
+            self.test_sub(self.binary_test_shapes[:-1])
 
     def test_sum(self):
         entries = [(0, True), (0, False),
@@ -3177,6 +3749,12 @@ class TestMathOps(OpTestCase):
         with dragon.device('mps'):
             self.test_sum()
 
+    @unittest.skipIf(not TEST_MLU, 'MLU unavailable')
+    def test_sum_cnnl(self):
+        dragon.mlu.set_cnnl_flags(True)
+        with dragon.device('mlu'), self.cnnl_ws.as_default():
+            self.test_sum()
+
     def test_var(self):
         entries = [(0, True), (0, False),
                    (1, True), (1, False),
@@ -3200,27 +3778,15 @@ class TestMathOps(OpTestCase):
             self.test_var()
 
 
-class TestMetricOps(OpTestCase):
-    """Test metric ops."""
-
-    def test_accuracy(self):
-        for execution in ('EAGER_MODE', 'GRAPH_MODE'):
-            with execution_context().mode(execution):
-                data1 = np.array([[0.2, 0.3, 0.5], [0.1, 0.7, 0.2]], 'float32')
-                data2 = np.array([0, 1], 'int64')
-                a, b = new_tensor(data1), new_tensor(data2)
-                y = dragon.metrics.accuracy([a, b])
-                self.assertEqual(y, np.array(0.5))
-
-
 class TestNormalizationOps(OpTestCase):
     """Test normalization ops."""
 
     def __init__(self, method_name='runTest'):
         super(TestNormalizationOps, self).__init__(method_name)
         self.cudnn_ws = dragon.Workspace()
+        self.cnnl_ws = dragon.Workspace()
 
-    def test_batch_norm(self):
+    def test_batch_norm(self, test_nchw=True, test_infer_grad=True):
         eps = 1e-5
         entries = [((4, 3), (3,), -1, 0),
                    ((4, 3), (3,), -1, 1),
@@ -3231,6 +3797,8 @@ class TestNormalizationOps(OpTestCase):
         for execution in ('EAGER_MODE', 'GRAPH_MODE'):
             with execution_context().mode(execution):
                 for x_shape, w_shape, axis, use_stats in entries:
+                    if not test_nchw and axis == 1:
+                        continue
                     data1 = arange(x_shape) * .1
                     data2, data3 = arange(w_shape, 1) * .1, arange(w_shape) * .1
                     data4, data5 = arange(w_shape) * .1, arange(w_shape, 1) * .1
@@ -3243,8 +3811,6 @@ class TestNormalizationOps(OpTestCase):
                         y = dragon.nn.batch_norm(
                             [x, w, b, rm, rv],
                             axis=axis, use_stats=use_stats, eps=eps)
-                    dy = new_tensor(data6)
-                    dx, dw, db = tape.gradient(y, [x, w, b], output_gradients=[dy])
                     if use_stats == 0:
                         axes = list(range(0, len(data1.shape)))
                         axes.pop(axis)
@@ -3262,6 +3828,11 @@ class TestNormalizationOps(OpTestCase):
                     else:
                         grad1 = data6 * data2 / sig
                     result = result * data2 + data3
+                    if not test_infer_grad and use_stats == 1:
+                        self.assertEqual(y, result)
+                        continue
+                    dy = new_tensor(data6)
+                    dx, dw, db = tape.gradient(y, [x, w, b], output_gradients=[dy])
                     self.assertEqual(
                         [y, dx, dw, db],
                         [result, grad1, grad2.flatten(), grad3.flatten()])
@@ -3282,6 +3853,12 @@ class TestNormalizationOps(OpTestCase):
     def test_batch_norm_mps(self):
         with dragon.device('mps'):
             self.test_batch_norm()
+
+    @unittest.skipIf(not TEST_MLU, 'MLU unavailable')
+    def test_batch_norm_cnnl(self):
+        dragon.mlu.set_cnnl_flags(True)
+        with dragon.device('mlu'), self.cnnl_ws.as_default():
+            self.test_batch_norm(test_nchw=False, test_infer_grad=False)
 
     def test_channel_norm(self):
         entries = [((2, 3, 4), [(1., 2., 3.), (3., 2., 1.), 1], {'perm': (0, 1, 2)}),
@@ -3441,6 +4018,12 @@ class TestNormalizationOps(OpTestCase):
         with dragon.device('mps'):
             self.test_layer_norm()
 
+    @unittest.skipIf(not TEST_MLU, 'MLU unavailable')
+    def test_layer_norm_cnnl(self):
+        dragon.mlu.set_cnnl_flags(True)
+        with dragon.device('mlu'), self.cnnl_ws.as_default():
+            self.test_layer_norm()
+
     def test_local_response_norm(self, test_cudnn=False, prec=None):
         entries = [((2, 3, 2, 2), 5, 0.0001, 0.75, 1., 'NCHW'),
                    ((2, 2, 2, 3), 5, 0.0001, 0.75, 1., 'NHWC')]
@@ -3482,7 +4065,7 @@ class TestNormalizationOps(OpTestCase):
         with dragon.device('cuda'), self.cudnn_ws.as_default():
             self.test_local_response_norm(test_cudnn=True, prec=1e-2)
 
-    def test_lp_norm(self):
+    def test_lp_norm(self, test_mean=True, prec=None):
         entries = [(0, 1, 1e-12, 'sum'),
                    (0, 1, 1e-12, 'mean'),
                    (0, 2, 1e-12, 'sum'),
@@ -3495,6 +4078,8 @@ class TestNormalizationOps(OpTestCase):
         for execution in ('EAGER_MODE', 'GRAPH_MODE'):
             with execution_context().mode(execution):
                 for (axis, p, eps, reduction), grad in zip(entries, grads):
+                    if not test_mean and reduction == 'mean':
+                        continue
                     data1, data2 = arange((6,)), arange((6,)) / 10 + 1
                     x, dy = new_tensor(data1), new_tensor(data2)
                     with dragon.GradientTape() as tape:
@@ -3505,7 +4090,7 @@ class TestNormalizationOps(OpTestCase):
                     norm = np.abs(data1) if p == 1 else np.square(data1)
                     norm = norm.sum() if reduction == 'sum' else norm.mean()
                     norm = norm if p == 1 else np.sqrt(norm)
-                    self.assertEqual([y, dx], [data1 / max(norm, eps), grad])
+                    self.assertEqual([y, dx], [data1 / max(norm, eps), grad], prec=prec)
 
     @unittest.skipIf(not TEST_CUDA, 'CUDA unavailable')
     def test_lp_norm_cuda(self):
@@ -3516,6 +4101,12 @@ class TestNormalizationOps(OpTestCase):
     def test_lp_norm_mps(self):
         with dragon.device('mps'):
             self.test_lp_norm()
+
+    @unittest.skipIf(not TEST_MLU, 'MLU unavailable')
+    def test_lp_norm_cnnl(self):
+        dragon.mlu.set_cnnl_flags(True)
+        with dragon.device('mlu'), self.cnnl_ws.as_default():
+            self.test_lp_norm(test_mean=False, prec=1e-4)
 
 
 class TestRNNOps(OpTestCase):
@@ -3536,17 +4127,18 @@ class TestTrainingOps(OpTestCase):
 
     def __init__(self, method_name='runTest'):
         super(TestTrainingOps, self).__init__(method_name)
-        self.adam = dragon.optimizers.Adam()
-        self.adam_w = dragon.optimizers.AdamW()
-        self.nesterov = dragon.optimizers.SGD(nesterov=True)
-        self.rmsprop = dragon.optimizers.RMSprop()
-        self.sgd = dragon.optimizers.SGD()
+        self.adam = dragon.optimizers.Adam(weight_decay=1.)
+        self.adam_w = dragon.optimizers.AdamW(weight_decay=1.)
+        self.nesterov = dragon.optimizers.SGD(nesterov=True, weight_decay=1.)
+        self.rmsprop = dragon.optimizers.RMSprop(weight_decay=1.)
+        self.sgd = dragon.optimizers.SGD(weight_decay=1.)
         self.sgd.lr = 0.01
 
     def test_adam_update(self):
         with execution_context().mode('EAGER_MODE'):
             lr, eps = self.adam.lr, self.adam.eps
             beta1, beta2 = self.adam.beta1, self.adam.beta2
+            wd = self.adam.weight_decay
             data1 = uniform((2, 3))
             data2, data3 = np.zeros((2, 3), 'float32'), np.zeros((2, 3), 'float32')
             param = new_tensor(data1)
@@ -3556,6 +4148,7 @@ class TestTrainingOps(OpTestCase):
                 data4 = uniform((2, 3))
                 grad = new_tensor(data4)
                 self.adam.apply_gradients([[grad, param]])
+                data4 += wd * data1
                 data2 = beta1 * data2 + (1 - beta1) * data4
                 data3 = beta2 * data3 + (1 - beta2) * np.square(data4)
                 data1 -= (lr * coef * data2 / (np.sqrt(data3) + eps))
@@ -3569,6 +4162,11 @@ class TestTrainingOps(OpTestCase):
     @unittest.skipIf(not TEST_MPS, 'MPS unavailable')
     def test_adam_update_mps(self):
         with dragon.device('mps'):
+            self.test_adam_update()
+
+    @unittest.skipIf(not TEST_MLU, 'MLU unavailable')
+    def test_adam_update_mlu(self):
+        with dragon.device('mlu'):
             self.test_adam_update()
 
     def test_adam_w_update(self):
@@ -3600,15 +4198,22 @@ class TestTrainingOps(OpTestCase):
         with dragon.device('mps'):
             self.test_adam_w_update()
 
+    @unittest.skipIf(not TEST_MLU, 'MLU unavailable')
+    def test_adam_w_update_mlu(self):
+        with dragon.device('mlu'):
+            self.test_adam_w_update()
+
     def test_nesterov_update(self):
         with execution_context().mode('EAGER_MODE'):
             momentum, lr = self.nesterov.momentum, self.nesterov.lr
+            wd = self.nesterov.weight_decay
             data1, data2 = uniform((2, 3)), np.zeros((2, 3), 'float32')
             param = new_tensor(data1)
             for i in range(3):
                 data3 = uniform((2, 3))
                 grad = new_tensor(data3)
                 self.nesterov.apply_gradients([[grad, param]])
+                data3 += wd * data1
                 data2 = momentum * data2 + data3
                 data1 -= lr * (momentum * data2 + data3)
                 self.assertEqual(param, data1)
@@ -3623,10 +4228,16 @@ class TestTrainingOps(OpTestCase):
         with dragon.device('mps'):
             self.test_nesterov_update()
 
-    def test_rmsprop_update(self):
+    @unittest.skipIf(not TEST_MLU, 'MLU unavailable')
+    def test_nesterov_update_mlu(self):
+        with dragon.device('mlu'):
+            self.test_nesterov_update()
+
+    def test_rmsprop_update(self, prec=None):
         with execution_context().mode('EAGER_MODE'):
             momentum, lr = self.rmsprop.momentum, self.rmsprop.lr
             alpha, eps = self.rmsprop.alpha, self.rmsprop.eps
+            wd = self.rmsprop.weight_decay
             data1 = uniform((2, 3))
             data2, data3 = np.zeros((2, 3), 'float32'), np.zeros((2, 3), 'float32')
             param = new_tensor(data1)
@@ -3634,10 +4245,11 @@ class TestTrainingOps(OpTestCase):
                 data4 = uniform((2, 3))
                 grad = new_tensor(data4)
                 self.rmsprop.apply_gradients([[grad, param]])
+                data4 += wd * data1
                 data3 = alpha * data3 + (1 - alpha) * np.square(data4)
                 data2 = momentum * data2 + (data4 / (np.sqrt(data3) + eps))
                 data1 -= lr * data2
-                self.assertEqual(param, data1)
+                self.assertEqual(param, data1, prec=prec)
 
     @unittest.skipIf(not TEST_CUDA, 'CUDA unavailable')
     def test_rmsprop_update_cuda(self):
@@ -3649,15 +4261,22 @@ class TestTrainingOps(OpTestCase):
         with dragon.device('mps'):
             self.test_rmsprop_update()
 
+    @unittest.skipIf(not TEST_MLU, 'MLU unavailable')
+    def test_rmsprop_update_mlu(self):
+        with dragon.device('mlu'):
+            self.test_rmsprop_update(prec=1e-4)
+
     def test_sgd_update(self):
         with execution_context().mode('EAGER_MODE'):
             momentum, lr = self.sgd.momentum, self.sgd.lr
+            wd = self.sgd.weight_decay
             data1, data2 = uniform((2, 3)), np.zeros((2, 3), 'float32')
             param = new_tensor(data1)
             for i in range(3):
                 data3 = uniform((2, 3))
                 grad = new_tensor(data3)
                 self.sgd.apply_gradients([[grad, param]])
+                data3 += wd * data1
                 data2 = momentum * data2 + data3
                 data1 -= lr * data2
                 self.assertEqual(param, data1)
@@ -3670,6 +4289,11 @@ class TestTrainingOps(OpTestCase):
     @unittest.skipIf(not TEST_MPS, 'MPS unavailable')
     def test_sgd_update_mps(self):
         with dragon.device('mps'):
+            self.test_sgd_update()
+
+    @unittest.skipIf(not TEST_MLU, 'MLU unavailable')
+    def test_sgd_update_mlu(self):
+        with dragon.device('mlu'):
             self.test_sgd_update()
 
 
@@ -3975,6 +4599,7 @@ class TestVisionOps(OpTestCase):
     def __init__(self, method_name='runTest'):
         super(TestVisionOps, self).__init__(method_name)
         self.cudnn_ws = dragon.Workspace()
+        self.cnnl_ws = dragon.Workspace()
 
     def test_bias_add(self):
         entries = [((2, 3), (3,), 'NCHW'),
@@ -4003,7 +4628,7 @@ class TestVisionOps(OpTestCase):
         with dragon.device('mps'):
             self.test_bias_add()
 
-    def test_conv1d(self, prec=1e-3, test_nhwc=True):
+    def test_conv1d(self, prec=1e-3, test_nchw=True, test_nhwc=True):
         entries = [((2, 2, 2), (3, 2, 1), (3,), 1, 1, 0, 1, 1, 'NCHW'),
                    ((2, 2, 2), (3, 2, 3), (3,), 3, 1, 1, 1, 1, 'NCHW'),
                    ((2, 2, 2), (3, 2, 1), (3,), 1, 1, 0, 1, 1, 'NHWC'),
@@ -4030,6 +4655,8 @@ class TestVisionOps(OpTestCase):
                 for (x_shape, w_shape, b_shape, kernel_shape,
                         strides, pads, dilations, group, data_format), \
                         result, grad1, grad2, grad3, in zip(entries, results, grads1, grads2, grads3):
+                    if not test_nchw and data_format == 'NCHW':
+                        continue
                     if not test_nhwc and data_format == 'NHWC':
                         continue
                     data1, data2, data3 = arange(x_shape) * .1, arange(w_shape) * .1, arange(b_shape) * .1
@@ -4066,7 +4693,13 @@ class TestVisionOps(OpTestCase):
         with dragon.device('mps'):
             self.test_conv1d(test_nhwc=False)
 
-    def test_conv2d(self, prec=1e-3, test_nhwc=True):
+    @unittest.skipIf(not TEST_MLU, 'MLU unavailable')
+    def test_conv1d_cnnl(self):
+        dragon.mlu.set_cnnl_flags(True)
+        with dragon.device('mlu'), self.cnnl_ws.as_default():
+            self.test_conv1d(test_nchw=False)
+
+    def test_conv2d(self, prec=1e-3, test_nchw=True, test_nhwc=True):
         entries = [((2, 2, 2, 2), (3, 2, 1, 1), (3,), 1, 1, 0, 1, 1, 'NCHW'),
                    ((2, 2, 2, 2), (3, 2, 3, 3), (3,), 3, 1, 1, 1, 1, 'NCHW'),
                    ((2, 2, 2, 2), (3, 2, 1, 1), (3,), 1, 1, 0, 1, 1, 'NHWC'),
@@ -4110,6 +4743,8 @@ class TestVisionOps(OpTestCase):
                 for (x_shape, w_shape, b_shape, kernel_shape,
                         strides, pads, dilations, group, data_format), \
                         result, grad1, grad2, grad3 in zip(entries, results, grads1, grads2, grads3):
+                    if not test_nchw and data_format == 'NCHW':
+                        continue
                     if not test_nhwc and data_format == 'NHWC':
                         continue
                     data1, data2, data3 = arange(x_shape) * .1, arange(w_shape) * .1, arange(b_shape) * .1
@@ -4146,7 +4781,13 @@ class TestVisionOps(OpTestCase):
         with dragon.device('mps'):
             self.test_conv2d(test_nhwc=False)
 
-    def test_conv3d(self, prec=1e-3, test_nhwc=True):
+    @unittest.skipIf(not TEST_MLU, 'MLU unavailable')
+    def test_conv2d_cnnl(self):
+        dragon.mlu.set_cnnl_flags(True)
+        with dragon.device('mlu'), self.cnnl_ws.as_default():
+            self.test_conv2d(test_nchw=False)
+
+    def test_conv3d(self, prec=1e-3, test_nchw=False, test_nhwc=True):
         entries = [((2, 2, 2, 2, 2), (3, 2, 1, 1, 1), (3,), 1, 1, 0, 1, 1, 'NCHW'),
                    ((2, 2, 2, 2, 2), (3, 2, 3, 3, 3), (3,), 3, 1, 1, 1, 1, 'NCHW')]
         if test_nhwc:
@@ -4236,6 +4877,10 @@ class TestVisionOps(OpTestCase):
                 for (x_shape, w_shape, b_shape, kernel_shape,
                         strides, pads, dilations, group, data_format), \
                         result, grad1, grad2, grad3 in zip(entries, results, grads1, grads2, grads3):
+                    if not test_nchw and data_format == 'NCHW':
+                        continue
+                    if not test_nhwc and data_format == 'NHWC':
+                        continue
                     data1, data2, data3 = arange(x_shape) * .1, arange(w_shape) * .1, arange(b_shape) * .1
                     x, w, b = new_tensor(data1), new_tensor(data2), new_tensor(data3)
                     with dragon.GradientTape() as tape:
@@ -4265,7 +4910,13 @@ class TestVisionOps(OpTestCase):
         with dragon.device('cuda'), self.cudnn_ws.as_default():
             self.test_conv3d(test_nhwc=TEST_CUDNN_CONV3D_NHWC)
 
-    def test_conv1d_transpose(self, prec=1e-3, test_nhwc=True):
+    @unittest.skipIf(not TEST_MLU, 'MLU unavailable')
+    def test_conv3d_cnnl(self):
+        dragon.mlu.set_cnnl_flags(True)
+        with dragon.device('mlu'), self.cnnl_ws.as_default():
+            self.test_conv3d(test_nchw=False)
+
+    def test_conv1d_transpose(self, prec=1e-3, test_nchw=True, test_nhwc=True):
         entries = [((2, 2, 2), (2, 3, 1), (3,), 1, 1, 0, 1, 1, 'NCHW'),
                    ((2, 2, 2), (2, 3, 3), (3,), 3, 1, 1, 1, 1, 'NCHW'),
                    ((2, 2, 2), (2, 3, 1), (3,), 1, 1, 0, 1, 1, 'NHWC'),
@@ -4294,6 +4945,8 @@ class TestVisionOps(OpTestCase):
                 for (x_shape, w_shape, b_shape, kernel_shape,
                         strides, pads, dilations, group, data_format),\
                         result, grad1, grad2, grad3 in zip(entries, results, grads1, grads2, grads3):
+                    if not test_nchw and data_format == 'NCHW':
+                        continue
                     if not test_nhwc and data_format == 'NHWC':
                         continue
                     data1, data2, data3 = arange(x_shape) * .1, arange(w_shape) * .1, arange(b_shape) * .1
@@ -4330,7 +4983,13 @@ class TestVisionOps(OpTestCase):
         with dragon.device('mps'):
             self.test_conv1d_transpose(test_nhwc=False)
 
-    def test_conv2d_transpose(self, prec=1e-3, test_nhwc=True):
+    @unittest.skipIf(not TEST_MLU, 'MLU unavailable')
+    def test_conv1d_transpose_cnnl(self):
+        dragon.mlu.set_cnnl_flags(True)
+        with dragon.device('mlu'), self.cnnl_ws.as_default():
+            self.test_conv1d_transpose(test_nchw=False)
+
+    def test_conv2d_transpose(self, prec=1e-3, test_nchw=True, test_nhwc=True):
         entries = [((2, 2, 2, 2), (2, 3, 1, 1), (3,), 1, 1, 0, 1, 1, 'NCHW'),
                    ((2, 2, 2, 2), (2, 3, 3, 3), (3,), 3, 1, 1, 1, 1, 'NCHW'),
                    ((2, 2, 2, 2), (2, 3, 1, 1), (3,), 1, 1, 0, 1, 1, 'NHWC'),
@@ -4375,6 +5034,8 @@ class TestVisionOps(OpTestCase):
                 for (x_shape, w_shape, b_shape, kernel_shape,
                         strides, pads, dilations, group, data_format),\
                         result, grad1, grad2, grad3 in zip(entries, results, grads1, grads2, grads3):
+                    if not test_nchw and data_format == 'NCHW':
+                        continue
                     if not test_nhwc and data_format == 'NHWC':
                         continue
                     data1, data2, data3 = arange(x_shape) * .1, arange(w_shape) * .1, arange(b_shape) * .1
@@ -4411,12 +5072,17 @@ class TestVisionOps(OpTestCase):
         with dragon.device('mps'):
             self.test_conv2d_transpose(test_nhwc=False)
 
-    def test_conv3d_transpose(self, prec=1e-3, test_nhwc=True):
+    @unittest.skipIf(not TEST_MLU, 'MLU unavailable')
+    def test_conv2d_transpose_cnnl(self):
+        dragon.mlu.set_cnnl_flags(True)
+        with dragon.device('mlu'), self.cnnl_ws.as_default():
+            self.test_conv2d_transpose(test_nchw=False)
+
+    def test_conv3d_transpose(self, prec=1e-3, test_nchw=True, test_nhwc=True):
         entries = [((2, 2, 2, 2, 2), (2, 3, 1, 1, 1), (3,), 1, 1, 0, 1, 1, 'NCHW'),
-                   ((2, 2, 2, 2, 2), (2, 3, 3, 3, 3), (3,), 3, 1, 1, 1, 1, 'NCHW')]
-        if test_nhwc:
-            entries += [((2, 2, 2, 2, 2), (2, 3, 1, 1, 1), (3,), 1, 1, 0, 1, 1, 'NHWC'),
-                        ((2, 2, 2, 2, 2), (2, 3, 3, 3, 3), (3,), 3, 1, 1, 1, 1, 'NHWC')]
+                   ((2, 2, 2, 2, 2), (2, 3, 3, 3, 3), (3,), 3, 1, 1, 1, 1, 'NCHW'),
+                   ((2, 2, 2, 2, 2), (2, 3, 1, 1, 1), (3,), 1, 1, 0, 1, 1, 'NHWC'),
+                   ((2, 2, 2, 2, 2), (2, 3, 3, 3, 3), (3,), 3, 1, 1, 1, 1, 'NHWC')]
         results = [[[[[[0.24, 0.27], [0.3, 0.33]], [[0.36, 0.39], [0.42, 0.45]]],
                      [[[0.42, 0.47], [0.52, 0.57]], [[0.62, 0.67], [0.72, 0.77]]],
                      [[[0.6, 0.67], [0.74, 0.81]], [[0.88, 0.95], [1.02, 1.09]]]],
@@ -4502,6 +5168,10 @@ class TestVisionOps(OpTestCase):
                 for (x_shape, w_shape, b_shape, kernel_shape,
                         strides, pads, dilations, group, data_format),\
                         result, grad1, grad2, grad3 in zip(entries, results, grads1, grads2, grads3):
+                    if not test_nchw and data_format == 'NCHW':
+                        continue
+                    if not test_nhwc and data_format == 'NHWC':
+                        continue
                     data1, data2, data3 = arange(x_shape) * .1, arange(w_shape) * .1, arange(b_shape) * .1
                     x, w, b = new_tensor(data1), new_tensor(data2), new_tensor(data3)
                     with dragon.GradientTape() as tape:
@@ -4536,6 +5206,12 @@ class TestVisionOps(OpTestCase):
         dragon.cuda.set_cudnn_flags(True)
         with dragon.device('cuda'), self.cudnn_ws.as_default():
             self.test_conv3d_transpose(test_nhwc=TEST_CUDNN_CONV3D_NHWC)
+
+    @unittest.skipIf(not TEST_MLU, 'MLU unavailable')
+    def test_conv3d_transpose_cnnl(self):
+        dragon.mlu.set_cnnl_flags(True)
+        with dragon.device('mlu'), self.cnnl_ws.as_default():
+            self.test_conv3d_transpose(test_nchw=False)
 
     def test_depthwise_conv2d(self, test_grad=False):
         entries = [((2, 2, 2, 2), (2, 1, 1, 1), (2,), 1, 1, 0, 1, 'NCHW'),
@@ -4650,6 +5326,12 @@ class TestVisionOps(OpTestCase):
         with dragon.device('mps'):
             self.test_depth_to_space()
 
+    @unittest.skipIf(not TEST_MLU, 'MLU unavailable')
+    def test_depth_to_space_cnnl(self):
+        dragon.mlu.set_cnnl_flags(True)
+        with dragon.device('mlu'), self.cnnl_ws.as_default():
+            self.test_depth_to_space()
+
     def test_extract_patches(self):
         entries = [((2, 1, 2, 2), (2, 2), 1, 1, 1, 'NCHW'),
                    ((2, 2, 2, 1), (2, 2), 1, 1, 1, 'NHWC')]
@@ -4695,7 +5377,7 @@ class TestVisionOps(OpTestCase):
         with dragon.device('cuda'):
             self.test_extract_patches()
 
-    def test_pool1d(self):
+    def test_pool1d(self, test_nchw=True):
         entries = [((2, 2, 2), (2,), 2, 1, 'max', 'NCHW'),
                    ((2, 2, 2), (2,), 2, 1, 'avg', 'NCHW'),
                    ((2, 2, 2), (2,), 2, 1, 'max', 'NHWC'),
@@ -4703,6 +5385,8 @@ class TestVisionOps(OpTestCase):
         for execution in ('EAGER_MODE', 'GRAPH_MODE'):
             with execution_context().mode(execution):
                 for x_shape, kernel_shape, strides, pads, mode, data_format in entries:
+                    if not test_nchw and data_format == 'NCHW':
+                        continue
                     data1 = arange(x_shape) * .1
                     x = new_tensor(data1)
                     with dragon.GradientTape() as tape:
@@ -4737,7 +5421,13 @@ class TestVisionOps(OpTestCase):
         with dragon.device('mps'):
             self.test_pool1d()
 
-    def test_pool2d(self):
+    @unittest.skipIf(not TEST_MLU, 'MLU unavailable')
+    def test_pool1d_cnnl(self):
+        dragon.mlu.set_cnnl_flags(True)
+        with dragon.device('mlu'), self.cnnl_ws.as_default():
+            self.test_pool1d(test_nchw=False)
+
+    def test_pool2d(self, test_nchw=True):
         entries = [((2, 2, 2, 2), (2, 2), 2, 1, 'max', 'NCHW'),
                    ((2, 2, 2, 2), (2, 2), 2, 1, 'avg', 'NCHW'),
                    ((2, 2, 2, 2), (2, 2), 2, 1, 'max', 'NHWC'),
@@ -4745,6 +5435,8 @@ class TestVisionOps(OpTestCase):
         for execution in ('EAGER_MODE', 'GRAPH_MODE'):
             with execution_context().mode(execution):
                 for x_shape, kernel_shape, strides, pads, mode, data_format in entries:
+                    if not test_nchw and data_format == 'NCHW':
+                        continue
                     data1 = arange(x_shape) * .1
                     x = new_tensor(data1)
                     with dragon.GradientTape() as tape:
@@ -4779,7 +5471,13 @@ class TestVisionOps(OpTestCase):
         with dragon.device('mps'):
             self.test_pool2d()
 
-    def test_pool3d(self):
+    @unittest.skipIf(not TEST_MLU, 'MLU unavailable')
+    def test_pool2d_cnnl(self):
+        dragon.mlu.set_cnnl_flags(True)
+        with dragon.device('mlu'), self.cnnl_ws.as_default():
+            self.test_pool2d(test_nchw=False)
+
+    def test_pool3d(self, test_nchw=True):
         entries = [((2, 2, 2, 2, 2), (2, 2, 2), 2, 1, 'max', 'NCHW'),
                    ((2, 2, 2, 2, 2), (2, 2, 2), 2, 1, 'avg', 'NCHW'),
                    ((2, 2, 2, 2, 2), (2, 2, 2), 2, 1, 'max', 'NHWC'),
@@ -4787,6 +5485,8 @@ class TestVisionOps(OpTestCase):
         for execution in ('EAGER_MODE', 'GRAPH_MODE'):
             with execution_context().mode(execution):
                 for x_shape, kernel_shape, strides, pads, mode, data_format in entries:
+                    if not test_nchw and data_format == 'NCHW':
+                        continue
                     data1 = arange(x_shape) * .1
                     x = new_tensor(data1)
                     with dragon.GradientTape() as tape:
@@ -4816,7 +5516,7 @@ class TestVisionOps(OpTestCase):
         with dragon.device('cuda'), self.cudnn_ws.as_default():
             self.test_pool3d()
 
-    def test_resize(self, test_nearest=True, test_nhwc_grad=True):
+    def test_resize(self, test_nearest=True, test_nchw=True, test_nhwc_grad=True):
         entries = [((2, 2, 1, 1), (2, 2), 'nearest', 'NCHW'),
                    ((2, 2, 1, 1), (2, 2), 'linear', 'NCHW'),
                    ((2, 2, 4, 4), (2, 2), 'nearest', 'NCHW'),
@@ -4877,6 +5577,8 @@ class TestVisionOps(OpTestCase):
             with execution_context().mode(execution):
                 for (x_shape, sizes, mode, data_format), result, grad \
                         in zip(entries, results, grads):
+                    if not test_nchw and data_format == 'NCHW':
+                        continue
                     if not test_nearest and mode == 'nearest':
                         continue
                     data1 = arange(x_shape) * .1
@@ -4904,6 +5606,12 @@ class TestVisionOps(OpTestCase):
             # MPS impls nearest with (ceil+half-pixel), excepted (floor+asymmetric).
             # MPS checks the wrong channel axis with NHWC layout.
             self.test_resize(test_nearest=False, test_nhwc_grad=False)
+
+    @unittest.skipIf(not TEST_MLU, 'MLU unavailable')
+    def test_resize_cnnl(self):
+        dragon.mlu.set_cnnl_flags(True)
+        with dragon.device('mlu'), self.cnnl_ws.as_default():
+            self.test_resize(test_nchw=False)
 
     def test_roi_align(self, test_grad=False):
         for execution in ('EAGER_MODE', 'GRAPH_MODE'):
@@ -5013,6 +5721,12 @@ class TestVisionOps(OpTestCase):
     @unittest.skipIf(not TEST_MPS, 'MPS unavailable')
     def test_space_to_depth_mps(self):
         with dragon.device('mps'):
+            self.test_space_to_depth()
+
+    @unittest.skipIf(not TEST_MLU, 'MLU unavailable')
+    def test_space_to_depth_cnnl(self):
+        dragon.mlu.set_cnnl_flags(True)
+        with dragon.device('mlu'), self.cnnl_ws.as_default():
             self.test_space_to_depth()
 
 

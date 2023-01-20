@@ -83,5 +83,8 @@ template class UpdateOpBase<CUDAContext>;
 #ifdef USE_MPS
 template class UpdateOpBase<MPSContext>;
 #endif
+#ifdef USE_MLU
+template class UpdateOpBase<MLUContext>;
+#endif
 
 } // namespace dragon

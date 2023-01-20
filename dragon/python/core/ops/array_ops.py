@@ -124,7 +124,7 @@ def broadcast_to(inputs, shape, **kwargs):
 
 @OpSchema.num_inputs(1)
 def channel_shuffle(inputs, axis=-1, group=1, **kwargs):
-    """Apply the group shuffle to each channel of input.
+    """Apply group shuffle to each channel of input.
     `[Zhang et.al, 2017] <https://arxiv.org/abs/1707.01083>`_.
 
     Examples:
@@ -566,7 +566,7 @@ def reshape(inputs, shape, copy=True, **kwargs):
     x = dragon.ones(shape=(1, 2, 3, 4))
     print(dragon.reshape(x, shape=(6, 4)).shape)  # (6, 4)
 
-    # Set the existing dimensions to ``0`` if it unchanged
+    # Set existing dimensions to ``0`` if it unchanged
     print(dragon.reshape(x, shape=(0, 0, 12)).shape)  # (1, 2, 12)
     print(dragon.reshape(x, shape=(0, 0, 0, 0)).shape)  # (1, 2, 3, 4)
     print(dragon.reshape(x, shape=(0, 0, 0, 0, 0)).shape)  # Wrong

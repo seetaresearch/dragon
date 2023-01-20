@@ -85,6 +85,8 @@ DEPLOY_CUDA_OPERATOR(Tile);
 DEPLOY_CUDA_OPERATOR(TileGradient);
 #endif
 
+DEFINE_OP_REPEATED_ARG(int64_t, TileOp, repeats);
+
 OPERATOR_SCHEMA(Tile).NumInputs(1).NumOutputs(1);
 OPERATOR_SCHEMA(TileGradient).NumInputs(1).NumOutputs(1);
 

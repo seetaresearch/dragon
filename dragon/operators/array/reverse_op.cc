@@ -36,17 +36,8 @@ DEPLOY_CUDA_OPERATOR(Reverse);
 REGISTER_CUDA_OPERATOR(ReverseGradient, ReverseOp<CUDAContext>);
 #endif
 
-OPERATOR_SCHEMA(Reverse)
-    /* X */
-    .NumInputs(1)
-    /* Y */
-    .NumOutputs(1);
-
-OPERATOR_SCHEMA(ReverseGradient)
-    /* dY */
-    .NumInputs(1)
-    /* dX */
-    .NumOutputs(1);
+OPERATOR_SCHEMA(Reverse).NumInputs(1).NumOutputs(1);
+OPERATOR_SCHEMA(ReverseGradient).NumInputs(1).NumOutputs(1);
 
 REGISTER_GRADIENT(Reverse, SimpleGradientMaker);
 

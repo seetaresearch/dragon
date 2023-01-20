@@ -17,7 +17,7 @@ from __future__ import print_function
 import inspect
 
 from dragon.core.util import nest
-from dragon.vm.torch.core.nn import functional as F
+from dragon.vm.torch.core.nn import functional
 from dragon.vm.torch.core.nn.modules.module import Module
 from dragon.vm.torch.core.nn.parameter import Parameter
 from dragon.vm.torch.core.ops import constant_ops
@@ -25,7 +25,7 @@ from dragon.vm.torch.core.tensor import Tensor
 
 
 class GroupNorm(Module):
-    r"""Apply the group normalization.
+    r"""Apply group normalization.
     `[Wu & He, 2018] <https://arxiv.org/abs/1803.08494>`_.
 
     The normalization is defined as:
@@ -95,18 +95,19 @@ class GroupNorm(Module):
                .format(**self.__dict__)
 
     def forward(self, input):
-        return F.group_norm(
+        return functional.group_norm(
             input, self.num_groups, self.weight, self.bias, self.eps)
 
     def _apply(self, fn):
-        lambda_source = inspect.getsource(fn)
-        if 'half_()' in lambda_source:
-            return self  # Float32 parameters are required.
+        if self.weight.device.type != 'mlu':
+            lambda_source = inspect.getsource(fn)
+            if 'half_()' in lambda_source:
+                return self  # Float32 parameters are required.
         return super(GroupNorm, self)._apply(fn)
 
 
 class LayerNorm(Module):
-    r"""Apply the layer normalization.
+    r"""Apply layer normalization.
     `[Ba et.al, 2016] <https://arxiv.org/abs/1607.06450>`_
 
     The normalization is defined as:
@@ -166,18 +167,19 @@ class LayerNorm(Module):
                .format(**self.__dict__)
 
     def forward(self, input):
-        return F.layer_norm(
+        return functional.layer_norm(
             input, self.normalized_shape, self.weight, self.bias, self.eps)
 
     def _apply(self, fn):
-        lambda_source = inspect.getsource(fn)
-        if 'half_()' in lambda_source:
-            return self  # Float32 parameters are required.
+        if self.weight.device.type != 'mlu':
+            lambda_source = inspect.getsource(fn)
+            if 'half_()' in lambda_source:
+                return self  # Float32 parameters are required.
         return super(LayerNorm, self)._apply(fn)
 
 
 class LocalResponseNorm(Module):
-    r"""Apply the local response normalization.
+    r"""Apply local response normalization.
     `[Krizhevsky et.al, 2012] <http://www.cs.toronto.edu/~hinton/absps/imagenet.pdf>`_.
 
     The normalization is defined as:
@@ -226,4 +228,5 @@ class LocalResponseNorm(Module):
         return '{size}, alpha={alpha}, beta={beta}, k={k}'.format(**self.__dict__)
 
     def forward(self, input):
-        return F.local_response_norm(input, self.size, self.alpha, self.beta, self.k)
+        return functional.local_response_norm(
+            input, self.size, self.alpha, self.beta, self.k)

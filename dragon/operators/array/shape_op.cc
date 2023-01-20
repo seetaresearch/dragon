@@ -14,6 +14,9 @@ DEPLOY_CUDA_OPERATOR(Shape);
 #ifdef USE_MPS
 DEPLOY_MPS_OPERATOR(Shape, Shape);
 #endif
+#ifdef USE_MLU
+DEPLOY_MLU_OPERATOR(Shape);
+#endif
 
 OPERATOR_SCHEMA(Shape).NumInputs(1).NumOutputs(1);
 

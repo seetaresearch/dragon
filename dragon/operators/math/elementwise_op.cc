@@ -11,7 +11,7 @@ namespace dragon {
   }
 
 DISPATCH_WITH_TENSOR_TYPES(Neg, dtypes::Signed, Input(0));
-DISPATCH_WITH_TENSOR_TYPES(Abs, dtypes::Numerical, Input(0));
+DISPATCH_WITH_TENSOR_TYPES(Abs, dtypes::Signed, Input(0));
 DISPATCH_WITH_TENSOR_TYPES(Square, dtypes::Numerical, Input(0));
 DISPATCH_WITH_TENSOR_TYPES(Sign, dtypes::Numerical, Input(0));
 DISPATCH_WITH_TENSOR_TYPES(Ceil, dtypes::Floating, Input(0));
@@ -193,6 +193,39 @@ DEFINE_INPLACE_BINARY_OP_IMPL(Mul, T);
 DEFINE_INPLACE_BINARY_OP_IMPL(Div, T);
 #undef DEFINE_INPLACE_BINARY_OP_IMPL
 
+template <class Context>
+template <typename T>
+void AxpbyOp<Context>::DoRunWithType() {
+  auto* x = X_->template data<T, Context>();
+  auto* y = Y_->ReshapeLike(*X_)->template mutable_data<T, Context>();
+  if (beta_ == 1.f) {
+    if (alpha_ == 1.f) {
+      math::Add(X_->count(), x, y, y, ctx());
+    } else {
+      math::Axpy(X_->count(), alpha_, x, y, ctx());
+    }
+  } else {
+    if (alpha_ == 0.f) {
+      math::Scale(X_->count(), beta_, y, y, ctx());
+    } else {
+      math::Axpby(X_->count(), alpha_, x, beta_, y, ctx());
+    }
+  }
+}
+
+template <class Context>
+template <typename T>
+void NaNToNumOp<Context>::DoRunWithType() {
+  math::NaNToNum(
+      X_->count(),
+      nan_,
+      pos_inf_,
+      neg_inf_,
+      X_->template data<T, Context>(),
+      Y_->ReshapeLike(*X_)->template mutable_data<T, Context>(),
+      ctx());
+}
+
 DEPLOY_CPU_OPERATOR(Neg);
 DEPLOY_CPU_OPERATOR(Abs);
 DEPLOY_CPU_OPERATOR(Square);
@@ -232,6 +265,8 @@ DEPLOY_CPU_OPERATOR(Less);
 DEPLOY_CPU_OPERATOR(LessEqual);
 DEPLOY_CPU_OPERATOR(Greater);
 DEPLOY_CPU_OPERATOR(GreaterEqual);
+DEPLOY_CPU_OPERATOR(Axpby);
+DEPLOY_CPU_OPERATOR(NaNToNum);
 
 #ifdef USE_CUDA
 DEPLOY_CUDA_OPERATOR(Neg);
@@ -273,6 +308,8 @@ DEPLOY_CUDA_OPERATOR(Less);
 DEPLOY_CUDA_OPERATOR(LessEqual);
 DEPLOY_CUDA_OPERATOR(Greater);
 DEPLOY_CUDA_OPERATOR(GreaterEqual);
+DEPLOY_CUDA_OPERATOR(Axpby);
+DEPLOY_CUDA_OPERATOR(NaNToNum);
 #endif
 
 #ifdef USE_MPS
@@ -315,6 +352,35 @@ DEPLOY_MPS_OPERATOR(Less, Less);
 DEPLOY_MPS_OPERATOR(LessEqual, LessEqual);
 DEPLOY_MPS_OPERATOR(Greater, Greater);
 DEPLOY_MPS_OPERATOR(GreaterEqual, GreaterEqual);
+#endif
+
+#ifdef USE_MLU
+DEPLOY_MLU_OPERATOR(Neg);
+DEPLOY_MLU_OPERATOR(Abs);
+DEPLOY_MLU_OPERATOR(Square);
+DEPLOY_MLU_OPERATOR(Sign);
+DEPLOY_MLU_OPERATOR(Ceil);
+DEPLOY_MLU_OPERATOR(Floor);
+DEPLOY_MLU_OPERATOR(Round);
+DEPLOY_MLU_OPERATOR(Exp);
+DEPLOY_MLU_OPERATOR(Log);
+DEPLOY_MLU_OPERATOR(Reciprocal);
+DEPLOY_MLU_OPERATOR(Sqrt);
+DEPLOY_MLU_OPERATOR(Rsqrt);
+DEPLOY_MLU_OPERATOR(Sin);
+DEPLOY_MLU_OPERATOR(Cos);
+DEPLOY_MLU_OPERATOR(Add);
+DEPLOY_MLU_OPERATOR(Sub);
+DEPLOY_MLU_OPERATOR(Mul);
+DEPLOY_MLU_OPERATOR(Div);
+DEPLOY_MLU_OPERATOR(Minimum);
+DEPLOY_MLU_OPERATOR(Maximum);
+DEPLOY_MLU_OPERATOR(Equal);
+DEPLOY_MLU_OPERATOR(NotEqual);
+DEPLOY_MLU_OPERATOR(Less);
+DEPLOY_MLU_OPERATOR(LessEqual);
+DEPLOY_MLU_OPERATOR(Greater);
+DEPLOY_MLU_OPERATOR(GreaterEqual);
 #endif
 
 OPERATOR_SCHEMA(Neg).NumInputs(1).NumOutputs(1).AllowInplace({{0, 0}});
@@ -363,6 +429,8 @@ OPERATOR_SCHEMA(Less).NumInputs(2).NumOutputs(1);
 OPERATOR_SCHEMA(LessEqual).NumInputs(2).NumOutputs(1);
 OPERATOR_SCHEMA(Greater).NumInputs(2).NumOutputs(1);
 OPERATOR_SCHEMA(GreaterEqual).NumInputs(2).NumOutputs(1);
+OPERATOR_SCHEMA(Axpby).AllowInplace([](int, int) -> bool { return true; });
+OPERATOR_SCHEMA(NaNToNum).AllowInplace([](int, int) -> bool { return true; });
 
 NO_GRADIENT(Ceil);
 NO_GRADIENT(Floor);
@@ -385,5 +453,7 @@ NO_GRADIENT(Less);
 NO_GRADIENT(LessEqual);
 NO_GRADIENT(Greater);
 NO_GRADIENT(GreaterEqual);
+NO_GRADIENT(Axpby);
+NO_GRADIENT(NaNToNum);
 
 } // namespace dragon

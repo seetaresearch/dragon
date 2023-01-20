@@ -1,8 +1,7 @@
 #ifdef USE_CUDNN
 
-#include "dragon/utils/device/common_cudnn.h"
-#include "dragon/core/tensor.h"
-#include "dragon/core/types.h"
+#include "dragon/core/context_cuda.h"
+#include "dragon/core/workspace.h"
 
 namespace dragon {
 
@@ -27,23 +26,39 @@ const void* CuDNNType<float16>::one =
 const void* CuDNNType<float16>::zero =
     static_cast<void*>(&CuDNNType<float16>::zeroval);
 
+template <typename T>
+cudnnMathType_t CuDNNGetMathType() {
+  if (TENSOR_CORE_AVAILABLE()) {
+    if (TypeMeta::Id<T>() == TypeMeta::Id<float16>()) {
+      return CUDNN_TENSOR_OP_MATH;
+    } else {
+      if (!CUDAContext::objects().cudnn_allow_tf32_) {
+#if CUDNN_VERSION_MIN(8, 0, 0)
+        return CUDNN_FMA_MATH;
+#endif
+      }
+    }
+  }
+  return CUDNN_DEFAULT_MATH;
+}
+
 void CuDNNCreateTensorDesc(cudnnTensorDescriptor_t* desc) {
   CUDNN_CHECK(cudnnCreateTensorDescriptor(desc));
 }
 
-void CuDNNDestroyTensorDesc(cudnnTensorDescriptor_t* desc) {
-  CUDNN_CHECK(cudnnDestroyTensorDescriptor(*desc));
+void CuDNNDestroyTensorDesc(cudnnTensorDescriptor_t desc) {
+  CUDNN_CHECK(cudnnDestroyTensorDescriptor(desc));
 }
 
 template <typename T>
 void CuDNNSetTensorDesc(
-    cudnnTensorDescriptor_t* desc,
+    cudnnTensorDescriptor_t desc,
     const vec64_t& dims,
     const vec64_t& strides) {
   CHECK_EQ(dims.size(), strides.size());
   CHECK(dims.size() >= 3 && dims.size() <= 8);
   CUDNN_CHECK(cudnnSetTensorNdDescriptor(
-      *desc,
+      desc,
       CuDNNType<T>::type,
       int(dims.size()),
       vec32_t({dims.begin(), dims.end()}).data(),
@@ -51,7 +66,7 @@ void CuDNNSetTensorDesc(
 }
 
 template <typename T>
-void CuDNNSetTensorDesc(cudnnTensorDescriptor_t* desc, const vec64_t& dims) {
+void CuDNNSetTensorDesc(cudnnTensorDescriptor_t desc, const vec64_t& dims) {
   // CuDNN requires ndimensions from 3 to 8.
   // Expand or squeeze dimensions to pass the check.
   vec64_t dims_v2(dims);
@@ -72,14 +87,14 @@ void CuDNNSetTensorDesc(cudnnTensorDescriptor_t* desc, const vec64_t& dims) {
     stride *= dimA[i];
   }
   CUDNN_CHECK(cudnnSetTensorNdDescriptor(
-      *desc, CuDNNType<T>::type, num_dims, dimA, strideA));
+      desc, CuDNNType<T>::type, num_dims, dimA, strideA));
   delete[] dimA;
   delete[] strideA;
 }
 
 template <typename T>
 void CuDNNSetTensorDesc(
-    cudnnTensorDescriptor_t* desc,
+    cudnnTensorDescriptor_t desc,
     const vec64_t& dims,
     const string& data_format) {
   const int N = dims[0];
@@ -90,22 +105,22 @@ void CuDNNSetTensorDesc(
     if (data_format == "NCHW") {
       H = dims[2]; // NCH -> NCH1
       CUDNN_CHECK(cudnnSetTensor4dDescriptorEx(
-          *desc, CuDNNType<T>::type, N, C, H, W, C * H * W, H * W, W, 1));
+          desc, CuDNNType<T>::type, N, C, H, W, C * H * W, H * W, W, 1));
     } else if (data_format == "NHWC") {
       H = dims[1]; // NHC -> NH1C
       CUDNN_CHECK(cudnnSetTensor4dDescriptorEx(
-          *desc, CuDNNType<T>::type, N, C, H, W, H * W * C, 1, W * C, C));
+          desc, CuDNNType<T>::type, N, C, H, W, H * W * C, 1, W * C, C));
     }
   } else if (dims.size() == 4) {
     D = 1;
     if (data_format == "NCHW") {
       H = dims[2], W = dims[3];
       CUDNN_CHECK(cudnnSetTensor4dDescriptorEx(
-          *desc, CuDNNType<T>::type, N, C, H, W, C * H * W, H * W, W, 1));
+          desc, CuDNNType<T>::type, N, C, H, W, C * H * W, H * W, W, 1));
     } else if (data_format == "NHWC") {
       H = dims[1], W = dims[2];
       CUDNN_CHECK(cudnnSetTensor4dDescriptorEx(
-          *desc, CuDNNType<T>::type, N, C, H, W, H * W * C, 1, W * C, C));
+          desc, CuDNNType<T>::type, N, C, H, W, H * W * C, 1, W * C, C));
     }
   } else if (dims.size() == 5) {
     vector<int> dims32, strides32;
@@ -119,7 +134,7 @@ void CuDNNSetTensorDesc(
       strides32 = {D * H * W * C, 1, H * W * C, W * C, C};
     }
     CUDNN_CHECK(cudnnSetTensorNdDescriptor(
-        *desc,
+        desc,
         CuDNNType<T>::type,
         (int)dims32.size(),
         dims32.data(),
@@ -131,24 +146,57 @@ void CuDNNSetTensorDesc(
 
 template <typename T>
 void CuDNNSetBiasDesc(
-    cudnnTensorDescriptor_t* desc,
+    cudnnTensorDescriptor_t desc,
     const int num_dims,
     const int64_t N,
-    const std::string& data_format) {
+    const string& data_format) {
   vec64_t dims(num_dims - 1, 1);
   dims.insert(data_format == "NCHW" ? dims.begin() + 1 : dims.end(), N);
   CuDNNSetTensorDesc<T>(desc, dims, data_format);
 }
 
-#define INSTANTIATE_API(T)                                       \
-  template void CuDNNSetTensorDesc<T>(                           \
-      cudnnTensorDescriptor_t*, const vec64_t&);                 \
-  template void CuDNNSetTensorDesc<T>(                           \
-      cudnnTensorDescriptor_t*, const vec64_t&, const vec64_t&); \
-  template void CuDNNSetTensorDesc<T>(                           \
-      cudnnTensorDescriptor_t*, const vec64_t&, const string&);  \
-  template void CuDNNSetBiasDesc<T>(                             \
-      cudnnTensorDescriptor_t*, const int, const int64_t, const string&);
+template <>
+void CuDNNSetDropoutDesc<CUDAContext>(
+    cudnnDropoutDescriptor_t desc,
+    const float ratio,
+    CUDAContext* ctx) {
+  size_t states_size = 0;
+  const auto seed = ctx->random_seed();
+  const auto handle = ctx->cudnn_handle();
+  CUDNN_CHECK(cudnnDropoutGetStatesSize(handle, &states_size));
+  auto states_name = "CUDNNDropoutStates:" + str::to(seed);
+  states_name += string(",") + str::to(ratio);
+  auto* states = ctx->workspace()->CreateTensor(states_name);
+  if (states->count() == 0) {
+    states->Reshape({int64_t(states_size)});
+    CUDNN_CHECK(cudnnSetDropoutDescriptor(
+        desc,
+        handle,
+        ratio,
+        states->mutable_data<uint8_t, CUDAContext>(),
+        states_size,
+        seed));
+  } else {
+    CUDNN_CHECK(cudnnRestoreDropoutDescriptor(
+        desc,
+        handle,
+        ratio,
+        states->template mutable_data<uint8_t, CUDAContext>(),
+        states_size,
+        seed));
+  }
+}
+
+#define INSTANTIATE_API(T)                                      \
+  template cudnnMathType_t CuDNNGetMathType<T>();               \
+  template void CuDNNSetTensorDesc<T>(                          \
+      cudnnTensorDescriptor_t, const vec64_t&);                 \
+  template void CuDNNSetTensorDesc<T>(                          \
+      cudnnTensorDescriptor_t, const vec64_t&, const vec64_t&); \
+  template void CuDNNSetTensorDesc<T>(                          \
+      cudnnTensorDescriptor_t, const vec64_t&, const string&);  \
+  template void CuDNNSetBiasDesc<T>(                            \
+      cudnnTensorDescriptor_t, const int, const int64_t, const string&);
 
 INSTANTIATE_API(float16);
 INSTANTIATE_API(float);

@@ -62,18 +62,18 @@ void CuDNNPoolOp<Context>::DoRunWithType() {
     return;
   }
 
-  SetPoolDesc();
-  CuDNNSetTensorDesc<T>(&input_desc_, X.dims(), data_format());
-  CuDNNSetTensorDesc<T>(&output_desc_, out_shape_, data_format());
+  this->SetPoolDesc();
+  CuDNNSetTensorDesc<T>(this->input_desc_, X.dims(), data_format());
+  CuDNNSetTensorDesc<T>(this->output_desc_, out_shape_, data_format());
 
   CUDNN_CHECK(cudnnPoolingForward(
       ctx()->cudnn_handle(),
-      pool_desc_,
+      this->pool_desc_,
       CuDNNType<T>::one,
-      input_desc_,
+      this->input_desc_,
       X.template data<T, Context>(),
       CuDNNType<T>::zero,
-      output_desc_,
+      this->output_desc_,
       Y->Reshape(out_shape_)->template mutable_data<T, Context>()));
 }
 
@@ -84,22 +84,22 @@ void CuDNNPoolGradientOp<Context>::DoRunWithType() {
   auto &X = Input(0), *dX = Output(0);
   auto &Y = Input(1), &dY = Input(2);
 
-  SetPoolDesc();
-  CuDNNSetTensorDesc<T>(&input_desc_, dY.dims(), data_format());
-  CuDNNSetTensorDesc<T>(&output_desc_, X.dims(), data_format());
+  this->SetPoolDesc();
+  CuDNNSetTensorDesc<T>(this->input_desc_, dY.dims(), data_format());
+  CuDNNSetTensorDesc<T>(this->output_desc_, X.dims(), data_format());
 
   CUDNN_CHECK(cudnnPoolingBackward(
       ctx()->cudnn_handle(),
-      pool_desc_,
+      this->pool_desc_,
       CuDNNType<T>::one,
-      input_desc_,
+      this->input_desc_,
       Y.template data<T, Context>(),
-      input_desc_,
+      this->input_desc_,
       dY.template data<T, Context>(),
-      output_desc_,
+      this->output_desc_,
       X.template data<T, Context>(),
       CuDNNType<T>::zero,
-      output_desc_,
+      this->output_desc_,
       dX->ReshapeLike(X)->template mutable_data<T, Context>()));
 }
 

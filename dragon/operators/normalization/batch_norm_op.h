@@ -13,8 +13,6 @@
 #ifndef DRAGON_OPERATORS_NORMALIZATION_BATCH_NORM_OP_H_
 #define DRAGON_OPERATORS_NORMALIZATION_BATCH_NORM_OP_H_
 
-#include <cfloat>
-
 #include "dragon/core/operator.h"
 #include "dragon/operators/distributed/collective_op_base.h"
 
@@ -41,13 +39,10 @@ class BatchNormOpBase : public GenericOpBase<Context> {
   void GetBaseArguments() {
     auto& X = Input(0);
     GET_OP_AXIS_ARG(axis, X.ndim(), -1);
-    // Set dimensions.
     N_ = X.dim(0), C_ = X.dim(axis);
     S_ = X.count() / N_ / C_;
-    // Set data format.
     this->data_format_ = "NCHW";
     if (axis + 1 == X.ndim()) this->data_format_ = "NHWC";
-    // Set training mode.
     training_ = use_stats_ < 0 ? (phase() == "TRAIN" ? 1 : 0)
                                : (use_stats_ > 0 ? 0 : 1);
   }
@@ -148,25 +143,22 @@ class BatchNormGradientOp : public BatchNormOpBase<Context> {
 };
 
 #ifdef USE_CUDNN
-
 template <class Context>
 class CuDNNBatchNormOp final : public BatchNormOpBase<Context> {
  public:
   CuDNNBatchNormOp(const OperatorDef& def, Workspace* ws)
       : BatchNormOpBase<Context>(def, ws) {
+    if (epsilon_ <= CUDNN_BN_MIN_EPSILON) epsilon_ = CUDNN_BN_MIN_EPSILON;
+    INITIALIZE_OP_SINGLE_ARG(float, momentum, 0.9f);
     CuDNNCreateTensorDesc(&bn_desc_);
     CuDNNCreateTensorDesc(&input_desc_);
-    if (epsilon_ <= CUDNN_BN_MIN_EPSILON) {
-      epsilon_ = CUDNN_BN_MIN_EPSILON;
-    }
-    INITIALIZE_OP_SINGLE_ARG(float, momentum, 0.9f);
   }
   USE_OPERATOR_FUNCTIONS;
   USE_BATCHNORM_FUNCTIONS;
 
   ~CuDNNBatchNormOp() {
-    CuDNNDestroyTensorDesc(&bn_desc_);
-    CuDNNDestroyTensorDesc(&input_desc_);
+    CuDNNDestroyTensorDesc(bn_desc_);
+    CuDNNDestroyTensorDesc(input_desc_);
   }
 
   void Setup() override {
@@ -182,8 +174,8 @@ class CuDNNBatchNormOp final : public BatchNormOpBase<Context> {
   void DoRunWithType();
 
  protected:
-  cudnnTensorDescriptor_t input_desc_, bn_desc_;
   cudnnBatchNormMode_t bn_mode_;
+  cudnnTensorDescriptor_t input_desc_, bn_desc_;
   DECLARE_OP_SINGLE_ARG(float, momentum);
 };
 
@@ -192,18 +184,16 @@ class CuDNNBatchNormGradientOp final : public BatchNormGradientOp<Context> {
  public:
   CuDNNBatchNormGradientOp(const OperatorDef& def, Workspace* ws)
       : BatchNormGradientOp<Context>(def, ws) {
+    if (epsilon_ <= CUDNN_BN_MIN_EPSILON) epsilon_ = CUDNN_BN_MIN_EPSILON;
     CuDNNCreateTensorDesc(&bn_desc_);
     CuDNNCreateTensorDesc(&input_desc_);
-    if (epsilon_ <= CUDNN_BN_MIN_EPSILON) {
-      epsilon_ = CUDNN_BN_MIN_EPSILON;
-    }
   }
   USE_OPERATOR_FUNCTIONS;
   USE_BATCHNORM_FUNCTIONS;
 
   ~CuDNNBatchNormGradientOp() {
-    CuDNNDestroyTensorDesc(&bn_desc_);
-    CuDNNDestroyTensorDesc(&input_desc_);
+    CuDNNDestroyTensorDesc(bn_desc_);
+    CuDNNDestroyTensorDesc(input_desc_);
   }
 
   void Setup() override {
@@ -228,29 +218,109 @@ class CuDNNBatchNormGradientOp final : public BatchNormGradientOp<Context> {
   };
 
  protected:
-  cudnnTensorDescriptor_t input_desc_, bn_desc_;
   cudnnBatchNormMode_t bn_mode_;
+  cudnnTensorDescriptor_t input_desc_, bn_desc_;
 };
-
-DEFINE_OP_SINGLE_ARG(float, CuDNNBatchNormOp, momentum);
-
 #endif // USE_CUDNN
 
-#ifdef USE_MPS
-
+#ifdef USE_MLU
 template <class Context>
-class MPSBatchNormGradientOp : public BatchNormOpBase<Context> {
+class CNNLBatchNormOp final : public BatchNormOpBase<Context> {
  public:
-  MPSBatchNormGradientOp(const OperatorDef& def, Workspace* ws)
-      : BatchNormOpBase<Context>(def, ws) {}
+  CNNLBatchNormOp(const OperatorDef& def, Workspace* ws)
+      : BatchNormOpBase<Context>(def, ws) {
+    INITIALIZE_OP_SINGLE_ARG(float, momentum, 0.9f);
+    CNNLCreateTensorDesc(&bn_desc_);
+    CNNLCreateTensorDesc(&input_desc_);
+    CNNLCreateTensorDesc(&syncbn_desc_);
+    CNNLCreateTensorDesc(&count_desc_);
+    CNNL_CHECK(cnnlCreateActivationDescriptor(&act_desc_));
+    CNNL_CHECK(cnnlSetActivationDescriptor_v6(
+        act_desc_,
+        CNNL_ACTIVATION_IDENTITY,
+        CNNL_ACTIVATION_FAST,
+        CNNL_PROPAGATE_NAN,
+        0.f,
+        0,
+        1.f, // gamma
+        1.f, // scale
+        true,
+        false));
+  }
   USE_OPERATOR_FUNCTIONS;
   USE_BATCHNORM_FUNCTIONS;
 #ifdef USE_MPI
   USE_COLLECTIVE_FUNCTIONS;
 #endif
 
+  ~CNNLBatchNormOp() {
+    CNNLDestroyTensorDesc(bn_desc_);
+    CNNLDestroyTensorDesc(input_desc_);
+    CNNLDestroyTensorDesc(syncbn_desc_);
+    CNNLDestroyTensorDesc(count_desc_);
+    CNNL_CHECK(cnnlDestroyActivationDescriptor(act_desc_));
+  }
+
   void Setup() override {
     GetBaseArguments();
+    CHECK_EQ(data_format(), "NHWC");
+    Output(0)->ReshapeLike(Input(0));
+  }
+
+  void RunOnDevice() override {
+    DispatchHelper<dtypes::Floating>::Call(this, Input(0));
+  }
+
+  template <typename T>
+  void DoRunWithType();
+
+ protected:
+  cnnlBatchNormMode_t bn_mode_;
+  cnnlActivationDescriptor_t act_desc_;
+  cnnlTensorDescriptor_t input_desc_, bn_desc_;
+  cnnlTensorDescriptor_t syncbn_desc_, count_desc_;
+  DECLARE_OP_SINGLE_ARG(float, momentum);
+};
+
+template <class Context>
+class CNNLBatchNormGradientOp final : public BatchNormGradientOp<Context> {
+ public:
+  CNNLBatchNormGradientOp(const OperatorDef& def, Workspace* ws)
+      : BatchNormGradientOp<Context>(def, ws) {
+    CNNLCreateTensorDesc(&bn_desc_);
+    CNNLCreateTensorDesc(&input_desc_);
+    CNNLCreateTensorDesc(&syncbn_desc_);
+    CNNLCreateTensorDesc(&count_desc_);
+    CNNL_CHECK(cnnlCreateActivationDescriptor(&act_desc_));
+    CNNL_CHECK(cnnlSetActivationDescriptor_v6(
+        act_desc_,
+        CNNL_ACTIVATION_IDENTITY,
+        CNNL_ACTIVATION_FAST,
+        CNNL_PROPAGATE_NAN,
+        0.f,
+        0,
+        1.f, // gamma
+        1.f, // scale
+        true,
+        false));
+  }
+  USE_OPERATOR_FUNCTIONS;
+  USE_BATCHNORM_FUNCTIONS;
+#ifdef USE_MPI
+  USE_COLLECTIVE_FUNCTIONS;
+#endif
+
+  ~CNNLBatchNormGradientOp() {
+    CNNLDestroyTensorDesc(bn_desc_);
+    CNNLDestroyTensorDesc(input_desc_);
+    CNNLDestroyTensorDesc(syncbn_desc_);
+    CNNLDestroyTensorDesc(count_desc_);
+    CNNL_CHECK(cnnlDestroyActivationDescriptor(act_desc_));
+  }
+
+  void Setup() override {
+    GetBaseArguments();
+    CHECK_EQ(data_format(), "NHWC");
     Output(0)->ReshapeLike(Input(0));
   }
 
@@ -262,21 +332,21 @@ class MPSBatchNormGradientOp : public BatchNormOpBase<Context> {
   void RunTraining();
 
   template <typename T>
-  void RunInference();
-
-  template <typename T>
   void DoRunWithType() {
     if (training_) {
       RunTraining<T>();
     } else {
-      RunInference<T>();
+      NOT_IMPLEMENTED;
     }
   };
+
+ protected:
+  cnnlBatchNormMode_t bn_mode_;
+  cnnlActivationDescriptor_t act_desc_;
+  cnnlTensorDescriptor_t input_desc_, bn_desc_;
+  cnnlTensorDescriptor_t syncbn_desc_, count_desc_;
 };
-
-#endif
-
-DEFINE_OP_SINGLE_ARG(float, BatchNormOp, momentum);
+#endif // USE_MLU
 
 } // namespace dragon
 

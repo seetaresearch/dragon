@@ -78,18 +78,20 @@ kernel void AdamW(
   y_copy[i] = CopyT(y[i]);
 }
 
-#define INSTANTIATE_KERNEL(name, T, CopyT) \
+#define INSTANTIATE_KERNEL(name, T) \
   template [[host_name(#name"_"#T)]] \
   kernel void name(device const T*, device const T*, \
-                   device T*, device T*, device T*, uint); \
+                   device T*, device T*, device T*, uint);
+INSTANTIATE_KERNEL(Adam, float);
+INSTANTIATE_KERNEL(AdamW, float);
+#undef INSTANTIATE_KERNEL
+
+#define INSTANTIATE_KERNEL(name, T, CopyT) \
   template [[host_name(#name"WithCopy_"#T)]] \
   kernel void name(device const T*, device const T*, \
-                   device T*, device T*, device T*, device CopyT*, uint); \
-
-INSTANTIATE_KERNEL(Adam, half, float);
-INSTANTIATE_KERNEL(Adam, float, float);
-INSTANTIATE_KERNEL(AdamW, half, float);
-INSTANTIATE_KERNEL(AdamW, float, float);
+                   device T*, device T*, device T*, device CopyT*, uint);
+INSTANTIATE_KERNEL(Adam, float, half);
+INSTANTIATE_KERNEL(AdamW, float, half);
 #undef INSTANTIATE_KERNEL
 
 )";

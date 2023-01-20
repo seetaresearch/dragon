@@ -15,6 +15,7 @@
 
 #include "dragon/core/context.h"
 #include "dragon/core/context_cuda.h"
+#include "dragon/core/context_mlu.h"
 #include "dragon/core/context_mps.h"
 
 namespace dragon {
@@ -141,18 +142,20 @@ void SigmoidFocalLossGrad(
     Context* ctx);
 
 template <typename T, class Context>
-void SmoothL1(
+void SmoothL1Loss(
     const int N,
     const float beta,
-    const T* diff,
+    const T* input,
+    const T* target,
     T* loss,
     Context* ctx);
 
 template <typename T, class Context>
-void SmoothL1Grad(
+void SmoothL1LossGrad(
     const int N,
     const float beta,
-    const T* diff,
+    const T* input,
+    const T* target,
     T* dx,
     Context* ctx);
 

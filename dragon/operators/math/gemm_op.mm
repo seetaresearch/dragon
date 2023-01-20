@@ -144,12 +144,9 @@ void MPSGemmGradientOp<Context>::DoRunWithType() {
                                     secondaryTensor:placeholders[2]
                                                name:nil]);
         }
-        vec64_t Y_axes, C_axes;
-        math::utils::ComputeBroadcastAxes(
-            dY.dims(), C.dims(), dY.dims(), Y_axes, C_axes);
         placeholders.emplace_back([graph_
             reductionSumWithTensor:placeholders[2]
-                              axes:MPSGetShape(C_axes)
+                              axes:MPSGetShape(vec64_t({0}))
                               name:nil]);
       });
 
@@ -174,6 +171,7 @@ void MPSGemmGradientOp<Context>::DoRunWithType() {
           placeholders[4]);
     }
     if (dC->has_name()) {
+      CHECK_EQ(C.count(), N) << "\nUnsupported bias broadcasting.";
       outputs[placeholders[5]] = MPSCreateTensorData(
           dC->ReshapeLike(C)->template mutable_data<T, Context>(),
           placeholders[5]);

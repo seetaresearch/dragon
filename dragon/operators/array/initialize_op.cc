@@ -257,6 +257,22 @@ DEPLOY_MPS_OPERATOR(Range, Range);
 DEPLOY_MPS_OPERATOR(Eye, Eye);
 #endif
 
+#ifdef USE_MLU
+DEPLOY_MLU_OPERATOR(Fill);
+DEPLOY_MLU_OPERATOR(GivenTensorFill);
+DEPLOY_MLU_OPERATOR(RandomNormal);
+DEPLOY_MLU_OPERATOR(RandomUniform);
+DEPLOY_MLU_OPERATOR(GlorotNormal);
+DEPLOY_MLU_OPERATOR(GlorotUniform);
+DEPLOY_MLU_OPERATOR(TruncatedNormal);
+#endif
+
+DEFINE_OP_SINGLE_ARG(int64_t, PermutationOp, limit);
+DEFINE_OP_REPEATED_ARG(int64_t, InitializeOp, dims);
+DEFINE_OP_REPEATED_ARG(double, RangeOp, slice);
+DEFINE_OP_REPEATED_ARG(double, LinSpaceOp, start);
+DEFINE_OP_REPEATED_ARG(double, LinSpaceOp, stop);
+
 OPERATOR_SCHEMA(Fill).NumInputs(0, 1).NumOutputs(1);
 OPERATOR_SCHEMA(GivenTensorFill).NumInputs(0).NumOutputs(1);
 OPERATOR_SCHEMA(Range).NumInputs(0).NumOutputs(1);

@@ -26,8 +26,8 @@ void CuDNNBiasAddGradientOp<Context>::DoRunWithType() {
   if (dB->has_name()) {
     vec64_t X_dims({N, S});
     X_dims.insert(X_dims.begin() + (data_format() == "NCHW" ? 1 : 2), C);
-    CuDNNSetTensorDesc<T>(&input_desc_, X_dims, data_format());
-    CuDNNSetBiasDesc<T>(&bias_desc_, 3, C, data_format());
+    CuDNNSetTensorDesc<T>(input_desc_, X_dims, data_format());
+    CuDNNSetBiasDesc<T>(bias_desc_, 3, C, data_format());
     CUDNN_CHECK(cudnnConvolutionBackwardBias(
         ctx()->cudnn_handle(),
         CuDNNType<T>::one,

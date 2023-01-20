@@ -85,7 +85,6 @@ class ScatterAddGradientOp final : public Operator<Context> {
 };
 
 #ifdef USE_MPS
-
 template <class Context>
 class MPSScatterElementsOp final : public Operator<Context> {
  public:
@@ -185,8 +184,53 @@ class MPSScatterAddGradientOp final : public Operator<Context> {
   MPSGraph_t graph_;
   MPSGraphCache graph_cache_;
 };
-
 #endif // USE_MPS
+
+#ifdef USE_MLU
+template <class Context>
+class CNNLScatterElementsOp : public Operator<Context> {
+ public:
+  CNNLScatterElementsOp(const OperatorDef& def, Workspace* ws)
+      : Operator<Context>(def, ws) {
+    CNNLCreateTensorDesc(&input_desc_);
+    CNNLCreateTensorDesc(&index_desc_);
+    CNNLCreateTensorDesc(&output_desc_);
+  }
+  USE_OPERATOR_FUNCTIONS;
+
+  ~CNNLScatterElementsOp() {
+    CNNLDestroyTensorDesc(input_desc_);
+    CNNLDestroyTensorDesc(index_desc_);
+    CNNLDestroyTensorDesc(output_desc_);
+  }
+
+  void RunOnDevice() override {
+    DispatchHelper<dtypes::Generic>::Call(this, Input(0));
+  }
+
+  template <typename T>
+  void DoRunWithType();
+
+ protected:
+  cnnlTensorDescriptor_t input_desc_, index_desc_, output_desc_;
+};
+
+template <class Context>
+class CNNLScatterElementsGradientOp final
+    : public CNNLScatterElementsOp<Context> {
+ public:
+  CNNLScatterElementsGradientOp(const OperatorDef& def, Workspace* ws)
+      : CNNLScatterElementsOp<Context>(def, ws) {}
+  USE_OPERATOR_FUNCTIONS;
+
+  void RunOnDevice() override {
+    DispatchHelper<dtypes::Floating>::Call(this, Input(1));
+  }
+
+  template <typename T>
+  void DoRunWithType();
+};
+#endif // USE_MLU
 
 } // namespace dragon
 

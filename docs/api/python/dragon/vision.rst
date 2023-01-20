@@ -13,11 +13,11 @@ dragon.vision
   : Resize input via interpolating neighborhoods.
 
   `roi_align(...) <vision/roi_align.html>`_
-  : Apply the average roi align.
+  : Apply average roi align.
   `[He et.al, 2017] <https://arxiv.org/abs/1703.06870>`_.
 
   `roi_pool(...) <vision/roi_pool.html>`_
-  : Apply the max roi pooling.
+  : Apply max roi pooling.
   `[Girshick, 2015] <https://arxiv.org/abs/1504.08083>`_.
 
 .. toctree::

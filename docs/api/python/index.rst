@@ -35,7 +35,7 @@ Dragon
   * `dragon.logging <dragon/logging.html>`_
   * `dragon.losses <dragon/losses.html>`_
   * `dragon.math <dragon/math.html>`_
-  * `dragon.metrics <dragon/metrics.html>`_
+  * `dragon.mlu <dragon/mlu.html>`_
   * `dragon.mps <dragon/mps.html>`_
   * `dragon.nn <dragon/nn.html>`_
   * `dragon.onnx <dragon/onnx.html>`_
@@ -85,6 +85,8 @@ PyTorch
   * `torch.cuda <torch/cuda.html>`_
   * `torch.distributed <torch/distributed.html>`_
   * `torch.jit <torch/jit.html>`_
+  * `torch.mlu <torch/mlu.html>`_
+  * `torch.mps <torch/mps.html>`_
   * `torch.nn <torch/nn.html>`_
   * `torch.nn.functional <torch/nn/functional.html>`_
   * `torch.nn.init <torch/nn/init.html>`_
@@ -166,8 +168,8 @@ Modules
   `Module math <dragon/math.html>`_
   : Native API for ``dragon.math`` namespace.
 
-  `Module metrics <dragon/metrics.html>`_
-  : Native API for ``dragon.metrics`` namespace.
+  `Module mlu <dragon/mlu.html>`_
+  : Native API for ``dragon.mlu`` namespace.
 
   `Module mps <dragon/mps.html>`_
   : Native API for ``dragon.mps`` namespace.
@@ -244,6 +246,12 @@ Modules
   `Module vm.torch.jit <torch/jit.html>`_
   : Virtual API for ``torch.jit`` namespace.
 
+  `Module vm.torch.mlu <torch/mlu.html>`_
+  : Virtual API for ``torch.mlu`` namespace.
+
+  `Module vm.torch.mps <torch/mps.html>`_
+  : Virtual API for ``torch.mps`` namespace.
+
   `Module vm.torch.nn <torch/nn.html>`_
   : Virtual API for ``torch.nn`` namespace.
 
@@ -280,7 +288,7 @@ Modules
   dragon/logging
   dragon/losses
   dragon/math
-  dragon/metrics
+  dragon/mlu
   dragon/mps
   dragon/nn
   dragon/onnx
@@ -306,6 +314,8 @@ Modules
   torch/cuda
   torch/distributed
   torch/jit
+  torch/mlu
+  torch/mps
   torch/nn
   torch/nn/functional
   torch/nn/init

@@ -14,7 +14,7 @@
 #define DRAGON_OPERATORS_MATH_ELEMENTWISE_OP_H_
 
 #include "dragon/core/operator.h"
-#include "dragon/utils/math/utils.h"
+#include "dragon/operators/math/reduce_op_impl_cnnl.h"
 
 namespace dragon {
 
@@ -40,13 +40,43 @@ class AxpbyOp final : public Operator<Context> {
         beta_(OP_SINGLE_ARG(float, "beta", 1.f)) {}
   USE_OPERATOR_FUNCTIONS;
 
-  void RunOnDevice() override;
+  void RunOnDevice() override {
+    for (int i = 0; i < InputSize(); ++i) {
+      X_ = &Input(i), Y_ = Output(i);
+      DispatchHelper<dtypes::Numerical>::Call(this, *X_);
+    }
+  }
 
   template <typename T>
   void DoRunWithType();
 
  protected:
   float alpha_, beta_;
+  Tensor *X_, *Y_;
+};
+
+template <class Context>
+class NaNToNumOp final : public Operator<Context> {
+ public:
+  NaNToNumOp(const OperatorDef& def, Workspace* ws)
+      : Operator<Context>(def, ws),
+        nan_(OP_SINGLE_ARG(float, "nan", 0.f)),
+        pos_inf_(OP_SINGLE_ARG(float, "pos_inf", FLT_MAX)),
+        neg_inf_(OP_SINGLE_ARG(float, "neg_inf", -FLT_MAX)) {}
+  USE_OPERATOR_FUNCTIONS;
+
+  void RunOnDevice() override {
+    for (int i = 0; i < InputSize(); ++i) {
+      X_ = &Input(i), Y_ = Output(i);
+      DispatchHelper<dtypes::Floating>::Call(this, *X_);
+    }
+  }
+
+  template <typename T>
+  void DoRunWithType();
+
+ protected:
+  float nan_, pos_inf_, neg_inf_;
   Tensor *X_, *Y_;
 };
 
@@ -133,6 +163,93 @@ DECLARE_ELEMENTWISE_OP(MaximumGradient);
 DECLARE_ELEMENTWISE_OP(Where);
 DECLARE_ELEMENTWISE_OP(WhereGradient);
 #undef DECLARE_ELEMENTWISE_OP
+
+#ifdef USE_MLU
+template <class Context>
+class CNNLNaNToNumOp final : public Operator<Context> {
+ public:
+  CNNLNaNToNumOp(const OperatorDef& def, Workspace* ws)
+      : Operator<Context>(def, ws),
+        nan_(OP_SINGLE_ARG(float, "nan", 0.f)),
+        pos_inf_(OP_SINGLE_ARG(float, "pos_inf", FLT_MAX)),
+        neg_inf_(OP_SINGLE_ARG(float, "neg_inf", -FLT_MAX)) {
+    CNNLCreateTensorDesc(&input_desc_);
+  }
+  USE_OPERATOR_FUNCTIONS;
+
+  ~CNNLNaNToNumOp() {
+    CNNLDestroyTensorDesc(input_desc_);
+  }
+
+  void RunOnDevice() override {
+    for (int i = 0; i < InputSize(); ++i) {
+      X_ = &Input(i), Y_ = Output(i);
+      DispatchHelper<dtypes::Floating>::Call(this, *X_);
+    }
+  }
+
+  template <typename T>
+  void DoRunWithType();
+
+ protected:
+  float nan_, pos_inf_, neg_inf_;
+  Tensor *X_, *Y_;
+  cnnlTensorDescriptor_t input_desc_;
+};
+
+#define DECLARE_ELEMENTWISE_OP(name)                      \
+  template <class Context>                                \
+  class CNNL##name##Op : public Operator<Context> {       \
+   public:                                                \
+    CNNL##name##Op(const OperatorDef& def, Workspace* ws) \
+        : Operator<Context>(def, ws) {                    \
+      CNNLCreateTensorDesc(&input_desc_);                 \
+      CNNLCreateTensorDesc(&output_desc_);                \
+    }                                                     \
+    USE_OPERATOR_FUNCTIONS;                               \
+    ~CNNL##name##Op() {                                   \
+      CNNLDestroyTensorDesc(input_desc_);                 \
+      CNNLDestroyTensorDesc(output_desc_);                \
+    }                                                     \
+    void RunOnDevice() override;                          \
+    template <typename T>                                 \
+    void DoRunWithType();                                 \
+                                                          \
+   protected:                                             \
+    cnnlTensorDescriptor_t input_desc_, output_desc_;     \
+  };
+
+#define DECLARE_ELEMENTWISE_GRAD_OP(name)                     \
+  template <class Context>                                    \
+  class CNNL##name##Op : public Operator<Context> {           \
+   public:                                                    \
+    CNNL##name##Op(const OperatorDef& def, Workspace* ws)     \
+        : Operator<Context>(def, ws) {                        \
+      reduce_impl_.SetReducer(CNNL_REDUCE_ADD);               \
+    }                                                         \
+    USE_OPERATOR_FUNCTIONS;                                   \
+    void RunOnDevice() override {                             \
+      DispatchHelper<dtypes::Floating>::Call(this, Input(0)); \
+    }                                                         \
+    template <typename T>                                     \
+    void DoRunWithType();                                     \
+                                                              \
+   protected:                                                 \
+    CNNLReduceOpImpl reduce_impl_;                            \
+  };
+
+DECLARE_ELEMENTWISE_OP(IsInf);
+DECLARE_ELEMENTWISE_OP(IsNaN);
+DECLARE_ELEMENTWISE_OP(IsFinite);
+DECLARE_ELEMENTWISE_GRAD_OP(AddGradient);
+DECLARE_ELEMENTWISE_GRAD_OP(SubGradient);
+DECLARE_ELEMENTWISE_GRAD_OP(MulGradient);
+DECLARE_ELEMENTWISE_GRAD_OP(DivGradient);
+DECLARE_ELEMENTWISE_GRAD_OP(MinimumGradient);
+DECLARE_ELEMENTWISE_GRAD_OP(MaximumGradient);
+#undef DECLARE_ELEMENTWISE_OP
+#undef DECLARE_ELEMENTWISE_GRAD_OP
+#endif // USE_MLU
 
 } // namespace dragon
 

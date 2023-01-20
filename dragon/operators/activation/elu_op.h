@@ -56,7 +56,6 @@ class EluGradientOp : public Operator<Context> {
 };
 
 #ifdef USE_CUDNN
-
 template <class Context>
 class CuDNNEluOp final : public EluOp<Context> {
  public:
@@ -69,7 +68,7 @@ class CuDNNEluOp final : public EluOp<Context> {
   USE_OPERATOR_FUNCTIONS;
 
   ~CuDNNEluOp() {
-    CuDNNDestroyTensorDesc(&input_desc_);
+    CuDNNDestroyTensorDesc(input_desc_);
     CUDNN_CHECK(cudnnDestroyActivationDescriptor(act_desc_));
   }
 
@@ -98,7 +97,7 @@ class CuDNNEluGradientOp final : public EluGradientOp<Context> {
   USE_OPERATOR_FUNCTIONS;
 
   ~CuDNNEluGradientOp() {
-    CuDNNDestroyTensorDesc(&input_desc_);
+    CuDNNDestroyTensorDesc(input_desc_);
     CUDNN_CHECK(cudnnDestroyActivationDescriptor(act_desc_));
   }
 
@@ -113,8 +112,63 @@ class CuDNNEluGradientOp final : public EluGradientOp<Context> {
   cudnnTensorDescriptor_t input_desc_;
   cudnnActivationDescriptor_t act_desc_;
 };
-
 #endif // USE_CUDNN
+
+#ifdef USE_MLU
+template <class Context>
+class CNNLEluOp : public Operator<Context> {
+ public:
+  CNNLEluOp(const OperatorDef& def, Workspace* ws)
+      : Operator<Context>(def, ws), alpha_(OP_SINGLE_ARG(float, "alpha", 1.f)) {
+    CNNLCreateTensorDesc(&input_desc_);
+    CNNL_CHECK(cnnlCreateActivationDescriptor(&act_desc_));
+    CNNL_CHECK(cnnlSetActivationDescriptor_v6(
+        act_desc_,
+        CNNL_ACTIVATION_ELU,
+        CNNL_ACTIVATION_FAST,
+        CNNL_PROPAGATE_NAN,
+        alpha_,
+        0,
+        1.f, // gamma
+        1.f, // scale
+        true,
+        false));
+  }
+  USE_OPERATOR_FUNCTIONS;
+
+  ~CNNLEluOp() {
+    CNNLDestroyTensorDesc(input_desc_);
+    CNNL_CHECK(cnnlDestroyActivationDescriptor(act_desc_));
+  }
+
+  void RunOnDevice() override {
+    DispatchHelper<dtypes::Floating>::Call(this, Input(0));
+  }
+
+  template <typename T>
+  void DoRunWithType();
+
+ protected:
+  float alpha_;
+  cnnlTensorDescriptor_t input_desc_;
+  cnnlActivationDescriptor_t act_desc_;
+};
+
+template <class Context>
+class CNNLEluGradientOp final : public CNNLEluOp<Context> {
+ public:
+  CNNLEluGradientOp(const OperatorDef& def, Workspace* ws)
+      : CNNLEluOp<Context>(def, ws) {}
+  USE_OPERATOR_FUNCTIONS;
+
+  void RunOnDevice() override {
+    DispatchHelper<dtypes::Floating>::Call(this, Input(0));
+  }
+
+  template <typename T>
+  void DoRunWithType();
+};
+#endif // USE_MLU
 
 } // namespace dragon
 

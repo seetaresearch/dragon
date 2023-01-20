@@ -146,6 +146,21 @@ DEPLOY_MPS_OPERATOR(UnsqueezeGradient, UnsqueezeGradient);
 REGISTER_MPS_OPERATOR(IdentityGradient, IdentityOp<MPSContext>);
 #endif
 
+#ifdef USE_MLU
+DEPLOY_MLU_OPERATOR(Reshape);
+DEPLOY_MLU_OPERATOR(Flatten);
+DEPLOY_MLU_OPERATOR(Squeeze);
+DEPLOY_MLU_OPERATOR(Unsqueeze);
+DEPLOY_MLU_OPERATOR(Identity);
+DEPLOY_MLU_OPERATOR(ReshapeGradient);
+DEPLOY_MLU_OPERATOR(FlattenGradient);
+DEPLOY_MLU_OPERATOR(SqueezeGradient);
+DEPLOY_MLU_OPERATOR(UnsqueezeGradient);
+REGISTER_MLU_OPERATOR(IdentityGradient, IdentityOp<MLUContext>);
+#endif
+
+DEFINE_OP_REPEATED_ARG(int64_t, ReshapeOp, dims);
+
 OPERATOR_SCHEMA(Reshape).NumInputs(1).NumOutputs(1).AllowInplace({{0, 0}});
 OPERATOR_SCHEMA(Flatten).NumInputs(1).NumOutputs(1).AllowInplace({{0, 0}});
 OPERATOR_SCHEMA(Squeeze).NumInputs(1).NumOutputs(1).AllowInplace({{0, 0}});

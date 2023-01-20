@@ -235,6 +235,20 @@ DEPLOY_MPS_OPERATOR(MaximumGradient, MaximumGradient);
 DEPLOY_MPS_OPERATOR(MinimumGradient, MinimumGradient);
 #endif
 
+#ifdef USE_MLU
+DEPLOY_MLU_OPERATOR(AbsGradient);
+DEPLOY_MLU_OPERATOR(CosGradient);
+DEPLOY_MLU_OPERATOR(ExpGradient);
+DEPLOY_MLU_OPERATOR(LogGradient);
+DEPLOY_MLU_OPERATOR(NegGradient);
+DEPLOY_MLU_OPERATOR(ReciprocalGradient);
+DEPLOY_MLU_OPERATOR(RsqrtGradient);
+DEPLOY_MLU_OPERATOR(SignGradient);
+DEPLOY_MLU_OPERATOR(SinGradient);
+DEPLOY_MLU_OPERATOR(SqrtGradient);
+DEPLOY_MLU_OPERATOR(SquareGradient);
+#endif
+
 OPERATOR_SCHEMA(AbsGradient).NumInputs(2).NumOutputs(1);
 OPERATOR_SCHEMA(CosGradient).NumInputs(2).NumOutputs(1);
 OPERATOR_SCHEMA(ExpGradient).NumInputs(2).NumOutputs(1).AllowInplace({{1, 0}});

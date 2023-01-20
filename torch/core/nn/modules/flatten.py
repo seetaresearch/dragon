@@ -18,7 +18,7 @@ from dragon.vm.torch.core.nn.modules.module import Module
 
 
 class Flatten(Module):
-    """Flatten the dimensions of input.
+    """Flatten input dimensions.
 
     Examples:
 

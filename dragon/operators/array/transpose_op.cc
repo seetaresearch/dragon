@@ -64,6 +64,8 @@ DEPLOY_MPS_OPERATOR(Transpose, Transpose);
 REGISTER_MPS_OPERATOR(TransposeGradient, TransposeOp<MPSContext>);
 #endif
 
+DEFINE_OP_REPEATED_ARG(int64_t, TransposeOp, perm);
+
 OPERATOR_SCHEMA(Transpose).NumInputs(1).NumOutputs(1).AllowInplace({{0, 0}});
 OPERATOR_SCHEMA(TransposeGradient)
     .NumInputs(1)

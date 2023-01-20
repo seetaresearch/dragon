@@ -14,7 +14,7 @@ from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
 
-from dragon.vm.torch.core.nn import functional as F
+from dragon.vm.torch.core.nn import functional
 from dragon.vm.torch.core.nn import _reduction
 from dragon.vm.torch.core.nn.modules.module import Module
 
@@ -50,7 +50,7 @@ class _WeightedLoss(_Loss):
 
 
 class CTCLoss(_Loss):
-    r"""Compute the ctc loss with batched labels.
+    r"""Compute ctc loss with batched labels.
     `[Graves & Gomez, 2006] <http://www.cs.utoronto.ca/~graves/icml_2006.pdf>`_.
 
     Examples:
@@ -90,7 +90,7 @@ class CTCLoss(_Loss):
         self.padding_mask = padding_mask
 
     def forward(self, input, target):
-        return F.ctc_loss(
+        return functional.ctc_loss(
             input, target,
             padding_mask=self.padding_mask,
             reduction=self.reduction,
@@ -98,7 +98,7 @@ class CTCLoss(_Loss):
 
 
 class NLLLoss(_WeightedLoss):
-    r"""Compute the negative likelihood loss.
+    r"""Compute negative likelihood loss.
 
     The NLL loss function is defined as:
 
@@ -147,7 +147,7 @@ class NLLLoss(_WeightedLoss):
         self.ignore_index = ignore_index
 
     def forward(self, input, target):
-        return F.nll_loss(
+        return functional.nll_loss(
             input, target,
             reduction=self.reduction,
             ignore_index=self.ignore_index,
@@ -155,7 +155,7 @@ class NLLLoss(_WeightedLoss):
 
 
 class BCEWithLogitsLoss(_WeightedLoss):
-    r"""Compute the sigmoid cross entropy.
+    r"""Compute sigmoid cross entropy.
 
     Examples:
 
@@ -196,12 +196,12 @@ class BCEWithLogitsLoss(_WeightedLoss):
             weight, size_average, reduce, reduction)
 
     def forward(self, input, target):
-        return F.binary_cross_entropy_with_logits(
+        return functional.binary_cross_entropy_with_logits(
             input, target, reduction=self.reduction)
 
 
 class CrossEntropyLoss(_WeightedLoss):
-    r"""Compute the softmax cross entropy.
+    r"""Compute softmax cross entropy.
 
     The **CrossEntropy** function is defined as:
 
@@ -224,6 +224,7 @@ class CrossEntropyLoss(_WeightedLoss):
 
     def __init__(
         self,
+        dim=1,
         weight=None,
         size_average=None,
         ignore_index=None,
@@ -234,6 +235,8 @@ class CrossEntropyLoss(_WeightedLoss):
 
         Parameters
         ----------
+        dim : int, optional, default=1
+            The dimension to reduce.
         weight : dragon.vm.torch.Tensor, optional
             The weight for each class.
         size_average : bool, optional
@@ -248,18 +251,20 @@ class CrossEntropyLoss(_WeightedLoss):
         """
         super(CrossEntropyLoss, self).__init__(
             weight, size_average, reduce, reduction)
+        self.dim = dim
         self.ignore_index = ignore_index
 
     def forward(self, input, target):
-        return F.cross_entropy(
+        return functional.cross_entropy(
             input, target,
+            dim=self.dim,
             reduction=self.reduction,
             ignore_index=self.ignore_index,
         )
 
 
 class KLDivLoss(_Loss):
-    """Compute the Kullback-Leibler divergence.
+    """Compute Kullback-Leibler divergence.
 
     Examples:
 
@@ -303,7 +308,7 @@ class KLDivLoss(_Loss):
         self.log_target = log_target
 
     def forward(self, input, target):
-        return F.kl_div(
+        return functional.kl_div(
             input, target,
             reduction=self.reduction,
             log_target=self.log_target,
@@ -311,7 +316,7 @@ class KLDivLoss(_Loss):
 
 
 class L1Loss(_Loss):
-    r"""Compute the element-wise absolute value difference.
+    r"""Compute element-wise absolute value difference.
 
     The ``L1Loss`` function is defined as:
 
@@ -346,11 +351,11 @@ class L1Loss(_Loss):
         super(L1Loss, self).__init__(size_average, reduce, reduction)
 
     def forward(self, input, target):
-        return F.l1_loss(input, target, reduction=self.reduction)
+        return functional.l1_loss(input, target, reduction=self.reduction)
 
 
 class MSELoss(_Loss):
-    r"""Compute the element-wise squared error.
+    r"""Compute element-wise squared error.
 
     The ``MSELoss`` function is defined as:
 
@@ -385,11 +390,11 @@ class MSELoss(_Loss):
         super(MSELoss, self).__init__(size_average, reduce, reduction)
 
     def forward(self, input, target):
-        return F.mse_loss(input, target, reduction=self.reduction)
+        return functional.mse_loss(input, target, reduction=self.reduction)
 
 
 class SmoothL1Loss(_Loss):
-    r"""Compute the element-wise error transited from L1 and L2.
+    r"""Compute element-wise error transited from L1 and L2.
     `[Girshick, 2015] <https://arxiv.org/abs/1504.08083>`_.
 
     The **SmoothL1Loss** function is defined as:
@@ -439,7 +444,7 @@ class SmoothL1Loss(_Loss):
         self.beta = beta
 
     def forward(self, input, target):
-        return F.smooth_l1_loss(
+        return functional.smooth_l1_loss(
             input, target,
             beta=self.beta,
             reduction=self.reduction,
@@ -447,7 +452,7 @@ class SmoothL1Loss(_Loss):
 
 
 class SigmoidFocalLoss(_WeightedLoss):
-    r"""Compute the sigmoid focal loss.
+    r"""Compute sigmoid focal loss.
     `[Lin et.al, 2017] <https://arxiv.org/abs/1708.02002>`__.
 
     The **FocalLoss** function is defined as:
@@ -505,7 +510,7 @@ class SigmoidFocalLoss(_WeightedLoss):
         self.start_index = start_index
 
     def forward(self, input, target):
-        return F.sigmoid_focal_loss(
+        return functional.sigmoid_focal_loss(
             input, target,
             alpha=self.alpha,
             gamma=self.gamma,

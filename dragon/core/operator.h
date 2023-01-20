@@ -14,6 +14,7 @@
 #define DRAGON_CORE_OPERATOR_H_
 
 #include "dragon/core/context_cuda.h"
+#include "dragon/core/context_mlu.h"
 #include "dragon/core/context_mps.h"
 #include "dragon/core/gradient.h"
 #include "dragon/core/operator_schema.h"
@@ -408,6 +409,18 @@ DECLARE_REGISTRY(
     const OperatorDef&,
     Workspace*);
 
+DECLARE_REGISTRY(
+    MLUOperatorRegistry,
+    OperatorBase,
+    const OperatorDef&,
+    Workspace*);
+
+DECLARE_REGISTRY(
+    CNNLOperatorRegistry,
+    OperatorBase,
+    const OperatorDef&,
+    Workspace*);
+
 #define INSTANTIATE_OPERATOR(name, context) template class name##Op<context>;
 
 #define REGISTER_CPU_OPERATOR(name, ...) \
@@ -421,6 +434,12 @@ DECLARE_REGISTRY(
 
 #define REGISTER_MPS_OPERATOR(name, ...) \
   REGISTER_CLASS(MPSOperatorRegistry, name, __VA_ARGS__)
+
+#define REGISTER_MLU_OPERATOR(name, ...) \
+  REGISTER_CLASS(MLUOperatorRegistry, name, __VA_ARGS__)
+
+#define REGISTER_CNNL_OPERATOR(name, ...) \
+  REGISTER_CLASS(CNNLOperatorRegistry, name, __VA_ARGS__)
 
 #define DEPLOY_CPU_OPERATOR(name)                    \
   REGISTER_CPU_OPERATOR(name, name##Op<CPUContext>); \
@@ -442,6 +461,14 @@ DECLARE_REGISTRY(
 #define DEPLOY_MPS_OPERATOR(name, op_name)              \
   REGISTER_MPS_OPERATOR(name, op_name##Op<MPSContext>); \
   INSTANTIATE_OPERATOR(op_name, MPSContext);
+
+#define DEPLOY_MLU_OPERATOR(name)                    \
+  REGISTER_MLU_OPERATOR(name, name##Op<MLUContext>); \
+  INSTANTIATE_OPERATOR(name, MLUContext);
+
+#define DEPLOY_CNNL_OPERATOR(name)                          \
+  REGISTER_CNNL_OPERATOR(name, CNNL##name##Op<MLUContext>); \
+  INSTANTIATE_OPERATOR(CNNL##name, MLUContext);
 
 } // namespace dragon
 

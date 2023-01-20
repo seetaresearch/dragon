@@ -29,8 +29,11 @@ def get_build_info():
     * cuda_version
     * cudnn_version
     * mps_version
+    * cnrt_version
+    * cnnl_version
     * is_cuda_build
     * is_mps_build
+    * is_mlu_build
     * third_party
 
     Returns
@@ -47,6 +50,7 @@ def get_build_info():
             build_info[k] = v[1:]
     build_info['is_cuda_build'] = 'cuda_version' in build_info
     build_info['is_mps_build'] = 'mps_version' in build_info
+    build_info['is_mlu_build'] = 'cnrt_version' in build_info
     return build_info
 
 

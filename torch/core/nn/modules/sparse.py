@@ -14,7 +14,7 @@ from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
 
-from dragon.vm.torch.core.nn import functional as F
+from dragon.vm.torch.core.nn import functional
 from dragon.vm.torch.core.nn import init
 from dragon.vm.torch.core.nn.modules.module import Module
 from dragon.vm.torch.core.nn.parameter import Parameter
@@ -58,4 +58,4 @@ class Embedding(Module):
             self.weight[self.padding_idx] = 0
 
     def forward(self, input):
-        return F.embedding(input, self.weight, self.padding_idx)
+        return functional.embedding(input, self.weight, self.padding_idx)

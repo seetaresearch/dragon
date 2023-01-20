@@ -10,28 +10,19 @@ void ConvTransposeOp<Context>::DoRunWithType() {
   auto &X = Input(0), &W = Input(1), *Y = Output(0);
   ConvOpBase<Context>::Reshape();
   INITIALIZE_TENSOR_VIA_SPEC(W, w_shape_, T);
+  if (HasBias()) INITIALIZE_TENSOR_VIA_SPEC(Input(2), b_shape_, T);
 
   auto* x = X.template data<T, Context>();
   auto* w = W.template data<T, Context>();
   auto* y = Y->template mutable_data<T, Context>();
 
   for (int i = 0; i < X.dim(0); ++i) {
-    GradX(x + i * X_stride_, w, y + i * Y_stride_);
+    BwdData(x + i * X_stride_, w, y + i * Y_stride_);
   }
 
   if (HasBias()) {
-    INITIALIZE_TENSOR_VIA_SPEC(Input(2), b_shape_, T);
-    AddBias(Input(2).template data<T, Context>(), y);
+    FwdBias(Input(2).template data<T, Context>(), y);
   }
-}
-
-template <class Context>
-void ConvTransposeOp<Context>::RunOnDevice() {
-  if (data_format() == "NHWC" && group_ != 1) {
-    // You really need the CuDNN to help you -:)
-    LOG(FATAL) << "GroupConv(NHWC) is not supported.";
-  }
-  DispatchHelper<dtypes::Floating>::Call(this, Input(0));
 }
 
 template <class Context>
@@ -41,12 +32,13 @@ void ConvTransposeGradientOp<Context>::DoRunWithType() {
   auto *dX = Output(0), *dW = Output(1), *dB = Output(2);
   ConvOpBase<Context>::Reshape(true);
 
+  auto* dy = dY.template data<T, Context>();
+
   if (dX->has_name()) {
-    auto* dy = dY.template data<T, Context>();
     auto* w = W.template data<T, Context>();
     auto* dx = dX->template mutable_data<T, Context>();
     for (int i = 0; i < X.dim(0); ++i) {
-      WeightedX(dy + i * Y_stride_, w, dx + i * X_stride_);
+      FwdData(dy + i * Y_stride_, w, dx + i * X_stride_);
     }
   }
 
@@ -55,33 +47,19 @@ void ConvTransposeGradientOp<Context>::DoRunWithType() {
     auto* dy = dY.template data<T, Context>();
     auto* dw = dW->template mutable_data<T, Context>();
     for (int i = 0; i < X.dim(0); ++i) {
-      GradW(x + i * X_stride_, dy + i * Y_stride_, dw, i > 0);
+      BwdFilter(x + i * X_stride_, dy + i * Y_stride_, dw, i > 0);
     }
   }
 
   if (dB->has_name()) {
-    GradBias(
-        dY.template data<T, Context>(),
-        dB->template mutable_data<T, Context>());
+    BwdBias(dy, dB->template mutable_data<T, Context>());
   }
-}
-
-template <class Context>
-void ConvTransposeGradientOp<Context>::RunOnDevice() {
-  if (data_format() == "NHWC" && group_ != 1) {
-    // You really need the CuDNN to help you -:)
-    LOG(FATAL) << "GroupConv(NHWC) is not supported.";
-  }
-  DispatchHelper<dtypes::Floating>::Call(this, Input(0));
 }
 
 DEPLOY_CPU_OPERATOR(ConvTranspose);
-#ifdef USE_CUDA
-DEPLOY_CUDA_OPERATOR(ConvTranspose);
-#endif
-
 DEPLOY_CPU_OPERATOR(ConvTransposeGradient);
 #ifdef USE_CUDA
+DEPLOY_CUDA_OPERATOR(ConvTranspose);
 DEPLOY_CUDA_OPERATOR(ConvTransposeGradient);
 #endif
 

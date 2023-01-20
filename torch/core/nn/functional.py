@@ -21,7 +21,7 @@ from dragon.vm.torch.core.nn.modules import utils
 
 
 def adaptive_avg_pool1d(input, output_size):
-    """Apply the 1d adaptive average pooling to input.
+    """Apply 1d adaptive average pooling to input.
 
     Parameters
     ----------
@@ -40,13 +40,12 @@ def adaptive_avg_pool1d(input, output_size):
     `torch.nn.AdaptiveAvgPool1d(...)`_
 
     """
-    args = utils._get_adaptive_pool_args(
-        input.size()[-1:], utils._single(output_size))
+    args = utils._get_adaptive_pool_args(input, utils._single(output_size))
     return _pool('AVG', utils._single, input, **args)
 
 
 def adaptive_avg_pool2d(input, output_size):
-    """Apply the 2d adaptive average pooling to input.
+    """Apply 2d adaptive average pooling to input.
 
     Parameters
     ----------
@@ -65,13 +64,12 @@ def adaptive_avg_pool2d(input, output_size):
     `torch.nn.AdaptiveAvgPool2d(...)`_
 
     """
-    args = utils._get_adaptive_pool_args(
-        input.size()[-2:], utils._pair(output_size))
+    args = utils._get_adaptive_pool_args(input, utils._pair(output_size))
     return _pool('AVG', utils._pair, input, **args)
 
 
 def adaptive_avg_pool3d(input, output_size):
-    """Apply the 3d adaptive average pooling to input.
+    """Apply 3d adaptive average pooling to input.
 
     Parameters
     ----------
@@ -90,13 +88,12 @@ def adaptive_avg_pool3d(input, output_size):
     `torch.nn.AdaptiveAvgPool3d(...)`_
 
     """
-    args = utils._get_adaptive_pool_args(
-        input.size()[-3:], utils._triple(output_size))
+    args = utils._get_adaptive_pool_args(input, utils._triple(output_size))
     return _pool('AVG', utils._triple, input, **args)
 
 
 def adaptive_max_pool1d(input, output_size):
-    """Apply the 1d adaptive max pooling to input.
+    """Apply 1d adaptive max pooling to input.
 
     Parameters
     ----------
@@ -115,13 +112,12 @@ def adaptive_max_pool1d(input, output_size):
     `torch.nn.AdaptiveMaxPool1d(...)`_
 
     """
-    args = utils._get_adaptive_pool_args(
-        input.size()[-1:], utils._single(output_size))
+    args = utils._get_adaptive_pool_args(input, utils._single(output_size))
     return _pool('MAX', utils._single, input, **args)
 
 
 def adaptive_max_pool2d(input, output_size):
-    """Apply the 2d adaptive max pooling to input.
+    """Apply 2d adaptive max pooling to input.
 
     Parameters
     ----------
@@ -140,13 +136,12 @@ def adaptive_max_pool2d(input, output_size):
     `torch.nn.AdaptiveMaxPool2d(...)`_
 
     """
-    args = utils._get_adaptive_pool_args(
-        input.size()[-2:], utils._pair(output_size))
+    args = utils._get_adaptive_pool_args(input, utils._pair(output_size))
     return _pool('MAX', utils._pair, input, **args)
 
 
 def adaptive_max_pool3d(input, output_size):
-    """Apply the 3d adaptive max pooling to input.
+    """Apply 3d adaptive max pooling to input.
 
     Parameters
     ----------
@@ -165,8 +160,7 @@ def adaptive_max_pool3d(input, output_size):
     `torch.nn.AdaptiveMaxPool3d(...)`_
 
     """
-    args = utils._get_adaptive_pool_args(
-        input.size()[-3:], utils._triple(output_size))
+    args = utils._get_adaptive_pool_args(input, utils._triple(output_size))
     return _pool('MAX', utils._triple, input, **args)
 
 
@@ -205,7 +199,7 @@ def affine(input, weight, bias=None, dim=-1, out=None):
 
 
 def avg_pool1d(input, kernel_size, stride=1, padding=0, ceil_mode=False):
-    """Apply the 1d average pooling to input.
+    """Apply 1d average pooling to input.
 
     Parameters
     ----------
@@ -234,7 +228,7 @@ def avg_pool1d(input, kernel_size, stride=1, padding=0, ceil_mode=False):
 
 
 def avg_pool2d(input, kernel_size, stride=1, padding=0, ceil_mode=False):
-    """Apply the 2d average pooling to input.
+    """Apply 2d average pooling to input.
 
     Parameters
     ----------
@@ -263,7 +257,7 @@ def avg_pool2d(input, kernel_size, stride=1, padding=0, ceil_mode=False):
 
 
 def avg_pool3d(input, kernel_size, stride=1, padding=0, ceil_mode=False):
-    """Apply the 3d average pooling to input.
+    """Apply 3d average pooling to input.
 
     Parameters
     ----------
@@ -301,7 +295,7 @@ def batch_norm(
     momentum=0.1,
     eps=1e-5,
 ):
-    """Apply the batch normalization to input.
+    """Apply batch normalization to input.
     `[Ioffe & Szegedy, 2015] <https://arxiv.org/abs/1502.03167>`_.
 
     Parameters
@@ -336,7 +330,9 @@ def batch_norm(
     return Function.apply(
         'BatchNorm', input.device,
         [input, weight, bias, running_mean, running_var],
-        axis=1, epsilon=eps, use_stats=int(not training),
+        axis=-1 if input.device.type == 'mlu' else 1,
+        epsilon=eps,
+        use_stats=int(not training),
         momentum=1.0 - momentum)
 
 
@@ -349,7 +345,7 @@ def binary_cross_entropy_with_logits(
     reduction='mean',
     pos_weight=None,
 ):
-    """Compute the sigmoid cross entropy with contiguous target.
+    """Compute sigmoid cross entropy.
 
     Parameters
     ----------
@@ -388,7 +384,7 @@ def binary_cross_entropy_with_logits(
 
 
 def channel_norm(input, mean, std, dim=-1, dtype='float32', dims=None):
-    """Apply the normalization to each channel of input.
+    """Apply normalization to each channel of input.
 
     :attr:`dim` can be negative:
 
@@ -436,7 +432,7 @@ def channel_norm(input, mean, std, dim=-1, dtype='float32', dims=None):
         ndim=len(dims) if dims is not None else 0, perm=dims)
 
 
-def channel_shuffle(input, groups):
+def channel_shuffle(input, groups, dim=1):
     """Apply group shuffle to each channel of input.
     `[Zhang et.al, 2017] <https://arxiv.org/abs/1707.01083>`_.
 
@@ -446,6 +442,8 @@ def channel_shuffle(input, groups):
         The input tensor.
     groups : int
         The number of shuffle groups.
+    dim : int, optional, default=1
+        The channel dimension.
 
     Returns
     -------
@@ -458,7 +456,7 @@ def channel_shuffle(input, groups):
 
     """
     return Function.apply(
-        'ChannelShuffle', input.device, [input], axis=1, group=groups)
+        'ChannelShuffle', input.device, [input], axis=dim, group=groups)
 
 
 def conv1d(
@@ -470,7 +468,7 @@ def conv1d(
     dilation=1,
     groups=1,
 ):
-    """Apply the 1d convolution to input.
+    """Apply 1d convolution to input.
 
     Parameters
     ----------
@@ -511,7 +509,7 @@ def conv2d(
     dilation=1,
     groups=1,
 ):
-    """Apply the 2d convolution to input.
+    """Apply 2d convolution to input.
 
     Parameters
     ----------
@@ -552,7 +550,7 @@ def conv3d(
     dilation=1,
     groups=1,
 ):
-    """Apply the 3d convolution to input.
+    """Apply 3d convolution to input.
 
     Parameters
     ----------
@@ -594,7 +592,7 @@ def conv_transpose1d(
     groups=1,
     dilation=1,
 ):
-    """Apply the 1d deconvolution to input.
+    """Apply 1d deconvolution to input.
 
     Parameters
     ----------
@@ -638,7 +636,7 @@ def conv_transpose2d(
     groups=1,
     dilation=1,
 ):
-    """Apply the 2d deconvolution to input.
+    """Apply 2d deconvolution to input.
 
     Parameters
     ----------
@@ -682,7 +680,7 @@ def conv_transpose3d(
     groups=1,
     dilation=1,
 ):
-    """Apply the 3d deconvolution to input.
+    """Apply 3d deconvolution to input.
 
     Parameters
     ----------
@@ -717,7 +715,7 @@ def conv_transpose3d(
 
 
 def cosine_similarity(x1, x2, dim=1, eps=1e-8):
-    """Compute the cosine similarity between inputs.
+    """Compute cosine similarity between inputs.
 
     Parameters
     ----------
@@ -748,13 +746,14 @@ def cosine_similarity(x1, x2, dim=1, eps=1e-8):
 def cross_entropy(
     input,
     target,
+    dim=1,
     weight=None,
     size_average=None,
     ignore_index=None,
     reduce=None,
     reduction='mean',
 ):
-    """Compute the softmax cross entropy with sparse target.
+    """Compute softmax cross entropy with sparse target.
 
     Parameters
     ----------
@@ -762,6 +761,8 @@ def cross_entropy(
         The input tensor.
     target : dragon.vm.torch.Tensor
         The target tensor.
+    dim : int, optional, default=1
+        The dimension to reduce.
     weight : dragon.vm.torch.Tensor, optional
         The weight for each class.
     size_average : bool, optional
@@ -789,11 +790,11 @@ def cross_entropy(
         reduction = reduction
     return Function.apply(
         'SoftmaxCrossEntropyLoss', input.device, [input, target],
-        axis=1, ignore_index=ignore_index, reduction=reduction.upper())
+        axis=dim, ignore_index=ignore_index, reduction=reduction.upper())
 
 
 def ctc_loss(input, target, padding_mask=-1, reduction='mean'):
-    """Compute the ctc loss.
+    """Compute ctc loss.
     `[Graves & Gomez, 2006] <http://www.cs.utoronto.ca/~graves/icml_2006.pdf>`_.
 
     Parameters
@@ -830,7 +831,7 @@ def depthwise_conv2d(
     padding=0,
     dilation=1,
 ):
-    """Apply the 2d depthwise convolution to input.
+    """Apply 2d depthwise convolution to input.
 
     Parameters
     ----------
@@ -861,7 +862,7 @@ def depthwise_conv2d(
 
 
 def dropout(input, p=0.5, training=True, inplace=False):
-    """Set the elements of the input to zero randomly.
+    """Set elements of the input to zero randomly.
     `[Srivastava et.al, 2014] <http://jmlr.org/papers/v15/srivastava14a.html>`_.
 
     Parameters
@@ -893,7 +894,7 @@ def dropout(input, p=0.5, training=True, inplace=False):
 
 
 def drop_block2d(input, p=0.5, block_size=1, training=True, inplace=False):
-    """Set the blocks over input to zero randomly.
+    """Set blocks of input to zero randomly.
 
     Parameters
     ----------
@@ -926,7 +927,7 @@ def drop_block2d(input, p=0.5, block_size=1, training=True, inplace=False):
 
 
 def drop_path(input, p=0.2, training=True, inplace=False):
-    r"""Set the examples over input to zero randomly.
+    r"""Set examples of input to zero randomly.
     `[Larsson et.al, 2016] <https://arxiv.org/abs/1605.07648>`_.
 
     Parameters
@@ -958,7 +959,7 @@ def drop_path(input, p=0.2, training=True, inplace=False):
 
 
 def elu(input, alpha=1.0, inplace=False):
-    r"""Apply the exponential linear unit to input.
+    r"""Apply exponential linear unit to input.
     `[Clevert et.al, 2015] <https://arxiv.org/abs/1511.07289>`_.
 
     Parameters
@@ -1013,11 +1014,11 @@ def embedding(input, weight, padding_idx=None):
                 raise ValueError('<padding_idx> must be within embedding matrix.')
             padding_idx = num_embeddings + padding_idx
         weight[padding_idx] = 0
-    return weight.index_select(0, input)
+    return weight[input]
 
 
 def gelu(input, approximate='none'):
-    r"""Apply the gaussian error linear unit to input.
+    r"""Apply gaussian error linear unit to input.
     `[Clevert et.al, 2015] <https://arxiv.org/abs/1511.07289>`_.
 
     The **GELU** function is defined as:
@@ -1046,7 +1047,7 @@ def gelu(input, approximate='none'):
 
 
 def group_norm(input, num_groups, weight, bias, eps=1e-5):
-    """Apply the group normalization to input.
+    """Apply group normalization to input.
     `[Wu & He, 2018] <https://arxiv.org/abs/1803.08494>`_.
 
     Parameters
@@ -1078,7 +1079,7 @@ def group_norm(input, num_groups, weight, bias, eps=1e-5):
 
 
 def hardsigmoid(input, inplace=False):
-    r"""Apply the hard sigmoid function to input.
+    r"""Apply hard sigmoid function to input.
 
     The **HardSigmoid** function is defined as:
 
@@ -1112,7 +1113,7 @@ def hardsigmoid(input, inplace=False):
 
 
 def hardswish(input):
-    r"""Apply the hard swish function to input.
+    r"""Apply hard swish function to input.
     `[Howard et.al, 2019] <https://arxiv.org/abs/1905.02244>`_.
 
     The **HardSwish** function is defined as:
@@ -1208,7 +1209,8 @@ def interpolate(
         mode=mode, align_corners=align_corners,
         num_sizes=len(size) if size is not None else 0,
         num_scales=len(scale_factor) if scale_factor is not None else 0,
-        sizes=size, scales=scale_factor)
+        sizes=size, scales=scale_factor,
+        data_format='NHWC' if input.device.type == 'mlu' else 'NCHW')
 
 
 def kl_div(
@@ -1219,7 +1221,7 @@ def kl_div(
     reduction='mean',
     log_target=False,
 ):
-    """Compute the Kullback-Leibler divergence.
+    """Compute Kullback-Leibler divergence.
 
     Parameters
     ----------
@@ -1265,7 +1267,7 @@ def kl_div(
 
 
 def l1_loss(input, target, size_average=None, reduce=None, reduction='mean'):
-    """Compute the element-wise absolute value difference.
+    """Compute element-wise absolute value difference.
 
     Parameters
     ----------
@@ -1300,7 +1302,7 @@ def l1_loss(input, target, size_average=None, reduce=None, reduction='mean'):
 
 
 def layer_norm(input, normalized_shape, weight, bias, eps=1e-5):
-    """Apply the layer normalization to input.
+    """Apply layer normalization to input.
     `[Ba et.al, 2016] <https://arxiv.org/abs/1607.06450>`_
 
     Parameters
@@ -1332,7 +1334,7 @@ def layer_norm(input, normalized_shape, weight, bias, eps=1e-5):
 
 
 def leaky_relu(input, negative_slope=0.01, inplace=False):
-    r"""Apply the leaky rectified linear unit to input.
+    r"""Apply leaky rectified linear unit to input.
 
     The **LeakyReLU** function is defined as:
 
@@ -1368,7 +1370,7 @@ def leaky_relu(input, negative_slope=0.01, inplace=False):
 
 
 def linear(input, weight, bias=None):
-    r"""Apply the linear transformation to input.
+    r"""Apply linear transformation to input.
 
     .. math:: \text{out} = \text{input} \times \text{weight}^{T} + \text{bias}
 
@@ -1398,7 +1400,7 @@ def linear(input, weight, bias=None):
 
 
 def local_response_norm(input, size, alpha=1e-4, beta=0.75, k=1.):
-    r"""Apply the local response normalization to input.
+    r"""Apply local response normalization to input.
     `[Krizhevsky et.al, 2012] <http://www.cs.toronto.edu/~hinton/absps/imagenet.pdf>`_.
 
     The normalization is defined as:
@@ -1437,7 +1439,7 @@ def local_response_norm(input, size, alpha=1e-4, beta=0.75, k=1.):
 
 
 def log_softmax(input, dim, inplace=False):
-    r"""Apply the composite of logarithm and softmax to input.
+    r"""Apply logarithm softmax function to input.
 
     The **LogSoftmax** function is defined as:
 
@@ -1491,7 +1493,7 @@ def lstm_cell(input, cx):
 
 
 def max_pool1d(input, kernel_size, stride=1, padding=0, ceil_mode=False):
-    """Apply the 1d max pooling to input.
+    """Apply 1d max pooling to input.
 
     Parameters
     ----------
@@ -1520,7 +1522,7 @@ def max_pool1d(input, kernel_size, stride=1, padding=0, ceil_mode=False):
 
 
 def max_pool2d(input, kernel_size, stride=1, padding=0, ceil_mode=False):
-    """Apply the 2d max pooling to input.
+    """Apply 2d max pooling to input.
 
     Parameters
     ----------
@@ -1549,7 +1551,7 @@ def max_pool2d(input, kernel_size, stride=1, padding=0, ceil_mode=False):
 
 
 def max_pool3d(input, kernel_size, stride=1, padding=0, ceil_mode=False):
-    """Apply the 3d max pooling to input.
+    """Apply 3d max pooling to input.
 
     Parameters
     ----------
@@ -1578,7 +1580,7 @@ def max_pool3d(input, kernel_size, stride=1, padding=0, ceil_mode=False):
 
 
 def mse_loss(input, target, size_average=None, reduce=None, reduction='mean'):
-    """Compute the element-wise squared error.
+    """Compute element-wise squared error.
 
     Parameters
     ----------
@@ -1632,7 +1634,7 @@ def multi_head_attention_forward(
     k_proj_weight=None,
     v_proj_weight=None,
 ):
-    """Apply the multihead attention to input.
+    """Apply multihead attention to input.
     `[Vaswani et.al, 2017] <https://arxiv.org/abs/1706.03762>`_.
 
     Parameters
@@ -1656,7 +1658,7 @@ def multi_head_attention_forward(
     out_proj_bias: dragon.vm.torch.Tensor
         The bias tensor for output projection.
     dropout_p: float, optional, default=0.
-        The probability to set the attention to zero.
+        The probability to set attention to zero.
     training: bool, optional, default=True
         Apply dropout if ``True``.
     need_weights : bool, optional, default=True
@@ -1759,7 +1761,7 @@ def nll_loss(
     reduce=None,
     reduction='mean',
 ):
-    """Compute the negative likelihood loss.
+    """Compute negative likelihood loss.
 
     Parameters
     ----------
@@ -1798,7 +1800,7 @@ def nll_loss(
 
 
 def normalize(input, p=2, dim=1, end_dim=None, eps=1e-12, out=None):
-    r"""Apply the :math:`L_{p}` normalization to the input.
+    r"""Apply :math:`L_{p}` normalization to the input.
 
     The :math:`L_{p}` normalization is defined as:
 
@@ -1831,7 +1833,7 @@ def normalize(input, p=2, dim=1, end_dim=None, eps=1e-12, out=None):
 
 
 def one_hot(tensor, num_classes, on_value=1, off_value=0):
-    """Return the one-hot representation of input.
+    """Return one-hot representation of input.
 
     Parameters
     ----------
@@ -1856,7 +1858,7 @@ def one_hot(tensor, num_classes, on_value=1, off_value=0):
 
 
 def pad(input, pad, mode='constant', value=0):
-    r"""Pad the input according to the given sizes.
+    r"""Pad input according to the given sizes.
 
     The padded dimension is computed as:
 
@@ -1921,7 +1923,8 @@ def pixel_shuffle(input, upscale_factor, inplace=False):
     return Function.apply(
         'DepthToSpace', input.device, [input],
         outputs=[input if inplace else None],
-        block_size=int(upscale_factor), mode='CRD', data_format='NCHW')
+        block_size=int(upscale_factor), mode='CRD',
+        data_format='NHWC' if input.device.type == 'mlu' else 'NCHW')
 
 
 def pixel_unshuffle(input, downscale_factor, inplace=False):
@@ -1945,7 +1948,8 @@ def pixel_unshuffle(input, downscale_factor, inplace=False):
     return Function.apply(
         'SpaceToDepth', input.device, [input],
         outputs=[input if inplace else None],
-        block_size=int(downscale_factor), mode='CRD', data_format='NCHW')
+        block_size=int(downscale_factor), mode='CRD',
+        data_format='NHWC' if input.device.type == 'mlu' else 'NCHW')
 
 
 def prelu(input, weight):
@@ -1982,7 +1986,7 @@ def prelu(input, weight):
 
 
 def relu(input, inplace=False):
-    r"""Apply the rectified linear unit to input.
+    r"""Apply rectified linear unit to input.
     `[Nair & Hinton, 2010] <http://www.csri.utoronto.ca/~hinton/absps/reluICML.pdf>`_.
 
     The **ReLU** function is defined as:
@@ -2017,7 +2021,7 @@ def relu(input, inplace=False):
 
 
 def relu6(input, inplace=False):
-    r"""Apply the clipped-6 rectified linear unit to input.
+    r"""Apply clipped-6 rectified linear unit to input.
     `[Krizhevsky, 2010] <http://www.cs.utoronto.ca/~kriz/conv-cifar10-aug2010.pdf>`_.
 
     The **ReLU-6** function is defined as:
@@ -2052,7 +2056,7 @@ def relu6(input, inplace=False):
 
 
 def selu(input, inplace=False):
-    r"""Apply the scaled exponential linear unit to input.
+    r"""Apply scaled exponential linear unit to input.
     `[Klambauer et.al, 2017] <https://arxiv.org/abs/1706.02515>`_.
 
     The **SELU** function is defined as:
@@ -2087,7 +2091,7 @@ def selu(input, inplace=False):
 
 
 def sigmoid(input, inplace=False):
-    r"""Apply the sigmoid function to input.
+    r"""Apply sigmoid function to input.
 
     The **Sigmoid** function is defined as:
 
@@ -2126,7 +2130,7 @@ def sigmoid_focal_loss(
     reduce=None,
     reduction='mean',
 ):
-    """Compute the sigmoid focal loss.
+    """Compute sigmoid focal loss.
     `[Lin et.al, 2017] <https://arxiv.org/abs/1708.02002>`__.
 
     Parameters
@@ -2171,7 +2175,7 @@ def sigmoid_focal_loss(
 
 
 def silu(input):
-    r"""Apply the sigmoid linear unit to input.
+    r"""Apply sigmoid linear unit to input.
     `[Hendrycks & Gimpel, 2016] <https://arxiv.org/abs/1606.08415>`_.
 
     The **SiLU** function is defined as:
@@ -2204,7 +2208,7 @@ def smooth_l1_loss(
     reduce=None,
     reduction='mean',
 ):
-    r"""Compute the element-wise error transited from L1 and L2.
+    r"""Compute element-wise error transited from L1 and L2.
     `[Girshick, 2015] <https://arxiv.org/abs/1504.08083>`_.
 
     The **SmoothL1Loss** function is defined as:
@@ -2251,7 +2255,7 @@ def smooth_l1_loss(
 
 
 def softmax(input, dim, inplace=False):
-    r"""Apply the softmax function to input.
+    r"""Apply softmax function to input.
 
     The **Softmax** function is defined as:
 
@@ -2292,7 +2296,7 @@ def sync_batch_norm(
     eps=1e-5,
     process_group=None,
 ):
-    r"""Apply the sync batch normalization over input.
+    r"""Apply sync batch normalization over input.
     `[Ioffe & Szegedy, 2015] <https://arxiv.org/abs/1502.03167>`_.
 
     Parameters
@@ -2333,12 +2337,13 @@ def sync_batch_norm(
     return Function.apply(
         'SyncBatchNorm', input.device,
         [input, weight, bias, running_mean, running_var],
-        axis=1, epsilon=eps, use_stats=int(not training),
+        axis=-1 if input.device.type == 'mlu' else 1,
+        epsilon=eps, use_stats=int(not training),
         momentum=1.0 - momentum, **process_group.arguments)
 
 
 def tanh(input, inplace=False):
-    r"""Apply the tanh function to input.
+    r"""Apply tanh function to input.
 
     The **Tanh** function is defined as:
 
@@ -2367,7 +2372,7 @@ def tanh(input, inplace=False):
 
 
 def unfold(input, kernel_size, dilation=1, padding=0, stride=1):
-    """Extract the sliding blocks from input.
+    """Extract sliding blocks from input.
 
     Parameters
     ----------
@@ -2554,6 +2559,7 @@ def _conv(
         bias=bias is not None,
         dtype=weight.dtype,
         input_shape=list(input.shape),
+        data_format='NHWC' if input.device.type == 'mlu' else 'NCHW',
     )
 
 
@@ -2586,6 +2592,7 @@ def _conv_transpose(
         bias=bias is not None,
         dtype=weight.dtype,
         input_shape=list(input.shape),
+        data_format='NHWC' if input.device.type == 'mlu' else 'NCHW',
     )
 
 
@@ -2608,4 +2615,5 @@ def _pool(
         pads=nd_util(padding),
         mode=pool_mode,
         ceil_mode=ceil_mode,
+        data_format='NHWC' if input.device.type == 'mlu' else 'NCHW',
     )

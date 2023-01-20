@@ -83,6 +83,10 @@ DEPLOY_CUDA_OPERATOR(LARS);
 DEPLOY_MPS_OPERATOR(MomentumSGD, MomentumSGD);
 DEPLOY_MPS_OPERATOR(NesterovSGD, NesterovSGD);
 #endif
+#ifdef USE_MLU
+DEPLOY_MLU_OPERATOR(MomentumSGD);
+DEPLOY_MLU_OPERATOR(NesterovSGD);
+#endif
 
 OPERATOR_SCHEMA(MomentumSGD).NumInputs(1, INT_MAX).NumOutputs(1, INT_MAX);
 OPERATOR_SCHEMA(NesterovSGD).NumInputs(1, INT_MAX).NumOutputs(1, INT_MAX);

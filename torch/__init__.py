@@ -23,6 +23,8 @@ from dragon.vm.torch._api import backends
 from dragon.vm.torch._api import cuda
 from dragon.vm.torch._api import distributed
 from dragon.vm.torch._api import jit
+from dragon.vm.torch._api import mlu
+from dragon.vm.torch._api import mps
 from dragon.vm.torch._api import nn
 from dragon.vm.torch._api import onnx
 from dragon.vm.torch._api import optim
@@ -130,6 +132,7 @@ from dragon.vm.torch.core.ops.math_ops import min
 from dragon.vm.torch.core.ops.math_ops import minimum
 from dragon.vm.torch.core.ops.math_ops import mm
 from dragon.vm.torch.core.ops.math_ops import mul
+from dragon.vm.torch.core.ops.math_ops import nan_to_num
 from dragon.vm.torch.core.ops.math_ops import ne
 from dragon.vm.torch.core.ops.math_ops import neg
 from dragon.vm.torch.core.ops.math_ops import norm

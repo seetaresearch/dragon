@@ -1,0 +1,121 @@
+#include "dragon/kernels/activation/op_kernels.h"
+#include "dragon/utils/math_functions.h"
+
+namespace dragon {
+
+namespace kernels {
+
+#define BLOCK_THREADS 40960
+
+namespace {
+
+template <typename T>
+__mlu_entry__ void _Relu(const int N, const T* x, T* y) {
+  __nram__ T Y[BLOCK_THREADS];
+  MLU_1D_KERNEL_LOOP(i, N, BLOCK_THREADS) {
+    const int N_ram = std::min(N - i, BLOCK_THREADS);
+    __memcpy(Y, x + i, N_ram * sizeof(T), GDRAM2NRAM);
+    __bang_relu(Y, Y, N_ram);
+    __memcpy(y + i, Y, N_ram * sizeof(T), NRAM2GDRAM);
+  }
+}
+
+template <typename T>
+__mlu_entry__ void
+_ReluN(const int N, const float max_value, const T* x, T* y) {
+  __nram__ T Y[BLOCK_THREADS];
+  MLU_1D_KERNEL_LOOP(i, N, BLOCK_THREADS) {
+    const int N_ram = std::min(N - i, BLOCK_THREADS);
+    __memcpy(Y, x + i, N_ram * sizeof(T), GDRAM2NRAM);
+    __bang_relun(Y, Y, N_ram, T(max_value));
+    __memcpy(y + i, Y, N_ram * sizeof(T), NRAM2GDRAM);
+  }
+}
+
+template <typename T>
+__mlu_entry__ void
+_LeakyRelu(const int N, const float alpha, const T* x, T* y) {
+  __nram__ T X[BLOCK_THREADS], Y[BLOCK_THREADS], Y2[BLOCK_THREADS];
+  MLU_1D_KERNEL_LOOP(i, N, BLOCK_THREADS) {
+    const int N_ram = std::min(N - i, BLOCK_THREADS);
+    __memcpy(X, x + i, N_ram * sizeof(T), GDRAM2NRAM);
+    __bang_relu(Y, X, N_ram);
+    __bang_le_scalar(Y2, X, T(0), N_ram);
+    __bang_mul_scalar(Y2, Y2, T(alpha), N_ram);
+    __bang_fusion(FUSION_FMA, Y, Y2, X, Y, N_ram, N_ram);
+    __memcpy(y + i, Y, N_ram * sizeof(T), NRAM2GDRAM);
+  }
+}
+
+} // namespace
+
+template <>
+void Relu<double, MLUContext>(
+    const int N,
+    const float alpha,
+    const double* x,
+    double* y,
+    MLUContext* ctx) {
+  LOG(FATAL) << "Unsupported BANG type for <ReluKernel>: double";
+}
+
+#define DEFINE_KERNEL_LAUNCHER(T)                                          \
+  template <>                                                              \
+  void Relu<T, MLUContext>(                                                \
+      const int N, const float alpha, const T* x, T* y, MLUContext* ctx) { \
+    if (alpha > 0.f) {                                                     \
+      _LeakyRelu<<<                                                        \
+          MLU_BLOCKS(N, BLOCK_THREADS),                                    \
+          CNRT_FUNC_TYPE_BLOCK,                                            \
+          ctx->mlu_stream()>>>(                                            \
+          N,                                                               \
+          alpha,                                                           \
+          reinterpret_cast<const math::ScalarType<T>::type*>(x),           \
+          reinterpret_cast<math::ScalarType<T>::type*>(y));                \
+    } else {                                                               \
+      _Relu<<<                                                             \
+          MLU_BLOCKS(N, BLOCK_THREADS),                                    \
+          CNRT_FUNC_TYPE_BLOCK,                                            \
+          ctx->mlu_stream()>>>(                                            \
+          alpha,                                                           \
+          reinterpret_cast<const math::ScalarType<T>::type*>(x),           \
+          reinterpret_cast<math::ScalarType<T>::type*>(y));                \
+    }                                                                      \
+  }
+
+DEFINE_KERNEL_LAUNCHER(float16);
+DEFINE_KERNEL_LAUNCHER(float);
+#undef DEFINE_KERNEL_LAUNCHER
+
+template <>
+void ReluN<double, MLUContext>(
+    const int N,
+    const float max_value,
+    const double* x,
+    double* y,
+    MLUContext* ctx) {
+  LOG(FATAL) << "Unsupported BANG type for <ReluNKernel>: double";
+}
+
+#define DEFINE_KERNEL_LAUNCHER(T)                                              \
+  template <>                                                                  \
+  void ReluN<T, MLUContext>(                                                   \
+      const int N, const float max_value, const T* x, T* y, MLUContext* ctx) { \
+    _ReluN<<<                                                                  \
+        MLU_BLOCKS(N, BLOCK_THREADS),                                          \
+        CNRT_FUNC_TYPE_BLOCK,                                                  \
+        ctx->mlu_stream()>>>(                                                  \
+        N,                                                                     \
+        max_value,                                                             \
+        reinterpret_cast<const math::ScalarType<T>::type*>(x),                 \
+        reinterpret_cast<math::ScalarType<T>::type*>(y));                      \
+  }
+
+DEFINE_KERNEL_LAUNCHER(float16);
+DEFINE_KERNEL_LAUNCHER(float);
+#undef DEFINE_KERNEL_LAUNCHER
+#undef BLOCK_THREADS
+
+} // namespace kernels
+
+} // namespace dragon

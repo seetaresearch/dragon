@@ -22,7 +22,7 @@ from dragon.core.ops import activation_ops
 
 @OpSchema.num_inputs(2)
 def ctc_loss(inputs, padding_mask=-1, **kwargs):
-    r"""Compute the ctc loss with batched labels.
+    r"""Compute ctc loss with batched labels.
     `[Graves & Gomez, 2006] <http://www.cs.utoronto.ca/~graves/icml_2006.pdf>`_.
 
     The shape of ``input`` and ``target`` should be :math:`(T, N, C)`,
@@ -53,7 +53,7 @@ def ctc_loss(inputs, padding_mask=-1, **kwargs):
 
 @OpSchema.num_inputs(1, 2)
 def l1_loss(inputs, reduction='mean', **kwargs):
-    r"""Compute the loss of element-wise absolute value difference.
+    r"""Compute element-wise absolute value difference.
 
     The **L1Loss** function is defined as:
 
@@ -88,7 +88,7 @@ def l1_loss(inputs, reduction='mean', **kwargs):
 
 @OpSchema.num_inputs(min_num=1, max_num=2)
 def l2_loss(inputs, reduction='mean', **kwargs):
-    r"""Compute the loss of element-wise squared error.
+    r"""Compute element-wise squared error.
 
     The **L2Loss** function is defined as:
 
@@ -123,7 +123,7 @@ def l2_loss(inputs, reduction='mean', **kwargs):
 
 @OpSchema.num_inputs(2)
 def nll_loss(inputs, axis=-1, ignore_index=None, reduction='valid', **kwargs):
-    """Compute the loss of negative likelihood.
+    """Compute negative likelihood loss.
 
     Examples:
 
@@ -162,7 +162,7 @@ def nll_loss(inputs, axis=-1, ignore_index=None, reduction='valid', **kwargs):
 
 @OpSchema.num_inputs(2)
 def sigmoid_cross_entropy_loss(inputs, reduction='valid', **kwargs):
-    """Compute the loss of sigmoid cross entropy.
+    """Compute sigmoid cross entropy.
 
     Examples:
 
@@ -203,7 +203,7 @@ def sigmoid_focal_loss(
     reduction='valid',
     **kwargs
 ):
-    """Compute the focal loss of sigmoid cross entropy.
+    """Compute sigmoid focal loss.
     `[Lin et.al, 2017] <https://arxiv.org/abs/1708.02002>`_.
 
     Examples:
@@ -248,7 +248,7 @@ def sigmoid_focal_loss(
 
 @OpSchema.num_inputs(1, 2)
 def smooth_l1_loss(inputs, beta=1.0, reduction='mean', **kwargs):
-    r"""Compute the loss of element-wise error transited from L1 and L2.
+    r"""Compute element-wise error transited from L1 and L2.
     `[Girshick, 2015] <https://arxiv.org/abs/1504.08083>`_.
 
     The **SmoothL1Loss** function is defined as:
@@ -300,7 +300,7 @@ def softmax_cross_entropy_loss(
     reduction='valid',
     **kwargs
 ):
-    """Compute the loss of softmax cross entropy.
+    """Compute softmax cross entropy.
 
     Both sparse or dense targets are supported:
 

@@ -14,6 +14,7 @@
 #define DRAGON_MODULES_PYTHON_NUMPY_H_
 
 #include <dragon/core/context_cuda.h>
+#include <dragon/core/context_mlu.h>
 #include <dragon/core/tensor.h>
 
 #include "dragon/modules/python/common.h"
@@ -54,6 +55,17 @@ class NumpyWrapper {
 #else
         CUDA_NOT_COMPILED;
 #endif
+      } else if (device_type == "mlu") {
+#ifdef USE_MLU
+        MLUDeviceGuard guard(memory->device());
+        MLUContext::Memcpy<CPUContext, MLUContext>(
+            tensor_->nbytes(),
+            PyArray_DATA(reinterpret_cast<PyArrayObject*>(array)),
+            tensor_->raw_data<MLUContext>(),
+            memory->device());
+#else
+        MLU_NOT_COMPILED;
+#endif
       } else {
         CPUContext::Memcpy<CPUContext, CPUContext>(
             tensor_->nbytes(),
@@ -90,6 +102,17 @@ class NumpyWrapper {
             memory->device());
 #else
         CUDA_NOT_COMPILED;
+#endif
+      } else if (device_type == "mlu") {
+#ifdef USE_MLU
+        MLUDeviceGuard guard(memory->device());
+        MLUContext::Memcpy<MLUContext, CPUContext>(
+            tensor_->nbytes(),
+            tensor_->raw_mutable_data<MLUContext>(),
+            data,
+            memory->device());
+#else
+        MLU_NOT_COMPILED;
 #endif
       } else {
         CPUContext::Memcpy<CPUContext, CPUContext>(

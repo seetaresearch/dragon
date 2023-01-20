@@ -446,7 +446,7 @@ class Tensor(types.TensorBase):
         """
 
     def __add__(self, other):
-        """Compute the element-wise addition.
+        """Compute element-wise addition.
 
         Parameters
         ----------
@@ -465,7 +465,7 @@ class Tensor(types.TensorBase):
         """
 
     def __and__(self, other):
-        """Compute the element-wise AND bitwise operation.
+        """Compute element-wise AND bitwise operation.
 
         Parameters
         ----------
@@ -570,7 +570,7 @@ class Tensor(types.TensorBase):
         return id(self)
 
     def __iadd__(self, other):
-        """Compute the element-wise addition.
+        """Compute element-wise addition.
 
         Parameters
         ----------
@@ -589,7 +589,7 @@ class Tensor(types.TensorBase):
         """
 
     def __iand__(self, other):
-        """Compute the element-wise AND bitwise operation.
+        """Compute element-wise AND bitwise operation.
 
         Parameters
         ----------
@@ -608,7 +608,7 @@ class Tensor(types.TensorBase):
         """
 
     def __idiv__(self, other):
-        """Compute the element-wise division.
+        """Compute element-wise division.
 
         Parameters
         ----------
@@ -627,7 +627,7 @@ class Tensor(types.TensorBase):
         """
 
     def __imul__(self, other):
-        """Compute the element-wise multiplication.
+        """Compute element-wise multiplication.
 
         Parameters
         ----------
@@ -657,7 +657,7 @@ class Tensor(types.TensorBase):
         return int(self.numpy())
 
     def __invert__(self):
-        """Compute the element-wise NOT bitwise operation.
+        """Compute element-wise NOT bitwise operation.
 
         Returns
         -------
@@ -671,7 +671,7 @@ class Tensor(types.TensorBase):
         """
 
     def __isub__(self, other):
-        """Compute the element-wise subtraction.
+        """Compute element-wise subtraction.
 
         Parameters
         ----------
@@ -728,7 +728,7 @@ class Tensor(types.TensorBase):
         """
 
     def __matmul__(self, other):
-        """Compute the matrix multiplication.
+        """Compute matrix multiplication.
 
         Parameters
         ----------
@@ -747,7 +747,7 @@ class Tensor(types.TensorBase):
         """
 
     def __mul__(self, other):
-        """Compute the element-wise multiplication.
+        """Compute element-wise multiplication.
 
         Parameters
         ----------
@@ -766,7 +766,7 @@ class Tensor(types.TensorBase):
         """
 
     def __neg__(self):
-        """Compute the element-wise negative.
+        """Compute element-wise negative.
 
         Returns
         -------
@@ -799,7 +799,7 @@ class Tensor(types.TensorBase):
         """
 
     def __or__(self, other):
-        """Compute the element-wise OR bitwise operation.
+        """Compute element-wise OR bitwise operation.
 
         Parameters
         ----------
@@ -818,7 +818,7 @@ class Tensor(types.TensorBase):
         """
 
     def __radd__(self, other):
-        """Compute the element-wise addition.
+        """Compute element-wise addition.
 
         Parameters
         ----------
@@ -837,7 +837,7 @@ class Tensor(types.TensorBase):
         """
 
     def __rand__(self, other):
-        """Compute the element-wise AND bitwise operation.
+        """Compute element-wise AND bitwise operation.
 
         Parameters
         ----------
@@ -878,7 +878,7 @@ class Tensor(types.TensorBase):
         return string.add_indent(main_str, 14)
 
     def __rtruediv__(self, other):
-        """Compute the element-wise division.
+        """Compute element-wise division.
 
         Parameters
         ----------
@@ -897,7 +897,7 @@ class Tensor(types.TensorBase):
         """
 
     def __rmul__(self, other):
-        """Compute the element-wise multiplication.
+        """Compute element-wise multiplication.
 
         Parameters
         ----------
@@ -916,7 +916,7 @@ class Tensor(types.TensorBase):
         """
 
     def __ror__(self, other):
-        """Compute the element-wise OR bitwise operation.
+        """Compute element-wise OR bitwise operation.
 
         Parameters
         ----------
@@ -935,7 +935,7 @@ class Tensor(types.TensorBase):
         """
 
     def __rsub__(self, other):
-        """Compute the element-wise subtraction.
+        """Compute element-wise subtraction.
 
         Parameters
         ----------
@@ -954,7 +954,7 @@ class Tensor(types.TensorBase):
         """
 
     def __rxor__(self, other):
-        """Compute the element-wise XOR bitwise operation.
+        """Compute element-wise XOR bitwise operation.
 
         Parameters
         ----------
@@ -976,7 +976,7 @@ class Tensor(types.TensorBase):
         """Set elements at the specific index."""
 
     def __sub__(self, other):
-        """Compute the element-wise subtraction.
+        """Compute element-wise subtraction.
 
         Parameters
         ----------
@@ -995,7 +995,7 @@ class Tensor(types.TensorBase):
         """
 
     def __truediv__(self, other):
-        """Compute the element-wise division.
+        """Compute element-wise division.
 
         Parameters
         ----------
@@ -1014,7 +1014,7 @@ class Tensor(types.TensorBase):
         """
 
     def __xor__(self, other):
-        """Compute the element-wise XOR bitwise operation.
+        """Compute element-wise XOR bitwise operation.
 
         Parameters
         ----------

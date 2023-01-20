@@ -89,6 +89,9 @@ template class PoolOpBase<CUDAContext>;
 #ifdef USE_MPS
 template class PoolOpBase<MPSContext>;
 #endif
+#ifdef USE_MLU
+template class PoolOpBase<MLUContext>;
+#endif
 
 #undef DETERMINE_SAME_PADDING
 

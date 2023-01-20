@@ -213,6 +213,12 @@ template class ConvOpBase<CUDAContext>;
 #ifdef USE_MPS
 template class ConvOpBase<MPSContext>;
 #endif
+#ifdef USE_MLU
+template class ConvOpBase<MLUContext>;
+#endif
+
+DEFINE_OP_REPEATED_ARG(int64_t, ConvOpBase, output_shape);
+DEFINE_OP_REPEATED_ARG(int64_t, ConvOpBase, output_padding);
 
 #undef DETERMINE_SAME_PADDING
 

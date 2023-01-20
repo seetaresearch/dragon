@@ -66,6 +66,9 @@ endif()
 if (USE_MPS)
   target_link_libraries(dragon_runtime ${MPS_LIBRARIES})
 endif()
+if (USE_MLU)
+  target_link_libraries(dragon ${MLU_LIBRARIES})
+endif()
 
 # ---[ Command - Strip
 strip_debug_symbol(dragon_runtime)

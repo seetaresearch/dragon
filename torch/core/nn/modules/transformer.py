@@ -14,7 +14,7 @@ from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
 
-from dragon.vm.torch.core.nn import functional as F
+from dragon.vm.torch.core.nn import functional
 from dragon.vm.torch.core.nn.modules.activation import MultiheadAttention
 from dragon.vm.torch.core.nn.modules.container import ModuleList
 from dragon.vm.torch.core.nn.modules.dropout import Dropout
@@ -373,7 +373,7 @@ class TransformerEncoderLayer(Module):
 def _get_activation_fn(activation):
     """Return the activation function."""
     if activation == 'relu':
-        return F.relu
+        return functional.relu
     elif activation == 'gelu':
-        return F.gelu
+        return functional.gelu
     raise RuntimeError('Unknown activation: {}'.format(activation))

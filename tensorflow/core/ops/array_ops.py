@@ -476,7 +476,7 @@ def reshape(tensor, shape, copy=True, name=None):
     x = tf.ones(shape=(1, 2, 3, 4))
     print(tf.reshape(x, shape=[6, 4]).shape)  # [6, 4]
 
-    # Set the existing dimensions to ``0`` if it unchanged
+    # Set existing dimensions to ``0`` if it unchanged
     print(tf.reshape(x, shape=[0, 0, 12]).shape)  # [1, 2, 12]
     print(tf.reshape(x, shape=[0, 0, 0, 0]).shape)  # [1, 2, 3, 4]
     print(tf.reshape(x, shape=[0, 0, 0, 0, 0]).shape)  # Wrong

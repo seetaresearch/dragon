@@ -16,12 +16,11 @@ from __future__ import print_function
 
 import itertools
 import math
-import numbers
 
 from dragon.core.util import math_util
 from dragon.core.util import nest
 from dragon.vm.torch.core.autograd.function import Function
-from dragon.vm.torch.core.nn import functional as F
+from dragon.vm.torch.core.nn import functional
 from dragon.vm.torch.core.nn.modules.module import Module
 from dragon.vm.torch.core.nn.parameter import Parameter
 from dragon.vm.torch.core.ops import constant_ops
@@ -30,6 +29,8 @@ from dragon.vm.torch.core.tensor import Tensor
 
 
 class RNNBase(Module):
+    """RNN base module."""
+
     def __init__(
         self,
         mode,
@@ -54,13 +55,10 @@ class RNNBase(Module):
             raise NotImplementedError('Batch first is not supported.')
         if not bias:
             raise NotImplementedError('Bias is required.')
-        if not isinstance(dropout, numbers.Number) or \
-                not 0 <= dropout <= 1 or isinstance(dropout, bool):
-            raise ValueError('<dropout> should be a number in range [0, 1] '
-                             'representing the probability of an element being zeroed.')
-        self._num_gates = {'lstm': 4, 'gru': 3}.get(self.mode, 1)
-        self._weights_shapes = []
-        self.flatten_parameters()
+        self._num_gates = {'LSTM': 4, 'GRU': 3}.get(self.mode, 1)
+        self._weight_count = 0
+        self._weight_shapes = []
+        self.weight = self.flatten_parameters()
         self.reset_parameters()
 
     def reset_parameters(self):
@@ -70,9 +68,9 @@ class RNNBase(Module):
                 range(self.num_layers * (self.bidirectional + 1)),
                 range(self._num_gates * 2)):
             i = layer_id * 2 + (param_id // self._num_gates)
-            j = i + len(self._weights_shapes) // 2
-            matrix_shape = self._weights_shapes[i][:]
-            bias_shape = self._weights_shapes[j][:]
+            j = i + len(self._weight_shapes) // 2
+            matrix_shape = self._weight_shapes[i][:]
+            bias_shape = self._weight_shapes[j][:]
             matrix_shape[0] //= self._num_gates
             bias_shape[0] //= self._num_gates
             self._set_parameter(
@@ -85,7 +83,6 @@ class RNNBase(Module):
     def flatten_parameters(self):
         """Flatten parameters into a single weights."""
         gate_size = self._num_gates * self.hidden_size
-        # Compute the shape of weight and bias.
         matrix_shapes, bias_shapes = [], []
         for layer in range(self.num_layers):
             for direction in range(int(self.bidirectional) + 1):
@@ -96,13 +93,12 @@ class RNNBase(Module):
                 b_ih_shape, b_hh_shape = [gate_size], [gate_size]
                 matrix_shapes.extend([w_ih_shape, w_hh_shape])
                 bias_shapes.extend([b_ih_shape, b_hh_shape])
-        # Compute total number of parameters.
-        self._weights_count = 0
-        self._weights_shapes = matrix_shapes + bias_shapes
-        for shape in self._weights_shapes:
-            self._weights_count += math_util.prod(shape)
-        # Create the flat float32 weights.
-        self.weights = Parameter(Tensor(self._weights_count))
+        self._weight_count = 0
+        self._weight_shapes = matrix_shapes + bias_shapes
+        for shape in self._weight_shapes:
+            self._weight_count += math_util.prod(shape)
+        self.weight = Parameter(Tensor(self._weight_count))
+        return self.weight
 
     def extra_repr(self):
         s = '{input_size}, {hidden_size}'
@@ -119,12 +115,12 @@ class RNNBase(Module):
         return s.format(**self.__dict__)
 
     def forward(self, input, hx=None):
-        inputs = [input, self.weights]
+        inputs = [input, self.weight]
         if hx is not None:
             inputs += nest.flatten(hx)
-        outputs = [None] * (3 if self.mode == 'lstm' else 2)
+        outputs = [None] * (3 if self.mode == 'LSTM' else 2)
         outputs = Function.apply(
-            'Recurrent', input.device, inputs, outputs=outputs,
+            'RNN', input.device, inputs, outputs=outputs,
             rnn_mode=self.mode, bidirectional=self.bidirectional,
             input_size=self.input_size, hidden_size=self.hidden_size,
             dropout=self.dropout, phase='TRAIN' if self.training else 'TEST')
@@ -134,7 +130,7 @@ class RNNBase(Module):
     def _set_parameter(self, data, layer_id=0, param_id=0, param_type='matrix'):
         """Set the data of a parameter."""
         return Function.apply(
-            'RNNParamSet', data.device, [data], outputs=[self.weights],
+            'RNNParamSet', data.device, [data], outputs=[self.weight],
             rnn_mode=self.mode, bidirectional=self.bidirectional,
             input_size=self.input_size, hidden_size=self.hidden_size,
             layer_id=layer_id, param_id=param_id, param_type=param_type)
@@ -187,7 +183,7 @@ class RNN(RNNBase):
             Whether to create a bidirectional rnn.
 
         """
-        mode = 'rnn_relu' if nonlinearity == 'relu' else 'rnn_tanh'
+        mode = 'RNN_RELU' if nonlinearity == 'relu' else 'RNN_TANH'
         super(RNN, self).__init__(
             mode, input_size, hidden_size, num_layers,
             bias, batch_first, dropout, bidirectional,
@@ -237,7 +233,7 @@ class LSTM(RNNBase):
 
         """
         super(LSTM, self).__init__(
-            'lstm', input_size, hidden_size, num_layers,
+            'LSTM', input_size, hidden_size, num_layers,
             bias, batch_first, dropout, bidirectional,
         )
 
@@ -286,7 +282,7 @@ class GRU(RNNBase):
 
         """
         super(GRU, self).__init__(
-            'gru', input_size, hidden_size, num_layers,
+            'GRU', input_size, hidden_size, num_layers,
             bias, batch_first, dropout, bidirectional,
         )
 
@@ -357,6 +353,6 @@ class LSTMCell(RNNCellBase):
                 input.size(0), self.hidden_size,
                 dtype=input.dtype, device=input.device)
             hx = (zeros, zeros)
-        wx = F.linear(input, self.weight_ih, self.bias_ih)
-        wh = F.linear(hx[0], self.weight_hh, self.bias_hh)
-        return F.lstm_cell(wx + wh, hx[1])
+        wx = functional.linear(input, self.weight_ih, self.bias_ih)
+        wh = functional.linear(hx[0], self.weight_hh, self.bias_hh)
+        return functional.lstm_cell(wx + wh, hx[1])

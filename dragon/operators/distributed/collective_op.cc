@@ -8,6 +8,39 @@ namespace dragon {
 
 template <class Context>
 template <typename T>
+void CollectiveOp<Context>::CopyTensors(bool done) {
+  int64_t count = 0, num = 0;
+  for (int i = 0; i + src_index_ < InputSize(); ++i) {
+    num += 1;
+    count += Input(src_index_ + i).count();
+    if (count * sizeof(T) > buffer_size_) break;
+  }
+  if (num == 1) {
+    if (done) src_index_ += 1;
+    return;
+  }
+  auto* Y = Output("Y");
+  if (!done) {
+    src_tensor_ = Y;
+    auto* data = Y->Reshape({count})->template mutable_data<T, Context>();
+    for (int i = 0; i < num; ++i) {
+      auto& X = Input(src_index_ + i);
+      math::Copy(X.count(), X.template data<T, Context>(), data, ctx());
+      data += X.count();
+    }
+  } else {
+    auto* data = Y->template data<T, Context>();
+    for (int i = 0; i < num; ++i) {
+      auto& X = Input(src_index_ + i);
+      math::Copy(X.count(), data, X.template mutable_data<T, Context>(), ctx());
+      data += X.count();
+    }
+    src_index_ += num;
+  }
+}
+
+template <class Context>
+template <typename T>
 void CollectiveOp<Context>::AllReduceMPI() {
   const auto N = src_tensor_->count();
   const auto split_size = N / comm_size_;
@@ -69,7 +102,23 @@ void CollectiveOp<Context>::AllReduceNCCL() {
       ncclSum,
       this->nccl_comm(),
       ((CUDAContext*)ctx())->cuda_stream()));
-#endif // USE_NCCL
+#endif
+}
+
+template <class Context>
+template <typename T>
+void CollectiveOp<Context>::AllReduceCNCL() {
+#ifdef USE_MLU
+  auto* data = src_tensor_->template mutable_data<T, Context>();
+  CNCL_CHECK(cnclAllReduce(
+      (const void*)data,
+      (void*)data,
+      src_tensor_->count(),
+      this->template cncl_data_type<T>(),
+      cnclSum,
+      this->cncl_comm(),
+      ((MLUContext*)ctx())->mlu_stream()));
+#endif
 }
 
 template <class Context>
@@ -96,7 +145,23 @@ void CollectiveOp<Context>::AllGatherNCCL() {
       this->template nccl_data_type<T>(),
       this->nccl_comm(),
       ((CUDAContext*)ctx())->cuda_stream()));
-#endif // USE_NCCL
+#endif
+}
+
+template <class Context>
+template <typename T>
+void CollectiveOp<Context>::AllGatherCNCL() {
+#ifdef USE_MLU
+  auto dest_dims = src_tensor_->dims();
+  dest_dims[0] *= comm_size_;
+  CNCL_CHECK(cnclAllGather(
+      src_tensor_->template data<T, Context>(),
+      dest_tensor_->Reshape(dest_dims)->template mutable_data<T, Context>(),
+      src_tensor_->count(),
+      this->template cncl_data_type<T>(),
+      this->cncl_comm(),
+      ((MLUContext*)ctx())->mlu_stream()));
+#endif
 }
 
 template <class Context>
@@ -117,7 +182,21 @@ void CollectiveOp<Context>::BroadcastNCCL() {
       comm_root_,
       this->nccl_comm(),
       ((CUDAContext*)ctx())->cuda_stream()));
-#endif // USE_NCCL
+#endif
+}
+
+template <class Context>
+template <typename T>
+void CollectiveOp<Context>::BroadcastCNCL() {
+#ifdef USE_MLU
+  CNCL_CHECK(cnclBcast(
+      (void*)src_tensor_->template mutable_data<T, Context>(),
+      src_tensor_->count(),
+      this->template cncl_data_type<T>(),
+      comm_root_,
+      this->cncl_comm(),
+      ((MLUContext*)ctx())->mlu_stream()));
+#endif
 }
 
 template <class Context>
@@ -125,14 +204,29 @@ template <typename T>
 void CollectiveOp<Context>::DoRunWithType() {
   if (src_tensor_ != nullptr) {
     if (operation_ == "ALLREDUCE") {
-      if (enable_nccl_) return AllReduceNCCL<T>();
-      AllReduceMPI<T>();
+      CopyTensors<T>(false);
+      if (enable_nccl_) {
+        AllReduceNCCL<T>();
+      } else if (enable_cncl_) {
+        AllReduceCNCL<T>();
+      } else {
+        AllReduceMPI<T>();
+      }
+      CopyTensors<T>(true);
     } else if (operation_ == "ALLGATHER") {
       if (enable_nccl_) return AllGatherNCCL<T>();
+      if (enable_cncl_) return AllGatherCNCL<T>();
       AllGatherMPI<T>();
     } else if (operation_ == "BROADCAST") {
-      if (enable_nccl_) return BroadcastNCCL<T>();
-      BroadcastMPI<T>();
+      CopyTensors<T>(false);
+      if (enable_nccl_) {
+        BroadcastNCCL<T>();
+      } else if (enable_cncl_) {
+        BroadcastCNCL<T>();
+      } else {
+        BroadcastMPI<T>();
+      }
+      CopyTensors<T>(true);
     } else {
       LOG(FATAL) << "Unknown operation: " << operation_;
     }
@@ -149,8 +243,9 @@ void CollectiveOp<Context>::RunOnDevice() {
   if (comm_size_ <= 1) return;
   // Wait stream to finish the enqueued kernels.
   ctx()->FinishDeviceComputation();
-  for (int i = 0; i < InputSize(); ++i) {
-    src_tensor_ = &Input(i), dest_tensor_ = Output(i);
+  src_index_ = 0;
+  while (src_index_ < InputSize()) {
+    src_tensor_ = &Input(src_index_), dest_tensor_ = Output(src_index_);
     DispatchHelper<dtypes::Numerical>::Call(this, *src_tensor_);
   }
   src_tensor_ = nullptr;
@@ -163,6 +258,9 @@ void CollectiveOp<Context>::RunOnDevice() {
 DEPLOY_CPU_OPERATOR(Collective);
 #ifdef USE_CUDA
 DEPLOY_CUDA_OPERATOR(Collective);
+#endif
+#ifdef USE_MLU
+DEPLOY_MLU_OPERATOR(Collective);
 #endif
 
 OPERATOR_SCHEMA(Collective).AllowInplace([](int, int) -> bool { return true; });

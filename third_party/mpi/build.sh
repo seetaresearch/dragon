@@ -23,6 +23,9 @@ read -p "Press any key to continue." var
             --with-pic=PIC \
             --without-verbs \
             --without-ucx \
+            --without-libnl \
+            --with-hwloc=internal \
+            --with-libevent=internal \
             --disable-libudev \
             --enable-shared \
             --enable-static \
@@ -35,6 +38,9 @@ read -p "Press any key to continue." var
             --with-pic=PIC \
             --without-verbs \
             --without-ucx \
+            --without-libnl \
+            --with-hwloc=internal \
+            --with-libevent=internal \
             --disable-libudev \
             --enable-shared \
             --enable-static \

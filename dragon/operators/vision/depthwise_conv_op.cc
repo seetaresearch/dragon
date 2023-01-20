@@ -8,12 +8,13 @@ template <class Context>
 template <typename T>
 void DepthwiseConvOp<Context>::DoRunWithType() {
   auto &X = Input(0), &W = Input(1), *Y = Output(0);
-
   group_ = data_format() == "NCHW" ? X.dim(1) : X.dim(-1);
   ConvOpBase<Context>::Reshape();
-  CHECK_EQ(in_channels_, out_channels_)
-      << "\nExcepted in/out channels to be same.";
   INITIALIZE_TENSOR_VIA_SPEC(W, w_shape_, T);
+  if (HasBias()) INITIALIZE_TENSOR_VIA_SPEC(Input(2), b_shape_, T);
+
+  CHECK_EQ(in_channels_, out_channels_)
+      << "\nInput and output channels to be same.";
 
   if (num_axes_ == 1 || num_axes_ == 2) {
     kernels::DepthwiseConv2d(
@@ -41,16 +42,10 @@ void DepthwiseConvOp<Context>::DoRunWithType() {
   }
 
   if (HasBias()) {
-    INITIALIZE_TENSOR_VIA_SPEC(Input(2), b_shape_, T);
-    AddBias(
+    FwdBias(
         Input(2).template data<T, Context>(),
         Y->template mutable_data<T, Context>());
   }
-}
-
-template <class Context>
-void DepthwiseConvOp<Context>::RunOnDevice() {
-  DispatchHelper<dtypes::TypesBase<float16, float>>::Call(this, Input(0));
 }
 
 template <class Context>
@@ -117,24 +112,16 @@ void DepthwiseConvGradientOp<Context>::DoRunWithType() {
   }
 
   if (dB->has_name()) {
-    GradBias(
+    BwdBias(
         dY.template data<T, Context>(),
         dB->template mutable_data<T, Context>());
   }
 }
 
-template <class Context>
-void DepthwiseConvGradientOp<Context>::RunOnDevice() {
-  DispatchHelper<dtypes::TypesBase<float16, float>>::Call(this, Input(0));
-}
-
 DEPLOY_CPU_OPERATOR(DepthwiseConv);
-#ifdef USE_CUDA
-DEPLOY_CUDA_OPERATOR(DepthwiseConv);
-#endif
-
 DEPLOY_CPU_OPERATOR(DepthwiseConvGradient);
 #ifdef USE_CUDA
+DEPLOY_CUDA_OPERATOR(DepthwiseConv);
 DEPLOY_CUDA_OPERATOR(DepthwiseConvGradient);
 #endif
 

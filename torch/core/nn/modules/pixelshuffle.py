@@ -14,7 +14,7 @@ from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
 
-from dragon.vm.torch.core.nn import functional as F
+from dragon.vm.torch.core.nn import functional
 from dragon.vm.torch.core.nn.modules.module import Module
 
 
@@ -55,7 +55,7 @@ class PixelShuffle(Module):
         return 'upscale_factor={}{}'.format(self.upscale_factor, inplace_str)
 
     def forward(self, input):
-        return F.pixel_shuffle(input, self.upscale_factor)
+        return functional.pixel_shuffle(input, self.upscale_factor)
 
 
 class PixelUnshuffle(Module):
@@ -95,4 +95,4 @@ class PixelUnshuffle(Module):
         return 'downscale_factor={}{}'.format(self.downscale_factor, inplace_str)
 
     def forward(self, input):
-        return F.pixel_unshuffle(input, self. downscale_factor)
+        return functional.pixel_unshuffle(input, self. downscale_factor)

@@ -14,12 +14,12 @@ from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
 
-from dragon.vm.torch.core.nn import functional as F
+from dragon.vm.torch.core.nn import functional
 from dragon.vm.torch.core.nn.modules.module import Module
 
 
 class Unfold(Module):
-    r"""Extract the sliding blocks.
+    r"""Extract sliding blocks.
 
     This module excepts the input size :math:`(N, C, D1, D2, ...)`,
     and output size is :math:`(N, C \times \prod(\text{kernel\_size}), L)`,
@@ -69,5 +69,5 @@ class Unfold(Module):
                .format(**self.__dict__)
 
     def forward(self, input):
-        return F.unfold(input, self.kernel_size, self.dilation,
-                        self.padding, self.stride)
+        return functional.unfold(
+            input, self.kernel_size, self.dilation, self.padding, self.stride)

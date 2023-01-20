@@ -57,21 +57,18 @@ DEPLOY_CUDA_OPERATOR(DropoutGradient);
 #ifdef USE_MPS
 DEPLOY_MPS_OPERATOR(DropoutGradient, DropoutGradient);
 #endif
+#ifdef USE_MLU
+DEPLOY_MLU_OPERATOR(Dropout);
+DEPLOY_MLU_OPERATOR(DropoutGradient);
+#endif
 
-OPERATOR_SCHEMA(Dropout)
-    /* X */
-    .NumInputs(1)
-    /* Y */
-    .NumOutputs(1)
-    /* X => Y */
-    .AllowInplace({{0, 0}});
+DEFINE_OP_SINGLE_ARG(float, DropoutOp, ratio);
+DEFINE_OP_SINGLE_ARG(float, DropoutGradientOp, ratio);
 
+OPERATOR_SCHEMA(Dropout).NumInputs(1).NumOutputs(1).AllowInplace({{0, 0}});
 OPERATOR_SCHEMA(DropoutGradient)
-    /* dY */
     .NumInputs(1)
-    /* dX */
     .NumOutputs(1)
-    /* dY => dX */
     .AllowInplace({{0, 0}});
 
 REGISTER_GRADIENT(Dropout, SimpleGradientMaker);

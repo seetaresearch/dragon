@@ -398,7 +398,7 @@ void MaximumGradientOp<Context>::DoRunWithType() {
   void *scratch, *mask;
   if (dA->has_name() || dB->has_name()) {
     mask = ctx()->workspace()->template data<bool, Context>(
-        dY.size(), "BufferShared2");
+        dY.size(), "BufferKernel");
   }
   if ((dA->has_name() && !A_broadcast_axes.empty()) ||
       (dB->has_name() && !B_broadcast_axes.empty())) {
@@ -531,7 +531,7 @@ void MinimumGradientOp<Context>::DoRunWithType() {
   // Scratch to save the intermediates.
   void *scratch, *mask;
   if (dA->has_name() || dB->has_name()) {
-    const string buffer_name = "BufferShared2";
+    const string buffer_name = "BufferKernel";
     mask = ctx()->workspace()->template data<Context>(dY.size(), buffer_name);
   }
   if ((dA->has_name() && !A_broadcast_axes.empty()) ||

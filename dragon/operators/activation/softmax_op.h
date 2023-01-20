@@ -18,7 +18,7 @@
 namespace dragon {
 
 template <class Context>
-class SoftmaxOp : public Operator<Context> {
+class SoftmaxOp final : public Operator<Context> {
  public:
   SIMPLE_CTOR_DTOR(SoftmaxOp);
   USE_OPERATOR_FUNCTIONS;
@@ -32,7 +32,7 @@ class SoftmaxOp : public Operator<Context> {
 };
 
 template <class Context>
-class SoftmaxGradientOp : public Operator<Context> {
+class SoftmaxGradientOp final : public Operator<Context> {
  public:
   SIMPLE_CTOR_DTOR(SoftmaxGradientOp);
   USE_OPERATOR_FUNCTIONS;
@@ -46,18 +46,17 @@ class SoftmaxGradientOp : public Operator<Context> {
 };
 
 #ifdef USE_CUDNN
-
 template <class Context>
-class CuDNNSoftmaxOp final : public SoftmaxOp<Context> {
+class CuDNNSoftmaxOp final : public Operator<Context> {
  public:
   CuDNNSoftmaxOp(const OperatorDef& def, Workspace* ws)
-      : SoftmaxOp<Context>(def, ws) {
+      : Operator<Context>(def, ws) {
     CuDNNCreateTensorDesc(&input_desc_);
   }
   USE_OPERATOR_FUNCTIONS;
 
   ~CuDNNSoftmaxOp() {
-    CuDNNDestroyTensorDesc(&input_desc_);
+    CuDNNDestroyTensorDesc(input_desc_);
   }
 
   void RunOnDevice() override {
@@ -72,16 +71,16 @@ class CuDNNSoftmaxOp final : public SoftmaxOp<Context> {
 };
 
 template <class Context>
-class CuDNNSoftmaxGradientOp final : public SoftmaxGradientOp<Context> {
+class CuDNNSoftmaxGradientOp final : public Operator<Context> {
  public:
   CuDNNSoftmaxGradientOp(const OperatorDef& def, Workspace* ws)
-      : SoftmaxGradientOp<Context>(def, ws) {
+      : Operator<Context>(def, ws) {
     CuDNNCreateTensorDesc(&input_desc_);
   }
   USE_OPERATOR_FUNCTIONS;
 
   ~CuDNNSoftmaxGradientOp() {
-    CuDNNDestroyTensorDesc(&input_desc_);
+    CuDNNDestroyTensorDesc(input_desc_);
   }
 
   void RunOnDevice() override {
@@ -94,8 +93,48 @@ class CuDNNSoftmaxGradientOp final : public SoftmaxGradientOp<Context> {
  protected:
   cudnnTensorDescriptor_t input_desc_;
 };
-
 #endif // USE_CUDNN
+
+#ifdef USE_MLU
+template <class Context>
+class CNNLSoftmaxOp : public Operator<Context> {
+ public:
+  CNNLSoftmaxOp(const OperatorDef& def, Workspace* ws)
+      : Operator<Context>(def, ws) {
+    CNNLCreateTensorDesc(&input_desc_);
+  }
+  USE_OPERATOR_FUNCTIONS;
+
+  ~CNNLSoftmaxOp() {
+    CNNLDestroyTensorDesc(input_desc_);
+  }
+
+  void RunOnDevice() override {
+    DispatchHelper<dtypes::Floating>::Call(this, Input(0));
+  }
+
+  template <typename T>
+  void DoRunWithType();
+
+ protected:
+  cnnlTensorDescriptor_t input_desc_;
+};
+
+template <class Context>
+class CNNLSoftmaxGradientOp final : public CNNLSoftmaxOp<Context> {
+ public:
+  CNNLSoftmaxGradientOp(const OperatorDef& def, Workspace* ws)
+      : CNNLSoftmaxOp<Context>(def, ws) {}
+  USE_OPERATOR_FUNCTIONS;
+
+  void RunOnDevice() override {
+    DispatchHelper<dtypes::Floating>::Call(this, Input(0));
+  }
+
+  template <typename T>
+  void DoRunWithType();
+};
+#endif // USE_MLU
 
 } // namespace dragon
 

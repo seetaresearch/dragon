@@ -14,6 +14,8 @@
 #define DRAGON_OPERATORS_MATH_MATMUL_OP_H_
 
 #include "dragon/core/operator.h"
+#include "dragon/operators/math/gemm_op_impl_cnnl.h"
+#include "dragon/operators/math/reduce_op_impl_cnnl.h"
 
 namespace dragon {
 
@@ -46,7 +48,6 @@ class MatMulGradientOp final : public Operator<Context> {
 };
 
 #ifdef USE_MPS
-
 template <class Context>
 class MPSMatMulOp final : public Operator<Context> {
  public:
@@ -97,8 +98,46 @@ class MPSMatMulGradientOp final : public Operator<Context> {
   MPSGraph_t graph_;
   MPSGraphCache graph_cache_;
 };
-
 #endif // USE_MPS
+
+#ifdef USE_MLU
+template <class Context>
+class CNNLMatMulOp final : public Operator<Context> {
+ public:
+  SIMPLE_CTOR_DTOR(CNNLMatMulOp);
+  USE_OPERATOR_FUNCTIONS;
+
+  void RunOnDevice() override {
+    DispatchHelper<dtypes::Floating>::Call(this, Input(0));
+  }
+
+  template <typename T>
+  void DoRunWithType();
+
+ protected:
+  CNNLGemmOpImpl<cnnlMatMulAlgo_t> mm_impl_;
+  CNNLBatchGemmOpImpl<cnnlMatMulAlgo_t> bmm_impl_;
+};
+
+template <class Context>
+class CNNLMatMulGradientOp final : public Operator<Context> {
+ public:
+  SIMPLE_CTOR_DTOR(CNNLMatMulGradientOp);
+  USE_OPERATOR_FUNCTIONS;
+
+  void RunOnDevice() override {
+    DispatchHelper<dtypes::Floating>::Call(this, Input(0));
+  }
+
+  template <typename T>
+  void DoRunWithType();
+
+ protected:
+  CNNLGemmOpImpl<cnnlMatMulAlgo_t> mm_impl_;
+  CNNLBatchGemmOpImpl<cnnlMatMulAlgo_t> bmm_impl_;
+  CNNLReduceOpImpl reduce_impl_;
+};
+#endif // USE_MLU
 
 } // namespace dragon
 

@@ -1,5 +1,6 @@
 #include "dragon/core/tensor.h"
 #include "dragon/core/context_cuda.h"
+#include "dragon/core/context_mlu.h"
 #include "dragon/core/context_mps.h"
 
 namespace dragon {
@@ -24,6 +25,13 @@ DRAGON_API const void* Tensor::raw_data<MPSContext>() {
 }
 #endif
 
+#ifdef USE_MLU
+template <>
+DRAGON_API const void* Tensor::raw_data<MLUContext>() {
+  return memory(true)->mlu_data(nbytes(), offset_);
+}
+#endif
+
 template <>
 DRAGON_API void Tensor::raw_mutable_data<CPUContext>(void** data_ptr) {
   auto* mem_ptr = memory();
@@ -43,6 +51,14 @@ template <>
 DRAGON_API void Tensor::raw_mutable_data<MPSContext>(void** data_ptr) {
   auto* mem_ptr = memory();
   *data_ptr = mem_ptr ? mem_ptr->mutable_mps_data(nbytes()) : nullptr;
+}
+#endif
+
+#ifdef USE_MLU
+template <>
+DRAGON_API void Tensor::raw_mutable_data<MLUContext>(void** data_ptr) {
+  auto* mem_ptr = memory();
+  *data_ptr = mem_ptr ? mem_ptr->mutable_mlu_data(nbytes()) : nullptr;
 }
 #endif
 

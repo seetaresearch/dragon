@@ -26,7 +26,9 @@ class TriluOp final : public Operator<Context> {
         upper_(OP_SINGLE_ARG(int64_t, "upper", 0)) {}
   USE_OPERATOR_FUNCTIONS;
 
-  void RunOnDevice() override;
+  void RunOnDevice() override {
+    DispatchHelper<dtypes::Generic>::Call(this, Input(0));
+  }
 
   template <typename T>
   void DoRunWithType();

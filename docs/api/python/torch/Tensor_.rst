@@ -425,6 +425,14 @@ multinomial
 ###########
 .. automethod:: dragon.vm.torch.Tensor.multinomial
 
+nan_to_num
+##########
+.. automethod:: dragon.vm.torch.Tensor.nan_to_num
+
+nan_to_num\_
+############
+.. automethod:: dragon.vm.torch.Tensor.nan_to_num_
+
 narrow
 ######
 .. automethod:: dragon.vm.torch.Tensor.narrow
@@ -766,6 +774,7 @@ zero\_
 .. _torch.minimum(...): minimum.html
 .. _torch.mm(...): mm.html
 .. _torch.mul(...): mul.html
+.. _torch.nan_to_num(...): nan_to_num.html
 .. _torch.ne(...): ne.html
 .. _torch.neg(...): neg.html
 .. _torch.nonzero(...): nonzero.html

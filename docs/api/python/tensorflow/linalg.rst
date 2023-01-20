@@ -7,7 +7,7 @@ vm.tensorflow.linalg
   ---------
 
   `matmul(...) <linalg/matmul.html>`_
-  : Compute the matrix multiplication.
+  : Compute matrix multiplication.
 
 .. toctree::
   :hidden:

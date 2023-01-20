@@ -16,13 +16,14 @@ void SoftmaxCrossEntropyLossOp<Context>::DoRunWithType() {
   const auto S = X.count(axis + 1);
   const auto NxS = N * S;
   const auto NxCxS = X.count();
+  const auto target_is_dense = Y.meta() == TypeMeta::Make<T>();
 
   T *loss = nullptr, *mask = nullptr;
   auto* X_norm = Output("X_norm")->ReshapeLike(X);
   auto* input = X_norm->template mutable_data<T, Context>();
-
   kernels::Softmax(N, S, C, X.template data<T, Context>(), input, ctx());
-  if (Y.meta() == TypeMeta::Make<T>()) {
+
+  if (target_is_dense) {
     CHECK_EQ(Y.count(), NxCxS) << "\nNumel of X and Y must be matched.";
     auto* target = Y.template data<T, Context>();
     loss = ctx()->workspace()->template data<T, Context>(NxCxS);
@@ -49,7 +50,7 @@ void SoftmaxCrossEntropyLossOp<Context>::DoRunWithType() {
   if (reduction_ == "NONE") {
     auto out_dims = X.dims();
     out_dims.erase(out_dims.begin() + axis);
-    if (mask == nullptr) {
+    if (target_is_dense) {
       math::ReduceSum(
           3,
           vec64_t({N, C, S}).data(),
@@ -76,7 +77,7 @@ void SoftmaxCrossEntropyLossOp<Context>::DoRunWithType() {
       normalizer = NxS;
     }
     kernels::ReduceLoss(
-        mask == nullptr ? NxCxS : NxS,
+        target_is_dense ? NxCxS : NxS,
         mask == nullptr ? 0 : NxS,
         normalizer,
         loss,

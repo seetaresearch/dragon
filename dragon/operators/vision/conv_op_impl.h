@@ -99,11 +99,11 @@ void ConvOpBase<Context>::Col2Im(const T* col, T* im) {
 
 template <class Context>
 template <typename T>
-void ConvOpBase<Context>::WeightedX(const T* x, const T* w, T* y) {
-  auto* col = const_cast<T*>(x);
+void ConvOpBase<Context>::FwdData(const T* X, const T* W, T* Y) {
+  auto* X_col = const_cast<T*>(X);
   if (skip_im2col_ == 0) {
-    col = ctx()->workspace()->template data<T, Context>(col_dim_);
-    Im2Col(x, col);
+    X_col = ctx()->workspace()->template data<T, Context>(col_dim_);
+    Im2Col(X, X_col);
   }
   for (int g = 0; g < group_; g++) {
     if (data_format() == "NCHW") {
@@ -114,10 +114,10 @@ void ConvOpBase<Context>::WeightedX(const T* x, const T* w, T* y) {
           conv_out_dim_,
           kernel_dim_,
           1.f,
-          w + W_stride_ * g,
-          col + col_stride_ * g,
+          W + W_stride_ * g,
+          X_col + col_stride_ * g,
           0.f,
-          y + Y_stride1_ * g,
+          Y + Y_stride1_ * g,
           ctx());
     } else if (data_format() == "NHWC") {
       math::Gemm(
@@ -127,10 +127,10 @@ void ConvOpBase<Context>::WeightedX(const T* x, const T* w, T* y) {
           conv_out_channels_,
           kernel_dim_,
           1.f,
-          col,
-          w,
+          X_col,
+          W,
           0.f,
-          y,
+          Y,
           ctx());
     }
   }
@@ -138,22 +138,21 @@ void ConvOpBase<Context>::WeightedX(const T* x, const T* w, T* y) {
 
 template <class Context>
 template <typename T>
-void ConvOpBase<Context>::AddBias(const T* bias, T* y) {
+void ConvOpBase<Context>::FwdBias(const T* B, T* Y) {
+  const auto batch_size = Input(0).dim(0);
   if (data_format() == "NCHW") {
-    kernels::BiasAdd(
-        Input(0).dim(0), out_dim_, out_channels_, y, bias, y, ctx());
+    kernels::BiasAdd(batch_size, out_dim_, out_channels_, Y, B, Y, ctx());
   } else if (data_format() == "NHWC") {
-    kernels::BiasAdd(
-        Input(0).dim(0) * out_dim_, 1, out_channels_, y, bias, y, ctx());
+    kernels::BiasAdd(batch_size * out_dim_, 1, out_channels_, Y, B, Y, ctx());
   }
 }
 
 template <class Context>
 template <typename T>
-void ConvOpBase<Context>::GradX(const T* dy, const T* w, T* dx) {
-  auto* col = (skip_im2col_ == 0)
+void ConvOpBase<Context>::BwdData(const T* dY, const T* W, T* dX) {
+  auto* dX_col = (skip_im2col_ == 0)
       ? ctx()->workspace()->template data<T, Context>(col_dim_)
-      : dx;
+      : dX;
   for (int g = 0; g < group_; g++) {
     if (data_format() == "NCHW") {
       math::Gemm(
@@ -163,10 +162,10 @@ void ConvOpBase<Context>::GradX(const T* dy, const T* w, T* dx) {
           conv_out_dim_,
           conv_out_channels_ / group_,
           1.f,
-          w + W_stride_ * g,
-          dy + Y_stride1_ * g,
+          W + W_stride_ * g,
+          dY + Y_stride1_ * g,
           0.f,
-          col + col_stride_ * g,
+          dX_col + col_stride_ * g,
           ctx());
     } else if (data_format() == "NHWC") {
       math::Gemm(
@@ -176,25 +175,29 @@ void ConvOpBase<Context>::GradX(const T* dy, const T* w, T* dx) {
           kernel_dim_,
           conv_out_channels_,
           1.f,
-          dy,
-          w,
+          dY,
+          W,
           0.f,
-          col,
+          dX_col,
           ctx());
     }
   }
   if (skip_im2col_ == 0) {
-    Col2Im(col, dx);
+    Col2Im(dX_col, dX);
   }
 }
 
 template <class Context>
 template <typename T>
-void ConvOpBase<Context>::GradW(const T* dy, const T* x, T* dw, bool accum) {
-  auto* col = const_cast<T*>(x);
+void ConvOpBase<Context>::BwdFilter(
+    const T* dY,
+    const T* X,
+    T* dW,
+    bool accum) {
+  auto* X_col = const_cast<T*>(X);
   if (skip_im2col_ == 0) {
-    col = ctx()->workspace()->template data<T, Context>(col_dim_);
-    Im2Col(x, col);
+    X_col = ctx()->workspace()->template data<T, Context>(col_dim_);
+    Im2Col(X, X_col);
   }
   for (int g = 0; g < group_; g++) {
     if (data_format() == "NCHW") {
@@ -205,10 +208,10 @@ void ConvOpBase<Context>::GradW(const T* dy, const T* x, T* dw, bool accum) {
           kernel_dim_,
           conv_out_dim_,
           1.f,
-          dy + Y_stride1_ * g,
-          col + col_stride_ * g,
+          dY + Y_stride1_ * g,
+          X_col + col_stride_ * g,
           accum ? 1.f : 0.f,
-          dw + W_stride_ * g,
+          dW + W_stride_ * g,
           ctx());
     } else if (data_format() == "NHWC") {
       math::Gemm(
@@ -218,10 +221,10 @@ void ConvOpBase<Context>::GradW(const T* dy, const T* x, T* dw, bool accum) {
           kernel_dim_,
           conv_out_dim_,
           1.f,
-          dy,
-          col,
+          dY,
+          X_col,
           accum ? 1.f : 0.f,
-          dw,
+          dW,
           ctx());
     }
   }
@@ -229,16 +232,17 @@ void ConvOpBase<Context>::GradW(const T* dy, const T* x, T* dw, bool accum) {
 
 template <class Context>
 template <typename T>
-void ConvOpBase<Context>::GradBias(const T* dy, T* db) {
+void ConvOpBase<Context>::BwdBias(const T* dY, T* dB) {
   vec64_t dims, axes;
+  const auto batch_size = Input(0).dim(0);
   if (data_format() == "NCHW") {
-    dims = {Input(0).dim(0), out_channels_, out_dim_};
+    dims = {batch_size, out_channels_, out_dim_};
     axes = {0, 2};
   } else if (data_format() == "NHWC") {
-    dims = {Input(0).dim(0), out_dim_, out_channels_};
+    dims = {batch_size, out_dim_, out_channels_};
     axes = {0, 1};
   }
-  math::ReduceSum(3, dims.data(), 2, axes.data(), 1.f, dy, db, ctx());
+  math::ReduceSum(3, dims.data(), 2, axes.data(), 1.f, dY, dB, ctx());
 }
 
 } // namespace dragon

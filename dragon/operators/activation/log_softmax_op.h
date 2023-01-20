@@ -45,6 +45,47 @@ class LogSoftmaxGradientOp : public Operator<Context> {
   void DoRunWithType();
 };
 
+#ifdef USE_MLU
+template <class Context>
+class CNNLLogSoftmaxOp : public Operator<Context> {
+ public:
+  CNNLLogSoftmaxOp(const OperatorDef& def, Workspace* ws)
+      : Operator<Context>(def, ws) {
+    CNNLCreateTensorDesc(&input_desc_);
+  }
+  USE_OPERATOR_FUNCTIONS;
+
+  ~CNNLLogSoftmaxOp() {
+    CNNLDestroyTensorDesc(input_desc_);
+  }
+
+  void RunOnDevice() override {
+    DispatchHelper<dtypes::Floating>::Call(this, Input(0));
+  }
+
+  template <typename T>
+  void DoRunWithType();
+
+ protected:
+  cnnlTensorDescriptor_t input_desc_;
+};
+
+template <class Context>
+class CNNLLogSoftmaxGradientOp final : public CNNLLogSoftmaxOp<Context> {
+ public:
+  CNNLLogSoftmaxGradientOp(const OperatorDef& def, Workspace* ws)
+      : CNNLLogSoftmaxOp<Context>(def, ws) {}
+  USE_OPERATOR_FUNCTIONS;
+
+  void RunOnDevice() override {
+    DispatchHelper<dtypes::Floating>::Call(this, Input(0));
+  }
+
+  template <typename T>
+  void DoRunWithType();
+};
+#endif // USE_MLU
+
 } // namespace dragon
 
 #endif // DRAGON_OPERATORS_ACTIVATION_LOG_SOFTMAX_OP_H_

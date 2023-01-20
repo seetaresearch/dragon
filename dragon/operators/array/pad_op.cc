@@ -73,7 +73,7 @@ void PadOp<Context>::DoRunWithType() {
         Y->Reshape(Y_dims)->template mutable_data<T, Context>(),
         ctx());
   } else {
-    LOG(FATAL) << "Unknown PadMode: " << mode_ << ".";
+    LOG(FATAL) << "Unsupported Pad mode: " << mode_;
   }
 }
 
@@ -106,11 +106,11 @@ void PadGradientOp<Context>::DoRunWithType() {
         dX->Reshape(X_dims)->template mutable_data<T, Context>(),
         ctx());
   } else if (mode_ == "REFLECT") {
-    LOG(FATAL) << "No implementation for <ReflectPadGrad>.";
+    LOG(FATAL) << "<ReflectPadGrad> is not implemented.";
   } else if (mode_ == "EDGE") {
-    LOG(FATAL) << "No implementation for <EdgePadGrad>.";
+    LOG(FATAL) << "<EdgePadGrad> is not implemented.";
   } else {
-    LOG(FATAL) << "Unknown PadMode: " << mode_ << ".";
+    LOG(FATAL) << "Unsupported Pad mode: " << mode_;
   }
 }
 
@@ -120,6 +120,8 @@ DEPLOY_CPU_OPERATOR(PadGradient);
 DEPLOY_CUDA_OPERATOR(Pad);
 DEPLOY_CUDA_OPERATOR(PadGradient);
 #endif
+
+DEFINE_OP_REPEATED_ARG(int64_t, PadOp, pads);
 
 OPERATOR_SCHEMA(Pad).NumInputs(1).NumOutputs(1);
 OPERATOR_SCHEMA(PadGradient).NumInputs(2).NumOutputs(1);

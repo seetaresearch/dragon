@@ -36,7 +36,6 @@ class ReverseOp final : public Operator<Context> {
 };
 
 #ifdef USE_MPS
-
 template <class Context>
 class MPSReverseOp final : public Operator<Context> {
  public:
@@ -62,8 +61,34 @@ class MPSReverseOp final : public Operator<Context> {
   MPSGraph_t graph_;
   MPSGraphCache graph_cache_;
 };
+#endif // USE_MPS
 
-#endif
+#ifdef USE_MLU
+template <class Context>
+class CNNLReverseOp final : public Operator<Context> {
+ public:
+  CNNLReverseOp(const OperatorDef& def, Workspace* ws)
+      : Operator<Context>(def, ws), axes_(OP_REPEATED_ARG(int64_t, "axes")) {
+    CNNLCreateTensorDesc(&input_desc_);
+  }
+  USE_OPERATOR_FUNCTIONS;
+
+  ~CNNLReverseOp() {
+    CNNLDestroyTensorDesc(input_desc_);
+  }
+
+  void RunOnDevice() override {
+    DispatchHelper<dtypes::Generic>::Call(this, Input(0));
+  }
+
+  template <typename T>
+  void DoRunWithType();
+
+ protected:
+  vec64_t axes_;
+  cnnlTensorDescriptor_t input_desc_;
+};
+#endif // USE_MLU
 
 } // namespace dragon
 

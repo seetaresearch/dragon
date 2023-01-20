@@ -26,7 +26,7 @@ from dragon.vm.torch.core import cpp
 
 
 class Tensor(object):
-    """A multi-dimensional array containing elements of a single data type.
+    """A multi-dimension array containing elements of a single data type.
 
     To create a tensor from constant value, use ``torch.tensor(...)``:
 
@@ -241,7 +241,7 @@ class Tensor(object):
         """
 
     def add(self, other):
-        r"""Compute the element-wise addition.
+        r"""Compute element-wise addition.
 
         .. math:: \text{out} = \text{self} + \text{other}
 
@@ -262,7 +262,7 @@ class Tensor(object):
         """
 
     def add_(self, other):
-        r"""Compute the element-wise addition.
+        r"""Compute element-wise addition.
 
         .. math:: \text{self} \mathrel{+}= \text{other}
 
@@ -373,7 +373,7 @@ class Tensor(object):
         """
 
     def atan2(self, other):
-        r"""Compute the element-wise arc-tangent of two arguments.
+        r"""Compute element-wise arc-tangent of two arguments.
 
         .. math:: \text{out} = \text{arctan}(\frac{\text{self}}{\text{other}})
 
@@ -464,7 +464,7 @@ class Tensor(object):
         """
 
     def bitwise_and(self, other):
-        r"""Compute the element-wise AND bitwise operation.
+        r"""Compute element-wise AND bitwise operation.
 
         .. math:: \text{out} = \text{self} \mathbin{\&} \text{other}
 
@@ -485,7 +485,7 @@ class Tensor(object):
         """
 
     def bitwise_and_(self, other):
-        r"""Compute the element-wise AND bitwise operation.
+        r"""Compute element-wise AND bitwise operation.
 
         .. math:: \text{self} = \text{self} \mathbin{\&} \text{other}
 
@@ -506,7 +506,7 @@ class Tensor(object):
         """
 
     def bitwise_not(self):
-        r"""Compute the element-wise NOT bitwise operation.
+        r"""Compute element-wise NOT bitwise operation.
 
         .. math:: \text{out} = \,\,\sim \text{self}
 
@@ -522,7 +522,7 @@ class Tensor(object):
         """
 
     def bitwise_not_(self):
-        r"""Compute the element-wise NOT bitwise operation.
+        r"""Compute element-wise NOT bitwise operation.
 
         .. math:: \text{self} = \,\,\sim \text{self}
 
@@ -538,7 +538,7 @@ class Tensor(object):
         """
 
     def bitwise_or(self, other):
-        r"""Compute the element-wise OR bitwise operation.
+        r"""Compute element-wise OR bitwise operation.
 
         .. math:: \text{out} = \text{self} \mathbin{|} \text{other}
 
@@ -559,7 +559,7 @@ class Tensor(object):
         """
 
     def bitwise_or_(self, other):
-        r"""Compute the element-wise OR bitwise operation.
+        r"""Compute element-wise OR bitwise operation.
 
         .. math:: \text{self} = \text{self} \mathbin{|} \text{other}
 
@@ -580,7 +580,7 @@ class Tensor(object):
         """
 
     def bitwise_xor(self, other):
-        r"""Compute the element-wise XOR logical operation.
+        r"""Compute element-wise XOR logical operation.
 
         .. math:: \text{out} = \text{self} \oplus \text{other}
 
@@ -601,7 +601,7 @@ class Tensor(object):
         """
 
     def bitwise_xor_(self, other):
-        r"""Compute the element-wise XOR bitwise operation.
+        r"""Compute element-wise XOR bitwise operation.
 
         .. math:: \text{self} = \text{self} \oplus \text{other}
 
@@ -622,7 +622,7 @@ class Tensor(object):
         """
 
     def bmm(self, batch2):
-        r"""Compute the batched matrix multiplication.
+        r"""Compute batched matrix multiplication.
 
         .. math:: \text{out}_{i} = \text{self}_{i} \times \text{batch2}_{i}
 
@@ -920,7 +920,7 @@ class Tensor(object):
         return self._impl.ndim
 
     def div(self, other):
-        r"""Compute the element-wise division.
+        r"""Compute element-wise division.
 
         .. math:: \text{out} = \text{self} \div \text{other}
 
@@ -941,7 +941,7 @@ class Tensor(object):
         """
 
     def div_(self, other):
-        r"""Compute the element-wise division.
+        r"""Compute element-wise division.
 
         .. math:: \text{self} \mathrel{\div}= \text{other}
 
@@ -982,7 +982,7 @@ class Tensor(object):
         """
 
     def eq(self, other):
-        r"""Compute the element-wise equal comparison.
+        r"""Compute element-wise equal comparison.
 
         .. math:: \text{out} = (\text{self} = \text{other})
 
@@ -1245,7 +1245,7 @@ class Tensor(object):
         """
 
     def ge(self, other):
-        r"""Compute the element-wise greater-equal comparison.
+        r"""Compute element-wise greater-equal comparison.
 
         .. math:: \text{out} = (\text{self} \geq \text{other})
 
@@ -1266,7 +1266,7 @@ class Tensor(object):
         """
 
     def gt(self, other):
-        r"""Compute the element-wise greater comparison.
+        r"""Compute element-wise greater comparison.
 
         .. math:: \text{out} = (\text{self} > \text{other})
 
@@ -1427,7 +1427,7 @@ class Tensor(object):
         return float(self) if self.is_floating_point() else int(self)
 
     def le(self, other):
-        r"""Compute the element-wise less-equal comparison.
+        r"""Compute element-wise less-equal comparison.
 
         .. math:: \text{out} = (\text{self} \leq \text{other})
 
@@ -1480,7 +1480,7 @@ class Tensor(object):
         """
 
     def logical_and(self, other):
-        r"""Compute the element-wise AND logical operation.
+        r"""Compute element-wise AND logical operation.
 
         .. math:: \text{out} = \text{self} \mathbin{\&} \text{other}
 
@@ -1501,7 +1501,7 @@ class Tensor(object):
         """
 
     def logical_not(self):
-        r"""Compute the element-wise NOT logical operation.
+        r"""Compute element-wise NOT logical operation.
 
         .. math:: \text{out} = \,\,\sim \text{self}
 
@@ -1517,7 +1517,7 @@ class Tensor(object):
         """
 
     def logical_or(self, other):
-        r"""Compute the element-wise OR logical operation.
+        r"""Compute element-wise OR logical operation.
 
         .. math:: \text{out} = \text{self} \mathbin{|} \text{other}
 
@@ -1538,7 +1538,7 @@ class Tensor(object):
         """
 
     def logical_xor(self, other):
-        r"""Compute the element-wise XOR logical operation.
+        r"""Compute element-wise XOR logical operation.
 
         .. math:: \text{out} = \text{self} \oplus \text{other}
 
@@ -1602,7 +1602,7 @@ class Tensor(object):
         """
 
     def lt(self, other):
-        r"""Compute the element-wise less comparison.
+        r"""Compute element-wise less comparison.
 
         .. math:: \text{out} = (\text{self} < \text{other})
 
@@ -1671,7 +1671,7 @@ class Tensor(object):
         """
 
     def matmul(self, tensor2):
-        r"""Compute the matrix multiplication.
+        r"""Compute matrix multiplication.
 
         .. math:: \text{out} = \text{self} \times \text{tensor2}
 
@@ -1811,8 +1811,33 @@ class Tensor(object):
 
         """
 
+    def mlu(self, device=None):
+        """Copy memory to the specified mlu device.
+
+        Parameters
+        ----------
+        device : Union[int, dragon.vm.torch.device], optional
+            The device to copy to.
+
+        Returns
+        -------
+        dragon.vm.torch.Tensor
+            The output tensor.
+
+        """
+        if device is None:
+            cfg = config.config()
+            device = cfg.device_index
+        if isinstance(device, cpp.device):
+            if device.type != 'mlu':
+                raise ValueError('Excepted mlu device, got: ' + device.type)
+            device = device.index
+        self._impl.ToMLU(device)
+        self._device = cpp.device('mlu', device)
+        return self
+
     def mm(self, mat2):
-        r"""Compute the matrix-matrix multiplication.
+        r"""Compute matrix-matrix multiplication.
 
         .. math:: \text{out} = \text{self} \times \text{mat2}
 
@@ -1858,7 +1883,7 @@ class Tensor(object):
         return self
 
     def mul(self, other):
-        r"""Compute the element-wise multiplication.
+        r"""Compute element-wise multiplication.
 
         .. math:: \text{out} = \text{self} \times \text{other}
 
@@ -1879,7 +1904,7 @@ class Tensor(object):
         """
 
     def mul_(self, other):
-        r"""Compute the element-wise multiplication.
+        r"""Compute element-wise multiplication.
 
         .. math:: \text{self} \mathrel{\times}= \text{other}
 
@@ -1914,6 +1939,52 @@ class Tensor(object):
 
         """
 
+    def nan_to_num(self, nan=0.0, posinf=None, neginf=None):
+        """Return a tensor with NaN or infinity elements replaced with given value.
+
+        Parameters
+        ----------
+        nan : float, optional, default=0.0
+            The value to replace NaN elements.
+        posinf : float, optional
+            The value to replace positive infinity elements.
+        neginf : float, optional
+            The value to replace negative infinity elements.
+
+        Returns
+        -------
+        dragon.vm.torch.Tensor
+            The output tensor.
+
+        See Also
+        --------
+        `torch.nan_to_num(...)`_
+
+        """
+
+    def nan_to_num_(self, nan=0.0, posinf=None, neginf=None):
+        """Replace NaN or infinity elements with given value.
+
+        Parameters
+        ----------
+        nan : float, optional, default=0.0
+            The value to replace NaN elements.
+        posinf : float, optional
+            The value to replace positive infinity elements.
+        neginf : float, optional
+            The value to replace negative infinity elements.
+
+        Returns
+        -------
+        dragon.vm.torch.Tensor
+            The output tensor.
+
+        See Also
+        --------
+        `torch.nan_to_num(...)`_
+
+        """
+
     def narrow(self, dimension, start, length):
         """Return a narrowed tensor.
 
@@ -1945,7 +2016,7 @@ class Tensor(object):
         return self.dim()
 
     def ne(self, other):
-        r"""Compute the element-wise not-equal comparison.
+        r"""Compute element-wise not-equal comparison.
 
         .. math:: \text{out} = (\text{self} \neq \text{other})
 
@@ -2824,7 +2895,7 @@ class Tensor(object):
         """
 
     def sub(self, other):
-        r"""Compute the element-wise subtraction.
+        r"""Compute element-wise subtraction.
 
         .. math:: \text{out} = \text{self} - \text{other}
 
@@ -2845,7 +2916,7 @@ class Tensor(object):
         """
 
     def sub_(self, other):
-        r"""Compute the element-wise subtraction.
+        r"""Compute element-wise subtraction.
 
         .. math:: \text{self} \mathrel{-}= \text{other}
 
@@ -2943,6 +3014,8 @@ class Tensor(object):
                 self.cuda(device.index)
             elif device.type == 'mps':
                 self.mps(device.index)
+            elif device.type == 'mlu':
+                self.mlu(device.index)
             else:
                 raise ValueError('Unsupported device type: ' + device.type)
         if dtype is not None:
@@ -3386,7 +3459,7 @@ class Tensor(object):
         self._deleter = default_ws._handle_pool
 
     def __add__(self, other):
-        """Compute the element-wise addition.
+        """Compute element-wise addition.
 
         Parameters
         ----------
@@ -3402,7 +3475,7 @@ class Tensor(object):
         return self.add(other)
 
     def __and__(self, other):
-        """Compute the element-wise AND bitwise operation.
+        """Compute element-wise AND bitwise operation.
 
         Parameters
         ----------
@@ -3422,7 +3495,7 @@ class Tensor(object):
             self._deleter.release(self._impl.name)
 
     def __eq__(self, other):
-        r"""Compute the element-wise equal comparison.
+        r"""Compute element-wise equal comparison.
 
         Parameters
         ----------
@@ -3449,7 +3522,7 @@ class Tensor(object):
         return float(self.numpy())
 
     def __ge__(self, other):
-        """Compute the element-wise greater-equal comparison.
+        """Compute element-wise greater-equal comparison.
 
         Parameters
         ----------
@@ -3475,7 +3548,7 @@ class Tensor(object):
         """
 
     def __gt__(self, other):
-        """Compute the element-wise greater comparison.
+        """Compute element-wise greater comparison.
 
         Parameters
         ----------
@@ -3495,7 +3568,7 @@ class Tensor(object):
         return id(self)
 
     def __iadd__(self, other):
-        """Compute the element-wise addition.
+        """Compute element-wise addition.
 
         Parameters
         ----------
@@ -3511,7 +3584,7 @@ class Tensor(object):
         return self.add_(other)
 
     def __iand__(self, other):
-        """Compute the element-wise AND bitwise operation.
+        """Compute element-wise AND bitwise operation.
 
         Parameters
         ----------
@@ -3527,7 +3600,7 @@ class Tensor(object):
         return self.bitwise_and_(other)
 
     def __imul__(self, other):
-        """Compute the element-wise multiplication.
+        """Compute element-wise multiplication.
 
         Parameters
         ----------
@@ -3554,7 +3627,7 @@ class Tensor(object):
         return int(self.numpy())
 
     def __invert__(self):
-        """Compute the element-wise NOT bitwise operation.
+        """Compute element-wise NOT bitwise operation.
 
         Returns
         -------
@@ -3565,7 +3638,7 @@ class Tensor(object):
         return self.bitwise_not()
 
     def __ior__(self, other):
-        """Compute the element-wise OR bitwise operation.
+        """Compute element-wise OR bitwise operation.
 
         Parameters
         ----------
@@ -3581,7 +3654,7 @@ class Tensor(object):
         return self.bitwise_or_(other)
 
     def __isub__(self, other):
-        """Compute the element-wise subtraction.
+        """Compute element-wise subtraction.
 
         Parameters
         ----------
@@ -3597,7 +3670,7 @@ class Tensor(object):
         return self.sub_(other)
 
     def __itruediv__(self, other):
-        """Compute the element-wise division.
+        """Compute element-wise division.
 
         Parameters
         ----------
@@ -3613,7 +3686,7 @@ class Tensor(object):
         return self.div_(other)
 
     def __ixor__(self, other):
-        """Compute the element-wise XOR bitwise operation.
+        """Compute element-wise XOR bitwise operation.
 
         Parameters
         ----------
@@ -3629,7 +3702,7 @@ class Tensor(object):
         return self.bitwise_xor_(other)
 
     def __le__(self, other):
-        """Compute the element-wise less-equal comparison.
+        """Compute element-wise less-equal comparison.
 
         Parameters
         ----------
@@ -3645,7 +3718,7 @@ class Tensor(object):
         return self.le(other)
 
     def __lt__(self, other):
-        """Compute the element-wise less comparison.
+        """Compute element-wise less comparison.
 
         Parameters
         ----------
@@ -3661,7 +3734,7 @@ class Tensor(object):
         return self.lt(other)
 
     def __matmul__(self, other):
-        r"""Compute the matrix multiplication.
+        r"""Compute matrix multiplication.
 
         .. math:: \text{out} = \text{self} \times \text{tensor2}
 
@@ -3683,7 +3756,7 @@ class Tensor(object):
         return self.matmul(other)
 
     def __mul__(self, other):
-        """Compute the element-wise multiplication.
+        """Compute element-wise multiplication.
 
         Parameters
         ----------
@@ -3699,7 +3772,7 @@ class Tensor(object):
         return self.mul(other)
 
     def __ne__(self, other):
-        """Compute the element-wise not-equal comparison.
+        """Compute element-wise not-equal comparison.
 
         Parameters
         ----------
@@ -3715,7 +3788,7 @@ class Tensor(object):
         return self.ne(other)
 
     def __neg__(self):
-        """Compute the element-wise negative.
+        """Compute element-wise negative.
 
         Returns
         -------
@@ -3726,7 +3799,7 @@ class Tensor(object):
         return self.neg()
 
     def __or__(self, other):
-        """Compute the element-wise OR bitwise operation.
+        """Compute element-wise OR bitwise operation.
 
         Parameters
         ----------
@@ -3742,7 +3815,7 @@ class Tensor(object):
         return self.bitwise_or(other)
 
     def __radd__(self, other):
-        """Compute the element-wise addition.
+        """Compute element-wise addition.
 
         Parameters
         ----------
@@ -3770,7 +3843,7 @@ class Tensor(object):
         return string.add_indent(debug_str, 7)
 
     def __rmul__(self, other):
-        """Compute the element-wise multiplication.
+        """Compute element-wise multiplication.
 
         Parameters
         ----------
@@ -3785,7 +3858,7 @@ class Tensor(object):
         """
 
     def __rsub__(self, other):
-        """Compute the element-wise subtraction.
+        """Compute element-wise subtraction.
 
         Parameters
         ----------
@@ -3800,7 +3873,7 @@ class Tensor(object):
         """
 
     def __rtruediv__(self, other):
-        """Compute the element-wise division.
+        """Compute element-wise division.
 
         Parameters
         ----------
@@ -3815,7 +3888,7 @@ class Tensor(object):
         """
 
     def __truediv__(self, other):
-        """Compute the element-wise division.
+        """Compute element-wise division.
 
         Parameters
         ----------
@@ -3834,7 +3907,7 @@ class Tensor(object):
         """Set elements at the specific index."""
 
     def __sub__(self, other):
-        """Compute the element-wise subtraction.
+        """Compute element-wise subtraction.
 
         Parameters
         ----------
@@ -3850,7 +3923,7 @@ class Tensor(object):
         return self.sub(other)
 
     def __xor__(self, other):
-        """Compute the element-wise XOR bitwise operation.
+        """Compute element-wise XOR bitwise operation.
 
         Parameters
         ----------

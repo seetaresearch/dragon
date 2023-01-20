@@ -36,11 +36,8 @@ void SigmoidFocalLossOp<Context>::DoRunWithType() {
       ctx());
 
   if (reduction_ == "NONE") {
-    math::Copy(
-        NxCxS,
-        loss,
-        L->ReshapeLike(X)->template mutable_data<InputT, Context>(),
-        ctx());
+    L->ReshapeLike(X);
+    math::Copy(NxCxS, loss, L->template mutable_data<InputT, Context>(), ctx());
   } else {
     int64_t normalizer = 1;
     if (reduction_ == "VALID") {

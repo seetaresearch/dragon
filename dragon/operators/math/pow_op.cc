@@ -96,7 +96,7 @@ void PowGradientOp<Context>::DoRunWithType() {
           A.template data<T, Context>(),
           dA->ReshapeLike(A)->template mutable_data<T, Context>(),
           ctx());
-      math::ReplaceNaN(
+      math::NaNToNum(
           A.count(),
           0.f,
           dA->template data<T, Context>(),
@@ -136,7 +136,7 @@ void PowGradientOp<Context>::DoRunWithType() {
           A.template data<T, Context>(),
           data,
           ctx());
-      math::ReplaceNaN(Y.count(), 0.f, data, data, ctx());
+      math::NaNToNum(Y.count(), 0.f, data, data, ctx());
       if (B_broadcast_axes.empty()) {
         math::Mul(Y.count(), data, B.template data<T, Context>(), data, ctx());
       } else {

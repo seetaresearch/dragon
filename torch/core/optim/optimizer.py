@@ -61,6 +61,7 @@ class Optimizer(object):
         defaults.update({'grad_scale': kwargs.pop('grad_scale', 1),
                          'clip_norm': kwargs.pop('clip_norm', 0),
                          'clip_value': kwargs.pop('clip_value', 0)})
+        self._update_pre_hook = kwargs.pop('update_pre_hook', None)
         if kwargs:
             raise ValueError('Unexpected arguments: ' + ','.join(v for v in kwargs))
         self.defaults = defaults
@@ -144,8 +145,33 @@ class Optimizer(object):
         ```
 
         """
+        params_all, grads_all = [], []
+        execute_ws = workspace.get_workspace()
         for group in self.param_groups:
-            self._update_group(group)
+            # Collect params and grads.
+            params_with_grad, grads = [], []
+            for p in group['params']:
+                g = self._get_grad(execute_ws, p, self._sums_grad)
+                if g is not None:
+                    grads.append(g)
+                    params_with_grad.append(p)
+            grads_all.append(grads)
+            params_all.append(params_with_grad)
+        # Reduce grads in the process group.
+        process_group = distributed.get_group()
+        if process_group is not None:
+            reduce_grads_all = collections.defaultdict(list)
+            for grads in grads_all:
+                for g in grads:
+                    reduce_grads_all[g.dtype].append(g)
+            for grads in reduce_grads_all.values():
+                if self._update_pre_hook is not None:
+                    self._update_pre_hook(grads)
+                Function.apply('Collective', grads[0].device, grads,
+                               outputs=grads, operation='ALLREDUCE',
+                               reduction='MEAN', **process_group.arguments)
+        for idx, group in enumerate(self.param_groups):
+            self._update_group(group, params_all[idx], grads_all[idx])
         self._sums_grad = False
 
     def sum_grad(self):
@@ -218,23 +244,14 @@ class Optimizer(object):
                     else:
                         grad.zero_()
 
-    def _update_group(self, group):
+    def _update_group(self, group, params, grads):
         """Update parameters for the group."""
-        execute_ws = workspace.get_workspace()
-
-        # Collect params and grads.
-        params_with_grad, grads = [], []
-        for p in group['params']:
-            g = self._get_grad(execute_ws, p, self._sums_grad)
-            if g is not None:
-                params_with_grad.append(p)
-                grads.append(g)
-
         # Skip if grads are all missing.
-        if len(params_with_grad) == 0:
+        if len(params) == 0:
             return
 
         # Update hyper from group values.
+        execute_ws = workspace.get_workspace()
         for name in self._hyper.keys():
             group_name = group['name']
             impl_name, group_dict = self._hyper[name]
@@ -244,16 +261,9 @@ class Optimizer(object):
             impl = group_dict[group_name]
             impl.FromNumpy(numpy.array(group[name], 'float32'), False)
 
-        # Reduce grads in the process group.
-        process_group = distributed.get_group()
-        if process_group is not None:
-            Function.apply('Collective', grads[0].device, grads,
-                           outputs=grads, operation='ALLREDUCE',
-                           reduction='MEAN', **process_group.arguments)
-
         # Apply updates.
-        Function.apply(self._op_type, params_with_grad[0].device, grads,
-                       outputs=params_with_grad, name=group['name'],
+        Function.apply(self._op_type, params[0].device, grads,
+                       outputs=params, name=group['name'],
                        weight_decay=None)
 
     @staticmethod

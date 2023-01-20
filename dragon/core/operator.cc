@@ -83,6 +83,14 @@ OperatorBase* OperatorBase::New(const OperatorDef& def, Workspace* ws) {
       return CUDAOperatorRegistry()->Create(op_type, def, ws);
     case PROTO_MPS:
       return MPSOperatorRegistry()->Create(op_type, def, ws);
+    case PROTO_MLU:
+#ifdef USE_MLU
+      if (CNNLOperatorRegistry()->Has(op_type) &&
+          MLUContext::objects().cnnl_enabled_) {
+        return CNNLOperatorRegistry()->Create(op_type, def, ws);
+      }
+#endif
+      return MLUOperatorRegistry()->Create(op_type, def, ws);
     default:
       LOG(FATAL) << "Unsupported device: " << def.device_option().device_type();
       return nullptr;
@@ -128,6 +136,18 @@ DEFINE_REGISTRY(
 
 DEFINE_REGISTRY(
     MPSOperatorRegistry,
+    OperatorBase,
+    const OperatorDef&,
+    Workspace*);
+
+DEFINE_REGISTRY(
+    MLUOperatorRegistry,
+    OperatorBase,
+    const OperatorDef&,
+    Workspace*);
+
+DEFINE_REGISTRY(
+    CNNLOperatorRegistry,
     OperatorBase,
     const OperatorDef&,
     Workspace*);
@@ -186,6 +206,9 @@ template class Operator<CUDAContext>;
 #endif
 #ifdef USE_MPS
 template class Operator<MPSContext>;
+#endif
+#ifdef USE_MLU
+template class Operator<MLUContext>;
 #endif
 
 } // namespace dragon

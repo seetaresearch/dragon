@@ -22,16 +22,6 @@ get = _REGISTERED_OP_ARGS.try_get
 register = _REGISTERED_OP_ARGS.register
 
 
-@register('Accuracy')
-def accuracy_args(**kwargs):
-    return {
-        'no_grad': True,
-        'axis': kwargs.get('axis', -1),
-        'top_k': kwargs.get('top_k', 1),
-        'ignore_index': kwargs.get('ignore_index', None),
-    }
-
-
 @register(['ArgMax', 'ArgMin'])
 def arg_reduce_args(**kwargs):
     return {
@@ -336,6 +326,15 @@ def multinomial_args(**kwargs):
     return {'sample_size': kwargs.get('sample_size', 1)}
 
 
+@register('NaNToNum')
+def nan_to_num_args(**kwargs):
+    return {
+        'nan': kwargs.get('nan', 0.0),
+        'pos_inf': kwargs.get('pos_inf', None),
+        'neg_inf': kwargs.get('neg_inf', None),
+    }
+
+
 @register(['NLLLoss', 'SoftmaxCrossEntropyLoss'])
 def nll_loss_args(**kwargs):
     return {
@@ -466,16 +465,15 @@ def reverse_args(**kwargs):
     return {'axes': kwargs.get('axes', None)}
 
 
-@register('Recurrent')
+@register('RNN')
 def rnn_args(**kwargs):
     return {
+        'rnn_mode': kwargs.get('rnn_mode', ''),
         'num_layers': kwargs.get('num_layers', 1),
         'bidirectional': kwargs.get('bidirectional', 0),
-        'input_size': kwargs.get('input_size', 0),
         'hidden_size': kwargs.get('hidden_size', 0),
         'dropout': kwargs.get('dropout', 0.0),
         'phase': kwargs.get('phase', 'TEST'),
-        'rnn_mode': kwargs.get('rnn_mode', 'rnn_tanh'),
     }
 
 
@@ -483,14 +481,14 @@ def rnn_args(**kwargs):
 def rnn_param_args(**kwargs):
     return {
         'no_grad': True,
+        'rnn_mode': kwargs.get('rnn_mode', ''),
         'num_layers': kwargs.get('num_layers', 1),
         'bidirectional': kwargs.get('bidirectional', 0),
-        'input_size': kwargs.get('input_size', 0),
         'hidden_size': kwargs.get('hidden_size', 0),
+        'input_size': kwargs.get('input_size', 0),
         'layer_id': kwargs.get('layer_id', 0),
         'param_id': kwargs.get('param_id', 0),
         'param_type': kwargs.get('param_type', 'matrix'),
-        'rnn_mode': kwargs.get('rnn_mode', 'rnn_tanh'),
     }
 
 

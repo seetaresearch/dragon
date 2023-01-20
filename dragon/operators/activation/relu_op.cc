@@ -57,6 +57,9 @@ DEPLOY_CUDA_OPERATOR(ReluGradient);
 DEPLOY_MPS_OPERATOR(Relu, Relu);
 DEPLOY_MPS_OPERATOR(ReluGradient, ReluGradient);
 #endif
+#ifdef USE_MLU
+DEPLOY_MLU_OPERATOR(Relu);
+#endif
 
 OPERATOR_SCHEMA(Relu)
     /* X */

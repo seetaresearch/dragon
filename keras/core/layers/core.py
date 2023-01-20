@@ -133,7 +133,7 @@ class Dense(Layer):
 
 
 class Dropout(Layer):
-    r"""Layer to apply the dropout function.
+    r"""Apply dropout function.
     `[Srivastava et.al, 2014] <http://jmlr.org/papers/v15/srivastava14a.html>`_.
 
     The **Dropout** function is defined as:

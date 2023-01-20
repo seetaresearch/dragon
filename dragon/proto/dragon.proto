@@ -60,6 +60,8 @@ enum DeviceTypeProto {
   PROTO_CUDA = 1;
   // Apple MetalPerformanceShaders.
   PROTO_MPS = 2;
+  // Cambricon MLU.
+  PROTO_MLU = 3;
 }
 
 // Device-specific options.

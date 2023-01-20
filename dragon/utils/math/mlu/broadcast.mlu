@@ -1,0 +1,542 @@
+#include "dragon/utils/math/blas.h"
+#include "dragon/utils/math/broadcast.h"
+#include "dragon/utils/math/elementwise.h"
+#include "dragon/utils/math/types.h"
+#include "dragon/utils/math/utils.h"
+
+namespace dragon {
+
+namespace math {
+
+#define BLOCK_THREADS 40960
+
+namespace {
+
+template <typename T>
+__mlu_entry__ void _RowwiseSet(const int N, const int C, const T* x, T* y) {
+  __nram__ T Y[BLOCK_THREADS];
+  __mlu_shared__ T Y_shared[BLOCK_THREADS];
+  for (int j = 0; j < C; j += BLOCK_THREADS) {
+    T* offset_y = y + j;
+    const int C_ram = std::min(C - j, BLOCK_THREADS);
+    __memcpy(Y_shared, x + j, C_ram * sizeof(T), GDRAM2SRAM);
+    __sync_cluster(); // Wait Memory Core.
+    __memcpy(Y, Y_shared, C_ram * sizeof(T), SRAM2NRAM);
+    for (int i = taskId; i < N; i += taskDim) {
+      __memcpy(offset_y + i * C, Y, C_ram * sizeof(T), NRAM2GDRAM);
+    }
+  }
+}
+
+template <typename T>
+__mlu_entry__ void _ColwiseSet(const int N, const int C, const T* x, T* y) {
+  __nram__ T Y[BLOCK_THREADS];
+  for (int i = taskId; i < N; i += taskDim) {
+    const T value = x[i];
+    T* offset_y = y + i * C;
+    for (int j = 0; j < C; j += BLOCK_THREADS) {
+      const int C_ram = std::min(C - j, BLOCK_THREADS);
+      __bang_write_value(Y, C_ram, value);
+      __memcpy(offset_y + j, Y, C_ram * sizeof(T), NRAM2GDRAM);
+    }
+  }
+}
+
+template <typename T>
+__mlu_entry__ void
+_ColwiseSet_fallback(const int N, const int C, const T* x, T* y) {
+  __nram__ T Y[BLOCK_THREADS];
+  const int Y_stride = C * sizeof(T);
+  for (int j = 0; j < N; j += BLOCK_THREADS) {
+    const int N_ram = std::min(N - j, BLOCK_THREADS);
+    const int N_seg = N_ram - 1;
+    __memcpy(Y, x + j, N_ram * sizeof(T), GDRAM2NRAM);
+    for (int i = taskId; i < C; i += taskDim) {
+      __memcpy(y + i, Y, sizeof(T), NRAM2GDRAM, Y_stride, sizeof(T), N_seg);
+    }
+  }
+}
+
+/*
+ * Math Kernels.
+ */
+
+#define DEFINE_BINARY_KERNEL(name, VecFunc)                            \
+  template <typename T, bool BroadcastA>                               \
+  __mlu_entry__ void _RowwiseBinary##name(                             \
+      const int N, const int C, const T* a, const T* b, T* y) {        \
+    __mlu_shared__ T X_shared[BLOCK_THREADS];                          \
+    __nram__ T X[BLOCK_THREADS], Y[BLOCK_THREADS];                     \
+    for (int j = 0; j < C; j += BLOCK_THREADS) {                       \
+      T* offset_y = y + j;                                             \
+      const T* offset_x1 = BroadcastA ? a + j : b + j;                 \
+      const T* offset_x2 = BroadcastA ? b + j : a + j;                 \
+      const int C_ram = std::min(C - j, BLOCK_THREADS);                \
+      __memcpy(X_shared, offset_x1, C_ram * sizeof(T), GDRAM2SRAM);    \
+      __sync_cluster();                                                \
+      __memcpy(X, X_shared, C_ram * sizeof(T), SRAM2NRAM);             \
+      for (int i = taskId; i < N; i += taskDim) {                      \
+        __memcpy(Y, offset_x2 + i * C, C_ram * sizeof(T), GDRAM2NRAM); \
+        VecFunc(Y, BroadcastA ? X : Y, BroadcastA ? Y : X, C_ram);     \
+        __memcpy(offset_y + i * C, Y, C_ram * sizeof(T), NRAM2GDRAM);  \
+      }                                                                \
+    }                                                                  \
+  }                                                                    \
+  template <typename T, bool BroadcastA>                               \
+  __mlu_entry__ void _ColwiseBinary##name(                             \
+      const int N, const int C, const T* a, const T* b, T* y) {        \
+    __nram__ T X[BLOCK_THREADS], Y[BLOCK_THREADS];                     \
+    for (int i = taskId; i < N; i += taskDim) {                        \
+      T* offset_y = y + i * C;                                         \
+      const T x1 = BroadcastA ? a[i] : b[i];                           \
+      const T* offset_x2 = BroadcastA ? b + i * C : a + i * C;         \
+      for (int j = 0; j < C; j += BLOCK_THREADS) {                     \
+        const int C_ram = std::min(C - j, BLOCK_THREADS);              \
+        __bang_write_value(X, C_ram, x1);                              \
+        __memcpy(Y, offset_x2 + j, C_ram * sizeof(T), GDRAM2NRAM);     \
+        VecFunc(Y, BroadcastA ? X : Y, BroadcastA ? Y : X, C_ram);     \
+        __memcpy(offset_y + j, Y, C_ram * sizeof(T), NRAM2GDRAM);      \
+      }                                                                \
+    }                                                                  \
+  }
+
+template <typename T, bool BroadcastA>
+__mlu_entry__ void
+_RowwiseBinaryDiv(const int N, const int C, const T* a, const T* b, T* y) {
+  __mlu_shared__ T X_shared[BLOCK_THREADS];
+  __nram__ T X[BLOCK_THREADS], Y[BLOCK_THREADS];
+  for (int j = 0; j < C; j += BLOCK_THREADS) {
+    T* offset_y = y + j;
+    const T* offset_x1 = BroadcastA ? a + j : b + j;
+    const T* offset_x2 = BroadcastA ? b + j : a + j;
+    const int C_ram = std::min(C - j, BLOCK_THREADS);
+    __memcpy(X_shared, offset_x1, C_ram * sizeof(T), GDRAM2SRAM);
+    __sync_cluster();
+    __memcpy(X, X_shared, C_ram * sizeof(T), SRAM2NRAM);
+    for (int i = taskId; i < N; i += taskDim) {
+      __memcpy(Y, offset_x2 + i * C, C_ram * sizeof(T), GDRAM2NRAM);
+      __bang_recip(BroadcastA ? Y : X, BroadcastA ? Y : X, C_ram);
+      __bang_mul(Y, BroadcastA ? X : Y, BroadcastA ? Y : X, C_ram);
+      __memcpy(offset_y + i * C, Y, C_ram * sizeof(T), NRAM2GDRAM);
+    }
+  }
+}
+
+template <typename T, bool BroadcastA>
+__mlu_entry__ void
+_ColwiseBinaryDiv(const int N, const int C, const T* a, const T* b, T* y) {
+  __nram__ T X[BLOCK_THREADS], Y[BLOCK_THREADS];
+  for (int i = taskId; i < N; i += taskDim) {
+    T* offset_y = y + i * C;
+    const T x1 = BroadcastA ? a[i] : b[i];
+    const T* offset_x2 = BroadcastA ? b + i * C : a + i * C;
+    for (int j = 0; j < C; j += BLOCK_THREADS) {
+      const int C_ram = std::min(C - j, BLOCK_THREADS);
+      __bang_write_value(X, C_ram, x1);
+      __memcpy(Y, offset_x2 + j, C_ram * sizeof(T), GDRAM2NRAM);
+      __bang_recip(BroadcastA ? Y : X, BroadcastA ? Y : X, C_ram);
+      __bang_mul(Y, BroadcastA ? X : Y, BroadcastA ? Y : X, C_ram);
+      __memcpy(offset_y + j, Y, C_ram * sizeof(T), NRAM2GDRAM);
+    }
+  }
+}
+
+DEFINE_BINARY_KERNEL(Add, __bang_add);
+DEFINE_BINARY_KERNEL(Sub, __bang_sub);
+DEFINE_BINARY_KERNEL(Mul, __bang_mul);
+DEFINE_BINARY_KERNEL(Minimum, __bang_nan_minimum);
+DEFINE_BINARY_KERNEL(Maximum, __bang_nan_maximum);
+#undef DEFINE_BINARY_KERNEL
+
+#define DEFINE_BINARY_KERNEL(name, VecFunc)                                 \
+  template <typename T, bool BroadcastA>                                    \
+  __mlu_entry__ void _ScalarBinary##name(                                   \
+      const int N, const T* a, const T* b, T* y) {                          \
+    __nram__ T X[BLOCK_THREADS], Y[BLOCK_THREADS];                          \
+    const T value = BroadcastA ? a[0] : b[0];                               \
+    MLU_1D_KERNEL_LOOP(i, N, BLOCK_THREADS) {                               \
+      const int N_ram = std::min(N - i, BLOCK_THREADS);                     \
+      __memcpy(Y, (BroadcastA ? b : a) + i, N_ram * sizeof(T), GDRAM2NRAM); \
+      VecFunc(Y, Y, value, N_ram);                                          \
+      __memcpy(y + i, Y, N_ram * sizeof(T), NRAM2GDRAM);                    \
+    }                                                                       \
+  }
+
+DEFINE_BINARY_KERNEL(Add, __bang_add_scalar);
+DEFINE_BINARY_KERNEL(Mul, __bang_mul_scalar);
+DEFINE_BINARY_KERNEL(Minimum, __bang_mineq_scalar);
+DEFINE_BINARY_KERNEL(Maximum, __bang_maxeq_scalar);
+#undef DEFINE_BINARY_KERNEL
+
+template <typename T, bool BroadcastA>
+__mlu_entry__ void _ScalarBinarySub(const int N, const T* a, const T* b, T* y) {
+  __nram__ T X[BLOCK_THREADS], Y[BLOCK_THREADS];
+  const T value = BroadcastA ? a[0] : -b[0];
+  MLU_1D_KERNEL_LOOP(i, N, BLOCK_THREADS) {
+    const int N_ram = std::min(N - i, BLOCK_THREADS);
+    __memcpy(Y, (BroadcastA ? b : a) + i, N_ram * sizeof(T), GDRAM2NRAM);
+    if (BroadcastA) __bang_mul_scalar(Y, Y, T(-1), N_ram);
+    __bang_add_scalar(Y, Y, value, N_ram);
+    __memcpy(y + i, Y, N_ram * sizeof(T), NRAM2GDRAM);
+  }
+}
+
+template <typename T, bool BroadcastA>
+__mlu_entry__ void _ScalarBinaryDiv(const int N, const T* a, const T* b, T* y) {
+  __nram__ T X[BLOCK_THREADS], Y[BLOCK_THREADS];
+  const T value = BroadcastA ? a[0] : T(1) / b[0];
+  MLU_1D_KERNEL_LOOP(i, N, BLOCK_THREADS) {
+    const int N_ram = std::min(N - i, BLOCK_THREADS);
+    __memcpy(Y, (BroadcastA ? b : a) + i, N_ram * sizeof(T), GDRAM2NRAM);
+    if (BroadcastA) __bang_recip(Y, Y, N_ram);
+    __bang_mul_scalar(Y, Y, value, N_ram);
+    __memcpy(y + i, Y, N_ram * sizeof(T), NRAM2GDRAM);
+  }
+}
+
+/*
+ * Compare Kernels.
+ */
+
+#define DEFINE_BINARY_KERNEL(name, VecFunc)                                 \
+  template <typename T, bool BroadcastA>                                    \
+  __mlu_entry__ void _RowwiseBinary##name(                                  \
+      const int N, const int C, const T* a, const T* b, bool* y) {          \
+    __mlu_shared__ T X_shared[BLOCK_THREADS];                               \
+    __nram__ T X[BLOCK_THREADS], Y[BLOCK_THREADS];                          \
+    __nram__ uint8_t Y_cast[BLOCK_THREADS];                                 \
+    for (int j = 0; j < C; j += BLOCK_THREADS) {                            \
+      bool* offset_y = y + j;                                               \
+      const T* offset_x1 = BroadcastA ? a + j : b + j;                      \
+      const T* offset_x2 = BroadcastA ? b + j : a + j;                      \
+      const int C_ram = std::min(C - j, BLOCK_THREADS);                     \
+      __memcpy(X_shared, offset_x1, C_ram * sizeof(T), GDRAM2SRAM);         \
+      __sync_cluster();                                                     \
+      __memcpy(X, X_shared, C_ram * sizeof(T), SRAM2NRAM);                  \
+      for (int i = taskId; i < N; i += taskDim) {                           \
+        __memcpy(Y, offset_x2 + i * C, C_ram * sizeof(T), GDRAM2NRAM);      \
+        VecFunc(Y, BroadcastA ? X : Y, BroadcastA ? Y : X, C_ram);          \
+        math::utils::Convert(Y_cast, Y, C_ram);                             \
+        __memcpy(offset_y + i * C, Y_cast, C_ram, NRAM2GDRAM);              \
+      }                                                                     \
+    }                                                                       \
+  }                                                                         \
+  template <typename T, bool BroadcastA>                                    \
+  __mlu_entry__ void _ColwiseBinary##name(                                  \
+      const int N, const int C, const T* a, const T* b, bool* y) {          \
+    __nram__ T X[BLOCK_THREADS], Y[BLOCK_THREADS];                          \
+    __nram__ uint8_t Y_cast[BLOCK_THREADS];                                 \
+    for (int i = taskId; i < N; i += taskDim) {                             \
+      bool* offset_y = y + i * C;                                           \
+      const T x1 = BroadcastA ? a[i] : b[i];                                \
+      const T* offset_x2 = BroadcastA ? b + i * C : a + i * C;              \
+      for (int j = 0; j < C; j += BLOCK_THREADS) {                          \
+        const int C_ram = std::min(C - j, BLOCK_THREADS);                   \
+        __bang_write_value(X, C_ram, x1);                                   \
+        __memcpy(Y, offset_x2 + j, C_ram * sizeof(T), GDRAM2NRAM);          \
+        VecFunc(Y, BroadcastA ? X : Y, BroadcastA ? Y : X, C_ram);          \
+        math::utils::Convert(Y_cast, Y, C_ram);                             \
+        __memcpy(offset_y + j, Y_cast, C_ram, NRAM2GDRAM);                  \
+      }                                                                     \
+    }                                                                       \
+  }                                                                         \
+  template <typename T, bool BroadcastA>                                    \
+  __mlu_entry__ void _ScalarBinary##name(                                   \
+      const int N, const T* a, const T* b, bool* y) {                       \
+    __nram__ T X[BLOCK_THREADS], Y[BLOCK_THREADS];                          \
+    __nram__ uint8_t Y_cast[BLOCK_THREADS];                                 \
+    const T value = BroadcastA ? a[0] : b[0];                               \
+    MLU_1D_KERNEL_LOOP(i, N, BLOCK_THREADS) {                               \
+      const int N_ram = std::min(N - i, BLOCK_THREADS);                     \
+      __memcpy(Y, (BroadcastA ? b : a) + i, N_ram * sizeof(T), GDRAM2NRAM); \
+      VecFunc##_scalar(Y, Y, value, N_ram);                                 \
+      math::utils::Convert(Y_cast, Y, N_ram);                               \
+      __memcpy(y + i, Y_cast, N_ram, NRAM2GDRAM);                           \
+    }                                                                       \
+  }
+
+DEFINE_BINARY_KERNEL(Equal, __bang_eq);
+DEFINE_BINARY_KERNEL(NotEqual, __bang_ne);
+DEFINE_BINARY_KERNEL(Less, __bang_lt);
+DEFINE_BINARY_KERNEL(LessEqual, __bang_le);
+DEFINE_BINARY_KERNEL(Greater, __bang_gt);
+DEFINE_BINARY_KERNEL(GreaterEqual, __bang_ge);
+#undef DEFINE_BINARY_KERNEL
+
+} // namespace
+
+#define DEFINE_SET_FUNC(T, ScalarT, ColwiseKernel)                             \
+  template <>                                                                  \
+  DRAGON_API void Set<T, MLUContext>(                                          \
+      const int x_ndim,                                                        \
+      const int64_t* x_dims,                                                   \
+      const int y_ndim,                                                        \
+      const int64_t* y_dims,                                                   \
+      const T* x,                                                              \
+      T* y,                                                                    \
+      MLUContext* ctx) {                                                       \
+    int64_t rows, cols;                                                        \
+    vec64_t X_dims(x_dims, x_dims + x_ndim);                                   \
+    vec64_t Y_dims(y_dims, y_dims + y_ndim);                                   \
+    vec64_t X_broadcast_dims, Y_broadcast_dims;                                \
+    math::utils::ComputeBroadcastDims(                                         \
+        X_dims, Y_dims, X_broadcast_dims, Y_broadcast_dims);                   \
+    if (X_broadcast_dims == Y_broadcast_dims) {                                \
+      const auto N = math::utils::Prod(x_ndim, x_dims);                        \
+      Copy(N, x, y, ctx);                                                      \
+      return;                                                                  \
+    }                                                                          \
+    if (math::utils::IsRowwiseBroadcast(X_dims, Y_dims, &rows, &cols)) {       \
+      _RowwiseSet<<<MLU_BLOCKS(), CNRT_FUNC_TYPE_UNION1, ctx->mlu_stream()>>>( \
+          rows,                                                                \
+          cols,                                                                \
+          reinterpret_cast<const ScalarT*>(x),                                 \
+          reinterpret_cast<ScalarT*>(y));                                      \
+      return;                                                                  \
+    }                                                                          \
+    if (math::utils::IsColwiseBroadcast(X_dims, Y_dims, &rows, &cols)) {       \
+      ColwiseKernel<<<                                                         \
+          MLU_BLOCKS(),                                                        \
+          CNRT_FUNC_TYPE_BLOCK,                                                \
+          ctx->mlu_stream()>>>(                                                \
+          rows,                                                                \
+          cols,                                                                \
+          reinterpret_cast<const ScalarT*>(x),                                 \
+          reinterpret_cast<ScalarT*>(y));                                      \
+      return;                                                                  \
+    }                                                                          \
+    NOT_IMPLEMENTED;                                                           \
+  }
+
+DEFINE_SET_FUNC(bool, int8_t, _ColwiseSet);
+DEFINE_SET_FUNC(uint8_t, int8_t, _ColwiseSet);
+DEFINE_SET_FUNC(int8_t, int8_t, _ColwiseSet);
+DEFINE_SET_FUNC(int, int, _ColwiseSet);
+DEFINE_SET_FUNC(int64_t, int64_t, _ColwiseSet_fallback);
+DEFINE_SET_FUNC(float16, half, _ColwiseSet);
+DEFINE_SET_FUNC(float, float, _ColwiseSet);
+DEFINE_SET_FUNC(double, double, _ColwiseSet_fallback);
+#undef DEFINE_SET_FUNC
+
+#define DEFINE_BINARY_FUNC(name, InputT, OutputT)                             \
+  template <>                                                                 \
+  DRAGON_API void name<InputT, MLUContext>(                                   \
+      const int a_ndim,                                                       \
+      const int64_t* a_dims,                                                  \
+      const int b_ndim,                                                       \
+      const int64_t* b_dims,                                                  \
+      const InputT* a,                                                        \
+      const InputT* b,                                                        \
+      OutputT* y,                                                             \
+      MLUContext* ctx) {                                                      \
+    int64_t rows, cols, broadcast_1st;                                        \
+    vec64_t A_dims(a_dims, a_dims + a_ndim);                                  \
+    vec64_t B_dims(b_dims, b_dims + b_ndim);                                  \
+    vec64_t A_broadcast_dims, B_broadcast_dims;                               \
+    math::utils::ComputeBroadcastDims(                                        \
+        A_dims, B_dims, A_broadcast_dims, B_broadcast_dims);                  \
+    if (A_broadcast_dims == B_broadcast_dims) {                               \
+      const auto N = math::utils::Prod(a_ndim, a_dims);                       \
+      name(N, a, b, y, ctx);                                                  \
+      return;                                                                 \
+    }                                                                         \
+    if (math::utils::IsRowwiseBroadcast(                                      \
+            A_dims, B_dims, &rows, &cols, &broadcast_1st)) {                  \
+      if (broadcast_1st > 0) {                                                \
+        if (cols == 1) {                                                      \
+          _ScalarBinary##name<math::ScalarType<InputT>::type, true>           \
+              <<<MLU_BLOCKS(), CNRT_FUNC_TYPE_BLOCK, ctx->mlu_stream()>>>(    \
+                  rows,                                                       \
+                  reinterpret_cast<const math::ScalarType<InputT>::type*>(a), \
+                  reinterpret_cast<const math::ScalarType<InputT>::type*>(b), \
+                  reinterpret_cast<math::ScalarType<OutputT>::type*>(y));     \
+        } else {                                                              \
+          _RowwiseBinary##name<math::ScalarType<InputT>::type, true>          \
+              <<<MLU_BLOCKS(), CNRT_FUNC_TYPE_UNION1, ctx->mlu_stream()>>>(   \
+                  rows,                                                       \
+                  cols,                                                       \
+                  reinterpret_cast<const math::ScalarType<InputT>::type*>(a), \
+                  reinterpret_cast<const math::ScalarType<InputT>::type*>(b), \
+                  reinterpret_cast<math::ScalarType<OutputT>::type*>(y));     \
+        }                                                                     \
+      } else {                                                                \
+        if (cols == 1) {                                                      \
+          _ScalarBinary##name<math::ScalarType<InputT>::type, false>          \
+              <<<MLU_BLOCKS(), CNRT_FUNC_TYPE_BLOCK, ctx->mlu_stream()>>>(    \
+                  rows,                                                       \
+                  reinterpret_cast<const math::ScalarType<InputT>::type*>(a), \
+                  reinterpret_cast<const math::ScalarType<InputT>::type*>(b), \
+                  reinterpret_cast<math::ScalarType<OutputT>::type*>(y));     \
+        } else {                                                              \
+          _RowwiseBinary##name<math::ScalarType<InputT>::type, false>         \
+              <<<MLU_BLOCKS(), CNRT_FUNC_TYPE_UNION1, ctx->mlu_stream()>>>(   \
+                  rows,                                                       \
+                  cols,                                                       \
+                  reinterpret_cast<const math::ScalarType<InputT>::type*>(a), \
+                  reinterpret_cast<const math::ScalarType<InputT>::type*>(b), \
+                  reinterpret_cast<math::ScalarType<OutputT>::type*>(y));     \
+        }                                                                     \
+      }                                                                       \
+      return;                                                                 \
+    }                                                                         \
+    if (math::utils::IsColwiseBroadcast(                                      \
+            A_dims, B_dims, &rows, &cols, &broadcast_1st)) {                  \
+      if (broadcast_1st > 0) {                                                \
+        _ColwiseBinary##name<math::ScalarType<InputT>::type, true>            \
+            <<<MLU_BLOCKS(), CNRT_FUNC_TYPE_BLOCK, ctx->mlu_stream()>>>(      \
+                rows,                                                         \
+                cols,                                                         \
+                reinterpret_cast<const math::ScalarType<InputT>::type*>(a),   \
+                reinterpret_cast<const math::ScalarType<InputT>::type*>(b),   \
+                reinterpret_cast<math::ScalarType<OutputT>::type*>(y));       \
+      } else {                                                                \
+        _ColwiseBinary##name<math::ScalarType<InputT>::type, false>           \
+            <<<MLU_BLOCKS(), CNRT_FUNC_TYPE_BLOCK, ctx->mlu_stream()>>>(      \
+                rows,                                                         \
+                cols,                                                         \
+                reinterpret_cast<const math::ScalarType<InputT>::type*>(a),   \
+                reinterpret_cast<const math::ScalarType<InputT>::type*>(b),   \
+                reinterpret_cast<math::ScalarType<OutputT>::type*>(y));       \
+      }                                                                       \
+      return;                                                                 \
+    }                                                                         \
+    NOT_IMPLEMENTED;                                                          \
+  }
+
+DEFINE_BINARY_FUNC(Add, int8_t, int8_t);
+DEFINE_BINARY_FUNC(Add, int, int);
+DEFINE_BINARY_FUNC(Add, float16, float16);
+DEFINE_BINARY_FUNC(Add, float, float);
+DEFINE_BINARY_FUNC(Sub, int8_t, int8_t);
+DEFINE_BINARY_FUNC(Sub, int, int);
+DEFINE_BINARY_FUNC(Sub, float16, float16);
+DEFINE_BINARY_FUNC(Sub, float, float);
+DEFINE_BINARY_FUNC(Mul, int8_t, int8_t);
+DEFINE_BINARY_FUNC(Mul, int, int);
+DEFINE_BINARY_FUNC(Mul, float16, float16);
+DEFINE_BINARY_FUNC(Mul, float, float);
+DEFINE_BINARY_FUNC(Div, float, float);
+DEFINE_BINARY_FUNC(Minimum, float16, float16);
+DEFINE_BINARY_FUNC(Minimum, float, float);
+DEFINE_BINARY_FUNC(Maximum, float16, float16);
+DEFINE_BINARY_FUNC(Maximum, float, float);
+DEFINE_BINARY_FUNC(Equal, int8_t, bool);
+DEFINE_BINARY_FUNC(Equal, int, bool);
+DEFINE_BINARY_FUNC(Equal, float16, bool);
+DEFINE_BINARY_FUNC(Equal, float, bool);
+DEFINE_BINARY_FUNC(NotEqual, int8_t, bool);
+DEFINE_BINARY_FUNC(NotEqual, int, bool);
+DEFINE_BINARY_FUNC(NotEqual, float16, bool);
+DEFINE_BINARY_FUNC(NotEqual, float, bool);
+DEFINE_BINARY_FUNC(Less, float16, bool);
+DEFINE_BINARY_FUNC(Less, float, bool);
+DEFINE_BINARY_FUNC(LessEqual, float16, bool);
+DEFINE_BINARY_FUNC(LessEqual, float, bool);
+DEFINE_BINARY_FUNC(Greater, float16, bool);
+DEFINE_BINARY_FUNC(Greater, float, bool);
+DEFINE_BINARY_FUNC(GreaterEqual, float16, bool);
+DEFINE_BINARY_FUNC(GreaterEqual, float, bool);
+#undef DEFINE_BINARY_FUNC
+
+#define DEFINE_BINARY_FUNC(name, InputT, OutputT, InputAliasT, OutputAliasT) \
+  template <>                                                                \
+  DRAGON_API void name<InputT, MLUContext>(                                  \
+      const int a_ndim,                                                      \
+      const int64_t* a_dims,                                                 \
+      const int b_ndim,                                                      \
+      const int64_t* b_dims,                                                 \
+      const InputT* a,                                                       \
+      const InputT* b,                                                       \
+      OutputT* y,                                                            \
+      MLUContext* ctx) {                                                     \
+    name(                                                                    \
+        a_ndim,                                                              \
+        a_dims,                                                              \
+        b_ndim,                                                              \
+        b_dims,                                                              \
+        reinterpret_cast<const InputAliasT*>(a),                             \
+        reinterpret_cast<const InputAliasT*>(b),                             \
+        reinterpret_cast<OutputAliasT*>(y),                                  \
+        ctx);                                                                \
+  }
+
+DEFINE_BINARY_FUNC(Equal, bool, bool, int8_t, bool);
+DEFINE_BINARY_FUNC(Equal, uint8_t, bool, int8_t, bool);
+DEFINE_BINARY_FUNC(NotEqual, bool, bool, int8_t, bool);
+DEFINE_BINARY_FUNC(NotEqual, uint8_t, bool, int8_t, bool);
+#undef DEFINE_BINARY_FUNC
+
+#define DEFINE_BINARY_FUNC(name, InputT, OutputT)                             \
+  template <>                                                                 \
+  DRAGON_API void name<InputT, MLUContext>(                                   \
+      const int a_ndim,                                                       \
+      const int64_t* a_dims,                                                  \
+      const int b_ndim,                                                       \
+      const int64_t* b_dims,                                                  \
+      const InputT* a,                                                        \
+      const InputT* b,                                                        \
+      OutputT* y,                                                             \
+      MLUContext* ctx) {                                                      \
+    LOG(FATAL) << "Unsupported BANG type for <" << #name                      \
+               << "Kernel>: " << dtypes::to_string(TypeMeta::Make<InputT>()); \
+  }
+
+DEFINE_BINARY_FUNC(Add, uint8_t, uint8_t);
+DEFINE_BINARY_FUNC(Add, int64_t, int64_t);
+DEFINE_BINARY_FUNC(Add, double, double);
+DEFINE_BINARY_FUNC(Sub, uint8_t, uint8_t);
+DEFINE_BINARY_FUNC(Sub, int64_t, int64_t);
+DEFINE_BINARY_FUNC(Sub, double, double);
+DEFINE_BINARY_FUNC(Mul, uint8_t, uint8_t);
+DEFINE_BINARY_FUNC(Mul, int64_t, int64_t);
+DEFINE_BINARY_FUNC(Mul, double, double);
+DEFINE_BINARY_FUNC(Div, uint8_t, uint8_t);
+DEFINE_BINARY_FUNC(Div, int8_t, int8_t);
+DEFINE_BINARY_FUNC(Div, int, int);
+DEFINE_BINARY_FUNC(Div, int64_t, int64_t);
+DEFINE_BINARY_FUNC(Div, float16, float16);
+DEFINE_BINARY_FUNC(Div, double, double);
+DEFINE_BINARY_FUNC(Minimum, uint8_t, uint8_t);
+DEFINE_BINARY_FUNC(Minimum, int8_t, int8_t);
+DEFINE_BINARY_FUNC(Minimum, int, int);
+DEFINE_BINARY_FUNC(Minimum, int64_t, int64_t);
+DEFINE_BINARY_FUNC(Minimum, double, double);
+DEFINE_BINARY_FUNC(Maximum, uint8_t, uint8_t);
+DEFINE_BINARY_FUNC(Maximum, int8_t, int8_t);
+DEFINE_BINARY_FUNC(Maximum, int, int);
+DEFINE_BINARY_FUNC(Maximum, int64_t, int64_t);
+DEFINE_BINARY_FUNC(Maximum, double, double);
+DEFINE_BINARY_FUNC(Equal, int64_t, bool);
+DEFINE_BINARY_FUNC(Equal, double, bool);
+DEFINE_BINARY_FUNC(NotEqual, int64_t, bool);
+DEFINE_BINARY_FUNC(NotEqual, double, bool);
+DEFINE_BINARY_FUNC(Less, bool, bool);
+DEFINE_BINARY_FUNC(Less, uint8_t, bool);
+DEFINE_BINARY_FUNC(Less, int8_t, bool);
+DEFINE_BINARY_FUNC(Less, int, bool);
+DEFINE_BINARY_FUNC(Less, int64_t, bool);
+DEFINE_BINARY_FUNC(Less, double, bool);
+DEFINE_BINARY_FUNC(LessEqual, bool, bool);
+DEFINE_BINARY_FUNC(LessEqual, uint8_t, bool);
+DEFINE_BINARY_FUNC(LessEqual, int8_t, bool);
+DEFINE_BINARY_FUNC(LessEqual, int, bool);
+DEFINE_BINARY_FUNC(LessEqual, int64_t, bool);
+DEFINE_BINARY_FUNC(LessEqual, double, bool);
+DEFINE_BINARY_FUNC(Greater, bool, bool);
+DEFINE_BINARY_FUNC(Greater, uint8_t, bool);
+DEFINE_BINARY_FUNC(Greater, int8_t, bool);
+DEFINE_BINARY_FUNC(Greater, int, bool);
+DEFINE_BINARY_FUNC(Greater, int64_t, bool);
+DEFINE_BINARY_FUNC(Greater, double, bool);
+DEFINE_BINARY_FUNC(GreaterEqual, bool, bool);
+DEFINE_BINARY_FUNC(GreaterEqual, uint8_t, bool);
+DEFINE_BINARY_FUNC(GreaterEqual, int8_t, bool);
+DEFINE_BINARY_FUNC(GreaterEqual, int, bool);
+DEFINE_BINARY_FUNC(GreaterEqual, int64_t, bool);
+DEFINE_BINARY_FUNC(GreaterEqual, double, bool);
+#undef DEFINE_BINARY_FUNC
+#undef BLOCK_THREADS
+
+} // namespace math
+
+} // namespace dragon

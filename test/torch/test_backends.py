@@ -17,6 +17,9 @@ from __future__ import print_function
 import unittest
 
 from dragon.core.testing.unittest.common_utils import run_tests
+from dragon.core.testing.unittest.common_utils import TEST_CUDA
+from dragon.core.testing.unittest.common_utils import TEST_MLU
+from dragon.core.testing.unittest.common_utils import TEST_MPS
 from dragon.vm import torch
 
 
@@ -29,6 +32,17 @@ class TestCUDA(unittest.TestCase):
     def test_set_flags(self):
         torch.backends.cuda.matmul.allow_tf32 = False
         self.assertEqual(torch.backends.cuda.matmul.allow_tf32, False)
+
+    def test_device(self):
+        count = torch.cuda.device_count()
+        name = torch.cuda.get_device_name(0)
+        major, _ = torch.cuda.get_device_capability(0)
+        self.assertGreaterEqual(count, 1 if TEST_CUDA else 0)
+        self.assertGreaterEqual(major, 1 if TEST_CUDA else 0)
+        self.assertGreaterEqual(len(name), 1 if TEST_CUDA else 0)
+        torch.cuda.set_device(0)
+        self.assertEqual(torch.cuda.current_device(), 0)
+        torch.cuda.synchronize()
 
 
 class TestCuDNN(unittest.TestCase):
@@ -59,12 +73,55 @@ class TestMPS(unittest.TestCase):
         if torch.backends.mps.is_available():
             self.assertEqual(torch.backends.mps.is_built(), True)
 
+    def test_device(self):
+        count = torch.mps.device_count()
+        name = torch.mps.get_device_name(0)
+        families = torch.mps.get_device_family(0)
+        self.assertGreaterEqual(count, 1 if TEST_MPS else 0)
+        self.assertGreaterEqual(len(families), 1 if TEST_MPS else 0)
+        self.assertGreaterEqual(len(name), 1 if TEST_MPS else 0)
+        torch.mps.set_device(0)
+        self.assertEqual(torch.mps.current_device(), 0)
+        torch.mps.synchronize()
+
 
 class TestOpenMP(unittest.TestCase):
     """Test OpenMP backend."""
 
     def test_library(self):
         _ = torch.backends.openmp.is_available()
+
+
+class TestMLU(unittest.TestCase):
+    """Test MLU backend."""
+
+    def test_library(self):
+        _ = torch.backends.mlu.is_available()
+
+    def test_device(self):
+        count = torch.mlu.device_count()
+        name = torch.mlu.get_device_name(0)
+        major, _ = torch.mlu.get_device_capability(0)
+        self.assertGreaterEqual(count, 1 if TEST_MLU else 0)
+        self.assertGreaterEqual(major, 1 if TEST_MLU else 0)
+        self.assertGreaterEqual(len(name), 1 if TEST_MLU else 0)
+        torch.mlu.set_device(0)
+        self.assertEqual(torch.mlu.current_device(), 0)
+        torch.mlu.synchronize()
+
+
+class TestCNNL(unittest.TestCase):
+    """Test CNNL backend."""
+
+    def test_library(self):
+        if torch.backends.cnnl.is_available():
+            self.assertGreater(torch.backends.cnnl.version(), 0)
+        else:
+            self.assertEqual(torch.backends.cnnl.version(), None)
+
+    def test_set_flags(self):
+        torch.backends.cnnl.enabled = True
+        self.assertEqual(torch.backends.cnnl.enabled, True)
 
 
 if __name__ == '__main__':

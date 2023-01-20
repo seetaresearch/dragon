@@ -16,7 +16,7 @@ from __future__ import print_function
 
 import math
 
-from dragon.vm.torch.core.nn import functional as F
+from dragon.vm.torch.core.nn import functional
 from dragon.vm.torch.core.nn.modules.module import Module
 from dragon.vm.torch.core.nn.modules.utils import _pair
 from dragon.vm.torch.core.nn.modules.utils import _single
@@ -26,7 +26,7 @@ from dragon.vm.torch.core.tensor import Tensor
 
 
 class _ConvNd(Module):
-    """Apply the n-dimension convolution."""
+    """Apply n-dimension convolution."""
 
     def __init__(
         self,
@@ -95,7 +95,7 @@ class _ConvNd(Module):
 
 
 class Conv1d(_ConvNd):
-    r"""Apply the 1d convolution.
+    r"""Apply 1d convolution.
 
     This module excepts the input size :math:`(N, C_{\text{in}}, H)`,
     and output size is :math:`(N, C_{\text{out}}, H_{\text{out}})`,
@@ -163,7 +163,7 @@ class Conv1d(_ConvNd):
         )
 
     def forward(self, input):
-        return F.conv1d(
+        return functional.conv1d(
             input=input,
             weight=self.weight,
             bias=self.bias,
@@ -175,7 +175,7 @@ class Conv1d(_ConvNd):
 
 
 class Conv2d(_ConvNd):
-    r"""Apply the 2d convolution.
+    r"""Apply 2d convolution.
 
     This module excepts the input size :math:`(N, C_{\text{in}}, H, W)`,
     and output size is :math:`(N, C_{\text{out}}, H_{\text{out}}, W_{\text{out}})`,
@@ -243,7 +243,7 @@ class Conv2d(_ConvNd):
         )
 
     def forward(self, input):
-        return F.conv2d(
+        return functional.conv2d(
             input=input,
             weight=self.weight,
             bias=self.bias,
@@ -255,7 +255,7 @@ class Conv2d(_ConvNd):
 
 
 class Conv3d(_ConvNd):
-    r"""Apply the 3d convolution.
+    r"""Apply 3d convolution.
 
     This module excepts the input size :math:`(N, C_{\text{in}}, D, H, W)`,
     and output size is :math:`(N, C_{\text{out}}, D_{\text{out}}, H_{\text{out}}, W_{\text{out}})`,
@@ -323,7 +323,7 @@ class Conv3d(_ConvNd):
         )
 
     def forward(self, input):
-        return F.conv3d(
+        return functional.conv3d(
             input=input,
             weight=self.weight,
             bias=self.bias,
@@ -335,7 +335,7 @@ class Conv3d(_ConvNd):
 
 
 class ConvTranspose1d(_ConvNd):
-    """Apply the 1d deconvolution.
+    """Apply 1d deconvolution.
 
     Examples:
 
@@ -401,7 +401,7 @@ class ConvTranspose1d(_ConvNd):
         )
 
     def forward(self, input):
-        return F.conv_transpose1d(
+        return functional.conv_transpose1d(
             input=input,
             weight=self.weight,
             bias=self.bias,
@@ -414,7 +414,7 @@ class ConvTranspose1d(_ConvNd):
 
 
 class ConvTranspose2d(_ConvNd):
-    """Apply the 2d deconvolution.
+    """Apply 2d deconvolution.
 
     Examples:
 
@@ -480,7 +480,7 @@ class ConvTranspose2d(_ConvNd):
         )
 
     def forward(self, input):
-        return F.conv_transpose2d(
+        return functional.conv_transpose2d(
             input=input,
             weight=self.weight,
             bias=self.bias,
@@ -493,7 +493,7 @@ class ConvTranspose2d(_ConvNd):
 
 
 class ConvTranspose3d(_ConvNd):
-    """Apply the 3d deconvolution.
+    """Apply 3d deconvolution.
 
     Examples:
 
@@ -559,7 +559,7 @@ class ConvTranspose3d(_ConvNd):
         )
 
     def forward(self, input):
-        return F.conv_transpose3d(
+        return functional.conv_transpose3d(
             input=input,
             weight=self.weight,
             bias=self.bias,
@@ -572,7 +572,7 @@ class ConvTranspose3d(_ConvNd):
 
 
 class DepthwiseConv2d(Conv2d):
-    """Apply the 2d depthwise convolution.
+    """Apply 2d depthwise convolution.
 
     Examples:
 
@@ -630,7 +630,7 @@ class DepthwiseConv2d(Conv2d):
         )
 
     def forward(self, input):
-        return F.depthwise_conv2d(
+        return functional.depthwise_conv2d(
             input=input,
             weight=self.weight,
             bias=self.bias,

@@ -174,7 +174,7 @@ def set_cudnn_flags(
 
     Parameters
     ----------
-    enabled : bool, optional, default=True
+    enabled : bool, optional
         Use cuDNN library or not.
     benchmark : bool, optional, default=False
         Select fastest algorithms via benchmark or heuristics.

@@ -22,141 +22,141 @@ dragon.nn
   ---------
 
   `batch_norm(...) <nn/batch_norm.html>`_
-  : Apply the batch normalization.
+  : Apply batch normalization.
   `[Ioffe & Szegedy, 2015] <https://arxiv.org/abs/1502.03167>`_.
 
   `bias_add(...) <nn/bias_add.html>`_
   : Add the bias across channels to input.
 
   `channel_norm(...) <nn/channel_norm.html>`_
-  : Apply the normalization to each channel of input.
+  : Apply normalization to each channel of input.
 
   `channel_shuffle(...) <nn/channel_shuffle.html>`_
-  : Apply the group shuffle to each channel of input.
+  : Apply group shuffle to each channel of input.
   `[Zhang et.al, 2017] <https://arxiv.org/abs/1707.01083>`_.
 
   `conv(...) <nn/conv.html>`_
-  : Apply the n-dimension convolution.
+  : Apply n-dimension convolution.
 
   `conv_transpose(...) <nn/conv_transpose.html>`_
-  : Apply the n-dimension deconvolution.
+  : Apply n-dimension deconvolution.
 
   `conv1d(...) <nn/conv1d.html>`_
-  : Apply the 1d convolution.
+  : Apply 1d convolution.
 
   `conv1d_transpose(...) <nn/conv1d_transpose.html>`_
-  : Apply the 1d deconvolution.
+  : Apply 1d deconvolution.
 
   `conv2d(...) <nn/conv2d.html>`_
-  : Apply the 2d convolution.
+  : Apply 2d convolution.
 
   `conv2d_transpose(...) <nn/conv2d_transpose.html>`_
-  : Apply the 2d deconvolution.
+  : Apply 2d deconvolution.
 
   `conv3d(...) <nn/conv3d.html>`_
-  : Apply the 3d convolution.
+  : Apply 3d convolution.
 
   `conv3d_transpose(...) <nn/conv3d_transpose.html>`_
-  : Apply the 3d deconvolution.
+  : Apply 3d deconvolution.
 
   `depthwise_conv2d(...) <nn/depthwise_conv2d.html>`_
-  : Apply the 2d depthwise convolution.
+  : Apply 2d depthwise convolution.
 
   `depth_to_space(...) <nn/depth_to_space.html>`_
   : Rearrange depth data into spatial blocks.
 
   `dropout(...) <nn/dropout.html>`_
-  : Set the elements of input to zero randomly.
+  : Set elements of input to zero randomly.
   `[Srivastava et.al, 2014] <http://jmlr.org/papers/v15/srivastava14a.html>`_.
 
   `drop_block(...) <nn/drop_block.html>`_
-  : Set the blocks over input to zero randomly.
+  : Set blocks of input to zero randomly.
   `[Ghiasi et.al, 2018] <https://arxiv.org/abs/1810.12890>`_.
 
   `drop_path(...) <nn/drop_path.html>`_
-  : Set the examples over input to zero randomly.
+  : Set examples of input to zero randomly.
   `[Larsson et.al, 2016] <https://arxiv.org/abs/1605.07648>`_.
 
   `elu(...) <nn/elu.html>`_
-  : Apply the exponential linear unit.
+  : Apply exponential linear unit.
   `[Clevert et.al, 2015] <https://arxiv.org/abs/1511.07289>`_.
 
   `gelu(...) <nn/gelu.html>`_
-  : Apply the gaussian error linear unit.
+  : Apply gaussian error linear unit.
   `[Hendrycks & Gimpel, 2016] <https://arxiv.org/abs/1606.08415>`_.
 
   `group_norm(...) <nn/group_norm.html>`_
-  : Apply the group normalization.
+  : Apply group normalization.
   `[Wu & He, 2018] <https://arxiv.org/abs/1803.08494>`_.
 
   `hardsigmoid(...) <nn/hardsigmoid.html>`_
-  : Apply the hard sigmoid function.
+  : Apply hard sigmoid function.
 
   `hardswish(...) <nn/hardswish.html>`_
-  : Apply the hard swish function.
+  : Apply hard swish function.
   `[Howard et.al, 2019] <https://arxiv.org/abs/1905.02244>`_.
 
   `instance_norm(...) <nn/instance_norm.html>`_
-  : Apply the instance normalization.
+  : Apply instance normalization.
   `[Ulyanov et.al, 2016] <https://arxiv.org/abs/1607.08022>`_
 
   `layer_norm(...) <nn/layer_norm.html>`_
-  : Apply the layer normalization.
+  : Apply layer normalization.
   `[Ba et.al, 2016] <https://arxiv.org/abs/1607.06450>`_
 
   `leaky_relu(...) <nn/leaky_relu.html>`_
-  : Apply the leaky rectified linear unit.
+  : Apply leaky rectified linear unit.
 
   `local_response_norm(...) <nn/local_response_norm.html>`_
-  : Apply the local response normalization.
+  : Apply local response normalization.
   `[Krizhevsky et.al, 2012] <http://www.cs.toronto.edu/~hinton/absps/imagenet.pdf>`_.
 
   `log_softmax(...) <nn/log_softmax.html>`_
-  : Compute the composite of logarithm and softmax.
+  : Apply logarithm softmax function.
 
   `lp_norm(...) <nn/lp_norm.html>`_
-  : Apply the lp normalization.
+  : Apply lp normalization.
 
   `moments(...) <nn/moments.html>`_
   : Compute the mean and variance of input along the given axis.
 
   `prelu(...) <nn/prelu.html>`_
-  : Apply the parametric rectified linear unit.
+  : Apply parametric rectified linear unit.
   `[He et.al, 2015] <https://arxiv.org/abs/1502.01852>`_.
 
   `pool1d(...) <nn/pool1d.html>`_
-  : Apply the 1d pooling.
+  : Apply 1d pooling.
 
   `pool2d(...) <nn/pool2d.html>`_
-  : Apply the 2d pooling.
+  : Apply 2d pooling.
 
   `pool3d(...) <nn/pool3d.html>`_
-  : Apply the 3d pooling.
+  : Apply 3d pooling.
 
   `relu(...) <nn/relu.html>`_
-  : Apply the rectified linear unit.
+  : Apply rectified linear unit.
   `[Nair & Hinton, 2010] <http://www.csri.utoronto.ca/~hinton/absps/reluICML.pdf>`_.
 
   `relu6(...) <nn/relu6.html>`_
-  : Apply the clipped-6 rectified linear unit.
+  : Apply clipped-6 rectified linear unit.
   `[Krizhevsky, 2010] <http://www.cs.utoronto.ca/~kriz/conv-cifar10-aug2010.pdf>`_.
 
   `selu(...) <nn/selu.html>`_
-  : Apply the scaled exponential linear unit.
+  : Apply scaled exponential linear unit.
   `[Klambauer et.al, 2017] <https://arxiv.org/abs/1706.02515>`_.
 
   `silu(...) <nn/silu.html>`_
-  : Apply the sigmoid linear unit.
+  : Apply sigmoid linear unit.
   `[Hendrycks & Gimpel, 2016] <https://arxiv.org/abs/1606.08415>`_.
 
   `softmax(...) <nn/softmax.html>`_
-  : Compute the softmax result.
+  : Apply softmax function.
 
   `space_to_depth(...) <nn/space_to_depth.html>`_
   : Rearrange blocks of spatial data into depth.
    
   `sync_batch_norm(...) <nn/sync_batch_norm.html>`_
-  : Apply the batch normalization with synced statistics.
+  : Apply batch normalization with synced statistics.
   `[Ioffe & Szegedy, 2015] <https://arxiv.org/abs/1502.03167>`_.
 
 .. toctree::

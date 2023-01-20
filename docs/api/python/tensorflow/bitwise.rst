@@ -7,13 +7,13 @@ vm.tensorflow.bitwise
   ---------
 
   `bitwise_and(...) <bitwise/bitwise_and.html>`_
-  : Compute the element-wise AND bitwise operation.
+  : Compute element-wise AND bitwise operation.
 
   `bitwise_or(...) <bitwise/bitwise_or.html>`_
-  : Compute the element-wise OR bitwise operation.
+  : Compute element-wise OR bitwise operation.
 
   `bitwise_xor(...) <bitwise/bitwise_xor.html>`_
-  : Compute the element-wise XOR bitwise operation.
+  : Compute element-wise XOR bitwise operation.
 
   `invert(...) <bitwise/invert.html>`_
   : Invert each bit of input.

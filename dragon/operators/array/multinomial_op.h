@@ -25,7 +25,10 @@ class MultinomialOp final : public Operator<Context> {
         sample_size_(OP_SINGLE_ARG(int64_t, "sample_size", 1)) {}
   USE_OPERATOR_FUNCTIONS;
 
-  void RunOnDevice() override;
+  void RunOnDevice() override {
+    ctx()->set_stream(0); // Enforce the default stream.
+    DispatchHelper<dtypes::Loss>::Call(this, Input(0));
+  }
 
   template <typename T>
   void DoRunWithType();

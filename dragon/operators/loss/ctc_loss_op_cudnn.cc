@@ -37,8 +37,8 @@ template <class Context>
 template <typename T>
 void CuDNNCTCLossOp<Context>::DoRunWithType() {
   auto &X = Input(0), *L = Output(0)->Reshape({});
-  CuDNNSetTensorDesc<T>(&prob_desc_, X.dims());
-  CuDNNSetTensorDesc<T>(&grad_desc_, X.dims());
+  CuDNNSetTensorDesc<T>(prob_desc_, X.dims());
+  CuDNNSetTensorDesc<T>(grad_desc_, X.dims());
 
   CUDNN_CHECK(cudnnGetCTCLossWorkspaceSize(
       ctx()->cudnn_handle(),

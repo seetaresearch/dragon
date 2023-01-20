@@ -115,18 +115,16 @@ DEPLOY_CUDA_OPERATOR(SplitGradient);
 DEPLOY_MPS_OPERATOR(Split, Split);
 DEPLOY_MPS_OPERATOR(SplitGradient, SplitGradient);
 #endif
+#ifdef USE_MLU
+DEPLOY_MLU_OPERATOR(Split);
+DEPLOY_MLU_OPERATOR(SplitGradient);
+#endif
 
-OPERATOR_SCHEMA(Split)
-    /* X */
-    .NumInputs(1)
-    /* Y(0), ... */
-    .NumOutputs(1, INT_MAX);
+DEFINE_OP_REPEATED_ARG(int64_t, SplitOp, split);
+DEFINE_OP_REPEATED_ARG(int64_t, SplitGradientOp, split);
 
-OPERATOR_SCHEMA(SplitGradient)
-    /* dY(0), ... */
-    .NumInputs(1, INT_MAX)
-    /* dX */
-    .NumOutputs(1);
+OPERATOR_SCHEMA(Split).NumInputs(1).NumOutputs(1, INT_MAX);
+OPERATOR_SCHEMA(SplitGradient).NumInputs(1, INT_MAX).NumOutputs(1);
 
 REGISTER_GRADIENT(Split, SimpleGradientMaker);
 

@@ -29,6 +29,7 @@ class Backend(object):
     AUTO = 'AUTO'
     MPI = 'MPI'
     NCCL = 'NCCL'
+    CNCL = 'CNCL'
 
     def __new__(cls, name):
         if not isinstance(name, six.string_types):
@@ -37,10 +38,15 @@ class Backend(object):
         if value == 'AUTO':
             if is_nccl_available():
                 return Backend.NCCL
+            elif is_cncl_available():
+                return Backend.CNCL
             return Backend.MPI
         elif value == 'NCCL':
             if not is_nccl_available():
                 raise ValueError('NCCL backend is not available.')
+        elif value == 'CNCL':
+            if not is_cncl_available():
+                raise ValueError('CNCL backend is not available.')
         elif value == Backend.UNDEFINED:
             raise ValueError('Invalid backend: ' + name)
         return value
@@ -143,6 +149,18 @@ def is_initialized():
 
     """
     return _GLOBAL_MPI_CONTEXT is not None
+
+
+def is_cncl_available():
+    """Return whether the CNCL backend is available.
+
+    Returns
+    -------
+    bool
+        ``True`` if available otherwise ``False``.
+
+    """
+    return _b.mluIsDriverSufficient()
 
 
 def is_mpi_available():

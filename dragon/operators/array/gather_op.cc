@@ -68,26 +68,14 @@ void GatherGradientOp<Context>::DoRunWithType() {
 }
 
 DEPLOY_CPU_OPERATOR(Gather);
-#ifdef USE_CUDA
-DEPLOY_CUDA_OPERATOR(Gather);
-#endif
-
 DEPLOY_CPU_OPERATOR(GatherGradient);
 #ifdef USE_CUDA
+DEPLOY_CUDA_OPERATOR(Gather);
 DEPLOY_CUDA_OPERATOR(GatherGradient);
 #endif
 
-OPERATOR_SCHEMA(Gather)
-    /* X, X_index */
-    .NumInputs(2)
-    /* Y */
-    .NumOutputs(1);
-
-OPERATOR_SCHEMA(GatherGradient)
-    /* X_index, dY */
-    .NumInputs(2)
-    /* dX */
-    .NumOutputs(1);
+OPERATOR_SCHEMA(Gather).NumInputs(2).NumOutputs(1);
+OPERATOR_SCHEMA(GatherGradient).NumInputs(2).NumOutputs(1);
 
 namespace {
 

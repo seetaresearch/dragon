@@ -52,13 +52,19 @@ class CollectiveOpBase : public Operator<Context> {
     CHECK(comm_root_ != MPI_UNDEFINED)
         << "\nRoot is not included in the group.";
 
-    // Check whether the NCCL backend should be enabled.
+    // Check whether the following backends should be enabled.
     // If not, we will fallback to the MPI backend.
 #ifdef USE_NCCL
     enable_nccl_ = OP_SINGLE_ARG(string, "backend", "MPI") == "NCCL";
     enable_nccl_ &= (TypeMeta::Id<Context>() == TypeMeta::Id<CUDAContext>());
 #else
     enable_nccl_ = false;
+#endif
+#ifdef USE_MLU
+    enable_cncl_ = OP_SINGLE_ARG(string, "backend", "MPI") == "CNCL";
+    enable_cncl_ &= (TypeMeta::Id<Context>() == TypeMeta::Id<MLUContext>());
+#else
+    enable_cncl_ = false;
 #endif
   }
 
@@ -149,9 +155,9 @@ class CollectiveOpBase : public Operator<Context> {
   template <typename T>
   ncclDataType_t nccl_data_type() {
     static Map<TypeId, ncclDataType_t> m{
-        {TypeMeta::Id<bool>(), ncclChar},
-        {TypeMeta::Id<int8_t>(), ncclInt8},
+        {TypeMeta::Id<bool>(), ncclUint8},
         {TypeMeta::Id<uint8_t>(), ncclUint8},
+        {TypeMeta::Id<int8_t>(), ncclInt8},
         {TypeMeta::Id<int>(), ncclInt32},
         {TypeMeta::Id<int64_t>(), ncclInt64},
         {TypeMeta::Id<float16>(), ncclFloat16},
@@ -173,7 +179,6 @@ class CollectiveOpBase : public Operator<Context> {
     if (ret == nullptr) {
       ncclUniqueId comm_uuid;
       if (comm_rank_ == comm_root_) {
-        // Create a new socket listening at root.
         NCCL_CHECK(ncclGetUniqueId(&comm_uuid));
       }
       Broadcast((uint8_t*)&comm_uuid, sizeof(comm_uuid));
@@ -188,27 +193,69 @@ class CollectiveOpBase : public Operator<Context> {
   }
 #endif // USE_NCCL
 
+#ifdef USE_MLU
+  template <typename T>
+  cnclDataType_t cncl_data_type() {
+    static Map<TypeId, cnclDataType_t> m{
+        {TypeMeta::Id<bool>(), cnclUint8},
+        {TypeMeta::Id<uint8_t>(), cnclUint8},
+        {TypeMeta::Id<int8_t>(), cnclInt8},
+        {TypeMeta::Id<int>(), cnclInt32},
+        {TypeMeta::Id<float16>(), cnclFloat16},
+        {TypeMeta::Id<float>(), cnclFloat32},
+    };
+    auto it = m.find(TypeMeta::Id<T>());
+    CHECK(it != m.end()) << "\nUnsupported CNCL type: "
+                         << dtypes::to_string(TypeMeta::Make<T>());
+    return it->second;
+  }
+
+  cnclComm_t cncl_comm() {
+    auto ret = MLUContext::objects().cncl_comm(
+        this->ctx()->template device(),
+        group_str_,
+        nullptr,
+        comm_size_,
+        comm_rank_);
+    if (ret == nullptr) {
+      cnclCliqueId comm_uuid;
+      if (comm_rank_ == comm_root_) {
+        CNCL_CHECK(cnclGetCliqueId(&comm_uuid));
+      }
+      Broadcast((uint8_t*)&comm_uuid, sizeof(comm_uuid));
+      ret = MLUContext::objects().cncl_comm(
+          this->ctx()->template device(),
+          group_str_,
+          &comm_uuid,
+          comm_size_,
+          comm_rank_);
+    }
+    return ret;
+  }
+#endif // USE_MLU
+
  public:
   MPI_Comm comm_;
   MPI_Group group_;
   string group_str_;
   int comm_size_, comm_rank_, comm_root_;
-  bool enable_nccl_;
+  bool enable_nccl_, enable_cncl_;
 };
 
-#define USE_COLLECTIVE_FUNCTIONS               \
-  using CollectiveOpBase<Context>::Recv;       \
-  using CollectiveOpBase<Context>::IRecv;      \
-  using CollectiveOpBase<Context>::Send;       \
-  using CollectiveOpBase<Context>::SendRecv;   \
-  using CollectiveOpBase<Context>::Broadcast;  \
-  using CollectiveOpBase<Context>::AllGather;  \
-  using CollectiveOpBase<Context>::AllReduce;  \
-  using CollectiveOpBase<Context>::comm_;      \
-  using CollectiveOpBase<Context>::comm_size_; \
-  using CollectiveOpBase<Context>::comm_rank_; \
-  using CollectiveOpBase<Context>::comm_root_; \
-  using CollectiveOpBase<Context>::enable_nccl_
+#define USE_COLLECTIVE_FUNCTIONS                 \
+  using CollectiveOpBase<Context>::Recv;         \
+  using CollectiveOpBase<Context>::IRecv;        \
+  using CollectiveOpBase<Context>::Send;         \
+  using CollectiveOpBase<Context>::SendRecv;     \
+  using CollectiveOpBase<Context>::Broadcast;    \
+  using CollectiveOpBase<Context>::AllGather;    \
+  using CollectiveOpBase<Context>::AllReduce;    \
+  using CollectiveOpBase<Context>::comm_;        \
+  using CollectiveOpBase<Context>::comm_size_;   \
+  using CollectiveOpBase<Context>::comm_rank_;   \
+  using CollectiveOpBase<Context>::comm_root_;   \
+  using CollectiveOpBase<Context>::enable_nccl_; \
+  using CollectiveOpBase<Context>::enable_cncl_
 
 } // namespace dragon
 

@@ -17,6 +17,8 @@
 
 #if defined(__CUDACC__)
 #define HOSTDEVICE_DECL inline __host__ __device__
+#elif defined(__mlu_host__)
+#define HOSTDEVICE_DECL inline __mlu_host__ __mlu_func__
 #else
 #define HOSTDEVICE_DECL inline
 #endif
@@ -135,7 +137,6 @@ HOSTDEVICE_DECL T Cube(const T x) {
  */
 
 #if defined(__CUDACC__)
-
 inline __device__ bool IsInf(half x) {
 #if __CUDA_ARCH__ >= 530
   return __hisinf(x);
@@ -198,11 +199,129 @@ inline __device__ half2 Cube(half2 x) {
 #endif // defined(__CUDACC__)
 
 /*
+ * MLU Functions.
+ */
+
+#if defined(__mlu_func__)
+template <typename DstT, typename SrcT>
+__mlu_func__ void Convert(DstT* dst, SrcT* src, int count) {
+  for (int i = 0; i < count; ++i) {
+    dst[i] = DstT(src[i]);
+  }
+}
+
+template <>
+__mlu_func__ void Convert<int, uint8_t>(int* dst, uint8_t* src, int count) {
+  __bang_uchar2int32(dst, src, count, 0);
+}
+
+template <>
+__mlu_func__ void Convert<half, uint8_t>(half* dst, uint8_t* src, int count) {
+  __bang_uchar2half(dst, src, count);
+}
+
+template <>
+__mlu_func__ void Convert<float, uint8_t>(float* dst, uint8_t* src, int count) {
+  __bang_uchar2float(dst, src, count);
+}
+
+template <>
+__mlu_func__ void Convert<int, int8_t>(int* dst, int8_t* src, int count) {
+  __bang_int82int32(dst, src, count, 0, 0);
+}
+
+template <>
+__mlu_func__ void Convert<int, char>(int* dst, char* src, int count) {
+  __bang_int82int32(dst, (int8_t*)src, count, 0, 0);
+}
+
+template <>
+__mlu_func__ void Convert<half, int8_t>(half* dst, int8_t* src, int count) {
+  __bang_int82half(dst, src, count, 0);
+}
+
+template <>
+__mlu_func__ void Convert<half, char>(half* dst, char* src, int count) {
+  __bang_int82half(dst, (int8_t*)src, count, 0);
+}
+
+template <>
+__mlu_func__ void Convert<float, int8_t>(float* dst, int8_t* src, int count) {
+  __bang_int82float(dst, src, count, 0);
+}
+
+template <>
+__mlu_func__ void Convert<float, char>(float* dst, char* src, int count) {
+  __bang_int82float(dst, (int8_t*)src, count, 0);
+}
+
+template <>
+__mlu_func__ void Convert<uint8_t, int>(uint8_t* dst, int* src, int count) {
+  __bang_int322uchar(dst, src, count, 0);
+}
+
+template <>
+__mlu_func__ void Convert<int8_t, int>(int8_t* dst, int* src, int count) {
+  __bang_int322int8(dst, src, count, 0, 0);
+}
+
+template <>
+__mlu_func__ void Convert<char, int>(char* dst, int* src, int count) {
+  __bang_int322int8((int8_t*)dst, src, count, 0, 0);
+}
+
+template <>
+__mlu_func__ void Convert<half, int>(half* dst, int* src, int count) {
+  __bang_int322half(dst, src, count, 0);
+}
+
+template <>
+__mlu_func__ void Convert<float, int>(float* dst, int* src, int count) {
+  __bang_int322float(dst, src, count, 0);
+}
+
+template <>
+__mlu_func__ void Convert<uint8_t, half>(uint8_t* dst, half* src, int count) {
+  __bang_half2uchar_dn(dst, src, count);
+}
+
+template <>
+__mlu_func__ void Convert<float, half>(float* dst, half* src, int count) {
+  __bang_half2float(dst, src, count);
+}
+
+template <>
+__mlu_func__ void Convert<uint8_t, float>(uint8_t* dst, float* src, int count) {
+  __bang_float2uchar(dst, src, count);
+}
+
+template <>
+__mlu_func__ void Convert<int8_t, float>(int8_t* dst, float* src, int count) {
+  __bang_float2int8_rn(dst, src, count, 0);
+}
+
+template <>
+__mlu_func__ void Convert<char, float>(char* dst, float* src, int count) {
+  __bang_float2int8_rn((int8_t*)dst, src, count, 0);
+}
+
+template <>
+__mlu_func__ void Convert<int, float>(int* dst, float* src, int count) {
+  __bang_float2int32(dst, src, count, 0);
+}
+
+template <>
+__mlu_func__ void Convert<half, float>(half* dst, float* src, int count) {
+  __bang_float2half_rn(dst, src, count);
+}
+#endif // defined(__mlu_func__)
+
+/*
  * Math Utilities.
  */
 
 template <typename T>
-inline T DivUp(const T a, const T b) {
+HOSTDEVICE_DECL T DivUp(const T a, const T b) {
   return (a + b - T(1)) / b;
 }
 

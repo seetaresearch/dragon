@@ -10,10 +10,10 @@ dragon.math
   : Compute the absolute value of input.
 
   `add(...) <math/add.html>`_
-  : Compute the element-wise addition.
+  : Compute element-wise addition.
 
   `affine(...) <math/affine.html>`_
-  : Apply the affine transformation to input.
+  : Apply affine transformation to input.
 
   `argmax(...) <math/argmax.html>`_
   : Compute the index of maximum elements along the given axis.
@@ -22,13 +22,13 @@ dragon.math
   : Compute the index of minimum elements along the given axis.
 
   `atan2(...) <math/atan2.html>`_
-  : Compute the element-wise arc-tangent of two arguments.
+  : Compute element-wise arc-tangent of two arguments.
 
   `ceil(...) <math/ceil.html>`_
   : Compute the smallest integer not less than input.
 
   `clip(...) <math/clip.html>`_
-  : Compute the clipped input according to the given bounds.
+  : Clip input according to the given bounds.
 
   `cos(...) <math/cos.html>`_
   : Compute the cos of input.
@@ -37,10 +37,10 @@ dragon.math
   : Compute the cumulative sum of elements along the given axis.
 
   `div(...) <math/div.html>`_
-  : Compute the element-wise division.
+  : Compute element-wise division.
 
   `equal(...) <math/equal.html>`_
-  : Compute the element-wise equal comparison.
+  : Compute element-wise equal comparison.
 
   `exp(...) <math/exp.html>`_
   : Compute the exponential of input.
@@ -49,13 +49,13 @@ dragon.math
   : Compute the largest integer not greater than input.
 
   `gemm(...) <math/gemm.html>`_
-  : Compute the general matrix multiplication.
+  : Compute general matrix multiplication.
 
   `greater(...) <math/greater.html>`_
-  : Compute the element-wise greater comparison.
+  : Compute element-wise greater comparison.
 
   `greater_equal(...) <math/greater_equal.html>`_
-  : Compute the element-wise greater-equal comparison.
+  : Compute element-wise greater-equal comparison.
 
   `is_finite(...) <math/is_finite.html>`_
   : Check if the elements of input are finite.
@@ -67,28 +67,28 @@ dragon.math
   : Check if the elements of input are NaN.
 
   `less(...) <math/less.html>`_
-  : Compute the element-wise less comparison.
+  : Compute element-wise less comparison.
 
   `less_equal(...) <math/less_equal.html>`_
-  : Compute the element-wise less-equal comparison.
+  : Compute element-wise less-equal comparison.
 
   `log(...) <math/log.html>`_
   : Compute the logarithm of input.
 
   `logical_and(...) <math/logical_and.html>`_
-  : Compute the element-wise AND logical operation.
+  : Compute element-wise AND logical operation.
 
   `logical_not(...) <math/logical_not.html>`_
-  : Compute the element-wise NOT logical operation.
+  : Compute element-wise NOT logical operation.
 
   `logical_or(...) <math/logical_or.html>`_
-  : Compute the element-wise OR logical operation.
+  : Compute element-wise OR logical operation.
 
   `logical_xor(...) <math/logical_xor.html>`_
-  : Compute the element-wise XOR logical operation.
+  : Compute element-wise XOR logical operation.
 
   `matmul(...) <math/matmul.html>`_
-  : Compute the matrix multiplication.
+  : Compute matrix multiplication.
 
   `max(...) <math/max.html>`_
   : Compute the max value of elements along the given axis.
@@ -106,16 +106,19 @@ dragon.math
   : Compute the minimum value of given two inputs.
 
   `mul(...) <math/mul.html>`_
-  : Compute the element-wise multiplication.
+  : Compute element-wise multiplication.
+
+  `nan_to_num(...) <math/nan_to_num.html>`_
+  : Replace NaN or infinity elements with given value.
 
   `negative(...) <math/negative.html>`_
-  : Compute the element-wise negative.
+  : Compute element-wise negative.
 
   `norm(...) <math/norm.html>`_
   : Compute the norm value of elements along the given axis.
 
   `not_equal(...) <math/not_equal.html>`_
-  : Compute the element-wise not-equal comparison.
+  : Compute element-wise not-equal comparison.
 
   `pow(...) <math/pow.html>`_
   : Compute the power of input.
@@ -130,7 +133,7 @@ dragon.math
   : Compute the reciprocal square root of input.
 
   `sigmoid(...) <math/sigmoid.html>`_
-  : Compute the sigmoid result of input.
+  : Compute the sigmoid of input.
 
   `sign(...) <math/sign.html>`_
   : Compute the sign indication of input.
@@ -145,7 +148,7 @@ dragon.math
   : Compute the square of input.
 
   `sub(...) <math/sub.html>`_
-  : Compute the element-wise subtraction.
+  : Compute element-wise subtraction.
 
   `sum(...) <math/sum.html>`_
   : Compute the sum value of elements along the given axis.
@@ -196,6 +199,7 @@ dragon.math
   math/min
   math/minimum
   math/mul
+  math/nan_to_num
   math/negative
   math/norm
   math/not_equal

@@ -182,6 +182,10 @@ DEFINE_COPY_FUNC(double);
       T* y,                                                               \
       MPSContext* ctx) {                                                  \
     if (M <= 0 || N <= 0) return;                                         \
+    if (M == 1) {                                                         \
+      Copy(N, x_offset, y_offset, x, y, ctx);                             \
+      return;                                                             \
+    }                                                                     \
     const uint arg1 = N, arg2 = ldx, arg3 = ldy;                          \
     const auto x_bytes_offset = sizeof(T) * x_offset;                     \
     const auto y_bytes_offset = sizeof(T) * y_offset;                     \

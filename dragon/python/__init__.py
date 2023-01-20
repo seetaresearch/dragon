@@ -26,7 +26,7 @@ from dragon._api import dlpack
 from dragon._api import logging
 from dragon._api import losses
 from dragon._api import math
-from dragon._api import metrics
+from dragon._api import mlu
 from dragon._api import mps
 from dragon._api import nn
 from dragon._api import onnx

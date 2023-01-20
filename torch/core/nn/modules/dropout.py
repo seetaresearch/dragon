@@ -14,12 +14,12 @@ from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
 
-from dragon.vm.torch.core.nn import functional as F
+from dragon.vm.torch.core.nn import functional
 from dragon.vm.torch.core.nn.modules.module import Module
 
 
 class DropBlock2d(Module):
-    r"""Set the blocks to zero randomly.
+    r"""Set blocks to zero randomly.
     `[Ghiasi et.al, 2018] <https://arxiv.org/abs/1810.12890>`_.
 
     The **DropBlock** function is defined as:
@@ -69,7 +69,7 @@ class DropBlock2d(Module):
                .format(self.p, self.block_size, inplace_str)
 
     def forward(self, input):
-        return F.drop_block2d(
+        return functional.drop_block2d(
             input, self.p,
             block_size=self.block_size,
             training=self.training,
@@ -78,7 +78,7 @@ class DropBlock2d(Module):
 
 
 class Dropout(Module):
-    r"""Set the elements to zero randomly.
+    r"""Set elements to zero randomly.
     `[Srivastava et.al, 2014] <http://jmlr.org/papers/v15/srivastava14a.html>`_.
 
     The **Dropout** function is defined as:
@@ -124,11 +124,11 @@ class Dropout(Module):
         return 'p={}{}'.format(self.p, inplace_str)
 
     def forward(self, input):
-        return F.dropout(input, self.p, self.training, self.inplace)
+        return functional.dropout(input, self.p, self.training, self.inplace)
 
 
 class DropPath(Module):
-    r"""Set the examples over input to zero randomly.
+    r"""Set examples to zero randomly.
     `[Larsson et.al, 2016] <https://arxiv.org/abs/1605.07648>`_.
 
     The **DropPath** function is defined as:
@@ -169,4 +169,4 @@ class DropPath(Module):
         return 'p={}{}'.format(self.p, inplace_str)
 
     def forward(self, input):
-        return F.drop_path(input, self.p, self.training, self.inplace)
+        return functional.drop_path(input, self.p, self.training, self.inplace)

@@ -128,7 +128,7 @@ def get_global_device_option():
 
 _MAX_NUM_OF_DEVICES = 16
 _ALL_DEVICE_OPTIONS = {}
-_DEVICE_TO_IDENTIFIER = {'cpu': 0, 'cuda': 1, 'mps': 2}
+_DEVICE_TO_IDENTIFIER = {'cpu': 0, 'cuda': 1, 'mps': 2, 'mlu': 3}
 
 for i in range(_MAX_NUM_OF_DEVICES):
     for device, identifier in _DEVICE_TO_IDENTIFIER.items():

@@ -56,10 +56,12 @@ message TensorProtos {
 enum DeviceTypeProto {
   // The default device.
   PROTO_CPU = 0;
-  // NVIDIA's CUDA Environment.
+  // NVIDIA CUDA.
   PROTO_CUDA = 1;
-  // CAMBRICON's CNML Environment.
-  PROTO_CNML = 2;
+  // Apple MetalPerformanceShaders.
+  PROTO_MPS = 2;
+  // Cambricon MLU.
+  PROTO_MLU = 3;
 }
 
 // Device-specific options.

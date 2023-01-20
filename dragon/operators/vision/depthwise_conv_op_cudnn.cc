@@ -44,8 +44,8 @@ void CuDNNDepthwiseConvOp<Context>::DoRunWithType() {
 
   if (HasBias()) {
     INITIALIZE_TENSOR_VIA_SPEC(Input(2), b_shape_, T);
-    CuDNNSetBiasDesc<T>(&bias_desc_, X.ndim(), out_channels_, data_format());
-    CuDNNSetTensorDesc<T>(&output_desc_, Y->dims(), data_format());
+    CuDNNSetBiasDesc<T>(bias_desc_, X.ndim(), out_channels_, data_format());
+    CuDNNSetTensorDesc<T>(output_desc_, Y->dims(), data_format());
     CUDNN_CHECK(cudnnAddTensor(
         ctx()->cudnn_handle(),
         CuDNNType<T>::one,
@@ -55,11 +55,6 @@ void CuDNNDepthwiseConvOp<Context>::DoRunWithType() {
         output_desc_,
         Y->template mutable_data<T, Context>()));
   }
-}
-
-template <class Context>
-void CuDNNDepthwiseConvOp<Context>::RunOnDevice() {
-  DispatchHelper<dtypes::TypesBase<float16, float>>::Call(this, Input(0));
 }
 
 template <class Context>
@@ -126,8 +121,8 @@ void CuDNNDepthwiseConvGradientOp<Context>::DoRunWithType() {
   }
 
   if (dB->has_name()) {
-    CuDNNSetTensorDesc<T>(&input_desc_, dY.dims(), data_format());
-    CuDNNSetBiasDesc<T>(&bias_desc_, dY.ndim(), out_channels_, data_format());
+    CuDNNSetTensorDesc<T>(input_desc_, dY.dims(), data_format());
+    CuDNNSetBiasDesc<T>(bias_desc_, dY.ndim(), out_channels_, data_format());
     CUDNN_CHECK(cudnnConvolutionBackwardBias(
         ctx()->cudnn_handle(),
         CuDNNType<T>::one,
@@ -137,11 +132,6 @@ void CuDNNDepthwiseConvGradientOp<Context>::DoRunWithType() {
         bias_desc_,
         dB->template mutable_data<T, Context>()));
   }
-}
-
-template <class Context>
-void CuDNNDepthwiseConvGradientOp<Context>::RunOnDevice() {
-  DispatchHelper<dtypes::TypesBase<float16, float>>::Call(this, Input(0));
 }
 
 DEPLOY_CUDNN_OPERATOR(DepthwiseConv);

@@ -52,8 +52,63 @@ class SliceGradientOp final : public Operator<Context> {
   void DoRunWithType();
 };
 
-DEFINE_OP_REPEATED_ARG(int64_t, SliceOp, starts);
-DEFINE_OP_REPEATED_ARG(int64_t, SliceOp, sizes);
+#ifdef USE_MLU
+template <class Context>
+class CNNLSliceOp final : public Operator<Context> {
+ public:
+  CNNLSliceOp(const OperatorDef& def, Workspace* ws)
+      : Operator<Context>(def, ws) {
+    INITIALIZE_OP_REPEATED_ARG(int64_t, starts);
+    INITIALIZE_OP_REPEATED_ARG(int64_t, sizes);
+    CNNLCreateTensorDesc(&input_desc_);
+    CNNLCreateTensorDesc(&output_desc_);
+  }
+  USE_OPERATOR_FUNCTIONS;
+
+  ~CNNLSliceOp() {
+    CNNLDestroyTensorDesc(input_desc_);
+    CNNLDestroyTensorDesc(output_desc_);
+  }
+
+  void RunOnDevice() override {
+    DispatchHelper<dtypes::Generic>::Call(this, Input(0));
+  }
+
+  template <typename T>
+  void DoRunWithType();
+
+ protected:
+  DECLARE_OP_REPEATED_ARG(int64_t, starts);
+  DECLARE_OP_REPEATED_ARG(int64_t, sizes);
+  cnnlTensorDescriptor_t input_desc_, output_desc_;
+};
+
+template <class Context>
+class CNNLSliceGradientOp final : public Operator<Context> {
+ public:
+  CNNLSliceGradientOp(const OperatorDef& def, Workspace* ws)
+      : Operator<Context>(def, ws) {
+    CNNLCreateTensorDesc(&input_desc_);
+    CNNLCreateTensorDesc(&output_desc_);
+  }
+  USE_OPERATOR_FUNCTIONS;
+
+  ~CNNLSliceGradientOp() {
+    CNNLDestroyTensorDesc(input_desc_);
+    CNNLDestroyTensorDesc(output_desc_);
+  }
+
+  void RunOnDevice() override {
+    DispatchHelper<dtypes::Floating>::Call(this, Input(0));
+  }
+
+  template <typename T>
+  void DoRunWithType();
+
+ protected:
+  cnnlTensorDescriptor_t input_desc_, output_desc_;
+};
+#endif // USE_MLU
 
 } // namespace dragon
 

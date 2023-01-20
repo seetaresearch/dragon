@@ -64,7 +64,7 @@ kernel void Sign(
 }
 
 template <typename T>
-kernel void ReplaceNaN(
+kernel void NaNToNum(
     device const T* x,
     device T* y,
     const uint index [[thread_position_in_grid]]) {
@@ -99,7 +99,6 @@ INSTANTIATE_UNARY_KERNEL(Neg, int, int);
 INSTANTIATE_UNARY_KERNEL(Neg, int64_t, int64_t);
 INSTANTIATE_UNARY_KERNEL(Neg, half, half);
 INSTANTIATE_UNARY_KERNEL(Neg, float, float);
-INSTANTIATE_UNARY_KERNEL(Abs, uint8_t, uint8_t);
 INSTANTIATE_UNARY_KERNEL(Abs, int8_t, int8_t);
 INSTANTIATE_UNARY_KERNEL(Abs, int, int);
 INSTANTIATE_UNARY_KERNEL(Abs, int64_t, int64_t);
@@ -145,8 +144,8 @@ INSTANTIATE_UNARY_KERNEL(Sin, half, half);
 INSTANTIATE_UNARY_KERNEL(Sin, float, float);
 INSTANTIATE_UNARY_KERNEL(Cos, half, half);
 INSTANTIATE_UNARY_KERNEL(Cos, float, float);
-INSTANTIATE_UNARY_KERNEL(ReplaceNaN, half, half);
-INSTANTIATE_UNARY_KERNEL(ReplaceNaN, float, float);
+INSTANTIATE_UNARY_KERNEL(NaNToNum, half, half);
+INSTANTIATE_UNARY_KERNEL(NaNToNum, float, float);
 INSTANTIATE_UNARY_KERNEL(Not, bool, bool);
 INSTANTIATE_UNARY_KERNEL(Not, uint8_t, bool);
 INSTANTIATE_UNARY_KERNEL(Not, int8_t, bool);
@@ -182,7 +181,7 @@ INSTANTIATE_UNARY_KERNEL(Sqrt, double, double);
 INSTANTIATE_UNARY_KERNEL(Rsqrt, double, double);
 INSTANTIATE_UNARY_KERNEL(Sin, double, double);
 INSTANTIATE_UNARY_KERNEL(Cos, double, double);
-INSTANTIATE_UNARY_KERNEL(ReplaceNaN, double, double);
+INSTANTIATE_UNARY_KERNEL(NaNToNum, double, double);
 #endif // defined(__HAVE_NATIVE_DOUBLE__)
 #undef INSTANTIATE_UNARY_KERNEL
 
@@ -441,7 +440,6 @@ DEFINE_UNARY_FUNC(Neg, int64_t, int64_t);
 DEFINE_UNARY_FUNC(Neg, float16, float16);
 DEFINE_UNARY_FUNC(Neg, float, float);
 DEFINE_UNARY_FUNC(Neg, double, double);
-DEFINE_UNARY_FUNC(Abs, uint8_t, uint8_t);
 DEFINE_UNARY_FUNC(Abs, int8_t, int8_t);
 DEFINE_UNARY_FUNC(Abs, int, int);
 DEFINE_UNARY_FUNC(Abs, int64_t, int64_t);
@@ -543,9 +541,9 @@ DEFINE_UNARY_FUNC(Bias, double);
 DEFINE_UNARY_FUNC(InvStd, float16);
 DEFINE_UNARY_FUNC(InvStd, float);
 DEFINE_UNARY_FUNC(InvStd, double);
-DEFINE_UNARY_FUNC(ReplaceNaN, float16);
-DEFINE_UNARY_FUNC(ReplaceNaN, float);
-DEFINE_UNARY_FUNC(ReplaceNaN, double);
+DEFINE_UNARY_FUNC(NaNToNum, float16);
+DEFINE_UNARY_FUNC(NaNToNum, float);
+DEFINE_UNARY_FUNC(NaNToNum, double);
 #undef DEFINE_UNARY_FUNC
 
 #define DEFINE_SET_FUNC(T)                                               \

@@ -40,7 +40,6 @@ class OneHotOp final : public Operator<Context> {
 };
 
 #ifdef USE_MPS
-
 template <class Context>
 class MPSOneHotOp final : public Operator<Context> {
  public:
@@ -70,8 +69,38 @@ class MPSOneHotOp final : public Operator<Context> {
   MPSGraph_t graph_;
   MPSGraphCache graph_cache_;
 };
-
 #endif // USE_MPS
+
+#ifdef USE_MLU
+template <class Context>
+class CNNLOneHotOp final : public Operator<Context> {
+ public:
+  CNNLOneHotOp(const OperatorDef& def, Workspace* ws)
+      : Operator<Context>(def, ws),
+        depth_(OP_SINGLE_ARG(int64_t, "depth", -1)),
+        on_value_(OP_SINGLE_ARG(float, "on_value", 1.f)),
+        off_value_(OP_SINGLE_ARG(float, "off_value", 0.f)) {
+    CNNLCreateTensorDesc(&input_desc_);
+  }
+  USE_OPERATOR_FUNCTIONS;
+
+  ~CNNLOneHotOp() {
+    CNNLDestroyTensorDesc(input_desc_);
+  }
+
+  void RunOnDevice() override {
+    DispatchHelper<dtypes::Numerical>::Call(this, Input(0));
+  }
+
+  template <typename T>
+  void DoRunWithType();
+
+ protected:
+  int64_t depth_;
+  float on_value_, off_value_;
+  cnnlTensorDescriptor_t input_desc_;
+};
+#endif // USE_MLU
 
 } // namespace dragon
 

@@ -35,7 +35,7 @@ def avg_pool(
     data_format='NHWC',
     name=None,
 ):
-    r"""Apply the n-dimension average pooling.
+    r"""Apply n-dimension average pooling.
 
     * If :attr:`data_format` is ``'NCHW'``, excepts input shape
       :math:`(N, C, D1, D2, ...)`, and output shape is
@@ -113,7 +113,7 @@ def avg_pool1d(
     data_format='NHWC',
     name=None,
 ):
-    r"""Apply the 1d average pooling.
+    r"""Apply 1d average pooling.
 
     * If :attr:`data_format` is ``'NCHW'``, excepts input shape
       :math:`(N, C, H)`, and output shape is :math:`(N, C, H_{\text{out}})`.
@@ -171,7 +171,7 @@ def avg_pool2d(
     data_format='NHWC',
     name=None,
 ):
-    r"""Apply the 2d average pooling.
+    r"""Apply 2d average pooling.
 
     * If :attr:`data_format` is ``'NCHW'``, excepts input shape
       :math:`(N, C, H, W)`, and output shape is
@@ -231,7 +231,7 @@ def avg_pool3d(
     data_format='NHWC',
     name=None,
 ):
-    r"""Apply the 3d average pooling.
+    r"""Apply 3d average pooling.
 
     * If :attr:`data_format` is ``'NCHW'``, excepts input shape
       :math:`(N, C, D, H, W)`, and output shape is
@@ -316,7 +316,7 @@ def convolution(
     name=None,
     **kwargs
 ):
-    r"""Apply the n-dimension convolution.
+    r"""Apply n-dimension convolution.
 
     * If :attr:`data_format` is ``'NCHW'``, excepts input shape
       :math:`(N, C_{\text{in}}, D1, D2, ...)`, filters shape
@@ -401,7 +401,7 @@ def conv_transpose(
     dilations=1,
     name=None,
 ):
-    r"""Apply the n-dimension deconvolution.
+    r"""Apply n-dimension deconvolution.
 
     * If :attr:`data_format` is ``'NCHW'``, excepts input shape
       :math:`(N, C_{\text{in}}, D1, D2, ...)`, filters shape
@@ -496,7 +496,7 @@ def conv1d(
     dilations=None,
     name=None,
 ):
-    r"""Apply the 1d convolution.
+    r"""Apply 1d convolution.
 
     * If :attr:`data_format` is ``'NCHW'``, excepts input shape
       :math:`(N, C_{\text{in}}, H)`, filters shape
@@ -554,7 +554,7 @@ def conv2d(
     dilations=None,
     name=None,
 ):
-    r"""Apply the 2d convolution.
+    r"""Apply 2d convolution.
 
     * If :attr:`data_format` is ``'NCHW'``, excepts input shape
       :math:`(N, C_{\text{in}}, H, W)`, filters shape
@@ -612,7 +612,7 @@ def conv3d(
     dilations=1,
     name=None,
 ):
-    r"""Apply the 3d convolution.
+    r"""Apply 3d convolution.
 
     * If :attr:`data_format` is ``'NCHW'``, excepts input shape
       :math:`(N, C_{\text{in}}, D, H, W)`, filters shape
@@ -672,7 +672,7 @@ def conv1d_transpose(
     dilations=None,
     name=None,
 ):
-    r"""Apply the 1d deconvolution.
+    r"""Apply 1d deconvolution.
 
     * If :attr:`data_format` is ``'NCHW'``, excepts input shape
       :math:`(N, C_{\text{in}}, H)`, filters shape
@@ -736,7 +736,7 @@ def conv2d_transpose(
     dilations=None,
     name=None,
 ):
-    r"""Apply the 2d deconvolution.
+    r"""Apply 2d deconvolution.
 
     * If :attr:`data_format` is ``'NCHW'``, excepts input shape
       :math:`(N, C_{\text{in}}, H, W)`, filters shape
@@ -800,7 +800,7 @@ def conv3d_transpose(
     dilations=None,
     name=None,
 ):
-    r"""Apply the 3d deconvolution.
+    r"""Apply 3d deconvolution.
 
     * If :attr:`data_format` is ``'NCHW'``, excepts input shape
       :math:`(N, C_{\text{in}}, D, H, W)`, filters shape
@@ -862,7 +862,7 @@ def depthwise_conv2d(
     dilations=1,
     name=None,
 ):
-    r"""Apply the 2d depthwise convolution.
+    r"""Apply 2d depthwise convolution.
     `[Chollet, 2016] <https://arxiv.org/abs/1610.02357>`_.
 
     * If :attr:`data_format` is ``'NCHW'``, excepts input shape
@@ -911,7 +911,7 @@ def depthwise_conv2d(
 
 
 def dropout(x, rate, name=None, **kwargs):
-    r"""Set the elements of input to zero randomly.
+    r"""Set elements of input to zero randomly.
     `[Srivastava et.al, 2014] <http://jmlr.org/papers/v15/srivastava14a.html>`_.
 
     The **Dropout** function is defined as:
@@ -944,7 +944,7 @@ def dropout(x, rate, name=None, **kwargs):
 
 
 def elu(features, alpha=1., name=None, **kwargs):
-    r"""Apply the exponential linear unit.
+    r"""Apply exponential linear unit.
     `[Clevert et.al, 2015] <https://arxiv.org/abs/1511.07289>`_.
 
     The **ELU** function is defined as:
@@ -993,7 +993,7 @@ def fused_batch_norm(
     name=None,
     exponential_avg_factor=1.0,
 ):
-    r"""Apply the batch normalization.
+    r"""Apply batch normalization.
     `[Ioffe & Szegedy, 2015] <https://arxiv.org/abs/1502.03167>`_.
 
     The normalization is defined as:
@@ -1051,7 +1051,7 @@ def fused_batch_norm(
 
 
 def gelu(features, approximate=False, name=None):
-    r"""Apply the gaussian error linear unit.
+    r"""Apply gaussian error linear unit.
     `[Hendrycks & Gimpel, 2016] <https://arxiv.org/abs/1606.08415>`_.
 
     The **GELU** function is defined as:
@@ -1084,7 +1084,7 @@ def gelu(features, approximate=False, name=None):
 
 
 def l2_loss(t, name=None):
-    r"""Compute the loss of element-wise squared error.
+    r"""Compute element-wise squared error.
 
     The **L2Loss** function is defined as:
 
@@ -1114,7 +1114,7 @@ def l2_loss(t, name=None):
 
 
 def l2_normalize(x, axis=None, epsilon=1e-12, name=None):
-    r"""Apply the l2 normalization.
+    r"""Apply l2 normalization.
 
     The **L2-Normalization** is defined as:
 
@@ -1159,7 +1159,7 @@ def l2_normalize(x, axis=None, epsilon=1e-12, name=None):
 
 
 def leaky_relu(features, alpha=0.2, name=None, **kwargs):
-    r"""Apply the leaky rectified linear unit.
+    r"""Apply leaky rectified linear unit.
 
     The **LeakyReLU** function is defined as:
 
@@ -1197,7 +1197,7 @@ def local_response_normalization(
     data_format='NHWC',
     name=None,
 ):
-    r"""Apply the local response normalization.
+    r"""Apply local response normalization.
     `[Krizhevsky et.al, 2012] <http://www.cs.toronto.edu/~hinton/absps/imagenet.pdf>`_.
 
     The normalization is defined as:
@@ -1242,7 +1242,7 @@ def local_response_normalization(
 
 
 def log_softmax(logits, axis=-1, name=None):
-    r"""Apply the composite of logarithm and softmax.
+    r"""Apply logarithm softmax function.
 
     The **LogSoftmax** function is defined as:
 
@@ -1282,7 +1282,7 @@ def max_pool(
     data_format='NHWC',
     name=None,
 ):
-    r"""Apply the n-dimension max pooling.
+    r"""Apply n-dimension max pooling.
 
     * If :attr:`data_format` is ``'NCHW'``, excepts input shape
       :math:`(N, C, D1, D2, ...)`, and output shape is
@@ -1360,7 +1360,7 @@ def max_pool1d(
     data_format='NHWC',
     name=None,
 ):
-    r"""Apply the 1d max pooling.
+    r"""Apply 1d max pooling.
 
     * If :attr:`data_format` is ``'NCHW'``, excepts input shape
       :math:`(N, C, H)`, and output shape is
@@ -1420,7 +1420,7 @@ def max_pool2d(
     data_format='NHWC',
     name=None,
 ):
-    r"""Apply the 2d max pooling.
+    r"""Apply 2d max pooling.
 
     * If :attr:`data_format` is ``'NCHW'``, excepts input shape
       :math:`(N, C, H, W)`, and output shape is
@@ -1480,7 +1480,7 @@ def max_pool3d(
     data_format='NHWC',
     name=None,
 ):
-    r"""Apply the 3d max pooling.
+    r"""Apply 3d max pooling.
 
     * If :attr:`data_format` is ``'NCHW'``, excepts input shape
       :math:`(N, C, D, H, W)`, and output shape is
@@ -1580,7 +1580,7 @@ def moments(x, axes=None, keepdims=False, name=None):
 
 
 def relu(features, name=None, **kwargs):
-    r"""Apply the rectified linear unit.
+    r"""Apply rectified linear unit.
     `[Nair & Hinton, 2010] <http://www.csri.utoronto.ca/~hinton/absps/reluICML.pdf>`_.
 
     The **ReLU** function is defined as:
@@ -1609,7 +1609,7 @@ def relu(features, name=None, **kwargs):
 
 
 def relu6(features, name=None, **kwargs):
-    r"""Apply the clipped-6 rectified linear unit.
+    r"""Apply clipped-6 rectified linear unit.
     `[Krizhevsky, 2010] <http://www.cs.utoronto.ca/~kriz/conv-cifar10-aug2010.pdf>`_.
 
     The **ReLU-6** function is defined as:
@@ -1638,7 +1638,7 @@ def relu6(features, name=None, **kwargs):
 
 
 def selu(features, name=None, **kwargs):
-    r"""Apply the scaled exponential linear unit.
+    r"""Apply scaled exponential linear unit.
     `[Klambauer et.al, 2017] <https://arxiv.org/abs/1706.02515>`_.
 
     .. math::
@@ -1672,7 +1672,7 @@ def selu(features, name=None, **kwargs):
 
 
 def sigmoid_cross_entropy_with_logits(labels=None, logits=None, name=None):
-    """Compute the loss of sigmoid cross entropy.
+    """Compute sigmoid cross entropy.
 
     Examples:
 
@@ -1702,7 +1702,7 @@ def sigmoid_cross_entropy_with_logits(labels=None, logits=None, name=None):
 
 
 def silu(features):
-    r"""Apply the sigmoid linear unit.
+    r"""Apply sigmoid linear unit.
     `[Hendrycks & Gimpel, 2016] <https://arxiv.org/abs/1606.08415>`_.
 
     The **SiLU** function is defined as:
@@ -1731,7 +1731,7 @@ def silu(features):
 
 
 def softmax(logits, axis=-1, name=None, **kwargs):
-    r"""Apply the softmax function.
+    r"""Apply softmax function.
 
     The **Softmax** function is defined as:
 
@@ -1764,7 +1764,7 @@ def softmax(logits, axis=-1, name=None, **kwargs):
 
 
 def softmax_cross_entropy_with_logits(labels, logits, name=None):
-    """Compute the loss of softmax cross entropy.
+    """Compute oftmax cross entropy.
 
     Examples:
 
@@ -1794,7 +1794,7 @@ def softmax_cross_entropy_with_logits(labels, logits, name=None):
 
 
 def sparse_softmax_cross_entropy_with_logits(labels, logits, name=None):
-    """Compute the loss of softmax cross entropy with sparse labels.
+    """Compute softmax cross entropy with sparse labels.
 
     Examples:
 

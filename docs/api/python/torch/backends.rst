@@ -6,6 +6,9 @@ vm.torch.backends
   Modules
   -------
 
+  `Module cnnl <backends/cnnl.html>`_
+  : The CNNL backend module.
+
   `Module cuda <backends/cuda.html>`_
   : The CUDA backend module.
 
@@ -21,6 +24,7 @@ vm.torch.backends
 .. toctree::
   :hidden:
 
+  backends/cnnl
   backends/cuda
   backends/cudnn
   backends/mps

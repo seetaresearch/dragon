@@ -41,22 +41,18 @@ void MultinomialOp<Context>::DoRunWithType() {
   Y->template data<int64_t, Context>();
 }
 
-template <class Context>
-void MultinomialOp<Context>::RunOnDevice() {
-  ctx()->set_stream(0); // Enforce the default stream.
-  DispatchHelper<dtypes::TypesBase<float, double>>::Call(this, Input(0));
-}
-
 DEPLOY_CPU_OPERATOR(Multinomial);
 #ifdef USE_CUDA
 DEPLOY_CUDA_OPERATOR(Multinomial);
 #endif
+#ifdef USE_MPS
+DEPLOY_MPS_OPERATOR(Multinomial, Multinomial);
+#endif
+#ifdef USE_MLU
+DEPLOY_MLU_OPERATOR(Multinomial);
+#endif
 
-OPERATOR_SCHEMA(Multinomial)
-    /* X */
-    .NumInputs(1)
-    /* Y */
-    .NumOutputs(1);
+OPERATOR_SCHEMA(Multinomial).NumInputs(1).NumOutputs(1);
 
 NO_GRADIENT(Multinomial);
 

@@ -38,8 +38,37 @@ class AssignOp final : public Operator<Context> {
   DECLARE_OP_REPEATED_ARG(int64_t, sizes);
 };
 
-DEFINE_OP_REPEATED_ARG(int64_t, AssignOp, starts);
-DEFINE_OP_REPEATED_ARG(int64_t, AssignOp, sizes);
+#ifdef USE_MLU
+template <class Context>
+class CNNLAssignOp final : public Operator<Context> {
+ public:
+  CNNLAssignOp(const OperatorDef& def, Workspace* ws)
+      : Operator<Context>(def, ws) {
+    INITIALIZE_OP_REPEATED_ARG(int64_t, starts);
+    INITIALIZE_OP_REPEATED_ARG(int64_t, sizes);
+    CNNLCreateTensorDesc(&input_desc_);
+    CNNLCreateTensorDesc(&output_desc_);
+  }
+  USE_OPERATOR_FUNCTIONS;
+
+  ~CNNLAssignOp() {
+    CNNLDestroyTensorDesc(input_desc_);
+    CNNLDestroyTensorDesc(output_desc_);
+  }
+
+  void RunOnDevice() override {
+    DispatchHelper<dtypes::Floating>::Call(this, Input(0));
+  }
+
+  template <typename T>
+  void DoRunWithType();
+
+ protected:
+  DECLARE_OP_REPEATED_ARG(int64_t, starts);
+  DECLARE_OP_REPEATED_ARG(int64_t, sizes);
+  cnnlTensorDescriptor_t input_desc_, output_desc_;
+};
+#endif // USE_MLU
 
 } // namespace dragon
 

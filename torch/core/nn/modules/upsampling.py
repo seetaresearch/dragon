@@ -14,7 +14,7 @@ from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
 
-from dragon.vm.torch.core.nn import functional as F
+from dragon.vm.torch.core.nn import functional
 from dragon.vm.torch.core.nn.modules.module import Module
 
 
@@ -73,7 +73,7 @@ class Upsample(Module):
         self.align_corners = align_corners
 
     def forward(self, input):
-        return F.interpolate(
+        return functional.interpolate(
             input,
             size=self.size,
             scale_factor=self.scale_factor,

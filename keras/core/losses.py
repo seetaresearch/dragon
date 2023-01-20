@@ -42,7 +42,7 @@ class Loss(object):
         """Define the loss computation."""
 
     def __call__(self, y_true, y_pred):
-        """Compute the defined loss function.
+        """Compute defined loss function.
 
         Parameters
         ----------
@@ -76,7 +76,7 @@ class LossFunctionWrapper(Loss):
 
 
 class BinaryCrossentropy(LossFunctionWrapper):
-    r"""A criterion to compute the binary cross entropy with contiguous targets.
+    r"""Criterion to compute binary cross entropy.
 
     The **CrossEntropy** function is defined as:
 
@@ -109,7 +109,7 @@ class BinaryCrossentropy(LossFunctionWrapper):
 
 
 class CategoricalCrossentropy(LossFunctionWrapper):
-    r"""A criterion to compute the categorical cross entropy with contiguous targets.
+    r"""Criterion to compute categorical cross entropy.
 
     The **CrossEntropy** function is defined as:
 
@@ -144,7 +144,7 @@ class CategoricalCrossentropy(LossFunctionWrapper):
 
 
 class MeanAbsoluteError(LossFunctionWrapper):
-    r"""A criterion to compute the reduced element-wise absolute value difference.
+    r"""Criterion to compute element-wise absolute value difference.
 
     The **AbsoluteError** function is defined as:
 
@@ -177,7 +177,7 @@ class MeanAbsoluteError(LossFunctionWrapper):
 
 
 class MeanSquaredError(LossFunctionWrapper):
-    r"""A criterion to compute the reduced element-wise squared error.
+    r"""Criterion to compute element-wise squared error.
 
     The **SquaredError** function is defined as:
 
@@ -210,7 +210,7 @@ class MeanSquaredError(LossFunctionWrapper):
 
 
 class SparseCategoricalCrossentropy(LossFunctionWrapper):
-    r"""A criterion to compute the categorical cross entropy with sparse labels.
+    r"""Criterion to compute categorical cross entropy with sparse labels.
 
     The **CrossEntropy** function is defined as:
 
@@ -258,7 +258,7 @@ class SparseCategoricalCrossentropy(LossFunctionWrapper):
 
 
 def binary_crossentropy(y_true, y_pred, reduction=Reduction.VALID):
-    r"""Compute the binary cross entropy with contiguous targets.
+    r"""Compute binary cross entropy.
 
     The **CrossEntropy** function is defined as:
 
@@ -292,7 +292,7 @@ def binary_crossentropy(y_true, y_pred, reduction=Reduction.VALID):
 
 
 def categorical_crossentropy(y_true, y_pred, axis=-1, reduction=Reduction.MEAN):
-    """Compute the categorical cross entropy with contiguous targets.
+    """Compute categorical cross entropy.
 
     Examples:
 
@@ -324,7 +324,7 @@ def categorical_crossentropy(y_true, y_pred, axis=-1, reduction=Reduction.MEAN):
 
 
 def mean_absolute_error(y_true, y_pred, reduction=Reduction.MEAN):
-    """Compute the reduced element-wise absolute value difference.
+    """Compute element-wise absolute value difference.
 
     Examples:
 
@@ -348,7 +348,7 @@ def mean_absolute_error(y_true, y_pred, reduction=Reduction.MEAN):
 
 
 def mean_squared_error(y_true, y_pred, reduction=Reduction.MEAN):
-    r"""Compute the reduced element-wise squared error.
+    r"""Compute element-wise squared error.
 
     Examples:
 
@@ -383,7 +383,7 @@ def sparse_categorical_crossentropy(
     ignore_index=None,
     reduction=Reduction.VALID,
 ):
-    r"""Compute the categorical cross entropy with sparse labels.
+    r"""Compute categorical cross entropy with sparse labels.
 
     The **CrossEntropy** function is defined as:
 

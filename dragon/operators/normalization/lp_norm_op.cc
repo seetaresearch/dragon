@@ -82,17 +82,8 @@ DEPLOY_MPS_OPERATOR(LpNorm, LpNorm);
 DEPLOY_MPS_OPERATOR(LpNormGradient, LpNormGradient);
 #endif
 
-OPERATOR_SCHEMA(LpNorm)
-    /* X */
-    .NumInputs(1)
-    /* Y */
-    .NumOutputs(1);
-
-OPERATOR_SCHEMA(LpNormGradient)
-    /* X, dY */
-    .NumInputs(2)
-    /* dX */
-    .NumOutputs(1);
+OPERATOR_SCHEMA(LpNorm).NumInputs(1).NumOutputs(1);
+OPERATOR_SCHEMA(LpNormGradient).NumInputs(2).NumOutputs(1);
 
 REGISTER_GRADIENT(LpNorm, GenericGradientMaker);
 

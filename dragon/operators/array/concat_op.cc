@@ -77,18 +77,13 @@ DEPLOY_CUDA_OPERATOR(ConcatGradient);
 DEPLOY_MPS_OPERATOR(Concat, Concat);
 DEPLOY_MPS_OPERATOR(ConcatGradient, ConcatGradient);
 #endif
+#ifdef USE_MLU
+DEPLOY_MLU_OPERATOR(Concat);
+DEPLOY_MLU_OPERATOR(ConcatGradient);
+#endif
 
-OPERATOR_SCHEMA(Concat)
-    /* X(0), ... */
-    .NumInputs(1, INT_MAX)
-    /* Y */
-    .NumOutputs(1);
-
-OPERATOR_SCHEMA(ConcatGradient)
-    /* dY */
-    .NumInputs(1)
-    /* dX(0), ... */
-    .NumOutputs(1, INT_MAX);
+OPERATOR_SCHEMA(Concat).NumInputs(1, INT_MAX).NumOutputs(1);
+OPERATOR_SCHEMA(ConcatGradient).NumInputs(1).NumOutputs(1, INT_MAX);
 
 REGISTER_GRADIENT(Concat, SimpleGradientMaker);
 

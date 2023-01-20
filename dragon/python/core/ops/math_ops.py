@@ -52,7 +52,7 @@ def abs(inputs, **kwargs):
 
 @OpSchema.num_inputs(2)
 def add(inputs, **kwargs):
-    r"""Compute the element-wise addition.
+    r"""Compute element-wise addition.
 
     .. math:: \text{out} = \text{input1} + \text{input2}
 
@@ -174,7 +174,7 @@ def argmin(inputs, axis=0, keepdims=False, **kwargs):
 
 @OpSchema.num_inputs(2)
 def atan2(inputs, **kwargs):
-    r"""Compute the element-wise arc-tangent of two arguments.
+    r"""Compute element-wise arc-tangent of two arguments.
 
     .. math:: \text{out} = \text{arctan}(\frac{\text{input1}}{\text{input2}})
 
@@ -205,7 +205,7 @@ def atan2(inputs, **kwargs):
 
 @OpSchema.num_inputs(2)
 def bitwise_and(inputs, **kwargs):
-    r"""Compute the element-wise AND bitwise operation.
+    r"""Compute element-wise AND bitwise operation.
 
     .. math:: \text{out} = \text{input1} \mathbin{\&} \text{input2}
 
@@ -236,7 +236,7 @@ def bitwise_and(inputs, **kwargs):
 
 @OpSchema.num_inputs(2)
 def bitwise_or(inputs, **kwargs):
-    r"""Compute the element-wise OR bitwise operation.
+    r"""Compute element-wise OR bitwise operation.
 
     .. math:: \text{out} = \text{input1} \mathbin{|} \text{input2}
 
@@ -267,7 +267,7 @@ def bitwise_or(inputs, **kwargs):
 
 @OpSchema.num_inputs(2)
 def bitwise_xor(inputs, **kwargs):
-    r"""Compute the element-wise XOR bitwise operation.
+    r"""Compute element-wise XOR bitwise operation.
 
     .. math:: \text{out} = \text{input1} \oplus \text{input2}
 
@@ -359,7 +359,7 @@ def ceil(inputs, **kwargs):
 
 @OpSchema.num_inputs(1)
 def clip(inputs, low=None, high=None, **kwargs):
-    r"""Compute the clipped input according to the given bounds.
+    r"""Clip input according to the given bounds.
 
     .. math:: \text{out} = \min(\max(\text{input}, \text{low}), \text{high})
 
@@ -478,7 +478,7 @@ def cumsum(inputs, axis=0, exclusive=False, reverse=False, **kwargs):
 
 @OpSchema.num_inputs(2)
 def div(inputs, **kwargs):
-    r"""Compute the element-wise division.
+    r"""Compute element-wise division.
 
     .. math:: \text{out} = \text{input1} \div \text{input2}
 
@@ -510,7 +510,7 @@ def div(inputs, **kwargs):
 
 @OpSchema.num_inputs(2)
 def equal(inputs, **kwargs):
-    r"""Compute the element-wise equal comparison.
+    r"""Compute element-wise equal comparison.
 
     .. math:: \text{out} = (\text{input1} == \text{input2})
 
@@ -601,7 +601,7 @@ def floor(inputs, **kwargs):
 
 @OpSchema.num_inputs(2, 3)
 def gemm(inputs, alpha=1, beta=1, transpose_a=False, transpose_b=False, **kwargs):
-    r"""Compute the general matrix multiplication.
+    r"""Compute general matrix multiplication.
 
     .. math:: \text{out} = \alpha AB + \beta C
 
@@ -635,7 +635,7 @@ def gemm(inputs, alpha=1, beta=1, transpose_a=False, transpose_b=False, **kwargs
 
 @OpSchema.num_inputs(2)
 def greater(inputs, **kwargs):
-    r"""Compute the element-wise greater comparison.
+    r"""Compute element-wise greater comparison.
 
     .. math:: \text{out} = (\text{input1} > \text{input2})
 
@@ -668,7 +668,7 @@ def greater(inputs, **kwargs):
 
 @OpSchema.num_inputs(2)
 def greater_equal(inputs, **kwargs):
-    r"""Compute the element-wise greater-equal comparison.
+    r"""Compute element-wise greater-equal comparison.
 
     .. math:: \text{out} = (\text{input1} >= \text{input2})
 
@@ -822,7 +822,7 @@ def is_nan(inputs, **kwargs):
 
 @OpSchema.num_inputs(2)
 def less(inputs, **kwargs):
-    r"""Compute the element-wise less comparison.
+    r"""Compute element-wise less comparison.
 
     .. math:: \text{out} = (\text{input1} < \text{input2})
 
@@ -855,7 +855,7 @@ def less(inputs, **kwargs):
 
 @OpSchema.num_inputs(2)
 def less_equal(inputs, **kwargs):
-    r"""Compute the element-wise less-equal comparison.
+    r"""Compute element-wise less-equal comparison.
 
     .. math:: \text{out} = (\text{input1} <= \text{input2})
 
@@ -917,7 +917,7 @@ def log(inputs, **kwargs):
 
 @OpSchema.num_inputs(2)
 def logical_and(inputs, **kwargs):
-    r"""Compute the element-wise AND logical operation.
+    r"""Compute element-wise AND logical operation.
 
     .. math:: \text{out} = \text{input1} \mathbin{\&} \text{input2}
 
@@ -951,7 +951,7 @@ def logical_and(inputs, **kwargs):
 
 @OpSchema.num_inputs(1)
 def logical_not(inputs, **kwargs):
-    r"""Compute the element-wise NOT logical operation.
+    r"""Compute element-wise NOT logical operation.
 
     .. math:: \text{out} = \,\,\sim \text{input}
 
@@ -982,7 +982,7 @@ def logical_not(inputs, **kwargs):
 
 @OpSchema.num_inputs(2)
 def logical_or(inputs, **kwargs):
-    r"""Compute the element-wise OR logical operation.
+    r"""Compute element-wise OR logical operation.
 
     .. math:: \text{out} = \text{input1} \mathbin{|} \text{input2}
 
@@ -1016,7 +1016,7 @@ def logical_or(inputs, **kwargs):
 
 @OpSchema.num_inputs(2)
 def logical_xor(inputs, **kwargs):
-    r"""Compute the element-wise XOR logical operation.
+    r"""Compute element-wise XOR logical operation.
 
     .. math:: \text{out} = \text{input1} \oplus \text{input2}
 
@@ -1050,7 +1050,7 @@ def logical_xor(inputs, **kwargs):
 
 @OpSchema.num_inputs(2)
 def matmul(inputs, **kwargs):
-    r"""Compute the matrix multiplication.
+    r"""Compute matrix multiplication.
 
     .. math:: \text{out} = \text{input1} \times \text{input2}
 
@@ -1330,7 +1330,7 @@ def moments(inputs, axis=None, keepdims=False, **kwargs):
 
 @OpSchema.num_inputs(2)
 def mul(inputs, **kwargs):
-    r"""Compute the element-wise multiplication.
+    r"""Compute element-wise multiplication.
 
     .. math:: \text{out} = \text{input1} \times \text{input2}
 
@@ -1361,8 +1361,47 @@ def mul(inputs, **kwargs):
 
 
 @OpSchema.num_inputs(1)
+def nan_to_num(inputs, nan=0., pos_inf=None, neg_inf=None, copy=True, **kwargs):
+    """Replace NaN or infinity elements with given value.
+
+    ```python
+    x = dragon.constant([float('nan'), float('inf'), float('-inf'), 2.33])
+    print(dragon.math.nan_to_num(x))  # [0., 3.40282e+38, -3.40282e+38, 2.33]
+    ```
+
+    Parameters
+    ----------
+    inputs : dragon.Tensor
+        The input tensor.
+    nan : float, optional, default=0.0
+        The value to replace NaN elements.
+    pos_inf : float, optional
+        The value to replace positive infinity elements.
+    neg_inf : float, optional
+        The value to replace negative infinity elements.
+    copy : bool, optional, default=True
+        Return a new tensor or call in-place.
+
+    Returns
+    -------
+    dragon.Tensor
+        The output tensor.
+
+    """
+    nan = float(nan) if nan is not None else nan
+    pos_inf = float(pos_inf) if pos_inf is not None else pos_inf
+    neg_inf = float(neg_inf) if neg_inf is not None else neg_inf
+    if context.executing_eagerly():
+        return OpLib.execute(
+            'NaNToNum', inputs, outputs=[None] if copy else inputs,
+            nan=nan, pos_inf=pos_inf, neg_inf=neg_inf)
+    return OpLib.add('NaNToNum', inputs, nan=nan,
+                     pos_inf=pos_inf, neg_inf=neg_inf, **kwargs)
+
+
+@OpSchema.num_inputs(1)
 def negative(inputs, **kwargs):
-    r"""Compute the element-wise negative.
+    r"""Compute element-wise negative.
 
     .. math:: \text{out} = -\text{input}
 
@@ -1439,7 +1478,7 @@ def norm(inputs, ord=None, axis=None, keepdims=False, **kwargs):
 
 @OpSchema.num_inputs(2)
 def not_equal(inputs, **kwargs):
-    r"""Compute the element-wise not-equal comparison.
+    r"""Compute element-wise not-equal comparison.
 
     .. math:: \text{out} = (\text{input1} \neq \text{input2})
 
@@ -1713,7 +1752,7 @@ def square(inputs, **kwargs):
 
 @OpSchema.num_inputs(2)
 def sub(inputs, **kwargs):
-    r"""Compute the element-wise subtraction.
+    r"""Compute element-wise subtraction.
 
     .. math:: \text{out} = \text{input1} - \text{input2}
 

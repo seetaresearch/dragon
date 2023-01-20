@@ -27,14 +27,17 @@ class DepthwiseConvOp final : public ConvOpBase<Context> {
   USE_OPERATOR_FUNCTIONS;
   USE_CONV_FUNCTIONS;
 
-  bool HasBias() override {
-    return InputSize() > 2;
+  void RunOnDevice() override {
+    DispatchHelper<dtypes::TypesBase<float16, float>>::Call(this, Input(0));
   }
-
-  void RunOnDevice() override;
 
   template <typename T>
   void DoRunWithType();
+
+ protected:
+  bool HasBias() override {
+    return InputSize() > 2;
+  }
 };
 
 template <class Context>
@@ -47,18 +50,20 @@ class DepthwiseConvGradientOp final : public ConvOpBase<Context> {
   USE_OPERATOR_FUNCTIONS;
   USE_CONV_FUNCTIONS;
 
-  bool HasBias() override {
-    return Output(2)->has_name();
+  void RunOnDevice() override {
+    DispatchHelper<dtypes::TypesBase<float16, float>>::Call(this, Input(0));
   }
-
-  void RunOnDevice() override;
 
   template <typename T>
   void DoRunWithType();
+
+ protected:
+  bool HasBias() override {
+    return Output(2)->has_name();
+  }
 };
 
 #ifdef USE_CUDNN
-
 template <class Context>
 class CuDNNDepthwiseConvOp final : public ConvOpBase<Context> {
  public:
@@ -72,20 +77,22 @@ class CuDNNDepthwiseConvOp final : public ConvOpBase<Context> {
   USE_CONV_FUNCTIONS;
 
   ~CuDNNDepthwiseConvOp() {
-    CuDNNDestroyTensorDesc(&bias_desc_);
-    CuDNNDestroyTensorDesc(&output_desc_);
+    CuDNNDestroyTensorDesc(bias_desc_);
+    CuDNNDestroyTensorDesc(output_desc_);
   }
 
-  bool HasBias() override {
-    return InputSize() > 2;
+  void RunOnDevice() override {
+    DispatchHelper<dtypes::TypesBase<float16, float>>::Call(this, Input(0));
   }
-
-  void RunOnDevice() override;
 
   template <typename T>
   void DoRunWithType();
 
  protected:
+  bool HasBias() override {
+    return InputSize() > 2;
+  }
+
   cudnnTensorDescriptor_t bias_desc_;
   cudnnTensorDescriptor_t output_desc_;
 };
@@ -103,24 +110,25 @@ class CuDNNDepthwiseConvGradientOp final : public ConvOpBase<Context> {
   USE_CONV_FUNCTIONS;
 
   ~CuDNNDepthwiseConvGradientOp() {
-    CuDNNDestroyTensorDesc(&bias_desc_);
-    CuDNNDestroyTensorDesc(&input_desc_);
+    CuDNNDestroyTensorDesc(bias_desc_);
+    CuDNNDestroyTensorDesc(input_desc_);
   }
 
-  bool HasBias() override {
-    return Output(2)->has_name();
+  void RunOnDevice() override {
+    DispatchHelper<dtypes::TypesBase<float16, float>>::Call(this, Input(0));
   }
-
-  void RunOnDevice() override;
 
   template <typename T>
   void DoRunWithType();
 
  protected:
+  bool HasBias() override {
+    return Output(2)->has_name();
+  }
+
   cudnnTensorDescriptor_t bias_desc_;
   cudnnTensorDescriptor_t input_desc_;
 };
-
 #endif // USE_CUDNN
 
 } // namespace dragon

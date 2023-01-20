@@ -34,11 +34,7 @@ DEPLOY_CPU_OPERATOR(OneHot);
 DEPLOY_CUDA_OPERATOR(OneHot);
 #endif
 
-OPERATOR_SCHEMA(OneHot)
-    /* X */
-    .NumInputs(1)
-    /* Y */
-    .NumOutputs(1);
+OPERATOR_SCHEMA(OneHot).NumInputs(1).NumOutputs(1);
 
 NO_GRADIENT(OneHot);
 

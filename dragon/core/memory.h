@@ -34,8 +34,10 @@ class DRAGON_API UnifiedMemory {
     STATE_AT_CUDA = 2,
     /*! \brief Data is mutable to mps */
     STATE_AT_MPS = 3,
+    /*! \brief Data is mutable to mlu */
+    STATE_AT_MLU = 4,
     /*! \brief Data is synced between host and device */
-    SYNCED = 4,
+    SYNCED = 5,
   };
 
   /*! \brief Constructor */
@@ -53,14 +55,20 @@ class DRAGON_API UnifiedMemory {
   /*! \brief Switch to the given mps device */
   void SwitchToMPSDevice(int device);
 
+  /*! \brief Switch to the given mlu device */
+  void SwitchToMLUDevice(int device);
+
   /*! \brief Set to the cpu state */
   void ToCPU(size_t size = 0);
 
   /*! \brief Set to the cuda state */
   void ToCUDA(size_t size = 0);
 
-  /*! \brief Set to the cuda state */
+  /*! \brief Set to the mps state */
   void ToMPS(size_t size = 0);
+
+  /*! \brief Set to the mlu state */
+  void ToMLU(size_t size = 0);
 
   /*! \brief Return the state */
   State state() const {
@@ -104,6 +112,9 @@ class DRAGON_API UnifiedMemory {
   /*! \brief Return the const mps data */
   const void* mps_data(size_t size = 0);
 
+  /*! \brief Return the const mlu data */
+  const void* mlu_data(size_t size = 0, size_t offset = 0);
+
   /*! \brief Return the mutable cpu data */
   void* mutable_cpu_data(size_t size = 0);
 
@@ -112,6 +123,9 @@ class DRAGON_API UnifiedMemory {
 
   /*! \brief Return the mutable mps data */
   void* mutable_mps_data(size_t size = 0);
+
+  /*! \brief Return the mutable mlu data */
+  void* mutable_mlu_data(size_t size = 0);
 
   /*! \brief Set the storage order */
   void set_order(StorageOrder order) {
@@ -123,6 +137,9 @@ class DRAGON_API UnifiedMemory {
 
   /*! \brief Set to use an external block of cuda data */
   void set_cuda_data(void* cuda_ptr, size_t size, int device);
+
+  /*! \brief Set to use an external block of mlu data */
+  void set_mlu_data(void* mlu_ptr, size_t size, int device);
 
  private:
   /*! \brief The data state */
@@ -149,14 +166,20 @@ class DRAGON_API UnifiedMemory {
   /*! \brief The mps data pointer */
   void* mps_ptr_ = nullptr;
 
+  /*! \brief The mlu data pointer */
+  void* mlu_ptr_ = nullptr;
+
   /*! \brief The ownership of cpu data pointer */
   bool own_cpu_ptr_ = true;
 
   /*! \brief The ownership of cuda data pointer */
   bool own_cuda_ptr_ = true;
 
-  /*! \brief The ownership of cuda data pointer */
+  /*! \brief The ownership of mps data pointer */
   bool own_mps_ptr_ = true;
+
+  /*! \brief The ownership of mlu data pointer */
+  bool own_mlu_ptr_ = true;
 
   DISABLE_COPY_AND_ASSIGN(UnifiedMemory);
 };

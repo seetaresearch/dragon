@@ -40,7 +40,6 @@ void _SimpleBinaryFunc(
     EigenVectorArrayMap<T>(y, N) = ConstEigenVectorArrayMap<T>(x, N).Expr(); \
   }
 
-DEFINE_UNARY_FUNC(Abs, uint8_t, abs);
 DEFINE_UNARY_FUNC(Abs, int8_t, abs);
 DEFINE_UNARY_FUNC(Abs, int, abs);
 DEFINE_UNARY_FUNC(Abs, int64_t, abs);
@@ -342,30 +341,60 @@ DEFINE_IS_FINITE_FUNC(float);
 DEFINE_IS_FINITE_FUNC(double);
 #undef DEFINE_IS_FINITE_FUNC
 
-#define DEFINE_REPLACE_NAN_FUNC(T)                                         \
-  template <>                                                              \
-  DRAGON_API void ReplaceNaN<T, CPUContext>(                               \
-      const int N, const float value, const T* x, T* y, CPUContext* ctx) { \
-    ConstEigenVectorArrayMap<T> X(x, N);                                   \
-    EigenVectorArrayMap<T>(y, N) = (X.isNaN()).select(T(value), X);        \
+#define DEFINE_NAN_TO_NUM_FUNC(T)                                        \
+  template <>                                                            \
+  DRAGON_API void NaNToNum<T, CPUContext>(                               \
+      const int N, const float nan, const T* x, T* y, CPUContext* ctx) { \
+    ConstEigenVectorArrayMap<T> X(x, N);                                 \
+    EigenVectorArrayMap<T>(y, N) = (X.isNaN()).select(T(nan), X);        \
   }
 
 template <>
-DRAGON_API void ReplaceNaN<float16, CPUContext>(
+DRAGON_API void NaNToNum<float16, CPUContext>(
     const int N,
-    const float value,
+    const float nan,
     const float16* x,
     float16* y,
     CPUContext* ctx) {
-  const float16 to_value = convert::To<float16>(value);
+  const float16 nan_fpcast = convert::To<float16>(nan);
   EigenVectorArrayMap<float16>(y, N) =
       ConstEigenVectorArrayMap<float16>(x, N).unaryExpr(
-          [&](float16 x) { return math::utils::IsNaN(x) ? to_value : x; });
+          [&](float16 x) { return math::utils::IsNaN(x) ? nan_fpcast : x; });
 }
 
-DEFINE_REPLACE_NAN_FUNC(float);
-DEFINE_REPLACE_NAN_FUNC(double);
-#undef DEFINE_REPLACE_NAN_FUNC
+DEFINE_NAN_TO_NUM_FUNC(float);
+DEFINE_NAN_TO_NUM_FUNC(double);
+#undef DEFINE_NAN_TO_NUM_FUNC
+
+#define DEFINE_NAN_TO_NUM_FUNC(T, kLowest, kMax)                              \
+  template <>                                                                 \
+  DRAGON_API void NaNToNum<T, CPUContext>(                                    \
+      const int N,                                                            \
+      const float nan,                                                        \
+      const float pos_inf,                                                    \
+      const float neg_inf,                                                    \
+      const T* x,                                                             \
+      T* y,                                                                   \
+      CPUContext* ctx) {                                                      \
+    const T nan_fpcast = convert::To<T>(nan);                                 \
+    const T pos_inf_fpcast = convert::To<T>(std::min(pos_inf, kMax));         \
+    const T neg_inf_fpcast = convert::To<T>(std::max(neg_inf, kLowest));      \
+    const T kZero = convert::To<T>(0.f);                                      \
+    EigenVectorArrayMap<T>(y, N) =                                            \
+        ConstEigenVectorArrayMap<T>(x, N).unaryExpr([&](T x) {                \
+          return math::utils::IsNaN(x)                                        \
+              ? nan_fpcast                                                    \
+              : (math::utils::IsInf(x)                                        \
+                     ? (math::GreaterFunctor<T>()(x, kZero) ? pos_inf_fpcast  \
+                                                            : neg_inf_fpcast) \
+                     : x);                                                    \
+        });                                                                   \
+  }
+
+DEFINE_NAN_TO_NUM_FUNC(float16, -65505.f, 65504.f);
+DEFINE_NAN_TO_NUM_FUNC(float, -FLT_MAX, FLT_MAX);
+DEFINE_NAN_TO_NUM_FUNC(double, -FLT_MAX, FLT_MAX);
+#undef DEFINE_NAN_TO_NUM_FUNC
 
 #define DEFINE_BIAS_FUNC(T)                                               \
   template <>                                                             \

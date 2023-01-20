@@ -14,7 +14,7 @@ from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
 
-from dragon.vm.torch.core.nn import functional as F
+from dragon.vm.torch.core.nn import functional
 from dragon.vm.torch.core.nn.init import xavier_uniform_
 from dragon.vm.torch.core.nn.modules.linear import Linear
 from dragon.vm.torch.core.nn.modules.module import Module
@@ -24,7 +24,7 @@ from dragon.vm.torch.core.tensor import Tensor
 
 
 class ELU(Module):
-    r"""Apply the exponential linear unit.
+    r"""Apply exponential linear unit.
     `[Clevert et.al, 2015] <https://arxiv.org/abs/1511.07289>`_.
 
     The **ELU** function is defined as:
@@ -70,11 +70,11 @@ class ELU(Module):
         return 'alpha={}{}'.format(self.alpha, inplace_str)
 
     def forward(self, input):
-        return F.elu(input, self.alpha, self.inplace)
+        return functional.elu(input, self.alpha, self.inplace)
 
 
 class GELU(Module):
-    r"""Apply the gaussian error linear unit.
+    r"""Apply gaussian error linear unit.
     `[Hendrycks & Gimpel, 2016] <https://arxiv.org/abs/1606.08415>`_.
 
     The **GELU** function is defined as:
@@ -111,11 +111,11 @@ class GELU(Module):
         return 'approximate={}'.format(self.approximate)
 
     def forward(self, input):
-        return F.gelu(input, approximate=self.approximate)
+        return functional.gelu(input, approximate=self.approximate)
 
 
 class GumbelSoftmax(Module):
-    r"""Apply the gumbel softmax function.
+    r"""Apply gumbel softmax function.
     `[Jang et.al, 2016] <https://arxiv.org/abs/1611.01144>`_.
 
     The **GumbelSoftmax** function is defined as:
@@ -163,11 +163,11 @@ class GumbelSoftmax(Module):
                                  device=input.device)
         gumbel = -((-(u_dist.log())).log())
         gumbel = (input + gumbel) / self.tau
-        return F.softmax(gumbel, self.dim, self.inplace)
+        return functional.softmax(gumbel, self.dim, self.inplace)
 
 
 class Hardsigmoid(Module):
-    r"""Apply the hard sigmoid function.
+    r"""Apply hard sigmoid function.
 
     The **HardSigmoid** function is defined as:
 
@@ -209,11 +209,11 @@ class Hardsigmoid(Module):
         return inplace_str
 
     def forward(self, input):
-        return F.hardsigmoid(input, self.inplace)
+        return functional.hardsigmoid(input, self.inplace)
 
 
 class Hardswish(Module):
-    r"""Apply the hard swish function.
+    r"""Apply hard swish function.
     `[Howard et.al, 2019] <https://arxiv.org/abs/1905.02244>`_.
 
     The **HardSwish** function is defined as:
@@ -244,11 +244,11 @@ class Hardswish(Module):
         super(Hardswish, self).__init__()
 
     def forward(self, input):
-        return F.hardswish(input)
+        return functional.hardswish(input)
 
 
 class LeakyReLU(Module):
-    r"""Apply the leaky rectified linear unit.
+    r"""Apply leaky rectified linear unit.
 
     The **LeakyReLU** function is defined as:
 
@@ -293,11 +293,11 @@ class LeakyReLU(Module):
         return 'negative_slope={}{}'.format(self.negative_slope, inplace_str)
 
     def forward(self, input):
-        return F.leaky_relu(input, self.negative_slope, self.inplace)
+        return functional.leaky_relu(input, self.negative_slope, self.inplace)
 
 
 class LogSoftmax(Module):
-    r"""Apply the composite of logarithm and softmax.
+    r"""Apply logarithm softmax function.
 
     The **LogSoftmax** function is defined as:
 
@@ -337,11 +337,11 @@ class LogSoftmax(Module):
         return 'dim={}{}'.format(self.dim, inplace_str)
 
     def forward(self, input):
-        return F.log_softmax(input, self.dim, self.inplace)
+        return functional.log_softmax(input, self.dim, self.inplace)
 
 
 class MultiheadAttention(Module):
-    """Apply the multihead attention.
+    """Apply multihead attention.
     `[Vaswani et.al, 2017] <https://arxiv.org/abs/1706.03762>`_.
 
     See Also
@@ -424,7 +424,7 @@ class MultiheadAttention(Module):
         need_weights=True,
         attn_mask=None,
     ):
-        return F.multi_head_attention_forward(
+        return functional.multi_head_attention_forward(
             query, key, value,
             embed_dim_to_check=self.embed_dim,
             num_heads=self.num_heads,
@@ -445,7 +445,7 @@ class MultiheadAttention(Module):
 
 
 class PReLU(Module):
-    r"""Apply the parametric rectified linear unit.
+    r"""Apply parametric rectified linear unit.
     `[He et.al, 2015] <https://arxiv.org/abs/1502.01852>`_.
 
     The **PReLU** function is defined as:
@@ -496,7 +496,7 @@ class PReLU(Module):
         return 'num_parameters={}'.format(self.num_parameters)
 
     def forward(self, input):
-        return F.prelu(input, self.weight)
+        return functional.prelu(input, self.weight)
 
 
 class ReLU(Module):
@@ -543,11 +543,11 @@ class ReLU(Module):
         return inplace_str
 
     def forward(self, input):
-        return F.relu(input, inplace=self.inplace)
+        return functional.relu(input, inplace=self.inplace)
 
 
 class ReLU6(Module):
-    r"""Apply the clipped-6 rectified linear unit.
+    r"""Apply clipped-6 rectified linear unit.
     `[Krizhevsky, 2010] <http://www.cs.utoronto.ca/~kriz/conv-cifar10-aug2010.pdf>`_.
 
     The **ReLU-6** function is defined as:
@@ -590,11 +590,11 @@ class ReLU6(Module):
         return inplace_str
 
     def forward(self, input):
-        return F.relu6(input, inplace=self.inplace)
+        return functional.relu6(input, inplace=self.inplace)
 
 
 class SELU(Module):
-    r"""Apply the scaled exponential linear unit.
+    r"""Apply scaled exponential linear unit.
     `[Klambauer et.al, 2017] <https://arxiv.org/abs/1706.02515>`_.
 
     The **SELU** function is defined as:
@@ -637,11 +637,11 @@ class SELU(Module):
         return inplace_str
 
     def forward(self, input):
-        return F.selu(input, self.inplace)
+        return functional.selu(input, self.inplace)
 
 
 class Sigmoid(Module):
-    r"""Apply the sigmoid function.
+    r"""Apply sigmoid function.
 
     The **Sigmoid** function is defined as:
 
@@ -678,11 +678,11 @@ class Sigmoid(Module):
         return inplace_str
 
     def forward(self, input):
-        return F.sigmoid(input, self.inplace)
+        return functional.sigmoid(input, self.inplace)
 
 
 class SiLU(Module):
-    r"""Apply the sigmoid linear unit.
+    r"""Apply sigmoid linear unit.
     `[Hendrycks & Gimpel, 2016] <https://arxiv.org/abs/1606.08415>`_.
 
     The **SiLU** function is defined as:
@@ -708,11 +708,11 @@ class SiLU(Module):
         super(SiLU, self).__init__()
 
     def forward(self, input):
-        return F.silu(input)
+        return functional.silu(input)
 
 
 class Softmax(Module):
-    r"""Apply the softmax function.
+    r"""Apply softmax function.
 
     The **Softmax** function is defined as:
 
@@ -752,11 +752,11 @@ class Softmax(Module):
         return 'dim={}{}'.format(self.dim, inplace_str)
 
     def forward(self, input):
-        return F.softmax(input, self.dim, self.inplace)
+        return functional.softmax(input, self.dim, self.inplace)
 
 
 class Tanh(Module):
-    r"""Apply the tanh function.
+    r"""Apply tanh function.
 
     The **Tanh** function is defined as:
 
@@ -793,4 +793,4 @@ class Tanh(Module):
         return inplace_str
 
     def forward(self, input):
-        return F.tanh(input, inplace=self.inplace)
+        return functional.tanh(input, inplace=self.inplace)

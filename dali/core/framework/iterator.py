@@ -93,7 +93,7 @@ class Iterator(object):
                     device=self.new_device(
                         device_type=('cuda' if isinstance(tensor, TensorGPU)
                                      else 'cpu'),
-                        device_index=self._pipe.device_id)))
+                        device_index=self._pipe.device_id or 0)))
         # Transfer the data: DALI -> Storage
         for i, tensor in enumerate(tensors):
             self._transfer_tensor(tensor, self._copies[i])
@@ -206,7 +206,7 @@ class Iterator(object):
         device = self.new_device(
             device_type='cuda' if isinstance(
                 dali_tensor, TensorGPU) else 'cpu',
-            device_index=self._pipe.device_id)
+            device_index=self._pipe.device_id or 0)
         if hasattr(target_tensor, '_device'):
             target_tensor._device = device
         impl = target_tensor._impl

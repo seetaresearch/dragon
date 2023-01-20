@@ -70,11 +70,7 @@ DEPLOY_CUDA_OPERATOR(ChannelNorm);
 DEPLOY_MPS_OPERATOR(ChannelNorm, ChannelNorm);
 #endif
 
-OPERATOR_SCHEMA(ChannelNorm)
-    /* X */
-    .NumInputs(1)
-    /* Y */
-    .NumOutputs(1);
+OPERATOR_SCHEMA(ChannelNorm).NumInputs(1).NumOutputs(1);
 
 NO_GRADIENT(ChannelNorm);
 

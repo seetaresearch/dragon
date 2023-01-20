@@ -14,7 +14,7 @@ from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
 
-from dragon.vm.torch.core.nn import functional as F
+from dragon.vm.torch.core.nn import functional
 from dragon.vm.torch.core.nn.modules.module import Module
 
 
@@ -36,20 +36,23 @@ class ChannelShuffle(Module):
 
     """
 
-    def __init__(self, groups):
+    def __init__(self, groups, dim=1):
         """Create a ``ChannelShuffle`` module.
 
         Parameters
         ----------
         groups : int
             The number of shuffle groups.
+        dim : int, optional, default=1
+            The channel dimension.
 
         """
         super(ChannelShuffle, self).__init__()
         self.groups = groups
+        self.dim = dim
 
     def extra_repr(self):
-        return 'groups={}'.format(self.groups)
+        return 'groups={}, dim={}'.format(self.groups, self.dim)
 
     def forward(self, input):
-        return F.channel_shuffle(input, self.groups)
+        return functional.channel_shuffle(input, self.groups, self.dim)

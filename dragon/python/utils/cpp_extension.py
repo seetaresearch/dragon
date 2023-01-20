@@ -27,8 +27,6 @@ import sys as _sys
 from setuptools import Extension as _Extension
 from setuptools.command.build_ext import build_ext as _build_ext
 
-from dragon.core.device import cuda as _cuda
-
 
 def include_paths(cuda=False):
     """Return the path of headers.
@@ -111,7 +109,7 @@ class BuildExtension(_build_ext):
             self.compiler.compiler_so.remove("-Wstrict-prototypes")
         except (AttributeError, ValueError):
             pass
-        self.compiler.src_extensions += ['.cu', '.cuh', '.mm']
+        self.compiler.src_extensions += ['.cu', '.cuh', '.mm', '.mlu']
         if self.compiler.compiler_type == 'msvc':
             self.compiler._cpp_extensions += ['.cu', '.cuh']
             original_compile = self.compiler.compile
@@ -124,7 +122,7 @@ class BuildExtension(_build_ext):
             """Patch to make the objects unique."""
             objects = original_object_filenames(source_filenames, strip_dir, output_dir)
             for i, src_name in enumerate(source_filenames):
-                if _os.path.splitext(src_name)[1] in ['.cu', '.cuh', '.mm']:
+                if _os.path.splitext(src_name)[1] in ['.cu', '.cuh', '.mm', '.mlu']:
                     _, src_ext = _os.path.splitext(src_name)
                     obj_base, obj_ext = _os.path.splitext(objects[i])
                     objects[i] = obj_base + src_ext + obj_ext
@@ -143,6 +141,12 @@ class BuildExtension(_build_ext):
                     cflags = (COMMON_NVCC_FLAGS +
                               ['--compiler-options', "'-fPIC'"] +
                               cflags + _get_cuda_arch_flags(cflags))
+                elif _os.path.splitext(src)[1] in ['.mlu']:
+                    cncc = [_os.path.join(NEUWARE_HOME, 'bin/cncc')]
+                    self.compiler.set_executable('compiler_so', cncc)
+                    if isinstance(cflags, dict):
+                        cflags = cflags['cncc']
+                    cflags = (COMMON_CNCC_FLAGS + cflags + _get_mlu_arch_flags(cflags))
                 else:
                     if isinstance(cflags, dict):
                         cflags = cflags['cxx']
@@ -291,6 +295,49 @@ class MPSExtension(object):
         return _Extension(name, sources, *args, **kwargs)
 
 
+class MLUExtension(object):
+    """Extension module for generic mlu/c++ sources."""
+
+    def __new__(cls, name, sources, *args, **kwargs):
+        if not NEUWARE_HOME:
+            raise EnvironmentError(
+                '<NEUWARE_HOME> environment variable is not set. '
+                'Please set it to your CNToolkit install root.')
+        include_dirs = kwargs.get('include_dirs', [])
+        include_dirs += include_paths()
+        include_dirs += [_os.path.join(NEUWARE_HOME, 'include')]
+        kwargs['include_dirs'] = include_dirs
+        library_dirs = kwargs.get('library_dirs', [])
+        library_dirs += library_paths()
+        library_dirs += [_os.path.join(NEUWARE_HOME, 'lib64')]
+        kwargs['library_dirs'] = library_dirs
+        libraries = kwargs.get('libraries', [])
+        libraries.extend(COMMON_LINK_LIBRARIES + ['cnrt', 'dragon'])
+        kwargs['libraries'] = libraries
+        define_macros = kwargs.get('define_macros', [])
+        define_macros.append(('USE_MLU', None))
+        define_macros.append(('DRAGON_API=' + DLLIMPORT_STR, None))
+        kwargs['define_macros'] = define_macros
+        kwargs['language'] = 'c++'
+        return _Extension(name, sources, *args, **kwargs)
+
+
+def _find_neuware():
+    """Find the neuware root path."""
+    neuware_home = _os.environ.get('NEUWARE_HOME')
+    if neuware_home is None:
+        try:
+            which = 'where' if IS_WINDOWS else 'which'
+            cncc = _subprocess.check_output(
+                [which, 'cncc']).decode().rstrip('\r\n')
+            neuware_home = _os.path.dirname(_os.path.dirname(cncc))
+        except _subprocess.CalledProcessError:
+            neuware_home = '/usr/local/neuware'
+            if not _os.path.exists(neuware_home):
+                neuware_home = None
+    return neuware_home
+
+
 def _find_cuda():
     """Find the cuda root path."""
     cuda_home = _os.environ.get('CUDA_HOME') or _os.environ.get('CUDA_PATH')
@@ -312,13 +359,12 @@ def _find_cuda():
                 cuda_home = '/usr/local/cuda'
             if not _os.path.exists(cuda_home):
                 cuda_home = None
-    if cuda_home and not _cuda.is_available():
-        print("No CUDA runtime is found, using CUDA_HOME='{}'".format(cuda_home))
     return cuda_home
 
 
 def _get_cuda_arch_flags(cflags=None):
     """Return the CUDA arch flags."""
+    from dragon.core.device import cuda
     if cflags is not None:
         for flag in cflags:
             if 'arch' in flag:
@@ -331,14 +377,13 @@ def _get_cuda_arch_flags(cflags=None):
                         '8.9', '9.0']
     valid_arch_strings = supported_arches + [s + "+PTX" for s in supported_arches]
     arch_list = []
-    for i in range(_cuda.get_device_count()):
-        capability = _cuda.get_device_capability(i)
+    for i in range(cuda.get_device_count()):
+        capability = cuda.get_device_capability(i)
         arch = '{}.{}'.format(capability[0], capability[1])
         if arch not in arch_list:
             arch_list.append(arch)
     arch_list = sorted(arch_list)
     arch_list[-1] += '+PTX'
-
     flags = []
     for arch in arch_list:
         if arch not in valid_arch_strings:
@@ -348,7 +393,31 @@ def _get_cuda_arch_flags(cflags=None):
             flags.append('-gencode=arch=compute_{},code=sm_{}'.format(num, num))
             if arch.endswith('+PTX'):
                 flags.append('-gencode=arch=compute_{},code=compute_{}'.format(num, num))
+    return list(set(flags))
 
+
+def _get_mlu_arch_flags(cflags=None):
+    """Return the MLU arch flags."""
+    from dragon.core.device import mlu
+    if cflags is not None:
+        for flag in cflags:
+            if 'arch' in flag:
+                return []
+    supported_arches = ['3.0']
+    arch_list = []
+    for i in range(mlu.get_device_count()):
+        capability = mlu.get_device_capability(i)
+        arch = '{}.{}'.format(capability[0], capability[1])
+        if arch not in arch_list:
+            arch_list.append(arch)
+    arch_list = sorted(arch_list)
+    flags = []
+    for arch in arch_list:
+        if arch not in supported_arches:
+            raise ValueError("Unknown MLU arch ({}) or MLU not supported".format(arch))
+        else:
+            num = arch[0] + arch[2]
+            flags.append('--bang-arch=compute_{}'.format(num))
     return list(set(flags))
 
 
@@ -364,8 +433,10 @@ def _join_cuda_path(*paths):
 IS_WINDOWS = _sys.platform == 'win32'
 CUDA_HOME = _find_cuda()
 CUDNN_HOME = _os.environ.get('CUDNN_HOME') or _os.environ.get('CUDNN_PATH')
+NEUWARE_HOME = _find_neuware()
 COMMON_CC_FLAGS = ['-Wno-sign-compare', '-Wno-unused-variable', '-Wno-reorder']
 COMMON_MSVC_FLAGS = ['/MT', '/EHsc', '/wd4819', '/wd4244', '/wd4251', '/wd4275', '/wd4800', '/wd4996']
 COMMON_NVCC_FLAGS = ['-w'] if IS_WINDOWS else ['-std=c++14']
+COMMON_CNCC_FLAGS = ['-fPIC', '-std=c++14', '-pthread', '-O3']
 COMMON_LINK_LIBRARIES = ['protobuf'] if IS_WINDOWS else []
 DLLIMPORT_STR = '__declspec(dllimport)' if IS_WINDOWS else ''

@@ -23,7 +23,7 @@ from dragon.vm.keras.core.utils import conv_utils
 
 
 class Flatten(Layer):
-    """Layer to reshape input into a matrix.
+    """Reshape input into a matrix.
 
     Examples:
 
@@ -61,7 +61,7 @@ class Flatten(Layer):
 
 
 class Permute(Layer):
-    """Layer to permute the dimensions of input.
+    """Permute input dimensions.
 
     Examples:
 
@@ -97,7 +97,7 @@ class Permute(Layer):
 
 
 class Reshape(Layer):
-    """Layer to change the dimensions of input.
+    """Change input dimensions.
 
     Examples:
 

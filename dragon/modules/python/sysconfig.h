@@ -17,6 +17,7 @@
 #include <dragon/utils/device/common_cuda.h>
 #include <dragon/utils/device/common_cudnn.h>
 #include <dragon/utils/device/common_eigen.h>
+#include <dragon/utils/device/common_mlu.h>
 
 #include "dragon/modules/python/common.h"
 
@@ -61,9 +62,20 @@ void RegisterModule_sysconfig(py::module& m) {
     build_info += " " + str::to(CUDNN_MAJOR) + "." + str::to(CUDNN_MINOR) +
         "." + str::to(CUDNN_PATCHLEVEL);
 #endif
+    build_info += "\nmps_version:";
 #if defined(USE_MPS) && defined(MPS_OSX_VERSION_MAJOR)
-    build_info += "\nmps_version: " + str::to(MPS_OSX_VERSION_MAJOR) + "." +
+    build_info += " " + str::to(MPS_OSX_VERSION_MAJOR) + "." +
         str::to(MPS_OSX_VERSION_MINOR);
+#endif
+    build_info += "\ncnrt_version:";
+#if defined(USE_MLU)
+    build_info += " " + str::to(CNRT_MAJOR_VERSION) + "." +
+        str::to(CNRT_MINOR_VERSION) + "." + str::to(CNRT_PATCH_VERSION);
+#endif
+    build_info += "\ncnnl_version:";
+#if defined(USE_MLU)
+    build_info += " " + str::to(CNNL_MAJOR) + "." + str::to(CNNL_MINOR) + "." +
+        str::to(CNNL_PATCHLEVEL);
 #endif
     build_info += "\nthird_party: eigen protobuf pybind11";
 #if defined(USE_OPENMP)
@@ -80,6 +92,9 @@ void RegisterModule_sysconfig(py::module& m) {
 #endif
 #if defined(USE_MPS)
     build_info += " mps";
+#endif
+#if defined(USE_MLU)
+    build_info += " mlu cnnl";
 #endif
     return build_info;
   });

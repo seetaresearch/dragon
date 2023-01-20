@@ -55,6 +55,66 @@ class LayerNormGradientOp final : public GroupNormGradientOp<Context> {
   }
 };
 
+#ifdef USE_MLU
+template <class Context>
+class CNNLLayerNormOp final : public Operator<Context> {
+ public:
+  CNNLLayerNormOp(const OperatorDef& def, Workspace* ws)
+      : Operator<Context>(def, ws),
+        epsilon_(OP_SINGLE_ARG(double, "epsilon", 1e-5)) {
+    CNNLCreateTensorDesc(&input_desc_);
+    CNNLCreateTensorDesc(&scale_desc_);
+    CNNLCreateTensorDesc(&stats_desc_);
+  }
+  USE_OPERATOR_FUNCTIONS;
+
+  ~CNNLLayerNormOp() {
+    CNNLDestroyTensorDesc(input_desc_);
+    CNNLDestroyTensorDesc(scale_desc_);
+    CNNLDestroyTensorDesc(stats_desc_);
+  }
+
+  void RunOnDevice() override {
+    DispatchHelper<dtypes::Floating>::Call(this, Input(0));
+  }
+
+  template <typename T>
+  void DoRunWithType();
+
+ protected:
+  double epsilon_;
+  cnnlTensorDescriptor_t input_desc_, scale_desc_, stats_desc_;
+};
+
+template <class Context>
+class CNNLLayerNormGradientOp final : public Operator<Context> {
+ public:
+  CNNLLayerNormGradientOp(const OperatorDef& def, Workspace* ws)
+      : Operator<Context>(def, ws) {
+    CNNLCreateTensorDesc(&input_desc_);
+    CNNLCreateTensorDesc(&scale_desc_);
+    CNNLCreateTensorDesc(&stats_desc_);
+  }
+  USE_OPERATOR_FUNCTIONS;
+
+  ~CNNLLayerNormGradientOp() {
+    CNNLDestroyTensorDesc(input_desc_);
+    CNNLDestroyTensorDesc(scale_desc_);
+    CNNLDestroyTensorDesc(stats_desc_);
+  }
+
+  void RunOnDevice() override {
+    DispatchHelper<dtypes::Floating>::Call(this, Input(0));
+  }
+
+  template <typename T>
+  void DoRunWithType();
+
+ protected:
+  cnnlTensorDescriptor_t input_desc_, scale_desc_, stats_desc_;
+};
+#endif // USE_MLU
+
 } // namespace dragon
 
 #endif // DRAGON_OPERATORS_NORMALIZATION_LAYER_NORM_OP_H_

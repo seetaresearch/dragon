@@ -48,7 +48,7 @@ class TanhGradientOp final : public Operator<Context> {
 #ifdef USE_CUDNN
 
 template <class Context>
-class CuDNNTanhOp final : public Operator<Context> {
+class CuDNNTanhOp : public Operator<Context> {
  public:
   CuDNNTanhOp(const OperatorDef& def, Workspace* ws)
       : Operator<Context>(def, ws) {
@@ -60,7 +60,7 @@ class CuDNNTanhOp final : public Operator<Context> {
   USE_OPERATOR_FUNCTIONS;
 
   ~CuDNNTanhOp() {
-    CuDNNDestroyTensorDesc(&input_desc_);
+    CuDNNDestroyTensorDesc(input_desc_);
     CUDNN_CHECK(cudnnDestroyActivationDescriptor(act_desc_));
   }
 
@@ -77,20 +77,46 @@ class CuDNNTanhOp final : public Operator<Context> {
 };
 
 template <class Context>
-class CuDNNTanhGradientOp final : public Operator<Context> {
+class CuDNNTanhGradientOp final : public CuDNNTanhOp<Context> {
  public:
   CuDNNTanhGradientOp(const OperatorDef& def, Workspace* ws)
+      : CuDNNTanhOp<Context>(def, ws) {}
+  USE_OPERATOR_FUNCTIONS;
+
+  void RunOnDevice() override {
+    DispatchHelper<dtypes::Floating>::Call(this, Input(0));
+  }
+
+  template <typename T>
+  void DoRunWithType();
+};
+#endif // USE_CUDNN
+
+#ifdef USE_MLU
+template <class Context>
+class CNNLTanhOp : public Operator<Context> {
+ public:
+  CNNLTanhOp(const OperatorDef& def, Workspace* ws)
       : Operator<Context>(def, ws) {
-    CuDNNCreateTensorDesc(&input_desc_);
-    CUDNN_CHECK(cudnnCreateActivationDescriptor(&act_desc_));
-    CUDNN_CHECK(cudnnSetActivationDescriptor(
-        act_desc_, CUDNN_ACTIVATION_TANH, CUDNN_PROPAGATE_NAN, 0));
+    CNNLCreateTensorDesc(&input_desc_);
+    CNNL_CHECK(cnnlCreateActivationDescriptor(&act_desc_));
+    CNNL_CHECK(cnnlSetActivationDescriptor_v6(
+        act_desc_,
+        CNNL_ACTIVATION_TANH,
+        CNNL_ACTIVATION_FAST,
+        CNNL_PROPAGATE_NAN,
+        0.f,
+        0,
+        1.f, // gamma
+        1.f, // scale
+        true,
+        false));
   }
   USE_OPERATOR_FUNCTIONS;
 
-  ~CuDNNTanhGradientOp() {
-    CuDNNDestroyTensorDesc(&input_desc_);
-    CUDNN_CHECK(cudnnDestroyActivationDescriptor(act_desc_));
+  ~CNNLTanhOp() {
+    CNNLDestroyTensorDesc(input_desc_);
+    CNNL_CHECK(cnnlDestroyActivationDescriptor(act_desc_));
   }
 
   void RunOnDevice() override {
@@ -101,11 +127,25 @@ class CuDNNTanhGradientOp final : public Operator<Context> {
   void DoRunWithType();
 
  protected:
-  cudnnTensorDescriptor_t input_desc_;
-  cudnnActivationDescriptor_t act_desc_;
+  cnnlTensorDescriptor_t input_desc_;
+  cnnlActivationDescriptor_t act_desc_;
 };
 
-#endif // USE_CUDNN
+template <class Context>
+class CNNLTanhGradientOp final : public CNNLTanhOp<Context> {
+ public:
+  CNNLTanhGradientOp(const OperatorDef& def, Workspace* ws)
+      : CNNLTanhOp<Context>(def, ws) {}
+  USE_OPERATOR_FUNCTIONS;
+
+  void RunOnDevice() override {
+    DispatchHelper<dtypes::Floating>::Call(this, Input(0));
+  }
+
+  template <typename T>
+  void DoRunWithType();
+};
+#endif // USE_MLU
 
 } // namespace dragon
 

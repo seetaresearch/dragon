@@ -54,25 +54,13 @@ class PoolGradientOp final : public PoolOpBase<Context> {
 };
 
 #ifdef USE_CUDNN
-
 template <class Context>
 class CuDNNPoolOp final : public CuDNNPoolOpBase<Context> {
  public:
   CuDNNPoolOp(const OperatorDef& def, Workspace* ws)
-      : CuDNNPoolOpBase<Context>(def, ws) {
-    CuDNNCreateTensorDesc(&input_desc_);
-    CuDNNCreateTensorDesc(&output_desc_);
-    CUDNN_CHECK(cudnnCreatePoolingDescriptor(&pool_desc_));
-  }
+      : CuDNNPoolOpBase<Context>(def, ws) {}
   USE_OPERATOR_FUNCTIONS;
   USE_POOL_FUNCTIONS;
-  USE_CUDNN_POOL_FUNCTIONS;
-
-  ~CuDNNPoolOp() {
-    CuDNNDestroyTensorDesc(&input_desc_);
-    CuDNNDestroyTensorDesc(&output_desc_);
-    CUDNN_CHECK(cudnnDestroyPoolingDescriptor(pool_desc_));
-  }
 
   void RunOnDevice() override {
     DispatchHelper<dtypes::Floating>::Call(this, Input(0));
@@ -80,30 +68,15 @@ class CuDNNPoolOp final : public CuDNNPoolOpBase<Context> {
 
   template <typename T>
   void DoRunWithType();
-
- protected:
-  cudnnTensorDescriptor_t input_desc_;
-  cudnnTensorDescriptor_t output_desc_;
 };
 
 template <class Context>
 class CuDNNPoolGradientOp final : public CuDNNPoolOpBase<Context> {
  public:
   CuDNNPoolGradientOp(const OperatorDef& def, Workspace* ws)
-      : CuDNNPoolOpBase<Context>(def, ws) {
-    CuDNNCreateTensorDesc(&input_desc_);
-    CuDNNCreateTensorDesc(&output_desc_);
-    CUDNN_CHECK(cudnnCreatePoolingDescriptor(&pool_desc_));
-  }
+      : CuDNNPoolOpBase<Context>(def, ws) {}
   USE_OPERATOR_FUNCTIONS;
   USE_POOL_FUNCTIONS;
-  USE_CUDNN_POOL_FUNCTIONS;
-
-  ~CuDNNPoolGradientOp() {
-    CuDNNDestroyTensorDesc(&input_desc_);
-    CuDNNDestroyTensorDesc(&output_desc_);
-    CUDNN_CHECK(cudnnDestroyPoolingDescriptor(pool_desc_));
-  }
 
   void RunOnDevice() override {
     DispatchHelper<dtypes::Floating>::Call(this, Input(0));
@@ -111,30 +84,17 @@ class CuDNNPoolGradientOp final : public CuDNNPoolOpBase<Context> {
 
   template <typename T>
   void DoRunWithType();
-
- protected:
-  cudnnTensorDescriptor_t input_desc_;
-  cudnnTensorDescriptor_t output_desc_;
 };
-
 #endif // USE_CUDNN
 
 #ifdef USE_MPS
-
 template <class Context>
 class MPSPoolOp final : public MPSPoolOpBase<Context> {
  public:
   MPSPoolOp(const OperatorDef& def, Workspace* ws)
-      : MPSPoolOpBase<Context>(def, ws) {
-    graph_ = MPSCreateGraph();
-  }
+      : MPSPoolOpBase<Context>(def, ws) {}
   USE_OPERATOR_FUNCTIONS;
   USE_POOL_FUNCTIONS;
-  USE_MPS_POOL_FUNCTIONS;
-
-  ~MPSPoolOp() {
-    NSReleaseObject(graph_);
-  }
 
   void RunOnDevice() override {
     DispatchHelper<dtypes::Floating>::Call(this, Input(0));
@@ -142,26 +102,15 @@ class MPSPoolOp final : public MPSPoolOpBase<Context> {
 
   template <typename T>
   void DoRunWithType();
-
- protected:
-  MPSGraph_t graph_;
-  MPSGraphCache graph_cache_;
 };
 
 template <class Context>
 class MPSPoolGradientOp final : public MPSPoolOpBase<Context> {
  public:
   MPSPoolGradientOp(const OperatorDef& def, Workspace* ws)
-      : MPSPoolOpBase<Context>(def, ws) {
-    graph_ = MPSCreateGraph();
-  }
+      : MPSPoolOpBase<Context>(def, ws) {}
   USE_OPERATOR_FUNCTIONS;
   USE_POOL_FUNCTIONS;
-  USE_MPS_POOL_FUNCTIONS;
-
-  ~MPSPoolGradientOp() {
-    NSReleaseObject(graph_);
-  }
 
   void RunOnDevice() override {
     DispatchHelper<dtypes::Floating>::Call(this, Input(0));
@@ -169,13 +118,46 @@ class MPSPoolGradientOp final : public MPSPoolOpBase<Context> {
 
   template <typename T>
   void DoRunWithType();
+};
+#endif // USE_MPS
 
- protected:
-  MPSGraph_t graph_;
-  MPSGraphCache graph_cache_;
+#ifdef USE_MLU
+template <class Context>
+class CNNLPoolOp final : public CNNLPoolOpBase<Context> {
+ public:
+  CNNLPoolOp(const OperatorDef& def, Workspace* ws)
+      : CNNLPoolOpBase<Context>(def, ws) {
+    CHECK_EQ(data_format(), "NHWC");
+  }
+  USE_OPERATOR_FUNCTIONS;
+  USE_POOL_FUNCTIONS;
+
+  void RunOnDevice() override {
+    DispatchHelper<dtypes::Floating>::Call(this, Input(0));
+  }
+
+  template <typename T>
+  void DoRunWithType();
 };
 
-#endif // USE_MPS
+template <class Context>
+class CNNLPoolGradientOp final : public CNNLPoolOpBase<Context> {
+ public:
+  CNNLPoolGradientOp(const OperatorDef& def, Workspace* ws)
+      : CNNLPoolOpBase<Context>(def, ws) {
+    CHECK_EQ(data_format(), "NHWC");
+  }
+  USE_OPERATOR_FUNCTIONS;
+  USE_POOL_FUNCTIONS;
+
+  void RunOnDevice() override {
+    DispatchHelper<dtypes::Floating>::Call(this, Input(0));
+  }
+
+  template <typename T>
+  void DoRunWithType();
+};
+#endif // USE_MLU
 
 } // namespace dragon
 

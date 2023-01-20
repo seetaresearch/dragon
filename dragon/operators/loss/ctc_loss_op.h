@@ -58,8 +58,8 @@ class CuDNNCTCLossOp final : public Operator<Context> {
   USE_OPERATOR_FUNCTIONS;
 
   ~CuDNNCTCLossOp() {
-    CuDNNDestroyTensorDesc(&prob_desc_);
-    CuDNNDestroyTensorDesc(&grad_desc_);
+    CuDNNDestroyTensorDesc(prob_desc_);
+    CuDNNDestroyTensorDesc(grad_desc_);
     CUDNN_CHECK(cudnnDestroyCTCLossDescriptor(ctc_desc_));
   }
 

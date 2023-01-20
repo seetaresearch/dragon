@@ -60,9 +60,6 @@ class SplitGradientOp final : public Operator<Context> {
   DECLARE_OP_REPEATED_ARG(int64_t, split);
 };
 
-DEFINE_OP_REPEATED_ARG(int64_t, SplitOp, split);
-DEFINE_OP_REPEATED_ARG(int64_t, SplitGradientOp, split);
-
 } // namespace dragon
 
 #endif // DRAGON_OPERATORS_ARRAY_SPLIT_OP_H_

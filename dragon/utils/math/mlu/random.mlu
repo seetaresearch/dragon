@@ -1,0 +1,91 @@
+#include "dragon/utils/math/random.h"
+
+namespace dragon {
+
+namespace math {
+
+template <>
+DRAGON_API void Random<int, MLUContext>(const int N, int* y, MLUContext* ctx) {
+  auto generator_and_state = ctx->cnrand_generator();
+  CNNL_CHECK(cnnlRandGenerateUniformInt(
+      ctx->cnnl_handle(),
+      generator_and_state.first,
+      generator_and_state.second,
+      N,
+      0,
+      INT32_MAX,
+      y));
+}
+
+#define DEFINE_RANDOM_UNIFORM_FUNC(T)                                          \
+  template <>                                                                  \
+  DRAGON_API void RandomUniform<T, MLUContext>(                                \
+      const int N, const float low, const float high, T* y, MLUContext* ctx) { \
+    auto generator_and_state = ctx->cnrand_generator();                        \
+    CNNL_CHECK(cnnlRandGenerateUniform(                                        \
+        ctx->cnnl_handle(),                                                    \
+        generator_and_state.first,                                             \
+        CNNLGetDataType<T>(),                                                  \
+        generator_and_state.second,                                            \
+        N,                                                                     \
+        low,                                                                   \
+        high,                                                                  \
+        y));                                                                   \
+  }
+
+DEFINE_RANDOM_UNIFORM_FUNC(float16);
+DEFINE_RANDOM_UNIFORM_FUNC(float);
+DEFINE_RANDOM_UNIFORM_FUNC(double);
+#undef DEFINE_RANDOM_UNIFORM_FUNC
+
+#define DEFINE_RANDOM_NORMAL_FUNC(T)                                           \
+  template <>                                                                  \
+  DRAGON_API void RandomNormal<T, MLUContext>(                                 \
+      const int N, const float mu, const float sigma, T* y, MLUContext* ctx) { \
+    auto generator_and_state = ctx->cnrand_generator();                        \
+    CNNL_CHECK(cnnlRandGenerateNormal(                                         \
+        ctx->cnnl_handle(),                                                    \
+        generator_and_state.first,                                             \
+        CNNLGetDataType<T>(),                                                  \
+        generator_and_state.second,                                            \
+        N,                                                                     \
+        mu,                                                                    \
+        sigma,                                                                 \
+        y));                                                                   \
+  }
+
+DEFINE_RANDOM_NORMAL_FUNC(float16);
+DEFINE_RANDOM_NORMAL_FUNC(float);
+DEFINE_RANDOM_NORMAL_FUNC(double);
+#undef DEFINE_RANDOM_NORMAL_FUNC
+
+#define DEFINE_TRUNCATED_NORMAL_FUNC(T)                 \
+  template <>                                           \
+  DRAGON_API void TruncatedNormal<T, MLUContext>(       \
+      const int N,                                      \
+      const float mu,                                   \
+      const float sigma,                                \
+      const float low,                                  \
+      const float high,                                 \
+      T* y,                                             \
+      MLUContext* ctx) {                                \
+    auto generator_and_state = ctx->cnrand_generator(); \
+    CNNL_CHECK(cnnlRandGenerateTruncatedNormal(         \
+        ctx->cnnl_handle(),                             \
+        generator_and_state.first,                      \
+        CNNLGetDataType<T>(),                           \
+        generator_and_state.second,                     \
+        N,                                              \
+        mu,                                             \
+        sigma,                                          \
+        y));                                            \
+  }
+
+DEFINE_TRUNCATED_NORMAL_FUNC(float16);
+DEFINE_TRUNCATED_NORMAL_FUNC(float);
+DEFINE_TRUNCATED_NORMAL_FUNC(double);
+#undef DEFINE_TRUNCATED_NORMAL_FUNC
+
+} // namespace math
+
+} // namespace dragon

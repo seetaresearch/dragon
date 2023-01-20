@@ -22,7 +22,7 @@ from dragon.core.autograph.op_lib import OpSchema
 @OpSchema.num_inputs(1)
 @OpSchema.convert_arg('ratio', as_target=False)
 def dropout(inputs, ratio=0.5, inplace=False, **kwargs):
-    r"""Set the elements of input to zero randomly.
+    r"""Set elements of input to zero randomly.
     `[Srivastava et.al, 2014] <http://jmlr.org/papers/v15/srivastava14a.html>`_.
 
     The **Dropout** function is defined as:
@@ -70,7 +70,7 @@ def drop_block(
     inplace=False,
     **kwargs
 ):
-    r"""Set the blocks over input to zero randomly.
+    r"""Set blocks of input to zero randomly.
     `[Ghiasi et.al, 2018] <https://arxiv.org/abs/1810.12890>`_.
 
     The **DropBlock** function is defined as:
@@ -121,7 +121,7 @@ def drop_block(
 @OpSchema.num_inputs(1)
 @OpSchema.convert_arg('ratio', as_target=False)
 def drop_path(inputs, ratio=0.2, inplace=False, **kwargs):
-    r"""Set the examples over the input to zero randomly.
+    r"""Set examples of the input to zero randomly.
     `[Larsson et.al, 2016] <https://arxiv.org/abs/1605.07648>`_.
 
     The **DropPath** function is defined as:
@@ -161,7 +161,7 @@ def drop_path(inputs, ratio=0.2, inplace=False, **kwargs):
 
 @OpSchema.num_inputs(1)
 def elu(inputs, alpha=1.0, inplace=False, **kwargs):
-    r"""Apply the exponential linear unit.
+    r"""Apply exponential linear unit.
     `[Clevert et.al, 2015] <https://arxiv.org/abs/1511.07289>`_.
 
     The **ELU** function is defined as:
@@ -204,7 +204,7 @@ def elu(inputs, alpha=1.0, inplace=False, **kwargs):
 
 @OpSchema.num_inputs(1)
 def gelu(inputs, approximate=False, **kwargs):
-    r"""Apply the gaussian error linear unit.
+    r"""Apply gaussian error linear unit.
     `[Hendrycks & Gimpel, 2016] <https://arxiv.org/abs/1606.08415>`_.
 
     The **GELU** function is defined as:
@@ -238,7 +238,7 @@ def gelu(inputs, approximate=False, **kwargs):
 
 @OpSchema.num_inputs(1)
 def hardsigmoid(inputs, alpha=0.2, beta=0.5, inplace=False, **kwargs):
-    r"""Apply the hard sigmoid function.
+    r"""Apply hard sigmoid function.
 
     The **HardSigmoid** function is defined as:
 
@@ -278,7 +278,7 @@ def hardsigmoid(inputs, alpha=0.2, beta=0.5, inplace=False, **kwargs):
 
 @OpSchema.num_inputs(1)
 def hardswish(inputs, **kwargs):
-    r"""Apply the hard swish function.
+    r"""Apply hard swish function.
     `[Howard et.al, 2019] <https://arxiv.org/abs/1905.02244>`_.
 
     The **HardSwish** function is defined as:
@@ -310,7 +310,7 @@ def hardswish(inputs, **kwargs):
 
 @OpSchema.num_inputs(1)
 def leaky_relu(inputs, alpha=0.2, inplace=False, **kwargs):
-    r"""Apply the leaky rectified linear unit.
+    r"""Apply leaky rectified linear unit.
 
     The **LeakyReLU** function is defined as:
 
@@ -352,7 +352,7 @@ def leaky_relu(inputs, alpha=0.2, inplace=False, **kwargs):
 
 @OpSchema.num_inputs(1)
 def log_softmax(inputs, axis=-1, inplace=False, **kwargs):
-    r"""Compute the composite of logarithm and softmax.
+    r"""Apply logarithm softmax function.
 
     The **LogSoftmax** function is defined as:
 
@@ -390,7 +390,7 @@ def log_softmax(inputs, axis=-1, inplace=False, **kwargs):
 
 @OpSchema.num_inputs(2)
 def prelu(inputs, data_format='NCHW', **kwargs):
-    r"""Apply the parametric rectified linear unit.
+    r"""Apply parametric rectified linear unit.
     `[He et.al, 2015] <https://arxiv.org/abs/1502.01852>`_.
 
     The **PReLU** function is defined as:
@@ -430,7 +430,7 @@ def prelu(inputs, data_format='NCHW', **kwargs):
 
 @OpSchema.num_inputs(1)
 def relu(inputs, inplace=False, **kwargs):
-    r"""Apply the rectified linear unit.
+    r"""Apply rectified linear unit.
     `[Nair & Hinton, 2010] <http://www.csri.utoronto.ca/~hinton/absps/reluICML.pdf>`_.
 
     The **ReLU** function is defined as:
@@ -470,7 +470,7 @@ def relu(inputs, inplace=False, **kwargs):
 
 @OpSchema.num_inputs(1)
 def relu6(inputs, inplace=False, **kwargs):
-    r"""Apply the clipped-6 rectified linear unit.
+    r"""Apply clipped-6 rectified linear unit.
     `[Krizhevsky, 2010] <http://www.cs.utoronto.ca/~kriz/conv-cifar10-aug2010.pdf>`_.
 
     The **ReLU-6** function is defined as:
@@ -511,7 +511,7 @@ def relu6(inputs, inplace=False, **kwargs):
 
 @OpSchema.num_inputs(1)
 def selu(inputs, alpha=1.67326, gamma=1.0507, inplace=False, **kwargs):
-    r"""Apply the scaled exponential linear unit.
+    r"""Apply scaled exponential linear unit.
     `[Klambauer et.al, 2017] <https://arxiv.org/abs/1706.02515>`_.
 
     The **SELU** function is defined as:
@@ -557,7 +557,7 @@ def selu(inputs, alpha=1.67326, gamma=1.0507, inplace=False, **kwargs):
 
 @OpSchema.num_inputs(1)
 def sigmoid(inputs, inplace=False, **kwargs):
-    r"""Compute the sigmoid result of input.
+    r"""Apply sigmoid function.
 
     The **Sigmoid** function is defined as:
 
@@ -591,7 +591,7 @@ def sigmoid(inputs, inplace=False, **kwargs):
 
 @OpSchema.num_inputs(1)
 def silu(inputs, **kwargs):
-    r"""Apply the sigmoid linear unit.
+    r"""Apply sigmoid linear unit.
     `[Hendrycks & Gimpel, 2016] <https://arxiv.org/abs/1606.08415>`_.
 
     The **SiLU** function is defined as:
@@ -623,7 +623,7 @@ def silu(inputs, **kwargs):
 
 @OpSchema.num_inputs(1)
 def softmax(inputs, axis=-1, inplace=False, **kwargs):
-    r"""Compute the softmax result.
+    r"""Apply softmax function.
 
     The **Softmax** function is defined as:
 

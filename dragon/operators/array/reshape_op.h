@@ -108,8 +108,6 @@ DEFINE_GRADIENT_OP(Squeeze);
 DEFINE_GRADIENT_OP(Unsqueeze);
 #undef DEFINE_GRADIENT_OP
 
-DEFINE_OP_REPEATED_ARG(int64_t, ReshapeOp, dims);
-
 } // namespace dragon
 
 #endif // DRAGON_OPERATORS_ARRAY_RESHAPE_OP_H_

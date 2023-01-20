@@ -17,7 +17,7 @@
 
 #include <cudnn.h>
 
-#include "dragon/core/types.h"
+#include "dragon/core/common.h"
 
 namespace dragon {
 
@@ -33,8 +33,6 @@ namespace dragon {
     CHECK_EQ(status, CUDNN_STATUS_SUCCESS) << "\n"                         \
                                            << cudnnGetErrorString(status); \
   } while (0)
-
-class Tensor;
 
 template <typename T>
 class CuDNNType;
@@ -66,37 +64,79 @@ class CuDNNType<double> {
   typedef double BNParamType;
 };
 
+/*! \brief Return the cudnn math type by template type */
+template <typename T>
+cudnnMathType_t CuDNNGetMathType();
+
 /*! \brief Create a tensor desc */
 void CuDNNCreateTensorDesc(cudnnTensorDescriptor_t* desc);
 
 /*! \brief Destroy a tensor desc */
-void CuDNNDestroyTensorDesc(cudnnTensorDescriptor_t* desc);
+void CuDNNDestroyTensorDesc(cudnnTensorDescriptor_t desc);
 
 /*! \brief Set a tensor desc with dims */
 template <typename T>
-void CuDNNSetTensorDesc(cudnnTensorDescriptor_t* desc, const vec64_t& dims);
+void CuDNNSetTensorDesc(cudnnTensorDescriptor_t desc, const vec64_t& dims);
 
 /*! \brief Set a tensor desc with dims and strides */
 template <typename T>
 void CuDNNSetTensorDesc(
-    cudnnTensorDescriptor_t* desc,
+    cudnnTensorDescriptor_t desc,
     const vec64_t& dims,
     const vec64_t& strides);
 
 /*! \brief Set a tensor desc with dims, data format and group */
 template <typename T>
 void CuDNNSetTensorDesc(
-    cudnnTensorDescriptor_t* desc,
+    cudnnTensorDescriptor_t desc,
     const vec64_t& dims,
-    const std::string& data_format);
+    const string& data_format);
 
 /*! \brief Set a bias desc with expanding dimensions */
 template <typename T>
 void CuDNNSetBiasDesc(
-    cudnnTensorDescriptor_t* desc,
+    cudnnTensorDescriptor_t desc,
     const int num_dims,
     const int64_t N,
-    const std::string& data_format);
+    const string& data_format);
+
+/*! \brief Set a dropout desc */
+template <class Context>
+void CuDNNSetDropoutDesc(
+    cudnnDropoutDescriptor_t desc,
+    const float ratio,
+    Context* ctx);
+
+class CuDNNTensorDescs {
+ public:
+  CuDNNTensorDescs(int num_descs) {
+    descs_.resize(num_descs);
+    for (int i = 0; i < num_descs; ++i) {
+      CuDNNCreateTensorDesc(&descs_[i]);
+    }
+  }
+
+  ~CuDNNTensorDescs() {
+    for (auto desc : descs_) {
+      CuDNNDestroyTensorDesc(desc);
+    }
+  }
+
+  template <typename T>
+  void Set(const vec64_t& dims, const vec64_t& strides) {
+    CHECK_EQ(dims.size(), strides.size());
+    for (auto desc : descs_) {
+      CuDNNSetTensorDesc<T>(desc, dims, strides);
+    }
+  }
+
+  cudnnTensorDescriptor_t* data() {
+    return descs_.data();
+  }
+
+ protected:
+  vector<cudnnTensorDescriptor_t> descs_;
+};
 
 } // namespace dragon
 

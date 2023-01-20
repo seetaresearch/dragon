@@ -31,7 +31,7 @@ vm.tensorflow
   : Cast the data type of input.
 
   `clip_by_value(...) <tensorflow/clip_by_value.html>`_
-  : Compute the clipped input according to the given bounds.
+  : Clip input according to the given bounds.
 
   `concat(...) <tensorflow/concat.html>`_
   : Concatenate the values along the given axis.

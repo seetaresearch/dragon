@@ -268,14 +268,7 @@ class GlorotUniformOp final : public InitializeOp<Context> {
   string mode_;
 };
 
-DEFINE_OP_SINGLE_ARG(int64_t, PermutationOp, limit);
-DEFINE_OP_REPEATED_ARG(int64_t, InitializeOp, dims);
-DEFINE_OP_REPEATED_ARG(double, RangeOp, slice);
-DEFINE_OP_REPEATED_ARG(double, LinSpaceOp, start);
-DEFINE_OP_REPEATED_ARG(double, LinSpaceOp, stop);
-
 #ifdef USE_MPS
-
 template <class Context>
 class MPSRandomOpBase : public InitializeOp<Context> {
  public:
@@ -348,8 +341,35 @@ class MPSTruncatedNormalOp final : public MPSRandomOpBase<Context> {
  protected:
   float mean_, std_, low_, high_;
 };
-
 #endif // USE_MPS
+
+#ifdef USE_MLU
+template <class Context>
+class CNNLRangeOp final : public Operator<Context> {
+ public:
+  CNNLRangeOp(const OperatorDef& def, Workspace* ws)
+      : Operator<Context>(def, ws) {
+    INITIALIZE_OP_REPEATED_ARG(double, slice);
+    CNNLCreateTensorDesc(&output_desc_);
+  }
+  USE_OPERATOR_FUNCTIONS;
+
+  ~CNNLRangeOp() {
+    CNNLDestroyTensorDesc(output_desc_);
+  }
+
+  void RunOnDevice() override {
+    DispatchHelper<dtypes::Numerical>::Call(this);
+  }
+
+  template <typename T>
+  void DoRunWithType();
+
+ protected:
+  DECLARE_OP_REPEATED_ARG(double, slice);
+  cnnlTensorDescriptor_t output_desc_;
+};
+#endif // USE_MLU
 
 } // namespace dragon
 

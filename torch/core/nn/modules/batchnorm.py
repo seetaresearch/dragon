@@ -17,7 +17,7 @@ from __future__ import print_function
 import inspect
 
 from dragon.core import distributed
-from dragon.vm.torch.core.nn import functional as F
+from dragon.vm.torch.core.nn import functional
 from dragon.vm.torch.core.nn.modules.module import Module
 from dragon.vm.torch.core.nn.parameter import Parameter
 from dragon.vm.torch.core.ops import constant_ops
@@ -76,7 +76,7 @@ class _BatchNorm(Module):
                .format(**self.__dict__)
 
     def forward(self, input):
-        return F.batch_norm(
+        return functional.batch_norm(
             input,
             self.running_mean,
             self.running_var,
@@ -108,7 +108,7 @@ class _BatchNorm(Module):
 
 
 class BatchNorm1d(_BatchNorm):
-    r"""Apply the batch normalization over 2d input.
+    r"""Apply batch normalization over 2d input.
     `[Ioffe & Szegedy, 2015] <https://arxiv.org/abs/1502.03167>`_.
 
     The normalization is defined as:
@@ -160,7 +160,7 @@ class BatchNorm1d(_BatchNorm):
 
 
 class BatchNorm2d(_BatchNorm):
-    r"""Apply the batch normalization over 3d input.
+    r"""Apply batch normalization over 3d input.
     `[Ioffe & Szegedy, 2015] <https://arxiv.org/abs/1502.03167>`_.
 
     The normalization is defined as:
@@ -212,7 +212,7 @@ class BatchNorm2d(_BatchNorm):
 
 
 class BatchNorm3d(_BatchNorm):
-    r"""Apply the batch normalization over 4d input.
+    r"""Apply batch normalization over 4d input.
     `[Ioffe & Szegedy, 2015] <https://arxiv.org/abs/1502.03167>`_.
 
     The normalization is defined as:
@@ -264,7 +264,7 @@ class BatchNorm3d(_BatchNorm):
 
 
 class SyncBatchNorm(_BatchNorm):
-    r"""Apply the sync batch normalization over input.
+    r"""Apply sync batch normalization over input.
     `[Ioffe & Szegedy, 2015] <https://arxiv.org/abs/1502.03167>`_.
 
     The normalization is defined as:
@@ -324,7 +324,7 @@ class SyncBatchNorm(_BatchNorm):
 
     def forward(self, input):
         if self.training:
-            return F.sync_batch_norm(
+            return functional.sync_batch_norm(
                 input,
                 self.running_mean,
                 self.running_var,
@@ -335,7 +335,7 @@ class SyncBatchNorm(_BatchNorm):
                 eps=self.eps,
                 process_group=self.process_group)
         else:
-            return F.batch_norm(
+            return functional.batch_norm(
                 input,
                 self.running_mean,
                 self.running_var,

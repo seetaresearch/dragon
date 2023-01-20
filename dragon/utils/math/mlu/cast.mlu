@@ -1,0 +1,105 @@
+#include "dragon/utils/math/elementwise.h"
+#include "dragon/utils/math/types.h"
+#include "dragon/utils/math/utils.h"
+
+namespace dragon {
+
+namespace math {
+
+#define BLOCK_THREADS 40960
+
+namespace {
+
+template <typename InputT, typename OutputT>
+__mlu_entry__ void _Cast(const int N, const InputT* x, OutputT* y) {
+  __nram__ InputT X[BLOCK_THREADS];
+  __nram__ OutputT Y[BLOCK_THREADS];
+  MLU_1D_KERNEL_LOOP(i, N, BLOCK_THREADS) {
+    const int N_ram = std::min(N - i, BLOCK_THREADS);
+    __memcpy(X, x + i, N_ram * sizeof(InputT), GDRAM2NRAM);
+    math::utils::Convert(Y, X, N_ram);
+    __memcpy(y + i, Y, N_ram * sizeof(OutputT), NRAM2GDRAM);
+  }
+}
+
+} // namespace
+
+#define DEFINE_CAST_FUNC(InputT, OutputT, InputAliasT, OutputAliasT) \
+  template <>                                                        \
+  DRAGON_API void Cast<InputT, OutputT, MLUContext>(                 \
+      const int N, const InputT* x, OutputT* y, MLUContext* ctx) {   \
+    if (std::is_same<InputT, OutputT>::value) {                      \
+      if ((void*)x != (void*)x) {                                    \
+        CNRT_CHECK(cnrtMemcpyAsync(                                  \
+            y,                                                       \
+            const_cast<InputT*>(x),                                  \
+            N * sizeof(OutputT),                                     \
+            ctx->mlu_stream(),                                       \
+            cnrtMemcpyDevToDev));                                    \
+      }                                                              \
+      return;                                                        \
+    }                                                                \
+    _Cast<<<                                                         \
+        MLU_BLOCKS(N, BLOCK_THREADS),                                \
+        CNRT_FUNC_TYPE_BLOCK,                                        \
+        ctx->mlu_stream()>>>(                                        \
+        N,                                                           \
+        reinterpret_cast<const ScalarType<InputAliasT>::type*>(x),   \
+        reinterpret_cast<ScalarType<OutputAliasT>::type*>(y));       \
+  }
+
+#define DEFINE_UNSUPPORTED_CAST_FUNC(InputT, OutputT)                    \
+  template <>                                                            \
+  DRAGON_API void Cast<InputT, OutputT, MLUContext>(                     \
+      const int N, const InputT* x, OutputT* y, MLUContext* ctx) {       \
+    LOG(FATAL) << "Unsupported conversion: "                             \
+               << dtypes::to_string(TypeMeta::Make<InputT>()) << " -> "  \
+               << dtypes::to_string(TypeMeta::Make<OutputT>());          \
+  }                                                                      \
+  template <>                                                            \
+  DRAGON_API void Cast<OutputT, InputT, MLUContext>(                     \
+      const int N, const OutputT* x, InputT* y, MLUContext* ctx) {       \
+    LOG(FATAL) << "Unsupported conversion: "                             \
+               << dtypes::to_string(TypeMeta::Make<OutputT>()) << " -> " \
+               << dtypes::to_string(TypeMeta::Make<InputT>());           \
+  }
+
+#define DEFINE_CAST_FUNC_TO(T, AliasT)           \
+  DEFINE_CAST_FUNC(T, bool, AliasT, uint8_t);    \
+  DEFINE_CAST_FUNC(T, uint8_t, AliasT, uint8_t); \
+  DEFINE_CAST_FUNC(T, int8_t, AliasT, int8_t);   \
+  DEFINE_CAST_FUNC(T, int, AliasT, int);         \
+  DEFINE_CAST_FUNC(T, int64_t, AliasT, int64_t); \
+  DEFINE_CAST_FUNC(T, float, AliasT, float);
+
+DEFINE_CAST_FUNC_TO(bool, uint8_t);
+DEFINE_CAST_FUNC_TO(uint8_t, uint8_t);
+DEFINE_CAST_FUNC_TO(int8_t, int8_t);
+DEFINE_CAST_FUNC_TO(int, int);
+DEFINE_CAST_FUNC_TO(int64_t, int64_t);
+DEFINE_CAST_FUNC_TO(float, float);
+DEFINE_CAST_FUNC(uint8_t, float16, uint8_t, float16);
+DEFINE_CAST_FUNC(float16, uint8_t, float16, uint8_t);
+DEFINE_CAST_FUNC(float16, float16, float16, float16);
+DEFINE_CAST_FUNC(float16, float, float16, float);
+DEFINE_CAST_FUNC(float, float16, float, float16);
+DEFINE_CAST_FUNC(double, double, double, double);
+DEFINE_UNSUPPORTED_CAST_FUNC(float16, bool);
+DEFINE_UNSUPPORTED_CAST_FUNC(float16, int8_t);
+DEFINE_UNSUPPORTED_CAST_FUNC(float16, int);
+DEFINE_UNSUPPORTED_CAST_FUNC(float16, int64_t);
+DEFINE_UNSUPPORTED_CAST_FUNC(double, bool);
+DEFINE_UNSUPPORTED_CAST_FUNC(double, uint8_t);
+DEFINE_UNSUPPORTED_CAST_FUNC(double, int8_t);
+DEFINE_UNSUPPORTED_CAST_FUNC(double, int);
+DEFINE_UNSUPPORTED_CAST_FUNC(double, int64_t);
+DEFINE_UNSUPPORTED_CAST_FUNC(double, float16);
+DEFINE_UNSUPPORTED_CAST_FUNC(double, float);
+#undef DEFINE_CAST_FUNC
+#undef DEFINE_CAST_FUNC_TO
+#undef DEFINE_UNSUPPORTED_CAST_FUNC
+#undef BLOCK_THREADS
+
+} // namespace math
+
+} // namespace dragon

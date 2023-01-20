@@ -60,19 +60,19 @@ class ConvOpBase : public Operator<Context> {
   void Col2Im(const T* col, T* im);
 
   template <typename T>
-  void WeightedX(const T* x, const T* w, T* y);
+  void FwdData(const T* x, const T* w, T* y);
 
   template <typename T>
-  void AddBias(const T* b, T* y);
+  void FwdBias(const T* b, T* y);
 
   template <typename T>
-  void GradX(const T* dy, const T* w, T* dx);
+  void BwdData(const T* dy, const T* w, T* dx);
 
   template <typename T>
-  void GradW(const T* dy, const T* x, T* dw, bool = false);
+  void BwdFilter(const T* dy, const T* x, T* dw, bool = false);
 
   template <typename T>
-  void GradBias(const T* dy, T* db);
+  void BwdBias(const T* dy, T* db);
 
   vec64_t kshape_, dilations_, strides_;
   vec64_t pads_begin_, pads_end_;
@@ -97,19 +97,16 @@ class ConvOpBase : public Operator<Context> {
   int64_t Y_stride1_;
 };
 
-DEFINE_OP_REPEATED_ARG(int64_t, ConvOpBase, output_shape);
-DEFINE_OP_REPEATED_ARG(int64_t, ConvOpBase, output_padding);
-
 #define USE_CONV_FUNCTIONS                       \
   using ConvOpBase<Context>::GetBaseArguments;   \
   using ConvOpBase<Context>::Reshape;            \
   using ConvOpBase<Context>::Transposed;         \
   using ConvOpBase<Context>::HasBias;            \
-  using ConvOpBase<Context>::WeightedX;          \
-  using ConvOpBase<Context>::AddBias;            \
-  using ConvOpBase<Context>::GradX;              \
-  using ConvOpBase<Context>::GradW;              \
-  using ConvOpBase<Context>::GradBias;           \
+  using ConvOpBase<Context>::FwdData;            \
+  using ConvOpBase<Context>::FwdBias;            \
+  using ConvOpBase<Context>::BwdData;            \
+  using ConvOpBase<Context>::BwdFilter;          \
+  using ConvOpBase<Context>::BwdBias;            \
   using ConvOpBase<Context>::kshape_;            \
   using ConvOpBase<Context>::dilations_;         \
   using ConvOpBase<Context>::strides_;           \
@@ -130,118 +127,7 @@ DEFINE_OP_REPEATED_ARG(int64_t, ConvOpBase, output_padding);
   using ConvOpBase<Context>::b_shape_;           \
   using ConvOpBase<Context>::out_shape_
 
-#ifdef USE_CUDNN
-
-template <class Context>
-class CuDNNConvOpBase : public ConvOpBase<Context> {
- public:
-  CuDNNConvOpBase(const OperatorDef& def, Workspace* ws)
-      : ConvOpBase<Context>(def, ws) {
-    GetBaseArguments();
-    if (data_format() == "NCHW") {
-      tensor_format_ = CUDNN_TENSOR_NCHW;
-    } else if (data_format() == "NHWC") {
-      tensor_format_ = CUDNN_TENSOR_NHWC;
-    } else {
-      LOG(FATAL) << "Unknown DataFormat: " << data_format();
-    }
-  }
-  USE_OPERATOR_FUNCTIONS;
-  USE_CONV_FUNCTIONS;
-
- protected:
-  template <typename T>
-  void SetConvDesc() {
-    auto input_type = TypeMeta::Id<T>();
-    if (input_type == TypeMeta::Id<float16>()) {
-      compute_type_ = CUDNN_DATA_FLOAT;
-    } else if (input_type == TypeMeta::Id<float>()) {
-      compute_type_ = CUDNN_DATA_FLOAT;
-    } else if (input_type == TypeMeta::Id<double>()) {
-      compute_type_ = CUDNN_DATA_DOUBLE;
-    }
-    if (num_axes_ == 1 || num_axes_ == 2) {
-      CUDNN_CHECK(cudnnSetConvolution2dDescriptor(
-          conv_desc_,
-          pads_begin_[0],
-          num_axes_ == 1 ? 0 : pads_begin_[1],
-          strides_[0],
-          num_axes_ == 1 ? 1 : strides_[1],
-          dilations_[0],
-          num_axes_ == 1 ? 1 : dilations_[1],
-          CUDNN_CROSS_CORRELATION,
-          compute_type_));
-    } else {
-      CUDNN_CHECK(cudnnSetConvolutionNdDescriptor(
-          conv_desc_,
-          num_axes_,
-          vec32_t{pads_begin_.begin(), pads_begin_.end()}.data(),
-          vec32_t{strides_.begin(), strides_.end()}.data(),
-          vec32_t{dilations_.begin(), dilations_.end()}.data(),
-          CUDNN_CROSS_CORRELATION,
-          compute_type_));
-    }
-    CUDNN_CHECK(cudnnSetConvolutionGroupCount(conv_desc_, group_));
-    if (TENSOR_CORE_AVAILABLE()) {
-      cudnnMathType_t math_type;
-      if (input_type == TypeMeta::Id<float16>()) {
-        math_type = CUDNN_TENSOR_OP_MATH;
-      } else {
-        math_type = CUDNN_DEFAULT_MATH;
-#if CUDNN_VERSION_MIN(8, 0, 0)
-        if (!CUDAContext::objects().cudnn_allow_tf32_) {
-          math_type = CUDNN_FMA_MATH;
-        }
-#endif
-      }
-      CUDNN_CHECK(cudnnSetConvolutionMathType(conv_desc_, math_type));
-    }
-  }
-
-  template <typename T>
-  void SetFilterDesc() {
-    if (num_axes_ == 1 || num_axes_ == 2) {
-      CUDNN_CHECK(cudnnSetFilter4dDescriptor(
-          filter_desc_,
-          CuDNNType<T>::type,
-          tensor_format_,
-          conv_out_channels_,
-          conv_in_channels_ / group_,
-          kshape_[0],
-          num_axes_ == 1 ? 1 : kshape_[1]));
-    } else {
-      vec64_t dims = {conv_out_channels_, conv_in_channels_ / group_};
-      dims.insert(dims.end(), kshape_.begin(), kshape_.end());
-      CUDNN_CHECK(cudnnSetFilterNdDescriptor(
-          filter_desc_,
-          CuDNNType<T>::type,
-          tensor_format_,
-          dims.size(),
-          vec32_t{dims.begin(), dims.end()}.data()));
-    }
-  }
-
-  cudnnConvolutionDescriptor_t conv_desc_;
-  cudnnFilterDescriptor_t filter_desc_;
-  cudnnDataType_t compute_type_;
-  cudnnTensorFormat_t tensor_format_;
-  size_t scratch_size_, scratch_max_size_;
-};
-
-#define USE_CUDNN_CONV_FUNCTIONS                  \
-  using CuDNNConvOpBase<Context>::SetConvDesc;    \
-  using CuDNNConvOpBase<Context>::SetFilterDesc;  \
-  using CuDNNConvOpBase<Context>::conv_desc_;     \
-  using CuDNNConvOpBase<Context>::filter_desc_;   \
-  using CuDNNConvOpBase<Context>::compute_type_;  \
-  using CuDNNConvOpBase<Context>::tensor_format_; \
-  using CuDNNConvOpBase<Context>::scratch_size_;  \
-  using CuDNNConvOpBase<Context>::scratch_max_size_
-
-#endif // USE_CUDNN
-
 #ifdef USE_MPS
-
 #ifdef __OBJC__
 typedef MPSGraphConvolution2DOpDescriptor* MPSGraphConvolution2DOpDescriptor_t;
 #else
@@ -265,8 +151,7 @@ class MPSConvOpBase : public ConvOpBase<Context> {
 #define USE_MPS_CONV_FUNCTIONS               \
   using MPSConvOpBase<Context>::SetConvDesc; \
   using MPSConvOpBase<Context>::conv2d_desc_;
-
-#endif
+#endif // USE_MPS
 
 } // namespace dragon
 

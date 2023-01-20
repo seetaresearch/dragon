@@ -46,9 +46,8 @@ class SigmoidGradientOp final : public Operator<Context> {
 };
 
 #ifdef USE_CUDNN
-
 template <class Context>
-class CuDNNSigmoidOp final : public Operator<Context> {
+class CuDNNSigmoidOp : public Operator<Context> {
  public:
   CuDNNSigmoidOp(const OperatorDef& def, Workspace* ws)
       : Operator<Context>(def, ws) {
@@ -60,7 +59,7 @@ class CuDNNSigmoidOp final : public Operator<Context> {
   USE_OPERATOR_FUNCTIONS;
 
   ~CuDNNSigmoidOp() {
-    CuDNNDestroyTensorDesc(&input_desc_);
+    CuDNNDestroyTensorDesc(input_desc_);
     CUDNN_CHECK(cudnnDestroyActivationDescriptor(act_desc_));
   }
 
@@ -77,20 +76,46 @@ class CuDNNSigmoidOp final : public Operator<Context> {
 };
 
 template <class Context>
-class CuDNNSigmoidGradientOp final : public Operator<Context> {
+class CuDNNSigmoidGradientOp final : public CuDNNSigmoidOp<Context> {
  public:
   CuDNNSigmoidGradientOp(const OperatorDef& def, Workspace* ws)
+      : CuDNNSigmoidOp<Context>(def, ws) {}
+  USE_OPERATOR_FUNCTIONS;
+
+  void RunOnDevice() override {
+    DispatchHelper<dtypes::Floating>::Call(this, Input(0));
+  }
+
+  template <typename T>
+  void DoRunWithType();
+};
+#endif // USE_CUDNN
+
+#ifdef USE_MLU
+template <class Context>
+class CNNLSigmoidOp : public Operator<Context> {
+ public:
+  CNNLSigmoidOp(const OperatorDef& def, Workspace* ws)
       : Operator<Context>(def, ws) {
-    CUDNN_CHECK(cudnnCreateTensorDescriptor(&input_desc_));
-    CUDNN_CHECK(cudnnCreateActivationDescriptor(&act_desc_));
-    CUDNN_CHECK(cudnnSetActivationDescriptor(
-        act_desc_, CUDNN_ACTIVATION_SIGMOID, CUDNN_PROPAGATE_NAN, 0));
+    CNNLCreateTensorDesc(&input_desc_);
+    CNNL_CHECK(cnnlCreateActivationDescriptor(&act_desc_));
+    CNNL_CHECK(cnnlSetActivationDescriptor_v6(
+        act_desc_,
+        CNNL_ACTIVATION_SIGMOID,
+        CNNL_ACTIVATION_FAST,
+        CNNL_PROPAGATE_NAN,
+        0.f,
+        0,
+        1.f, // gamma
+        1.f, // scale
+        true,
+        false));
   }
   USE_OPERATOR_FUNCTIONS;
 
-  ~CuDNNSigmoidGradientOp() {
-    CUDNN_CHECK(cudnnDestroyTensorDescriptor(input_desc_));
-    CUDNN_CHECK(cudnnDestroyActivationDescriptor(act_desc_));
+  ~CNNLSigmoidOp() {
+    CNNLDestroyTensorDesc(input_desc_);
+    CNNL_CHECK(cnnlDestroyActivationDescriptor(act_desc_));
   }
 
   void RunOnDevice() override {
@@ -101,11 +126,25 @@ class CuDNNSigmoidGradientOp final : public Operator<Context> {
   void DoRunWithType();
 
  protected:
-  cudnnTensorDescriptor_t input_desc_;
-  cudnnActivationDescriptor_t act_desc_;
+  cnnlTensorDescriptor_t input_desc_;
+  cnnlActivationDescriptor_t act_desc_;
 };
 
-#endif // USE_CUDNN
+template <class Context>
+class CNNLSigmoidGradientOp final : public CNNLSigmoidOp<Context> {
+ public:
+  CNNLSigmoidGradientOp(const OperatorDef& def, Workspace* ws)
+      : CNNLSigmoidOp<Context>(def, ws) {}
+  USE_OPERATOR_FUNCTIONS;
+
+  void RunOnDevice() override {
+    DispatchHelper<dtypes::Floating>::Call(this, Input(0));
+  }
+
+  template <typename T>
+  void DoRunWithType();
+};
+#endif // USE_MLU
 
 } // namespace dragon
 

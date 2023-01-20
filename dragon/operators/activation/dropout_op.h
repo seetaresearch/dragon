@@ -57,25 +57,19 @@ class DropoutGradientOp : public Operator<Context> {
   DECLARE_OP_SINGLE_ARG(float, ratio);
 };
 
-DEFINE_OP_SINGLE_ARG(float, DropoutOp, ratio);
-DEFINE_OP_SINGLE_ARG(float, DropoutGradientOp, ratio);
-
 #ifdef USE_CUDNN
-
 template <class Context>
 class CuDNNDropoutOp final : public DropoutOp<Context> {
  public:
   CuDNNDropoutOp(const OperatorDef& def, Workspace* ws)
-      : DropoutOp<Context>(def, ws),
-        states_initialized_(false),
-        seed_(DEFAULT_RNG_SEED) {
+      : DropoutOp<Context>(def, ws), prev_ratio_(-1.f) {
     CuDNNCreateTensorDesc(&input_desc_);
     CUDNN_CHECK(cudnnCreateDropoutDescriptor(&dropout_desc_));
   }
   USE_OPERATOR_FUNCTIONS;
 
   ~CuDNNDropoutOp() {
-    CuDNNDestroyTensorDesc(&input_desc_);
+    CuDNNDestroyTensorDesc(input_desc_);
     CUDNN_CHECK(cudnnDestroyDropoutDescriptor(dropout_desc_));
   }
 
@@ -87,26 +81,23 @@ class CuDNNDropoutOp final : public DropoutOp<Context> {
   void DoRunWithType();
 
  protected:
-  bool states_initialized_;
+  float prev_ratio_;
   cudnnTensorDescriptor_t input_desc_;
   cudnnDropoutDescriptor_t dropout_desc_;
-  unsigned long long seed_;
 };
 
 template <class Context>
 class CuDNNDropoutGradientOp final : public DropoutGradientOp<Context> {
  public:
   CuDNNDropoutGradientOp(const OperatorDef& def, Workspace* ws)
-      : DropoutGradientOp<Context>(def, ws),
-        states_initialized_(false),
-        seed_(DEFAULT_RNG_SEED) {
+      : DropoutGradientOp<Context>(def, ws), prev_ratio_(-1.f) {
     CuDNNCreateTensorDesc(&input_desc_);
     CUDNN_CHECK(cudnnCreateDropoutDescriptor(&dropout_desc_));
   }
   USE_OPERATOR_FUNCTIONS;
 
   ~CuDNNDropoutGradientOp() {
-    CuDNNDestroyTensorDesc(&input_desc_);
+    CuDNNDestroyTensorDesc(input_desc_);
     CUDNN_CHECK(cudnnDestroyDropoutDescriptor(dropout_desc_));
   }
 
@@ -118,16 +109,13 @@ class CuDNNDropoutGradientOp final : public DropoutGradientOp<Context> {
   void DoRunWithType();
 
  protected:
-  bool states_initialized_;
+  float prev_ratio_;
   cudnnTensorDescriptor_t input_desc_;
   cudnnDropoutDescriptor_t dropout_desc_;
-  unsigned long long seed_;
 };
-
 #endif // USE_CUDNN
 
 #ifdef USE_MPS
-
 template <class Context>
 class MPSDropoutOp final : public Operator<Context> {
  public:
@@ -154,9 +142,6 @@ class MPSDropoutOp final : public Operator<Context> {
   MPSGraph_t graph_;
   MPSGraphCache graph_cache_;
 };
-
-DEFINE_OP_SINGLE_ARG(float, MPSDropoutOp, ratio);
-
 #endif // USE_MPS
 
 } // namespace dragon

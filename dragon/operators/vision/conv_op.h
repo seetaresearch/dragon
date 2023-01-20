@@ -13,8 +13,11 @@
 #ifndef DRAGON_OPERATORS_VISION_CONV_OP_H_
 #define DRAGON_OPERATORS_VISION_CONV_OP_H_
 
+#include "dragon/operators/math/reduce_op_impl_cnnl.h"
 #include "dragon/operators/vision/conv_op_algo.h"
 #include "dragon/operators/vision/conv_op_base.h"
+#include "dragon/operators/vision/conv_op_impl_cnnl.h"
+#include "dragon/operators/vision/conv_op_impl_cudnn.h"
 
 namespace dragon {
 
@@ -28,7 +31,12 @@ class ConvOp final : public ConvOpBase<Context> {
   USE_OPERATOR_FUNCTIONS;
   USE_CONV_FUNCTIONS;
 
-  void RunOnDevice() override;
+  void RunOnDevice() override {
+    if (data_format() == "NHWC" && group_ != 1) {
+      LOG(FATAL) << "GroupConv(NHWC) is not supported.";
+    }
+    DispatchHelper<dtypes::Floating>::Call(this, Input(0));
+  }
 
   template <typename T>
   void DoRunWithType();
@@ -49,7 +57,12 @@ class ConvGradientOp final : public ConvOpBase<Context> {
   USE_OPERATOR_FUNCTIONS;
   USE_CONV_FUNCTIONS;
 
-  void RunOnDevice() override;
+  void RunOnDevice() override {
+    if (data_format() == "NHWC" && group_ != 1) {
+      LOG(FATAL) << "GroupConv(NHWC) is not supported.";
+    }
+    DispatchHelper<dtypes::Floating>::Call(this, Input(0));
+  }
 
   template <typename T>
   void DoRunWithType();
@@ -61,29 +74,15 @@ class ConvGradientOp final : public ConvOpBase<Context> {
 };
 
 #ifdef USE_CUDNN
-
 template <class Context>
-class CuDNNConvOp final : public CuDNNConvOpBase<Context> {
+class CuDNNConvOp final : public ConvOpBase<Context> {
  public:
   CuDNNConvOp(const OperatorDef& def, Workspace* ws)
-      : CuDNNConvOpBase<Context>(def, ws) {
-    CuDNNCreateTensorDesc(&input_desc_);
-    CuDNNCreateTensorDesc(&output_desc_);
-    CuDNNCreateTensorDesc(&bias_desc_);
-    CUDNN_CHECK(cudnnCreateFilterDescriptor(&filter_desc_));
-    CUDNN_CHECK(cudnnCreateConvolutionDescriptor(&conv_desc_));
+      : ConvOpBase<Context>(def, ws) {
+    GetBaseArguments();
   }
   USE_OPERATOR_FUNCTIONS;
   USE_CONV_FUNCTIONS;
-  USE_CUDNN_CONV_FUNCTIONS;
-
-  ~CuDNNConvOp() {
-    CuDNNDestroyTensorDesc(&input_desc_);
-    CuDNNDestroyTensorDesc(&output_desc_);
-    CuDNNDestroyTensorDesc(&bias_desc_);
-    CUDNN_CHECK(cudnnDestroyFilterDescriptor(filter_desc_));
-    CUDNN_CHECK(cudnnDestroyConvolutionDescriptor(conv_desc_));
-  }
 
   void RunOnDevice() override {
     DispatchHelper<dtypes::Floating>::Call(this, Input(0));
@@ -97,41 +96,18 @@ class CuDNNConvOp final : public CuDNNConvOpBase<Context> {
     return InputSize() > 2;
   }
 
-  template <typename T>
-  void SetOpDesc();
-
-  vec64_t input_dims_, filter_dims_;
-  cudnnTensorDescriptor_t input_desc_, output_desc_, bias_desc_;
-
-  using FwdAlgo = cudnnConvolutionFwdAlgo_t;
-  using FwdAlgoWithCost = std::tuple<FwdAlgo, float>;
-  FwdAlgo fwd_algo_;
-  ConvAlgoCache<FwdAlgoWithCost> fwd_algo_cache_;
-  bool exhaustive_search_;
+  CuDNNConvOpImpl<cudnnConvolutionFwdAlgo_t> Y_impl_;
 };
 
 template <class Context>
-class CuDNNConvGradientOp final : public CuDNNConvOpBase<Context> {
+class CuDNNConvGradientOp final : public ConvOpBase<Context> {
  public:
   CuDNNConvGradientOp(const OperatorDef& def, Workspace* ws)
-      : CuDNNConvOpBase<Context>(def, ws) {
-    CuDNNCreateTensorDesc(&input_desc_);
-    CuDNNCreateTensorDesc(&output_desc_);
-    CuDNNCreateTensorDesc(&bias_desc_);
-    CUDNN_CHECK(cudnnCreateFilterDescriptor(&filter_desc_));
-    CUDNN_CHECK(cudnnCreateConvolutionDescriptor(&conv_desc_));
+      : ConvOpBase<Context>(def, ws) {
+    GetBaseArguments();
   }
   USE_OPERATOR_FUNCTIONS;
   USE_CONV_FUNCTIONS;
-  USE_CUDNN_CONV_FUNCTIONS;
-
-  ~CuDNNConvGradientOp() {
-    CuDNNDestroyTensorDesc(&input_desc_);
-    CuDNNDestroyTensorDesc(&output_desc_);
-    CuDNNDestroyTensorDesc(&bias_desc_);
-    CUDNN_CHECK(cudnnDestroyFilterDescriptor(filter_desc_));
-    CUDNN_CHECK(cudnnDestroyConvolutionDescriptor(conv_desc_));
-  }
 
   void RunOnDevice() override {
     DispatchHelper<dtypes::Floating>::Call(this, Input(0));
@@ -145,27 +121,12 @@ class CuDNNConvGradientOp final : public CuDNNConvOpBase<Context> {
     return Output(2)->has_name();
   }
 
-  template <typename T>
-  void SetOpDesc();
-
-  vec64_t input_dims_, filter_dims_;
-  cudnnTensorDescriptor_t input_desc_, output_desc_, bias_desc_;
-
-  using BwdDataAlgo = cudnnConvolutionBwdDataAlgo_t;
-  using BwdFilterAlgo = cudnnConvolutionBwdFilterAlgo_t;
-  using BwdDataAlgoWithCost = std::tuple<BwdDataAlgo, float>;
-  using BwdFilterAlgoWithCost = std::tuple<BwdFilterAlgo, float>;
-  BwdDataAlgo bwd_data_algo_;
-  BwdFilterAlgo bwd_filter_algo_;
-  ConvAlgoCache<BwdDataAlgoWithCost> data_algo_cache_;
-  ConvAlgoCache<BwdFilterAlgoWithCost> filter_algo_cache_;
-  bool exhaustive_search_data_, exhaustive_search_filter_;
+  CuDNNConvOpImpl<cudnnConvolutionBwdDataAlgo_t> dX_impl_;
+  CuDNNConvOpImpl<cudnnConvolutionBwdFilterAlgo_t> dW_impl_;
 };
-
 #endif // USE_CUDNN
 
 #ifdef USE_MPS
-
 template <class Context>
 class MPSConvOp final : public MPSConvOpBase<Context> {
  public:
@@ -229,8 +190,64 @@ class MPSConvGradientOp final : public MPSConvOpBase<Context> {
   MPSGraph_t graph_;
   MPSGraphCache graph_cache_;
 };
-
 #endif // USE_MPS
+
+#ifdef USE_MLU
+template <class Context>
+class CNNLConvOp final : public ConvOpBase<Context> {
+ public:
+  CNNLConvOp(const OperatorDef& def, Workspace* ws)
+      : ConvOpBase<Context>(def, ws) {
+    CHECK_EQ(data_format(), "NHWC");
+    GetBaseArguments();
+  }
+  USE_OPERATOR_FUNCTIONS;
+  USE_CONV_FUNCTIONS;
+
+  void RunOnDevice() override {
+    DispatchHelper<dtypes::Floating>::Call(this, Input(0));
+  }
+
+  template <typename T>
+  void DoRunWithType();
+
+ protected:
+  bool HasBias() override {
+    return InputSize() > 2;
+  }
+
+  CNNLConvOpImpl<cnnlConvolutionForwardAlgo_t> Y_impl_;
+};
+
+template <class Context>
+class CNNLConvGradientOp final : public ConvOpBase<Context> {
+ public:
+  CNNLConvGradientOp(const OperatorDef& def, Workspace* ws)
+      : ConvOpBase<Context>(def, ws) {
+    CHECK_EQ(data_format(), "NHWC");
+    GetBaseArguments();
+    dB_impl_.SetReducer(CNNL_REDUCE_ADD);
+  }
+  USE_OPERATOR_FUNCTIONS;
+  USE_CONV_FUNCTIONS;
+
+  void RunOnDevice() override {
+    DispatchHelper<dtypes::Floating>::Call(this, Input(0));
+  }
+
+  template <typename T>
+  void DoRunWithType();
+
+ protected:
+  bool HasBias() override {
+    return Output(2)->has_name();
+  }
+
+  CNNLConvOpImpl<cnnlConvolutionBwdDataAlgo_t> dX_impl_;
+  CNNLConvOpImpl<cnnlConvolutionBwdFilterAlgo_t> dW_impl_;
+  CNNLReduceOpImpl dB_impl_;
+};
+#endif // USE_MLU
 
 } // namespace dragon
 

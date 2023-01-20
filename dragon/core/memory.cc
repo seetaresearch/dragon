@@ -1,6 +1,7 @@
 #include "dragon/core/memory.h"
 #include "dragon/core/context.h"
 #include "dragon/core/context_cuda.h"
+#include "dragon/core/context_mlu.h"
 #include "dragon/core/context_mps.h"
 
 namespace dragon {
@@ -38,6 +39,16 @@ void UnifiedMemory::ToCPU(size_t size) {
       state_ = SYNCED;
       break;
 #endif
+    case STATE_AT_MLU:
+#ifdef USE_MLU
+      if (cpu_ptr_ == nullptr) {
+        cpu_ptr_ = CPUContext::New(size_);
+      }
+      MLUContext::Memcpy<CPUContext, MLUContext>(
+          size > 0 ? size : size_, cpu_ptr_, mlu_ptr_, device_id_);
+      state_ = SYNCED;
+      break;
+#endif
     case STATE_AT_CPU:
     case SYNCED:
       break;
@@ -64,6 +75,7 @@ void UnifiedMemory::ToCUDA(size_t size) {
       break;
     case STATE_AT_CUDA:
     case STATE_AT_MPS:
+    case STATE_AT_MLU:
     case SYNCED:
       break;
   }
@@ -93,6 +105,34 @@ void UnifiedMemory::ToMPS(size_t size) {
       break;
     case STATE_AT_CUDA:
     case STATE_AT_MPS:
+    case STATE_AT_MLU:
+    case SYNCED:
+      break;
+  }
+#endif
+}
+
+void UnifiedMemory::ToMLU(size_t size) {
+#ifdef USE_MLU
+  switch (state_) {
+    case UNINITIALIZED:
+      mlu_ptr_ = MLUContext::New(size_);
+      MLUContext::Memset(size_, mlu_ptr_);
+      device_id_ = MLUContext::current_device();
+      state_ = STATE_AT_MLU;
+      break;
+    case STATE_AT_CPU:
+      if (mlu_ptr_ == nullptr) {
+        mlu_ptr_ = MLUContext::New(size_);
+        device_id_ = MLUContext::current_device();
+      }
+      MLUContext::Memcpy<MLUContext, CPUContext>(
+          size > 0 ? size : size_, mlu_ptr_, cpu_ptr_, device_id_);
+      state_ = SYNCED;
+      break;
+    case STATE_AT_CUDA:
+    case STATE_AT_MPS:
+    case STATE_AT_MLU:
     case SYNCED:
       break;
   }
@@ -120,6 +160,14 @@ const void* UnifiedMemory::mps_data(size_t size) {
   return (const void*)((uint8_t*)mps_ptr_);
 }
 
+const void* UnifiedMemory::mlu_data(size_t size, size_t offset) {
+#ifdef USE_MLU
+  SwitchToMLUDevice(MLUContext::current_device());
+#endif
+  ToMLU(size);
+  return (const void*)((uint8_t*)mlu_ptr_ + offset);
+}
+
 void* UnifiedMemory::mutable_cpu_data(size_t size) {
   ToCPU(size);
   state_ = STATE_AT_CPU;
@@ -142,6 +190,15 @@ void* UnifiedMemory::mutable_mps_data(size_t size) {
   ToMPS(size);
   state_ = STATE_AT_MPS;
   return mps_ptr_;
+}
+
+void* UnifiedMemory::mutable_mlu_data(size_t size) {
+#ifdef USE_MLU
+  SwitchToMLUDevice(MLUContext::current_device());
+#endif
+  ToMLU(size);
+  state_ = STATE_AT_MLU;
+  return mlu_ptr_;
 }
 
 bool UnifiedMemory::set_cpu_data(void* cpu_ptr, size_t size) {
@@ -194,6 +251,11 @@ UnifiedMemory::~UnifiedMemory() {
     MPSContext::Delete(mps_ptr_);
   }
 #endif
+#ifdef USE_MLU
+  if (own_mlu_ptr_ && mlu_ptr_) {
+    MLUContext::Delete(mlu_ptr_);
+  }
+#endif
 }
 
 void UnifiedMemory::SwitchToCUDADevice(int device_id) {
@@ -231,12 +293,35 @@ void UnifiedMemory::SwitchToMPSDevice(int device_id) {
 #endif
 }
 
+void UnifiedMemory::SwitchToMLUDevice(int device_id) {
+#ifdef USE_MLU
+  if (mlu_ptr_) {
+    if (device_id != device_id_) {
+      void* new_ptr_ = nullptr;
+      MLUDeviceGuard guard(device_id);
+      new_ptr_ = MLUContext::New(size_);
+      MLUContext::Memcpy<MLUContext, MLUContext>(
+          size_, new_ptr_, mlu_ptr_, device_id_);
+      if (own_mlu_ptr_) {
+        MLUContext::Delete(mlu_ptr_);
+      }
+      mlu_ptr_ = new_ptr_;
+      device_id_ = device_id;
+    }
+  } else {
+    MLUDeviceGuard guard(device_id);
+    ToMLU(size_);
+  }
+#endif
+}
+
 Map<string, string> UnifiedMemory::info() const {
   static map<State, string> state_map{
       {UNINITIALIZED, "uninitialized"},
       {STATE_AT_CPU, "cpu"},
       {STATE_AT_CUDA, "cuda"},
       {STATE_AT_MPS, "mps"},
+      {STATE_AT_MLU, "mlu"},
       {SYNCED, "device"},
   };
   string state_str = state_map[state_];
@@ -245,6 +330,8 @@ Map<string, string> UnifiedMemory::info() const {
       state_str = "cuda";
     } else if (mps_ptr_) {
       state_str = "mps";
+    } else if (mlu_ptr_) {
+      state_str = "mlu";
     } else {
       LOG(FATAL) << "Device activated, but got invalid mem pointer.";
     }

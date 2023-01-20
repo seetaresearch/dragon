@@ -68,26 +68,14 @@ void GatherElementsGradientOp<Context>::DoRunWithType() {
 }
 
 DEPLOY_CPU_OPERATOR(GatherElements);
-#ifdef USE_CUDA
-DEPLOY_CUDA_OPERATOR(GatherElements);
-#endif
-
 DEPLOY_CPU_OPERATOR(GatherElementsGradient);
 #ifdef USE_CUDA
+DEPLOY_CUDA_OPERATOR(GatherElements);
 DEPLOY_CUDA_OPERATOR(GatherElementsGradient);
 #endif
 
-OPERATOR_SCHEMA(GatherElements)
-    /* X, X_index */
-    .NumInputs(2)
-    /* Y */
-    .NumOutputs(1);
-
-OPERATOR_SCHEMA(GatherElementsGradient)
-    /* X_index, dY */
-    .NumInputs(2)
-    /* dX */
-    .NumOutputs(1);
+OPERATOR_SCHEMA(GatherElements).NumInputs(2).NumOutputs(1);
+OPERATOR_SCHEMA(GatherElementsGradient).NumInputs(2).NumOutputs(1);
 
 namespace {
 

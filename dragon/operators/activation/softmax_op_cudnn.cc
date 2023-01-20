@@ -22,7 +22,7 @@ void CuDNNSoftmaxOp<Context>::DoRunWithType() {
         ctx());
     return;
   }
-  CuDNNSetTensorDesc<T>(&input_desc_, {N, C, S, 1});
+  CuDNNSetTensorDesc<T>(input_desc_, {N, C, S, 1});
   CUDNN_CHECK(cudnnSoftmaxForward(
       ctx()->cudnn_handle(),
       CUDNN_SOFTMAX_ACCURATE,
@@ -53,7 +53,7 @@ void CuDNNSoftmaxGradientOp<Context>::DoRunWithType() {
         ctx());
     return;
   }
-  CuDNNSetTensorDesc<T>(&input_desc_, {N, C, S, 1});
+  CuDNNSetTensorDesc<T>(input_desc_, {N, C, S, 1});
   CUDNN_CHECK(cudnnSoftmaxBackward(
       ctx()->cudnn_handle(),
       CUDNN_SOFTMAX_ACCURATE,

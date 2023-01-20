@@ -11,34 +11,25 @@ void L2LossOp<Context>::DoRunWithType() {
   auto &X = Input(0), *L = Output(0);
 
   const auto N = X.count();
-  for (int i = 1; i < InputSize(); i++) {
-    CHECK_EQ(Input(i).count(), N)
-        << "\nTensor(" << Input(i).name() << ") takes the "
-        << "dimensions of " << Input(i).DimString() << ", "
-        << "while " << X.DimString() << " is required.";
-  }
-
-  auto* scratch = ctx()->workspace()->template data<T, Context>(N);
+  auto* loss = ctx()->workspace()->template data<T, Context>(N);
 
   if (InputSize() > 1) {
+    CHECK_EQ(Input(1).count(), N) << "\nNumel of X and Y must be matched.";
     math::Sub(
         N,
         X.template data<T, Context>(),
         Input(1).template data<T, Context>(),
-        scratch,
+        loss,
         ctx());
-    math::Square(N, scratch, scratch, ctx());
+    math::Square(N, loss, loss, ctx());
   } else {
-    math::Square(N, X.template data<T, Context>(), scratch, ctx());
+    math::Square(N, X.template data<T, Context>(), loss, ctx());
   }
 
   // Reduction.
   if (reduction_ == "NONE") {
-    math::Copy(
-        N,
-        scratch,
-        L->ReshapeLike(X)->template mutable_data<T, Context>(),
-        ctx());
+    L->ReshapeLike(X);
+    math::Copy(N, loss, L->template mutable_data<T, Context>(), ctx());
   } else {
     int64_t normalizer = 1;
     if (reduction_ == "BATCH_MEAN") {
@@ -50,7 +41,7 @@ void L2LossOp<Context>::DoRunWithType() {
         N,
         0,
         normalizer,
-        scratch,
+        loss,
         (T*)nullptr,
         L->Reshape({})->template mutable_data<T, Context>(),
         ctx());

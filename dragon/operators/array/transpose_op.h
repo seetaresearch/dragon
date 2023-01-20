@@ -14,6 +14,7 @@
 #define DRAGON_OPERATORS_ARRAY_TRANSPOSE_OP_H_
 
 #include "dragon/core/operator.h"
+#include "dragon/operators/array/transpose_op_impl_cnnl.h"
 
 namespace dragon {
 
@@ -37,7 +38,28 @@ class TransposeOp final : public Operator<Context> {
   DECLARE_OP_REPEATED_ARG(int64_t, perm);
 };
 
-DEFINE_OP_REPEATED_ARG(int64_t, TransposeOp, perm);
+#ifdef USE_MLU
+template <class Context>
+class CNNLTransposeOp final : public Operator<Context> {
+ public:
+  CNNLTransposeOp(const OperatorDef& def, Workspace* ws)
+      : Operator<Context>(def, ws) {
+    INITIALIZE_OP_REPEATED_ARG(int64_t, perm);
+  }
+  USE_OPERATOR_FUNCTIONS;
+
+  void RunOnDevice() override {
+    DispatchHelper<dtypes::Generic>::Call(this, Input(0));
+  }
+
+  template <typename T>
+  void DoRunWithType();
+
+ protected:
+  DECLARE_OP_REPEATED_ARG(int64_t, perm);
+  CNNLTransposeOpImpl impl_;
+};
+#endif // USE_MLU
 
 } // namespace dragon
 

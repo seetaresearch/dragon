@@ -66,26 +66,16 @@ void RollGradientOp<Context>::DoRunWithType() {
 }
 
 DEPLOY_CPU_OPERATOR(Roll);
-#ifdef USE_CUDA
-DEPLOY_CUDA_OPERATOR(Roll);
-#endif
-
 DEPLOY_CPU_OPERATOR(RollGradient);
 #ifdef USE_CUDA
+DEPLOY_CUDA_OPERATOR(Roll);
 DEPLOY_CUDA_OPERATOR(RollGradient);
 #endif
 
-OPERATOR_SCHEMA(Roll)
-    /* X */
-    .NumInputs(1)
-    /* Y */
-    .NumOutputs(1);
+DEFINE_OP_REPEATED_ARG(int64_t, RollOp, shifts);
 
-OPERATOR_SCHEMA(RollGradient)
-    /* dY */
-    .NumInputs(1)
-    /* dX */
-    .NumOutputs(1);
+OPERATOR_SCHEMA(Roll).NumInputs(1).NumOutputs(1);
+OPERATOR_SCHEMA(RollGradient).NumInputs(1).NumOutputs(1);
 
 REGISTER_GRADIENT(Roll, SimpleGradientMaker);
 

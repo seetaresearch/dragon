@@ -60,10 +60,7 @@ class PadGradientOp final : public Operator<Context> {
   string mode_;
 };
 
-DEFINE_OP_REPEATED_ARG(int64_t, PadOp, pads);
-
 #ifdef USE_MPS
-
 template <class Context>
 class MPSPadOp final : public Operator<Context> {
  public:
@@ -123,10 +120,69 @@ class MPSPadGradientOp final : public Operator<Context> {
   MPSGraph_t graph_;
   MPSGraphCache graph_cache_;
 };
-
-DEFINE_OP_REPEATED_ARG(int64_t, MPSPadOp, pads);
-
 #endif // USE_MPS
+
+#ifdef USE_MLU
+template <class Context>
+class CNNLPadOp final : public Operator<Context> {
+ public:
+  CNNLPadOp(const OperatorDef& def, Workspace* ws)
+      : Operator<Context>(def, ws),
+        value_(OP_SINGLE_ARG(float, "value", 0.f)),
+        mode_(OP_SINGLE_ARG(string, "mode", "CONSTANT")) {
+    INITIALIZE_OP_REPEATED_ARG(int64_t, pads);
+    CNNLCreateTensorDesc(&input_desc_);
+    CNNLCreateTensorDesc(&output_desc_);
+  }
+  USE_OPERATOR_FUNCTIONS;
+
+  ~CNNLPadOp() {
+    CNNLDestroyTensorDesc(input_desc_);
+    CNNLDestroyTensorDesc(output_desc_);
+  }
+
+  void RunOnDevice() override {
+    DispatchHelper<dtypes::Generic>::Call(this, Input(0));
+  }
+
+  template <typename T>
+  void DoRunWithType();
+
+ protected:
+  float value_;
+  string mode_;
+  DECLARE_OP_REPEATED_ARG(int64_t, pads);
+  cnnlTensorDescriptor_t input_desc_, output_desc_;
+};
+
+template <class Context>
+class CNNLPadGradientOp final : public Operator<Context> {
+ public:
+  CNNLPadGradientOp(const OperatorDef& def, Workspace* ws)
+      : Operator<Context>(def, ws),
+        mode_(OP_SINGLE_ARG(string, "mode", "CONSTANT")) {
+    CNNLCreateTensorDesc(&input_desc_);
+    CNNLCreateTensorDesc(&output_desc_);
+  }
+  USE_OPERATOR_FUNCTIONS;
+
+  ~CNNLPadGradientOp() {
+    CNNLDestroyTensorDesc(input_desc_);
+    CNNLDestroyTensorDesc(output_desc_);
+  }
+
+  void RunOnDevice() override {
+    DispatchHelper<dtypes::Floating>::Call(this, Input(0));
+  }
+
+  template <typename T>
+  void DoRunWithType();
+
+ protected:
+  string mode_;
+  cnnlTensorDescriptor_t input_desc_, output_desc_;
+};
+#endif // USE_MLU
 
 } // namespace dragon
 

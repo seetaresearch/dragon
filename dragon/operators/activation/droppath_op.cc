@@ -59,21 +59,15 @@ DEPLOY_CUDA_OPERATOR(DropPathGradient);
 #ifdef USE_MPS
 DEPLOY_MPS_OPERATOR(DropPathGradient, DropPathGradient);
 #endif
+#ifdef USE_MLU
+DEPLOY_MLU_OPERATOR(DropPath);
+DEPLOY_MLU_OPERATOR(DropPathGradient);
+#endif
 
-OPERATOR_SCHEMA(DropPath)
-    /* X */
-    .NumInputs(1)
-    /* Y */
-    .NumOutputs(1)
-    /* X => Y */
-    .AllowInplace({{0, 0}});
-
+OPERATOR_SCHEMA(DropPath).NumInputs(1).NumOutputs(1).AllowInplace({{0, 0}});
 OPERATOR_SCHEMA(DropPathGradient)
-    /* dY */
     .NumInputs(1)
-    /* dX */
     .NumOutputs(1)
-    /* dY => dX */
     .AllowInplace({{0, 0}});
 
 REGISTER_GRADIENT(DropPath, SimpleGradientMaker);

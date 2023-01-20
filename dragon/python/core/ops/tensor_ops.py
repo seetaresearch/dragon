@@ -22,7 +22,7 @@ from dragon.core.ops import constant_ops
 
 
 def add(self, other):
-    """Compute the element-wise addition.
+    """Compute element-wise addition.
 
     Parameters
     ----------
@@ -43,7 +43,7 @@ def add(self, other):
 
 
 def _and(self, other):
-    """Compute the element-wise AND bitwise operation.
+    """Compute element-wise AND bitwise operation.
 
     Parameters
     ----------
@@ -106,7 +106,7 @@ def copy(self):
 
 
 def div(self, other):
-    """Compute the element-wise division.
+    """Compute element-wise division.
 
     Parameters
     ----------
@@ -211,14 +211,14 @@ def getitem(self, item):
             if context.executing_eagerly():
                 return OpLib.execute('BooleanMask', [self, item])
             return OpLib.add('BooleanMask', [self, item])
-        elif item.dtype == 'int64':
+        elif item.dtype in ('int32', 'int64'):
             gather_args.append((0, item))
         else:
             raise TypeError('Unsupported index type: ' + item.dtype)
     if isinstance(item, tuple):
         for i, elem in enumerate(item):
             if isinstance(elem, Tensor):
-                if elem.dtype == 'int64':
+                if elem.dtype in ('int32', 'int64'):
                     gather_args.append((i, elem))
                 else:
                     raise TypeError('Unsupported index type: ' + elem.dtype)
@@ -312,7 +312,7 @@ def gt(self, other):
 
 
 def iadd(self, other):
-    """Compute the element-wise addition.
+    """Compute element-wise addition.
 
     Parameters
     ----------
@@ -333,7 +333,7 @@ def iadd(self, other):
 
 
 def iand(self, other):
-    """Compute the element-wise AND bitwise operation.
+    """Compute element-wise AND bitwise operation.
 
     Parameters
     ----------
@@ -354,7 +354,7 @@ def iand(self, other):
 
 
 def idiv(self, other):
-    """Compute the element-wise division.
+    """Compute element-wise division.
 
     Parameters
     ----------
@@ -375,7 +375,7 @@ def idiv(self, other):
 
 
 def imul(self, other):
-    """Compute the element-wise multiplication.
+    """Compute element-wise multiplication.
 
     Parameters
     ----------
@@ -396,7 +396,7 @@ def imul(self, other):
 
 
 def invert(self):
-    """Compute the element-wise NOT bitwise operation.
+    """Compute element-wise NOT bitwise operation.
 
     Returns
     -------
@@ -412,7 +412,7 @@ def invert(self):
 
 
 def ior(self, other):
-    """Compute the element-wise OR bitwise operation.
+    """Compute element-wise OR bitwise operation.
 
     Parameters
     ----------
@@ -433,7 +433,7 @@ def ior(self, other):
 
 
 def isub(self, other):
-    """Compute the element-wise subtraction.
+    """Compute element-wise subtraction.
 
     Parameters
     ----------
@@ -454,7 +454,7 @@ def isub(self, other):
 
 
 def ixor(self, other):
-    """Compute the element-wise XOR bitwise operation.
+    """Compute element-wise XOR bitwise operation.
 
     Parameters
     ----------
@@ -517,7 +517,7 @@ def lt(self, other):
 
 
 def matmul(self, other):
-    """Compute the matrix multiplication.
+    """Compute matrix multiplication.
 
     Parameters
     ----------
@@ -538,7 +538,7 @@ def matmul(self, other):
 
 
 def mul(self, other):
-    """Compute the element-wise multiplication.
+    """Compute element-wise multiplication.
 
     Parameters
     ----------
@@ -580,7 +580,7 @@ def ne(self, other):
 
 
 def neg(self):
-    """Compute the element-wise negative.
+    """Compute element-wise negative.
 
     Returns
     -------
@@ -622,7 +622,7 @@ def normal(self, mean=0, std=1):
 
 
 def _or(self, other):
-    """Compute the element-wise OR bitwise operation.
+    """Compute element-wise OR bitwise operation.
 
     Parameters
     ----------
@@ -643,7 +643,7 @@ def _or(self, other):
 
 
 def radd(self, other):
-    """Compute the element-wise addition.
+    """Compute element-wise addition.
 
     Parameters
     ----------
@@ -664,7 +664,7 @@ def radd(self, other):
 
 
 def rand(self, other):
-    """Compute the element-wise AND bitwise operation.
+    """Compute element-wise AND bitwise operation.
 
     Parameters
     ----------
@@ -685,7 +685,7 @@ def rand(self, other):
 
 
 def rdiv(self, other):
-    """Compute the element-wise division.
+    """Compute element-wise division.
 
     Parameters
     ----------
@@ -729,7 +729,7 @@ def reshape(self, shape, copy=True):
 
 
 def rmul(self, other):
-    """Compute the element-wise multiplication.
+    """Compute element-wise multiplication.
 
     Parameters
     ----------
@@ -750,7 +750,7 @@ def rmul(self, other):
 
 
 def ror(self, other):
-    """Compute the element-wise OR bitwise operation.
+    """Compute element-wise OR bitwise operation.
 
     Parameters
     ----------
@@ -771,7 +771,7 @@ def ror(self, other):
 
 
 def rsub(self, other):
-    """Compute the element-wise subtraction.
+    """Compute element-wise subtraction.
 
     Parameters
     ----------
@@ -792,7 +792,7 @@ def rsub(self, other):
 
 
 def rxor(self, other):
-    """Compute the element-wise XOR bitwise operation.
+    """Compute element-wise XOR bitwise operation.
 
     Parameters
     ----------
@@ -845,7 +845,7 @@ def setitem(self, key, value):
 
 
 def sub(self, other):
-    """Compute the element-wise subtraction.
+    """Compute element-wise subtraction.
 
     Parameters
     ----------
@@ -942,7 +942,7 @@ def uniform(self, low=0, high=1):
 
 
 def xor(self, other):
-    """Compute the element-wise XOR bitwise operation.
+    """Compute element-wise XOR bitwise operation.
 
     Parameters
     ----------
@@ -963,7 +963,7 @@ def xor(self, other):
 
 
 def _apply_binary_op(inputs, op_type, outputs=(None,)):
-    """Apply the binary operator."""
+    """Apply binary operator."""
     inputs = constant_ops.remove_scalars(inputs)
     if context.executing_eagerly():
         return OpLib.execute(op_type, inputs, outputs=outputs)
@@ -971,7 +971,7 @@ def _apply_binary_op(inputs, op_type, outputs=(None,)):
 
 
 def _apply_init_op(self, op_type, **kwargs):
-    """Apply the initialization operator."""
+    """Apply initialization operator."""
     shape = self.shape
     if shape is None or None in shape:
         raise ValueError('Excepted the certain shape to initialize data.')
@@ -981,7 +981,7 @@ def _apply_init_op(self, op_type, **kwargs):
 
 
 def _apply_unary_op(inputs, op_type, outputs=(None,)):
-    """Apply the unary operator."""
+    """Apply unary operator."""
     if context.executing_eagerly():
         return OpLib.execute(op_type, inputs, outputs=outputs)
     return OpLib.add(op_type, inputs)

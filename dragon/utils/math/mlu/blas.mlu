@@ -1,0 +1,243 @@
+#include "dragon/utils/math/blas.h"
+#include "dragon/utils/math/types.h"
+#include "dragon/utils/math/utils.h"
+
+namespace dragon {
+
+namespace math {
+
+#define BLOCK_THREADS 40960
+
+namespace {
+
+template <typename T>
+__mlu_entry__ void _Scale(const int N, const T alpha, const T* x, T* y) {
+  __nram__ T Y[BLOCK_THREADS];
+  MLU_1D_KERNEL_LOOP(i, N, BLOCK_THREADS) {
+    const int N_ram = std::min(N - i, BLOCK_THREADS);
+    __memcpy(Y, x + i, N_ram * sizeof(T), GDRAM2NRAM);
+    __bang_mul_scalar(Y, Y, alpha, N_ram);
+    __memcpy(y + i, Y, N_ram * sizeof(T), NRAM2GDRAM);
+  }
+}
+
+template <typename T>
+__mlu_entry__ void _Axpy(const int N, const T alpha, const T* x, T* y) {
+  __nram__ T X[BLOCK_THREADS], Y[BLOCK_THREADS];
+  MLU_1D_KERNEL_LOOP(i, N, BLOCK_THREADS) {
+    const int N_ram = std::min(N - i, BLOCK_THREADS);
+    __memcpy(X, x + i, N_ram * sizeof(T), GDRAM2NRAM);
+    __memcpy(Y, y + i, N_ram * sizeof(T), GDRAM2NRAM);
+    __bang_mul_scalar(X, X, alpha, N_ram);
+    __bang_add(Y, Y, X, N_ram);
+    __memcpy(y + i, Y, N_ram * sizeof(T), NRAM2GDRAM);
+  }
+}
+
+template <typename T>
+__mlu_entry__ void _CopyMatrix(
+    const int M,
+    const int N,
+    const int ldx,
+    const int ldy,
+    const T* x,
+    T* y) {
+  __nram__ T Y[BLOCK_THREADS];
+  for (int i = taskId; i < M; i += taskDim) {
+    T* offset_y = y + i * ldy;
+    const T* offset_x = x + i * ldx;
+    for (int j = 0; j < N; j += BLOCK_THREADS) {
+      const int N_ram = std::min(N - j, BLOCK_THREADS);
+      __memcpy(Y, offset_x + j, N_ram * sizeof(T), GDRAM2NRAM);
+      __memcpy(offset_y + j, Y, N_ram * sizeof(T), NRAM2GDRAM);
+    }
+  }
+}
+
+} // namespace
+
+#define DEFINE_COPY_FUNC(T)                             \
+  template <>                                           \
+  DRAGON_API void Copy<T, MLUContext>(                  \
+      const int N, const T* x, T* y, MLUContext* ctx) { \
+    if (N <= 0 || x == y) return;                       \
+    CNRT_CHECK(cnrtMemcpyAsync(                         \
+        y,                                              \
+        const_cast<T*>(x),                              \
+        N * sizeof(T),                                  \
+        ctx->mlu_stream(),                              \
+        cnrtMemcpyDevToDev));                           \
+  }
+
+DEFINE_COPY_FUNC(bool);
+DEFINE_COPY_FUNC(int8_t);
+DEFINE_COPY_FUNC(uint8_t);
+DEFINE_COPY_FUNC(int);
+DEFINE_COPY_FUNC(int64_t);
+DEFINE_COPY_FUNC(float16);
+DEFINE_COPY_FUNC(float);
+DEFINE_COPY_FUNC(double);
+#undef DEFINE_COPY_FUNC
+
+#define DEFINE_COPY_FUNC(T)                   \
+  template <>                                 \
+  DRAGON_API void Copy<T, MLUContext>(        \
+      const int N,                            \
+      const int x_offset,                     \
+      const int y_offset,                     \
+      const T* x,                             \
+      T* y,                                   \
+      MLUContext* ctx) {                      \
+    Copy(N, x + x_offset, y + y_offset, ctx); \
+  }
+
+DEFINE_COPY_FUNC(bool);
+DEFINE_COPY_FUNC(int8_t);
+DEFINE_COPY_FUNC(uint8_t);
+DEFINE_COPY_FUNC(int);
+DEFINE_COPY_FUNC(int64_t);
+DEFINE_COPY_FUNC(float16);
+DEFINE_COPY_FUNC(float);
+DEFINE_COPY_FUNC(double);
+#undef DEFINE_COPY_FUNC
+
+#define DEFINE_COPY_MATRIX_FUNC(T)                                          \
+  template <>                                                               \
+  DRAGON_API void CopyMatrix<T, MLUContext>(                                \
+      const int M,                                                          \
+      const int N,                                                          \
+      const int ldx,                                                        \
+      const int ldy,                                                        \
+      const int x_offset,                                                   \
+      const int y_offset,                                                   \
+      const T* x,                                                           \
+      T* y,                                                                 \
+      MLUContext* ctx) {                                                    \
+    if (M <= 0 || N <= 0) return;                                           \
+    if (M == 1) {                                                           \
+      Copy(N, x_offset, y_offset, x, y, ctx);                               \
+      return;                                                               \
+    }                                                                       \
+    _CopyMatrix<<<MLU_BLOCKS(), CNRT_FUNC_TYPE_BLOCK, ctx->mlu_stream()>>>( \
+        M,                                                                  \
+        N,                                                                  \
+        ldx,                                                                \
+        ldy,                                                                \
+        reinterpret_cast<const math::ScalarType<T>::type*>(x + x_offset),   \
+        reinterpret_cast<math::ScalarType<T>::type*>(y + y_offset));        \
+  }
+
+DEFINE_COPY_MATRIX_FUNC(bool);
+DEFINE_COPY_MATRIX_FUNC(int8_t);
+DEFINE_COPY_MATRIX_FUNC(uint8_t);
+DEFINE_COPY_MATRIX_FUNC(int);
+DEFINE_COPY_MATRIX_FUNC(int64_t);
+DEFINE_COPY_MATRIX_FUNC(float16);
+DEFINE_COPY_MATRIX_FUNC(float);
+DEFINE_COPY_MATRIX_FUNC(double);
+#undef DEFINE_COPY_MATRIX_FUNC
+
+#define DEFINE_SCALE_FUNC(T)                                               \
+  template <>                                                              \
+  DRAGON_API void Scale<T, MLUContext>(                                    \
+      const int N, const float alpha, const T* x, T* y, MLUContext* ctx) { \
+    if (alpha != 1.f) {                                                    \
+      _Scale<<<                                                            \
+          MLU_BLOCKS(N, BLOCK_THREADS),                                    \
+          CNRT_FUNC_TYPE_BLOCK,                                            \
+          ctx->mlu_stream()>>>(                                            \
+          N,                                                               \
+          convert::To<math::ScalarType<T>::type>(alpha),                   \
+          reinterpret_cast<const math::ScalarType<T>::type*>(x),           \
+          reinterpret_cast<math::ScalarType<T>::type*>(y));                \
+      return;                                                              \
+    }                                                                      \
+    if (x != y) {                                                          \
+      CNRT_CHECK(cnrtMemcpyAsync(                                          \
+          y,                                                               \
+          const_cast<T*>(x),                                               \
+          N * sizeof(T),                                                   \
+          ctx->mlu_stream(),                                               \
+          cnrtMemcpyDevToDev));                                            \
+    }                                                                      \
+  }
+
+DEFINE_SCALE_FUNC(int8_t);
+DEFINE_SCALE_FUNC(int);
+DEFINE_SCALE_FUNC(float16);
+DEFINE_SCALE_FUNC(float);
+#undef DEFINE_SCALE_FUNC
+
+#define DEFINE_SCALE_FUNC(T)                                               \
+  template <>                                                              \
+  DRAGON_API void Scale<T, MLUContext>(                                    \
+      const int N, const float alpha, const T* x, T* y, MLUContext* ctx) { \
+    if (alpha != 1.f) {                                                    \
+      LOG(FATAL) << "Unsupported BANG type for <ScaleKernel>: "            \
+                 << dtypes::to_string(TypeMeta::Make<T>());                \
+    }                                                                      \
+    if (x != y) {                                                          \
+      CNRT_CHECK(cnrtMemcpyAsync(                                          \
+          y,                                                               \
+          const_cast<T*>(x),                                               \
+          N * sizeof(T),                                                   \
+          ctx->mlu_stream(),                                               \
+          cnrtMemcpyDevToDev));                                            \
+    }                                                                      \
+  }
+
+DEFINE_SCALE_FUNC(uint8_t);
+DEFINE_SCALE_FUNC(int64_t);
+DEFINE_SCALE_FUNC(double);
+#undef DEFINE_SCALE_FUNC
+
+#define DEFINE_AXPY_FUNC(T)                                                \
+  template <>                                                              \
+  DRAGON_API void Axpy<T, MLUContext>(                                     \
+      const int N, const float alpha, const T* x, T* y, MLUContext* ctx) { \
+    _Axpy<<<                                                               \
+        MLU_BLOCKS(N, BLOCK_THREADS),                                      \
+        CNRT_FUNC_TYPE_BLOCK,                                              \
+        ctx->mlu_stream()>>>(                                              \
+        N,                                                                 \
+        convert::To<math::ScalarType<T>::type>(alpha),                     \
+        reinterpret_cast<const math::ScalarType<T>::type*>(x),             \
+        reinterpret_cast<math::ScalarType<T>::type*>(y));                  \
+  }
+
+DEFINE_AXPY_FUNC(int8_t);
+DEFINE_AXPY_FUNC(int);
+DEFINE_AXPY_FUNC(float16);
+DEFINE_AXPY_FUNC(float);
+#undef DEFINE_AXPY_FUNC
+
+#define DEFINE_AXPY_FUNC(T)                                                \
+  template <>                                                              \
+  DRAGON_API void Axpy<T, MLUContext>(                                     \
+      const int N, const float alpha, const T* x, T* y, MLUContext* ctx) { \
+    LOG(FATAL) << "Unsupported BANG type for <AxpyKernel>: "               \
+               << dtypes::to_string(TypeMeta::Make<T>());                  \
+  }
+
+DEFINE_AXPY_FUNC(uint8_t);
+DEFINE_AXPY_FUNC(int64_t);
+DEFINE_AXPY_FUNC(double);
+#undef DEFINE_AXPY_FUNC
+
+#define DEFINE_DOT_FUNC(T)                                    \
+  template <>                                                 \
+  DRAGON_API T Dot<T, MLUContext>(                            \
+      const int N, const T* a, const T* b, MLUContext* ctx) { \
+    LOG(FATAL) << "Unsupported BANG type for <DoTKernel>: "   \
+               << dtypes::to_string(TypeMeta::Make<T>());     \
+    return T();                                               \
+  }
+
+DEFINE_DOT_FUNC(float16);
+DEFINE_DOT_FUNC(float);
+DEFINE_DOT_FUNC(double);
+#undef BLOCK_THREADS
+
+} // namespace math
+
+} // namespace dragon

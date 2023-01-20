@@ -40,19 +40,17 @@ void GemmOp<Context>::DoRunWithType() {
   // Copy matrix C to Y if provided.
   if (InputSize() > 2) {
     auto& C = Input(2);
-    if (math::utils::IsBinaryBroadcast(Y_dims, C.dims(), Y_dims)) {
-      math::Set(
-          C.ndim(),
-          C.dims().data(),
-          Y_dims.size(),
-          Y_dims.data(),
-          C.template data<T, Context>(),
-          Y->Reshape(Y_dims)->template mutable_data<T, Context>(),
-          ctx());
-    } else {
-      LOG(FATAL) << "Could not broadcast with shapes: "
-                 << Tensor::DimString(Y_dims) << " " << C.DimString();
-    }
+    CHECK(math::utils::IsBinaryBroadcast(Y_dims, C.dims(), Y_dims))
+        << "\nCould not broadcast together with shapes: "
+        << Tensor::DimString(Y_dims) << " " << C.DimString();
+    math::Set(
+        C.ndim(),
+        C.dims().data(),
+        Y_dims.size(),
+        Y_dims.data(),
+        C.template data<T, Context>(),
+        Y->Reshape(Y_dims)->template mutable_data<T, Context>(),
+        ctx());
   }
 
   math::Gemm(

@@ -66,56 +66,58 @@ kernel void NesterovSGD(
   y_copy[i] = CopyT(y[i]);
 }
 
-#define INSTANTIATE_KERNEL(name, T, CopyT) \
+#define INSTANTIATE_KERNEL(name, T) \
   template [[host_name(#name"_"#T)]] \
   kernel void name(device const T*, device const T*, \
-                   device T*, device T*, uint); \
+                   device T*, device T*, uint);
+INSTANTIATE_KERNEL(MomentumSGD, float);
+INSTANTIATE_KERNEL(NesterovSGD, float);
+#undef INSTANTIATE_KERNEL
+
+#define INSTANTIATE_KERNEL(name, T, CopyT) \
   template [[host_name(#name"WithCopy_"#T)]] \
   kernel void name(device const T*, device const T*, \
                    device T*, device T*, device CopyT*, uint);
-
-INSTANTIATE_KERNEL(MomentumSGD, half, float);
-INSTANTIATE_KERNEL(MomentumSGD, float, float);
-INSTANTIATE_KERNEL(NesterovSGD, half, float);
-INSTANTIATE_KERNEL(NesterovSGD, float, float);
+INSTANTIATE_KERNEL(MomentumSGD, float, half);
+INSTANTIATE_KERNEL(NesterovSGD, float, half);
 #undef INSTANTIATE_KERNEL
 
 )";
 
 } // namespace
 
-#define DEFINE_KERNEL_LAUNCHER(name, T, CopyT)                           \
-  template <>                                                            \
-  void name<T, CopyT, MPSContext>(                                       \
-      const int N,                                                       \
-      const float lr,                                                    \
-      const float momentum,                                              \
-      const float wd,                                                    \
-      const T* x,                                                        \
-      const T* g,                                                        \
-      T* m,                                                              \
-      T* y,                                                              \
-      CopyT* y_copy,                                                     \
-      MPSContext* ctx) {                                                 \
-    auto kernel = string(#name) + (y_copy ? "WithCopy" : "");            \
-    kernel = MPSKernel::TypedString<T>(kernel);                          \
-    auto args = vector<MPSConstant>({                                    \
-        MPSConstant(&lr, MTLDataTypeFloat, 0),                           \
-        MPSConstant(&momentum, MTLDataTypeFloat, 1),                     \
-        MPSConstant(&wd, MTLDataTypeFloat, 2),                           \
-    });                                                                  \
-    auto* command_buffer = ctx->mps_stream()->command_buffer();          \
-    auto* encoder = [command_buffer computeCommandEncoder];              \
-    auto* pso = MPSKernel(kernel, METAL_SHADERS).GetState(ctx, args);    \
-    [encoder setComputePipelineState:pso];                               \
-    [encoder setBuffer:id<MTLBuffer>(x) offset:0 atIndex:0];             \
-    [encoder setBuffer:id<MTLBuffer>(g) offset:0 atIndex:1];             \
-    [encoder setBuffer:id<MTLBuffer>(m) offset:0 atIndex:2];             \
-    [encoder setBuffer:id<MTLBuffer>(y) offset:0 atIndex:3];             \
-    if (y_copy) [encoder setBuffer:id<MTLBuffer>(y) offset:0 atIndex:4]; \
-    MPSDispatchThreads(N, encoder, pso);                                 \
-    [encoder endEncoding];                                               \
-    [encoder release];                                                   \
+#define DEFINE_KERNEL_LAUNCHER(name, T, CopyT)                                \
+  template <>                                                                 \
+  void name<T, CopyT, MPSContext>(                                            \
+      const int N,                                                            \
+      const float lr,                                                         \
+      const float momentum,                                                   \
+      const float wd,                                                         \
+      const T* x,                                                             \
+      const T* g,                                                             \
+      T* m,                                                                   \
+      T* y,                                                                   \
+      CopyT* y_copy,                                                          \
+      MPSContext* ctx) {                                                      \
+    auto kernel = string(#name) + (y_copy ? "WithCopy" : "");                 \
+    kernel = MPSKernel::TypedString<T>(kernel);                               \
+    auto args = vector<MPSConstant>({                                         \
+        MPSConstant(&lr, MTLDataTypeFloat, 0),                                \
+        MPSConstant(&momentum, MTLDataTypeFloat, 1),                          \
+        MPSConstant(&wd, MTLDataTypeFloat, 2),                                \
+    });                                                                       \
+    auto* command_buffer = ctx->mps_stream()->command_buffer();               \
+    auto* encoder = [command_buffer computeCommandEncoder];                   \
+    auto* pso = MPSKernel(kernel, METAL_SHADERS).GetState(ctx, args);         \
+    [encoder setComputePipelineState:pso];                                    \
+    [encoder setBuffer:id<MTLBuffer>(x) offset:0 atIndex:0];                  \
+    [encoder setBuffer:id<MTLBuffer>(g) offset:0 atIndex:1];                  \
+    [encoder setBuffer:id<MTLBuffer>(m) offset:0 atIndex:2];                  \
+    [encoder setBuffer:id<MTLBuffer>(y) offset:0 atIndex:3];                  \
+    if (y_copy) [encoder setBuffer:id<MTLBuffer>(y_copy) offset:0 atIndex:4]; \
+    MPSDispatchThreads(N, encoder, pso);                                      \
+    [encoder endEncoding];                                                    \
+    [encoder release];                                                        \
   }
 
 DEFINE_KERNEL_LAUNCHER(MomentumSGD, float, float16);

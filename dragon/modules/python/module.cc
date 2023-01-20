@@ -3,6 +3,7 @@
 
 #include "dragon/modules/python/cuda.h"
 #include "dragon/modules/python/gradient.h"
+#include "dragon/modules/python/mlu.h"
 #include "dragon/modules/python/mpi.h"
 #include "dragon/modules/python/mps.h"
 #include "dragon/modules/python/proto.h"
@@ -190,6 +191,7 @@ PYBIND11_MODULE(libdragon_python, m) {
 
   REGISTER_MODULE(cuda);
   REGISTER_MODULE(gradient);
+  REGISTER_MODULE(mlu);
   REGISTER_MODULE(mpi);
   REGISTER_MODULE(mps);
   REGISTER_MODULE(proto);

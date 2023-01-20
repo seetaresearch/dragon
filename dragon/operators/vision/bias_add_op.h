@@ -58,8 +58,8 @@ class CuDNNBiasAddGradientOp final : public Operator<Context> {
   USE_OPERATOR_FUNCTIONS;
 
   ~CuDNNBiasAddGradientOp() {
-    CuDNNDestroyTensorDesc(&bias_desc_);
-    CuDNNDestroyTensorDesc(&input_desc_);
+    CuDNNDestroyTensorDesc(bias_desc_);
+    CuDNNDestroyTensorDesc(input_desc_);
   }
 
   void RunOnDevice() override {

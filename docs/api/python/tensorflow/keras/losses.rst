@@ -7,43 +7,43 @@ losses
   -------
 
   `class BinaryCrossentropy <losses/BinaryCrossentropy.html>`_
-  : A criterion to compute the binary cross entropy with contiguous targets.
+  : Criterion to compute binary cross entropy.
 
   `class CategoricalCrossentropy <losses/CategoricalCrossentropy.html>`_
-  : A criterion to compute the categorical cross entropy with contiguous targets.
+  : Criterion to compute categorical cross entropy.
 
   `class Loss <losses/Loss.html>`_
   : The base class for loss criterion.
 
   `class MeanAbsoluteError <losses/MeanAbsoluteError.html>`_
-  : A criterion to compute the reduced element-wise absolute value difference.
+  : Criterion to compute element-wise absolute value difference.
 
   `class MeanSquaredError <losses/MeanSquaredError.html>`_
-  : A criterion to compute the reduced element-wise squared error.
+  : Criterion to compute element-wise squared error.
 
   `class SparseCategoricalCrossentropy <losses/SparseCategoricalCrossentropy.html>`_
-  : A criterion to compute the categorical cross entropy with sparse labels.
+  : Criterion to compute categorical cross entropy with sparse labels.
 
   Functions
   ---------
 
   `binary_crossentropy(...) <losses/binary_crossentropy.html>`_
-  : Compute the binary cross entropy with contiguous targets.
+  : Compute binary cross entropy.
 
   `categorical_crossentropy(...) <losses/categorical_crossentropy.html>`_
-  : Compute the categorical cross entropy with contiguous targets.
+  : Compute categorical cross entropy.
 
   `get(...) <losses/get.html>`_
   : Return the loss callable by identifier.
 
   `mean_absolute_error(...) <losses/mean_absolute_error.html>`_
-  : Compute the reduced element-wise absolute value difference.
+  : Compute element-wise absolute value difference.
 
   `mean_squared_error(...) <losses/mean_squared_error.html>`_
-  : Compute the reduced element-wise squared error.
+  : Compute element-wise squared error.
 
   `sparse_categorical_crossentropy(...) <losses/sparse_categorical_crossentropy.html>`_
-  : Compute the categorical cross entropy with sparse labels.
+  : Compute categorical cross entropy with sparse labels.
 
 .. toctree::
   :hidden:

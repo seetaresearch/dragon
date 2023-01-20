@@ -1,0 +1,143 @@
+#include "dragon/kernels/training/op_kernels.h"
+#include "dragon/utils/math_functions.h"
+
+namespace dragon {
+
+namespace kernels {
+
+namespace {
+
+#define BLOCK_THREADS 40960
+
+template <typename T, typename CopyT>
+__mlu_entry__ void _MomentumSGD(
+    const int N,
+    const T lr,
+    const T momentum,
+    const T wd,
+    const T* x,
+    const T* g,
+    T* m,
+    T* y,
+    CopyT* y_copy) {
+  __nram__ T Y[BLOCK_THREADS], scratch[BLOCK_THREADS];
+  MLU_1D_KERNEL_LOOP(i, N, BLOCK_THREADS) {
+    const int N_ram = std::min(N - i, BLOCK_THREADS);
+    __memcpy(Y, g + i, N_ram * sizeof(T), GDRAM2NRAM);
+    if (wd > T(0)) {
+      __memcpy(scratch, x + i, N_ram * sizeof(T), GDRAM2NRAM);
+      __bang_fusion(FUSION_FMA, Y, scratch, wd, Y, N_ram, N_ram);
+    }
+    // Update "m".
+    __memcpy(scratch, m + i, N_ram * sizeof(T), GDRAM2NRAM);
+    __bang_fusion(FUSION_FMA, Y, scratch, momentum, Y, N_ram, N_ram);
+    __memcpy(m + i, Y, N_ram * sizeof(T), NRAM2GDRAM);
+    // Update "y".
+    __memcpy(scratch, y + i, N_ram * sizeof(T), GDRAM2NRAM);
+    __bang_fusion(FUSION_FMA, Y, Y, -lr, scratch, N_ram, N_ram);
+    __memcpy(y + i, Y, N_ram * sizeof(T), NRAM2GDRAM);
+    // Update "y_copy".
+    if (y_copy != nullptr) {
+      math::utils::Convert((CopyT*)scratch, Y, N_ram);
+      __memcpy(y_copy + i, scratch, N_ram * sizeof(CopyT), NRAM2GDRAM);
+    }
+  }
+}
+
+template <typename T, typename CopyT>
+__mlu_entry__ void _NesterovSGD(
+    const int N,
+    const T lr,
+    const T momentum,
+    const T wd,
+    const T* x,
+    const T* g,
+    T* m,
+    T* y,
+    CopyT* y_copy) {
+  __nram__ T Y[BLOCK_THREADS], scratch[BLOCK_THREADS];
+  MLU_1D_KERNEL_LOOP(i, N, BLOCK_THREADS) {
+    const int N_ram = std::min(N - i, BLOCK_THREADS);
+    __memcpy(Y, g + i, N_ram * sizeof(T), GDRAM2NRAM);
+    if (wd > T(0)) {
+      __memcpy(scratch, x + i, N_ram * sizeof(T), GDRAM2NRAM);
+      __bang_fusion(FUSION_FMA, Y, scratch, wd, Y, N_ram, N_ram);
+    }
+    // Update "m".
+    __memcpy(scratch, m + i, N_ram * sizeof(T), GDRAM2NRAM);
+    __bang_fusion(FUSION_FMA, scratch, scratch, momentum, Y, N_ram, N_ram);
+    __memcpy(m + i, scratch, N_ram * sizeof(T), NRAM2GDRAM);
+    // Update "y".
+    __bang_fusion(FUSION_FMA, Y, scratch, momentum, Y, N_ram, N_ram);
+    __memcpy(scratch, y + i, N_ram * sizeof(T), GDRAM2NRAM);
+    __bang_fusion(FUSION_FMA, Y, Y, -lr, scratch, N_ram, N_ram);
+    __memcpy(y + i, Y, N_ram * sizeof(T), NRAM2GDRAM);
+    // Update "y_copy".
+    if (y_copy != nullptr) {
+      math::utils::Convert((CopyT*)scratch, Y, N_ram);
+      __memcpy(y_copy + i, scratch, N_ram * sizeof(CopyT), NRAM2GDRAM);
+    }
+  }
+}
+
+} // namespace
+
+#define DEFINE_KERNEL_LAUNCHER(name, T, CopyT)                     \
+  template <>                                                      \
+  void name<T, CopyT, MLUContext>(                                 \
+      const int N,                                                 \
+      const float lr,                                              \
+      const float momentum,                                        \
+      const float wd,                                              \
+      const T* x,                                                  \
+      const T* g,                                                  \
+      T* m,                                                        \
+      T* y,                                                        \
+      CopyT* y_copy,                                               \
+      MLUContext* ctx) {                                           \
+    _##name<<<                                                     \
+        MLU_BLOCKS(N, BLOCK_THREADS),                              \
+        CNRT_FUNC_TYPE_BLOCK,                                      \
+        ctx->mlu_stream()>>>(                                      \
+        N,                                                         \
+        T(lr),                                                     \
+        T(momentum),                                               \
+        T(wd),                                                     \
+        x,                                                         \
+        g,                                                         \
+        m,                                                         \
+        y,                                                         \
+        reinterpret_cast<math::ScalarType<CopyT>::type*>(y_copy)); \
+  }
+
+DEFINE_KERNEL_LAUNCHER(MomentumSGD, float, float16);
+DEFINE_KERNEL_LAUNCHER(MomentumSGD, float, float);
+DEFINE_KERNEL_LAUNCHER(NesterovSGD, float, float16);
+DEFINE_KERNEL_LAUNCHER(NesterovSGD, float, float);
+#undef DEFINE_KERNEL_LAUNCHER
+
+#define DEFINE_KERNEL_LAUNCHER(name, T, CopyT)                           \
+  template <>                                                            \
+  void name<T, CopyT, MLUContext>(                                       \
+      const int N,                                                       \
+      const float lr,                                                    \
+      const float momentum,                                              \
+      const float wd,                                                    \
+      const T* x,                                                        \
+      const T* g,                                                        \
+      T* m,                                                              \
+      T* y,                                                              \
+      CopyT* y_copy,                                                     \
+      MLUContext* ctx) {                                                 \
+    LOG(FATAL) << "Unsupported BANG type for <" << #name                 \
+               << "Kernel>: " << dtypes::to_string(TypeMeta::Make<T>()); \
+  }
+
+DEFINE_KERNEL_LAUNCHER(MomentumSGD, double, double);
+DEFINE_KERNEL_LAUNCHER(NesterovSGD, double, double);
+#undef DEFINE_KERNEL_LAUNCHER
+#undef BLOCK_THREADS
+
+} // namespace kernels
+
+} // namespace dragon

@@ -27,8 +27,9 @@ namespace dragon {
 
 #ifdef USE_CUDA
 
-/*! \brief The number of cuda threads in a warp */
-constexpr int CUDA_WARP_SIZE = 32;
+/*
+ * Constants.
+ */
 
 /*! \brief The number of cuda threads in a block */
 constexpr int CUDA_THREADS = 256;
@@ -38,6 +39,10 @@ constexpr int CUDA_MAX_DEVICES = 16;
 
 /*! \brief The maximum number of tensor dimsensions */
 constexpr int CUDA_TENSOR_MAX_DIMS = 8;
+
+/*
+ * Defines.
+ */
 
 #define CUDA_VERSION_MIN(major, minor) \
   (CUDA_VERSION >= (major * 1000 + minor * 10))
@@ -78,6 +83,10 @@ constexpr int CUDA_TENSOR_MAX_DIMS = 8;
 #define CUDA_2D_KERNEL_LOOP2(j, m) \
   for (size_t j = threadIdx.x; j < m; j += blockDim.x)
 
+/*
+ * CUDA Utilities.
+ */
+
 inline int CUDA_BLOCKS(const int N) {
   int device, sm_count, threads_per_sm;
   CUDA_CHECK(cudaGetDevice(&device));
@@ -89,10 +98,6 @@ inline int CUDA_BLOCKS(const int N) {
   const auto max_blocks = sm_count * threads_per_sm / CUDA_THREADS * 32;
   return std::max(1, std::min(num_blocks, max_blocks));
 }
-
-#if CUDA_VERSION_MAX(9, 0)
-#define __hdiv hdiv
-#endif
 
 inline int CUDAGetDeviceCount() {
   static int count = -1;
@@ -160,6 +165,10 @@ class CUDADeviceGuard {
  private:
   int prev_id_;
 };
+
+/*
+ * CUDA Marcos.
+ */
 
 #define DISPATCH_FUNC_BY_VALUE_WITH_TYPE_1(Func, T, val, ...) \
   do {                                                        \

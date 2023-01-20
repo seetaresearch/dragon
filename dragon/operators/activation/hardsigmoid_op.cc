@@ -39,6 +39,9 @@ DEPLOY_CUDA_OPERATOR(HardSigmoidGradient);
 DEPLOY_MPS_OPERATOR(HardSigmoid, HardSigmoid);
 DEPLOY_MPS_OPERATOR(HardSigmoidGradient, HardSigmoidGradient);
 #endif
+#ifdef USE_MLU
+DEPLOY_MLU_OPERATOR(HardSigmoidGradient);
+#endif
 
 OPERATOR_SCHEMA(HardSigmoid)
     /* X */

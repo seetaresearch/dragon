@@ -30,6 +30,9 @@ DEPLOY_CUDA_OPERATOR(RMSprop);
 #ifdef USE_MPS
 DEPLOY_MPS_OPERATOR(RMSprop, RMSprop);
 #endif
+#ifdef USE_MLU
+DEPLOY_MLU_OPERATOR(RMSprop);
+#endif
 
 OPERATOR_SCHEMA(RMSprop).NumInputs(1, INT_MAX).NumOutputs(1, INT_MAX);
 

@@ -1,0 +1,111 @@
+#include "dragon/kernels/loss/op_kernels.h"
+#include "dragon/utils/math_functions.h"
+
+namespace dragon {
+
+namespace kernels {
+
+#define BLOCK_THREADS 40960
+
+namespace {
+
+template <typename T>
+__mlu_entry__ void _SmoothL1Loss(
+    const int N,
+    const T beta,
+    const T* input,
+    const T* target,
+    T* loss) {
+  __nram__ T X[BLOCK_THREADS], Y[BLOCK_THREADS];
+  __nram__ T scratch[BLOCK_THREADS];
+  MLU_1D_KERNEL_LOOP(i, N, BLOCK_THREADS) {
+    const int N_ram = std::min(N - i, BLOCK_THREADS);
+    __memcpy(X, input + i, N_ram * sizeof(T), GDRAM2NRAM);
+    __memcpy(Y, target + i, N_ram * sizeof(T), GDRAM2NRAM);
+    __bang_sub(X, X, Y, N_ram);
+    __bang_abs(Y, X, N_ram);
+    // BranchL2
+    __bang_square(X, X, N_ram);
+    __bang_mul_scalar(X, X, T(0.5) / beta, N_ram);
+    __bang_lt_scalar(scratch, Y, beta, N_ram);
+    __bang_mul(X, X, scratch, N_ram);
+    // BranchL1
+    __bang_ge_scalar(scratch, Y, beta, N_ram);
+    __bang_sub_scalar(Y, Y, T(0.5) * beta, N_ram);
+    __bang_mul(Y, Y, scratch, N_ram);
+    __bang_add(Y, X, Y, N_ram);
+    __memcpy(loss + i, Y, N_ram * sizeof(T), NRAM2GDRAM);
+  }
+}
+
+template <typename T>
+__mlu_entry__ void _SmoothL1LossGrad(
+    const int N,
+    const T beta,
+    const T* input,
+    const T* target,
+    T* dx) {
+  __nram__ T X[BLOCK_THREADS], Y[BLOCK_THREADS];
+  __nram__ T scratch1[BLOCK_THREADS], scratch2[BLOCK_THREADS];
+  MLU_1D_KERNEL_LOOP(i, N, BLOCK_THREADS) {
+    const int N_ram = std::min(N - i, BLOCK_THREADS);
+    __memcpy(X, input + i, N_ram * sizeof(T), GDRAM2NRAM);
+    __memcpy(Y, target + i, N_ram * sizeof(T), GDRAM2NRAM);
+    __bang_sub(X, X, Y, N_ram);
+    __bang_abs(Y, X, N_ram);
+    // BranchL1
+    __bang_ge_scalar(scratch1, Y, beta, N_ram);
+    __bang_active_sign(scratch2, X, N_ram); // Miss zeros.
+    __bang_mul(scratch2, scratch2, scratch1, N_ram);
+    __bang_ne_scalar(scratch1, X, T(0), N_ram);
+    __bang_mul(scratch2, scratch2, scratch1, N_ram); // Restore zeros.
+    // BranchL2
+    __bang_mul_scalar(X, X, T(1) / beta, N_ram);
+    __bang_lt_scalar(scratch1, Y, beta, N_ram);
+    __bang_mul(X, X, scratch1, N_ram);
+    __bang_add(X, X, scratch2, N_ram);
+    __memcpy(dx + i, X, N_ram * sizeof(T), NRAM2GDRAM);
+  }
+}
+
+} // namespace
+
+#define DEFINE_KERNEL_LAUNCHER(name, T)                        \
+  template <>                                                  \
+  void name<T, MLUContext>(                                    \
+      const int N,                                             \
+      const float beta,                                        \
+      const T* input,                                          \
+      const T* target,                                         \
+      T* loss,                                                 \
+      MLUContext* ctx) {                                       \
+    _##name<<<                                                 \
+        MLU_BLOCKS(N, BLOCK_THREADS),                          \
+        CNRT_FUNC_TYPE_BLOCK,                                  \
+        ctx->mlu_stream()>>>(N, T(beta), input, target, loss); \
+  }
+
+DEFINE_KERNEL_LAUNCHER(SmoothL1Loss, float);
+DEFINE_KERNEL_LAUNCHER(SmoothL1LossGrad, float);
+#undef DEFINE_KERNEL_LAUNCHER
+
+#define DEFINE_KERNEL_LAUNCHER(name, T)                                  \
+  template <>                                                            \
+  void name<T, MLUContext>(                                              \
+      const int N,                                                       \
+      const float beta,                                                  \
+      const T* input,                                                    \
+      const T* target,                                                   \
+      T* loss,                                                           \
+      MLUContext* ctx) {                                                 \
+    LOG(FATAL) << "Unsupported BANG type for <" << #name                 \
+               << "Kernel>: " << dtypes::to_string(TypeMeta::Make<T>()); \
+  }
+
+DEFINE_KERNEL_LAUNCHER(SmoothL1Loss, double);
+DEFINE_KERNEL_LAUNCHER(SmoothL1LossGrad, double);
+#undef DEFINE_KERNEL_LAUNCHER
+
+} // namespace kernels
+
+} // namespace dragon

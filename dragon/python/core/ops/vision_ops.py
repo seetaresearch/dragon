@@ -68,7 +68,7 @@ def conv(
     data_format='NCHW',
     **kwargs
 ):
-    r"""Apply the n-dimension convolution.
+    r"""Apply n-dimension convolution.
 
     * If :attr:`data_format` is ``'NCHW'``, excepts input shape
       :math:`(N, C_{\text{in}}, D1, D2, ...)`, weight shape
@@ -166,7 +166,7 @@ def conv1d(
     data_format='NCHW',
     **kwargs
 ):
-    r"""Apply the 1d convolution.
+    r"""Apply 1d convolution.
 
     * If :attr:`data_format` is ``'NCHW'``, excepts input shape
       :math:`(N, C_{\text{in}}, H)`, weight shape
@@ -240,7 +240,7 @@ def conv2d(
     data_format='NCHW',
     **kwargs
 ):
-    r"""Apply the 2d convolution.
+    r"""Apply 2d convolution.
 
     * If :attr:`data_format` is ``'NCHW'``, excepts input shape
       :math:`(N, C_{\text{in}}, H, W)`, weight shape
@@ -314,7 +314,7 @@ def conv3d(
     data_format='NCHW',
     **kwargs
 ):
-    r"""Apply the 3d convolution.
+    r"""Apply 3d convolution.
 
     * If :attr:`data_format` is ``'NCHW'``, excepts input shape
       :math:`(N, C_{\text{in}}, D, H, W)`, weight shape
@@ -390,7 +390,7 @@ def conv_transpose(
     data_format='NCHW',
     **kwargs
 ):
-    r"""Apply the n-dimension deconvolution.
+    r"""Apply n-dimension deconvolution.
 
     * If :attr:`data_format` is ``'NCHW'``, excepts input shape
       :math:`(N, C_{\text{in}}, D1, D2, ...)`, weight shape
@@ -496,7 +496,7 @@ def conv1d_transpose(
     data_format='NCHW',
     **kwargs
 ):
-    r"""Apply the 1d deconvolution.
+    r"""Apply 1d deconvolution.
 
     * If :attr:`data_format` is ``'NCHW'``, excepts input shape
       :math:`(N, C_{\text{in}}, H)`, weight shape
@@ -582,7 +582,7 @@ def conv2d_transpose(
     data_format='NCHW',
     **kwargs
 ):
-    r"""Apply the 2d deconvolution.
+    r"""Apply 2d deconvolution.
 
     * If :attr:`data_format` is ``'NCHW'``, excepts input shape
       :math:`(N, C_{\text{in}}, H, W)`, weight shape
@@ -668,7 +668,7 @@ def conv3d_transpose(
     data_format='NCHW',
     **kwargs
 ):
-    r"""Apply the 3d deconvolution.
+    r"""Apply 3d deconvolution.
 
     * If :attr:`data_format` is ``'NCHW'``, excepts input shape
       :math:`(N, C_{\text{in}}, D, H, W)`, weight shape
@@ -751,7 +751,7 @@ def depthwise_conv2d(
     data_format='NCHW',
     **kwargs
 ):
-    r"""Apply the 2d depthwise convolution.
+    r"""Apply 2d depthwise convolution.
     `[Chollet, 2016] <https://arxiv.org/abs/1610.02357>`_.
 
     * If :attr:`data_format` is ``'NCHW'``, excepts input shape
@@ -980,11 +980,11 @@ def pool(
     data_format='NCHW',
     **kwargs
 ):
-    r"""Apply the n-dimension pooling.
+    r"""Apply n-dimension pooling.
 
     * Set :attr:`mode` for the specific pooling type, default is ``maxpool``.
 
-    * Use :attr:`global_pool` to apply the global pooling further.
+    * Use :attr:`global_pool` to apply global pooling further.
 
     * If :attr:`data_format` is ``'NCHW'``, excepts input shape
       :math:`(N, C, D1, D2, ...)`, and output shape is
@@ -1022,7 +1022,7 @@ def pool(
     mode : str, optional, default='max'
         ``'max'`` or ``'avg'``.
     global_pool : bool, optional, default=False
-        Apply the global pooling or not.
+        Apply global pooling or not.
     ceil_mode : bool, optional, default=False
         Ceil or floor the boundary.
     data_format : str, optional, default='NCHW'
@@ -1080,11 +1080,11 @@ def pool1d(
     data_format='NCHW',
     **kwargs
 ):
-    r"""Apply the 1d pooling.
+    r"""Apply 1d pooling.
 
     * Set :attr:`mode` for the specific pooling type, default is ``maxpool``.
 
-    * Use :attr:`global_pool` to apply the global pooling further.
+    * Use :attr:`global_pool` to apply global pooling further.
 
     * If :attr:`data_format` is ``'NCHW'``, excepts input shape
       :math:`(N, C, H)`, and output shape is :math:`(N, C, H_{\text{out}})`.
@@ -1118,7 +1118,7 @@ def pool1d(
     mode : str, optional, default='max'
         ``'max'`` or ``'avg'``.
     global_pool : bool, optional, default=False
-        Apply the global pooling or not.
+        Apply global pooling or not.
     ceil_mode : bool, optional, default=False
         Ceil or floor the boundary.
     data_format : str, optional, default='NCHW'
@@ -1156,11 +1156,11 @@ def pool2d(
     data_format='NCHW',
     **kwargs
 ):
-    r"""Apply the 2d pooling.
+    r"""Apply 2d pooling.
 
     * Set :attr:`mode` for the specific pooling type, default is ``maxpool``.
 
-    * Use :attr:`global_pool` to apply the global pooling further.
+    * Use :attr:`global_pool` to apply global pooling further.
 
     * If :attr:`data_format` is ``'NCHW'``, excepts input shape
       :math:`(N, C, H, W)`, and output shape is
@@ -1196,7 +1196,7 @@ def pool2d(
     mode : str, optional, default='max'
         ``'max'`` or ``'avg'``.
     global_pool : bool, optional, default=False
-        Apply the global pooling or not.
+        Apply global pooling or not.
     ceil_mode : bool, optional, default=False
         Ceil or floor the boundary.
     data_format : str, optional, default='NCHW'
@@ -1234,11 +1234,11 @@ def pool3d(
     data_format='NCHW',
     **kwargs
 ):
-    r"""Apply the 3d pooling.
+    r"""Apply 3d pooling.
 
     * Set :attr:`mode` for the specific pooling type, default is ``maxpool``.
 
-    * Use :attr:`global_pool` to apply the global pooling further.
+    * Use :attr:`global_pool` to apply global pooling further.
 
     * If :attr:`data_format` is ``'NCHW'``, excepts input shape
       :math:`(N, C, D, H, W)`, and output shape is
@@ -1274,7 +1274,7 @@ def pool3d(
     mode : str, optional, default='max'
         ``'max'`` or ``'avg'``.
     global_pool : bool, optional, default=False
-        Apply the global pooling or not.
+        Apply global pooling or not.
     ceil_mode : bool, optional, default=False
         Ceil or floor the boundary.
     data_format : str, optional, default='NCHW'
@@ -1390,7 +1390,7 @@ def roi_align(
     aligned=False,
     **kwargs
 ):
-    r"""Apply the average roi align.
+    r"""Apply average roi align.
     `[He et.al, 2017] <https://arxiv.org/abs/1703.06870>`_.
 
     The input ``rois`` should be packed with the shape :math:`(N, 5)`,
@@ -1453,7 +1453,7 @@ def roi_pool(
     spatial_scale=1.0,
     **kwargs
 ):
-    r"""Apply the max roi pooling.
+    r"""Apply max roi pooling.
     `[Girshick, 2015] <https://arxiv.org/abs/1504.08083>`_.
 
     The input ``rois`` should be packed with the shape :math:`(N, 5)`,

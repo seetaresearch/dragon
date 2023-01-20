@@ -45,7 +45,7 @@ void MPSPadOp<Context>::DoRunWithType() {
         } else if (mode_ == "EDGE") {
           mode = MPSGraphPaddingModeClampToEdge;
         } else {
-          LOG(FATAL) << "Unknown PadMode: " << mode_ << ".";
+          LOG(FATAL) << "Unsupported Pad mode: " << mode_;
         }
         placeholders.emplace_back(MPSCreateTensor<T>(graph_, X.dims()));
         placeholders.emplace_back([graph_ padTensor:placeholders[0]
@@ -103,7 +103,7 @@ void MPSPadGradientOp<Context>::DoRunWithType() {
         } else if (mode_ == "EDGE") {
           mode = MPSGraphPaddingModeClampToEdge;
         } else {
-          LOG(FATAL) << "Unknown PadMode: " << mode_ << ".";
+          LOG(FATAL) << "Unsupported Pad mode: " << mode_;
         }
         placeholders.emplace_back(MPSCreateTensor<T>(graph_, X.dims()));
         placeholders.emplace_back(MPSCreateTensor<T>(graph_, dY.dims()));
@@ -134,5 +134,7 @@ void MPSPadGradientOp<Context>::DoRunWithType() {
 
 DEPLOY_MPS_OPERATOR(Pad, MPSPad);
 DEPLOY_MPS_OPERATOR(PadGradient, MPSPadGradient);
+
+DEFINE_OP_REPEATED_ARG(int64_t, MPSPadOp, pads);
 
 } // namespace dragon
