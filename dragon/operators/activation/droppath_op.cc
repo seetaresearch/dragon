@@ -14,11 +14,11 @@ void DropPathOp<Context>::DoRunWithType() {
   } else if (phase() == "TRAIN") {
     const auto N = X.dim(0);
     const auto drop_ratio = ratio();
-    auto* X_mask = Output("X_mask")->Reshape({X.dim(0)});
+    auto* X_mask = Output("X_mask")->Reshape({N});
     auto* scratch = ctx()->workspace()->template data<float, Context>(N);
     math::RandomUniform(N, 0.f, 1.f, scratch, ctx());
     kernels::DropPath(
-        X.dim(0),
+        N,
         X.stride(0),
         drop_ratio,
         1.f / (1.f - drop_ratio),

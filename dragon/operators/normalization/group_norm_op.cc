@@ -22,7 +22,7 @@ void GroupNormOp<Context>::DoRunWithType() {
   auto* mu = X_mu->template mutable_data<ParamT, Context>();
   auto* rsig = X_rsig->template mutable_data<ParamT, Context>();
 
-  // Compute the moments.
+  // Compute moments.
   if (data_format() == "NCHW") {
     vec64_t dims = {N_ * G_, D_ * S_};
     vec64_t axes = {1};

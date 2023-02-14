@@ -47,7 +47,7 @@ class UpdateOpBase : public Operator<Context> {
   Tensor* GetState(const string& key);
 
  protected:
-  int weight_index_;
+  int src_index_;
   float grad_scale_, weight_decay_;
   float clip_norm_, clip_value_;
 };

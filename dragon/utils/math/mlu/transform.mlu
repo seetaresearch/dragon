@@ -1,0 +1,148 @@
+#include "dragon/utils/math/reduce.h"
+#include "dragon/utils/math/transform.h"
+#include "dragon/utils/math/types.h"
+#include "dragon/utils/math/utils.h"
+
+namespace dragon {
+
+namespace math {
+
+#define BLOCK_THREADS 40960
+
+namespace {
+
+template <typename T>
+__mlu_entry__ void
+_AffineChannel(const int N, const T* x, const T* scale, const T* bias, T* y) {
+  __nram__ T Y[BLOCK_THREADS], W[BLOCK_THREADS], B[BLOCK_THREADS];
+  MLU_1D_KERNEL_LOOP(i, N, BLOCK_THREADS) {
+    const int N_ram = std::min(N - i, BLOCK_THREADS);
+    __memcpy(Y, x + i, N_ram * sizeof(T), GDRAM2NRAM);
+    __memcpy(W, scale + i, N_ram * sizeof(T), GDRAM2NRAM);
+    if (bias != nullptr) {
+      __memcpy(B, bias + i, N_ram * sizeof(T), GDRAM2NRAM);
+      __bang_fusion(FUSION_FMA, Y, Y, W, B, N_ram, N_ram);
+    } else {
+      __bang_mul(Y, Y, W, N_ram);
+    }
+    __memcpy(y + i, Y, N_ram * sizeof(T), NRAM2GDRAM);
+  }
+}
+
+template <typename T>
+__mlu_entry__ void _AffineChannel(
+    const int N,
+    const int C,
+    const T* x,
+    const T* scale,
+    const T* bias,
+    T* y) {
+  __nram__ T Y[BLOCK_THREADS], W[BLOCK_THREADS], B[BLOCK_THREADS];
+  __mlu_shared__ T W_shared[BLOCK_THREADS], B_shared[BLOCK_THREADS];
+  for (int j = 0; j < C; j += BLOCK_THREADS) {
+    T* offset_y = y + j;
+    const T* offset_x = x + j;
+    const int C_ram = std::min(C - j, BLOCK_THREADS);
+    if (bias != nullptr) {
+      __memcpy(W_shared, scale + j, C_ram * sizeof(T), GDRAM2SRAM);
+      __memcpy(B_shared, bias + j, C_ram * sizeof(T), GDRAM2SRAM);
+      __sync_cluster();
+      __memcpy(W, W_shared, C_ram * sizeof(T), SRAM2NRAM);
+      __memcpy(B, B_shared, C_ram * sizeof(T), SRAM2NRAM);
+      for (int i = taskId; i < N; i += taskDim) {
+        __memcpy(Y, offset_x + i * C, C_ram * sizeof(T), GDRAM2NRAM);
+        __bang_fusion(FUSION_FMA, Y, Y, W, B, C_ram, C_ram);
+        __memcpy(offset_y + i * C, Y, C_ram * sizeof(T), NRAM2GDRAM);
+      }
+    } else {
+      __memcpy(W_shared, scale + j, C_ram * sizeof(T), GDRAM2SRAM);
+      __sync_cluster();
+      __memcpy(W, W_shared, C_ram * sizeof(T), SRAM2NRAM);
+      for (int i = taskId; i < N; i += taskDim) {
+        __memcpy(Y, offset_x + i * C, C_ram * sizeof(T), GDRAM2NRAM);
+        __bang_mul(Y, Y, W, C_ram);
+        __memcpy(offset_y + i * C, Y, C_ram * sizeof(T), NRAM2GDRAM);
+      }
+    }
+  }
+}
+
+template <typename T>
+void DispatchAffine(
+    const int num_dims,
+    const int64_t* dims,
+    const int num_axes,
+    const int64_t* axes,
+    const T* x,
+    const T* scale,
+    const T* bias,
+    T* y,
+    MLUContext* ctx) {
+  if (num_dims == 1 && num_axes == 1 && axes[0] == 0) {
+    _AffineChannel<<<
+        MLU_BLOCKS(dims[0], BLOCK_THREADS),
+        CNRT_FUNC_TYPE_BLOCK,
+        ctx->mlu_stream()>>>(dims[0], x, scale, bias, y); // [NxC]
+  } else if (num_dims == 2 && num_axes == 1 && axes[0] == 1) {
+    _AffineChannel<<<MLU_BLOCKS(), CNRT_FUNC_TYPE_UNION1, ctx->mlu_stream()>>>(
+        dims[0], dims[1], x, scale, bias, y); // [N, C]
+  } else if (num_dims == 2 && num_axes == 1 && axes[0] == 0) {
+    NOT_IMPLEMENTED; // [NxC, S]
+  } else if (num_dims == 3 && num_axes == 1 && axes[0] == 1) {
+    NOT_IMPLEMENTED; // [N, C, S]
+  } else {
+    LOG(FATAL) << "Unsupported affine dimensions.";
+  }
+}
+
+} // namespace
+
+#define DEFINE_AFFINE_FUNC(T)                                      \
+  template <>                                                      \
+  void Affine<T, MLUContext>(                                      \
+      const int num_dims,                                          \
+      const int64_t* dims,                                         \
+      const int num_axes,                                          \
+      const int64_t* axes,                                         \
+      const T* x,                                                  \
+      const T* scale,                                              \
+      const T* bias,                                               \
+      T* y,                                                        \
+      MLUContext* ctx) {                                           \
+    vec64_t new_dims, new_axes;                                    \
+    math::utils::CollapseReduceAxes(                               \
+        num_dims, dims, num_axes, axes, new_dims, new_axes);       \
+    DispatchAffine(                                                \
+        new_dims.size(),                                           \
+        new_dims.data(),                                           \
+        new_axes.size(),                                           \
+        new_axes.data(),                                           \
+        reinterpret_cast<const math::ScalarType<T>::type*>(x),     \
+        reinterpret_cast<const math::ScalarType<T>::type*>(scale), \
+        reinterpret_cast<const math::ScalarType<T>::type*>(bias),  \
+        reinterpret_cast<math::ScalarType<T>::type*>(y),           \
+        ctx);                                                      \
+  }
+
+template <>
+void Affine<double, MLUContext>(
+    const int num_dims,
+    const int64_t* dims,
+    const int num_axes,
+    const int64_t* axes,
+    const double* x,
+    const double* scale,
+    const double* bias,
+    double* y,
+    MLUContext* ctx) {
+  LOG(FATAL) << "Unsupported BANG type for <AffineKernel>: double";
+}
+
+DEFINE_AFFINE_FUNC(float16);
+DEFINE_AFFINE_FUNC(float);
+#undef DEFINE_AFFINE_FUNC
+#undef BLOCK_THREADS
+
+} // namespace math
+
+} // namespace dragon

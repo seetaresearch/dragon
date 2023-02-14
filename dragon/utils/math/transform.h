@@ -15,6 +15,7 @@
 
 #include "dragon/core/context.h"
 #include "dragon/core/context_cuda.h"
+#include "dragon/core/context_mlu.h"
 #include "dragon/core/context_mps.h"
 
 namespace dragon {

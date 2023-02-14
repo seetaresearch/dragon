@@ -103,7 +103,7 @@ class CNNLTanhOp : public Operator<Context> {
     CNNL_CHECK(cnnlSetActivationDescriptor_v6(
         act_desc_,
         CNNL_ACTIVATION_TANH,
-        CNNL_ACTIVATION_FAST,
+        CNNL_ACTIVATION_HIGH_PRECISION,
         CNNL_PROPAGATE_NAN,
         0.f,
         0,

@@ -46,21 +46,29 @@ void CNNLSoftmaxCrossEntropyLossOp<Context>::DoRunWithType() {
     kernels::CrossEntropy(NxCxS, input, target, loss, ctx());
   } else {
     CHECK_EQ(Y.count(), NxS) << "\nNumel of X and Y must be matched.";
+    auto* target = Y.template data<int, Context>();
+    auto* mutable_target = const_cast<int*>(target);
+    loss = reinterpret_cast<T*>(ctx()->workspace()->template data<Context>(
+        NxS * (sizeof(T) + sizeof(int)), "BufferKernel"));
+    if (ignore_index_ != INT_MAX) {
+      CHECK_EQ(S, 1) << "\nSpatial loss does not support <ignore_index>.";
+      mutable_target = reinterpret_cast<int*>(loss + NxS);
+      kernels::Clip(NxS, 0.f, float(C - 1), target, mutable_target, ctx());
+    }
     CNNLSetTensorDesc<T>(input_desc_, {N, C, S});
     CNNLSetTensorDesc<int>(target_desc_, {N, 1, S});
     CNNLSetTensorDesc<T>(output_desc_, {N, 1, S});
-    loss = ctx()->workspace()->template data<T, Context>(NxS, "BufferKernel");
     CNNL_CHECK(cnnlGather(
         ctx()->cnnl_handle(),
         1,
         input_desc_,
         input,
         target_desc_,
-        Y.template data<int, Context>(),
+        mutable_target,
         output_desc_,
         loss));
     kernels::CrossEntropy(NxS, loss, (T*)nullptr, loss, ctx());
-    if (ignore_index_ >= 0) NOT_IMPLEMENTED;
+    kernels::MaskLoss(NxS, ignore_index_, target, loss, ctx());
   }
 
   if (reduction_ == "NONE") {
@@ -111,13 +119,21 @@ void CNNLSoftmaxCrossEntropyLossGradientOp<Context>::DoRunWithType() {
 
   auto* dl = dL.template data<T, Context>();
   auto* dx = dX->template mutable_data<T, Context>();
-  auto* scratch = Input("X_norm").template mutable_data<T, Context>();
+  auto* p = Input("X_norm").template data<T, Context>();
+  auto* scratch = (T*)ctx()->workspace()->template data<Context>(
+      sizeof(T) + NxS * sizeof(int));
 
-  math::Copy(NxCxS, scratch, dx, ctx());
+  math::Copy(NxCxS, p, dx, ctx());
   if (Y.meta() == TypeMeta::Make<T>()) {
     auto* target = Y.template data<T, Context>();
     math::Axpy(NxCxS, -1.f, target, dx, ctx());
   } else {
+    auto* target = Y.template data<int, Context>();
+    auto* mutable_target = const_cast<int*>(target);
+    if (this->ignore_index_ != INT_MAX) {
+      mutable_target = reinterpret_cast<int*>(scratch + 1);
+      kernels::Clip(NxS, 0.f, float(C - 1), target, mutable_target, ctx());
+    }
     CNNLSetTensorDesc<T>(this->input_desc_, {1, 1, 1});
     CNNLSetTensorDesc<int>(this->target_desc_, {N, 1, S});
     CNNLSetTensorDesc<T>(this->output_desc_, {N, C, S});
@@ -128,12 +144,13 @@ void CNNLSoftmaxCrossEntropyLossGradientOp<Context>::DoRunWithType() {
         this->output_desc_,
         dx,
         this->target_desc_,
-        Y.template data<int, Context>(),
+        mutable_target,
         this->input_desc_,
         scratch,
         this->output_desc_,
         dx,
         CNNL_SCATTER_ADD));
+    kernels::MaskLossGrad(N, C, this->ignore_index_, target, dx, ctx());
   }
 
   if (this->reduction_ == "NONE") {

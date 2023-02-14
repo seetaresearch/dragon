@@ -134,6 +134,9 @@ DEPLOY_CUDA_OPERATOR(AffineGradient);
 DEPLOY_MPS_OPERATOR(Affine, Affine);
 DEPLOY_MPS_OPERATOR(AffineGradient, AffineGradient);
 #endif
+#ifdef USE_MLU
+DEPLOY_MLU_OPERATOR(Affine);
+#endif
 
 OPERATOR_SCHEMA(Affine)
     /* X, W, B */

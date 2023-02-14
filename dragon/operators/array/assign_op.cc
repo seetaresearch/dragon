@@ -41,27 +41,23 @@ void AssignOp<Context>::DoRunWithType() {
   auto* data = X.template data<T, Context>();
   if (X.dims() != X_dims) {
     vec64_t dims1, dims2;
-    if (math::utils::IsBinaryBroadcast(X.dims(), X_dims, dims1)) {
-      CHECK(X_dims == dims1)
-          << "\nCould not assign with shapes " << X.DimString() << " "
-          << Tensor::DimString(X_dims);
-      math::utils::ComputeBroadcastDims(X.dims(), X_dims, dims1, dims2);
-      if (dims1 != dims2) {
-        auto* scratch =
-            ctx()->workspace()->template data<T, Context>(X_ref.count());
-        math::Set(
-            X.ndim(),
-            X.dims().data(),
-            X_ref.ndim(),
-            X_ref.dims().data(),
-            data,
-            scratch,
-            ctx());
-        data = scratch;
-      }
-    } else {
-      LOG(FATAL) << "Could not broadcast with shapes " << X.DimString() << " "
-                 << Tensor::DimString(X_dims);
+    CHECK(math::utils::IsBinaryBroadcast(X.dims(), X_dims, dims1))
+        << "\nCould not broadcast with shapes " << X.DimString() << " "
+        << Tensor::DimString(X_dims);
+    CHECK(X_dims == dims1) << "\nCould not assign with shapes " << X.DimString()
+                           << " " << Tensor::DimString(X_dims);
+    math::utils::ComputeBroadcastDims(X.dims(), X_dims, dims1, dims2);
+    if (dims1 != dims2) {
+      T* scratch = ctx()->workspace()->template data<T, Context>(X_ref.count());
+      math::Set(
+          X.ndim(),
+          X.dims().data(),
+          X_ref.ndim(),
+          X_ref.dims().data(),
+          data,
+          scratch,
+          ctx());
+      data = scratch;
     }
   }
 

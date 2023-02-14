@@ -23,7 +23,7 @@ class NLLLossOp final : public Operator<Context> {
  public:
   NLLLossOp(const OperatorDef& def, Workspace* ws)
       : Operator<Context>(def, ws),
-        ignore_index_(OP_SINGLE_ARG(int64_t, "ignore_index", -1)),
+        ignore_index_(OP_SINGLE_ARG(int64_t, "ignore_index", INT_MAX)),
         reduction_(OP_SINGLE_ARG(string, "reduction", "VALID")) {}
   USE_OPERATOR_FUNCTIONS;
 
@@ -44,7 +44,7 @@ class NLLLossGradientOp final : public Operator<Context> {
  public:
   NLLLossGradientOp(const OperatorDef& def, Workspace* ws)
       : Operator<Context>(def, ws),
-        ignore_index_(OP_SINGLE_ARG(int64_t, "ignore_index", -1)),
+        ignore_index_(OP_SINGLE_ARG(int64_t, "ignore_index", INT_MAX)),
         reduction_(OP_SINGLE_ARG(string, "reduction", "VALID")) {}
   USE_OPERATOR_FUNCTIONS;
 
@@ -66,7 +66,7 @@ class CNNLNLLLossOp : public Operator<Context> {
  public:
   CNNLNLLLossOp(const OperatorDef& def, Workspace* ws)
       : Operator<Context>(def, ws),
-        ignore_index_(OP_SINGLE_ARG(int64_t, "ignore_index", -1)),
+        ignore_index_(OP_SINGLE_ARG(int64_t, "ignore_index", INT_MAX)),
         reduction_(OP_SINGLE_ARG(string, "reduction", "MEAN")) {
     CNNLCreateTensorDesc(&input_desc_);
     CNNLCreateTensorDesc(&target_desc_);

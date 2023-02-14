@@ -1075,7 +1075,8 @@ def group_norm(input, num_groups, weight, bias, eps=1e-5):
     """
     return Function.apply(
         'GroupNorm', input.device, [input, weight, bias],
-        axis=1, group=num_groups, epsilon=eps)
+        axis=-1 if input.device.type == 'mlu' else 1,
+        group=num_groups, epsilon=eps)
 
 
 def hardsigmoid(input, inplace=False):

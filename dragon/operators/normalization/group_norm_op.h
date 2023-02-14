@@ -14,6 +14,7 @@
 #define DRAGON_OPERATORS_NORMALIZATION_GROUP_NORM_OP_H_
 
 #include "dragon/core/operator.h"
+#include "dragon/operators/math/reduce_op_impl_cnnl.h"
 
 namespace dragon {
 
@@ -28,7 +29,6 @@ class GroupNormOpBase : public Operator<Context> {
   virtual void GetBaseArguments() {
     auto& X = Input(0);
     GET_OP_AXIS_ARG(axis, X.ndim(), -1);
-    // Set and check dimensions
     N_ = X.dim(0);
     C_ = X.dim(axis);
     S_ = X.count() / N_ / C_;
@@ -37,7 +37,6 @@ class GroupNormOpBase : public Operator<Context> {
     D_ = C_ / G_;
     CHECK_EQ(C_ % G_, 0) << "\nThe " << C_ << " channels "
                          << "can not be split into " << G_ << " groups.";
-    // Set data format
     this->data_format_ = "NCHW";
     if (axis + 1 == X.ndim()) this->data_format_ = "NHWC";
   }
@@ -87,6 +86,56 @@ class GroupNormGradientOp : public GroupNormOpBase<Context> {
   template <typename T>
   void DoRunWithType();
 };
+
+#ifdef USE_MLU
+template <class Context>
+class CNNLGroupNormOp : public GroupNormOpBase<Context> {
+ public:
+  CNNLGroupNormOp(const OperatorDef& def, Workspace* ws)
+      : GroupNormOpBase<Context>(def, ws) {
+    CNNLCreateTensorDesc(&input_desc_);
+    CNNLCreateTensorDesc(&scale_desc_);
+    CNNLCreateTensorDesc(&stats_desc_);
+  }
+  USE_OPERATOR_FUNCTIONS;
+  USE_GROUPNORM_FUNCTIONS;
+
+  ~CNNLGroupNormOp() {
+    CNNLDestroyTensorDesc(input_desc_);
+    CNNLDestroyTensorDesc(scale_desc_);
+    CNNLDestroyTensorDesc(stats_desc_);
+  }
+
+  void RunOnDevice() override {
+    DispatchHelper<dtypes::Floating>::Call(this, Input(0));
+  }
+
+  template <typename T>
+  void DoRunWithType();
+
+ protected:
+  cnnlTensorDescriptor_t input_desc_, scale_desc_, stats_desc_;
+};
+
+template <class Context>
+class CNNLGroupNormGradientOp final : public CNNLGroupNormOp<Context> {
+ public:
+  CNNLGroupNormGradientOp(const OperatorDef& def, Workspace* ws)
+      : CNNLGroupNormOp<Context>(def, ws) {}
+  USE_OPERATOR_FUNCTIONS;
+  USE_GROUPNORM_FUNCTIONS;
+
+  void RunOnDevice() override {
+    DispatchHelper<dtypes::Floating>::Call(this, Input(0));
+  }
+
+  template <typename T>
+  void DoRunWithType();
+
+ protected:
+  CNNLReduceOpImpl mean_impl_, rsig_impl_;
+};
+#endif // USE_MLU
 
 } // namespace dragon
 

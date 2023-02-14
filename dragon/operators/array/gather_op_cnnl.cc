@@ -48,29 +48,26 @@ void CNNLGatherGradientOp<Context>::DoRunWithType() {
 
   const auto N = dX->count(0, axis), S = dX->count(end_axis + 1);
   const auto C = dX->count(axis, end_axis + 1), K = X_index.count();
+  CNNLSetTensorDesc<float>(this->input_desc_, {N, K, S});
+  CNNLSetTensorDesc<int>(this->index_desc_, {K});
+  CNNLSetTensorDesc<float>(this->output_desc_, {N, C, S});
 
   auto* dy = dY.template data<T, Context>();
   auto* dx = dX->template mutable_data<T, Context>();
-
   float *dy_acc = nullptr, *dx_acc = nullptr;
   if (TypeMeta::Id<T>() != TypeMeta::Id<float>()) {
-    dy_acc = ctx()->workspace()->template data<float, Context>(
-        dY.count() + dX->count());
+    const auto scratch_count = dY.count() + dX->count();
+    dy_acc = ctx()->workspace()->template data<float, Context>(scratch_count);
     dx_acc = dy_acc + dY.count();
-    math::Cast(dY.count(), dy, dy_acc, ctx());
   }
 
-  // Zero dX.
   math::Set(
       dX->count(),
       0.f,
       dx_acc != nullptr ? dx_acc : reinterpret_cast<float*>(dx),
       ctx());
 
-  // Accumulate to dX.
-  CNNLSetTensorDesc<float>(this->input_desc_, {N, K, S});
-  CNNLSetTensorDesc<int>(this->index_desc_, {K});
-  CNNLSetTensorDesc<float>(this->output_desc_, {N, C, S});
+  if (dy_acc != nullptr) math::Cast(dY.count(), dy, dy_acc, ctx());
   CNNL_CHECK(cnnlIndexAdd(
       ctx()->cnnl_handle(),
       1,
@@ -82,11 +79,7 @@ void CNNLGatherGradientOp<Context>::DoRunWithType() {
       dy_acc != nullptr ? dy_acc : reinterpret_cast<const float*>(dy),
       this->output_desc_,
       dx_acc != nullptr ? dx_acc : reinterpret_cast<float*>(dx)));
-
-  // Convert to dX.
-  if (dx_acc != nullptr) {
-    math::Cast(dX->count(), dx_acc, dx, ctx());
-  }
+  if (dx_acc != nullptr) math::Cast(dX->count(), dx_acc, dx, ctx());
 }
 
 DEPLOY_CNNL_OPERATOR(Gather);

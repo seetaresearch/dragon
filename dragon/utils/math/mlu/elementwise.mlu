@@ -30,8 +30,8 @@ DEFINE_UNARY_KERNEL(Abs, __bang_abs);
 DEFINE_UNARY_KERNEL(Square, __bang_square);
 DEFINE_UNARY_KERNEL(Floor, __bang_floor);
 DEFINE_UNARY_KERNEL(Round, __bang_round);
-DEFINE_UNARY_KERNEL(Exp, __bang_active_exp);
-DEFINE_UNARY_KERNEL(Log, __bang_active_log);
+DEFINE_UNARY_KERNEL(Exp, __bang_active_exphp);
+DEFINE_UNARY_KERNEL(Log, __bang_active_loghp);
 DEFINE_UNARY_KERNEL(Sqrt, __bang_active_sqrt);
 DEFINE_UNARY_KERNEL(Rsqrt, __bang_active_rsqrt);
 DEFINE_UNARY_KERNEL(Inv, __bang_active_recip);
@@ -86,6 +86,29 @@ __mlu_entry__ void _Set_fallback(const int N, const T value, T* y) {
 }
 
 template <typename T>
+__mlu_entry__ void _Bias(const int N, const T beta, const T* x, T* y) {
+  __nram__ T Y[BLOCK_THREADS];
+  MLU_1D_KERNEL_LOOP(i, N, BLOCK_THREADS) {
+    const int N_ram = std::min(N - i, BLOCK_THREADS);
+    __memcpy(Y, x + i, N_ram * sizeof(T), GDRAM2NRAM);
+    __bang_add_scalar(Y, Y, beta, N_ram);
+    __memcpy(y + i, Y, N_ram * sizeof(T), NRAM2GDRAM);
+  }
+}
+
+template <typename T>
+__mlu_entry__ void _InvStd(const int N, const T eps, const T* x, T* y) {
+  __nram__ T Y[BLOCK_THREADS];
+  MLU_1D_KERNEL_LOOP(i, N, BLOCK_THREADS) {
+    const int N_ram = std::min(N - i, BLOCK_THREADS);
+    __memcpy(Y, x + i, N_ram * sizeof(T), GDRAM2NRAM);
+    __bang_add_scalar(Y, Y, eps, N_ram);
+    __bang_active_rsqrt(Y, Y, N_ram);
+    __memcpy(y + i, Y, N_ram * sizeof(T), NRAM2GDRAM);
+  }
+}
+
+template <typename T>
 __mlu_entry__ void _ApplyMask(
     const int N,
     const float scale,
@@ -129,7 +152,8 @@ __mlu_entry__ void _ApplyMask(
       const int N_ram = std::min(N - i, BLOCK_THREADS);                   \
       __memcpy(Y, a + i, N_ram * sizeof(T), GDRAM2NRAM);                  \
       __memcpy(X, b + i, N_ram * sizeof(T), GDRAM2NRAM);                  \
-      for (int j = 0; j < N_ram; ++j) Y[j] Expr X[j];                     \
+      for (int j = 0; j < N_ram; ++j)                                     \
+        Y[j] Expr X[j];                                                   \
       __memcpy(y + i, Y, N_ram * sizeof(T), NRAM2GDRAM);                  \
     }                                                                     \
   }
@@ -371,6 +395,70 @@ DEFINE_APPLY_MASK_FUNC(uint8_t);
 DEFINE_APPLY_MASK_FUNC(int64_t);
 DEFINE_APPLY_MASK_FUNC(double);
 #undef DEFINE_APPLY_MASK_FUNC
+
+#define DEFINE_BIAS_FUNC(T)                                               \
+  template <>                                                             \
+  DRAGON_API void Bias<T, MLUContext>(                                    \
+      const int N, const float beta, const T* x, T* y, MLUContext* ctx) { \
+    if (beta == 0.f && x == y) return;                                    \
+    _Bias<<<                                                              \
+        MLU_BLOCKS(N, BLOCK_THREADS),                                     \
+        CNRT_FUNC_TYPE_BLOCK,                                             \
+        ctx->mlu_stream()>>>(                                             \
+        N,                                                                \
+        convert::To<math::ScalarType<T>::type>(beta),                     \
+        reinterpret_cast<const math::ScalarType<T>::type*>(x),            \
+        reinterpret_cast<math::ScalarType<T>::type*>(y));                 \
+  }
+
+DEFINE_BIAS_FUNC(int8_t);
+DEFINE_BIAS_FUNC(int);
+DEFINE_BIAS_FUNC(float16);
+DEFINE_BIAS_FUNC(float);
+#undef DEFINE_BIAS_FUNC
+
+#define DEFINE_BIAS_FUNC(T)                                               \
+  template <>                                                             \
+  DRAGON_API void Bias<T, MLUContext>(                                    \
+      const int N, const float beta, const T* x, T* y, MLUContext* ctx) { \
+    if (beta == 0.f && x == y) return;                                    \
+    LOG(FATAL) << "Unsupported BANG type for <BiasKernel>: "              \
+               << dtypes::to_string(TypeMeta::Make<T>());                 \
+  }
+
+DEFINE_BIAS_FUNC(uint8_t);
+DEFINE_BIAS_FUNC(int64_t);
+DEFINE_BIAS_FUNC(double);
+#undef DEFINE_BIAS_FUNC
+
+#define DEFINE_INVSTD_FUNC(T)                                            \
+  template <>                                                            \
+  DRAGON_API void InvStd<T, MLUContext>(                                 \
+      const int N, const float eps, const T* x, T* y, MLUContext* ctx) { \
+    _InvStd<<<                                                           \
+        MLU_BLOCKS(N, BLOCK_THREADS),                                    \
+        CNRT_FUNC_TYPE_BLOCK,                                            \
+        ctx->mlu_stream()>>>(                                            \
+        N,                                                               \
+        convert::To<math::ScalarType<T>::type>(eps),                     \
+        reinterpret_cast<const math::ScalarType<T>::type*>(x),           \
+        reinterpret_cast<math::ScalarType<T>::type*>(y));                \
+  }
+
+DEFINE_INVSTD_FUNC(float16);
+DEFINE_INVSTD_FUNC(float);
+#undef DEFINE_INVSTD_FUNC
+
+#define DEFINE_INVSTD_FUNC(T)                                            \
+  template <>                                                            \
+  DRAGON_API void InvStd<T, MLUContext>(                                 \
+      const int N, const float eps, const T* x, T* y, MLUContext* ctx) { \
+    LOG(FATAL) << "Unsupported BANG type for <InvStdKernel>: "           \
+               << dtypes::to_string(TypeMeta::Make<T>());                \
+  }
+
+DEFINE_INVSTD_FUNC(double);
+#undef DEFINE_INVSTD_FUNC
 
 #define DEFINE_BINARY_FUNC(name, InputT, OutputT, Kernel)           \
   template <>                                                       \

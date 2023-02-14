@@ -1,3 +1,5 @@
+#ifdef USE_MLU
+
 #include "dragon/core/workspace.h"
 #include "dragon/kernels/op_kernels.h"
 #include "dragon/operators/loss/cross_entropy_loss_op.h"
@@ -7,7 +9,7 @@ namespace dragon {
 
 template <class Context>
 template <typename T>
-void SigmoidCrossEntropyLossOp<Context>::DoRunWithType() {
+void CNNLSigmoidCrossEntropyLossOp<Context>::DoRunWithType() {
   auto &X = Input(0), &Y = Input(1), *L = Output(0);
 
   const auto N = X.count();
@@ -29,27 +31,24 @@ void SigmoidCrossEntropyLossOp<Context>::DoRunWithType() {
     math::Copy(N, loss, L->template mutable_data<T, Context>(), ctx());
   } else {
     int64_t normalizer = 1;
-    if (reduction_ == "VALID") {
-      normalizer = -1; // Select from mask.
-    } else if (reduction_ == "BATCH_MEAN") {
+    if (reduction_ == "BATCH_MEAN") {
       normalizer = X.dim(0);
     } else if (reduction_ == "MEAN") {
       normalizer = N;
     }
-    kernels::ReduceLoss(
-        N,
-        N,
-        normalizer,
+    reduce_impl_.Setup<T>({N}, {0}, ctx());
+    reduce_impl_.Compute<T>(
         loss,
-        mask,
         L->Reshape({})->template mutable_data<T, Context>(),
-        ctx());
+        ctx()->workspace()->template data<Context>(reduce_impl_.scratch_size()),
+        ctx(),
+        1.f / float(normalizer));
   }
 }
 
 template <class Context>
 template <typename T>
-void SigmoidCrossEntropyLossGradientOp<Context>::DoRunWithType() {
+void CNNLSigmoidCrossEntropyLossGradientOp<Context>::DoRunWithType() {
   auto &X = Input(0), &Y = Input(1), &dL = Input(2);
   auto* dX = Output(0)->ReshapeLike(X);
 
@@ -66,62 +65,25 @@ void SigmoidCrossEntropyLossGradientOp<Context>::DoRunWithType() {
       mask,
       ctx());
 
-  if (reduction_ == "NONE") {
+  if (this->reduction_ == "NONE") {
     math::Mul(N, dl, dx, dx, ctx());
   } else {
     int64_t normalizer = 1;
-    if (reduction_ == "VALID") {
-      normalizer = -1; // Select from mask
-    } else if (reduction_ == "BATCH_MEAN") {
+    if (this->reduction_ == "BATCH_MEAN") {
       normalizer = X.dim(0);
-    } else if (reduction_ == "MEAN") {
+    } else if (this->reduction_ == "MEAN") {
       normalizer = N;
     }
-    kernels::ReduceLossGrad(N, N, normalizer, dl, mask, dx, ctx());
+    const auto scale = 1.f / float(normalizer);
+    auto* dl = ctx()->workspace()->template data<T, Context>(1);
+    math::Scale(1, scale, dL.template data<T, Context>(), dl, ctx());
+    math::Mul(1, &N, 1, vec64_t({1}).data(), dx, dl, dx, ctx());
   }
 }
 
-DEPLOY_CPU_OPERATOR(SigmoidCrossEntropyLoss);
-DEPLOY_CPU_OPERATOR(SigmoidCrossEntropyLossGradient);
-#ifdef USE_CUDA
-DEPLOY_CUDA_OPERATOR(SigmoidCrossEntropyLoss);
-DEPLOY_CUDA_OPERATOR(SigmoidCrossEntropyLossGradient);
-#endif
-#ifdef USE_MPS
-DEPLOY_MPS_OPERATOR(SigmoidCrossEntropyLoss, SigmoidCrossEntropyLoss);
-DEPLOY_MPS_OPERATOR(
-    SigmoidCrossEntropyLossGradient,
-    SigmoidCrossEntropyLossGradient);
-#endif
-
-OPERATOR_SCHEMA(SigmoidCrossEntropyLoss)
-    /* X, Y */
-    .NumInputs(2)
-    /* L */
-    .NumOutputs(1);
-
-OPERATOR_SCHEMA(SigmoidCrossEntropyLossGradient)
-    /* X, Y, dL */
-    .NumInputs(3)
-    /* dX */
-    .NumOutputs(1);
-
-namespace {
-
-class GradientMaker final : public GradientMakerBase {
- public:
-  GRADIENT_MAKER_CTOR(GradientMaker);
-  void CreateGradientDefs() override {
-    AddGradientDef(
-        def().type() + "Gradient",
-        "",
-        vector<string>({I(0), I(1), GO(0)}),
-        vector<string>({GI(0)}));
-  }
-};
-
-} // namespace
-
-REGISTER_GRADIENT(SigmoidCrossEntropyLoss, GradientMaker);
+DEPLOY_CNNL_OPERATOR(SigmoidCrossEntropyLoss);
+DEPLOY_CNNL_OPERATOR(SigmoidCrossEntropyLossGradient);
 
 } // namespace dragon
+
+#endif // USE_MLU

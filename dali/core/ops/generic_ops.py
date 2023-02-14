@@ -163,7 +163,7 @@ class Pad(object):
     pad = dali.ops.Pad(
         # The axes to pad
         axes=[0, 1],
-        # The constant value fill at the right side
+        # The constant value fill on the right side
         fill_value=0.,
     )
     y = pad(inputs['x'])
@@ -245,7 +245,7 @@ class Slice(object):
     slice = dali.ops.Slice(
         # Axis of intervals
         axes=[1, 0],
-        # Whether the begin of interval is normalized
+        # Whether the start of interval is normalized
         # in a range of [0.0, 1.0]
         normalized_anchor=True,
         # Whether the size of interval is normalized
@@ -272,7 +272,7 @@ class Slice(object):
         axes : Sequence[int], optional
             The axis to select.
         normalized_anchor : bool, optional, default=True
-            Whether the begin of interval is normalized.
+            Whether the start of interval is normalized.
         normalized_shape : bool, optional, default=True
             Whether the size of interval is normalized.
 

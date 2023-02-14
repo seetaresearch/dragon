@@ -1,6 +1,7 @@
 #ifdef USE_MLU
 
 #include "dragon/core/workspace.h"
+#include "dragon/kernels/op_kernels.h"
 #include "dragon/operators/loss/nll_loss_op.h"
 #include "dragon/utils/math_functions.h"
 
@@ -19,9 +20,17 @@ void CNNLNLLLossOp<Context>::DoRunWithType() {
   const auto X_dims = vec64_t({N, S == 1 ? 1 : C, S == 1 ? C : S});
 
   auto* input = X.template mutable_data<T, Context>();
-  T* loss = ctx()->workspace()->template data<T, Context>(NxS, "BufferKernel");
-
+  auto* target = Y.template data<int, Context>();
+  auto* mutable_target = const_cast<int*>(target);
   CHECK_EQ(Y.count(), NxS) << "\nNumel of X and Y must be matched.";
+  auto* loss = reinterpret_cast<T*>(ctx()->workspace()->template data<Context>(
+      NxS * (sizeof(T) + sizeof(int)), "BufferKernel"));
+  if (ignore_index_ != INT_MAX) {
+    CHECK_EQ(S, 1) << "\nSpatial loss does not support <ignore_index>.";
+    mutable_target = reinterpret_cast<int*>(loss + NxS);
+    kernels::Clip(NxS, 0.f, float(C - 1), target, mutable_target, ctx());
+  }
+
   CNNLSetTensorDesc<T>(input_desc_, {N, C, S});
   CNNLSetTensorDesc<int>(target_desc_, {N, 1, S});
   CNNLSetTensorDesc<T>(output_desc_, {N, 1, S});
@@ -31,11 +40,11 @@ void CNNLNLLLossOp<Context>::DoRunWithType() {
       input_desc_,
       input,
       target_desc_,
-      Y.template data<int, Context>(),
+      target,
       output_desc_,
       loss));
   math::Neg(NxS, loss, loss, ctx());
-  if (ignore_index_ >= 0) NOT_IMPLEMENTED;
+  kernels::MaskLoss(NxS, ignore_index_, target, loss, ctx());
 
   if (reduction_ == "NONE") {
     auto out_dims = X.dims();
@@ -73,7 +82,14 @@ void CNNLNLLLossGradientOp<Context>::DoRunWithType() {
 
   auto* dl = dL.template data<T, Context>();
   auto* dx = dX->template mutable_data<T, Context>();
-  auto* scratch = ctx()->workspace()->template data<T, Context>(1);
+  auto* scratch = (T*)ctx()->workspace()->template data<Context>(
+      sizeof(T) + NxS * sizeof(int));
+  auto* target = Y.template data<int, Context>();
+  auto* mutable_target = const_cast<int*>(target);
+  if (this->ignore_index_ != INT_MAX) {
+    mutable_target = reinterpret_cast<int*>(scratch + 1);
+    kernels::Clip(NxS, 0.f, float(C - 1), target, mutable_target, ctx());
+  }
 
   math::Set(dX->count(), convert::To<T>(0.f), dx, ctx());
   CNNLSetTensorDesc<T>(this->input_desc_, {1, 1, 1});
@@ -86,12 +102,13 @@ void CNNLNLLLossGradientOp<Context>::DoRunWithType() {
       this->output_desc_,
       dx,
       this->target_desc_,
-      Y.template data<int, Context>(),
+      mutable_target,
       this->input_desc_,
       scratch,
       this->output_desc_,
       dx,
       CNNL_SCATTER));
+  kernels::MaskLossGrad(N, C, this->ignore_index_, target, dx, ctx());
 
   if (this->reduction_ == "NONE") {
     math::Mul(

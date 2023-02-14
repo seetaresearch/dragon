@@ -27,7 +27,9 @@ class RoiPoolOp final : public Operator<Context> {
         spatial_scale_(OP_SINGLE_ARG(float, "spatial_scale", 1.f)) {}
   USE_OPERATOR_FUNCTIONS;
 
-  void RunOnDevice() override;
+  void RunOnDevice() override {
+    DispatchHelper<dtypes::Floating>::Call(this, Input(0));
+  }
 
   template <typename T>
   void DoRunWithType();
@@ -47,7 +49,9 @@ class RoiPoolGradientOp final : public Operator<Context> {
         spatial_scale_(OP_SINGLE_ARG(float, "spatial_scale", 1.f)) {}
   USE_OPERATOR_FUNCTIONS;
 
-  void RunOnDevice() override;
+  void RunOnDevice() override {
+    DispatchHelper<dtypes::Floating>::Call(this, Input(1));
+  }
 
   template <typename T>
   void DoRunWithType();

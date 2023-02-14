@@ -57,4 +57,6 @@ def roi_align(
         'RoiAlign', input.device, [input, boxes],
         pooled_h=output_size[0], pooled_w=output_size[1],
         spatial_scale=spatial_scale,
-        sampling_ratio=sampling_ratio, aligned=aligned)
+        sampling_ratio=sampling_ratio,
+        aligned=aligned,
+        data_format='NHWC' if input.device.type == 'mlu' else 'NCHW')

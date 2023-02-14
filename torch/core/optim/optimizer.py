@@ -96,7 +96,6 @@ class Optimizer(object):
         """
         if not isinstance(param_group, dict):
             raise TypeError('Param group must be a dict.')
-
         params = param_group['params']
         if isinstance(params, Tensor):
             param_group['params'] = [params]
@@ -104,14 +103,12 @@ class Optimizer(object):
             raise TypeError('Parameters should be organized in a sequence.')
         else:
             param_group['params'] = list(params)
-
         for param in param_group['params']:
             if not isinstance(param, Tensor):
                 raise TypeError('Optimizer can only optimize Tensors, '
                                 "but one of the params is " + str(type(param)))
             if not param.is_leaf:
                 raise ValueError("Optimize a non-leaf Tensor.")
-
         for name, default in self.defaults.items():
             if default is required and name not in param_group:
                 raise ValueError(
@@ -119,17 +116,14 @@ class Optimizer(object):
                     "required optimization parameter: " + name)
             else:
                 param_group.setdefault(name, default)
-
         if 'name' not in param_group:
             default_ws = workspace.get_workspace()
             param_group['name'] = default_ws.create_handle('Optimizer')
-
         param_set = set()
         for group in self.param_groups:
             param_set.update(set(group['params']))
         if not param_set.isdisjoint(set(param_group['params'])):
             raise ValueError('Some parameters appear in more than one parameter group.')
-
         self.param_groups.append(param_group)
 
     def step(self):
@@ -148,7 +142,6 @@ class Optimizer(object):
         params_all, grads_all = [], []
         execute_ws = workspace.get_workspace()
         for group in self.param_groups:
-            # Collect params and grads.
             params_with_grad, grads = [], []
             for p in group['params']:
                 g = self._get_grad(execute_ws, p, self._sums_grad)
@@ -249,8 +242,7 @@ class Optimizer(object):
         # Skip if grads are all missing.
         if len(params) == 0:
             return
-
-        # Update hyper from group values.
+        # Update hypers from group values.
         execute_ws = workspace.get_workspace()
         for name in self._hyper.keys():
             group_name = group['name']
@@ -260,7 +252,6 @@ class Optimizer(object):
                 group_dict[group_name] = execute_ws.create_tensor(impl_name)
             impl = group_dict[group_name]
             impl.FromNumpy(numpy.array(group[name], 'float32'), False)
-
         # Apply updates.
         Function.apply(self._op_type, params[0].device, grads,
                        outputs=params, name=group['name'],
@@ -269,11 +260,9 @@ class Optimizer(object):
     @staticmethod
     def _get_grad(execute_ws, param, summed=False):
         """Return the grad of a parameter."""
-        grad_impl = execute_ws.get_tensor(
+        impl = execute_ws.get_tensor(
             param.id + ('_grad_sum' if summed else '_grad'))
-        if grad_impl:
-            return Tensor(device=param.device, impl=grad_impl)
-        return None
+        return Tensor(device=param.device, impl=impl) if impl else None
 
     def __repr__(self):
         format_string = self.__class__.__name__ + ' ('

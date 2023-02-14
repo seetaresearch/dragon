@@ -31,6 +31,23 @@ void BroadcastLossGrad(
     T* dx,
     Context* ctx);
 
+template <typename InputT, typename TargetT, class Context>
+void MaskLoss(
+    const int N,
+    const int ignore_index,
+    const TargetT* target,
+    InputT* loss,
+    Context* ctx);
+
+template <typename InputT, typename TargetT, class Context>
+void MaskLossGrad(
+    const int N,
+    const int C,
+    const int ignore_index,
+    const TargetT* target,
+    InputT* dx,
+    Context* ctx);
+
 template <typename T, class Context>
 void CrossEntropy(
     const int N,

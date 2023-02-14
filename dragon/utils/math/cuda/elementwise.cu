@@ -680,9 +680,9 @@ DEFINE_NAN_TO_NUM_FUNC(double, -FLT_MAX, FLT_MAX);
   template <>                                                              \
   DRAGON_API void Bias<T, CUDAContext>(                                    \
       const int N, const float beta, const T* x, T* y, CUDAContext* ctx) { \
-    if (beta == 0.f) return;                                               \
+    if (beta == 0.f && x == y) return;                                     \
     _Bias<<<CUDA_BLOCKS(N), CUDA_THREADS, 0, ctx->cuda_stream()>>>(        \
-        N, (T)beta, math::PlusFunctor<T>(), x, y);                         \
+        N, T(beta), math::PlusFunctor<T>(), x, y);                         \
   }
 
 template <>

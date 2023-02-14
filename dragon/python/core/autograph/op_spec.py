@@ -769,10 +769,13 @@ def resize_spec(args, inputs, outputs):
 def roi_pool_spec(args, inputs, outputs):
     outputs[0]._dtype = inputs[0].dtype
     pool_h, pool_w = args['pooled_h'], args['pooled_w']
-    out_shape = None
+    data_format = args.pop('data_format', 'NCHW')
     try:
         out_shape = list(inputs[0].shape[:])
-        out_shape[2:4] = pool_h, pool_w
+        if data_format == 'NCHW':
+            out_shape[2:4] = pool_h, pool_w
+        else:
+            out_shape[1:3] = pool_h, pool_w
         try:
             out_shape[0] = inputs[1].shape[0]
         except (TypeError, IndexError):

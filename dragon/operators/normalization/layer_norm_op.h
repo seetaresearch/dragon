@@ -46,18 +46,16 @@ class LayerNormGradientOp final : public GroupNormGradientOp<Context> {
   void GetBaseArguments() override {
     auto& X = Input(0);
     GET_OP_AXIS_ARG(axis, X.ndim(), -1);
-    // Set dimensions
     this->N_ = X.count(0, axis);
     this->C_ = this->D_ = X.count(axis);
     this->G_ = this->S_ = 1;
-    // Set data format
     this->data_format_ = "NHWC";
   }
 };
 
 #ifdef USE_MLU
 template <class Context>
-class CNNLLayerNormOp final : public Operator<Context> {
+class CNNLLayerNormOp : public Operator<Context> {
  public:
   CNNLLayerNormOp(const OperatorDef& def, Workspace* ws)
       : Operator<Context>(def, ws),
@@ -87,21 +85,11 @@ class CNNLLayerNormOp final : public Operator<Context> {
 };
 
 template <class Context>
-class CNNLLayerNormGradientOp final : public Operator<Context> {
+class CNNLLayerNormGradientOp final : public CNNLLayerNormOp<Context> {
  public:
   CNNLLayerNormGradientOp(const OperatorDef& def, Workspace* ws)
-      : Operator<Context>(def, ws) {
-    CNNLCreateTensorDesc(&input_desc_);
-    CNNLCreateTensorDesc(&scale_desc_);
-    CNNLCreateTensorDesc(&stats_desc_);
-  }
+      : CNNLLayerNormOp<Context>(def, ws) {}
   USE_OPERATOR_FUNCTIONS;
-
-  ~CNNLLayerNormGradientOp() {
-    CNNLDestroyTensorDesc(input_desc_);
-    CNNLDestroyTensorDesc(scale_desc_);
-    CNNLDestroyTensorDesc(stats_desc_);
-  }
 
   void RunOnDevice() override {
     DispatchHelper<dtypes::Floating>::Call(this, Input(0));
@@ -109,9 +97,6 @@ class CNNLLayerNormGradientOp final : public Operator<Context> {
 
   template <typename T>
   void DoRunWithType();
-
- protected:
-  cnnlTensorDescriptor_t input_desc_, scale_desc_, stats_desc_;
 };
 #endif // USE_MLU
 

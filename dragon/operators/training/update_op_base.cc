@@ -14,8 +14,8 @@ T UpdateOpBase<Context>::GetHyper(const string& key) {
 
 template <class Context>
 Tensor* UpdateOpBase<Context>::GetState(const string& key) {
-  const string& weight_name = Output(weight_index_)->name();
-  return workspace()->CreateTensor(name() + "/" + weight_name + "/" + key);
+  const string& src_name = Output(src_index_)->name();
+  return workspace()->CreateTensor(name() + "/" + src_name + "/" + key);
 }
 
 template <class Context>
@@ -40,8 +40,8 @@ void UpdateOpBase<Context>::TransformGrad(Tensor* dX) {
 template <class Context>
 void UpdateOpBase<Context>::RunOnDevice() {
   GetArguments();
-  for (weight_index_ = 0; weight_index_ < InputSize(); ++weight_index_) {
-    auto &dX = Input(weight_index_), *X = Output(weight_index_);
+  for (src_index_ = 0; src_index_ < InputSize(); ++src_index_) {
+    auto &dX = Input(src_index_), *X = Output(src_index_);
     if (dX.count() == 0 || X->count() == 0) continue;
     CHECK(dX.dims() == X->dims())
         << "\nWeight and grad should have the same dimensions."

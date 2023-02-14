@@ -35,6 +35,21 @@ __mlu_entry__ void _Axpy(const int N, const T alpha, const T* x, T* y) {
 }
 
 template <typename T>
+__mlu_entry__ void
+_Axpby(const int N, const T alpha, const T beta, const T* x, T* y) {
+  __nram__ T X[BLOCK_THREADS], Y[BLOCK_THREADS];
+  MLU_1D_KERNEL_LOOP(i, N, BLOCK_THREADS) {
+    const int N_ram = std::min(N - i, BLOCK_THREADS);
+    __memcpy(X, x + i, N_ram * sizeof(T), GDRAM2NRAM);
+    __memcpy(Y, y + i, N_ram * sizeof(T), GDRAM2NRAM);
+    __bang_mul_scalar(X, X, alpha, N_ram);
+    __bang_mul_scalar(Y, Y, beta, N_ram);
+    __bang_add(Y, Y, X, N_ram);
+    __memcpy(y + i, Y, N_ram * sizeof(T), NRAM2GDRAM);
+  }
+}
+
+template <typename T>
 __mlu_entry__ void _CopyMatrix(
     const int M,
     const int N,
@@ -223,6 +238,50 @@ DEFINE_AXPY_FUNC(uint8_t);
 DEFINE_AXPY_FUNC(int64_t);
 DEFINE_AXPY_FUNC(double);
 #undef DEFINE_AXPY_FUNC
+
+#define DEFINE_AXPBY_FUNC(T)                                   \
+  template <>                                                  \
+  DRAGON_API void Axpby<T, MLUContext>(                        \
+      const int N,                                             \
+      const float alpha,                                       \
+      const T* x,                                              \
+      const float beta,                                        \
+      T* y,                                                    \
+      MLUContext* ctx) {                                       \
+    _Axpby<<<                                                  \
+        MLU_BLOCKS(N, BLOCK_THREADS),                          \
+        CNRT_FUNC_TYPE_BLOCK,                                  \
+        ctx->mlu_stream()>>>(                                  \
+        N,                                                     \
+        convert::To<math::ScalarType<T>::type>(alpha),         \
+        convert::To<math::ScalarType<T>::type>(beta),          \
+        reinterpret_cast<const math::ScalarType<T>::type*>(x), \
+        reinterpret_cast<math::ScalarType<T>::type*>(y));      \
+  }
+
+DEFINE_AXPBY_FUNC(int8_t);
+DEFINE_AXPBY_FUNC(int);
+DEFINE_AXPBY_FUNC(float16);
+DEFINE_AXPBY_FUNC(float);
+#undef DEFINE_AXPBY_FUNC
+
+#define DEFINE_AXPBY_FUNC(T)                                  \
+  template <>                                                 \
+  DRAGON_API void Axpby<T, MLUContext>(                       \
+      const int N,                                            \
+      const float alpha,                                      \
+      const T* x,                                             \
+      const float beta,                                       \
+      T* y,                                                   \
+      MLUContext* ctx) {                                      \
+    LOG(FATAL) << "Unsupported BANG type for <AxpbyKernel>: " \
+               << dtypes::to_string(TypeMeta::Make<T>());     \
+  }
+
+DEFINE_AXPBY_FUNC(uint8_t);
+DEFINE_AXPBY_FUNC(int64_t);
+DEFINE_AXPBY_FUNC(double);
+#undef DEFINE_AXPBY_FUNC
 
 #define DEFINE_DOT_FUNC(T)                                    \
   template <>                                                 \

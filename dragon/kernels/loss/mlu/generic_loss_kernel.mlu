@@ -1,0 +1,119 @@
+#include "dragon/kernels/loss/op_kernels.h"
+#include "dragon/utils/math_functions.h"
+
+namespace dragon {
+
+namespace kernels {
+
+#define BLOCK_THREADS 40960
+
+namespace {
+
+template <typename InputT, typename TargetT>
+__mlu_entry__ void _MaskLoss(
+    const int N,
+    const TargetT ignore_index,
+    const TargetT* target,
+    InputT* loss) {
+  __nram__ InputT L[BLOCK_THREADS];
+  __nram__ InputT scratch[BLOCK_THREADS];
+  __nram__ TargetT Y[BLOCK_THREADS];
+  MLU_1D_KERNEL_LOOP(i, N, BLOCK_THREADS) {
+    const int N_ram = std::min(N - i, BLOCK_THREADS);
+    __memcpy(L, loss + i, N_ram * sizeof(InputT), GDRAM2NRAM);
+    __memcpy(Y, target + i, N_ram * sizeof(TargetT), GDRAM2NRAM);
+    __bang_ne_scalar(Y, Y, ignore_index, N_ram);
+    math::utils::Convert(scratch, Y, N_ram);
+    __bang_mul(L, L, scratch, N_ram);
+    __memcpy(loss + i, L, N_ram * sizeof(InputT), NRAM2GDRAM);
+  }
+}
+
+template <typename InputT, typename TargetT>
+__mlu_entry__ void _MaskLossGrad(
+    const int N,
+    const int C,
+    const TargetT ignore_index,
+    const TargetT* target,
+    InputT* dx) {
+  __nram__ InputT scratch[BLOCK_THREADS];
+  __bang_write_zero(scratch, BLOCK_THREADS);
+  for (int i = taskId; i < N; i += taskDim) {
+    if (target[i] == ignore_index) {
+      __memcpy(dx + i * C, scratch, C * sizeof(InputT), NRAM2GDRAM);
+    }
+  }
+}
+
+} // namespace
+
+#define DEFINE_KERNEL_LAUNCHER(InputT, TargetT)                       \
+  template <>                                                         \
+  void MaskLoss<InputT, TargetT, MLUContext>(                         \
+      const int N,                                                    \
+      const int ignore_index,                                         \
+      const TargetT* target,                                          \
+      InputT* loss,                                                   \
+      MLUContext* ctx) {                                              \
+    if (ignore_index == INT_MAX) return;                              \
+    _MaskLoss<<<                                                      \
+        MLU_BLOCKS(N, BLOCK_THREADS),                                 \
+        CNRT_FUNC_TYPE_BLOCK,                                         \
+        ctx->mlu_stream()>>>(N, TargetT(ignore_index), target, loss); \
+  }
+
+DEFINE_KERNEL_LAUNCHER(float, int);
+#undef DEFINE_KERNEL_LAUNCHER
+
+#define DEFINE_KERNEL_LAUNCHER(InputT, TargetT)                  \
+  template <>                                                    \
+  void MaskLoss<InputT, TargetT, MLUContext>(                    \
+      const int N,                                               \
+      const int ignore_index,                                    \
+      const TargetT* target,                                     \
+      InputT* loss,                                              \
+      MLUContext* ctx) {                                         \
+    LOG(FATAL) << "Unsupported BANG type for <MaskLossKernel>: " \
+               << dtypes::to_string(TypeMeta::Make<InputT>());   \
+  }
+
+DEFINE_KERNEL_LAUNCHER(double, int);
+#undef DEFINE_KERNEL_LAUNCHER
+
+#define DEFINE_GRAD_KERNEL_LAUNCHER(InputT, TargetT)                          \
+  template <>                                                                 \
+  void MaskLossGrad<InputT, TargetT, MLUContext>(                             \
+      const int N,                                                            \
+      const int C,                                                            \
+      const int ignore_index,                                                 \
+      const TargetT* target,                                                  \
+      InputT* dx,                                                             \
+      MLUContext* ctx) {                                                      \
+    if (ignore_index == INT_MAX) return;                                      \
+    _MaskLossGrad<<<MLU_BLOCKS(), CNRT_FUNC_TYPE_BLOCK, ctx->mlu_stream()>>>( \
+        N, C, TargetT(ignore_index), target, dx);                             \
+  }
+
+DEFINE_GRAD_KERNEL_LAUNCHER(float, int);
+#undef DEFINE_GRAD_KERNEL_LAUNCHER
+
+#define DEFINE_GRAD_KERNEL_LAUNCHER(InputT, TargetT)                 \
+  template <>                                                        \
+  void MaskLossGrad<InputT, TargetT, MLUContext>(                    \
+      const int N,                                                   \
+      const int C,                                                   \
+      const int ignore_index,                                        \
+      const TargetT* target,                                         \
+      InputT* dx,                                                    \
+      MLUContext* ctx) {                                             \
+    LOG(FATAL) << "Unsupported BANG type for <MaskLossGradKernel>: " \
+               << dtypes::to_string(TypeMeta::Make<InputT>());       \
+  }
+
+DEFINE_GRAD_KERNEL_LAUNCHER(double, int);
+#undef DEFINE_GRAD_KERNEL_LAUNCHER
+#undef BLOCK_THREADS
+
+} // namespace kernels
+
+} // namespace dragon

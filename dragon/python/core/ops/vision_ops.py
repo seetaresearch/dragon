@@ -1388,6 +1388,7 @@ def roi_align(
     spatial_scale=1.0,
     sampling_ratio=-1,
     aligned=False,
+    data_format='NCHW',
     **kwargs
 ):
     r"""Apply average roi align.
@@ -1419,6 +1420,8 @@ def roi_align(
         The number of sampling grids for ``rois``.
     aligned : bool, optional, default=False
         Whether to shift the input coordinates by ``-0.5``.
+    data_format : str, optional, default='NCHW'
+        ``'NCHW'`` or ``'NHWC'``.
 
     Returns
     -------
@@ -1427,6 +1430,8 @@ def roi_align(
 
     """
     spatial_scale = float(spatial_scale)
+    if data_format not in ('NCHW', 'NHWC'):
+        raise ValueError('Unsupported data format: {}'.format(data_format))
     if context.executing_eagerly():
         return OpLib.execute(
             'RoiAlign',
@@ -1435,13 +1440,15 @@ def roi_align(
             pooled_w=pooled_w,
             spatial_scale=spatial_scale,
             sampling_ratio=sampling_ratio,
-            aligned=aligned)
+            aligned=aligned,
+            data_format=data_format)
     return OpLib.add('RoiAlign', inputs,
                      pooled_h=pooled_h,
                      pooled_w=pooled_w,
                      spatial_scale=spatial_scale,
                      sampling_ratio=sampling_ratio,
                      aligned=aligned,
+                     data_format=data_format,
                      **kwargs)
 
 

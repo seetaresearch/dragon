@@ -8,9 +8,12 @@ namespace dragon {
 template <class Context>
 template <typename T>
 void RoiAlignOp<Context>::DoRunWithType() {
-  auto &X = Input(0), &RoI = Input(1), *Y = Output(0);
+  auto &X = Input(0), &B = Input(1), *Y = Output(0);
   Output("X_spec")->ReshapeLike(X);
-  Y->Reshape({RoI.dim(0), X.dim(1), out_h_, out_w_});
+
+  auto Y_dims = vec64_t({B.dim(0), out_h_, out_w_});
+  auto C = data_format() == "NCHW" ? X.dim(1) : X.dim(-1);
+  Y_dims.insert(data_format() == "NCHW" ? Y_dims.begin() + 1 : Y_dims.end(), C);
 
   kernels::RoiAlign(
       X.dim(1),
@@ -18,20 +21,20 @@ void RoiAlignOp<Context>::DoRunWithType() {
       X.dim(3),
       out_h_,
       out_w_,
-      RoI.dim(0),
+      B.dim(0),
       spatial_scale_,
       sampling_ratio_,
       aligned_ > 0,
       X.template data<T, Context>(),
-      RoI.template data<float, Context>(),
-      Y->template mutable_data<T, Context>(),
+      B.template data<float, Context>(),
+      Y->Reshape(Y_dims)->template mutable_data<T, Context>(),
       ctx());
 }
 
 template <class Context>
 template <typename T>
 void RoiAlignGradientOp<Context>::DoRunWithType() {
-  auto &RoI = Input(0), &dY = Input(1);
+  auto &B = Input(0), &dY = Input(1);
   auto* dX = Output(0)->ReshapeLike(Input("X_spec"));
 
   auto* dx = dX->template mutable_data<T, Context>();
@@ -39,30 +42,30 @@ void RoiAlignGradientOp<Context>::DoRunWithType() {
       ? (float*)nullptr
       : ctx()->workspace()->template data<float, Context>(dX->count());
 
-  // Empty gradient
+  // Empty gradient.
   math::Set(
       dX->count(),
       0.f,
       dx_acc != nullptr ? dx_acc : reinterpret_cast<float*>(dx),
       ctx());
 
-  // Accumulate to dX
+  // Accumulate to dX.
   kernels::RoiAlignGrad(
       dX->dim(1),
       dX->dim(2),
       dX->dim(3),
       out_h_,
       out_w_,
-      RoI.dim(0),
+      B.dim(0),
       spatial_scale_,
       sampling_ratio_,
       aligned_ > 0,
       dY.template data<T, Context>(),
-      RoI.template data<float, Context>(),
+      B.template data<float, Context>(),
       dx_acc != nullptr ? dx_acc : reinterpret_cast<float*>(dx),
       ctx());
 
-  // Convert to dX if necessary
+  // Convert to dX.
   if (dx_acc != nullptr) {
     math::Cast(dX->count(), dx_acc, dx, ctx());
   }
@@ -79,13 +82,13 @@ DEPLOY_MPS_OPERATOR(RoiAlign, RoiAlign);
 #endif
 
 OPERATOR_SCHEMA(RoiAlign)
-    /* X, RoI */
+    /* X, Box */
     .NumInputs(2)
     /* Y */
     .NumOutputs(1);
 
 OPERATOR_SCHEMA(RoiAlignGradient)
-    /* RoI, dY */
+    /* Box, dY */
     .NumInputs(2)
     /* dX */
     .NumOutputs(1);

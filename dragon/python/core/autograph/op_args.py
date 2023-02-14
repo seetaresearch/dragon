@@ -500,6 +500,7 @@ def roi_align_args(**kwargs):
         'spatial_scale': kwargs.get('spatial_scale', 1.0),
         'sampling_ratio': kwargs.get('sampling_ratio', 0),
         'aligned': kwargs.get('aligned', False),
+        'data_format': kwargs.get('data_format', 'NCHW'),
     }
 
 

@@ -69,3 +69,7 @@ if (CUDNN_VERSION VERSION_GREATER "8.2.4")
                              cudnn_cnn_infer_static cudnn_cnn_train_static
                              cudnn_ops_infer_static cudnn_ops_train_static)
 endif()
+if (CUDNN_VERSION VERSION_GREATER "8.7.0")
+  set(CUDNN_LIBRARIES_STATIC nvrtc_static nvrtc-builtins_static
+                             nvptxcompiler_static ${CUDNN_LIBRARIES_STATIC})
+endif()

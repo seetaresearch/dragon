@@ -102,8 +102,8 @@ void CNNLResizeGradientOp<Context>::DoRunWithType() {
   auto* dx = dX->template mutable_data<T, Context>();
   float *dy_acc = nullptr, *dx_acc = nullptr;
   if (TypeMeta::Id<T>() != TypeMeta::Id<float>()) {
-    dy_acc = ctx()->workspace()->template data<float, Context>(
-        dY.count() + dX->count());
+    const auto scratch_count = dY.count() + dX->count();
+    dy_acc = ctx()->workspace()->template data<float, Context>(scratch_count);
     dx_acc = dy_acc + dY.count();
   }
 

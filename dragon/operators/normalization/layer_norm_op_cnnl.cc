@@ -23,9 +23,9 @@ void CNNLLayerNormOp<Context>::DoRunWithType() {
   CNNLSetTensorDesc<T>(scale_desc_, {C});
   CNNLSetTensorDesc<T>(stats_desc_, {N});
 
-  size_t scratch_size = 0;
+  size_t workspace_size = 0;
   CNNL_CHECK(cnnlGetLayerNormOpWorkspaceSize(
-      ctx()->cnnl_handle(), 1, input_desc_, &scratch_size));
+      ctx()->cnnl_handle(), 1, input_desc_, &workspace_size));
   CNNL_CHECK(cnnlLayerNormForward(
       ctx()->cnnl_handle(),
       input_desc_,
@@ -35,8 +35,8 @@ void CNNLLayerNormOp<Context>::DoRunWithType() {
       W.template data<T, Context>(),
       B.template data<T, Context>(),
       epsilon_,
-      ctx()->workspace()->template data<Context>(scratch_size),
-      scratch_size,
+      ctx()->workspace()->template data<Context>(workspace_size),
+      workspace_size,
       input_desc_,
       Y->ReshapeLike(X)->template mutable_data<T, Context>(),
       stats_desc_,
@@ -55,28 +55,28 @@ void CNNLLayerNormGradientOp<Context>::DoRunWithType() {
   const auto C = X.count(axis);
   auto &X_mu = Input("X_mu"), &X_rsig = Input("X_rsig");
 
-  CNNLSetTensorDesc<T>(input_desc_, {N, C});
-  CNNLSetTensorDesc<T>(scale_desc_, {C});
-  CNNLSetTensorDesc<T>(stats_desc_, {N});
+  CNNLSetTensorDesc<T>(this->input_desc_, {N, C});
+  CNNLSetTensorDesc<T>(this->scale_desc_, {C});
+  CNNLSetTensorDesc<T>(this->stats_desc_, {N});
 
-  size_t scratch_size = 0;
+  size_t workspace_size = 0;
   CNNL_CHECK(cnnlGetLayerNormBackwardWorkspaceSize(
-      ctx()->cnnl_handle(), input_desc_, 1, &scratch_size));
+      ctx()->cnnl_handle(), this->input_desc_, 1, &workspace_size));
   CNNL_CHECK(cnnlLayerNormBackward_v2(
       ctx()->cnnl_handle(),
-      input_desc_,
+      this->input_desc_,
       X.template data<T, Context>(),
       1,
-      input_desc_,
+      this->input_desc_,
       dY.template data<T, Context>(),
-      scale_desc_,
+      this->scale_desc_,
       W.template data<T, Context>(),
-      stats_desc_,
+      this->stats_desc_,
       X_mu.template data<T, Context>(),
       X_rsig.template data<T, Context>(),
-      ctx()->workspace()->template data<Context>(scratch_size),
-      scratch_size,
-      input_desc_,
+      ctx()->workspace()->template data<Context>(workspace_size),
+      workspace_size,
+      this->input_desc_,
       dX->ReshapeLike(X)->template mutable_data<T, Context>(),
       dW->Reshape({C})->template mutable_data<T, Context>(),
       dB->Reshape({C})->template mutable_data<T, Context>()));

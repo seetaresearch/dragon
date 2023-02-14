@@ -62,6 +62,8 @@ class Affine(Module):
     ):
         """Create an ``AffineChannel`` module.
 
+        conversion
+
         Parameters
         ----------
         num_features : int
@@ -102,10 +104,8 @@ class Affine(Module):
 
     def forward(self, input):
         return functional.affine(
-            input,
-            self.weight,
-            self.bias,
-            dim=1,
+            input, self.weight, self.bias,
+            dim=-1 if input.device.type == 'mlu' else 1,
             out=input if self.inplace else None)
 
 

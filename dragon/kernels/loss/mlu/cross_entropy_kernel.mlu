@@ -27,6 +27,58 @@ _CrossEntropy(const int N, const T* input, const T* target, T* loss) {
   }
 }
 
+template <typename T>
+__mlu_entry__ void _SigmoidCrossEntropy(
+    const int N,
+    const T* input,
+    const T* target,
+    T* loss,
+    T* mask) {
+  __nram__ T X[BLOCK_THREADS], Y[BLOCK_THREADS];
+  __nram__ T scratch1[BLOCK_THREADS], scratch2[BLOCK_THREADS];
+  MLU_1D_KERNEL_LOOP(i, N, BLOCK_THREADS) {
+    const int N_ram = std::min(N - i, BLOCK_THREADS);
+    __memcpy(Y, input + i, N_ram * sizeof(T), GDRAM2NRAM);
+    __memcpy(X, target + i, N_ram * sizeof(T), GDRAM2NRAM);
+    __bang_ge_scalar(scratch1, Y, T(0), N_ram);
+    __bang_ge_scalar(scratch2, X, T(0), N_ram);
+    __bang_fusion(FUSION_FSM, X, scratch1, X, Y, N_ram, N_ram);
+    __bang_mul(scratch1, scratch1, Y, N_ram);
+    __bang_fusion(FUSION_FMA, scratch1, scratch1, T(-2), Y, N_ram, N_ram);
+    __bang_active_exphp(scratch1, scratch1, N_ram);
+    __bang_add_scalar(scratch1, scratch1, T(1), N_ram);
+    __bang_active_loghp(scratch1, scratch1, N_ram);
+    __bang_fusion(FUSION_FAM, Y, scratch1, X, scratch2, N_ram, N_ram);
+    __memcpy(loss + i, Y, N_ram * sizeof(T), NRAM2GDRAM);
+    __memcpy(mask + i, scratch2, N_ram * sizeof(T), NRAM2GDRAM);
+  }
+}
+
+template <typename T>
+__mlu_entry__ void _SigmoidCrossEntropyGrad(
+    const int N,
+    const T* input,
+    const T* target,
+    T* dx,
+    T* mask) {
+  __nram__ T X[BLOCK_THREADS], Y[BLOCK_THREADS];
+  __nram__ T scratch[BLOCK_THREADS];
+  MLU_1D_KERNEL_LOOP(i, N, BLOCK_THREADS) {
+    const int N_ram = std::min(N - i, BLOCK_THREADS);
+    __memcpy(Y, input + i, N_ram * sizeof(T), GDRAM2NRAM);
+    __memcpy(X, target + i, N_ram * sizeof(T), GDRAM2NRAM);
+    __bang_ge_scalar(scratch, X, T(0), N_ram);
+    // Low precision: __bang_active_sigmoid(Y, Y, N_ram);
+    __bang_mul_scalar(Y, Y, T(-1), N_ram);
+    __bang_active_exphp(Y, Y, N_ram);
+    __bang_add_scalar(Y, Y, T(1), N_ram);
+    __bang_active_reciphp(Y, Y, N_ram); // Fallback impl.
+    __bang_fusion(FUSION_FSM, Y, Y, X, scratch, N_ram, N_ram);
+    __memcpy(dx + i, Y, N_ram * sizeof(T), NRAM2GDRAM);
+    __memcpy(mask + i, scratch, N_ram * sizeof(T), NRAM2GDRAM);
+  }
+}
+
 } // namespace
 
 #define DEFINE_KERNEL_LAUNCHER(name, T)               \
@@ -59,6 +111,42 @@ DEFINE_KERNEL_LAUNCHER(CrossEntropy, float);
   }
 
 DEFINE_KERNEL_LAUNCHER(CrossEntropy, double);
+#undef DEFINE_KERNEL_LAUNCHER
+
+#define DEFINE_KERNEL_LAUNCHER(name, T)                     \
+  template <>                                               \
+  void name<T, MLUContext>(                                 \
+      const int N,                                          \
+      const T* input,                                       \
+      const T* target,                                      \
+      T* loss,                                              \
+      T* mask,                                              \
+      MLUContext* ctx) {                                    \
+    _##name<<<                                              \
+        MLU_BLOCKS(N, BLOCK_THREADS),                       \
+        CNRT_FUNC_TYPE_BLOCK,                               \
+        ctx->mlu_stream()>>>(N, input, target, loss, mask); \
+  }
+
+DEFINE_KERNEL_LAUNCHER(SigmoidCrossEntropy, float);
+DEFINE_KERNEL_LAUNCHER(SigmoidCrossEntropyGrad, float);
+#undef DEFINE_KERNEL_LAUNCHER
+
+#define DEFINE_KERNEL_LAUNCHER(name, T)                                  \
+  template <>                                                            \
+  void name<T, MLUContext>(                                              \
+      const int N,                                                       \
+      const T* input,                                                    \
+      const T* target,                                                   \
+      T* loss,                                                           \
+      T* mask,                                                           \
+      MLUContext* ctx) {                                                 \
+    LOG(FATAL) << "Unsupported BANG type for <" << #name                 \
+               << "Kernel>: " << dtypes::to_string(TypeMeta::Make<T>()); \
+  }
+
+DEFINE_KERNEL_LAUNCHER(SigmoidCrossEntropy, double);
+DEFINE_KERNEL_LAUNCHER(SigmoidCrossEntropyGrad, double);
 #undef DEFINE_KERNEL_LAUNCHER
 
 } // namespace kernels

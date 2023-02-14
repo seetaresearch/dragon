@@ -74,7 +74,6 @@ class CNNLTransposeOpImpl {
     return scratch_size_;
   }
 
- private:
   size_t scratch_size_;
   cnnlTransposeDescriptor_t transpose_desc_;
   cnnlTensorDescriptor_t input_desc_, output_desc_;
