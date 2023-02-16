@@ -51,6 +51,7 @@ void CNNLBatchNormOp<Context>::DoRunWithType() {
         buffer,
         bn_desc_,
         buffer + C_));
+    ctx()->FinishDeviceComputation();
     CNCL_CHECK(cnclAllGather(
         buffer,
         buffer + C_ * 2,
@@ -221,6 +222,7 @@ void CNNLBatchNormGradientOp<Context>::RunTraining() {
         true,
         true,
         true));
+    ctx()->FinishDeviceComputation();
     CNCL_CHECK(cnclAllReduce(
         buffer,
         buffer,
