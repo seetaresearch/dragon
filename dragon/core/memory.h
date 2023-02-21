@@ -83,9 +83,11 @@ class DRAGON_API UnifiedMemory {
   /*! \brief Return the data size on given device */
   size_t size(const string& device_type, int device_id) const {
     if (device_type == "cuda") {
-      if (own_cuda_ptr_ && cuda_ptr_ && device_id_ == device_id) {
-        return size_;
-      }
+      if (own_cuda_ptr_ && cuda_ptr_ && device_id_ == device_id) return size_;
+    } else if (device_type == "mlu") {
+      if (own_mlu_ptr_ && mlu_ptr_ && device_id_ == device_id) return size_;
+    } else if (device_type == "mps") {
+      if (own_mps_ptr_ && mps_ptr_ && device_id_ == device_id) return size_;
     }
     return size_t(0);
   }

@@ -43,6 +43,9 @@ class TestCUDA(unittest.TestCase):
         torch.cuda.set_device(0)
         self.assertEqual(torch.cuda.current_device(), 0)
         torch.cuda.synchronize()
+        torch.cuda.manual_seed(1337)
+        torch.cuda.manual_seed_all(1337)
+        self.assertGreaterEqual(torch.cuda.memory_allocated(), 0)
 
 
 class TestCuDNN(unittest.TestCase):
@@ -83,6 +86,9 @@ class TestMPS(unittest.TestCase):
         torch.mps.set_device(0)
         self.assertEqual(torch.mps.current_device(), 0)
         torch.mps.synchronize()
+        torch.mps.manual_seed(1337)
+        torch.mps.manual_seed_all(1337)
+        self.assertGreaterEqual(torch.mps.memory_allocated(), 0)
 
 
 class TestOpenMP(unittest.TestCase):
@@ -108,6 +114,9 @@ class TestMLU(unittest.TestCase):
         torch.mlu.set_device(0)
         self.assertEqual(torch.mlu.current_device(), 0)
         torch.mlu.synchronize()
+        torch.mlu.manual_seed(1337)
+        torch.mlu.manual_seed_all(1337)
+        self.assertGreaterEqual(torch.mlu.memory_allocated(), 0)
 
 
 class TestCNNL(unittest.TestCase):

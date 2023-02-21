@@ -61,7 +61,6 @@ DEFINE_OP_SINGLE_ARG(float, DropPathOp, ratio);
 DEFINE_OP_SINGLE_ARG(float, DropPathGradientOp, ratio);
 
 #ifdef USE_MPS
-
 template <class Context>
 class MPSDropPathOp final : public Operator<Context> {
  public:
@@ -90,7 +89,6 @@ class MPSDropPathOp final : public Operator<Context> {
 };
 
 DEFINE_OP_SINGLE_ARG(float, MPSDropPathOp, ratio);
-
 #endif // USE_MPS
 
 } // namespace dragon

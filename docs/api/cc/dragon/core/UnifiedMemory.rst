@@ -35,6 +35,10 @@ info
 ####
 .. doxygenfunction:: dragon::UnifiedMemory::info
 
+mlu_data
+########
+.. doxygenfunction:: dragon::UnifiedMemory::mlu_data
+
 mps_data
 ########
 .. doxygenfunction:: dragon::UnifiedMemory::mps_data
@@ -63,6 +67,10 @@ mutable_cuda_data
 #################
 .. doxygenfunction:: dragon::UnifiedMemory::mutable_cuda_data
 
+mutable_mlu_data
+#################
+.. doxygenfunction:: dragon::UnifiedMemory::mutable_mlu_data
+
 set_cpu_data
 ############
 .. doxygenfunction:: dragon::UnifiedMemory::set_cpu_data
@@ -82,6 +90,10 @@ SwitchToCUDADevice
 ##################
 .. doxygenfunction:: dragon::UnifiedMemory::SwitchToCUDADevice
 
+SwitchToMLUDevice
+##################
+.. doxygenfunction:: dragon::UnifiedMemory::SwitchToMLUDevice
+
 SwitchToMPSDevice
 ##################
 .. doxygenfunction:: dragon::UnifiedMemory::SwitchToMPSDevice
@@ -93,6 +105,10 @@ ToCPU
 ToCUDA
 ######
 .. doxygenfunction:: dragon::UnifiedMemory::ToCUDA
+
+ToMLU
+#####
+.. doxygenfunction:: dragon::UnifiedMemory::ToMLU
 
 ToMPS
 #####

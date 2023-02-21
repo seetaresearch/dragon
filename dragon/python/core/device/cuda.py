@@ -227,6 +227,23 @@ def set_device(device_index=0):
     backend.cudaSetDevice(device_index)
 
 
+def set_random_seed(device_index=None, seed=3):
+    """Set the random seed for cuda device.
+
+    If ``device_index`` is **None**, the current device will be selected.
+
+    Parameters
+    ----------
+    device_index : int, optional
+        The device index.
+    seed : int, default=3
+        The seed to use.
+
+    """
+    device_index = -1 if device_index is None else device_index
+    backend.cudaSetRandomSeed(device_index, seed)
+
+
 def synchronize(device_index=None, stream_index=0):
     """Synchronize a specified CUDA stream.
 

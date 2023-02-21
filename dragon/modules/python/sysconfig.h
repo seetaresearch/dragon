@@ -13,7 +13,7 @@
 #ifndef DRAGON_MODULES_PYTHON_SYSCONFIG_H_
 #define DRAGON_MODULES_PYTHON_SYSCONFIG_H_
 
-#include <dragon/core/common.h>
+#include <dragon/core/context.h>
 #include <dragon/utils/device/common_cuda.h>
 #include <dragon/utils/device/common_cudnn.h>
 #include <dragon/utils/device/common_eigen.h>
@@ -29,6 +29,11 @@ void RegisterModule_sysconfig(py::module& m) {
   /*! \brief Set the logging severity */
   m.def("SetLoggingLevel", [](const string& severity) {
     SetLogDestination(severity);
+  });
+
+  /*! \brief Set the random seed for cuda device */
+  m.def("SetRandomSeed", [](int seed) {
+    CPUContext::objects().SetRandomSeed(seed);
   });
 
   /*! \brief Set the number of threads for cpu parallelism */

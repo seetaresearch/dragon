@@ -21,6 +21,15 @@ vm.torch.mlu
   `is_available(...) <mlu/is_available.html>`_
   : Return a bool reporting if runtime is available.
 
+  `manual_seed(...) <mlu/manual_seed.html>`_
+  : Set the random seed for mlu device.
+
+  `manual_seed_all(...) <mlu/manual_seed_all.html>`_
+  : Set the random seed for all mlu devices.
+
+  `memory_allocated(...) <mlu/memory_allocated.html>`_
+  : Return the size of memory used by tensors in current workspace.
+
   `set_device(...) <mlu/set_device.html>`_
   : Set the current device.
 
@@ -35,6 +44,9 @@ vm.torch.mlu
   mlu/get_device_capability
   mlu/get_device_name
   mlu/is_available
+  mlu/manual_seed
+  mlu/manual_seed_all
+  mlu/memory_allocated
   mlu/set_device
   mlu/synchronize
 

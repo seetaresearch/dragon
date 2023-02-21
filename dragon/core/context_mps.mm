@@ -10,6 +10,7 @@ MPSObjects::MPSObjects() {
     auto* device = devices[i];
     if (!device.isLowPower) {
       devices_.push_back([device retain]);
+      random_seeds_.push_back(DEFAULT_RNG_SEED);
     }
   }
 }

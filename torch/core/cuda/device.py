@@ -8,7 +8,7 @@
 #     <https://opensource.org/licenses/BSD-2-Clause>
 #
 # ------------------------------------------------------------
-"""CUDA device functions."""
+"""CUDA device utilities."""
 
 from __future__ import absolute_import
 from __future__ import division

@@ -12,6 +12,7 @@
 #     <https://github.com/tensorflow/tensorflow/blob/master/tensorflow/python/framework/tensor_spec.py>
 #
 # ------------------------------------------------------------
+"""Tensor spec utilities."""
 
 from __future__ import absolute_import
 from __future__ import division

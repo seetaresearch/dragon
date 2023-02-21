@@ -30,6 +30,7 @@ class CollectiveOp final : public CollectiveOpBase<Context> {
     char* env_var = nullptr;
     env_var = getenv("DRAGON_COLL_BUFFER_SIZE");
     if (env_var != nullptr) buffer_size_ = std::stoi(string(env_var));
+    if (operation_ == "ALLGATHER") buffer_size_ = 0; // Disabled.
   }
   USE_OPERATOR_FUNCTIONS;
   USE_COLLECTIVE_FUNCTIONS;

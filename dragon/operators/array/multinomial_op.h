@@ -22,7 +22,8 @@ class MultinomialOp final : public Operator<Context> {
  public:
   MultinomialOp(const OperatorDef& def, Workspace* ws)
       : Operator<Context>(def, ws),
-        sample_size_(OP_SINGLE_ARG(int64_t, "sample_size", 1)) {}
+        sample_size_(OP_SINGLE_ARG(int64_t, "sample_size", 1)),
+        impl_ctx_(def.device_option()) {}
   USE_OPERATOR_FUNCTIONS;
 
   void RunOnDevice() override {
@@ -35,6 +36,7 @@ class MultinomialOp final : public Operator<Context> {
 
  protected:
   int64_t sample_size_;
+  CPUContext impl_ctx_;
 };
 
 } // namespace dragon

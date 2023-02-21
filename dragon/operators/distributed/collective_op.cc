@@ -202,40 +202,42 @@ void CollectiveOp<Context>::BroadcastCNCL() {
 template <class Context>
 template <typename T>
 void CollectiveOp<Context>::DoRunWithType() {
-  if (src_tensor_ != nullptr) {
-    if (operation_ == "ALLREDUCE") {
-      CopyTensors<T>(false);
-      if (enable_nccl_) {
-        AllReduceNCCL<T>();
-      } else if (enable_cncl_) {
-        AllReduceCNCL<T>();
-      } else {
-        AllReduceMPI<T>();
-      }
-      CopyTensors<T>(true);
-    } else if (operation_ == "ALLGATHER") {
-      if (enable_nccl_) return AllGatherNCCL<T>();
-      if (enable_cncl_) return AllGatherCNCL<T>();
-      AllGatherMPI<T>();
-    } else if (operation_ == "BROADCAST") {
-      CopyTensors<T>(false);
-      if (enable_nccl_) {
-        BroadcastNCCL<T>();
-      } else if (enable_cncl_) {
-        BroadcastCNCL<T>();
-      } else {
-        BroadcastMPI<T>();
-      }
-      CopyTensors<T>(true);
-    } else {
-      LOG(FATAL) << "Unknown operation: " << operation_;
-    }
-  } else {
+  if (src_tensor_ == nullptr) { // Transformation.
     if (operation_ == "ALLREDUCE" && reduction_ == "MEAN") {
       auto* data = dest_tensor_->template mutable_data<T, Context>();
       math::Scale(dest_tensor_->count(), 1.f / comm_size_, data, data, ctx());
     }
+    return;
   }
+  CopyTensors<T>(/* done = */ false); // Concat tensors.
+  if (operation_ == "ALLREDUCE") {
+    if (enable_nccl_) {
+      AllReduceNCCL<T>();
+    } else if (enable_cncl_) {
+      AllReduceCNCL<T>();
+    } else {
+      AllReduceMPI<T>();
+    }
+  } else if (operation_ == "ALLGATHER") {
+    if (enable_nccl_) {
+      AllGatherNCCL<T>();
+    } else if (enable_cncl_) {
+      AllGatherCNCL<T>();
+    } else {
+      AllGatherMPI<T>();
+    }
+  } else if (operation_ == "BROADCAST") {
+    if (enable_nccl_) {
+      BroadcastNCCL<T>();
+    } else if (enable_cncl_) {
+      BroadcastCNCL<T>();
+    } else {
+      BroadcastMPI<T>();
+    }
+  } else {
+    LOG(FATAL) << "Unsupported operation: " << operation_;
+  }
+  CopyTensors<T>(/* done = */ true); // Split tensors.
 }
 
 template <class Context>
@@ -243,14 +245,15 @@ void CollectiveOp<Context>::RunOnDevice() {
   if (comm_size_ <= 1) return;
   // Wait stream to finish the enqueued kernels.
   ctx()->FinishDeviceComputation();
-  src_index_ = 0;
-  while (src_index_ < InputSize()) {
+  // Enqueue collective kernels.
+  for (src_index_ = 0; src_index_ < InputSize();) {
     src_tensor_ = &Input(src_index_), dest_tensor_ = Output(src_index_);
     DispatchHelper<dtypes::Numerical>::Call(this, *src_tensor_);
   }
+  // Enqueue transform kernels.
   src_tensor_ = nullptr;
-  for (int i = 0; i < InputSize(); ++i) {
-    dest_tensor_ = Output(i);
+  for (src_index_ = 0; src_index_ < InputSize(); ++src_index_) {
+    dest_tensor_ = &Input(src_index_);
     DispatchHelper<dtypes::Numerical>::Call(this, *dest_tensor_);
   }
 }

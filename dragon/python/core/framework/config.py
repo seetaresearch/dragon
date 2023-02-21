@@ -28,8 +28,6 @@ class Config(object):
         self.device_type = 'cpu'
         # Device index.
         self.device_index = 0
-        # Device random seed.
-        self.random_seed = 3
         # Graph type for various scheduling.
         self.graph_type = ''
         # Graph optimization level.
@@ -79,7 +77,7 @@ def set_num_threads(num):
 
 
 def set_random_seed(seed):
-    """Set the global random seed.
+    """Set the random seed for cpu device.
 
     Parameters
     ----------
@@ -87,7 +85,7 @@ def set_random_seed(seed):
         The seed to use.
 
     """
-    config().random_seed = seed
+    backend.SetRandomSeed(seed)
 
 
 _config = None

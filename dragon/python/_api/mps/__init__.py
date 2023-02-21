@@ -15,12 +15,14 @@ from __future__ import print_function as _print_function
 
 # Functions
 from dragon.core.device.mps import current_device
-from dragon.core.device.mps import is_available
 from dragon.core.device.mps import get_device_count
 from dragon.core.device.mps import get_device_family
 from dragon.core.device.mps import get_device_name
+from dragon.core.device.mps import is_available
+from dragon.core.device.mps import memory_allocated
 from dragon.core.device.mps import set_default_device
 from dragon.core.device.mps import set_device
+from dragon.core.device.mps import set_random_seed
 from dragon.core.device.mps import synchronize
 
 __all__ = [_s for _s in dir() if not _s.startswith('_')]

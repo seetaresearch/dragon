@@ -21,6 +21,15 @@ vm.torch.cuda
   `is_available(...) <cuda/is_available.html>`_
   : Return a bool reporting if runtime is available.
 
+  `manual_seed(...) <cuda/manual_seed.html>`_
+  : Set the random seed for cuda device.
+
+  `manual_seed_all(...) <cuda/manual_seed_all.html>`_
+  : Set the random seed for all cuda devices.
+
+  `memory_allocated(...) <cuda/memory_allocated.html>`_
+  : Return the size of memory used by tensors in current workspace.
+
   `set_device(...) <cuda/set_device.html>`_
   : Set the current device.
 
@@ -35,6 +44,9 @@ vm.torch.cuda
   cuda/get_device_capability
   cuda/get_device_name
   cuda/is_available
+  cuda/manual_seed
+  cuda/manual_seed_all
+  cuda/memory_allocated
   cuda/set_device
   cuda/synchronize
 

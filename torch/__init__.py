@@ -157,6 +157,7 @@ from dragon.vm.torch.core.ops.random_ops import randperm
 from dragon.vm.torch.core.ops.sort_ops import argsort
 from dragon.vm.torch.core.ops.sort_ops import sort
 from dragon.vm.torch.core.ops.sort_ops import topk
+from dragon.vm.torch.core.random import manual_seed
 from dragon.vm.torch.core.serialization import load
 from dragon.vm.torch.core.serialization import save
 

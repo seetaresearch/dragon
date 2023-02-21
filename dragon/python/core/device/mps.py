@@ -16,6 +16,7 @@ from __future__ import print_function
 
 from dragon.core.framework import backend
 from dragon.core.framework import config
+from dragon.core.framework import workspace
 
 
 def current_device():
@@ -28,18 +29,6 @@ def current_device():
 
     """
     return backend.mpsGetDevice()
-
-
-def is_available():
-    """Return a bool reporting if runtime is available.
-
-    Returns
-    -------
-    bool
-        ``True`` if available otherwise ``False``.
-
-    """
-    return backend.mpsIsDriverSufficient()
 
 
 def get_device_count():
@@ -94,6 +83,44 @@ def get_device_name(device_index=None):
     return backend.mpsGetDeviceName(device_index)
 
 
+def is_available():
+    """Return a bool reporting if runtime is available.
+
+    Returns
+    -------
+    bool
+        ``True`` if available otherwise ``False``.
+
+    """
+    return backend.mpsIsDriverSufficient()
+
+
+def memory_allocated(device_index=None):
+    """Return the size of memory used by tensors in current workspace.
+
+    If ``device_index`` is **None**, the current device will be selected.
+
+    Parameters
+    ----------
+    device_index : int, optional
+        The device index.
+
+    Returns
+    -------
+    int
+        The total number of allocated bytes.
+
+    See Also
+    --------
+    `dragon.Workspace.memory_allocated(...)`_
+
+    """
+    if device_index is None:
+        device_index = current_device()
+    current_ws = workspace.get_workspace()
+    return current_ws.memory_allocated('mps', device_index)
+
+
 def set_default_device(device_index=0):
     """Set the default device.
 
@@ -130,8 +157,25 @@ def set_device(device_index=0):
     backend.mpsSetDevice(device_index)
 
 
+def set_random_seed(device_index=None, seed=3):
+    """Set the random seed for mps device.
+
+    If ``device_index`` is **None**, the current device will be selected.
+
+    Parameters
+    ----------
+    device_index : int, optional
+        The device index.
+    seed : int, default=3
+        The seed to use.
+
+    """
+    device_index = -1 if device_index is None else device_index
+    backend.mpsSetRandomSeed(device_index, seed)
+
+
 def synchronize(device_index=None, stream_index=0):
-    """Synchronize a specified MPS stream.
+    """Synchronize a specified mps stream.
 
     If ``device_index`` is **None**, the current device will be selected.
 

@@ -15,6 +15,9 @@ dragon/core
   `class Graph <core/Graph.html>`_
   : Graph to execute operators sequentially.
 
+  `class MLUContext <core/MLUContext.html>`_
+  : The mlu device context.
+
   `class MPSContext <core/MPSContext.html>`_
   : The mps device context.
 
@@ -42,6 +45,7 @@ dragon/core
   core/CPUContext
   core/CUDAContext
   core/Graph
+  core/MLUContext
   core/MPSContext
   core/Operator
   core/OpSchema

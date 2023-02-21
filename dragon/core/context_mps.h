@@ -92,9 +92,20 @@ class MPSObjects {
     device_id_ = device_id;
   }
 
+  /*! \brief Set the random seed for given device */
+  void SetRandomSeed(int device_id, int seed) {
+    if (device_id < random_seeds_.size()) random_seeds_[device_id] = seed;
+  }
+
   /*! \brief Return the current mps device */
   int GetDevice() {
     return device_id_;
+  }
+
+  /*! \brief Return the random seed of given device */
+  int GetRandomSeed(int device_id) const {
+    return (device_id < random_seeds_.size()) ? random_seeds_[device_id]
+                                              : DEFAULT_RNG_SEED;
   }
 
   /*! \brief Return the name of given device */
@@ -134,6 +145,9 @@ class MPSObjects {
   /*! \brief The retained mps devices */
   vector<MTLDevice_t> devices_;
 
+  /*! \brief The random seed for all devices */
+  vector<int> random_seeds_;
+
   /*! \brief The created mps streams for all devices */
   vector<MPSStream*> streams_[MPS_MAX_DEVICES];
 
@@ -163,11 +177,9 @@ class DRAGON_API MPSContext {
 
   /*! \brief Constructor with the device option */
   explicit MPSContext(const DeviceOption& option)
-      : device_id_(option.device_id()),
-        random_seed_(
-            option.has_random_seed() ? option.random_seed()
-                                     : DEFAULT_RNG_SEED) {
+      : device_id_(option.device_id()), random_seed_(-1) {
     CHECK_EQ(option.device_type(), PROTO_MPS);
+    if (option.has_random_seed()) random_seed_ = int(option.random_seed());
   }
 
   /*! \brief Allocate a device buffer */
@@ -254,6 +266,12 @@ class DRAGON_API MPSContext {
     return stream_id_;
   }
 
+  /*! \brief Return the random seed */
+  int random_seed() const {
+    return random_seed_ >= 0 ? random_seed_
+                             : objects().GetRandomSeed(device_id_);
+  }
+
   /*! \brief Return the device index of current thread */
   static int current_device() {
     return objects().GetDevice();
@@ -265,14 +283,6 @@ class DRAGON_API MPSContext {
   /*! \brief Return the thread-local mps objects */
   static MPSObjects& objects();
 
-  /*! \brief Return the random generator */
-  std::mt19937* rand_generator() {
-    if (!rand_generator_.get()) {
-      rand_generator_.reset(new std::mt19937(random_seed_));
-    }
-    return rand_generator_.get();
-  }
-
   /*! \brief Set the stream index */
   void set_stream(int stream) {
     stream_id_ = stream;
@@ -280,7 +290,6 @@ class DRAGON_API MPSContext {
 
  private:
   int device_id_, stream_id_ = 0, random_seed_;
-  unique_ptr<std::mt19937> rand_generator_;
 };
 
 /*!

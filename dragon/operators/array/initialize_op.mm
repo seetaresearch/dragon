@@ -11,7 +11,7 @@ void MPSRandomOpBase<Context>::DoRunWithType() {
   const auto N = Y->count();
   const auto Y_dims = vec64_t({N});
   const auto Y_meta = dtypes::to_meta(data_type());
-  const auto seed = def().device_option().random_seed();
+  const auto seed = ctx()->random_seed();
   const auto state_name = "MPSPhiloxState:" + str::to(seed);
   auto* Y_state = ctx()->workspace()->CreateTensor(state_name);
   auto* Y_state_inc = ctx()->workspace()->GetTensor("MPSPhiloxStateInc");

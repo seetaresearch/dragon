@@ -21,6 +21,9 @@ from dragon.vm.torch.core.backends.mps import get_device_family
 from dragon.vm.torch.core.backends.mps import get_device_name
 from dragon.vm.torch.core.backends.mps import is_available
 from dragon.vm.torch.core.backends.mps import is_built
+from dragon.vm.torch.core.backends.mps import manual_seed
+from dragon.vm.torch.core.backends.mps import manual_seed_all
+from dragon.vm.torch.core.backends.mps import memory_allocated
 from dragon.vm.torch.core.backends.mps import set_device
 from dragon.vm.torch.core.backends.mps import synchronize
 

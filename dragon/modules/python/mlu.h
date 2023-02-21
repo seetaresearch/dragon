@@ -83,6 +83,14 @@ void RegisterModule_mlu(py::module& m) {
 #endif
   });
 
+  /*! \brief Set the random seed for cuda device */
+  m.def("mluSetRandomSeed", [](int device_id, int seed) {
+#ifdef USE_MLU
+    if (device_id < 0) device_id = MLUContext::current_device();
+    MLUContext::objects().SetRandomSeed(device_id, seed);
+#endif
+  });
+
   /*! \brief Synchronize the specified mlu stream */
   m.def("mluStreamSynchronize", [](int device_id, int stream_id) {
 #ifdef USE_MLU

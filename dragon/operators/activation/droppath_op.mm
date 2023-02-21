@@ -15,7 +15,7 @@ void MPSDropPathOp<Context>::DoRunWithType() {
     const auto N = X.dim(0);
     const auto X_dims = vec64_t({N});
     const auto drop_ratio = ratio();
-    const auto seed = def().device_option().random_seed();
+    const auto seed = ctx()->random_seed();
     const auto state_name = "MPSPhiloxState:" + str::to(seed);
     auto* X_mask = Output("X_mask")->Reshape({X.dim(0)});
     auto* Y_state = ctx()->workspace()->CreateTensor(state_name);

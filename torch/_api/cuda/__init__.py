@@ -22,5 +22,8 @@ from dragon.vm.torch.core.cuda.device import get_device_name
 from dragon.vm.torch.core.cuda.device import is_available
 from dragon.vm.torch.core.cuda.device import set_device
 from dragon.vm.torch.core.cuda.device import synchronize
+from dragon.vm.torch.core.cuda.memory import memory_allocated
+from dragon.vm.torch.core.cuda.random import manual_seed
+from dragon.vm.torch.core.cuda.random import manual_seed_all
 
 __all__ = [_s for _s in dir() if not _s.startswith('_')]

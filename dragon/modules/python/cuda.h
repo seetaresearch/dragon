@@ -161,6 +161,14 @@ void RegisterModule_cuda(py::module& m) {
 #endif
   });
 
+  /*! \brief Set the random seed for cuda device */
+  m.def("cudaSetRandomSeed", [](int device_id, int seed) {
+#ifdef USE_CUDA
+    if (device_id < 0) device_id = CUDAContext::current_device();
+    CUDAContext::objects().SetRandomSeed(device_id, seed);
+#endif
+  });
+
   /*! \brief Synchronize the specified cuda stream */
   m.def("cudaStreamSynchronize", [](int device_id, int stream_id) {
 #ifdef USE_CUDA

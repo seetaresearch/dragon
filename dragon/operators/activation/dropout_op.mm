@@ -14,7 +14,7 @@ void MPSDropoutOp<Context>::DoRunWithType() {
   } else if (phase() == "TRAIN") {
     const auto N = X.count();
     const auto X_dims = vec64_t({N});
-    const auto seed = def().device_option().random_seed();
+    const auto seed = ctx()->random_seed();
     const auto drop_ratio = this->ratio();
     const auto state_name = "MPSPhiloxState:" + str::to(seed);
     auto* X_mask = Output("X_mask")->ReshapeLike(X);

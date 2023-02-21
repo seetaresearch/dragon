@@ -26,7 +26,8 @@ class MLUObjects {
  public:
   /*! \brief Constructor */
   MLUObjects() {
-    for (int i = 0; i < MLU_MAX_DEVICES; i++) {
+    for (int i = 0; i < MLU_MAX_DEVICES; ++i) {
+      random_seeds_[i] = DEFAULT_RNG_SEED;
       streams_[i] = vector<cnrtQueue_t>();
       workspaces_[i] = vector<Workspace*>();
       cnnl_handles_[i] = vector<cnnlHandle_t>();
@@ -38,9 +39,14 @@ class MLUObjects {
   /*! \brief Destructor */
   ~MLUObjects();
 
-  /*! \brief Set the current mlu device */
+  /*! \brief Set the current device */
   void SetDevice(int device_id) {
     CNRT_CHECK(cnrtSetDevice(device_id));
+  }
+
+  /*! \brief Set the random seed for given device */
+  void SetRandomSeed(int device_id, int seed) {
+    if (device_id < MLU_MAX_DEVICES) random_seeds_[device_id] = seed;
   }
 
   /*! \brief Return the current mlu device */
@@ -48,6 +54,12 @@ class MLUObjects {
     int device_id;
     CNRT_CHECK(cnrtGetDevice(&device_id));
     return device_id;
+  }
+
+  /*! \brief Return the random seed of given device */
+  int GetRandomSeed(int device_id) const {
+    return (device_id < MLU_MAX_DEVICES) ? random_seeds_[device_id]
+                                         : DEFAULT_RNG_SEED;
   }
 
   /*! \brief Return the specified cnnl handle */
@@ -111,6 +123,9 @@ class MLUObjects {
   /*! \brief Return the workspace of specified mlu stream */
   Workspace* workspace(int device_id, int stream_id);
 
+  /*! \brief The random seed for all devices */
+  int random_seeds_[MLU_MAX_DEVICES];
+
   /*! \brief The created streams for all devices */
   vector<cnrtQueue_t> streams_[MLU_MAX_DEVICES];
 
@@ -139,18 +154,16 @@ class MLUObjects {
 class DRAGON_API MLUContext {
  public:
   /*! \brief Constructor */
-  MLUContext() : device_id_(0), random_seed_(DEFAULT_RNG_SEED) {}
+  MLUContext() : device_id_(0), random_seed_(-1) {}
 
   /*! \brief Constructor with the device index */
   explicit MLUContext(int device) : device_id_(device) {}
 
   /*! \brief Constructor with the device option */
   explicit MLUContext(const DeviceOption& option)
-      : device_id_(option.device_id()),
-        random_seed_(
-            option.has_random_seed() ? option.random_seed()
-                                     : DEFAULT_RNG_SEED) {
+      : device_id_(option.device_id()), random_seed_(-1) {
     CHECK_EQ(option.device_type(), PROTO_MLU);
+    if (option.has_random_seed()) random_seed_ = int(option.random_seed());
   }
 
   /*! \brief Allocate a block of device memory */
@@ -249,7 +262,7 @@ class DRAGON_API MLUContext {
 
   /*! \brief Return the cnrand generator */
   std::pair<cnnlRandGenerator_t, void*> cnrand_generator() {
-    return objects().cnrand_generator(device_id_, stream_id_, random_seed_);
+    return objects().cnrand_generator(device_id_, stream_id_, random_seed());
   }
 
   /*! \brief Return the cnnl handle */
@@ -267,6 +280,12 @@ class DRAGON_API MLUContext {
     return stream_id_;
   }
 
+  /*! \brief Return the random seed */
+  int random_seed() const {
+    return random_seed_ >= 0 ? random_seed_
+                             : objects().GetRandomSeed(device_id_);
+  }
+
   /*! \brief Return the device index of current thread */
   static int current_device() {
     return objects().GetDevice();
@@ -278,14 +297,6 @@ class DRAGON_API MLUContext {
   /*! \brief Return the thread-local mlu objects */
   static MLUObjects& objects();
 
-  /*! \brief Return the random generator */
-  std::mt19937* rand_generator() {
-    if (!rand_generator_.get()) {
-      rand_generator_.reset(new std::mt19937(random_seed_));
-    }
-    return rand_generator_.get();
-  }
-
   /*! \brief Set the stream index */
   void set_stream(int stream) {
     stream_id_ = stream;
@@ -293,7 +304,6 @@ class DRAGON_API MLUContext {
 
  private:
   int device_id_, stream_id_ = 0, random_seed_;
-  unique_ptr<std::mt19937> rand_generator_;
 };
 
 #endif // USE_MLU

@@ -7,7 +7,7 @@ Constructors
 ------------
 
 .. doxygenfunction:: dragon::CPUContext::CPUContext()
-.. doxygenfunction:: dragon::CPUContext::CPUContext(unsigned int random_seed)
+.. doxygenfunction:: dragon::CPUContext::CPUContext(int random_seed)
 .. doxygenfunction:: dragon::CPUContext::CPUContext(const DeviceOption &option)
 
 Public Properties
@@ -16,6 +16,18 @@ Public Properties
 device
 ######
 .. doxygenfunction:: dragon::CPUContext::device
+
+mutex
+#####
+.. doxygenfunction:: dragon::CPUContext::mutex
+
+objects
+#######
+.. doxygenfunction:: dragon::CPUContext::objects
+
+random_seed
+###########
+.. doxygenfunction:: dragon::CPUContext::random_seed
 
 rand_generator
 ##############

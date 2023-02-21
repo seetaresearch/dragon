@@ -33,9 +33,9 @@ objects
 #######
 .. doxygenfunction:: dragon::MPSContext::objects
 
-rand_generator
-##############
-.. doxygenfunction:: dragon::MPSContext::rand_generator
+random_seed
+###########
+.. doxygenfunction:: dragon::MPSContext::random_seed
 
 stream
 ######

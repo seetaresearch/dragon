@@ -28,7 +28,8 @@ class CUDAObjects {
  public:
   /*! \brief Constructor */
   CUDAObjects() {
-    for (int i = 0; i < CUDA_MAX_DEVICES; i++) {
+    for (int i = 0; i < CUDA_MAX_DEVICES; ++i) {
+      random_seeds_[i] = DEFAULT_RNG_SEED;
       streams_[i] = vector<cudaStream_t>();
       workspaces_[i] = vector<Workspace*>();
       cublas_handles_[i] = vector<cublasHandle_t>();
@@ -45,9 +46,14 @@ class CUDAObjects {
   /*! \brief Destructor */
   ~CUDAObjects();
 
-  /*! \brief Set the current cuda device */
+  /*! \brief Set the current device */
   void SetDevice(int device_id) {
     CUDA_CHECK(cudaSetDevice(device_id));
+  }
+
+  /*! \brief Set the random seed for given device */
+  void SetRandomSeed(int device_id, int seed) {
+    if (device_id < CUDA_MAX_DEVICES) random_seeds_[device_id] = seed;
   }
 
   /*! \brief Return the current cuda device */
@@ -55,6 +61,12 @@ class CUDAObjects {
     int device_id;
     CUDA_CHECK(cudaGetDevice(&device_id));
     return device_id;
+  }
+
+  /*! \brief Return the random seed of given device */
+  int GetRandomSeed(int device_id) const {
+    return (device_id < CUDA_MAX_DEVICES) ? random_seeds_[device_id]
+                                          : DEFAULT_RNG_SEED;
   }
 
   /*! \brief Return the specified cublas handle */
@@ -159,6 +171,9 @@ class CUDAObjects {
   /*! \brief Return the workspace of specified cuda stream */
   Workspace* workspace(int device_id, int stream_id);
 
+  /*! \brief The random seed for all devices */
+  int random_seeds_[CUDA_MAX_DEVICES];
+
   /*! \brief The created streams for all devices */
   vector<cudaStream_t> streams_[CUDA_MAX_DEVICES];
 
@@ -206,18 +221,16 @@ class CUDAObjects {
 class DRAGON_API CUDAContext {
  public:
   /*! \brief Constructor */
-  CUDAContext() : device_id_(0), random_seed_(DEFAULT_RNG_SEED) {}
+  CUDAContext() : device_id_(0), random_seed_(-1) {}
 
   /*! \brief Constructor with the device index */
   explicit CUDAContext(int device) : device_id_(device) {}
 
   /*! \brief Constructor with the device option */
   explicit CUDAContext(const DeviceOption& option)
-      : device_id_(option.device_id()),
-        random_seed_(
-            option.has_random_seed() ? option.random_seed()
-                                     : DEFAULT_RNG_SEED) {
+      : device_id_(option.device_id()), random_seed_(-1) {
     CHECK_EQ(option.device_type(), PROTO_CUDA);
+    if (option.has_random_seed()) random_seed_ = int(option.random_seed());
   }
 
   /*! \brief Allocate a block of device memory */
@@ -330,7 +343,7 @@ class DRAGON_API CUDAContext {
 
   /*! \brief Return the curand generator */
   curandGenerator_t curand_generator() {
-    return objects().curand_generator(device_id_, stream_id_, random_seed_);
+    return objects().curand_generator(device_id_, stream_id_, random_seed());
   }
 
   /*! \brief Return the cudnn handle */
@@ -352,7 +365,8 @@ class DRAGON_API CUDAContext {
 
   /*! \brief Return the random seed */
   int random_seed() const {
-    return random_seed_;
+    return random_seed_ >= 0 ? random_seed_
+                             : objects().GetRandomSeed(device_id_);
   }
 
   /*! \brief Return the device index of current thread */
@@ -366,14 +380,6 @@ class DRAGON_API CUDAContext {
   /*! \brief Return the thread-local cuda objects */
   static CUDAObjects& objects();
 
-  /*! \brief Return the random generator */
-  std::mt19937* rand_generator() {
-    if (!rand_generator_.get()) {
-      rand_generator_.reset(new std::mt19937(random_seed_));
-    }
-    return rand_generator_.get();
-  }
-
   /*! \brief Set the stream index */
   void set_stream(int stream) {
     stream_id_ = stream;
@@ -381,7 +387,6 @@ class DRAGON_API CUDAContext {
 
  private:
   int device_id_, stream_id_ = 0, random_seed_;
-  unique_ptr<std::mt19937> rand_generator_;
 };
 
 #endif // USE_CUDA

@@ -27,6 +27,7 @@ from dragon.core.device.cuda import set_cublas_flags
 from dragon.core.device.cuda import set_cudnn_flags
 from dragon.core.device.cuda import set_default_device
 from dragon.core.device.cuda import set_device
+from dragon.core.device.cuda import set_random_seed
 from dragon.core.device.cuda import synchronize
 
 __all__ = [_s for _s in dir() if not _s.startswith('_')]

@@ -54,6 +54,8 @@ class TestCUDA(unittest.TestCase):
         dragon.cuda.set_default_device(-1)
         self.assertEqual(config.config().device_type, 'cpu')
         self.assertEqual(config.config().device_index, 0)
+        dragon.cuda.set_random_seed(1337)
+        self.assertGreaterEqual(dragon.cuda.memory_allocated(), 0)
 
 
 class TestMPS(unittest.TestCase):
@@ -77,6 +79,8 @@ class TestMPS(unittest.TestCase):
         dragon.mps.set_default_device(-1)
         self.assertEqual(config.config().device_type, 'cpu')
         self.assertEqual(config.config().device_index, 0)
+        dragon.mps.set_random_seed(1337)
+        self.assertGreaterEqual(dragon.mps.memory_allocated(), 0)
 
 
 class TestMLU(unittest.TestCase):
@@ -100,6 +104,11 @@ class TestMLU(unittest.TestCase):
         dragon.mlu.set_default_device(-1)
         self.assertEqual(config.config().device_type, 'cpu')
         self.assertEqual(config.config().device_index, 0)
+        dragon.mlu.set_random_seed(1337)
+        self.assertGreaterEqual(dragon.mlu.memory_allocated(), 0)
+
+    def test_cnnl(self):
+        dragon.mlu.set_cnnl_flags()
 
 
 if __name__ == '__main__':

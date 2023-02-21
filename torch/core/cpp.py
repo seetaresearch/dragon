@@ -8,6 +8,7 @@
 #     <https://opensource.org/licenses/BSD-2-Clause>
 #
 # ------------------------------------------------------------
+"""Cpp utilities."""
 
 from __future__ import absolute_import
 from __future__ import division
@@ -18,7 +19,7 @@ from dragon.core.util import math_util
 
 
 class Size(tuple):
-    """Represent the a sequence of dimensions."""
+    """Represent a sequence of dimensions."""
 
     def __init__(self, sizes=None):
         """Create a ``Size``.

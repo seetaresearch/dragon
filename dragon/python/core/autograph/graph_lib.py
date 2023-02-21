@@ -103,11 +103,9 @@ class GraphLib(object):
     @staticmethod
     def _add_device(graph_def):
         """Add device."""
-        cfg = config.config()
         spec = context.get_device()
         graph_def.device_option.CopyFrom(
-            proto_util.get_device_option(
-                spec.type, spec.index, cfg.random_seed))
+            proto_util.get_device_option(spec.type, spec.index))
 
     @staticmethod
     def _add_grads(graph_def, outputs):

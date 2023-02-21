@@ -42,6 +42,9 @@ dragon.cuda
   `set_device(...) <cuda/set_device.html>`_
   : Set the current device.
 
+  `set_random_seed(...) <cuda/set_random_seed.html>`_
+  : Set the random seed for cuda device.
+
   `synchronize(...) <cuda/synchronize.html>`_
   : Synchronize a specified CUDA stream.
 
@@ -59,6 +62,7 @@ dragon.cuda
   cuda/set_cudnn_flags
   cuda/set_default_device
   cuda/set_device
+  cuda/set_random_seed
   cuda/synchronize
 
 .. raw:: html

@@ -19,22 +19,57 @@ namespace dragon {
 
 class Workspace;
 
+class CPUObjects {
+ public:
+  /*! \brief Constructor */
+  CPUObjects() : random_seed_(DEFAULT_RNG_SEED) {}
+
+  /*! \brief Set the random seed for cpu device */
+  void SetRandomSeed(int seed) {
+    random_seed_ = seed;
+  }
+
+  /*! \brief Return the random seed of cpu device */
+  int GetRandomSeed() const {
+    return random_seed_;
+  }
+
+  /*! \brief Return the specified random generator */
+  std::mt19937* rand_generator(int seed) {
+    auto& generators = rand_generators_;
+    const string key = "RNGState:" + str::to(seed);
+    auto find_iter = generators.find(key);
+    if (find_iter != generators.end()) return find_iter->second.get();
+    auto& generator = generators[key];
+    generator.reset(new std::mt19937(seed));
+    return generator.get();
+  }
+
+ private:
+  /*! \brief The random seed */
+  int random_seed_;
+
+  /*! \brief The created random generators */
+  Map<string, unique_ptr<std::mt19937>> rand_generators_;
+
+  DISABLE_COPY_AND_ASSIGN(CPUObjects);
+};
+
 /*!
  * \brief The cpu device context.
  */
 class DRAGON_API CPUContext {
  public:
   /*! \brief Constructor */
-  CPUContext() : random_seed_(3) {}
+  CPUContext() : random_seed_(-1) {}
 
   /*! \brief Constructor with the random seed */
-  explicit CPUContext(unsigned int random_seed) : random_seed_(random_seed) {}
+  explicit CPUContext(int random_seed) : random_seed_(random_seed) {}
 
   /*! \brief Constructor with the device option */
-  explicit CPUContext(const DeviceOption& option)
-      : random_seed_(
-            option.has_random_seed() ? option.random_seed()
-                                     : DEFAULT_RNG_SEED) {}
+  explicit CPUContext(const DeviceOption& option) : random_seed_(-1) {
+    if (option.has_random_seed()) random_seed_ = int(option.random_seed());
+  }
 
   /*! \brief Destructor */
   virtual ~CPUContext() {}
@@ -96,6 +131,11 @@ class DRAGON_API CPUContext {
   /*! \brief Return the current workspace */
   Workspace* workspace();
 
+  /*! \brief Return the random generator */
+  std::mt19937* rand_generator() {
+    return objects().rand_generator(random_seed());
+  }
+
   /*! \brief Return the device index */
   int device() const {
     return 0;
@@ -106,20 +146,23 @@ class DRAGON_API CPUContext {
     return 0;
   }
 
-  /*! \brief Return the random generator */
-  std::mt19937* rand_generator() {
-    if (!rand_generator_.get()) {
-      rand_generator_.reset(new std::mt19937(random_seed_));
-    }
-    return rand_generator_.get();
+  /*! \brief Return the random seed */
+  int random_seed() const {
+    return random_seed_ >= 0 ? random_seed_ : objects().GetRandomSeed();
   }
+
+  /*! \brief Return the shared context mutex */
+  static std::mutex& mutex();
+
+  /*! \brief Return the thread-local cpu objects */
+  static CPUObjects& objects();
 
   /*! \brief Set the stream index */
   void set_stream(int stream) {}
 
  private:
   /*! \brief The random seed */
-  unsigned int random_seed_;
+  int random_seed_;
 
   /*! \brief The random generator */
   unique_ptr<std::mt19937> rand_generator_;

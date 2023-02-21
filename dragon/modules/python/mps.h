@@ -77,6 +77,14 @@ void RegisterModule_mps(py::module& m) {
 #endif
   });
 
+  /*! \brief Set the random seed for cuda device */
+  m.def("mpsSetRandomSeed", [](int device_id, int seed) {
+#ifdef USE_MPS
+    if (device_id < 0) device_id = MPSContext::current_device();
+    MPSContext::objects().SetRandomSeed(device_id, seed);
+#endif
+  });
+
   /*! \brief Synchronize the specified mps stream */
   m.def("mpsStreamSynchronize", [](int device_id, int stream_id) {
 #ifdef USE_MPS

@@ -24,6 +24,15 @@ vm.torch.mps
   `set_device(...) <mps/set_device.html>`_
   : Set the current device.
 
+  `manual_seed(...) <mps/manual_seed.html>`_
+  : Set the random seed for mps device.
+
+  `manual_seed_all(...) <mps/manual_seed_all.html>`_
+  : Set the random seed for all mps devices.
+
+  `memory_allocated(...) <mps/memory_allocated.html>`_
+  : Return the size of memory used by tensors in current workspace.
+
   `synchronize(...) <mps/synchronize.html>`_
   : Synchronize all streams on a device.
 
@@ -35,6 +44,9 @@ vm.torch.mps
   mps/get_device_family
   mps/get_device_name
   mps/is_available
+  mps/manual_seed
+  mps/manual_seed_all
+  mps/memory_allocated
   mps/set_device
   mps/synchronize
 

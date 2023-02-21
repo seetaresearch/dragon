@@ -49,9 +49,9 @@ objects
 #######
 .. doxygenfunction:: dragon::CUDAContext::objects
 
-rand_generator
-##############
-.. doxygenfunction:: dragon::CUDAContext::rand_generator
+random_seed
+###########
+.. doxygenfunction:: dragon::CUDAContext::random_seed
 
 stream
 ######

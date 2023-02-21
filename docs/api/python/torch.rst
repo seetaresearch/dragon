@@ -177,6 +177,9 @@ vm.torch
   `lt(...) <torch/lt.html>`_
   : Compute element-wise less comparison.
 
+  `manual_seed(...) <torch/manual_seed.html>`_
+  : Set the random seed for cpu device.
+
   `masked_select(...) <torch/logsumexp.html>`_
   : Select the input elements where mask is true.
 
@@ -402,6 +405,7 @@ vm.torch
   torch/logical_xor
   torch/logsumexp
   torch/lt
+  torch/manual_seed
   torch/masked_select
   torch/matmul
   torch/max

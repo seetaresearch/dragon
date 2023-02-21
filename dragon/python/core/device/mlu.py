@@ -16,6 +16,7 @@ from __future__ import print_function
 
 from dragon.core.framework import backend
 from dragon.core.framework import config
+from dragon.core.framework import workspace
 
 
 def current_device():
@@ -94,6 +95,32 @@ def is_available():
     return backend.mluIsDriverSufficient()
 
 
+def memory_allocated(device_index=None):
+    """Return the size of memory used by tensors in current workspace.
+
+    If ``device_index`` is **None**, the current device will be selected.
+
+    Parameters
+    ----------
+    device_index : int, optional
+        The device index.
+
+    Returns
+    -------
+    int
+        The total number of allocated bytes.
+
+    See Also
+    --------
+    `dragon.Workspace.memory_allocated(...)`_
+
+    """
+    if device_index is None:
+        device_index = current_device()
+    current_ws = workspace.get_workspace()
+    return current_ws.memory_allocated('mlu', device_index)
+
+
 def set_cnnl_flags(enabled=None):
     """Set the flags of CNNL library.
 
@@ -140,6 +167,23 @@ def set_device(device_index=0):
 
     """
     backend.mluSetDevice(device_index)
+
+
+def set_random_seed(device_index=None, seed=3):
+    """Set the random seed for mlu device.
+
+    If ``device_index`` is **None**, the current device will be selected.
+
+    Parameters
+    ----------
+    device_index : int, optional
+        The device index.
+    seed : int, default=3
+        The seed to use.
+
+    """
+    device_index = -1 if device_index is None else device_index
+    backend.mluSetRandomSeed(device_index, seed)
 
 
 def synchronize(device_index=None, stream_index=0):

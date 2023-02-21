@@ -10,7 +10,12 @@
 # ------------------------------------------------------------
 """MLU backend."""
 
+from __future__ import absolute_import
+from __future__ import division
+from __future__ import print_function
+
 from dragon.core.framework import backend
+from dragon.core.framework import workspace
 
 
 def current_device():
@@ -89,6 +94,59 @@ def is_available():
 
     """
     return backend.mluIsDriverSufficient()
+
+
+def manual_seed(seed, device_index=None):
+    """Set the random seed for mlu device.
+
+    If ``device_index`` is **None**, the current device will be selected.
+
+    Parameters
+    ----------
+    seed : int
+        The seed to use.
+    device_index : int, optional
+        The device index.
+
+    """
+    device_index = -1 if device_index is None else device_index
+    backend.mluSetRandomSeed(device_index, int(seed))
+
+
+def manual_seed_all(seed):
+    """Set the random seed for all mlu devices.
+
+    Parameters
+    ----------
+    seed : int
+        The seed to use.
+
+    """
+    for i in range(backend.mluGetDeviceCount()):
+        backend.mluSetRandomSeed(i, int(seed))
+
+
+def memory_allocated(device=None):
+    """Return the size of memory used by tensors in current workspace.
+
+    If ``device`` is **None**, the current device will be selected.
+
+    Parameters
+    ----------
+    device : Union[dragon.vm.torch.device, int], optional
+        The device to query.
+
+    Returns
+    -------
+    int
+        The total number of allocated bytes.
+
+    """
+    device_index = device.index if hasattr(device, 'index') else device
+    if device_index is None:
+        device_index = backend.mluGetDevice()
+    current_ws = workspace.get_workspace()
+    return current_ws.memory_allocated('mlu', device_index)
 
 
 def set_device(device):
