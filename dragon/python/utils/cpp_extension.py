@@ -344,17 +344,14 @@ def _find_cuda():
     if cuda_home is None:
         try:
             which = 'where' if IS_WINDOWS else 'which'
-            nvcc = _subprocess.check_output(
-                [which, 'nvcc']).decode().rstrip('\r\n')
-            cuda_home = _os.path.dirname(_os.path.dirname(nvcc))
+            nvcc_list = _subprocess.check_output([which, 'nvcc']) \
+                                   .decode().rstrip('\r\n').split('\n')
+            cuda_home = _os.path.dirname(_os.path.dirname(nvcc_list[0]))
         except _subprocess.CalledProcessError:
             if IS_WINDOWS:
-                cuda_homes = _glob.glob(
-                    'C:/Program Files/NVIDIA GPU Computing Toolkit/CUDA/v*.*')
-                if len(cuda_homes) == 0:
-                    cuda_home = ''
-                else:
-                    cuda_home = cuda_homes[0]
+                search_path = 'C:/Program Files/NVIDIA GPU Computing Toolkit/CUDA/v*.*'
+                cuda_home_list = _glob.glob(search_path)[::-1]  # Select newer.
+                cuda_home = cuda_home_list[0] if len(cuda_home_list) > 0 else ''
             else:
                 cuda_home = '/usr/local/cuda'
             if not _os.path.exists(cuda_home):
@@ -373,7 +370,7 @@ def _get_cuda_arch_flags(cflags=None):
                         '5.0', '5.2', '5.3',
                         '6.0', '6.1', '6.2',
                         '7.0', '7.2', '7.5',
-                        '8.0', '8.6',
+                        '8.0', '8.6', '8.7',
                         '8.9', '9.0']
     valid_arch_strings = supported_arches + [s + "+PTX" for s in supported_arches]
     arch_list = []

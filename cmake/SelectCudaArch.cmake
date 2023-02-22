@@ -7,7 +7,7 @@
 #      ARCH_AND_PTX : NAME | NUM.NUM | NUM.NUM(NUM.NUM) | NUM.NUM+PTX
 #      NAME: Kepler Maxwell Kepler+Tesla Maxwell+Tegra Pascal Volta Turing Ampere
 #      NUM: Any number. Only those pairs are currently accepted by NVCC though:
-#            3.5 3.7 5.0 5.2 5.3 6.0 6.1 6.2 7.0 7.2 7.5 8.0 8.6 8.9 9.0
+#            3.5 3.7 5.0 5.2 5.3 6.0 6.1 6.2 7.0 7.2 7.5 8.0 8.6 8.7 8.9 9.0
 #      Returns LIST of flags to be added to CUDA_NVCC_FLAGS in ${out_variable}
 #      Additionally, sets ${out_variable}_readable to the resulting numeric list
 #      Example:
@@ -28,16 +28,14 @@ endif()
 
 # This list will be used for CUDA_ARCH_NAME = All option
 set(CUDA_KNOWN_GPU_ARCHITECTURES  "Kepler" "Maxwell")
-
+# This list is used to filter CUDA archs when autodetecting
+set(CUDA_ALL_GPU_ARCHITECTURES "3.5" "5.0")
 # This list will be used for CUDA_ARCH_NAME = Common option (enabled by default)
 set(CUDA_COMMON_GPU_ARCHITECTURES "5.0")
 
 if(CUDA_VERSION VERSION_LESS "7.0")
   set(CUDA_LIMIT_GPU_ARCHITECTURE "5.2")
 endif()
-
-# This list is used to filter CUDA archs when autodetecting
-set(CUDA_ALL_GPU_ARCHITECTURES "3.5" "5.0")
 
 if(CUDA_VERSION VERSION_GREATER "6.5")
   list(APPEND CUDA_KNOWN_GPU_ARCHITECTURES "Kepler+Tesla" "Maxwell+Tegra")
@@ -97,9 +95,13 @@ if(CUDA_VERSION VERSION_GREATER "11.0")
   list(APPEND CUDA_COMMON_GPU_ARCHITECTURES "8.6")
   list(APPEND CUDA_ALL_GPU_ARCHITECTURES "8.6")
 
+  if(CUDA_VERSION VERSION_GREATER "11.4")
+    list(APPEND CUDA_ALL_GPU_ARCHITECTURES "8.7")
+  endif()
+
   if(CUDA_VERSION VERSION_LESS "11.8")
     list(APPEND CUDA_COMMON_GPU_ARCHITECTURES "8.6+PTX")
-    set(CUDA_LIMIT_GPU_ARCHITECTURE "9.0")
+    set(CUDA_LIMIT_GPU_ARCHITECTURE "8.9")
   endif()
 endif()
 
@@ -108,7 +110,7 @@ if(CUDA_VERSION VERSION_GREATER "11.7")
   list(APPEND CUDA_COMMON_GPU_ARCHITECTURES "8.9" "9.0")
   list(APPEND CUDA_ALL_GPU_ARCHITECTURES "8.9" "9.0")
 
-  if(CUDA_VERSION VERSION_LESS "12.0")
+  if(CUDA_VERSION VERSION_LESS "13.0")
     list(APPEND CUDA_COMMON_GPU_ARCHITECTURES "9.0+PTX")
     set(CUDA_LIMIT_GPU_ARCHITECTURE "10.0")
   endif()
@@ -202,10 +204,15 @@ function(CUDA_SELECT_NVCC_ARCH_FLAGS out_variable)
 
   if("${CUDA_ARCH_LIST}" STREQUAL "All")
     set(CUDA_ARCH_LIST ${CUDA_KNOWN_GPU_ARCHITECTURES})
+    message(STATUS "Selected all CUDA architecture(s): ${CUDA_ARCH_LIST}")
   elseif("${CUDA_ARCH_LIST}" STREQUAL "Common")
     set(CUDA_ARCH_LIST ${CUDA_COMMON_GPU_ARCHITECTURES})
+    message(STATUS "Selected common CUDA architecture(s): ${CUDA_ARCH_LIST}")
   elseif("${CUDA_ARCH_LIST}" STREQUAL "Auto")
     CUDA_DETECT_INSTALLED_GPUS(CUDA_ARCH_LIST)
+    string(STRIP ${CUDA_ARCH_LIST} CUDA_ARCH_LIST)
+    string(REGEX REPLACE " " ";" CUDA_ARCH_LIST "${CUDA_ARCH_LIST}")
+    list(REMOVE_DUPLICATES CUDA_ARCH_LIST)
     message(STATUS "Autodetected CUDA architecture(s): ${CUDA_ARCH_LIST}")
   endif()
 
@@ -246,7 +253,7 @@ function(CUDA_SELECT_NVCC_ARCH_FLAGS out_variable)
         set(arch_bin 7.5)
         set(arch_ptx 7.5)
       elseif(${arch_name} STREQUAL "Ampere")
-        set(arch_bin 8.0 8.6)
+        set(arch_bin 8.0 8.6 8.7)
         set(arch_ptx 8.6)
       elseif(${arch_name} STREQUAL "Ada")
         set(arch_bin 8.9)
