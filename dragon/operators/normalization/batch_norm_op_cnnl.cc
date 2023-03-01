@@ -34,10 +34,11 @@ void CNNLBatchNormOp<Context>::DoRunWithType() {
     auto* X_mu = Output("X_mu")->Reshape({C_});
     auto* X_rsig = Output("X_rsig")->Reshape({C_});
     auto* buffer = ctx()->workspace()->template data<ParamT, Context>(
-        (2 + comm_size_ * 2) * C_ + comm_size_, "BufferKernel");
-    math::Set(comm_size_, count_avg, buffer + C_ * (2 + comm_size_ * 2), ctx());
+        (2 + comm_size_ * 4) * C_ + comm_size_, "BufferKernel");
+    math::Set(comm_size_, count_avg, buffer + C_ * (2 + comm_size_ * 4), ctx());
     CNNLSetTensorDesc<ParamT>(count_desc_, {comm_size_});
     CNNLSetTensorDesc<ParamT>(syncbn_desc_, {comm_size_, C_}, "NC");
+    trans_impl_.Setup<ParamT>({comm_size_, 2, C_}, {1, 0, 2}, ctx());
     CNNL_CHECK(cnnlGetSyncBatchNormStatsWorkspaceSize(
         ctx()->cnnl_handle(), input_desc_, &scratch_size));
     CNNL_CHECK(cnnlSyncBatchNormStats_v2(
@@ -55,23 +56,21 @@ void CNNLBatchNormOp<Context>::DoRunWithType() {
     CNCL_CHECK(cnclAllGather(
         buffer,
         buffer + C_ * 2,
-        C_,
+        C_ * 2,
         this->template cncl_data_type<ParamT>(),
         this->cncl_comm(),
         ((MLUContext*)ctx())->mlu_stream()));
-    CNCL_CHECK(cnclAllGather(
-        buffer + C_,
-        buffer + C_ * (2 + comm_size_),
-        C_,
-        this->template cncl_data_type<ParamT>(),
-        this->cncl_comm(),
-        ((MLUContext*)ctx())->mlu_stream()));
+    trans_impl_.Compute<ParamT>(
+        buffer + C_ * (2 + comm_size_ * 0),
+        buffer + C_ * (2 + comm_size_ * 2),
+        ctx()->workspace()->template data<Context>(trans_impl_.scratch_size()),
+        ctx());
     CNNL_CHECK(cnnlSyncBatchNormGatherStatsWithCounts(
         ctx()->cnnl_handle(),
         syncbn_desc_,
-        buffer + C_ * 2,
+        buffer + C_ * (2 + comm_size_ * 2),
         syncbn_desc_,
-        buffer + C_ * (2 + comm_size_),
+        buffer + C_ * (2 + comm_size_ * 3),
         bn_desc_,
         nullptr, // rm
         bn_desc_,
@@ -79,7 +78,7 @@ void CNNLBatchNormOp<Context>::DoRunWithType() {
         1.f - momentum(),
         epsilon_,
         count_desc_,
-        buffer + C_ * (2 + comm_size_ * 2),
+        buffer + C_ * (2 + comm_size_ * 4),
         bn_desc_,
         X_mu->template mutable_data<ParamT, Context>(), // sm
         bn_desc_,

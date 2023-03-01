@@ -14,6 +14,7 @@
 #define DRAGON_OPERATORS_NORMALIZATION_BATCH_NORM_OP_H_
 
 #include "dragon/core/operator.h"
+#include "dragon/operators/array/transpose_op_impl_cnnl.h"
 #include "dragon/operators/distributed/collective_op_base.h"
 
 namespace dragon {
@@ -279,6 +280,7 @@ class CNNLBatchNormOp final : public BatchNormOpBase<Context> {
   cnnlActivationDescriptor_t act_desc_;
   cnnlTensorDescriptor_t input_desc_, bn_desc_;
   cnnlTensorDescriptor_t syncbn_desc_, count_desc_;
+  CNNLTransposeOpImpl trans_impl_;
   DECLARE_OP_SINGLE_ARG(float, momentum);
 };
 
