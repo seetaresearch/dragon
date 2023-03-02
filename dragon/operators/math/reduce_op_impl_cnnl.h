@@ -79,7 +79,7 @@ class CNNLReduceOpImpl {
         reduce_axes.size(),
         reducer,
         tensor_type,
-        CNNL_PROPAGATE_NAN,
+        CNNL_NOT_PROPAGATE_NAN,
         index_mode_,
         CNNL_32BIT_INDICES,
         0.f));

@@ -126,7 +126,7 @@ class CNNLEluOp : public Operator<Context> {
         act_desc_,
         CNNL_ACTIVATION_ELU,
         CNNL_ACTIVATION_FAST,
-        CNNL_PROPAGATE_NAN,
+        CNNL_NOT_PROPAGATE_NAN,
         alpha_,
         0,
         1.f, // gamma

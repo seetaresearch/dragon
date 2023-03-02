@@ -206,7 +206,7 @@ class CNNLReluOp : public Operator<Context> {
         act_desc_,
         mode,
         CNNL_ACTIVATION_FAST,
-        CNNL_PROPAGATE_NAN,
+        CNNL_NOT_PROPAGATE_NAN,
         coef,
         0,
         1.f, // gamma

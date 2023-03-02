@@ -103,7 +103,7 @@ class CNNLSigmoidOp : public Operator<Context> {
         act_desc_,
         CNNL_ACTIVATION_SIGMOID,
         CNNL_ACTIVATION_HIGH_PRECISION,
-        CNNL_PROPAGATE_NAN,
+        CNNL_NOT_PROPAGATE_NAN,
         0.f,
         0,
         1.f, // gamma

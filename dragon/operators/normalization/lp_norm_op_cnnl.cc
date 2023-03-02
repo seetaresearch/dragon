@@ -24,7 +24,7 @@ void CNNLLpNormOp<Context>::DoRunWithType() {
       norm_desc_,
       &norm_axis,
       1,
-      CNNL_PROPAGATE_NAN,
+      CNNL_NOT_PROPAGATE_NAN,
       epsilon_,
       float(p_),
       0, // channel_shared
