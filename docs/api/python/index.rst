@@ -148,7 +148,7 @@ Modules
   : Native API for ``dragon.autograph`` namespace.
 
   `Module bitwise <dragon/bitwise.html>`_
-  : Native API for ``dragon.bitwise`` namespace.
+  : Virtual API for ``dragon.bitwise`` namespace.
 
   `Module cuda <dragon/cuda.html>`_
   : Native API for ``dragon.cuda`` namespace.
@@ -163,10 +163,10 @@ Modules
   : Native API for ``dragon.logging`` namespace.
 
   `Module losses <dragon/losses.html>`_
-  : Native API for ``dragon.losses`` namespace.
+  : Virtual API for ``dragon.losses`` namespace.
 
   `Module math <dragon/math.html>`_
-  : Native API for ``dragon.math`` namespace.
+  : Virtual API for ``dragon.math`` namespace.
 
   `Module mlu <dragon/mlu.html>`_
   : Native API for ``dragon.mlu`` namespace.
@@ -175,22 +175,22 @@ Modules
   : Native API for ``dragon.mps`` namespace.
 
   `Module nn <dragon/nn.html>`_
-  : Native API for ``dragon.nn`` namespace.
+  : Virtual API for ``dragon.nn`` namespace.
 
   `Module onnx <dragon/onnx.html>`_
   : Native API for ``dragon.onnx`` namespace.
 
   `Module optimizers <dragon/optimizers.html>`_
-  : Native API for ``dragon.optimizers`` namespace.
+  : Virtual API for ``dragon.optimizers`` namespace.
 
   `Module random <dragon/random.html>`_
-  : Native API for ``dragon.random`` namespace.
+  : Virtual API for ``dragon.random`` namespace.
 
   `Module sysconfig <dragon/sysconfig.html>`_
   : Native API for ``dragon.sysconfig`` namespace.
 
   `Module vision <dragon/vision.html>`_
-  : Native API for ``dragon.vision`` namespace.
+  : Virtual API for ``dragon.vision`` namespace.
 
   `Module vm.dali <dali.html>`_
   : Virtual API for ``dali`` namespace.

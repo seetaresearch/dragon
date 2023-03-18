@@ -34,7 +34,7 @@ class Optimizer(object):
         self._name = workspace.get_workspace().create_handle('Optimizer')
         self._op_type = self.__class__.__name__
         self._process_group = distributed.get_group()
-        self._hyper = {}
+        self._hyper_dict = {}
         self._set_hyper('grad_scale', kwargs.pop('grad_scale', 1))
         self._set_hyper('weight_decay', kwargs.pop('weight_decay', 0))
         self._set_hyper('clip_norm', kwargs.pop('clip_norm', 0))
@@ -66,15 +66,15 @@ class Optimizer(object):
                 group_vars[weight_decay].append(var)
                 group_grads[weight_decay].append(grad)
 
-        # Reduce grads in the process group.
-        process_group = distributed.get_group()
-        if process_group is not None:
+        # Reduce grads in the distribution group.
+        dist_group = distributed.get_group()
+        if dist_group is not None:
             grads = list(itertools.chain(*group_grads.values()))
             OpLib.execute('Collective', grads, outputs=grads,
                           operation='ALLREDUCE', reduction='MEAN',
-                          **process_group.arguments)
+                          **dist_group.arguments)
 
-        # Apply updates.
+        # Apply update.
         for weight_decay, vars in group_vars.items():
             grads = group_grads[weight_decay]
             # Skip if grads are all missing.
@@ -83,25 +83,25 @@ class Optimizer(object):
             OpLib.execute(self._op_type, grads, outputs=vars,
                           name=self._name, weight_decay=weight_decay)
 
-    def _set_hyper(self, name, value):
+    def _set_hyper(self, hyper_name, new_value):
         """Set value to a hyper parameter."""
-        if name not in self._hyper:
-            default_ws = workspace.get_workspace()
-            impl = default_ws.create_tensor(self._name + '/' + name)
-            self._hyper[name] = impl
-        value = numpy.array(float(value), 'float32')
-        self._hyper[name].FromNumpy(value, False)
+        if hyper_name not in self._hyper_dict:
+            execute_ws = workspace.get_workspace()
+            impl = execute_ws.create_tensor(self._name + '/' + hyper_name)
+            self._hyper_dict[hyper_name] = impl
+        new_value = numpy.array(float(new_value), 'float32')
+        self._hyper_dict[hyper_name].FromNumpy(new_value, False)
 
     def __getattr__(self, item):
-        hyper = self.__dict__.get('_hyper')
-        if item in hyper:
-            return float(self._hyper[item].ToNumpy(False))
+        hyper_dict = self.__dict__.get('_hyper_dict')
+        if hyper_dict and item in hyper_dict:
+            return float(hyper_dict[item].ToNumpy(False))
         return self.__dict__[item]
 
     def __setattr__(self, key, value):
-        hyper = self.__dict__.get('_hyper')
-        if hyper and key in hyper:
-            value = numpy.array(float(value), 'float32')
-            hyper[key].FromNumpy(value, False)
+        hyper_dict = self.__dict__.get('_hyper_dict')
+        if hyper_dict and key in hyper_dict:
+            new_value = numpy.array(float(value), 'float32')
+            hyper_dict[key].FromNumpy(new_value, False)
         else:
             object.__setattr__(self, key, value)

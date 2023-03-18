@@ -161,8 +161,8 @@ class GraphLib(object):
             group_vars[weight_decay].append(var.id)
             group_grads[weight_decay].append(grad.id)
         op_defs = []
-        process_group = distributed.get_group()
-        if process_group:
+        dist_group = distributed.get_group()
+        if dist_group:
             grads = list(itertools.chain(*group_grads.values()))
             op_defs.append(proto_util.make_operator_def(
                 op_type='Collective',
@@ -171,7 +171,7 @@ class GraphLib(object):
                 name=optimizer._name,
                 operation='ALLREDUCE',
                 reduction='MEAN',
-                **process_group.arguments))
+                **dist_group.arguments))
         for weight_decay, vars in group_vars.items():
             grads = group_grads[weight_decay]
             op_defs.append(proto_util.make_operator_def(

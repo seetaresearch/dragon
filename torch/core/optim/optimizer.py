@@ -58,9 +58,11 @@ class Optimizer(object):
         """
         if isinstance(params, Tensor):
             raise TypeError('<params> should be a sequence of tensors.')
-        defaults.update({'grad_scale': kwargs.pop('grad_scale', 1),
-                         'clip_norm': kwargs.pop('clip_norm', 0),
-                         'clip_value': kwargs.pop('clip_value', 0)})
+        defaults.update({
+            'grad_scale': kwargs.pop('grad_scale', 1),
+            'clip_norm': kwargs.pop('clip_norm', 0),
+            'clip_value': kwargs.pop('clip_value', 0),
+        })
         self._update_pre_hook = kwargs.pop('update_pre_hook', None)
         if kwargs:
             raise ValueError('Unexpected arguments: ' + ','.join(v for v in kwargs))
@@ -74,8 +76,7 @@ class Optimizer(object):
         for param_group in param_groups:
             self.add_param_group(param_group)
         self._op_type = self.__class__.__name__
-        self._hyper = dict((k, [k, collections.defaultdict(str)])
-                           for k in self.defaults.keys())
+        self._hyper_dict = dict((k, dict()) for k in self.defaults.keys())
         self._sums_grad = False
 
     def add_param_group(self, param_group):
@@ -111,9 +112,8 @@ class Optimizer(object):
                 raise ValueError("Optimize a non-leaf Tensor.")
         for name, default in self.defaults.items():
             if default is required and name not in param_group:
-                raise ValueError(
-                    "Parameter group didn't specify a value of "
-                    "required optimization parameter: " + name)
+                raise ValueError("Parameter group didn't specify a value of "
+                                 "required optimization parameter: " + name)
             else:
                 param_group.setdefault(name, default)
         if 'name' not in param_group:
@@ -139,10 +139,13 @@ class Optimizer(object):
         ```
 
         """
-        params_all, grads_all = [], []
         execute_ws = workspace.get_workspace()
+        dist_group = distributed.get_group()
+        params_all, grads_all = [], []
         for group in self.param_groups:
             params_with_grad, grads = [], []
+            if dist_group is not None:
+                group['dist_size'] = dist_group.size
             for p in group['params']:
                 g = self._get_grad(execute_ws, p, self._sums_grad)
                 if g is not None:
@@ -150,19 +153,16 @@ class Optimizer(object):
                     params_with_grad.append(p)
             grads_all.append(grads)
             params_all.append(params_with_grad)
-        # Reduce grads in the process group.
-        process_group = distributed.get_group()
-        if process_group is not None:
+        if dist_group is not None:
+            # Reduce grads in the distribution group.
             reduce_grads_all = collections.defaultdict(list)
             for grads in grads_all:
                 for g in grads:
                     reduce_grads_all[g.dtype].append(g)
             for grads in reduce_grads_all.values():
-                if self._update_pre_hook is not None:
-                    self._update_pre_hook(grads)
                 Function.apply('Collective', grads[0].device, grads,
                                outputs=grads, operation='ALLREDUCE',
-                               reduction='MEAN', **process_group.arguments)
+                               reduction='SUM', **dist_group.arguments)
         for idx, group in enumerate(self.param_groups):
             self._update_group(group, params_all[idx], grads_all[idx])
         self._sums_grad = False
@@ -185,18 +185,21 @@ class Optimizer(object):
         ```
 
         """
-        current_ws = workspace.get_workspace()
+        execute_ws = workspace.get_workspace()
+        grads_all, sum_grads_all = [], []
         for group in self.param_groups:
             grads, sum_grads = [], []
-            for param in group['params']:
-                grad = self._get_grad(current_ws, param)
-                if grad is not None:
-                    grads.append(grad)
-                    sum_grads.append(grad.id + '_sum')
-            Function.apply(
-                'Axpby', grads[0].device,
-                grads, outputs=sum_grads,
-                alpha=1., beta=1. if self._sums_grad else 0.)
+            for p in group['params']:
+                g = self._get_grad(execute_ws, p)
+                if g is not None:
+                    grads.append(g)
+                    sum_grads.append(g.id + '_sum')
+            grads_all.append(grads)
+            sum_grads_all.append(sum_grads)
+        for grads, sum_grads in zip(grads_all, sum_grads_all):
+            Function.apply('Axpby', grads[0].device,
+                           grads, outputs=sum_grads,
+                           alpha=1.0, beta=1.0 if self._sums_grad else 0.0)
         self._sums_grad = True
 
     def zero_grad(self, set_to_none=False):
@@ -229,40 +232,38 @@ class Optimizer(object):
         """
         execute_ws = workspace.get_workspace()
         for group in self.param_groups:
-            for param in group['params']:
-                grad = self._get_grad(execute_ws, param)
-                if grad is not None:
-                    if set_to_none:
-                        grad._impl.Reset()
-                    else:
-                        grad.zero_()
+            for p in group['params']:
+                g = self._get_grad(execute_ws, p)
+                if g is not None:
+                    _ = g._impl.Reset() if set_to_none else g.zero_()
+
+    @staticmethod
+    def _get_grad(execute_ws, param, summed=False):
+        """Return the grad of a parameter."""
+        impl = execute_ws.get_tensor(param.id + ('_grad_sum' if summed else '_grad'))
+        return Tensor(device=param.device, impl=impl) if impl else None
 
     def _update_group(self, group, params, grads):
         """Update parameters for the group."""
         # Skip if grads are all missing.
         if len(params) == 0:
             return
-        # Update hypers from group values.
         execute_ws = workspace.get_workspace()
-        for name in self._hyper.keys():
-            group_name = group['name']
-            impl_name, group_dict = self._hyper[name]
+        # Update hyper tensors with current value.
+        for hyper_name in self._hyper_dict.keys():
+            group_dict = self._hyper_dict[hyper_name]
+            group_name, new_value = group['name'], group[hyper_name]
             if group_name not in group_dict:
-                impl_name = group_name + '/' + impl_name
+                impl_name = group_name + '/' + hyper_name
                 group_dict[group_name] = execute_ws.create_tensor(impl_name)
-            impl = group_dict[group_name]
-            impl.FromNumpy(numpy.array(group[name], 'float32'), False)
-        # Apply updates.
+            if hyper_name == 'grad_scale':
+                new_value = new_value / group.pop('dist_size', 1)
+            group_dict[group_name].FromNumpy(numpy.array(new_value, 'float32'), False)
+        # Apply update.
+        if self._update_pre_hook is not None:
+            self._update_pre_hook(grads)
         Function.apply(self._op_type, params[0].device, grads,
-                       outputs=params, name=group['name'],
-                       weight_decay=None)
-
-    @staticmethod
-    def _get_grad(execute_ws, param, summed=False):
-        """Return the grad of a parameter."""
-        impl = execute_ws.get_tensor(
-            param.id + ('_grad_sum' if summed else '_grad'))
-        return Tensor(device=param.device, impl=impl) if impl else None
+                       outputs=params, name=group['name'], weight_decay=None)
 
     def __repr__(self):
         format_string = self.__class__.__name__ + ' ('

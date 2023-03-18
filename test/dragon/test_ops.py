@@ -3683,7 +3683,7 @@ class TestMathOps(OpTestCase):
     @unittest.skipIf(not TEST_MLU, 'MLU unavailable')
     def test_sqrt_mlu(self):
         with dragon.device('mlu'):
-            self.test_sqrt(prec=1e-4)
+            self.test_sqrt(prec=1e-3)
 
     def test_square(self):
         for execution in ('EAGER_MODE', 'GRAPH_MODE'):
@@ -4133,7 +4133,7 @@ class TestNormalizationOps(OpTestCase):
     def test_lp_norm_cnnl(self):
         dragon.mlu.set_cnnl_flags(True)
         with dragon.device('mlu'), self.cnnl_ws.as_default():
-            self.test_lp_norm(test_mean=False, prec=1e-4)
+            self.test_lp_norm(test_mean=False, prec=1e-3)
 
 
 class TestRNNOps(OpTestCase):

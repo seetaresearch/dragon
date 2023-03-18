@@ -98,7 +98,7 @@ class SGD(Optimizer):
                         nesterov=nesterov, weight_decay=weight_decay)
         super(SGD, self).__init__(params, defaults, **kwargs)
         self._op_type = 'NesterovSGD' if nesterov else 'MomentumSGD'
-        self._hyper.pop('dampening')  # Unsupported.
+        self._hyper_dict.pop('dampening')  # Unsupported.
 
 
 class LARS(Optimizer):

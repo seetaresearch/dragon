@@ -72,9 +72,9 @@ void CNNLBatchNormOp<Context>::DoRunWithType() {
         syncbn_desc_,
         buffer + C_ * (2 + comm_size_ * 3),
         bn_desc_,
-        nullptr, // rm
+        Input(3).template mutable_data<ParamT, Context>(), // rm
         bn_desc_,
-        nullptr, // rv
+        Input(4).template mutable_data<ParamT, Context>(), // rv
         1.f - momentum(),
         epsilon_,
         count_desc_,
@@ -97,17 +97,6 @@ void CNNLBatchNormOp<Context>::DoRunWithType() {
         Input(2).template data<ParamT, Context>(),
         input_desc_,
         Output(0)->template mutable_data<T, Context>()));
-    // [ATTENTION]: CNNL updates "rv" incorrectly.
-    const float decay = momentum();
-    auto* mu = X_mu->template data<ParamT, Context>();
-    auto* rsig = X_rsig->template data<ParamT, Context>();
-    auto* rm = Input(3).template mutable_data<ParamT, Context>();
-    auto* rv = Input(4).template mutable_data<ParamT, Context>();
-    math::Inv(C_, rsig, buffer, ctx());
-    math::Square(C_, buffer, buffer, ctx());
-    math::Bias(C_, -epsilon_, buffer, buffer, ctx());
-    math::Axpby(C_, 1.f - decay, mu, decay, rm, ctx());
-    math::Axpby(C_, 1.f - decay, buffer, decay, rv, ctx());
 #else
     LOG(FATAL) << "MPI library is not built with.";
 #endif

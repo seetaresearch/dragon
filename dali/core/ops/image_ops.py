@@ -356,7 +356,7 @@ class Paste(object):
         fill_value : Sequence[number], optional
             The value(s) to fill for the canvas.
         ratio : int, optional
-            The expand ratio.
+            The ratio to expand.
         paste_x : int, optional
             The paste position at x-axis.
         paste_y : int, optional
@@ -380,7 +380,7 @@ class Paste(object):
 
 
 class RandomBBoxCrop(object):
-    """Return an valid image crop restricted by bounding boxes.
+    """Return a valid image crop restricted by bounding boxes.
 
     Examples:
 

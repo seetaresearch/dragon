@@ -80,7 +80,7 @@ class Adam(Optimizer):
         defaults = dict(lr=lr, beta1=betas[0], beta2=betas[1], eps=eps,
                         amsgrad=amsgrad, weight_decay=weight_decay)
         super(Adam, self).__init__(params, defaults, **kwargs)
-        self._hyper.pop('amsgrad')  # Unsupported.
+        self._hyper_dict.pop('amsgrad')  # Unsupported.
 
 
 class AdamW(Adam):

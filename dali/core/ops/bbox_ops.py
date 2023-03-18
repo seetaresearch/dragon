@@ -101,7 +101,7 @@ class BBoxPaste(object):
         ltrb : bool, optional, default=True
             Indicate the bbox is ``ltrb`` or ``xywh`` format.
         ratio : int, optional
-            The expand ratio.
+            The ratio to expand.
         paste_x : int, optional
             The paste position at x-axis.
         paste_y : int, optional

@@ -21,17 +21,15 @@ from sphinx_seeta_theme import setup as setup_v1
 
 def path_to(href, index=False):
     if index:
-        if len(href) == 0:
-            return 'index.html'
-        return href + '/index.html'
-    else:
-        return href + '.html'
+        return href + '/index.html' if href else 'index.html'
+    return href + '.html'
 
 
 # Basic
 html_static_path = ['../_static']
 master_doc = 'index'
 source_suffix = '.rst'
+toc_object_entries = False  # Sphinx>=5.3.0 or Sphinx<5.2.0
 
 # Extension
 extensions = ['sphinx.ext.autodoc', 'sphinxcontrib.katex', 'breathe']

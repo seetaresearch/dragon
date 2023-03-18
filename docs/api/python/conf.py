@@ -17,25 +17,21 @@ from __future__ import print_function
 
 def path_to(href, index=False):
     if index:
-        if len(href) == 0:
-            return 'index.html'
-        return href + '/index.html'
-    else:
-        return href + '.html'
+        return href + '/index.html' if href else 'index.html'
+    return href + '.html'
 
 
 # Basic
 html_static_path = ['../_static']
 master_doc = 'index'
 source_suffix = '.rst'
+toc_object_entries = False  # Sphinx>=5.3.0 or Sphinx<5.2.0
 
 # Extension
-extensions = [
-    'sphinx.ext.autodoc',
-    'sphinx.ext.napoleon',
-    'sphinxcontrib.katex',
-    'sphinx_seeta_theme.ext.viewcode',
-]
+extensions = ['sphinx.ext.autodoc',
+              'sphinx.ext.napoleon',
+              'sphinxcontrib.katex',
+              'sphinx_seeta_theme.ext.viewcode']
 napoleon_use_rtype = False
 
 # Project
@@ -44,6 +40,7 @@ copyright = 'Copyright (c) 2017-present, SeetaTech, Co.,Ltd'
 author = 'SeetaTech, Co.,Ltd'
 with open('../../../version.txt', 'r') as f:
     version = f.read().strip()
+
 
 # HTML
 html_theme = 'seeta'
