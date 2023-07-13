@@ -240,7 +240,8 @@ class Optimizer(object):
     @staticmethod
     def _get_grad(execute_ws, param, summed=False):
         """Return the grad of a parameter."""
-        impl = execute_ws.get_tensor(param.id + ('_grad_sum' if summed else '_grad'))
+        impl = execute_ws.get_tensor(param.id + '_grad_sum') if summed else None
+        impl = execute_ws.get_tensor(param.id + '_grad') if impl is None else impl
         return Tensor(device=param.device, impl=impl) if impl else None
 
     def _update_group(self, group, params, grads):

@@ -20,28 +20,17 @@ void CNNLConvTransposeOp<Context>::DoRunWithType() {
       dilations_,
       group_,
       data_format(),
-      Y->dims(),
-      W.dims(),
       X.dims(),
+      W.dims(),
+      Y->dims(),
       ctx());
 
   Y_impl_.Compute<T>(
       X.template data<T, Context>(),
       W.template data<T, Context>(),
+      HasBias() ? Input(2).template data<T, Context>() : nullptr,
       Y->template mutable_data<T, Context>(),
       ctx());
-
-  if (HasBias()) {
-    math::Add(
-        2,
-        vec64_t({Y->count() / out_channels_, out_channels_}).data(),
-        1,
-        vec64_t({out_channels_}).data(),
-        Y->template data<T, Context>(),
-        Input(2).template data<T, Context>(),
-        Y->template mutable_data<T, Context>(),
-        ctx());
-  }
 }
 
 template <class Context>

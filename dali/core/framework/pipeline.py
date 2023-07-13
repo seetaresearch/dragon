@@ -8,6 +8,7 @@
 #     <https://opensource.org/licenses/BSD-2-Clause>
 #
 # ------------------------------------------------------------
+"""DALI pipeline."""
 
 from __future__ import absolute_import
 from __future__ import division
@@ -114,16 +115,9 @@ try:
             """
             return self._num_threads
 
-        def build(self, define_graph=None):
-            """Build the pipeline.
-
-            Parameters
-            ----------
-            define_graph : callable, optional
-                The defined function to use instead.
-
-            """
-            super(Pipeline, self).build(define_graph)
+        def build(self):
+            """Build the pipeline."""
+            super(Pipeline, self).build()
 
         def define_graph(self):
             """Define the symbolic operations for pipeline."""

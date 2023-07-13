@@ -244,7 +244,7 @@ class CNNLConvTransposeOp final : public ConvOpBase<Context> {
     return true;
   }
 
-  CNNLConvOpImpl<cnnlConvolutionBwdDataAlgo_t> Y_impl_;
+  CNNLDeconvOpImpl<cnnlDeconvolutionAlgo_t> Y_impl_;
 };
 
 template <class Context>

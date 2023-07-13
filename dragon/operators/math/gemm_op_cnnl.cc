@@ -156,13 +156,23 @@ void CNNLGemmGradientOp<Context>::DoRunWithType() {
     vec64_t Y_axes, C_axes;
     math::utils::ComputeBroadcastAxes(
         dY.dims(), C.dims(), dY.dims(), Y_axes, C_axes);
-    reduce_impl_.Setup<T>(dY.dims(), C_axes, ctx());
-    reduce_impl_.Compute<T>(
-        dY.template data<T, Context>(),
-        dC->ReshapeLike(C)->template mutable_data<T, Context>(),
-        ctx()->workspace()->template data<Context>(reduce_impl_.scratch_size()),
-        ctx(),
-        beta_);
+    if (C_axes.empty()) {
+      math::Scale(
+          C.count(),
+          beta_,
+          dY.template data<T, Context>(),
+          dC->ReshapeLike(C)->template mutable_data<T, Context>(),
+          ctx());
+    } else {
+      reduce_impl_.Setup<T>(dY.dims(), C_axes, ctx());
+      reduce_impl_.Compute<T>(
+          dY.template data<T, Context>(),
+          dC->ReshapeLike(C)->template mutable_data<T, Context>(),
+          ctx()->workspace()->template data<Context>(
+              reduce_impl_.scratch_size()),
+          ctx(),
+          beta_);
+    }
   }
 }
 
