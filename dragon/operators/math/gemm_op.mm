@@ -10,12 +10,12 @@ void MPSGemmOp<Context>::DoRunWithType() {
   const auto A_axis = A.axis(-1), B_axis = B.axis(-1);
 
   // Check matrix A.
-  auto M = transA_ ? A.count(A_axis) : A.count(0, A_axis);
-  auto K = transA_ ? A.count(0, A_axis) : A.count(A_axis);
+  auto M = transA_ ? A.dim(A_axis) : A.count(0, A_axis);
+  auto K = transA_ ? A.count(0, A_axis) : A.dim(A_axis);
 
   // Check matrix B.
-  auto N = transB_ ? B.count(0, B_axis) : B.count(B_axis);
-  auto K2 = transB_ ? B.count(B_axis) : B.count(0, B_axis);
+  auto N = transB_ ? B.count(0, B_axis) : B.dim(B_axis);
+  auto K2 = transB_ ? B.dim(B_axis) : B.count(0, B_axis);
   if (transB_) {
     CHECK_EQ(K, K2) << "\nMatrixB's dimensions should be (...," << K
                     << "), got " << B.DimString() << ".";
@@ -92,11 +92,11 @@ void MPSGemmGradientOp<Context>::DoRunWithType() {
   const auto A_axis = A.axis(-1), B_axis = B.axis(-1);
 
   // Check matrix A/B.
-  auto M = transA_ ? A.count(A_axis) : A.count(0, A_axis);
-  auto N = transB_ ? B.count(0, B_axis) : B.count(B_axis);
+  auto M = transA_ ? A.dim(A_axis) : A.count(0, A_axis);
+  auto N = transB_ ? B.count(0, B_axis) : B.dim(B_axis);
 
-  const auto A_dims = vec64_t({A.count(0, A_axis), A.count(A_axis)});
-  const auto B_dims = vec64_t({B.count(0, B_axis), B.count(B_axis)});
+  const auto A_dims = vec64_t({A.count(0, A_axis), A.dim(A_axis)});
+  const auto B_dims = vec64_t({B.count(0, B_axis), B.dim(B_axis)});
   const auto dY_dims = vec64_t({M, N});
 
   auto placeholders = graph_cache_.GetPlaceholders(

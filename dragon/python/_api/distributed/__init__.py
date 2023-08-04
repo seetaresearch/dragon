@@ -13,6 +13,7 @@ from __future__ import absolute_import as _absolute_import
 from __future__ import division as _division
 from __future__ import print_function as _print_function
 
+from dragon.core.distributed.backend import is_cncl_available
 from dragon.core.distributed.backend import is_initialized
 from dragon.core.distributed.backend import is_mpi_available
 from dragon.core.distributed.backend import is_nccl_available
@@ -22,7 +23,9 @@ from dragon.core.distributed.backend import get_group
 from dragon.core.distributed.backend import get_rank
 from dragon.core.distributed.backend import get_world_size
 from dragon.core.distributed.backend import new_group
+from dragon.core.ops.distributed_ops import all_gather
 from dragon.core.ops.distributed_ops import all_reduce
 from dragon.core.ops.distributed_ops import broadcast
+from dragon.core.ops.distributed_ops import reduce_scatter
 
 __all__ = [_s for _s in dir() if not _s.startswith('_')]

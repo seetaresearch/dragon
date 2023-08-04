@@ -181,17 +181,7 @@ class DRAGON_API Tensor {
 
   /*! \brief Return a string formatting the given dimensions */
   static string DimString(const vector<int64_t>& dims) {
-    if (dims.size() == 0) return "(0,)";
-    std::stringstream ss;
-    ss << "(";
-    for (size_t i = 0; i < dims.size() - 1; i++)
-      ss << dims[i] << ",";
-    if (dims.size() == 1) {
-      ss << dims[0] << ",)";
-    } else {
-      ss << dims.back() << ")";
-    }
-    return ss.str();
+    return str::to(dims, "(0,)");
   }
 
   /*! \brief Return a string formatting the tensor dimensions */

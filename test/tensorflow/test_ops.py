@@ -343,27 +343,27 @@ class TestBitwiseOps(OpTestCase):
 
     def test_bitwise_and(self):
         data1 = arange(8, dtype='uint8')
-        data2 = arange(8, start=-4, dtype='uint8')
+        data2 = arange(8, start=4, dtype='uint8')
         x1, x2 = new_tensor(data1), new_tensor(data2)
         y = tf.bitwise.bitwise_and(x1, x2)
         self.assertEqual(y, np.bitwise_and(data1, data2))
 
     def test_bitwise_or(self):
         data1 = arange(8, dtype='uint8')
-        data2 = arange(8, start=-4, dtype='uint8')
+        data2 = arange(8, start=4, dtype='uint8')
         x1, x2 = new_tensor(data1), new_tensor(data2)
         y = tf.bitwise.bitwise_or(x1, x2)
         self.assertEqual(y, np.bitwise_or(data1, data2))
 
     def test_bitwise_xor(self):
         data1 = arange(8, dtype='uint8')
-        data2 = arange(8, start=-4, dtype='uint8')
+        data2 = arange(8, start=4, dtype='uint8')
         x1, x2 = new_tensor(data1), new_tensor(data2)
         y = tf.bitwise.bitwise_xor(x1, x2)
         self.assertEqual(y, np.bitwise_xor(data1, data2))
 
     def test_invert(self):
-        data = arange(8, start=-4, dtype='uint8')
+        data = arange(8, start=4, dtype='uint8')
         x = new_tensor(data)
         y = tf.bitwise.invert(x)
         self.assertEqual(y, ~data)

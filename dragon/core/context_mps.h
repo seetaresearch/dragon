@@ -76,7 +76,7 @@ class DRAGON_API MPSStream {
 /*!
  * \brief The MPSObjects.
  */
-class MPSObjects {
+class DRAGON_API MPSObjects {
  public:
   /*! \brief Constructor */
   MPSObjects();
@@ -289,7 +289,14 @@ class DRAGON_API MPSContext {
   }
 
  private:
-  int device_id_, stream_id_ = 0, random_seed_;
+  /*! \brief The device index */
+  int device_id_;
+
+  /*! \brief The stream index */
+  int stream_id_ = 0;
+
+  /*! \brief The random seed */
+  int random_seed_;
 };
 
 /*!

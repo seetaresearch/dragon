@@ -15,7 +15,10 @@ from __future__ import division as _division
 from __future__ import print_function as _print_function
 
 from dragon.vm.torch.core.ops.distributed_ops import all_gather
+from dragon.vm.torch.core.ops.distributed_ops import all_gather_into_tensor
 from dragon.vm.torch.core.ops.distributed_ops import all_reduce
 from dragon.vm.torch.core.ops.distributed_ops import broadcast
+from dragon.vm.torch.core.ops.distributed_ops import reduce_scatter
+from dragon.vm.torch.core.ops.distributed_ops import reduce_scatter_tensor
 
 __all__ = [_s for _s in dir() if not _s.startswith('_')]

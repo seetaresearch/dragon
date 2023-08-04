@@ -210,10 +210,12 @@ function(CUDA_SELECT_NVCC_ARCH_FLAGS out_variable)
     message(STATUS "Selected common CUDA architecture(s): ${CUDA_ARCH_LIST}")
   elseif("${CUDA_ARCH_LIST}" STREQUAL "Auto")
     CUDA_DETECT_INSTALLED_GPUS(CUDA_ARCH_LIST)
-    string(STRIP ${CUDA_ARCH_LIST} CUDA_ARCH_LIST)
+    string(STRIP "${CUDA_ARCH_LIST}" CUDA_ARCH_LIST)
     string(REGEX REPLACE " " ";" CUDA_ARCH_LIST "${CUDA_ARCH_LIST}")
     list(REMOVE_DUPLICATES CUDA_ARCH_LIST)
     message(STATUS "Autodetected CUDA architecture(s): ${CUDA_ARCH_LIST}")
+  else()
+    message(STATUS "Selected custom CUDA architecture(s): ${CUDA_ARCH_LIST}")
   endif()
 
   # Now process the list and look for names

@@ -25,6 +25,20 @@ MLUObjects::~MLUObjects() {
   }
 }
 
+cnnlHandle_t MLUObjects::cnnl_handle(int device_id, int stream_id) {
+  auto& handles = cnnl_handles_[device_id];
+  if (handles.size() <= (unsigned)stream_id) {
+    handles.resize(stream_id + 1, nullptr);
+  }
+  if (!handles[stream_id]) {
+    MLUDeviceGuard guard(device_id);
+    CNNL_CHECK(cnnlCreate(&handles[stream_id]));
+    auto& handle = handles[stream_id];
+    CNNL_CHECK(cnnlSetQueue(handle, stream(device_id, stream_id)));
+  }
+  return handles[stream_id];
+}
+
 Workspace* MLUObjects::workspace(int device_id, int stream_id) {
   auto& workspaces = workspaces_[device_id];
   if (workspaces.size() <= unsigned(stream_id)) {
@@ -63,6 +77,22 @@ MLUObjects::cnrand_generator(int device_id, int stream_id, int seed) {
   CNNL_CHECK(cnnlRandMakeMTGP32Constants(handle, desc, params));
   CNNL_CHECK(cnnlRandMakeMTGP32KernelState(handle, state, desc, params, seed));
   return std::make_pair(generator, (void*)state);
+}
+
+cnclComm_t MLUObjects::cncl_comm(
+    int device_id,
+    const string& cache_key,
+    cnclCliqueId* comm_uuid,
+    int comm_size,
+    int comm_rank) {
+  auto& comms = cncl_comms_[device_id];
+  auto find_iter = comms.find(cache_key);
+  if (find_iter != comms.end()) return find_iter->second;
+  if (comm_uuid == nullptr) return nullptr;
+  MLUDeviceGuard guard(device_id);
+  CNCL_CHECK(cnclInitComms(
+      &comms[cache_key], 1, &device_id, &comm_rank, comm_size, comm_uuid));
+  return comms[cache_key];
 }
 
 std::mutex& MLUContext::mutex() {

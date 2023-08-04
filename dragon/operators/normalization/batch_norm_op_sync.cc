@@ -1,5 +1,3 @@
-#ifdef USE_MPI
-
 #include "dragon/operators/normalization/batch_norm_op.h"
 
 namespace dragon {
@@ -42,5 +40,3 @@ class GradientMaker final : public GradientMakerBase {
 REGISTER_GRADIENT(SyncBatchNorm, GradientMaker);
 
 } // namespace dragon
-
-#endif // USE_MPI

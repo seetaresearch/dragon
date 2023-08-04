@@ -24,7 +24,7 @@ namespace dragon {
 
 class Workspace;
 
-class CUDAObjects {
+class DRAGON_API CUDAObjects {
  public:
   /*! \brief Constructor */
   CUDAObjects() {
@@ -70,78 +70,24 @@ class CUDAObjects {
   }
 
   /*! \brief Return the specified cublas handle */
-  cublasHandle_t cublas_handle(int device_id, int stream_id) {
-    auto& handles = cublas_handles_[device_id];
-    if (handles.size() <= (unsigned)stream_id) {
-      handles.resize(stream_id + 1, nullptr);
-    }
-    if (!handles[stream_id]) {
-      CUDADeviceGuard guard(device_id);
-      CUBLAS_CHECK(cublasCreate(&handles[stream_id]));
-      auto& handle = handles[stream_id];
-      CUBLAS_CHECK(cublasSetPointerMode(handle, CUBLAS_POINTER_MODE_HOST));
-      CUBLAS_CHECK(cublasSetStream(handle, stream(device_id, stream_id)));
-    }
-    auto& handle = handles[stream_id];
-#if CUDA_VERSION >= 11000
-    if (cublas_allow_tf32_) {
-      CUBLAS_CHECK(cublasSetMathMode(handle, CUBLAS_TF32_TENSOR_OP_MATH));
-    } else {
-      CUBLAS_CHECK(cublasSetMathMode(handle, CUBLAS_DEFAULT_MATH));
-    }
-#endif
-    return handle;
-  }
+  cublasHandle_t cublas_handle(int device_id, int stream_id);
 
   /*! \brief Return the specified curand generator */
-  curandGenerator_t curand_generator(int device_id, int stream_id, int seed) {
-    auto& generators = curand_generators_[device_id];
-    const string key = str::to(stream_id) + "/RNGState:" + str::to(seed);
-    auto find_iter = generators.find(key);
-    if (find_iter != generators.end()) return find_iter->second;
-    CUDADeviceGuard guard(device_id);
-    CURAND_CHECK(
-        curandCreateGenerator(&generators[key], CURAND_RNG_PSEUDO_DEFAULT));
-    auto& generator = generators[key];
-    CURAND_CHECK(curandSetPseudoRandomGeneratorSeed(generator, seed));
-    CURAND_CHECK(curandSetStream(generator, stream(device_id, stream_id)));
-    return generator;
-  }
+  curandGenerator_t curand_generator(int device_id, int stream_id, int seed);
 
-  /*! \brief Return the specified cudnn handle */
 #ifdef USE_CUDNN
-  cudnnHandle_t cudnn_handle(int device_id, int stream_id) {
-    auto& handles = cudnn_handles_[device_id];
-    if (handles.size() <= (unsigned)stream_id) {
-      handles.resize(stream_id + 1, nullptr);
-    }
-    if (!handles[stream_id]) {
-      CUDADeviceGuard guard(device_id);
-      CUDNN_CHECK(cudnnCreate(&handles[stream_id]));
-      auto& handle = handles[stream_id];
-      CUDNN_CHECK(cudnnSetStream(handle, stream(device_id, stream_id)));
-    }
-    return handles[stream_id];
-  }
+  /*! \brief Return the specified cudnn handle */
+  cudnnHandle_t cudnn_handle(int device_id, int stream_id);
 #endif
 
-  /*! \brief Return the specified nccl comm */
 #ifdef USE_NCCL
+  /*! \brief Return the specified nccl comm */
   ncclComm_t nccl_comm(
       int device_id,
       const string& cache_key,
       ncclUniqueId* comm_uuid,
       int comm_size,
-      int comm_rank) {
-    auto& comms = nccl_comms_[device_id];
-    auto find_iter = comms.find(cache_key);
-    if (find_iter != comms.end()) return find_iter->second;
-    if (comm_uuid == nullptr) return nullptr;
-    CUDADeviceGuard guard(device_id);
-    NCCL_CHECK(
-        ncclCommInitRank(&comms[cache_key], comm_size, *comm_uuid, comm_rank));
-    return comms[cache_key];
-  }
+      int comm_rank);
 #endif
 
   /*! \brief Return the default cuda stream of current device */
@@ -386,7 +332,14 @@ class DRAGON_API CUDAContext {
   }
 
  private:
-  int device_id_, stream_id_ = 0, random_seed_;
+  /*! \brief The device index */
+  int device_id_;
+
+  /*! \brief The stream index */
+  int stream_id_ = 0;
+
+  /*! \brief The random seed */
+  int random_seed_;
 };
 
 #endif // USE_CUDA

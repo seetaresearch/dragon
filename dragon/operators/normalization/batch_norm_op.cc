@@ -27,9 +27,8 @@ void BatchNormOp<Context>::RunTraining() {
 
   // Compute moments.
   if (sync_stats_ > 0) {
-#ifdef USE_MPI
     int64_t N = N_;
-    AllReduce(&N, &N, 1);
+    coll_impl_.AllReduce(&N, &N, 1);
     // Compute E(X) and E(X^2)
     kernels::BatchNormExpectation(
         N_,
@@ -42,25 +41,11 @@ void BatchNormOp<Context>::RunTraining() {
         params + C_,
         ctx());
     ctx()->FinishDeviceComputation();
-    if (enable_nccl_) {
-#ifdef USE_NCCL
-      NCCL_CHECK(ncclAllReduce(
-          (void*)params,
-          (void*)params,
-          C_ * 2,
-          this->template nccl_data_type<ParamT>(),
-          ncclSum,
-          this->nccl_comm(),
-          ((CUDAContext*)ctx())->cuda_stream()));
-#endif // USE_NCCL
-    } else {
-      AllReduce(params, params, C_ * 2);
-    }
+    coll_impl_.AllReduce(params, params, C_ * 2, ctx());
     // Compute D(X) = E(X^2) - E(X)^2
     math::Copy(C_, params, mu, ctx());
     math::Square(C_, params, params, ctx());
     math::Sub(C_, params + C_, params, rsig, ctx());
-#endif // USE_MPI
   } else {
     if (data_format() == "NCHW") {
       vec64_t dims = {N_, C_, S_};
@@ -182,24 +167,9 @@ void BatchNormGradientOp<Context>::RunTraining() {
 
   int64_t N = N_; // Total batch size.
   if (sync_stats_ > 0) {
-#ifdef USE_MPI
-    AllReduce(&N, &N, 1);
+    coll_impl_.AllReduce(&N, &N, 1);
     ctx()->FinishDeviceComputation();
-    if (enable_nccl_) {
-#ifdef USE_NCCL
-      NCCL_CHECK(ncclAllReduce(
-          (void*)params,
-          (void*)params,
-          C_ * 2,
-          this->template nccl_data_type<ParamT>(),
-          ncclSum,
-          this->nccl_comm(),
-          ((CUDAContext*)ctx())->cuda_stream()));
-#endif // USE_NCCL
-    } else {
-      AllReduce(params, params, C_ * 2);
-    }
-#endif // USE_MPI
+    coll_impl_.AllReduce(params, params, C_ * 2, ctx());
   }
 
   // Gradient w.r.t. input.

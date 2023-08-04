@@ -26,19 +26,21 @@ void CNNLBatchNormOp<Context>::DoRunWithType() {
   }
 
   if (sync_stats_ > 0) {
-#ifdef USE_MPI
     int64_t N = N_;
-    AllReduce(&N, &N, 1);
-    const ParamT count_avg = ParamT(N * S_) / comm_size_;
+    coll_impl_.AllReduce(&N, &N, 1);
+    const auto comm_size = coll_impl_.comm_size();
+    const ParamT count_avg = ParamT(N * S_) / ParamT(comm_size);
     size_t scratch_size = 0;
     auto* X_mu = Output("X_mu")->Reshape({C_});
     auto* X_rsig = Output("X_rsig")->Reshape({C_});
     auto* buffer = ctx()->workspace()->template data<ParamT, Context>(
-        (2 + comm_size_ * 4) * C_ + comm_size_, "BufferKernel");
-    math::Set(comm_size_, count_avg, buffer + C_ * (2 + comm_size_ * 4), ctx());
-    CNNLSetTensorDesc<ParamT>(count_desc_, {comm_size_});
-    CNNLSetTensorDesc<ParamT>(syncbn_desc_, {comm_size_, C_}, "NC");
-    trans_impl_.Setup<ParamT>({comm_size_, 2, C_}, {1, 0, 2}, ctx());
+        (2 + comm_size * 4) * C_ + comm_size, "BufferKernel");
+    auto* host_buffer = ctx()->workspace()->template data<ParamT, CPUContext>(
+        (2 + comm_size * 2) * C_, "BufferCPUKernel");
+    math::Set(comm_size, count_avg, buffer + C_ * (2 + comm_size * 4), ctx());
+    CNNLSetTensorDesc<ParamT>(count_desc_, {comm_size});
+    CNNLSetTensorDesc<ParamT>(syncbn_desc_, {comm_size, C_}, "NC");
+    trans_impl_.Setup<ParamT>({comm_size, 2, C_}, {1, 0, 2}, ctx());
     CNNL_CHECK(cnnlGetSyncBatchNormStatsWorkspaceSize(
         ctx()->cnnl_handle(), input_desc_, &scratch_size));
     CNNL_CHECK(cnnlSyncBatchNormStats_v2(
@@ -52,25 +54,32 @@ void CNNLBatchNormOp<Context>::DoRunWithType() {
         buffer,
         bn_desc_,
         buffer + C_));
-    ctx()->FinishDeviceComputation();
-    CNCL_CHECK(cnclAllGather(
+    CNRT_CHECK(cnrtMemcpyAsync(
+        host_buffer,
         buffer,
+        sizeof(ParamT) * C_ * 2,
+        ctx()->mlu_stream(),
+        cnrtMemcpyDevToHost));
+    ctx()->FinishDeviceComputation();
+    // HostAllGather is faster.
+    coll_impl_.AllGather(host_buffer, host_buffer + C_ * 2, C_ * 2);
+    CNRT_CHECK(cnrtMemcpyAsync(
         buffer + C_ * 2,
-        C_ * 2,
-        this->template cncl_data_type<ParamT>(),
-        this->cncl_comm(),
-        ((MLUContext*)ctx())->mlu_stream()));
+        host_buffer + C_ * 2,
+        sizeof(ParamT) * comm_size * C_ * 2,
+        ctx()->mlu_stream(),
+        cnrtMemcpyHostToDev));
     trans_impl_.Compute<ParamT>(
-        buffer + C_ * (2 + comm_size_ * 0),
-        buffer + C_ * (2 + comm_size_ * 2),
+        buffer + C_ * (2 + comm_size * 0),
+        buffer + C_ * (2 + comm_size * 2),
         ctx()->workspace()->template data<Context>(trans_impl_.scratch_size()),
         ctx());
     CNNL_CHECK(cnnlSyncBatchNormGatherStatsWithCounts(
         ctx()->cnnl_handle(),
         syncbn_desc_,
-        buffer + C_ * (2 + comm_size_ * 2),
+        buffer + C_ * (2 + comm_size * 2),
         syncbn_desc_,
-        buffer + C_ * (2 + comm_size_ * 3),
+        buffer + C_ * (2 + comm_size * 3),
         bn_desc_,
         Input(3).template mutable_data<ParamT, Context>(), // rm
         bn_desc_,
@@ -78,7 +87,7 @@ void CNNLBatchNormOp<Context>::DoRunWithType() {
         1.f - momentum(),
         epsilon_,
         count_desc_,
-        buffer + C_ * (2 + comm_size_ * 4),
+        buffer + C_ * (2 + comm_size * 4),
         bn_desc_,
         X_mu->template mutable_data<ParamT, Context>(), // sm
         bn_desc_,
@@ -97,9 +106,6 @@ void CNNLBatchNormOp<Context>::DoRunWithType() {
         Input(2).template data<ParamT, Context>(),
         input_desc_,
         Output(0)->template mutable_data<T, Context>()));
-#else
-    LOG(FATAL) << "MPI library is not built with.";
-#endif
     return;
   }
 
@@ -177,9 +183,8 @@ void CNNLBatchNormGradientOp<Context>::RunTraining() {
   }
 
   if (sync_stats_ > 0) {
-#ifdef USE_MPI
     int64_t N = N_;
-    AllReduce(&N, &N, 1);
+    coll_impl_.AllReduce(&N, &N, 1);
     size_t scratch_size = 0;
     auto* buffer = ctx()->workspace()->template data<ParamT, Context>(
         2 * C_ + 1, "BufferKernel");
@@ -211,14 +216,7 @@ void CNNLBatchNormGradientOp<Context>::RunTraining() {
         true,
         true));
     ctx()->FinishDeviceComputation();
-    CNCL_CHECK(cnclAllReduce(
-        buffer,
-        buffer,
-        C_ * 2,
-        this->template cncl_data_type<ParamT>(),
-        cnclSum,
-        this->cncl_comm(),
-        ((MLUContext*)ctx())->mlu_stream()));
+    coll_impl_.AllReduce(buffer, buffer, C_ * 2, ctx());
     CNNL_CHECK(cnnlSyncBatchNormBackwardElemtV2(
         ctx()->cnnl_handle(),
         input_desc_,
@@ -239,9 +237,6 @@ void CNNLBatchNormGradientOp<Context>::RunTraining() {
         buffer + C_ * 2,
         input_desc_,
         Output(0)->template mutable_data<T, Context>()));
-#else
-    LOG(FATAL) << "MPI library is not built with.";
-#endif
     return;
   }
 

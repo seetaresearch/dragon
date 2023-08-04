@@ -1,12 +1,13 @@
-#include "dragon/operators/math/gemm_op.h"
+#ifdef USE_CUDA
+
 #include "dragon/core/workspace.h"
-#include "dragon/utils/math_functions.h"
+#include "dragon/operators/math/gemm_op.h"
 
 namespace dragon {
 
 template <class Context>
 template <typename T>
-void GemmOp<Context>::DoRunWithType() {
+void CUDAGemmOp<Context>::DoRunWithType() {
   auto &A = Input(0), &B = Input(1), *Y = Output(0);
   const auto A_axis = A.axis(-1), B_axis = B.axis(-1);
 
@@ -37,40 +38,43 @@ void GemmOp<Context>::DoRunWithType() {
     Y_dims.push_back(N);
   }
 
-  // Copy matrix C to Y if provided.
+  // Copy matrix C to Y if not fused.
+  auto fuse_bias = beta_ == 1.f && InputSize() > 2;
   if (InputSize() > 2) {
     auto& C = Input(2);
-    CHECK(math::utils::IsBinaryBroadcast(Y_dims, C.dims(), Y_dims))
-        << "\nCould not broadcast together with shapes: "
-        << Tensor::DimString(Y_dims) << " " << C.DimString();
-    math::Set(
-        C.ndim(),
-        C.dims().data(),
-        Y_dims.size(),
-        Y_dims.data(),
-        C.template data<T, Context>(),
-        Y->Reshape(Y_dims)->template mutable_data<T, Context>(),
-        ctx());
+    fuse_bias = fuse_bias && C.ndim() == 1 && C.count() == N;
+    if (fuse_bias) {
+      Y_impl_.SetEpilogueAndBias(
+          CUBLASLT_EPILOGUE_BIAS, (T*)C.template data<T, Context>());
+    } else {
+      CHECK(math::utils::IsBinaryBroadcast(Y_dims, C.dims(), Y_dims))
+          << "\nCould not broadcast together with shapes: "
+          << Tensor::DimString(Y_dims) << " " << C.DimString();
+      math::Set(
+          C.ndim(),
+          C.dims().data(),
+          Y_dims.size(),
+          Y_dims.data(),
+          C.template data<T, Context>(),
+          Y->Reshape(Y_dims)->template mutable_data<T, Context>(),
+          ctx());
+    }
   }
 
-  math::Gemm(
-      transA_ > 0 ? CblasTrans : CblasNoTrans,
-      transB_ > 0 ? CblasTrans : CblasNoTrans,
-      M,
-      N,
-      K,
-      alpha_,
+  const auto beta = (InputSize() == 2 || fuse_bias) ? 0.f : beta_;
+  Y_impl_.Setup<T>(transA_, transB_, alpha_, beta, A.dims(), B.dims(), ctx());
+  Y_impl_.Compute<T>(
       A.template data<T, Context>(),
       B.template data<T, Context>(),
-      InputSize() > 2 ? beta_ : 0.f,
       Y->Reshape(Y_dims)->template mutable_data<T, Context>(),
+      ctx()->workspace()->template data<Context>(Y_impl_.scratch_size()),
       ctx());
 }
 
 template <class Context>
 template <typename T>
-void GemmGradientOp<Context>::DoRunWithType() {
-  auto &A = Input(0), &B = Input(1), &dY = Input(3);
+void CUDAGemmGradientOp<Context>::DoRunWithType() {
+  auto &A = Input(0), &B = Input(1), &C = Input(2), &dY = Input(3);
   auto *dA = Output(0), *dB = Output(1), *dC = Output(2);
   const auto A_axis = A.axis(-1), B_axis = B.axis(-1);
 
@@ -79,67 +83,64 @@ void GemmGradientOp<Context>::DoRunWithType() {
   auto K = transA_ ? A.count(0, A_axis) : A.dim(A_axis);
   auto N = transB_ ? B.count(0, B_axis) : B.dim(B_axis);
 
+  // Check tensor C.
+  auto has_bgrad = dC->has_name();
+  auto fuse_bgrad = beta_ == 1.f && dC->has_name();
+  fuse_bgrad = fuse_bgrad && C.ndim() == 1 && C.count() == N;
+
+  // Compute dA.
   if (dA->has_name()) {
     if (transA_ > 0) {
-      math::Gemm(
-          transB_ > 0 ? CblasTrans : CblasNoTrans,
-          CblasTrans,
-          K,
-          M,
-          N,
-          alpha_,
+      dA_impl_.Setup<T>(transB_, 1, alpha_, 0.f, B.dims(), dY.dims(), ctx());
+      dA_impl_.Compute<T>(
           B.template data<T, Context>(),
           dY.template data<T, Context>(),
-          0.f,
           dA->ReshapeLike(A)->template mutable_data<T, Context>(),
+          ctx()->workspace()->template data<Context>(dA_impl_.scratch_size()),
           ctx());
     } else {
-      math::Gemm(
-          CblasNoTrans,
-          transB_ > 0 ? CblasNoTrans : CblasTrans,
-          M,
-          K,
-          N,
-          alpha_,
+      dA_impl_.Setup<T>(0, !transB_, alpha_, 0.f, dY.dims(), B.dims(), ctx());
+      dA_impl_.Compute<T>(
           dY.template data<T, Context>(),
           B.template data<T, Context>(),
-          0.f,
           dA->ReshapeLike(A)->template mutable_data<T, Context>(),
+          ctx()->workspace()->template data<Context>(dA_impl_.scratch_size()),
           ctx());
     }
   }
 
+  // Compute dB and dC.
   if (dB->has_name()) {
+    dB_impl_.SetEpilogueAndBias(CUBLASLT_EPILOGUE_DEFAULT, (T*)nullptr);
+    if (has_bgrad && fuse_bgrad) {
+#if CUBLAS_VERSION >= 11600 // CUDA >= 11.4.2
+      has_bgrad = false;
+      dB_impl_.SetEpilogueAndBias(
+          transB_ > 0 ? CUBLASLT_EPILOGUE_BGRADB : CUBLASLT_EPILOGUE_BGRADA,
+          dC->ReshapeLike(C)->template mutable_data<T, Context>());
+#endif
+    }
     if (transB_ > 0) {
-      math::Gemm(
-          CblasTrans,
-          transA_ > 0 ? CblasTrans : CblasNoTrans,
-          N,
-          K,
-          M,
-          alpha_,
+      dB_impl_.Setup<T>(1, transA_, alpha_, 0.f, dY.dims(), A.dims(), ctx());
+      dB_impl_.Compute<T>(
           dY.template data<T, Context>(),
           A.template data<T, Context>(),
-          0.f,
           dB->ReshapeLike(B)->template mutable_data<T, Context>(),
+          ctx()->workspace()->template data<Context>(dB_impl_.scratch_size()),
           ctx());
     } else {
-      math::Gemm(
-          transA_ > 0 ? CblasNoTrans : CblasTrans,
-          CblasNoTrans,
-          K,
-          N,
-          M,
-          alpha_,
+      dB_impl_.Setup<T>(!transA_, 0, alpha_, 0.f, A.dims(), dY.dims(), ctx());
+      dB_impl_.Compute<T>(
           A.template data<T, Context>(),
           dY.template data<T, Context>(),
-          0.f,
           dB->ReshapeLike(B)->template mutable_data<T, Context>(),
+          ctx()->workspace()->template data<Context>(dB_impl_.scratch_size()),
           ctx());
     }
   }
 
-  if (dC->has_name()) {
+  // Compute dC.
+  if (has_bgrad) {
     auto& C = Input(2);
     if (C.count() == dY.count()) {
       math::Scale(
@@ -184,37 +185,11 @@ void GemmGradientOp<Context>::DoRunWithType() {
   }
 }
 
-DEPLOY_CPU_OPERATOR(Gemm);
-DEPLOY_CPU_OPERATOR(GemmGradient);
-
-OPERATOR_SCHEMA(Gemm)
-    /* A, B, C */
-    .NumInputs(2, 3)
-    /* Y */
-    .NumOutputs(1);
-
-OPERATOR_SCHEMA(GemmGradient)
-    /* A, B, C, dY */
-    .NumInputs(4)
-    /* dA, dB, dC */
-    .NumOutputs(3);
-
-namespace {
-
-class GradientMaker : public GradientMakerBase {
- public:
-  GRADIENT_MAKER_CTOR(GradientMaker);
-  void CreateGradientDefs() override {
-    AddGradientDef(
-        def().type() + "Gradient",
-        "",
-        vector<string>({I(0), I(1), I(2), GO(0)}),
-        vector<string>({GI(0), GI(1), GI(2)}));
-  }
-};
-
-} // namespace
-
-REGISTER_GRADIENT(Gemm, GradientMaker);
+INSTANTIATE_OPERATOR(CUDAGemm, CUDAContext);
+INSTANTIATE_OPERATOR(CUDAGemmGradient, CUDAContext);
+REGISTER_CUDA_OPERATOR(Gemm, CUDAGemmOp<CUDAContext>);
+REGISTER_CUDA_OPERATOR(GemmGradient, CUDAGemmGradientOp<CUDAContext>);
 
 } // namespace dragon
+
+#endif // USE_CUDA

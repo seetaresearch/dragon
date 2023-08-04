@@ -2390,7 +2390,7 @@ class TestMathOps(OpTestCase):
         for execution in ('EAGER_MODE', 'GRAPH_MODE'):
             with execution_context().mode(execution):
                 data1 = arange(8, dtype='uint8')
-                data2 = arange(8, start=-4, dtype='uint8')
+                data2 = arange(8, start=4, dtype='uint8')
                 x1, x2 = new_tensor(data1), new_tensor(data2)
                 y = dragon.bitwise.bitwise_and([x1, x2])
                 self.assertEqual(y, np.bitwise_and(data1, data2))
@@ -2409,7 +2409,7 @@ class TestMathOps(OpTestCase):
         for execution in ('EAGER_MODE', 'GRAPH_MODE'):
             with execution_context().mode(execution):
                 data1 = arange(8, dtype='uint8')
-                data2 = arange(8, start=-4, dtype='uint8')
+                data2 = arange(8, start=4, dtype='uint8')
                 x1, x2 = new_tensor(data1), new_tensor(data2)
                 y = dragon.bitwise.bitwise_or([x1, x2])
                 self.assertEqual(y, np.bitwise_or(data1, data2))
@@ -2428,7 +2428,7 @@ class TestMathOps(OpTestCase):
         for execution in ('EAGER_MODE', 'GRAPH_MODE'):
             with execution_context().mode(execution):
                 data1 = arange(8, dtype='uint8')
-                data2 = arange(8, start=-4, dtype='uint8')
+                data2 = arange(8, start=4, dtype='uint8')
                 x1, x2 = new_tensor(data1), new_tensor(data2)
                 y = dragon.bitwise.bitwise_xor([x1, x2])
                 self.assertEqual(y, np.bitwise_xor(data1, data2))
@@ -2758,7 +2758,7 @@ class TestMathOps(OpTestCase):
     def test_invert(self):
         for execution in ('EAGER_MODE', 'GRAPH_MODE'):
             with execution_context().mode(execution):
-                data = arange(8, start=-4, dtype='uint8')
+                data = arange(8, start=4, dtype='uint8')
                 x = new_tensor(data)
                 y = dragon.bitwise.invert(x)
                 self.assertEqual(y, ~data)

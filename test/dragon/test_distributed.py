@@ -25,7 +25,7 @@ class TestBackend(unittest.TestCase):
     """Test backend components."""
 
     def test_empty_group(self):
-        for backend in (None, 'AUTO', 'NCCL', 'MPI', 'UNKNOWN', 0):
+        for backend in (None, 'AUTO', 'NCCL', 'CNCL', 'MPI', 'UNKNOWN', 0):
             try:
                 group = dragon.distributed.new_group(backend=backend)
                 self.assertEqual(group.ranks, None)

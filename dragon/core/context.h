@@ -19,7 +19,7 @@ namespace dragon {
 
 class Workspace;
 
-class CPUObjects {
+class DRAGON_API CPUObjects {
  public:
   /*! \brief Constructor */
   CPUObjects() : random_seed_(DEFAULT_RNG_SEED) {}

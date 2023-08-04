@@ -34,7 +34,8 @@ if %BUILD_PYTHON% == ON (
 )
 
 echo -- CMAKE_GENERATOR=%CMAKE_GENERATOR%
-if not exist %BUILD_DIR% mkdir %BUILD_DIR% && cd %BUILD_DIR%
+if not exist %BUILD_DIR% mkdir %BUILD_DIR%
+cd %BUILD_DIR%
 
 cmake %SOURCE_DIR%  ^
   -G%CMAKE_GENERATOR% ^

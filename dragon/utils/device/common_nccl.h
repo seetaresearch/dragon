@@ -14,7 +14,6 @@
 #define DRAGON_UTILS_DEVICE_COMMON_NCCL_H_
 
 #ifdef USE_NCCL
-
 #include <nccl.h>
 
 #define NCCL_VERSION_MIN(major, minor, patch) \
@@ -25,7 +24,10 @@
     ncclResult_t status = condition;                                     \
     CHECK_EQ(status, ncclSuccess) << "\n" << ncclGetErrorString(status); \
   } while (0)
-
+#else
+typedef int ncclDataType_t;
+typedef struct ncclComm* ncclComm_t;
+#define NCCL_NOT_COMPILED LOG(FATAL) << "NCCL library is not built with."
 #endif // USE_NCCL
 
 #endif // DRAGON_UTILS_DEVICE_COMMON_NCCL_H_

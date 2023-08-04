@@ -16,7 +16,7 @@
 #ifdef USE_MLU
 
 #include "dragon/core/context_mlu.h"
-#include "dragon/utils/math/broadcast.h"
+#include "dragon/utils/math_functions.h"
 
 namespace dragon {
 
@@ -62,34 +62,25 @@ class CNNLGemmOpImpl<cnnlMatMulAlgo_t> {
       const vec64_t& A_dims,
       const vec64_t& B_dims,
       MLUContext* ctx) {
-    alpha_ = alpha, beta_ = beta;
-    const bool use_beta = beta != 0.f;
     const int transA = TransA, transB = TransB;
+    auto M = math::utils::Prod(A_dims.size() - 1, A_dims.data());
+    auto K2 = math::utils::Prod(B_dims.size() - 1, B_dims.data());
+    auto K1 = A_dims.back(), N = B_dims.back();
+    const vec64_t A_squeeze_dims({M, K1});
+    const vec64_t B_squeeze_dims({K2, N});
+    if (TransA > 0) std::swap(M, K1);
+    if (TransB > 0) std::swap(K2, N);
+    alpha_ = alpha, beta_ = beta;
+    const auto use_beta = beta != 0.f;
+    CNNLSetTensorDesc<T>(A_desc_, A_squeeze_dims);
+    CNNLSetTensorDesc<T>(B_desc_, B_squeeze_dims);
+    CNNLSetTensorDesc<T>(Y_desc_, vec64_t({M, N}));
     CNNL_CHECK(cnnlSetMatMulDescAttr(
         mm_desc_, CNNL_MATMUL_DESC_TRANSA, &transA, sizeof(int)));
     CNNL_CHECK(cnnlSetMatMulDescAttr(
         mm_desc_, CNNL_MATMUL_DESC_TRANSB, &transB, sizeof(int)));
     CNNL_CHECK(cnnlSetMatMulDescAttr(
         mm_desc_, CNNL_MATMUL_USE_BETA, &use_beta, sizeof(use_beta)));
-    int64_t M = std::accumulate(
-        A_dims.begin(),
-        A_dims.end() - 1,
-        int64_t(1),
-        std::multiplies<int64_t>());
-    int64_t K1 = A_dims.back();
-    int64_t K2 = std::accumulate(
-        B_dims.begin(),
-        B_dims.end() - 1,
-        int64_t(1),
-        std::multiplies<int64_t>());
-    int64_t N = B_dims.back();
-    vec64_t A_squeeze_dims({M, K1});
-    vec64_t B_squeeze_dims({K2, N});
-    if (TransA > 0) std::swap(M, K1);
-    if (TransB > 0) std::swap(K2, N);
-    CNNLSetTensorDesc<T>(A_desc_, A_squeeze_dims);
-    CNNLSetTensorDesc<T>(B_desc_, B_squeeze_dims);
-    CNNLSetTensorDesc<T>(Y_desc_, vec64_t({M, N}));
     int num_valid;
     CNNL_CHECK(cnnlGetMatMulAlgoHeuristic(
         ctx->cnnl_handle(),
@@ -174,19 +165,9 @@ class CNNLBatchGemmOpImpl<cnnlMatMulAlgo_t> {
       const vec64_t& A_dims,
       const vec64_t& B_dims,
       MLUContext* ctx) {
-    alpha_ = alpha, beta_ = beta;
-    const bool use_beta = beta != 0.f;
     const int transA = TransA, transB = TransB;
-    CNNL_CHECK(cnnlSetMatMulDescAttr(
-        mm_desc_, CNNL_MATMUL_DESC_TRANSA, &transA, sizeof(int)));
-    CNNL_CHECK(cnnlSetMatMulDescAttr(
-        mm_desc_, CNNL_MATMUL_DESC_TRANSB, &transB, sizeof(int)));
-    CNNL_CHECK(cnnlSetMatMulDescAttr(
-        mm_desc_, CNNL_MATMUL_USE_BETA, &use_beta, sizeof(use_beta)));
-    int64_t M = *(A_dims.end() - 2);
-    int64_t K1 = A_dims.back();
-    int64_t K2 = *(B_dims.end() - 2);
-    int64_t N = B_dims.back();
+    auto M = *(A_dims.end() - 2), K1 = A_dims.back();
+    auto K2 = *(B_dims.end() - 2), N = B_dims.back();
     vec64_t A_bcast_dims, B_bcast_dims, Y_bcast_dims;
     vec64_t A_batch_dims(A_dims.begin(), A_dims.end() - 2);
     vec64_t B_batch_dims(B_dims.begin(), B_dims.end() - 2);
@@ -201,9 +182,17 @@ class CNNLBatchGemmOpImpl<cnnlMatMulAlgo_t> {
     if (TransB > 0) std::swap(K2, N);
     Y_bcast_dims.push_back(M);
     Y_bcast_dims.push_back(N);
+    alpha_ = alpha, beta_ = beta;
+    const bool use_beta = beta != 0.f;
     CNNLSetTensorDesc<T>(A_desc_, A_bcast_dims);
     CNNLSetTensorDesc<T>(B_desc_, B_bcast_dims);
     CNNLSetTensorDesc<T>(Y_desc_, Y_bcast_dims);
+    CNNL_CHECK(cnnlSetMatMulDescAttr(
+        mm_desc_, CNNL_MATMUL_DESC_TRANSA, &transA, sizeof(int)));
+    CNNL_CHECK(cnnlSetMatMulDescAttr(
+        mm_desc_, CNNL_MATMUL_DESC_TRANSB, &transB, sizeof(int)));
+    CNNL_CHECK(cnnlSetMatMulDescAttr(
+        mm_desc_, CNNL_MATMUL_USE_BETA, &use_beta, sizeof(use_beta)));
     int num_valid;
     CNNL_CHECK(cnnlGetBatchMatMulAlgoHeuristic(
         ctx->cnnl_handle(),

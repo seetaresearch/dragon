@@ -19,7 +19,7 @@ from dragon.vm.torch.core.autograd.function import Function
 
 
 def all_gather(tensor_list, tensor, group=None):
-    """Gather the tensor across all nodes in a group.
+    """Gather tensor across all nodes and output to a tensor list.
 
     Parameters
     ----------
@@ -32,8 +32,8 @@ def all_gather(tensor_list, tensor, group=None):
 
     Returns
     -------
-    dragon.vm.torch.Tensor
-        The output tensor.
+    Sequence[dragon.vm.torch.Tensor]
+        The output tensor list.
 
     """
     group = group or distributed.get_group()
@@ -47,11 +47,37 @@ def all_gather(tensor_list, tensor, group=None):
             'Split', output_tensor.device, [output_tensor],
             outputs=[None] * len(tensor_list),
             axis=0, size_split=None, copy=True)
-    return output_tensor
+    return [output_tensor]
+
+
+def all_gather_into_tensor(output_tensor, input_tensor, group=None):
+    """Gather tensor across all nodes and output to a tensor.
+
+    Parameters
+    ----------
+    output_tensor : dragon.vm.torch.Tensor
+        The output tensor.
+    input_tensor : dragon.vm.torch.Tensor
+        The tensor to be sent.
+    group : ProcessGroup, optional
+        The group for communication.
+
+    Returns
+    -------
+    dragon.vm.torch.Tensor
+        The output tensor.
+
+    """
+    group = group or distributed.get_group()
+    if group is None:
+        return input_tensor
+    return Function.apply(
+        'Collective', input_tensor.device, [input_tensor],
+        outputs=[output_tensor], operation='ALLGATHER', **group.arguments)
 
 
 def all_reduce(tensor, op='sum', group=None):
-    """Reduce the tensor across all nodes in a group.
+    """Reduce tensor across all nodes.
 
     Parameters
     ----------
@@ -80,7 +106,7 @@ def all_reduce(tensor, op='sum', group=None):
 
 
 def broadcast(tensor, src=0, group=None):
-    """Broadcast the tensor from source node in a group.
+    """Broadcast tensor from the source node.
 
     Parameters
     ----------
@@ -103,3 +129,69 @@ def broadcast(tensor, src=0, group=None):
     return Function.apply(
         'Collective', tensor.device, [tensor], outputs=[tensor],
         operation='BROADCAST', root=src, **group.arguments)
+
+
+def reduce_scatter(output, input_list, op='sum', group=None):
+    """Reduce and scatter the tensor list across all nodes.
+
+    Parameters
+    ----------
+    output : dragon.vm.torch.Tensor
+        The output tensor.
+    input_list : Sequence[dragon.vm.torch.Tensor]
+        The input tensor list.
+    op : str, optional
+        The reduction op.
+    group : ProcessGroup, optional
+        The group for communication.
+
+    Returns
+    -------
+    dragon.vm.torch.Tensor
+        The output tensor.
+
+    """
+    group = group or distributed.get_group()
+    if group is None:
+        return input_list
+    op = op.upper()
+    if op not in ('SUM',):
+        raise ValueError('Unsupported reduction: ' + op)
+    if len(input_list) > 0:
+        input = Function.apply('Concat', input_list[0].device, input_list)
+    else:
+        input = input_list[0]
+    return Function.apply(
+        'Collective', input.device, [input], outputs=[output],
+        operation='REDUCESCATTER', reduction=op, **group.arguments)
+
+
+def reduce_scatter_tensor(output, input, op='sum', group=None):
+    """Reduce and scatter the tensor across all nodes.
+
+    Parameters
+    ----------
+    output : dragon.vm.torch.Tensor
+        The output tensor.
+    input : dragon.vm.torch.Tensor
+        The input tensor.
+    op : str, optional
+        The reduction op.
+    group : ProcessGroup, optional
+        The group for communication.
+
+    Returns
+    -------
+    dragon.vm.torch.Tensor
+        The output tensor.
+
+    """
+    group = group or distributed.get_group()
+    if group is None:
+        return input
+    op = op.upper()
+    if op not in ('SUM',):
+        raise ValueError('Unsupported reduction: ' + op)
+    return Function.apply(
+        'Collective', input.device, [input], outputs=[output],
+        operation='REDUCESCATTER', reduction=op, **group.arguments)

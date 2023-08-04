@@ -6,11 +6,17 @@ dragon.distributed
   Functions
   ---------
 
+  `all_gather(...) <distributed/all_gather.html>`_
+  : Gather input across all nodes.
+
   `all_reduce(...) <distributed/all_reduce.html>`_
-  : Reduce the input across all nodes in a group.
+  : Reduce input across all nodes.
 
   `broadcast(...) <distributed/broadcast.html>`_
-  : Broadcast the input from root node in a group.
+  : Broadcast input from root node.
+
+  `is_cncl_available(...) <distributed/is_cncl_available.html>`_
+  : Return whether the CNCL backend is available.
 
   `is_initialized(...) <distributed/is_initialized.html>`_
   : Return whether the distributed environment is initialized.
@@ -36,11 +42,16 @@ dragon.distributed
   `new_group(...) <distributed/new_group.html>`_
   : Create a new communication group.
 
+  `reduce_scatter(...) <distributed/reduce_scatter.html>`_
+  : Reduce and scatter input across all nodes.
+
 .. toctree::
   :hidden:
   
+  distributed/all_gather
   distributed/all_reduce
   distributed/broadcast
+  distributed/is_cncl_available
   distributed/is_initialized
   distributed/is_mpi_available
   distributed/is_nccl_available
@@ -49,6 +60,7 @@ dragon.distributed
   distributed/get_rank
   distributed/get_world_size
   distributed/new_group
+  distributed/reduce_scatter
 
 .. raw:: html
 

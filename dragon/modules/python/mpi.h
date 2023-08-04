@@ -13,23 +13,14 @@
 #ifndef DRAGON_MODULES_PYTHON_MPI_H_
 #define DRAGON_MODULES_PYTHON_MPI_H_
 
-#ifdef USE_MPI
-#include <mpi.h>
-#endif
-
 #include <dragon/core/common.h>
+#include <dragon/utils/device/common_mpi.h>
 
 #include "dragon/modules/python/common.h"
 
 namespace dragon {
 
 namespace python {
-
-#define MPI_CHECK(condition, error_string)                     \
-  do {                                                         \
-    int error_code = condition;                                \
-    CHECK_EQ(error_code, MPI_SUCCESS) << "\n" << error_string; \
-  } while (0)
 
 void RegisterModule_mpi(py::module& m) {
   /*! \brief Return whether MPI is available */
@@ -56,36 +47,32 @@ void RegisterModule_mpi(py::module& m) {
       MPI_Init_thread(NULL, NULL, MPI_THREAD_SINGLE, &thread_type);
     }
 #else
-    LOG(FATAL) << "MPI library is not built with.";
+    MPI_NOT_COMPILED;
 #endif
   });
 
   /*! \brief Return the world rank of current node */
   m.def("mpiWorldRank", []() {
+    int world_rank = 0;
 #ifdef USE_MPI
-    int world_rank;
     MPI_Comm_rank(MPI_COMM_WORLD, &world_rank);
-    return world_rank;
-#else
-    LOG(FATAL) << "MPI library is not built with.";
 #endif
+    return world_rank;
   });
 
   /*! \brief Return the world size of current node */
   m.def("mpiWorldSize", []() {
+    int world_size = 0;
 #ifdef USE_MPI
-    int world_size;
     MPI_Comm_size(MPI_COMM_WORLD, &world_size);
-    return world_size;
-#else
-    LOG(FATAL) << "MPI library is not built with.";
 #endif
+    return world_size;
   });
 
   /*! \brief Create a MPI group from the ranks */
   m.def("mpiCreateGroup", [](const vec32_t& ranks, bool verbose = false) {
 #ifdef USE_MPI
-    // Skip the empty ranks to avoid asserting
+    // Skip the empty ranks.
     if (ranks.empty()) return vector<long>();
 
     int world_size;
@@ -96,17 +83,15 @@ void RegisterModule_mpi(py::module& m) {
 
     MPI_CHECK(
         MPI_Group_incl(world_group, (int)ranks.size(), ranks.data(), &group),
-        "Failed to include the specified ranks.");
+        "Failed to include given ranks into MPIGroup.");
 
-    // Create a new group from the world group
-    // Each process should call this function
-    // to synchronize the information
+    // Create a new group from the world group.
     MPI_CHECK(
         MPI_Comm_create(MPI_COMM_WORLD, group, &group_comm),
-        "Failed to create the group from ranks.");
+        "Failed to create MPIGroup using given ranks.");
 
     if (verbose && group_comm != MPI_COMM_NULL) {
-      // Log the debug string at the first rank
+      // Log the debug string at the first rank.
       int world_rank, local_size;
       MPI_Comm_rank(MPI_COMM_WORLD, &world_rank);
       if (world_rank == ranks[0]) {
@@ -115,10 +100,7 @@ void RegisterModule_mpi(py::module& m) {
            << "Create a group of " << ranks.size() << " members.";
         ss << "\nGroup: [";
         for (auto rank : ranks) {
-          if (rank != ranks[0])
-            ss << rank << ", ";
-          else
-            ss << rank << "*, ";
+          ss << rank << (rank != ranks[0] ? ", " : "*, ");
         }
         string debug_string = ss.str();
         debug_string[debug_string.size() - 2] = ']';
@@ -127,7 +109,7 @@ void RegisterModule_mpi(py::module& m) {
     }
     return vector<long>({(long)group_comm, (long)group});
 #else
-    LOG(FATAL) << "MPI library is not built with.";
+    MPI_NOT_COMPILED;
     return vector<long>();
 #endif
   });
@@ -137,12 +119,10 @@ void RegisterModule_mpi(py::module& m) {
 #ifdef USE_MPI
     MPI_Finalize();
 #else
-    LOG(FATAL) << "MPI library is not built with.";
+    MPI_NOT_COMPILED;
 #endif
   });
 }
-
-#undef MPI_CHECK
 
 } // namespace python
 

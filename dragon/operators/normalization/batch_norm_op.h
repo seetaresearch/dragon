@@ -15,26 +15,24 @@
 
 #include "dragon/core/operator.h"
 #include "dragon/operators/array/transpose_op_impl_cnnl.h"
-#include "dragon/operators/distributed/collective_op_base.h"
+#include "dragon/operators/distributed/collective_op_impl.h"
 
 namespace dragon {
 
-// Multiple inheritance is forbidden by the registry.
-// So, we should inherit the collective op base if mpi available.
-#ifdef USE_MPI
-#define GenericOpBase CollectiveOpBase
-#else
-#define GenericOpBase Operator
-#endif
-
 template <class Context>
-class BatchNormOpBase : public GenericOpBase<Context> {
+class BatchNormOpBase : public Operator<Context> {
  public:
   BatchNormOpBase(const OperatorDef& def, Workspace* ws)
-      : GenericOpBase<Context>(def, ws),
+      : Operator<Context>(def, ws),
         epsilon_(OP_SINGLE_ARG(double, "epsilon", 1e-5)),
         use_stats_(OP_SINGLE_ARG(int64_t, "use_stats", -1)),
-        sync_stats_(OP_SINGLE_ARG(int64_t, "comm", 0) > 0 ? 1 : 0) {}
+        sync_stats_(OP_SINGLE_ARG(int64_t, "comm", 0) > 0 ? 1 : 0) {
+    coll_impl_.SetBackend(OP_SINGLE_ARG(string, "backend", "MPI"));
+    coll_impl_.SetComm(
+        OP_SINGLE_ARG(int64_t, "comm", 0),
+        OP_SINGLE_ARG(int64_t, "group", 0),
+        OP_REPEATED_ARG(int64_t, "ranks"));
+  }
   USE_OPERATOR_FUNCTIONS;
 
   void GetBaseArguments() {
@@ -53,6 +51,7 @@ class BatchNormOpBase : public GenericOpBase<Context> {
   int64_t N_, C_, S_;
   int64_t use_stats_, sync_stats_;
   int64_t training_;
+  CollectiveOpImpl coll_impl_;
 };
 
 #undef GenericOpBase
@@ -65,7 +64,8 @@ class BatchNormOpBase : public GenericOpBase<Context> {
   using BatchNormOpBase<Context>::N_;               \
   using BatchNormOpBase<Context>::C_;               \
   using BatchNormOpBase<Context>::S_;               \
-  using BatchNormOpBase<Context>::training_
+  using BatchNormOpBase<Context>::training_;        \
+  using BatchNormOpBase<Context>::coll_impl_;
 
 template <class Context>
 class BatchNormOp : public BatchNormOpBase<Context> {
@@ -76,9 +76,6 @@ class BatchNormOp : public BatchNormOpBase<Context> {
   }
   USE_OPERATOR_FUNCTIONS;
   USE_BATCHNORM_FUNCTIONS;
-#ifdef USE_MPI
-  USE_COLLECTIVE_FUNCTIONS;
-#endif
 
   void Setup() override {
     GetBaseArguments();
@@ -114,9 +111,6 @@ class BatchNormGradientOp : public BatchNormOpBase<Context> {
       : BatchNormOpBase<Context>(def, ws) {}
   USE_OPERATOR_FUNCTIONS;
   USE_BATCHNORM_FUNCTIONS;
-#ifdef USE_MPI
-  USE_COLLECTIVE_FUNCTIONS;
-#endif
 
   void Setup() override {
     GetBaseArguments();
@@ -250,9 +244,6 @@ class CNNLBatchNormOp final : public BatchNormOpBase<Context> {
   }
   USE_OPERATOR_FUNCTIONS;
   USE_BATCHNORM_FUNCTIONS;
-#ifdef USE_MPI
-  USE_COLLECTIVE_FUNCTIONS;
-#endif
 
   ~CNNLBatchNormOp() {
     CNNLDestroyTensorDesc(bn_desc_);
@@ -308,9 +299,6 @@ class CNNLBatchNormGradientOp final : public BatchNormGradientOp<Context> {
   }
   USE_OPERATOR_FUNCTIONS;
   USE_BATCHNORM_FUNCTIONS;
-#ifdef USE_MPI
-  USE_COLLECTIVE_FUNCTIONS;
-#endif
 
   ~CNNLBatchNormGradientOp() {
     CNNLDestroyTensorDesc(bn_desc_);

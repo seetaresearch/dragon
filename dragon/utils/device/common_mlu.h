@@ -17,6 +17,10 @@
 #include <cncl.h>
 #include <cnnl.h>
 #include <cnrt.h>
+#else
+typedef struct cnrtQueue* cnrtQueue_t;
+typedef struct cnclComm* cnclComm_t;
+typedef int cnclDataType_t;
 #endif
 
 #include "dragon/core/common.h"

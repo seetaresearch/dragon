@@ -2,7 +2,6 @@
 
 #include "dragon/core/workspace.h"
 #include "dragon/operators/math/gemm_op.h"
-#include "dragon/utils/math_functions.h"
 
 namespace dragon {
 

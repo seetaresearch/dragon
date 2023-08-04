@@ -22,7 +22,7 @@ namespace dragon {
 
 class Workspace;
 
-class MLUObjects {
+class DRAGON_API MLUObjects {
  public:
   /*! \brief Constructor */
   MLUObjects() {
@@ -63,39 +63,19 @@ class MLUObjects {
   }
 
   /*! \brief Return the specified cnnl handle */
-  cnnlHandle_t cnnl_handle(int device_id, int stream_id) {
-    auto& handles = cnnl_handles_[device_id];
-    if (handles.size() <= (unsigned)stream_id) {
-      handles.resize(stream_id + 1, nullptr);
-    }
-    if (!handles[stream_id]) {
-      MLUDeviceGuard guard(device_id);
-      CNNL_CHECK(cnnlCreate(&handles[stream_id]));
-      auto& handle = handles[stream_id];
-      CNNL_CHECK(cnnlSetQueue(handle, stream(device_id, stream_id)));
-    }
-    return handles[stream_id];
-  }
+  cnnlHandle_t cnnl_handle(int device_id, int stream_id);
 
+  /*! \brief Return the specified cnrand generator */
+  std::pair<cnnlRandGenerator_t, void*>
+  cnrand_generator(int device_id, int stream_id, int seed);
+
+  /*! \brief Return the specified cncl comm */
   cnclComm_t cncl_comm(
       int device_id,
       const string& cache_key,
       cnclCliqueId* comm_uuid,
       int comm_size,
-      int comm_rank) {
-    auto& comms = cncl_comms_[device_id];
-    auto find_iter = comms.find(cache_key);
-    if (find_iter != comms.end()) return find_iter->second;
-    if (comm_uuid == nullptr) return nullptr;
-    MLUDeviceGuard guard(device_id);
-    CNCL_CHECK(cnclInitComms(
-        &comms[cache_key], 1, &device_id, &comm_rank, comm_size, comm_uuid));
-    return comms[cache_key];
-  }
-
-  /*! \brief Return the specified cnrand generator */
-  std::pair<cnnlRandGenerator_t, void*>
-  cnrand_generator(int device_id, int stream_id, int seed);
+      int comm_rank);
 
   /*! \brief Return the default mlu stream of current device */
   cnrtQueue_t default_stream() {
@@ -303,7 +283,14 @@ class DRAGON_API MLUContext {
   }
 
  private:
-  int device_id_, stream_id_ = 0, random_seed_;
+  /*! \brief The device index */
+  int device_id_;
+
+  /*! \brief The stream index */
+  int stream_id_ = 0;
+
+  /*! \brief The random seed */
+  int random_seed_;
 };
 
 #endif // USE_MLU

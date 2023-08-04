@@ -21,14 +21,43 @@ from dragon.core.autograph.op_lib import OpSchema
 
 
 @OpSchema.num_inputs(1)
-def all_reduce(inputs, reduction='mean', group=None, **kwargs):
-    """Reduce the input across all nodes in a group.
+def all_gather(inputs, group=None, **kwargs):
+    """Gather input across all nodes.
 
     Parameters
     ----------
     inputs : dragon.Tensor
         The input tensor.
-    reduction : str, optional
+    group : ProcessGroup, optional
+        The group for communication.
+
+    Returns
+    -------
+    dragon.Tensor
+        The output tensor.
+
+    """
+    if group is None:
+        group = distributed.get_group()
+    if group is None:
+        raise ValueError('<group> is required.')
+    coll_args = group.arguments.copy()
+    coll_args['operation'] = 'ALLGATHER'
+    if context.executing_eagerly():
+        return OpLib.execute('Collective', inputs, **coll_args)
+    kwargs.update(coll_args)
+    return OpLib.add('Collective', inputs, **kwargs)
+
+
+@OpSchema.num_inputs(1)
+def all_reduce(inputs, reduction='sum', group=None, **kwargs):
+    """Reduce input across all nodes.
+
+    Parameters
+    ----------
+    inputs : dragon.Tensor
+        The input tensor.
+    reduction : str, optional, default='sum'
         The reduction method.
     group : ProcessGroup, optional
         The group for communication.
@@ -57,7 +86,7 @@ def all_reduce(inputs, reduction='mean', group=None, **kwargs):
 
 @OpSchema.num_inputs(1)
 def broadcast(inputs, root=0, group=None, **kwargs):
-    """Broadcast the input from root node in a group.
+    """Broadcast input from the root node.
 
     Parameters
     ----------
@@ -82,6 +111,41 @@ def broadcast(inputs, root=0, group=None, **kwargs):
     coll_args = group.arguments.copy()
     coll_args['root'] = root
     coll_args['operation'] = 'BROADCAST'
+    if context.executing_eagerly():
+        return OpLib.execute('Collective', inputs, **coll_args)
+    kwargs.update(coll_args)
+    return OpLib.add('Collective', inputs, **kwargs)
+
+
+@OpSchema.num_inputs(1)
+def reduce_scatter(inputs, reduction='sum', group=None, **kwargs):
+    """Reduce and scatter input across all nodes.
+
+    Parameters
+    ----------
+    inputs : dragon.Tensor
+        The input tensor.
+    reduction : str, optional, default='sum'
+        The reduction method.
+    group : ProcessGroup, optional
+        The group for communication.
+
+    Returns
+    -------
+    dragon.Tensor
+        The output tensor.
+
+    """
+    reduction = reduction.upper()
+    if group is None:
+        group = distributed.get_group()
+    if group is None:
+        raise ValueError('<group> is required.')
+    if reduction not in ('SUM',):
+        raise ValueError('Unsupported reduction: ' + reduction)
+    coll_args = group.arguments.copy()
+    coll_args['operation'] = 'REDUCESCATTER'
+    coll_args['reduction'] = reduction
     if context.executing_eagerly():
         return OpLib.execute('Collective', inputs, **coll_args)
     kwargs.update(coll_args)

@@ -29,6 +29,24 @@ std::string to(T val) {
   return std::to_string(val);
 }
 
+template <typename T>
+inline std::string to(
+    const std::vector<T>& val,
+    const std::string& empty = "") {
+  if (val.size() == 0) return empty;
+  std::stringstream ss;
+  ss << "(";
+  for (size_t i = 0; i < val.size() - 1; ++i) {
+    ss << val[i] << ",";
+  }
+  if (val.size() == 1) {
+    ss << val[0] << ",)";
+  } else {
+    ss << val.back() << ")";
+  }
+  return ss.str();
+}
+
 inline std::string lower(const std::string& str) {
   std::string ret(str);
   std::transform(str.begin(), str.end(), ret.begin(), ::tolower);

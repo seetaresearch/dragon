@@ -14,11 +14,14 @@
 #define DRAGON_UTILS_DEVICE_COMMON_CUDA_H_
 
 #ifdef USE_CUDA
+#include <cublasLt.h>
 #include <cublas_v2.h>
 #include <cuda.h>
 #include <cuda_runtime.h>
 #include <curand.h>
 #include <device_launch_parameters.h>
+#else
+typedef struct CUstream_st* cudaStream_t;
 #endif
 
 #include "dragon/core/common.h"
@@ -133,19 +136,11 @@ inline const cudaDeviceProp& CUDAGetDeviceProp(int device_id) {
   return props.props[device_id];
 }
 
-inline bool CUDA_TRUE_FP16_AVAILABLE() {
-  int device = CUDAGetDevice();
-  auto& prop = CUDAGetDeviceProp(device);
-  return prop.major >= 6;
-}
-
 inline bool TENSOR_CORE_AVAILABLE() {
 #if CUDA_VERSION < 9000
   return false;
 #else
-  int device = CUDAGetDevice();
-  auto& prop = CUDAGetDeviceProp(device);
-  return prop.major >= 7;
+  return CUDAGetDeviceProp(CUDAGetDevice()).major >= 7;
 #endif
 }
 

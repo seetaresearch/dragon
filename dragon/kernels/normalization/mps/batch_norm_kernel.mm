@@ -212,6 +212,26 @@ INSTANTIATE_GRAD_KERNEL(BatchNormInferenceGrad, NHWC, double, double);
 
 } // namespace
 
+#define DEFINE_KERNEL_LAUNCHER(T, AccT)           \
+  template <>                                     \
+  void BatchNormExpectation<T, AccT, MPSContext>( \
+      const int N,                                \
+      const int C,                                \
+      const int S,                                \
+      const float normalizer,                     \
+      const string& data_format,                  \
+      const T* x,                                 \
+      AccT* ex,                                   \
+      AccT* ex2,                                  \
+      MPSContext* ctx) {                          \
+    NOT_IMPLEMENTED;                              \
+  }
+
+DEFINE_KERNEL_LAUNCHER(float16, float);
+DEFINE_KERNEL_LAUNCHER(float, float);
+DEFINE_KERNEL_LAUNCHER(double, double);
+#undef DEFINE_KERNEL_LAUNCHER
+
 #define DEFINE_KERNEL_LAUNCHER(T, AccT)                                        \
   template <>                                                                  \
   void BatchNorm<T, AccT, MPSContext>(                                         \
