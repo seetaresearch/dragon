@@ -15,8 +15,8 @@ kernel void Silu(
     device const T* x,
     device T* y,
     const uint index [[thread_position_in_grid]]) {
-  const T val = x[index];
-  y[index] = val / (T(1) + exp(-val));
+  const T v = x[index];
+  y[index] = v / (T(1) + exp(-v));
 }
 
 template <typename T>
@@ -24,9 +24,8 @@ kernel void HardSwish(
     device const T* x,
     device T* y,
     const uint index [[thread_position_in_grid]]) {
-  const T val = x[index];
-  const T s_val = fma(val, T(0.1666666666666667), T(0.5));
-  y[index] = val * max(T(0), min(T(1), s_val));
+  const T v = x[index];
+  y[index] = v * clamp(fma(v, T(0.166667), T(0.5)), T(0), T(1));
 }
 
 template <typename T>
@@ -35,9 +34,9 @@ kernel void SiluGrad(
     device const T* x,
     device T* dx, 
     const uint index [[thread_position_in_grid]]) {
-  const T val = x[index];
-  const T s_val = T(1) / (T(1) + exp(-val));
-  dx[index] = dy[index] * s_val * (val + T(1) - val * s_val);
+  const T v = x[index];
+  const T s = T(1) / (T(1) + exp(-v));
+  dx[index] = dy[index] * s * (v + T(1) - v * s);
 }
 
 template <typename T>
@@ -46,9 +45,9 @@ kernel void HardSwishGrad(
     device const T* x,
     device T* dx, 
     const uint index [[thread_position_in_grid]]) {
-  const T val = x[index];
-  dx[index] = (val < T(-3)) ? T(0) : (val < T(3)) ?
-    dy[index] * fma(val, T(0.3333333333333333), T(0.5)) : dy[index];
+  const T v = x[index];
+  dx[index] = (v < T(-3)) ? T(0) : (v < T(3)) ?
+      dy[index] * fma(v, T(0.333333), T(0.5)) : dy[index];
 }
 
 #define INSTANTIATE_KERNEL(name, T) \
@@ -107,15 +106,19 @@ INSTANTIATE_GRAD_KERNEL(HardSwishGrad, float);
   }
 
 DEFINE_KERNEL_LAUNCHER(Silu, float16);
+DEFINE_KERNEL_LAUNCHER(Silu, bfloat16);
 DEFINE_KERNEL_LAUNCHER(Silu, float);
 DEFINE_KERNEL_LAUNCHER(Silu, double);
 DEFINE_KERNEL_LAUNCHER(HardSwish, float16);
+DEFINE_KERNEL_LAUNCHER(HardSwish, bfloat16);
 DEFINE_KERNEL_LAUNCHER(HardSwish, float);
 DEFINE_KERNEL_LAUNCHER(HardSwish, double);
 DEFINE_GRAD_KERNEL_LAUNCHER(SiluGrad, float16);
+DEFINE_GRAD_KERNEL_LAUNCHER(SiluGrad, bfloat16);
 DEFINE_GRAD_KERNEL_LAUNCHER(SiluGrad, float);
 DEFINE_GRAD_KERNEL_LAUNCHER(SiluGrad, double);
 DEFINE_GRAD_KERNEL_LAUNCHER(HardSwishGrad, float16);
+DEFINE_GRAD_KERNEL_LAUNCHER(HardSwishGrad, bfloat16);
 DEFINE_GRAD_KERNEL_LAUNCHER(HardSwishGrad, float);
 DEFINE_GRAD_KERNEL_LAUNCHER(HardSwishGrad, double);
 #undef DEFINE_KERNEL_LAUNCHER

@@ -32,7 +32,6 @@ from dragon.vm.keras.core.layers.convolutional import Conv2DTranspose
 from dragon.vm.keras.core.layers.convolutional import Conv2DTranspose as Convolution2DTranspose
 from dragon.vm.keras.core.layers.convolutional import Conv3DTranspose
 from dragon.vm.keras.core.layers.convolutional import Conv3DTranspose as Convolution3DTranspose
-from dragon.vm.keras.core.layers.convolutional import DepthwiseConv2D
 from dragon.vm.keras.core.layers.core import Activation
 from dragon.vm.keras.core.layers.core import Dense
 from dragon.vm.keras.core.layers.core import Dropout

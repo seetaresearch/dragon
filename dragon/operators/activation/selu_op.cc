@@ -17,11 +17,6 @@ void SeluOp<Context>::DoRunWithType() {
 }
 
 template <class Context>
-void SeluOp<Context>::RunOnDevice() {
-  DispatchHelper<dtypes::Floating>::Call(this, Input(0));
-}
-
-template <class Context>
 template <typename T>
 void SeluGradientOp<Context>::DoRunWithType() {
   auto &Y = Input(0), &dY = Input(1), *dX = Output(0);
@@ -35,18 +30,10 @@ void SeluGradientOp<Context>::DoRunWithType() {
       ctx());
 }
 
-template <class Context>
-void SeluGradientOp<Context>::RunOnDevice() {
-  DispatchHelper<dtypes::Floating>::Call(this, Input(0));
-}
-
 DEPLOY_CPU_OPERATOR(Selu);
-#ifdef USE_CUDA
-DEPLOY_CUDA_OPERATOR(Selu);
-#endif
-
 DEPLOY_CPU_OPERATOR(SeluGradient);
 #ifdef USE_CUDA
+DEPLOY_CUDA_OPERATOR(Selu);
 DEPLOY_CUDA_OPERATOR(SeluGradient);
 #endif
 

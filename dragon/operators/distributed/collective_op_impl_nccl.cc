@@ -127,6 +127,7 @@ ncclDataType_t NCCLCollectiveOpImpl::data_type() {
       {TypeMeta::Id<int>(), ncclInt32},
       {TypeMeta::Id<int64_t>(), ncclInt64},
       {TypeMeta::Id<float16>(), ncclFloat16},
+      {TypeMeta::Id<bfloat16>(), ncclBfloat16},
       {TypeMeta::Id<float>(), ncclFloat32},
       {TypeMeta::Id<double>(), ncclFloat64},
   };
@@ -155,6 +156,7 @@ INSTANTIATE_API(uint8_t);
 INSTANTIATE_API(int);
 INSTANTIATE_API(int64_t);
 INSTANTIATE_API(float16);
+INSTANTIATE_API(bfloat16);
 INSTANTIATE_API(float);
 INSTANTIATE_API(double);
 #undef INSTANTIATE_API

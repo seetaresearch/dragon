@@ -73,13 +73,15 @@ __global__ void _NesterovSGD(
         g,                                                            \
         m,                                                            \
         y,                                                            \
-        reinterpret_cast<math::ScalarType<CopyT>::type*>(y_copy));    \
+        reinterpret_cast<math::Traits<CopyT>::scalar_type*>(y_copy)); \
   }
 
 DEFINE_KERNEL_LAUNCHER(MomentumSGD, float, float16);
+DEFINE_KERNEL_LAUNCHER(MomentumSGD, float, bfloat16);
 DEFINE_KERNEL_LAUNCHER(MomentumSGD, float, float);
 DEFINE_KERNEL_LAUNCHER(MomentumSGD, double, double);
 DEFINE_KERNEL_LAUNCHER(NesterovSGD, float, float16);
+DEFINE_KERNEL_LAUNCHER(NesterovSGD, float, bfloat16);
 DEFINE_KERNEL_LAUNCHER(NesterovSGD, float, float);
 DEFINE_KERNEL_LAUNCHER(NesterovSGD, double, double);
 #undef DEFINE_KERNEL_LAUNCHER

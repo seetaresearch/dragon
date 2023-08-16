@@ -34,7 +34,7 @@ bool ParseProtoFromText(string text, Message* proto) {
 bool ParseProtoFromLargeString(const string& str, Message* proto) {
   ArrayInputStream input_stream(str.data(), (int)str.size());
   CodedInputStream coded_stream(&input_stream);
-  coded_stream.SetTotalBytesLimit(2147483647, -1);
+  coded_stream.SetTotalBytesLimit(2147483647);
   return proto->ParseFromCodedStream(&coded_stream);
 }
 
@@ -47,7 +47,7 @@ bool ReadProtoFromBinaryFile(const char* filename, Message* proto) {
   CHECK_NE(fd, -1) << "File not found: " << filename;
   ZeroCopyInputStream* raw_input = new FileInputStream(fd);
   CodedInputStream* coded_input = new CodedInputStream(raw_input);
-  coded_input->SetTotalBytesLimit(2147483647, -1);
+  coded_input->SetTotalBytesLimit(2147483647);
   bool success = proto->ParseFromCodedStream(coded_input);
   delete coded_input;
   delete raw_input;

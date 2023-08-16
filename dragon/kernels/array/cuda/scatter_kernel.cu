@@ -75,7 +75,7 @@ __global__ void _ScatterAdd(
 }
 
 template <typename T, int D>
-void _ScatterImpl(
+void DispatchScatter(
     const int axis,
     const int64_t* dims,
     const int64_t* x_strides,
@@ -101,7 +101,7 @@ void _ScatterImpl(
 }
 
 template <typename InputT, typename OutputT, int D>
-void _ScatterAccImpl(
+void DispatchScatterAcc(
     const string& kernel,
     const int axis,
     const int64_t* dims,
@@ -118,8 +118,8 @@ void _ScatterAccImpl(
     X_strides.data[i] = x_strides[i];
     Y_strides.data[i] = y_strides[i];
   }
-  using T = typename math::ScalarType<InputT>::type;
-  using AccT = typename math::ScalarType<OutputT>::type;
+  using T = typename math::Traits<InputT>::scalar_type;
+  using AccT = typename math::Traits<OutputT>::scalar_type;
   if (kernel == "ScatterAdd") {
     _ScatterAdd<<<CUDA_BLOCKS(N), CUDA_THREADS, 0, ctx->cuda_stream()>>>(
         N,
@@ -150,7 +150,7 @@ void _ScatterAccImpl(
       CUDAContext* ctx) {               \
     CUDA_TENSOR_DIMS_CHECK(num_dims);   \
     DISPATCH_FUNC_BY_VALUE_WITH_TYPE_1( \
-        _ScatterImpl,                   \
+        DispatchScatter,                \
         T,                              \
         num_dims,                       \
         axis,                           \
@@ -169,6 +169,7 @@ DEFINE_KERNEL_LAUNCHER(ScatterElements, int8_t);
 DEFINE_KERNEL_LAUNCHER(ScatterElements, int);
 DEFINE_KERNEL_LAUNCHER(ScatterElements, int64_t);
 DEFINE_KERNEL_LAUNCHER(ScatterElements, float16);
+DEFINE_KERNEL_LAUNCHER(ScatterElements, bfloat16);
 DEFINE_KERNEL_LAUNCHER(ScatterElements, float);
 DEFINE_KERNEL_LAUNCHER(ScatterElements, double);
 #undef DEFINE_KERNEL_LAUNCHER
@@ -187,7 +188,7 @@ DEFINE_KERNEL_LAUNCHER(ScatterElements, double);
       CUDAContext* ctx) {               \
     CUDA_TENSOR_DIMS_CHECK(num_dims);   \
     DISPATCH_FUNC_BY_VALUE_WITH_TYPE_1( \
-        _ScatterImpl,                   \
+        DispatchScatter,                \
         T,                              \
         num_dims,                       \
         axis,                           \
@@ -206,6 +207,7 @@ DEFINE_KERNEL_LAUNCHER(ScatterElements, int8_t);
 DEFINE_KERNEL_LAUNCHER(ScatterElements, int);
 DEFINE_KERNEL_LAUNCHER(ScatterElements, int64_t);
 DEFINE_KERNEL_LAUNCHER(ScatterElements, float16);
+DEFINE_KERNEL_LAUNCHER(ScatterElements, bfloat16);
 DEFINE_KERNEL_LAUNCHER(ScatterElements, float);
 DEFINE_KERNEL_LAUNCHER(ScatterElements, double);
 #undef DEFINE_KERNEL_LAUNCHER
@@ -224,7 +226,7 @@ DEFINE_KERNEL_LAUNCHER(ScatterElements, double);
       CUDAContext* ctx) {                             \
     CUDA_TENSOR_DIMS_CHECK(num_dims);                 \
     DISPATCH_FUNC_BY_VALUE_WITH_TYPE_2(               \
-        _ScatterAccImpl,                              \
+        DispatchScatterAcc,                           \
         InputT,                                       \
         OutputT,                                      \
         num_dims,                                     \
@@ -244,6 +246,7 @@ DEFINE_KERNEL_LAUNCHER(ScatterAdd, int8_t, int8_t);
 DEFINE_KERNEL_LAUNCHER(ScatterAdd, int, int)
 DEFINE_KERNEL_LAUNCHER(ScatterAdd, int64_t, int64_t)
 DEFINE_KERNEL_LAUNCHER(ScatterAdd, float16, float);
+DEFINE_KERNEL_LAUNCHER(ScatterAdd, bfloat16, float);
 DEFINE_KERNEL_LAUNCHER(ScatterAdd, float, float)
 DEFINE_KERNEL_LAUNCHER(ScatterAdd, double, float);
 #undef DEFINE_KERNEL_LAUNCHER

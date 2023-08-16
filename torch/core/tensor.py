@@ -463,6 +463,26 @@ class Tensor(object):
 
         """
 
+    def bfloat16(self):
+        """Return a bfloat16 tensor with the same data.
+
+        Returns
+        -------
+        dragon.vm.torch.Tensor
+            The output tensor.
+
+        """
+
+    def bfloat16_(self):
+        """Cast to a bfloat16 tensor.
+
+        Returns
+        -------
+        dragon.vm.torch.Tensor
+            The output tensor.
+
+        """
+
     def bitwise_and(self, other):
         r"""Compute element-wise AND bitwise operation.
 
@@ -3937,6 +3957,14 @@ class Tensor(object):
 
         """
         return self.bitwise_xor(other)
+
+
+class BFloat16Tensor(object):
+    """The bfloat16 tensor."""
+
+    def __new__(cls, *args, **kwargs):
+        kwargs['dtype'] = 'bfloat16'
+        return Tensor(*args, **kwargs)
 
 
 class BoolTensor(object):

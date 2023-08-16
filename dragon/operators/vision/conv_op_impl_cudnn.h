@@ -68,7 +68,7 @@ void CuDNNSetConvFilterDesc(
   if (num_axes == 1 || num_axes == 2) {
     CUDNN_CHECK(cudnnSetFilter4dDescriptor(
         filter_desc,
-        CuDNNType<T>::type,
+        CuDNNTraits<T>::type,
         data_format == "NCHW" ? CUDNN_TENSOR_NCHW : CUDNN_TENSOR_NHWC,
         filter_dims[0],
         filter_dims[1],
@@ -77,7 +77,7 @@ void CuDNNSetConvFilterDesc(
   } else {
     CUDNN_CHECK(cudnnSetFilterNdDescriptor(
         filter_desc,
-        CuDNNType<T>::type,
+        CuDNNTraits<T>::type,
         data_format == "NCHW" ? CUDNN_TENSOR_NCHW : CUDNN_TENSOR_NHWC,
         filter_dims.size(),
         vec32_t{filter_dims.begin(), filter_dims.end()}.data()));
@@ -193,7 +193,7 @@ class CuDNNConvOpImpl<cudnnConvolutionFwdAlgo_t> {
     }
     CUDNN_CHECK(cudnnConvolutionForward(
         ctx->cudnn_handle(),
-        CuDNNType<T>::one,
+        CuDNNTraits<T>::one,
         X_desc_,
         X,
         W_desc_,
@@ -202,16 +202,16 @@ class CuDNNConvOpImpl<cudnnConvolutionFwdAlgo_t> {
         algo_,
         ctx->workspace()->data<CUDAContext>(workspace_size_),
         workspace_size_,
-        CuDNNType<T>::zero,
+        CuDNNTraits<T>::zero,
         Y_desc_,
         Y));
     if (B != nullptr) {
       CUDNN_CHECK(cudnnAddTensor(
           ctx->cudnn_handle(),
-          CuDNNType<T>::one,
+          CuDNNTraits<T>::one,
           B_desc_,
           B,
-          CuDNNType<T>::one,
+          CuDNNTraits<T>::one,
           Y_desc_,
           Y));
     }
@@ -335,7 +335,7 @@ class CuDNNConvOpImpl<cudnnConvolutionBwdDataAlgo_t> {
     }
     CUDNN_CHECK(cudnnConvolutionBackwardData(
         ctx->cudnn_handle(),
-        CuDNNType<T>::one,
+        CuDNNTraits<T>::one,
         W_desc_,
         W,
         Y_desc_,
@@ -344,7 +344,7 @@ class CuDNNConvOpImpl<cudnnConvolutionBwdDataAlgo_t> {
         algo_,
         ctx->workspace()->data<CUDAContext>(workspace_size_),
         workspace_size_,
-        CuDNNType<T>::zero,
+        CuDNNTraits<T>::zero,
         X_desc_,
         dX));
   }
@@ -468,7 +468,7 @@ class CuDNNConvOpImpl<cudnnConvolutionBwdFilterAlgo_t> {
     }
     CUDNN_CHECK(cudnnConvolutionBackwardFilter(
         ctx->cudnn_handle(),
-        CuDNNType<T>::one,
+        CuDNNTraits<T>::one,
         X_desc_,
         X,
         Y_desc_,
@@ -477,16 +477,16 @@ class CuDNNConvOpImpl<cudnnConvolutionBwdFilterAlgo_t> {
         algo_,
         ctx->workspace()->data<CUDAContext>(workspace_size_),
         workspace_size_,
-        CuDNNType<T>::zero,
+        CuDNNTraits<T>::zero,
         W_desc_,
         dW));
-    if (dB != nullptr) {
+    if (dB != nullptr && TypeMeta::Id<T>() != TypeMeta::Id<bfloat16>()) {
       CUDNN_CHECK(cudnnConvolutionBackwardBias(
           ctx->cudnn_handle(),
-          CuDNNType<T>::one,
+          CuDNNTraits<T>::one,
           Y_desc_,
           dY,
-          CuDNNType<T>::zero,
+          CuDNNTraits<T>::zero,
           B_desc_,
           dB));
     }

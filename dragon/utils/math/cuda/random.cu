@@ -21,8 +21,8 @@ DRAGON_API void RandomUniform<float, CUDAContext>(
     float* y,
     CUDAContext* ctx) {
   CURAND_CHECK(curandGenerateUniform(ctx->curand_generator(), y, N));
-  Scale(N, high - low, y, y, ctx);
-  Bias(N, low, y, y, ctx);
+  math::Scale(N, high - low, y, y, ctx);
+  math::Bias(N, low, y, y, ctx);
 }
 
 template <>
@@ -33,21 +33,8 @@ DRAGON_API void RandomUniform<double, CUDAContext>(
     double* y,
     CUDAContext* ctx) {
   CURAND_CHECK(curandGenerateUniformDouble(ctx->curand_generator(), y, N));
-  Scale(N, high - low, y, y, ctx);
-  Bias(N, low, y, y, ctx);
-}
-
-template <>
-DRAGON_API void RandomUniform<float16, CUDAContext>(
-    const int N,
-    const float low,
-    const float high,
-    float16* y,
-    CUDAContext* ctx) {
-  auto* scratch = ctx->workspace()->template data<CUDAContext>(
-      sizeof(float) * N, "BufferKernel");
-  RandomUniform(N, low, high, (float*)scratch, ctx);
-  Cast(N, (float*)scratch, y, ctx);
+  math::Scale(N, high - low, y, y, ctx);
+  math::Bias(N, low, y, y, ctx);
 }
 
 template <>
@@ -71,18 +58,24 @@ DRAGON_API void RandomNormal<double, CUDAContext>(
   CURAND_CHECK(curandGenerateNormalDouble(rng, y, N, mu, sigma));
 }
 
-template <>
-DRAGON_API void RandomNormal<float16, CUDAContext>(
-    const int N,
-    const float mu,
-    const float sigma,
-    float16* y,
-    CUDAContext* ctx) {
-  auto* scratch = ctx->workspace()->template data<CUDAContext>(
-      sizeof(float) * N, "BufferKernel");
-  RandomNormal(N, mu, sigma, (float*)scratch, ctx);
-  Cast(N, (float*)scratch, y, ctx);
-}
+#define DEFINE_RANDOM_CAST_FUNC(name, T)                                     \
+  template <>                                                                \
+  DRAGON_API void name<T, CUDAContext>(                                      \
+      const int N,                                                           \
+      const float arg1,                                                      \
+      const float arg2,                                                      \
+      T* y,                                                                  \
+      CUDAContext* ctx) {                                                    \
+    auto* x = ctx->workspace()->data<float, CUDAContext>(N, "BufferKernel"); \
+    math::name(N, arg1, arg2, x, ctx);                                       \
+    math::Cast(N, x, y, ctx);                                                \
+  }
+
+DEFINE_RANDOM_CAST_FUNC(RandomUniform, float16);
+DEFINE_RANDOM_CAST_FUNC(RandomUniform, bfloat16);
+DEFINE_RANDOM_CAST_FUNC(RandomNormal, float16);
+DEFINE_RANDOM_CAST_FUNC(RandomNormal, bfloat16);
+#undef DEFINE_RANDOM_CAST_FUNC
 
 } // namespace math
 

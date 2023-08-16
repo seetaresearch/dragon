@@ -9,43 +9,20 @@ void LRNOp<Context>::DoRunWithType() {
 }
 
 template <class Context>
-void LRNOp<Context>::RunOnDevice() {
-  Output(0)->ReshapeLike(Input(0));
-  DispatchHelper<dtypes::Floating>::Call(this, Input(0));
-}
-
-template <class Context>
 template <typename T>
 void LRNGradientOp<Context>::DoRunWithType() {
   LOG(FATAL) << "Compile with CuDNN for LocalResponseNorm.";
 }
-template <class Context>
-void LRNGradientOp<Context>::RunOnDevice() {
-  Output(0)->ReshapeLike(Input(-1));
-  DispatchHelper<dtypes::Floating>::Call(this, Input(-1));
-}
 
 DEPLOY_CPU_OPERATOR(LRN);
-#ifdef USE_CUDA
-DEPLOY_CUDA_OPERATOR(LRN);
-#endif
-
 DEPLOY_CPU_OPERATOR(LRNGradient);
 #ifdef USE_CUDA
+DEPLOY_CUDA_OPERATOR(LRN);
 DEPLOY_CUDA_OPERATOR(LRNGradient);
 #endif
 
-OPERATOR_SCHEMA(LRN)
-    /* X */
-    .NumInputs(1)
-    /* Y */
-    .NumOutputs(1);
-
-OPERATOR_SCHEMA(LRNGradient)
-    /* X, Y, dY */
-    .NumInputs(3)
-    /* dX */
-    .NumOutputs(1);
+OPERATOR_SCHEMA(LRN).NumInputs(1).NumOutputs(1);
+OPERATOR_SCHEMA(LRNGradient).NumInputs(3).NumOutputs(1);
 
 namespace {
 

@@ -8,9 +8,6 @@ namespace kernels {
 
 namespace {
 
-#define LDG(x, i) __ldg(x + i)
-#define LDG2(x, i) convert::To<AccT>(__ldg(x + i))
-
 template <typename T, typename AccT, StorageOrder kOrder>
 __global__ void _BatchNormExpectation(
     const int N,
@@ -28,8 +25,8 @@ __global__ void _BatchNormExpectation(
     CUDA_2D_KERNEL_LOOP2(j, NxS) {
       const int xi = kOrder == StorageOrder::NCHW ? (j / S * C + i) * S + j % S
                                                   : j * C + i;
-      ex_val += LDG2(x, xi);
-      ex2_val += math::utils::Square(LDG2(x, xi));
+      ex_val += math::utils::LDGC<AccT>(x + xi);
+      ex2_val += math::utils::Sqr(math::utils::LDGC<AccT>(x + xi));
     }
     ex_val = BlockReduce<AccT>(ex_storage).Reduce(ex_val, cub::Sum());
     ex2_val = BlockReduce<AccT>(ex2_storage).Reduce(ex2_val, cub::Sum());
@@ -66,8 +63,7 @@ __global__ void _BatchNormAffine(
     T* y) {
   CUDA_1D_KERNEL_LOOP(i, NxCxS) {
     const int j = kOrder == StorageOrder::NCHW ? i / S % C : i % C;
-    y[i] = convert::To<T>(
-        fma(convert::To<AccT>(x[i]), LDG(scale, j), LDG(bias, j)));
+    y[i] = fma(convert::To<AccT>(x[i]), __ldg(scale + j), __ldg(bias + j));
   }
 }
 
@@ -87,12 +83,14 @@ __global__ void _BatchNormWGrad(
   __shared__ typename BlockReduce<AccT>::TempStorage db_storage;
   CUDA_2D_KERNEL_LOOP1(i, C) {
     AccT dg_val = AccT(0), db_val = AccT(0);
-    CUDA_2D_KERNEL_LOOP2(j, NxS) {
+    CUDA_2D_KERNEL_LOOP2(j, NxS) { // clang-format off
       const int idx = kOrder == StorageOrder::NCHW ? (j / S * C + i) * S + j % S
                                                    : j * C + i;
-      dg_val += LDG2(dy, idx) * (LDG2(x, idx) - LDG(mu, i));
-      db_val += LDG2(dy, idx);
-    }
+
+      dg_val += math::utils::LDGC<AccT>(dy + idx) * (
+                    math::utils::LDGC<AccT>(x + idx) - __ldg(mu + i));
+      db_val += math::utils::LDGC<AccT>(dy + idx);
+    } // clang-format on
     dg_val = BlockReduce<AccT>(dg_storage).Sum(dg_val);
     db_val = BlockReduce<AccT>(db_storage).Sum(db_val);
     if (threadIdx.x == 0) {
@@ -116,16 +114,13 @@ __global__ void _BatchNormTrainingGrad(
     const AccT* dbeta,
     const T* dy,
     T* dx) {
-  CUDA_1D_KERNEL_LOOP(i, NxCxS) {
+  CUDA_1D_KERNEL_LOOP(i, NxCxS) { // clang-format off
     const int j = kOrder == StorageOrder::NCHW ? i / S % C : i % C;
-    dx[i] = convert::To<T>(
-        LDG(gamma, j) * LDG(rsig, j) *
-        (convert::To<AccT>(dy[i]) -
-         fma((convert::To<AccT>(x[i]) - LDG(mu, j)) * LDG(rsig, j),
-             LDG(dgamma, j),
-             LDG(dbeta, j)) /
-             normalizer));
-  }
+    dx[i] = __ldg(gamma + j) * __ldg(rsig + j) * (
+        convert::To<AccT>(dy[i]) - fma(
+            (convert::To<AccT>(x[i]) - __ldg(mu + j)) * __ldg(rsig + j),
+            __ldg(dgamma + j), __ldg(dbeta + j)) /  normalizer);
+  } // clang-format on
 }
 
 template <typename T, typename AccT, StorageOrder kOrder>
@@ -139,13 +134,9 @@ __global__ void _BatchNormInferenceGrad(
     T* dx) {
   CUDA_1D_KERNEL_LOOP(i, NxCxS) {
     const int j = kOrder == StorageOrder::NCHW ? i / S % C : i % C;
-    dx[i] =
-        convert::To<T>(LDG(gamma, j) * convert::To<AccT>(dy[i]) * LDG(rsig, j));
+    dx[i] = __ldg(gamma + j) * convert::To<AccT>(dy[i]) * __ldg(rsig + j);
   }
 }
-
-#undef LDG
-#undef LDG2
 
 } // namespace
 
@@ -160,34 +151,35 @@ __global__ void _BatchNormInferenceGrad(
     LOG(FATAL) << "Unknown DataFormat: " << data_format;                 \
   }
 
-#define DEFINE_KERNEL_LAUNCHER(T, AccT)                        \
-  template <>                                                  \
-  void BatchNormExpectation<T, AccT, CUDAContext>(             \
-      const int N,                                             \
-      const int C,                                             \
-      const int S,                                             \
-      const float normalizer,                                  \
-      const string& data_format,                               \
-      const T* x,                                              \
-      AccT* ex,                                                \
-      AccT* ex2,                                               \
-      CUDAContext* ctx) {                                      \
-    DISPATCH_BATCHNORM_KERNEL(                                 \
-        _BatchNormExpectation,                                 \
-        math::ScalarType<T>::type,                             \
-        AccT,                                                  \
-        C,                                                     \
-        CUDA_THREADS,                                          \
-        N,                                                     \
-        C,                                                     \
-        S,                                                     \
-        normalizer,                                            \
-        reinterpret_cast<const math::ScalarType<T>::type*>(x), \
-        ex,                                                    \
-        ex2);                                                  \
+#define DEFINE_KERNEL_LAUNCHER(T, AccT)                           \
+  template <>                                                     \
+  void BatchNormExpectation<T, AccT, CUDAContext>(                \
+      const int N,                                                \
+      const int C,                                                \
+      const int S,                                                \
+      const float normalizer,                                     \
+      const string& data_format,                                  \
+      const T* x,                                                 \
+      AccT* ex,                                                   \
+      AccT* ex2,                                                  \
+      CUDAContext* ctx) {                                         \
+    DISPATCH_BATCHNORM_KERNEL(                                    \
+        _BatchNormExpectation,                                    \
+        math::Traits<T>::scalar_type,                             \
+        AccT,                                                     \
+        C,                                                        \
+        CUDA_THREADS,                                             \
+        N,                                                        \
+        C,                                                        \
+        S,                                                        \
+        normalizer,                                               \
+        reinterpret_cast<const math::Traits<T>::scalar_type*>(x), \
+        ex,                                                       \
+        ex2);                                                     \
   }
 
 DEFINE_KERNEL_LAUNCHER(float16, float);
+DEFINE_KERNEL_LAUNCHER(bfloat16, float);
 DEFINE_KERNEL_LAUNCHER(float, float);
 DEFINE_KERNEL_LAUNCHER(double, double);
 #undef DEFINE_KERNEL_LAUNCHER
@@ -221,101 +213,104 @@ DEFINE_KERNEL_LAUNCHER(double, double);
         ctx->cuda_stream()>>>(C, mu, rsig, gamma, beta, scale, bias); \
     DISPATCH_BATCHNORM_KERNEL(                                        \
         _BatchNormAffine,                                             \
-        math::ScalarType<T>::type,                                    \
+        math::Traits<T>::scalar_type,                                 \
         AccT,                                                         \
         CUDA_BLOCKS(NxCxS),                                           \
         CUDA_THREADS,                                                 \
         NxCxS,                                                        \
         C,                                                            \
         S,                                                            \
-        reinterpret_cast<const math::ScalarType<T>::type*>(x),        \
+        reinterpret_cast<const math::Traits<T>::scalar_type*>(x),     \
         scale,                                                        \
         bias,                                                         \
-        reinterpret_cast<math::ScalarType<T>::type*>(y));             \
+        reinterpret_cast<math::Traits<T>::scalar_type*>(y));          \
   }
 
 DEFINE_KERNEL_LAUNCHER(float16, float);
+DEFINE_KERNEL_LAUNCHER(bfloat16, float);
 DEFINE_KERNEL_LAUNCHER(float, float);
 DEFINE_KERNEL_LAUNCHER(double, double);
 #undef DEFINE_KERNEL_LAUNCHER
 
-#define DEFINE_GRAD_KERNEL_LAUNCHER(T, AccT)                    \
-  template <>                                                   \
-  void BatchNormWGrad<T, AccT, CUDAContext>(                    \
-      const int N,                                              \
-      const int C,                                              \
-      const int S,                                              \
-      const string& data_format,                                \
-      const T* x,                                               \
-      const AccT* mu,                                           \
-      const AccT* rsig,                                         \
-      const T* dy,                                              \
-      AccT* dgamma,                                             \
-      AccT* dbeta,                                              \
-      CUDAContext* ctx) {                                       \
-    dbeta = (dgamma == dbeta ? dgamma + C : dbeta);             \
-    DISPATCH_BATCHNORM_KERNEL(                                  \
-        _BatchNormWGrad,                                        \
-        math::ScalarType<T>::type,                              \
-        AccT,                                                   \
-        C,                                                      \
-        CUDA_THREADS,                                           \
-        N,                                                      \
-        C,                                                      \
-        S,                                                      \
-        reinterpret_cast<const math::ScalarType<T>::type*>(x),  \
-        mu,                                                     \
-        rsig,                                                   \
-        reinterpret_cast<const math::ScalarType<T>::type*>(dy), \
-        dgamma,                                                 \
-        dbeta);                                                 \
+#define DEFINE_GRAD_KERNEL_LAUNCHER(T, AccT)                       \
+  template <>                                                      \
+  void BatchNormWGrad<T, AccT, CUDAContext>(                       \
+      const int N,                                                 \
+      const int C,                                                 \
+      const int S,                                                 \
+      const string& data_format,                                   \
+      const T* x,                                                  \
+      const AccT* mu,                                              \
+      const AccT* rsig,                                            \
+      const T* dy,                                                 \
+      AccT* dgamma,                                                \
+      AccT* dbeta,                                                 \
+      CUDAContext* ctx) {                                          \
+    dbeta = (dgamma == dbeta ? dgamma + C : dbeta);                \
+    DISPATCH_BATCHNORM_KERNEL(                                     \
+        _BatchNormWGrad,                                           \
+        math::Traits<T>::scalar_type,                              \
+        AccT,                                                      \
+        C,                                                         \
+        CUDA_THREADS,                                              \
+        N,                                                         \
+        C,                                                         \
+        S,                                                         \
+        reinterpret_cast<const math::Traits<T>::scalar_type*>(x),  \
+        mu,                                                        \
+        rsig,                                                      \
+        reinterpret_cast<const math::Traits<T>::scalar_type*>(dy), \
+        dgamma,                                                    \
+        dbeta);                                                    \
   }
 
 DEFINE_GRAD_KERNEL_LAUNCHER(float16, float);
+DEFINE_GRAD_KERNEL_LAUNCHER(bfloat16, float);
 DEFINE_GRAD_KERNEL_LAUNCHER(float, float);
 DEFINE_GRAD_KERNEL_LAUNCHER(double, double);
 #undef DEFINE_GRAD_KERNEL_LAUNCHER
 
-#define DEFINE_GRAD_KERNEL_LAUNCHER(T, AccT)                    \
-  template <>                                                   \
-  void BatchNormTrainingGrad<T, AccT, CUDAContext>(             \
-      const int N,                                              \
-      const int C,                                              \
-      const int S,                                              \
-      const float normalizer,                                   \
-      const string& data_format,                                \
-      const T* x,                                               \
-      const AccT* mu,                                           \
-      const AccT* rsig,                                         \
-      const AccT* gamma,                                        \
-      const AccT* dgamma,                                       \
-      const AccT* dbeta,                                        \
-      const T* dy,                                              \
-      T* dx,                                                    \
-      CUDAContext* ctx) {                                       \
-    const auto NxCxS = N * C * S;                               \
-    dbeta = (dgamma == dbeta ? dgamma + C : dbeta);             \
-    DISPATCH_BATCHNORM_KERNEL(                                  \
-        _BatchNormTrainingGrad,                                 \
-        math::ScalarType<T>::type,                              \
-        AccT,                                                   \
-        CUDA_BLOCKS(NxCxS),                                     \
-        CUDA_THREADS,                                           \
-        NxCxS,                                                  \
-        C,                                                      \
-        S,                                                      \
-        normalizer,                                             \
-        reinterpret_cast<const math::ScalarType<T>::type*>(x),  \
-        mu,                                                     \
-        rsig,                                                   \
-        gamma,                                                  \
-        dgamma,                                                 \
-        dbeta,                                                  \
-        reinterpret_cast<const math::ScalarType<T>::type*>(dy), \
-        reinterpret_cast<math::ScalarType<T>::type*>(dx));      \
+#define DEFINE_GRAD_KERNEL_LAUNCHER(T, AccT)                       \
+  template <>                                                      \
+  void BatchNormTrainingGrad<T, AccT, CUDAContext>(                \
+      const int N,                                                 \
+      const int C,                                                 \
+      const int S,                                                 \
+      const float normalizer,                                      \
+      const string& data_format,                                   \
+      const T* x,                                                  \
+      const AccT* mu,                                              \
+      const AccT* rsig,                                            \
+      const AccT* gamma,                                           \
+      const AccT* dgamma,                                          \
+      const AccT* dbeta,                                           \
+      const T* dy,                                                 \
+      T* dx,                                                       \
+      CUDAContext* ctx) {                                          \
+    const auto NxCxS = N * C * S;                                  \
+    dbeta = (dgamma == dbeta ? dgamma + C : dbeta);                \
+    DISPATCH_BATCHNORM_KERNEL(                                     \
+        _BatchNormTrainingGrad,                                    \
+        math::Traits<T>::scalar_type,                              \
+        AccT,                                                      \
+        CUDA_BLOCKS(NxCxS),                                        \
+        CUDA_THREADS,                                              \
+        NxCxS,                                                     \
+        C,                                                         \
+        S,                                                         \
+        normalizer,                                                \
+        reinterpret_cast<const math::Traits<T>::scalar_type*>(x),  \
+        mu,                                                        \
+        rsig,                                                      \
+        gamma,                                                     \
+        dgamma,                                                    \
+        dbeta,                                                     \
+        reinterpret_cast<const math::Traits<T>::scalar_type*>(dy), \
+        reinterpret_cast<math::Traits<T>::scalar_type*>(dx));      \
   }
 
 DEFINE_GRAD_KERNEL_LAUNCHER(float16, float);
+DEFINE_GRAD_KERNEL_LAUNCHER(bfloat16, float);
 DEFINE_GRAD_KERNEL_LAUNCHER(float, float);
 DEFINE_GRAD_KERNEL_LAUNCHER(double, double);
 #undef DEFINE_GRAD_KERNEL_LAUNCHER
@@ -338,12 +333,12 @@ DEFINE_GRAD_KERNEL_LAUNCHER(double, double);
       CUDAContext* ctx) {                                             \
     const auto NxCxS = N * C * S;                                     \
     if (dgamma != nullptr) {                                          \
-      BatchNormWGrad(                                                 \
+      BatchNormWGrad<T, AccT>(                                        \
           N, C, S, data_format, x, mu, rsig, dy, dgamma, dbeta, ctx); \
     }                                                                 \
     DISPATCH_BATCHNORM_KERNEL(                                        \
         _BatchNormInferenceGrad,                                      \
-        math::ScalarType<T>::type,                                    \
+        math::Traits<T>::scalar_type,                                 \
         AccT,                                                         \
         CUDA_BLOCKS(NxCxS),                                           \
         CUDA_THREADS,                                                 \
@@ -352,11 +347,12 @@ DEFINE_GRAD_KERNEL_LAUNCHER(double, double);
         S,                                                            \
         rsig,                                                         \
         gamma,                                                        \
-        reinterpret_cast<const math::ScalarType<T>::type*>(dy),       \
-        reinterpret_cast<math::ScalarType<T>::type*>(dx));            \
+        reinterpret_cast<const math::Traits<T>::scalar_type*>(dy),    \
+        reinterpret_cast<math::Traits<T>::scalar_type*>(dx));         \
   }
 
 DEFINE_GRAD_KERNEL_LAUNCHER(float16, float);
+DEFINE_GRAD_KERNEL_LAUNCHER(bfloat16, float);
 DEFINE_GRAD_KERNEL_LAUNCHER(float, float);
 DEFINE_GRAD_KERNEL_LAUNCHER(double, double);
 #undef DEFINE_GRAD_KERNEL_LAUNCHER

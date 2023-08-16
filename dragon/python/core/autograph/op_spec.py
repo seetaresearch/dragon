@@ -156,7 +156,7 @@ def concat_spec(args, inputs, outputs):
     return outputs
 
 
-@register(['Conv', 'DepthwiseConv'])
+@register('Conv')
 def conv_spec(args, inputs, outputs):
     outputs[0]._dtype = inputs[0].dtype
     try:

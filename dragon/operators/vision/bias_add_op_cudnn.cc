@@ -9,7 +9,6 @@ template <class Context>
 template <typename T>
 void CuDNNBiasAddGradientOp<Context>::DoRunWithType() {
   auto &dY = Input(0), *dX = Output(0), *dB = Output(1);
-
   int64_t N = dY.dim(0), C, S;
   if (data_format() == "NCHW") {
     C = dY.dim(1), S = dY.count(2);
@@ -18,11 +17,7 @@ void CuDNNBiasAddGradientOp<Context>::DoRunWithType() {
   } else {
     LOG(FATAL) << "Unknown DataFormat: " << data_format();
   }
-
-  if (dX->has_name()) {
-    dX->ReshapeLike(dY)->CopyFrom(dY, ctx());
-  }
-
+  if (dX->has_name()) dX->ReshapeLike(dY)->CopyFrom(dY, ctx());
   if (dB->has_name()) {
     vec64_t X_dims({N, S});
     X_dims.insert(X_dims.begin() + (data_format() == "NCHW" ? 1 : 2), C);
@@ -30,10 +25,10 @@ void CuDNNBiasAddGradientOp<Context>::DoRunWithType() {
     CuDNNSetBiasDesc<T>(bias_desc_, 3, C, data_format());
     CUDNN_CHECK(cudnnConvolutionBackwardBias(
         ctx()->cudnn_handle(),
-        CuDNNType<T>::one,
+        CuDNNTraits<T>::one,
         input_desc_,
         dY.template data<T, Context>(),
-        CuDNNType<T>::zero,
+        CuDNNTraits<T>::zero,
         bias_desc_,
         dB->Reshape({C})->template mutable_data<T, Context>()));
   }

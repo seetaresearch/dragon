@@ -208,7 +208,7 @@ class TestTensorOps(OpTestCase):
     def test_clamp(self):
         entries = [(None, None), (2, None), (None, 4), (2, 4)]
         for low, high in entries:
-            data = arange((6,))
+            data = arange((6,), -1)
             x = new_tensor(data)
             result = np.clip(data, low, high) if low or high else data
             self.assertEqual(x.clamp(low, high), result)

@@ -26,9 +26,7 @@ void _Adam(
     const T mi = m[i] = std::fma(beta1, m[i], (T(1) - beta1) * gi);
     const T vi = v[i] = std::fma(beta2, v[i], (T(1) - beta2) * gi * gi);
     y[i] -= lr * mi / (std::sqrt(vi) + eps);
-    if (y_copy != nullptr) {
-      y_copy[i] = convert::To<CopyT>(y[i]);
-    }
+    if (y_copy != nullptr) y_copy[i] = convert::To<CopyT>(y[i]);
   }
 }
 
@@ -52,9 +50,7 @@ void _AdamW(
     const T vi = v[i] = std::fma(beta2, v[i], (T(1) - beta2) * gi * gi);
     y[i] -= wd > T(0) ? std::fma(wd, x[i], lr * mi / (std::sqrt(vi) + eps))
                       : lr * mi / (std::sqrt(vi) + eps);
-    if (y_copy != nullptr) {
-      y_copy[i] = convert::To<CopyT>(y[i]);
-    }
+    if (y_copy != nullptr) y_copy[i] = convert::To<CopyT>(y[i]);
   }
 }
 
@@ -92,9 +88,11 @@ void _AdamW(
   }
 
 DEFINE_KERNEL_LAUNCHER(Adam, float, float16);
+DEFINE_KERNEL_LAUNCHER(Adam, float, bfloat16);
 DEFINE_KERNEL_LAUNCHER(Adam, float, float);
 DEFINE_KERNEL_LAUNCHER(Adam, double, double);
 DEFINE_KERNEL_LAUNCHER(AdamW, float, float16);
+DEFINE_KERNEL_LAUNCHER(AdamW, float, bfloat16);
 DEFINE_KERNEL_LAUNCHER(AdamW, float, float);
 DEFINE_KERNEL_LAUNCHER(AdamW, double, double);
 #undef DEFINE_KERNEL_LAUNCHER

@@ -41,11 +41,12 @@ void _BatchNormFusedParams(
     const T* beta,
     T* scale,
     T* bias) {
-  EigenVectorArrayMap<T> scale_arr(scale, C);
-  scale_arr = ConstEigenVectorArrayMap<T>(gamma, C) *
+  EigenVectorArrayMap<T> Scale(scale, C);
+  EigenVectorArrayMap<T> Bias(bias, C);
+  Scale = ConstEigenVectorArrayMap<T>(gamma, C) *
       ConstEigenVectorArrayMap<T>(rsig, C);
-  EigenVectorArrayMap<T>(bias, C) = ConstEigenVectorArrayMap<T>(beta, C) -
-      scale_arr * ConstEigenVectorArrayMap<T>(mu, C);
+  Bias = ConstEigenVectorArrayMap<T>(beta, C) -
+      Scale * ConstEigenVectorArrayMap<T>(mu, C);
 }
 
 template <typename T, typename AccT>
@@ -77,11 +78,10 @@ void _BatchNormAffineNHWC(
     const AccT* bias,
     T* y) {
   const auto NS = N * S;
-  ConstEigenVectorArrayMap<AccT> scale_arr(scale, C);
-  ConstEigenVectorArrayMap<AccT> bias_arr(bias, C);
-  EigenArrayMap<T>(y, C, NS) =
-      (ConstEigenArrayMap<T>(x, C, NS).colwise() * scale_arr).colwise() +
-      bias_arr;
+  ConstEigenVectorArrayMap<AccT> Scale(scale, C);
+  ConstEigenVectorArrayMap<AccT> Bias(bias, C);
+  ConstEigenArrayMap<T> X(x, C, NS);
+  EigenArrayMap<T>(y, C, NS) = (X.colwise() * Scale).colwise() + Bias;
 }
 
 template <typename T, typename AccT, StorageOrder kOrder>
@@ -156,6 +156,25 @@ void _BatchNormInferenceGrad(
 
 } //  namespace
 
+#define DEFINE_KERNEL_LAUNCHER(T, AccT)           \
+  template <>                                     \
+  void BatchNormExpectation<T, AccT, CPUContext>( \
+      const int N,                                \
+      const int C,                                \
+      const int S,                                \
+      const float denorm,                         \
+      const string& data_format,                  \
+      const T* x,                                 \
+      float* ex,                                  \
+      float* ex2,                                 \
+      CPUContext* ctx) {                          \
+    CPU_UNSUPPORTED_DTYPE(T);                     \
+  }
+
+DEFINE_KERNEL_LAUNCHER(float16, float);
+DEFINE_KERNEL_LAUNCHER(bfloat16, float);
+#undef DEFINE_KERNEL_LAUNCHER
+
 #define DEFINE_KERNEL_LAUNCHER(T, AccT)                   \
   template <>                                             \
   void BatchNormExpectation<T, AccT, CPUContext>(         \
@@ -179,22 +198,31 @@ void _BatchNormInferenceGrad(
     }                                                     \
   }
 
-template <>
-void BatchNormExpectation<float16, float, CPUContext>(
-    const int N,
-    const int C,
-    const int S,
-    const float denorm,
-    const string& data_format,
-    const float16* x,
-    float* ex,
-    float* ex2,
-    CPUContext* ctx) {
-  CPU_FP16_NOT_SUPPORTED;
-}
-
 DEFINE_KERNEL_LAUNCHER(float, float);
 DEFINE_KERNEL_LAUNCHER(double, double);
+#undef DEFINE_KERNEL_LAUNCHER
+
+#define DEFINE_KERNEL_LAUNCHER(T, AccT) \
+  template <>                           \
+  void BatchNorm<T, AccT, CPUContext>(  \
+      const int N,                      \
+      const int C,                      \
+      const int S,                      \
+      const string& data_format,        \
+      const T* x,                       \
+      const AccT* mu,                   \
+      const AccT* rsig,                 \
+      const AccT* gamma,                \
+      const AccT* beta,                 \
+      AccT* scale,                      \
+      AccT* bias,                       \
+      T* y,                             \
+      CPUContext* ctx) {                \
+    CPU_UNSUPPORTED_DTYPE(T);           \
+  }
+
+DEFINE_KERNEL_LAUNCHER(float16, float);
+DEFINE_KERNEL_LAUNCHER(bfloat16, float);
 #undef DEFINE_KERNEL_LAUNCHER
 
 #define DEFINE_KERNEL_LAUNCHER(T, AccT)                           \
@@ -226,27 +254,30 @@ DEFINE_KERNEL_LAUNCHER(double, double);
     }                                                             \
   }
 
-template <>
-void BatchNorm<float16, float, CPUContext>(
-    const int N,
-    const int C,
-    const int S,
-    const string& data_format,
-    const float16* x,
-    const float* mu,
-    const float* rsig,
-    const float* gamma,
-    const float* beta,
-    float* scale,
-    float* bias,
-    float16* y,
-    CPUContext* tx) {
-  CPU_FP16_NOT_SUPPORTED;
-}
-
 DEFINE_KERNEL_LAUNCHER(float, float);
 DEFINE_KERNEL_LAUNCHER(double, double);
 #undef DEFINE_KERNEL_LAUNCHER
+
+#define DEFINE_GRAD_KERNEL_LAUNCHER(T, AccT) \
+  template <>                                \
+  void BatchNormWGrad<T, AccT, CPUContext>(  \
+      const int N,                           \
+      const int C,                           \
+      const int S,                           \
+      const string& data_format,             \
+      const T* x,                            \
+      const AccT* mu,                        \
+      const AccT* rsig,                      \
+      const T* dy,                           \
+      AccT* dgamma,                          \
+      AccT* dbeta,                           \
+      CPUContext* ctx) {                     \
+    CPU_UNSUPPORTED_DTYPE(T);                \
+  }
+
+DEFINE_GRAD_KERNEL_LAUNCHER(float16, float);
+DEFINE_GRAD_KERNEL_LAUNCHER(bfloat16, float);
+#undef DEFINE_GRAD_KERNEL_LAUNCHER
 
 #define DEFINE_GRAD_KERNEL_LAUNCHER(T, AccT)          \
   template <>                                         \
@@ -274,24 +305,32 @@ DEFINE_KERNEL_LAUNCHER(double, double);
     }                                                 \
   }
 
-template <>
-void BatchNormWGrad<float16, float, CPUContext>(
-    const int N,
-    const int C,
-    const int S,
-    const string& data_format,
-    const float16* x,
-    const float* mu,
-    const float* rsig,
-    const float16* dy,
-    float* dgamma,
-    float* dbeta,
-    CPUContext* ctx) {
-  CPU_FP16_NOT_SUPPORTED;
-} // BatchNormWGrad
-
 DEFINE_GRAD_KERNEL_LAUNCHER(float, float);
 DEFINE_GRAD_KERNEL_LAUNCHER(double, double);
+#undef DEFINE_GRAD_KERNEL_LAUNCHER
+
+#define DEFINE_GRAD_KERNEL_LAUNCHER(T, AccT)       \
+  template <>                                      \
+  void BatchNormTrainingGrad<T, AccT, CPUContext>( \
+      const int N,                                 \
+      const int C,                                 \
+      const int S,                                 \
+      const float normalizer,                      \
+      const string& data_format,                   \
+      const T* x,                                  \
+      const AccT* mu,                              \
+      const AccT* rsig,                            \
+      const AccT* gamma,                           \
+      const AccT* dgamma,                          \
+      const AccT* dbeta,                           \
+      const T* dy,                                 \
+      T* dx,                                       \
+      CPUContext* ctx) {                           \
+    CPU_UNSUPPORTED_DTYPE(T);                      \
+  }
+
+DEFINE_GRAD_KERNEL_LAUNCHER(float16, float);
+DEFINE_GRAD_KERNEL_LAUNCHER(bfloat16, float);
 #undef DEFINE_GRAD_KERNEL_LAUNCHER
 
 #define DEFINE_GRAD_KERNEL_LAUNCHER(T, AccT)                                 \
@@ -321,27 +360,31 @@ DEFINE_GRAD_KERNEL_LAUNCHER(double, double);
     }                                                                        \
   }
 
-template <>
-void BatchNormTrainingGrad<float16, float, CPUContext>(
-    const int N,
-    const int C,
-    const int S,
-    const float normalizer,
-    const string& data_format,
-    const float16* x,
-    const float* mu,
-    const float* rsig,
-    const float* gamma,
-    const float* dgamma,
-    const float* dbeta,
-    const float16* dy,
-    float16* dx,
-    CPUContext* ctx) {
-  CPU_FP16_NOT_SUPPORTED;
-} // BatchNormTrainingGrad
-
 DEFINE_GRAD_KERNEL_LAUNCHER(float, float);
 DEFINE_GRAD_KERNEL_LAUNCHER(double, double);
+#undef DEFINE_GRAD_KERNEL_LAUNCHER
+
+#define DEFINE_GRAD_KERNEL_LAUNCHER(T, AccT)        \
+  template <>                                       \
+  void BatchNormInferenceGrad<T, AccT, CPUContext>( \
+      const int N,                                  \
+      const int C,                                  \
+      const int S,                                  \
+      const string& data_format,                    \
+      const T* x,                                   \
+      const AccT* mu,                               \
+      const AccT* rsig,                             \
+      const AccT* gamma,                            \
+      const T* dy,                                  \
+      AccT* dgamma,                                 \
+      AccT* dbeta,                                  \
+      T* dx,                                        \
+      CPUContext* ctx) {                            \
+    CPU_UNSUPPORTED_DTYPE(T);                       \
+  }
+
+DEFINE_GRAD_KERNEL_LAUNCHER(float16, float);
+DEFINE_GRAD_KERNEL_LAUNCHER(bfloat16, float);
 #undef DEFINE_GRAD_KERNEL_LAUNCHER
 
 #define DEFINE_GRAD_KERNEL_LAUNCHER(T, AccT)                          \
@@ -361,7 +404,7 @@ DEFINE_GRAD_KERNEL_LAUNCHER(double, double);
       T* dx,                                                          \
       CPUContext* ctx) {                                              \
     if (dgamma != nullptr) {                                          \
-      BatchNormWGrad(                                                 \
+      BatchNormWGrad<T, AccT>(                                        \
           N, C, S, data_format, x, mu, rsig, dy, dgamma, dbeta, ctx); \
     }                                                                 \
     if (data_format == "NCHW") {                                      \
@@ -372,24 +415,6 @@ DEFINE_GRAD_KERNEL_LAUNCHER(double, double);
           N, C, S, rsig, gamma, dy, dx);                              \
     }                                                                 \
   }
-
-template <>
-void BatchNormInferenceGrad<float16, float, CPUContext>(
-    const int N,
-    const int C,
-    const int S,
-    const string& data_format,
-    const float16* x,
-    const float* mu,
-    const float* rsig,
-    const float* gamma,
-    const float16* dy,
-    float* dgamma,
-    float* dbeta,
-    float16* dx,
-    CPUContext* ctx) {
-  CPU_FP16_NOT_SUPPORTED;
-} // BatchNormInferenceGrad
 
 DEFINE_GRAD_KERNEL_LAUNCHER(float, float);
 DEFINE_GRAD_KERNEL_LAUNCHER(double, double);

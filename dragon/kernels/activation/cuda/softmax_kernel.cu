@@ -8,10 +8,9 @@ namespace kernels {
 
 namespace {
 
-#define WARP_ITEMS 16
-#define WARP_SIZE 32
-#define BLOCK_SIZE 1024
-#define LDG(x, i) convert::To<AccT>(__ldg(x + i))
+constexpr int kBlockSize = 1024;
+constexpr int kWarpSize = 32;
+constexpr int kWarpItems = 16;
 
 template <typename T, typename AccT>
 __global__ void
@@ -22,19 +21,19 @@ _WarpSoftmax(const int NxS, const int S, const int C, const T* x, T* y) {
   auto* offset_x = x + offset;
   auto* offset_y = y + offset;
   AccT val = AccT(-FLT_MAX);
-  for (int j = threadIdx.x; j < C; j += WARP_SIZE) {
-    val = max(val, LDG(offset_x, j * S));
+  for (int j = threadIdx.x; j < C; j += kWarpSize) {
+    val = max(val, math::utils::LDGC<AccT>(offset_x + j * S));
   }
-  const AccT warp_max = WarpAllReduce<AccT, cub::Max, WARP_SIZE>(val);
+  const AccT warp_max = WarpAllReduce<AccT, cub::Max, kWarpSize>(val);
   val = AccT(0);
-  for (int j = threadIdx.x; j < C; j += WARP_SIZE) {
-    val += exp(LDG(offset_x, j * S) - warp_max);
+  for (int j = threadIdx.x; j < C; j += kWarpSize) {
+    val += exp(math::utils::LDGC<AccT>(offset_x + j * S) - warp_max);
   }
-  const AccT warp_sum = WarpAllReduce<AccT, cub::Sum, WARP_SIZE>(val);
-  for (int j = threadIdx.x; j < C; j += WARP_SIZE) {
+  const AccT warp_sum = WarpAllReduce<AccT, cub::Sum, kWarpSize>(val);
+  for (int j = threadIdx.x; j < C; j += kWarpSize) {
     const int k = j * S;
-    val = exp(LDG(offset_x, k) - warp_max);
-    offset_y[k] = convert::To<T>(val / warp_sum);
+    val = exp(math::utils::LDGC<AccT>(offset_x + k) - warp_max);
+    offset_y[k] = val / warp_sum;
   }
 }
 
@@ -47,19 +46,19 @@ _WarpLogSoftmax(const int NxS, const int S, const int C, const T* x, T* y) {
   auto* offset_x = x + offset;
   auto* offset_y = y + offset;
   AccT val = AccT(-FLT_MAX);
-  for (int j = threadIdx.x; j < C; j += WARP_SIZE) {
-    val = max(val, LDG(offset_x, j * S));
+  for (int j = threadIdx.x; j < C; j += kWarpSize) {
+    val = max(val, math::utils::LDGC<AccT>(offset_x + j * S));
   }
-  const AccT warp_max = WarpAllReduce<AccT, cub::Max, WARP_SIZE>(val);
+  const AccT warp_max = WarpAllReduce<AccT, cub::Max, kWarpSize>(val);
   val = AccT(0);
-  for (int j = threadIdx.x; j < C; j += WARP_SIZE) {
-    val += exp(LDG(offset_x, j * S) - warp_max);
+  for (int j = threadIdx.x; j < C; j += kWarpSize) {
+    val += exp(math::utils::LDGC<AccT>(offset_x + j * S) - warp_max);
   }
-  const AccT warp_sum = WarpAllReduce<AccT, cub::Sum, WARP_SIZE>(val);
-  for (int j = threadIdx.x; j < C; j += WARP_SIZE) {
+  const AccT warp_sum = WarpAllReduce<AccT, cub::Sum, kWarpSize>(val);
+  for (int j = threadIdx.x; j < C; j += kWarpSize) {
     const int k = j * S;
-    val = LDG(offset_x, k) - warp_max;
-    offset_y[k] = convert::To<T>(val - log(warp_sum));
+    val = math::utils::LDGC<AccT>(offset_x + k) - warp_max;
+    offset_y[k] = val - log(warp_sum);
   }
 }
 
@@ -69,19 +68,19 @@ __global__ void _BlockSoftmax(const int S, const int C, const T* x, T* y) {
   auto* offset_x = x + offset;
   auto* offset_y = y + offset;
   AccT val = AccT(-FLT_MAX);
-  for (int j = threadIdx.x; j < C; j += BLOCK_SIZE) {
-    val = max(val, LDG(offset_x, j * S));
+  for (int j = threadIdx.x; j < C; j += kBlockSize) {
+    val = max(val, math::utils::LDGC<AccT>(offset_x + j * S));
   }
-  const AccT block_max = BlockAllReduce<AccT, cub::Max, BLOCK_SIZE>(val);
+  const AccT block_max = BlockAllReduce<AccT, cub::Max, kBlockSize>(val);
   val = AccT(0);
-  for (int j = threadIdx.x; j < C; j += BLOCK_SIZE) {
-    val += exp(LDG(offset_x, j * S) - block_max);
+  for (int j = threadIdx.x; j < C; j += kBlockSize) {
+    val += exp(math::utils::LDGC<AccT>(offset_x + j * S) - block_max);
   }
-  const AccT block_sum = BlockAllReduce<AccT, cub::Sum, BLOCK_SIZE>(val);
-  for (int j = threadIdx.x; j < C; j += BLOCK_SIZE) {
+  const AccT block_sum = BlockAllReduce<AccT, cub::Sum, kBlockSize>(val);
+  for (int j = threadIdx.x; j < C; j += kBlockSize) {
     const int k = j * S;
-    val = exp(LDG(offset_x, k) - block_max);
-    offset_y[k] = convert::To<T>(val / block_sum);
+    val = exp(math::utils::LDGC<AccT>(offset_x + k) - block_max);
+    offset_y[k] = val / block_sum;
   }
 }
 
@@ -91,19 +90,19 @@ __global__ void _BlockLogSoftmax(const int S, const int C, const T* x, T* y) {
   auto* offset_x = x + offset;
   auto* offset_y = y + offset;
   AccT val = AccT(-FLT_MAX);
-  for (int j = threadIdx.x; j < C; j += BLOCK_SIZE) {
-    val = max(val, LDG(offset_x, j * S));
+  for (int j = threadIdx.x; j < C; j += kBlockSize) {
+    val = max(val, math::utils::LDGC<AccT>(offset_x + j * S));
   }
-  const AccT block_max = BlockAllReduce<AccT, cub::Max, BLOCK_SIZE>(val);
+  const AccT block_max = BlockAllReduce<AccT, cub::Max, kBlockSize>(val);
   val = AccT(0);
-  for (int j = threadIdx.x; j < C; j += BLOCK_SIZE) {
-    val += exp(LDG(offset_x, j * S) - block_max);
+  for (int j = threadIdx.x; j < C; j += kBlockSize) {
+    val += exp(math::utils::LDGC<AccT>(offset_x + j * S) - block_max);
   }
-  const AccT block_sum = BlockAllReduce<AccT, cub::Sum, BLOCK_SIZE>(val);
-  for (int j = threadIdx.x; j < C; j += BLOCK_SIZE) {
+  const AccT block_sum = BlockAllReduce<AccT, cub::Sum, kBlockSize>(val);
+  for (int j = threadIdx.x; j < C; j += kBlockSize) {
     const int k = j * S;
-    val = LDG(offset_x, k) - block_max;
-    offset_y[k] = convert::To<T>(val - log(block_sum));
+    val = math::utils::LDGC<AccT>(offset_x + k) - block_max;
+    offset_y[k] = val - log(block_sum);
   }
 }
 
@@ -121,15 +120,16 @@ __global__ void _WarpSoftmaxGrad(
   auto *offset_dy = dy + offset, *offset_y = y + offset;
   auto* offset_dx = dx + offset;
   AccT val = AccT(0);
-  for (int j = threadIdx.x; j < C; j += WARP_SIZE) {
+  for (int j = threadIdx.x; j < C; j += kWarpSize) {
     const int k = j * S;
-    val += LDG(offset_dy, k) * LDG(offset_y, k);
+    val += math::utils::LDGC<AccT>(offset_dy + k) *
+        math::utils::LDGC<AccT>(offset_y + k);
   }
-  const AccT warp_sum = WarpAllReduce<AccT, cub::Sum, WARP_SIZE>(val);
-  for (int j = threadIdx.x; j < C; j += WARP_SIZE) {
+  const AccT warp_sum = WarpAllReduce<AccT, cub::Sum, kWarpSize>(val);
+  for (int j = threadIdx.x; j < C; j += kWarpSize) {
     const int k = j * S;
-    val = LDG(offset_dy, k) - warp_sum;
-    offset_dx[k] = convert::To<T>(val * LDG(offset_y, k));
+    val = math::utils::LDGC<AccT>(offset_dy + k) - warp_sum;
+    offset_dx[k] = val * math::utils::LDGC<AccT>(offset_y + k);
   }
 }
 
@@ -147,14 +147,14 @@ __global__ void _WarpLogSoftmaxGrad(
   auto *offset_dy = dy + offset, *offset_y = y + offset;
   auto* offset_dx = dx + offset;
   AccT val = AccT(0);
-  for (int j = threadIdx.x; j < C; j += WARP_SIZE) {
-    val += LDG(offset_dy, j * S);
+  for (int j = threadIdx.x; j < C; j += kWarpSize) {
+    val += math::utils::LDGC<AccT>(offset_dy + j * S);
   }
-  const AccT warp_sum = WarpAllReduce<AccT, cub::Sum, WARP_SIZE>(val);
-  for (int j = threadIdx.x; j < C; j += WARP_SIZE) {
+  const AccT warp_sum = WarpAllReduce<AccT, cub::Sum, kWarpSize>(val);
+  for (int j = threadIdx.x; j < C; j += kWarpSize) {
     const int k = j * S;
     val = exp(convert::To<AccT>(offset_y[k])) * warp_sum;
-    offset_dx[k] = convert::To<T>(LDG(offset_dy, k) - val);
+    offset_dx[k] = math::utils::LDGC<AccT>(offset_dy + k) - val;
   }
 }
 
@@ -165,15 +165,16 @@ _BlockSoftmaxGrad(const int S, const int C, const T* dy, const T* y, T* dx) {
   auto *offset_dy = dy + offset, *offset_y = y + offset;
   auto* offset_dx = dx + offset;
   AccT val = AccT(0);
-  for (int j = threadIdx.x; j < C; j += BLOCK_SIZE) {
+  for (int j = threadIdx.x; j < C; j += kBlockSize) {
     const int k = j * S;
-    val += LDG(offset_dy, k) * LDG(offset_y, k);
+    val += math::utils::LDGC<AccT>(offset_dy + k) *
+        math::utils::LDGC<AccT>(offset_y + k);
   }
-  const AccT block_sum = BlockAllReduce<AccT, cub::Sum, BLOCK_SIZE>(val);
-  for (int j = threadIdx.x; j < C; j += BLOCK_SIZE) {
+  const AccT block_sum = BlockAllReduce<AccT, cub::Sum, kBlockSize>(val);
+  for (int j = threadIdx.x; j < C; j += kBlockSize) {
     const int k = j * S;
-    val = LDG(offset_dy, k) - block_sum;
-    offset_dx[k] = convert::To<T>(val * LDG(offset_y, k));
+    val = math::utils::LDGC<AccT>(offset_dy + k) - block_sum;
+    offset_dx[k] = val * math::utils::LDGC<AccT>(offset_y + k);
   }
 }
 
@@ -184,101 +185,86 @@ _BlockLogSoftmaxGrad(const int S, const int C, const T* dy, const T* y, T* dx) {
   auto *offset_dy = dy + offset, *offset_y = y + offset;
   auto* offset_dx = dx + offset;
   AccT val = AccT(0);
-  for (int j = threadIdx.x; j < C; j += BLOCK_SIZE) {
-    val += LDG(offset_dy, j * S);
+  for (int j = threadIdx.x; j < C; j += kBlockSize) {
+    val += math::utils::LDGC<AccT>(offset_dy + j * S);
   }
-  const AccT block_sum = BlockAllReduce<AccT, cub::Sum, BLOCK_SIZE>(val);
-  for (int j = threadIdx.x; j < C; j += BLOCK_SIZE) {
+  const AccT block_sum = BlockAllReduce<AccT, cub::Sum, kBlockSize>(val);
+  for (int j = threadIdx.x; j < C; j += kBlockSize) {
     const int k = j * S;
     val = exp(convert::To<AccT>(offset_y[k])) * block_sum;
-    offset_dx[k] = convert::To<T>(LDG(offset_dy, k) - val);
+    offset_dx[k] = math::utils::LDGC<AccT>(offset_dy + k) - val;
   }
 }
 
-#undef LDG
-
 } // namespace
 
-#define DEFINE_KERNEL_LAUNCHER(name, T)                                       \
-  template <>                                                                 \
-  void name<T, CUDAContext>(                                                  \
-      const int N,                                                            \
-      const int S,                                                            \
-      const int C,                                                            \
-      const T* x,                                                             \
-      T* y,                                                                   \
-      CUDAContext* ctx) {                                                     \
-    const auto NxS = N * S;                                                   \
-    if (C <= 1024) {                                                          \
-      const auto block_threads = dim3(WARP_SIZE, std::min(NxS, WARP_ITEMS));  \
-      const auto num_blocks = math::utils::DivUp<int>(NxS, block_threads.y);  \
-      _Warp##name<math::ScalarType<T>::type, math::AccumulatorType<T>::type>  \
-          <<<num_blocks, block_threads, 0, ctx->cuda_stream()>>>(             \
-              NxS,                                                            \
-              S,                                                              \
-              C,                                                              \
-              reinterpret_cast<const math::ScalarType<T>::type*>(x),          \
-              reinterpret_cast<math::ScalarType<T>::type*>(y));               \
-    } else {                                                                  \
-      _Block##name<math::ScalarType<T>::type, math::AccumulatorType<T>::type> \
-          <<<NxS, BLOCK_SIZE, 0, ctx->cuda_stream()>>>(                       \
-              S,                                                              \
-              C,                                                              \
-              reinterpret_cast<const math::ScalarType<T>::type*>(x),          \
-              reinterpret_cast<math::ScalarType<T>::type*>(y));               \
-    }                                                                         \
+#define DEFINE_KERNEL_LAUNCHER(name, T)                                        \
+  template <>                                                                  \
+  void name<T, CUDAContext>(                                                   \
+      const int N,                                                             \
+      const int S,                                                             \
+      const int C,                                                             \
+      const T* x,                                                              \
+      T* y,                                                                    \
+      CUDAContext* ctx) {                                                      \
+    using ScalarT = math::Traits<T>::scalar_type;                              \
+    using AccT = math::Traits<T>::accumulator_type;                            \
+    const auto NxS = N * S;                                                    \
+    if (C <= 1024) {                                                           \
+      const auto num_threads = dim3(kWarpSize, std::min(NxS, kWarpItems));     \
+      const auto num_blocks = math::utils::DivUp<int>(NxS, num_threads.y);     \
+      _Warp##name<ScalarT, AccT>                                               \
+          <<<num_blocks, num_threads, 0, ctx->cuda_stream()>>>(                \
+              NxS, S, C, (const ScalarT*)x, (ScalarT*)y);                      \
+    } else {                                                                   \
+      _Block##name<ScalarT, AccT><<<NxS, kBlockSize, 0, ctx->cuda_stream()>>>( \
+          S, C, (const ScalarT*)x, (ScalarT*)y);                               \
+    }                                                                          \
   }
 
-#define DEFINE_GRAD_KERNEL_LAUNCHER(name, T)                                  \
-  template <>                                                                 \
-  void name<T, CUDAContext>(                                                  \
-      const int N,                                                            \
-      const int S,                                                            \
-      const int C,                                                            \
-      const T* dy,                                                            \
-      const T* y,                                                             \
-      T* dx,                                                                  \
-      CUDAContext* ctx) {                                                     \
-    const auto NxS = N * S;                                                   \
-    if (C <= 1024) {                                                          \
-      const auto block_threads = dim3(WARP_SIZE, std::min(NxS, WARP_ITEMS));  \
-      const auto num_blocks = math::utils::DivUp<int>(NxS, block_threads.y);  \
-      _Warp##name<math::ScalarType<T>::type, math::AccumulatorType<T>::type>  \
-          <<<num_blocks, block_threads, 0, ctx->cuda_stream()>>>(             \
-              NxS,                                                            \
-              S,                                                              \
-              C,                                                              \
-              reinterpret_cast<const math::ScalarType<T>::type*>(dy),         \
-              reinterpret_cast<const math::ScalarType<T>::type*>(y),          \
-              reinterpret_cast<math::ScalarType<T>::type*>(dx));              \
-    } else {                                                                  \
-      _Block##name<math::ScalarType<T>::type, math::AccumulatorType<T>::type> \
-          <<<NxS, BLOCK_SIZE, 0, ctx->cuda_stream()>>>(                       \
-              S,                                                              \
-              C,                                                              \
-              reinterpret_cast<const math::ScalarType<T>::type*>(dy),         \
-              reinterpret_cast<const math::ScalarType<T>::type*>(y),          \
-              reinterpret_cast<math::ScalarType<T>::type*>(dx));              \
-    }                                                                         \
+#define DEFINE_GRAD_KERNEL_LAUNCHER(name, T)                                   \
+  template <>                                                                  \
+  void name<T, CUDAContext>(                                                   \
+      const int N,                                                             \
+      const int S,                                                             \
+      const int C,                                                             \
+      const T* dy,                                                             \
+      const T* y,                                                              \
+      T* dx,                                                                   \
+      CUDAContext* ctx) {                                                      \
+    using ScalarT = math::Traits<T>::scalar_type;                              \
+    using AccT = math::Traits<T>::accumulator_type;                            \
+    const auto NxS = N * S;                                                    \
+    if (C <= 1024) {                                                           \
+      const auto num_threads = dim3(kWarpSize, std::min(NxS, kWarpItems));     \
+      const auto num_blocks = math::utils::DivUp<int>(NxS, num_threads.y);     \
+      _Warp##name<ScalarT, AccT>                                               \
+          <<<num_blocks, num_threads, 0, ctx->cuda_stream()>>>(                \
+              NxS, S, C, (const ScalarT*)dy, (const ScalarT*)y, (ScalarT*)dx); \
+    } else {                                                                   \
+      _Block##name<ScalarT, AccT><<<NxS, kBlockSize, 0, ctx->cuda_stream()>>>( \
+          S, C, (const ScalarT*)dy, (const ScalarT*)y, (ScalarT*)dx);          \
+    }                                                                          \
   }
 
 DEFINE_KERNEL_LAUNCHER(Softmax, float16);
+DEFINE_KERNEL_LAUNCHER(Softmax, bfloat16);
 DEFINE_KERNEL_LAUNCHER(Softmax, float);
 DEFINE_KERNEL_LAUNCHER(Softmax, double);
 DEFINE_KERNEL_LAUNCHER(LogSoftmax, float16);
+DEFINE_KERNEL_LAUNCHER(LogSoftmax, bfloat16);
 DEFINE_KERNEL_LAUNCHER(LogSoftmax, float);
 DEFINE_KERNEL_LAUNCHER(LogSoftmax, double);
 DEFINE_GRAD_KERNEL_LAUNCHER(SoftmaxGrad, float16);
+DEFINE_GRAD_KERNEL_LAUNCHER(SoftmaxGrad, bfloat16);
 DEFINE_GRAD_KERNEL_LAUNCHER(SoftmaxGrad, float);
 DEFINE_GRAD_KERNEL_LAUNCHER(SoftmaxGrad, double);
 DEFINE_GRAD_KERNEL_LAUNCHER(LogSoftmaxGrad, float16);
+DEFINE_GRAD_KERNEL_LAUNCHER(LogSoftmaxGrad, bfloat16);
 DEFINE_GRAD_KERNEL_LAUNCHER(LogSoftmaxGrad, float);
 DEFINE_GRAD_KERNEL_LAUNCHER(LogSoftmaxGrad, double);
 #undef DEFINE_KERNEL_LAUNCHER
 #undef DEFINE_GRAD_KERNEL_LAUNCHER
-#undef WARP_ITEMS
-#undef WARP_SIZE
-#undef BLOCK_SIZE
 
 } // namespace kernels
 

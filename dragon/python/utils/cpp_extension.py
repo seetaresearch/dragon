@@ -140,6 +140,7 @@ class BuildExtension(_build_ext):
                         cflags = cflags['nvcc']
                     cflags = (COMMON_NVCC_FLAGS +
                               ['--compiler-options', "'-fPIC'"] +
+                              ['--compiler-options', "'-Wno-attributes'"] +
                               cflags + _get_cuda_arch_flags(cflags))
                 elif _os.path.splitext(src)[1] in ['.mlu']:
                     cncc = [_os.path.join(NEUWARE_HOME, 'bin/cncc')]

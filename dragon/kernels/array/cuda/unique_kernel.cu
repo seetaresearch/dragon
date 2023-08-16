@@ -47,7 +47,7 @@ __global__ void _ComputeCounts(
       CUDAContext* ctx) {                                                      \
     math::Copy(dim, x, y, ctx);                                                \
     auto policy = thrust::cuda::par.on(ctx->cuda_stream());                    \
-    auto* data = reinterpret_cast<math::ScalarType<T>::type*>(y);              \
+    auto* data = reinterpret_cast<math::Traits<T>::scalar_type*>(y);           \
     thrust::device_vector<int> order1(dim), order2(dim);                       \
     thrust::sequence(policy, order1.begin(), order1.end());                    \
     thrust::sequence(policy, order2.begin(), order2.end());                    \
@@ -56,21 +56,21 @@ __global__ void _ComputeCounts(
         data,                                                                  \
         data + dim,                                                            \
         order1.begin(),                                                        \
-        math::LessFunctor<math::ScalarType<T>::type>());                       \
+        math::LessFunctor<math::Traits<T>::scalar_type>());                    \
     auto last = thrust::unique_by_key(                                         \
         policy,                                                                \
         data,                                                                  \
         data + dim,                                                            \
         order2.begin(),                                                        \
-        math::EqualFunctor<math::ScalarType<T>::type>());                      \
-    int n = num[0] = last.first - data;                                        \
+        math::EqualFunctor<math::Traits<T>::scalar_type>());                   \
+    const auto N = num[0] = last.first - data;                                 \
     if (inverse_index) {                                                       \
-      _RemapInverse<<<CUDA_BLOCKS(n), CUDA_THREADS, 0, ctx->cuda_stream()>>>(  \
-          dim, n, order1.data(), order2.data(), inverse_index);                \
+      _RemapInverse<<<CUDA_BLOCKS(N), CUDA_THREADS, 0, ctx->cuda_stream()>>>(  \
+          dim, N, order1.data(), order2.data(), inverse_index);                \
     }                                                                          \
     if (counts) {                                                              \
-      _ComputeCounts<<<CUDA_BLOCKS(n), CUDA_THREADS, 0, ctx->cuda_stream()>>>( \
-          dim, n, order2.data(), counts);                                      \
+      _ComputeCounts<<<CUDA_BLOCKS(N), CUDA_THREADS, 0, ctx->cuda_stream()>>>( \
+          dim, N, order2.data(), counts);                                      \
     }                                                                          \
   }
 
@@ -79,6 +79,7 @@ DEFINE_KERNEL_LAUNCHER(int8_t);
 DEFINE_KERNEL_LAUNCHER(int);
 DEFINE_KERNEL_LAUNCHER(int64_t);
 DEFINE_KERNEL_LAUNCHER(float16);
+DEFINE_KERNEL_LAUNCHER(bfloat16);
 DEFINE_KERNEL_LAUNCHER(float);
 DEFINE_KERNEL_LAUNCHER(double);
 #undef DEFINE_KERNEL_LAUNCHER

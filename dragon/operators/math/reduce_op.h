@@ -68,7 +68,7 @@ struct L2Reducer {
       const T* x,
       T* y,
       Context* ctx) const {
-    int64_t N = math::utils::Prod(dims);
+    auto N = math::utils::Prod(dims);
     for (const auto axis : axes) {
       N /= dims[axis];
     }
@@ -87,9 +87,9 @@ struct L2Reducer {
         const T* x,                              \
         T* y,                                    \
         Context* ctx) const {                    \
-      int64_t C = 1;                             \
+      int64_t N = 1;                             \
       for (const auto axis : axes) {             \
-        C *= dims[axis];                         \
+        N *= dims[axis];                         \
       }                                          \
       return ReduceFunc(                         \
           dims.size(),                           \
@@ -106,7 +106,7 @@ struct L2Reducer {
 DEFINE_REDUCER(MaxReducer, math::ReduceMax, 1.f);
 DEFINE_REDUCER(MinReducer, math::ReduceMin, 1.f);
 DEFINE_REDUCER(SumReducer, math::ReduceSum, 1.f);
-DEFINE_REDUCER(MeanReducer, math::ReduceSum, 1.f / C);
+DEFINE_REDUCER(MeanReducer, math::ReduceSum, 1.f / N);
 DEFINE_REDUCER(L1Reducer, math::ReduceL1, 1.f);
 #undef DEFINE_REDUCER
 
@@ -150,6 +150,7 @@ DEFINE_REDUCE_OP(ReduceL2, ReduceOp, L2Reducer, dtypes::Floating);
 
 DEFINE_REDUCE_GRAD_OP(ReduceMean);
 DEFINE_REDUCE_GRAD_OP(ReduceSum);
+#undef DEFINE_REDUCE_GRAD_OP
 
 #ifdef USE_MLU
 #define DEFINE_CNNL_REDUCE_OP(name, Reducer, ReduceTypes) \

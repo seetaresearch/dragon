@@ -5,40 +5,49 @@
 
 namespace dragon {
 
-float CuDNNType<float>::oneval = 1.f;
-float CuDNNType<float>::zeroval = 0.f;
-const void* CuDNNType<float>::one =
-    static_cast<void*>(&CuDNNType<float>::oneval);
-const void* CuDNNType<float>::zero =
-    static_cast<void*>(&CuDNNType<float>::zeroval);
+float CuDNNTraits<float16>::oneval = 1.f;
+float CuDNNTraits<float16>::zeroval = 0.f;
+const void* CuDNNTraits<float16>::one = &CuDNNTraits<float16>::oneval;
+const void* CuDNNTraits<float16>::zero = &CuDNNTraits<float16>::zeroval;
 
-double CuDNNType<double>::oneval = 1.0;
-double CuDNNType<double>::zeroval = 0.0;
-const void* CuDNNType<double>::one =
-    static_cast<void*>(&CuDNNType<double>::oneval);
-const void* CuDNNType<double>::zero =
-    static_cast<void*>(&CuDNNType<double>::zeroval);
+float CuDNNTraits<bfloat16>::oneval = 1.f;
+float CuDNNTraits<bfloat16>::zeroval = 0.f;
+const void* CuDNNTraits<bfloat16>::one = &CuDNNTraits<bfloat16>::oneval;
+const void* CuDNNTraits<bfloat16>::zero = &CuDNNTraits<bfloat16>::zeroval;
 
-float CuDNNType<float16>::oneval = 1.f;
-float CuDNNType<float16>::zeroval = 0.f;
-const void* CuDNNType<float16>::one =
-    static_cast<void*>(&CuDNNType<float16>::oneval);
-const void* CuDNNType<float16>::zero =
-    static_cast<void*>(&CuDNNType<float16>::zeroval);
+float CuDNNTraits<float>::oneval = 1.f;
+float CuDNNTraits<float>::zeroval = 0.f;
+const void* CuDNNTraits<float>::one = &CuDNNTraits<float>::oneval;
+const void* CuDNNTraits<float>::zero = &CuDNNTraits<float>::zeroval;
+
+double CuDNNTraits<double>::oneval = 1.0;
+double CuDNNTraits<double>::zeroval = 0.0;
+const void* CuDNNTraits<double>::one = &CuDNNTraits<double>::oneval;
+const void* CuDNNTraits<double>::zero = &CuDNNTraits<double>::zeroval;
+
+const cudnnDataType_t& CuDNNGetDataType(const TypeMeta& type) {
+  static cudnnDataType_t unknown_type = cudnnDataType_t(255);
+  static std::unordered_map<TypeId, cudnnDataType_t> m{
+      {TypeMeta::Id<uint8_t>(), CUDNN_DATA_UINT8},
+      {TypeMeta::Id<int8_t>(), CUDNN_DATA_INT8},
+      {TypeMeta::Id<int>(), CUDNN_DATA_INT32},
+      {TypeMeta::Id<int64_t>(), CUDNN_DATA_INT64},
+      {TypeMeta::Id<float16>(), CUDNN_DATA_HALF},
+      {TypeMeta::Id<bfloat16>(), CUDNN_DATA_BFLOAT16},
+      {TypeMeta::Id<float>(), CUDNN_DATA_FLOAT},
+      {TypeMeta::Id<double>(), CUDNN_DATA_DOUBLE},
+  };
+  auto it = m.find(type.id());
+  return it != m.end() ? it->second : unknown_type;
+}
 
 template <typename T>
 cudnnMathType_t CuDNNGetMathType() {
-  if (TENSOR_CORE_AVAILABLE()) {
-    if (TypeMeta::Id<T>() == TypeMeta::Id<float16>()) {
-      return CUDNN_TENSOR_OP_MATH;
-    } else {
-      if (!CUDAContext::objects().cudnn_allow_tf32_) {
-#if CUDNN_VERSION_MIN(8, 0, 0)
-        return CUDNN_FMA_MATH;
-#endif
-      }
-    }
+  if (TypeMeta::Id<T>() == TypeMeta::Id<float16>() ||
+      TypeMeta::Id<T>() == TypeMeta::Id<bfloat16>()) {
+    return CUDNN_TENSOR_OP_MATH;
   }
+  if (!CUDAContext::objects().cudnn_allow_tf32_) return CUDNN_FMA_MATH;
   return CUDNN_DEFAULT_MATH;
 }
 
@@ -59,7 +68,7 @@ void CuDNNSetTensorDesc(
   CHECK(dims.size() >= 3 && dims.size() <= 8);
   CUDNN_CHECK(cudnnSetTensorNdDescriptor(
       desc,
-      CuDNNType<T>::type,
+      CuDNNTraits<T>::type,
       int(dims.size()),
       vec32_t({dims.begin(), dims.end()}).data(),
       vec32_t({strides.begin(), strides.end()}).data()));
@@ -87,7 +96,7 @@ void CuDNNSetTensorDesc(cudnnTensorDescriptor_t desc, const vec64_t& dims) {
     stride *= dimA[i];
   }
   CUDNN_CHECK(cudnnSetTensorNdDescriptor(
-      desc, CuDNNType<T>::type, num_dims, dimA, strideA));
+      desc, CuDNNTraits<T>::type, num_dims, dimA, strideA));
   delete[] dimA;
   delete[] strideA;
 }
@@ -105,22 +114,22 @@ void CuDNNSetTensorDesc(
     if (data_format == "NCHW") {
       H = dims[2]; // NCH -> NCH1
       CUDNN_CHECK(cudnnSetTensor4dDescriptorEx(
-          desc, CuDNNType<T>::type, N, C, H, W, C * H * W, H * W, W, 1));
+          desc, CuDNNTraits<T>::type, N, C, H, W, C * H * W, H * W, W, 1));
     } else if (data_format == "NHWC") {
       H = dims[1]; // NHC -> NH1C
       CUDNN_CHECK(cudnnSetTensor4dDescriptorEx(
-          desc, CuDNNType<T>::type, N, C, H, W, H * W * C, 1, W * C, C));
+          desc, CuDNNTraits<T>::type, N, C, H, W, H * W * C, 1, W * C, C));
     }
   } else if (dims.size() == 4) {
     D = 1;
     if (data_format == "NCHW") {
       H = dims[2], W = dims[3];
       CUDNN_CHECK(cudnnSetTensor4dDescriptorEx(
-          desc, CuDNNType<T>::type, N, C, H, W, C * H * W, H * W, W, 1));
+          desc, CuDNNTraits<T>::type, N, C, H, W, C * H * W, H * W, W, 1));
     } else if (data_format == "NHWC") {
       H = dims[1], W = dims[2];
       CUDNN_CHECK(cudnnSetTensor4dDescriptorEx(
-          desc, CuDNNType<T>::type, N, C, H, W, H * W * C, 1, W * C, C));
+          desc, CuDNNTraits<T>::type, N, C, H, W, H * W * C, 1, W * C, C));
     }
   } else if (dims.size() == 5) {
     vector<int> dims32, strides32;
@@ -135,7 +144,7 @@ void CuDNNSetTensorDesc(
     }
     CUDNN_CHECK(cudnnSetTensorNdDescriptor(
         desc,
-        CuDNNType<T>::type,
+        CuDNNTraits<T>::type,
         (int)dims32.size(),
         dims32.data(),
         strides32.data()));
@@ -188,17 +197,18 @@ void CuDNNSetDropoutDesc<CUDAContext>(
 }
 
 #define INSTANTIATE_API(T)                                      \
-  template cudnnMathType_t CuDNNGetMathType<T>();               \
-  template void CuDNNSetTensorDesc<T>(                          \
+  template DRAGON_API cudnnMathType_t CuDNNGetMathType<T>();    \
+  template DRAGON_API void CuDNNSetTensorDesc<T>(               \
       cudnnTensorDescriptor_t, const vec64_t&);                 \
-  template void CuDNNSetTensorDesc<T>(                          \
+  template DRAGON_API void CuDNNSetTensorDesc<T>(               \
       cudnnTensorDescriptor_t, const vec64_t&, const vec64_t&); \
-  template void CuDNNSetTensorDesc<T>(                          \
+  template DRAGON_API void CuDNNSetTensorDesc<T>(               \
       cudnnTensorDescriptor_t, const vec64_t&, const string&);  \
-  template void CuDNNSetBiasDesc<T>(                            \
+  template DRAGON_API void CuDNNSetBiasDesc<T>(                 \
       cudnnTensorDescriptor_t, const int, const int64_t, const string&);
 
 INSTANTIATE_API(float16);
+INSTANTIATE_API(bfloat16);
 INSTANTIATE_API(float);
 INSTANTIATE_API(double);
 #undef INSTANTIATE_API

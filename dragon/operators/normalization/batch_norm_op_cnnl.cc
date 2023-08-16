@@ -9,14 +9,14 @@ namespace dragon {
 template <class Context>
 template <typename T>
 void CNNLBatchNormOp<Context>::DoRunWithType() {
-  using ParamT = typename CNNLType<T>::BNParamType;
-  INITIALIZE_TENSOR_VIA_SPEC(Input(1), vec64_t({C_}), ParamT);
-  INITIALIZE_TENSOR_VIA_SPEC(Input(2), vec64_t({C_}), ParamT);
-  INITIALIZE_TENSOR_VIA_SPEC(Input(3), vec64_t({C_}), ParamT);
-  INITIALIZE_TENSOR_VIA_SPEC(Input(4), vec64_t({C_}), ParamT);
+  using AccT = typename math::Traits<T>::accumulator_type;
+  INITIALIZE_TENSOR_VIA_SPEC(Input(1), vec64_t({C_}), AccT);
+  INITIALIZE_TENSOR_VIA_SPEC(Input(2), vec64_t({C_}), AccT);
+  INITIALIZE_TENSOR_VIA_SPEC(Input(3), vec64_t({C_}), AccT);
+  INITIALIZE_TENSOR_VIA_SPEC(Input(4), vec64_t({C_}), AccT);
 
   // Set descriptors.
-  CNNLSetTensorDesc<ParamT>(bn_desc_, vec64_t({C_}));
+  CNNLSetTensorDesc<AccT>(bn_desc_, vec64_t({C_}));
   if (Input(0).ndim() == 2) {
     bn_mode_ = CNNL_BATCHNORM_SPATIAL;
     CNNLSetTensorDesc<T>(input_desc_, vec64_t({N_, 1, 1, C_}), data_format());
@@ -29,18 +29,18 @@ void CNNLBatchNormOp<Context>::DoRunWithType() {
     int64_t N = N_;
     coll_impl_.AllReduce(&N, &N, 1);
     const auto comm_size = coll_impl_.comm_size();
-    const ParamT count_avg = ParamT(N * S_) / ParamT(comm_size);
+    const AccT count_avg = AccT(N * S_) / AccT(comm_size);
     size_t scratch_size = 0;
     auto* X_mu = Output("X_mu")->Reshape({C_});
     auto* X_rsig = Output("X_rsig")->Reshape({C_});
-    auto* buffer = ctx()->workspace()->template data<ParamT, Context>(
+    auto* buffer = ctx()->workspace()->template data<AccT, Context>(
         (2 + comm_size * 4) * C_ + comm_size, "BufferKernel");
-    auto* host_buffer = ctx()->workspace()->template data<ParamT, CPUContext>(
+    auto* host_buffer = ctx()->workspace()->template data<AccT, CPUContext>(
         (2 + comm_size * 2) * C_, "BufferCPUKernel");
     math::Set(comm_size, count_avg, buffer + C_ * (2 + comm_size * 4), ctx());
-    CNNLSetTensorDesc<ParamT>(count_desc_, {comm_size});
-    CNNLSetTensorDesc<ParamT>(syncbn_desc_, {comm_size, C_}, "NC");
-    trans_impl_.Setup<ParamT>({comm_size, 2, C_}, {1, 0, 2}, ctx());
+    CNNLSetTensorDesc<AccT>(count_desc_, {comm_size});
+    CNNLSetTensorDesc<AccT>(syncbn_desc_, {comm_size, C_}, "NC");
+    trans_impl_.Setup<AccT>({comm_size, 2, C_}, {1, 0, 2}, ctx());
     CNNL_CHECK(cnnlGetSyncBatchNormStatsWorkspaceSize(
         ctx()->cnnl_handle(), input_desc_, &scratch_size));
     CNNL_CHECK(cnnlSyncBatchNormStats_v2(
@@ -57,7 +57,7 @@ void CNNLBatchNormOp<Context>::DoRunWithType() {
     CNRT_CHECK(cnrtMemcpyAsync(
         host_buffer,
         buffer,
-        sizeof(ParamT) * C_ * 2,
+        sizeof(AccT) * C_ * 2,
         ctx()->mlu_stream(),
         cnrtMemcpyDevToHost));
     ctx()->FinishDeviceComputation();
@@ -66,10 +66,10 @@ void CNNLBatchNormOp<Context>::DoRunWithType() {
     CNRT_CHECK(cnrtMemcpyAsync(
         buffer + C_ * 2,
         host_buffer + C_ * 2,
-        sizeof(ParamT) * comm_size * C_ * 2,
+        sizeof(AccT) * comm_size * C_ * 2,
         ctx()->mlu_stream(),
         cnrtMemcpyHostToDev));
-    trans_impl_.Compute<ParamT>(
+    trans_impl_.Compute<AccT>(
         buffer + C_ * (2 + comm_size * 0),
         buffer + C_ * (2 + comm_size * 2),
         ctx()->workspace()->template data<Context>(trans_impl_.scratch_size()),
@@ -81,29 +81,29 @@ void CNNLBatchNormOp<Context>::DoRunWithType() {
         syncbn_desc_,
         buffer + C_ * (2 + comm_size * 3),
         bn_desc_,
-        Input(3).template mutable_data<ParamT, Context>(), // rm
+        Input(3).template mutable_data<AccT, Context>(), // rm
         bn_desc_,
-        Input(4).template mutable_data<ParamT, Context>(), // rv
+        Input(4).template mutable_data<AccT, Context>(), // rv
         1.f - momentum(),
         epsilon_,
         count_desc_,
         buffer + C_ * (2 + comm_size * 4),
         bn_desc_,
-        X_mu->template mutable_data<ParamT, Context>(), // sm
+        X_mu->template mutable_data<AccT, Context>(), // sm
         bn_desc_,
-        X_rsig->template mutable_data<ParamT, Context>())); // sv
+        X_rsig->template mutable_data<AccT, Context>())); // sv
     CNNL_CHECK(cnnlSyncBatchNormElemt(
         ctx()->cnnl_handle(),
         input_desc_,
         Input(0).template data<T, Context>(),
         bn_desc_,
-        X_mu->template data<ParamT, Context>(),
+        X_mu->template data<AccT, Context>(),
         bn_desc_,
-        X_rsig->template data<ParamT, Context>(),
+        X_rsig->template data<AccT, Context>(),
         bn_desc_,
-        Input(1).template data<ParamT, Context>(),
+        Input(1).template data<AccT, Context>(),
         bn_desc_,
-        Input(2).template data<ParamT, Context>(),
+        Input(2).template data<AccT, Context>(),
         input_desc_,
         Output(0)->template mutable_data<T, Context>()));
     return;
@@ -128,16 +128,16 @@ void CNNLBatchNormOp<Context>::DoRunWithType() {
         nullptr,
         nullptr,
         bn_desc_,
-        Input(1).template data<ParamT, Context>(), // gamma
-        Input(2).template data<ParamT, Context>(), // beta
-        Input(3).template mutable_data<ParamT, Context>(), // rm
-        Input(4).template mutable_data<ParamT, Context>(), // rv
+        Input(1).template data<AccT, Context>(), // gamma
+        Input(2).template data<AccT, Context>(), // beta
+        Input(3).template mutable_data<AccT, Context>(), // rm
+        Input(4).template mutable_data<AccT, Context>(), // rv
         epsilon_,
         1.f - momentum(),
         input_desc_,
         Output(0)->template mutable_data<T, Context>(), // y
-        X_mu->template mutable_data<ParamT, Context>(), // sm
-        X_rsig->template mutable_data<ParamT, Context>(), // sv
+        X_mu->template mutable_data<AccT, Context>(), // sm
+        X_rsig->template mutable_data<AccT, Context>(), // sv
         ctx()->workspace()->template data<Context>(scratch_size),
         scratch_size,
         nullptr,
@@ -153,12 +153,12 @@ void CNNLBatchNormOp<Context>::DoRunWithType() {
         input_desc_,
         Input(0).template data<T, Context>(), // x
         bn_desc_,
-        Input(1).template data<ParamT, Context>(), // gamma
-        Input(2).template data<ParamT, Context>(), // beta
+        Input(1).template data<AccT, Context>(), // gamma
+        Input(2).template data<AccT, Context>(), // beta
         nullptr,
         nullptr, // y
-        Input(3).template data<ParamT, Context>(), // rm
-        Input(4).template data<ParamT, Context>(), // rv
+        Input(3).template data<AccT, Context>(), // rm
+        Input(4).template data<AccT, Context>(), // rv
         epsilon_,
         input_desc_,
         Output(0)->template mutable_data<T, Context>())); // y
@@ -168,12 +168,12 @@ void CNNLBatchNormOp<Context>::DoRunWithType() {
 template <class Context>
 template <typename T>
 void CNNLBatchNormGradientOp<Context>::RunTraining() {
-  using ParamT = typename CNNLType<T>::BNParamType;
+  using AccT = typename math::Traits<T>::accumulator_type;
   auto *dX = Output(0), *dW = Output(1), *dB = Output(2);
   auto &X_mu = Input("X_mu"), &X_rsig = Input("X_rsig");
 
   // Set descriptors.
-  CNNLSetTensorDesc<ParamT>(bn_desc_, vec64_t({C_}));
+  CNNLSetTensorDesc<AccT>(bn_desc_, vec64_t({C_}));
   if (Input(0).ndim() == 2) {
     bn_mode_ = CNNL_BATCHNORM_SPATIAL;
     CNNLSetTensorDesc<T>(input_desc_, vec64_t({N_, 1, 1, C_}), data_format());
@@ -186,7 +186,7 @@ void CNNLBatchNormGradientOp<Context>::RunTraining() {
     int64_t N = N_;
     coll_impl_.AllReduce(&N, &N, 1);
     size_t scratch_size = 0;
-    auto* buffer = ctx()->workspace()->template data<ParamT, Context>(
+    auto* buffer = ctx()->workspace()->template data<AccT, Context>(
         2 * C_ + 1, "BufferKernel");
     CNNLSetTensorDesc<int>(count_desc_, {1});
     math::Set(1, int(N * S_), (int*)buffer + C_ * 2, ctx());
@@ -199,15 +199,15 @@ void CNNLBatchNormGradientOp<Context>::RunTraining() {
         input_desc_,
         Input(0).template data<T, Context>(), // x
         bn_desc_,
-        X_mu.template data<ParamT, Context>(),
+        X_mu.template data<AccT, Context>(),
         bn_desc_,
-        X_rsig.template data<ParamT, Context>(),
+        X_rsig.template data<AccT, Context>(),
         ctx()->workspace()->template data<Context>(scratch_size),
         scratch_size,
         bn_desc_,
-        dW->Reshape({C_})->template mutable_data<ParamT, Context>(),
+        dW->Reshape({C_})->template mutable_data<AccT, Context>(),
         bn_desc_,
-        dB->Reshape({C_})->template mutable_data<ParamT, Context>(),
+        dB->Reshape({C_})->template mutable_data<AccT, Context>(),
         bn_desc_,
         buffer,
         bn_desc_,
@@ -224,11 +224,11 @@ void CNNLBatchNormGradientOp<Context>::RunTraining() {
         input_desc_,
         Input(0).template data<T, Context>(), // x
         bn_desc_,
-        X_mu.template data<ParamT, Context>(),
+        X_mu.template data<AccT, Context>(),
         bn_desc_,
-        X_rsig.template data<ParamT, Context>(),
+        X_rsig.template data<AccT, Context>(),
         bn_desc_,
-        Input(1).template data<ParamT, Context>(), // gamma
+        Input(1).template data<AccT, Context>(), // gamma
         bn_desc_,
         buffer,
         bn_desc_,
@@ -259,17 +259,17 @@ void CNNLBatchNormGradientOp<Context>::RunTraining() {
       input_desc_,
       Input(4).template data<T, Context>(), // dy
       bn_desc_,
-      Input(1).template data<ParamT, Context>(), // gamma
+      Input(1).template data<AccT, Context>(), // gamma
       nullptr,
-      X_mu.template data<ParamT, Context>(), // mu
-      X_rsig.template data<ParamT, Context>(), // rsig
+      X_mu.template data<AccT, Context>(), // mu
+      X_rsig.template data<AccT, Context>(), // rsig
       epsilon_,
       nullptr,
       nullptr,
       input_desc_,
       Output(0)->template mutable_data<T, Context>(), // dx
-      dW->Reshape({C_})->template mutable_data<ParamT, Context>(), // dw
-      dB->Reshape({C_})->template mutable_data<ParamT, Context>(), // db
+      dW->Reshape({C_})->template mutable_data<AccT, Context>(), // dw
+      dB->Reshape({C_})->template mutable_data<AccT, Context>(), // db
       ctx()->workspace()->template data<Context>(scratch_size),
       scratch_size,
       nullptr,

@@ -55,6 +55,8 @@ class ScatterAddOp final : public Operator<Context> {
     auto& X = Input(0);
     if (X.template IsType<float16>()) {
       DoRunWithTypeAndCast<float16>();
+    } else if (X.template IsType<bfloat16>()) {
+      DoRunWithTypeAndCast<bfloat16>();
     } else if (X.template IsType<double>()) {
       DoRunWithTypeAndCast<double>();
     } else {

@@ -47,6 +47,7 @@ void RegisterModule_sysconfig(py::module& m) {
     if (!build_info.empty()) {
       return build_info;
     }
+    // clang-format off
     build_info += "cpu_features:";
 #if defined(USE_AVX)
     build_info += " AVX";
@@ -60,27 +61,42 @@ void RegisterModule_sysconfig(py::module& m) {
     build_info += "\ncuda_version:";
 #if defined(USE_CUDA)
     build_info += " " + str::to(CUDA_VERSION / 1000) + "." +
-        str::to(CUDA_VERSION % 1000 / 10);
+                        str::to(CUDA_VERSION % 1000 / 10);
 #endif
     build_info += "\ncudnn_version:";
 #if defined(USE_CUDNN)
-    build_info += " " + str::to(CUDNN_MAJOR) + "." + str::to(CUDNN_MINOR) +
-        "." + str::to(CUDNN_PATCHLEVEL);
+    build_info += " " + str::to(CUDNN_MAJOR) + "." +
+                        str::to(CUDNN_MINOR) + "." +
+                        str::to(CUDNN_PATCHLEVEL);
+#endif
+    build_info += "\nnccl_version:";
+#if defined(USE_NCCL)
+    build_info += " " + str::to(NCCL_MAJOR) + "." +
+                        str::to(NCCL_MINOR) + "." +
+                        str::to(NCCL_PATCH);
 #endif
     build_info += "\nmps_version:";
 #if defined(USE_MPS) && defined(MPS_OSX_VERSION_MAJOR)
     build_info += " " + str::to(MPS_OSX_VERSION_MAJOR) + "." +
-        str::to(MPS_OSX_VERSION_MINOR);
+                        str::to(MPS_OSX_VERSION_MINOR);
 #endif
     build_info += "\ncnrt_version:";
 #if defined(USE_MLU)
     build_info += " " + str::to(CNRT_MAJOR_VERSION) + "." +
-        str::to(CNRT_MINOR_VERSION) + "." + str::to(CNRT_PATCH_VERSION);
+                        str::to(CNRT_MINOR_VERSION) + "." +
+                        str::to(CNRT_PATCH_VERSION);
 #endif
     build_info += "\ncnnl_version:";
 #if defined(USE_MLU)
-    build_info += " " + str::to(CNNL_MAJOR) + "." + str::to(CNNL_MINOR) + "." +
-        str::to(CNNL_PATCHLEVEL);
+    build_info += " " + str::to(CNNL_MAJOR) + "." +
+                        str::to(CNNL_MINOR) + "." +
+                        str::to(CNNL_PATCHLEVEL);
+#endif
+    build_info += "\ncncl_version:";
+#if defined(USE_MLU)
+    build_info += " " + str::to(CNCL_MAJOR_VERSION) + "." +
+                        str::to(CNCL_MINOR_VERSION) + "." +
+                        str::to(CNCL_PATCH_VERSION);
 #endif
     build_info += "\nthird_party: eigen protobuf pybind11";
 #if defined(USE_OPENMP)
@@ -95,12 +111,16 @@ void RegisterModule_sysconfig(py::module& m) {
 #if defined(USE_CUDNN)
     build_info += " cudnn";
 #endif
+#if defined(USE_NCCL)
+    build_info += " nccl";
+#endif
 #if defined(USE_MPS)
     build_info += " mps";
 #endif
 #if defined(USE_MLU)
-    build_info += " mlu cnnl";
+    build_info += " cnrt cnnl cncl";
 #endif
+    // clang-format on
     return build_info;
   });
 }

@@ -429,7 +429,7 @@ void DispatchKernel(
     MPSDispatchThreads(num_blocks, block_threads, encoder, pso);
   } else {
     args.pop_back();
-    using AccT = typename math::AccumulatorType<T>::type;
+    using AccT = typename math::Traits<T>::accumulator_type;
     auto kernel = MPSKernel::TypedString<T>("Block" + name);
     pso = MPSKernel(kernel, METAL_SHADERS).GetState(ctx, args);
     const int block_threads = MPSGetBlockReduceThreads(C, pso);
@@ -461,9 +461,11 @@ void DispatchKernel(
   }
 
 DEFINE_KERNEL_LAUNCHER(Softmax, float16);
+DEFINE_KERNEL_LAUNCHER(Softmax, bfloat16);
 DEFINE_KERNEL_LAUNCHER(Softmax, float);
 DEFINE_KERNEL_LAUNCHER(Softmax, double);
 DEFINE_KERNEL_LAUNCHER(LogSoftmax, float16);
+DEFINE_KERNEL_LAUNCHER(LogSoftmax, bfloat16);
 DEFINE_KERNEL_LAUNCHER(LogSoftmax, float);
 DEFINE_KERNEL_LAUNCHER(LogSoftmax, double);
 #undef DEFINE_KERNEL_LAUNCHER
@@ -489,9 +491,11 @@ DEFINE_KERNEL_LAUNCHER(LogSoftmax, double);
   }
 
 DEFINE_GRAD_KERNEL_LAUNCHER(SoftmaxGrad, float16);
+DEFINE_GRAD_KERNEL_LAUNCHER(SoftmaxGrad, bfloat16);
 DEFINE_GRAD_KERNEL_LAUNCHER(SoftmaxGrad, float);
 DEFINE_GRAD_KERNEL_LAUNCHER(SoftmaxGrad, double);
 DEFINE_GRAD_KERNEL_LAUNCHER(LogSoftmaxGrad, float16);
+DEFINE_GRAD_KERNEL_LAUNCHER(LogSoftmaxGrad, bfloat16);
 DEFINE_GRAD_KERNEL_LAUNCHER(LogSoftmaxGrad, float);
 DEFINE_GRAD_KERNEL_LAUNCHER(LogSoftmaxGrad, double);
 #undef DEFINE_GRAD_KERNEL_LAUNCHER

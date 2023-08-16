@@ -62,10 +62,11 @@ __global__ void _RMSprop(
         m,                                                            \
         v,                                                            \
         y,                                                            \
-        reinterpret_cast<math::ScalarType<CopyT>::type*>(y_copy));    \
+        reinterpret_cast<math::Traits<CopyT>::scalar_type*>(y_copy)); \
   }
 
 DEFINE_KERNEL_LAUNCHER(RMSprop, float, float16);
+DEFINE_KERNEL_LAUNCHER(RMSprop, float, bfloat16);
 DEFINE_KERNEL_LAUNCHER(RMSprop, float, float);
 DEFINE_KERNEL_LAUNCHER(RMSprop, double, double);
 #undef DEFINE_KERNEL_LAUNCHER

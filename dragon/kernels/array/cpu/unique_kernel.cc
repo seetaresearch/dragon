@@ -53,7 +53,19 @@ void Unique<float16, CPUContext>(
     int64_t* counts,
     int* num,
     CPUContext* ctx) {
-  CPU_FP16_NOT_SUPPORTED;
+  CPU_UNSUPPORTED_DTYPE(float16);
+}
+
+template <>
+void Unique<bfloat16, CPUContext>(
+    const int dim,
+    const bfloat16* x,
+    bfloat16* y,
+    int64_t* inverse_index,
+    int64_t* counts,
+    int* num,
+    CPUContext* ctx) {
+  CPU_UNSUPPORTED_DTYPE(bfloat16);
 }
 
 #define DEFINE_KERNEL_LAUNCHER(T)                   \

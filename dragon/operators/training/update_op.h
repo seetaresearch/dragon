@@ -37,6 +37,15 @@ class UpdateOpBase : public Operator<Context> {
   void RunOnDevice() override;
 
   template <typename T>
+  void DoRunWithTensor(Tensor* dX, Tensor* X) {
+    TransformGrad<T>(dX);
+    ApplyUpdate(dX, X, nullptr);
+  }
+
+  template <typename T>
+  void DoRunWithTensor(Tensor* dX, Tensor* X, Tensor* Y);
+
+  template <typename T>
   void TransformGrad(Tensor* dX);
 
   virtual void ApplyUpdate(Tensor* dX, Tensor* X, Tensor* Y) = 0;
@@ -52,25 +61,27 @@ class UpdateOpBase : public Operator<Context> {
   float clip_norm_, clip_value_;
 };
 
-#define USE_UPDATE_FUNCTIONS                                       \
-  using UpdateOpBase<Context>::GetHyper;                           \
-  using UpdateOpBase<Context>::GetState;                           \
-  void ApplyUpdate(Tensor* dX, Tensor* X, Tensor* Y) override {    \
-    if (dX->template IsType<float>()) {                            \
-      if (Y == nullptr) {                                          \
-        DoRunWithType<float, float>(dX, X, Y);                     \
-      } else if (Y->template IsType<float16>()) {                  \
-        DoRunWithType<float, float16>(dX, X, Y);                   \
-      } else {                                                     \
-        LOG(FATAL) << MessageForUnsupported(                       \
-            dtypes::to_string(Y->meta()), {"float16", "float32"}); \
-      }                                                            \
-    } else if (dX->template IsType<double>()) {                    \
-      DoRunWithType<double, double>(dX, X, Y);                     \
-    } else {                                                       \
-      LOG(FATAL) << MessageForUnsupported(                         \
-          dtypes::to_string(dX->meta()), {"float32", "float64"});  \
-    }                                                              \
+#define USE_UPDATE_FUNCTIONS                                                   \
+  using UpdateOpBase<Context>::GetHyper;                                       \
+  using UpdateOpBase<Context>::GetState;                                       \
+  void ApplyUpdate(Tensor* dX, Tensor* X, Tensor* Y) override {                \
+    if (dX->template IsType<float>()) {                                        \
+      if (Y == nullptr) {                                                      \
+        DoRunWithType<float, float>(dX, X, Y);                                 \
+      } else if (Y->template IsType<float16>()) {                              \
+        DoRunWithType<float, float16>(dX, X, Y);                               \
+      } else if (Y->template IsType<bfloat16>()) {                             \
+        DoRunWithType<float, bfloat16>(dX, X, Y);                              \
+      } else {                                                                 \
+        LOG(FATAL) << MessageForUnsupported(                                   \
+            dtypes::to_string(Y->meta()), {"float16", "bfloat16", "float32"}); \
+      }                                                                        \
+    } else if (dX->template IsType<double>()) {                                \
+      DoRunWithType<double, double>(dX, X, Y);                                 \
+    } else {                                                                   \
+      LOG(FATAL) << MessageForUnsupported(                                     \
+          dtypes::to_string(dX->meta()), {"float32", "float64"});              \
+    }                                                                          \
   }
 
 template <class Context>

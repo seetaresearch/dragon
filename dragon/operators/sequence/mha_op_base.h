@@ -55,7 +55,7 @@ class CuDNNMultiHeadAttnOpBase : public Operator<Context> {
     seq_dims[CUDNN_SEQDATA_VECT_DIM] = dims[2];
     CUDNN_CHECK(cudnnSetSeqDataDescriptor(
         desc,
-        CuDNNType<T>::type,
+        CuDNNTraits<T>::type,
         seq_dims.size(),
         seq_dims.data(),
         axes,
@@ -71,8 +71,8 @@ class CuDNNMultiHeadAttnOpBase : public Operator<Context> {
         attn_mode_,
         num_heads_,
         softmax_scale_,
-        CuDNNType<T>::type,
-        CuDNNType<T>::type,
+        CuDNNTraits<T>::type,
+        CuDNNTraits<T>::type,
         CuDNNGetMathType<T>(),
         dropout_desc_, // attn_drop
         dropout_desc_, // post_drop

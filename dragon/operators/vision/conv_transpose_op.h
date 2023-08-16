@@ -14,6 +14,7 @@
 #define DRAGON_OPERATORS_VISION_CONV_TRANSPOSE_OP_H_
 
 #include "dragon/operators/math/reduce_op_impl_cnnl.h"
+#include "dragon/operators/math/reduce_op_impl_cudnn.h"
 #include "dragon/operators/vision/conv_op_algo.h"
 #include "dragon/operators/vision/conv_op_base.h"
 #include "dragon/operators/vision/conv_op_impl_cnnl.h"

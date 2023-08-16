@@ -49,10 +49,6 @@ layers
   `class Dense <layers/Dense.html>`_
   : Fully-connected layer.
 
-  `class DepthwiseConv2D <layers/DepthwiseConv2D.html>`_
-  : 2D depthwise convolution layer.
-  `[Chollet, 2016] <https://arxiv.org/abs/1610.02357>`_.
-
   `class Dropout <layers/Dropout.html>`_
   : Apply dropout function.
   `[Srivastava et.al, 2014] <http://jmlr.org/papers/v15/srivastava14a.html>`_.
@@ -165,7 +161,6 @@ layers
   layers/Conv3D
   layers/Conv3DTranspose
   layers/Dense
-  layers/DepthwiseConv2D
   layers/Dropout
   layers/ELU
   layers/Flatten

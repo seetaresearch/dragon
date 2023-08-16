@@ -17,9 +17,8 @@ void _Reverse(
     T* y) {
   const auto N = math::utils::Prod(num_dims, y_dims);
   vec64_t index(num_dims, 0);
-  int64_t xi;
-  for (int yi = 0; yi < N; ++yi) {
-    xi = 0;
+  for (int64_t yi = 0; yi < N; ++yi) {
+    int64_t xi = 0;
     for (int d = num_dims - 1; d >= 0; --d) {
       xi += (x_flips[d] ? y_dims[d] - index[d] - 1 : index[d]) * x_strides[d];
     }
@@ -49,6 +48,7 @@ DEFINE_KERNEL_LAUNCHER(int8_t);
 DEFINE_KERNEL_LAUNCHER(int);
 DEFINE_KERNEL_LAUNCHER(int64_t);
 DEFINE_KERNEL_LAUNCHER(float16);
+DEFINE_KERNEL_LAUNCHER(bfloat16);
 DEFINE_KERNEL_LAUNCHER(float);
 DEFINE_KERNEL_LAUNCHER(double);
 #undef DEFINE_KERNEL_LAUNCHER

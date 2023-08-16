@@ -39,21 +39,12 @@ void NonZeroOp<Context>::DoRunWithType() {
       ctx());
 }
 
-template <class Context>
-void NonZeroOp<Context>::RunOnDevice() {
-  DispatchHelper<dtypes::Generic>::Call(this, Input(0));
-}
-
 DEPLOY_CPU_OPERATOR(NonZero);
 #ifdef USE_CUDA
 DEPLOY_CUDA_OPERATOR(NonZero);
 #endif
 
-OPERATOR_SCHEMA(NonZero)
-    /* X */
-    .NumInputs(1)
-    /* Y */
-    .NumOutputs(1);
+OPERATOR_SCHEMA(NonZero).NumInputs(1).NumOutputs(1);
 
 NO_GRADIENT(NonZero);
 

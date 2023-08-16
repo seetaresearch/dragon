@@ -219,23 +219,23 @@ class CNNLNaNToNumOp final : public Operator<Context> {
     cnnlTensorDescriptor_t input_desc_, output_desc_;     \
   };
 
-#define DECLARE_ELEMENTWISE_GRAD_OP(name)                     \
-  template <class Context>                                    \
-  class CNNL##name##Op : public Operator<Context> {           \
-   public:                                                    \
-    CNNL##name##Op(const OperatorDef& def, Workspace* ws)     \
-        : Operator<Context>(def, ws) {                        \
-      reduce_impl_.SetReducer(CNNL_REDUCE_ADD);               \
-    }                                                         \
-    USE_OPERATOR_FUNCTIONS;                                   \
-    void RunOnDevice() override {                             \
+#define DECLARE_ELEMENTWISE_GRAD_OP(name)                      \
+  template <class Context>                                     \
+  class CNNL##name##Op : public Operator<Context> {            \
+   public:                                                     \
+    CNNL##name##Op(const OperatorDef& def, Workspace* ws)      \
+        : Operator<Context>(def, ws) {                         \
+      reduce_impl_.SetReducer(CNNL_REDUCE_ADD);                \
+    }                                                          \
+    USE_OPERATOR_FUNCTIONS;                                    \
+    void RunOnDevice() override {                              \
       DispatchHelper<dtypes::Floating>::Call(this, Input(0)); \
-    }                                                         \
-    template <typename T>                                     \
-    void DoRunWithType();                                     \
-                                                              \
-   protected:                                                 \
-    CNNLReduceOpImpl reduce_impl_;                            \
+    }                                                          \
+    template <typename T>                                      \
+    void DoRunWithType();                                      \
+                                                               \
+   protected:                                                  \
+    CNNLReduceOpImpl reduce_impl_;                             \
   };
 
 DECLARE_ELEMENTWISE_OP(IsInf);

@@ -64,8 +64,8 @@ HOSTDEVICE_DECL T IsFinite(const T x) {
 template <
     typename T,
     typename std::enable_if<std::is_floating_point<T>::value, int>::type = 0>
-HOSTDEVICE_DECL bool IsInf(T x) {
-#if defined(__CUDACC__)
+HOSTDEVICE_DECL bool IsInf(const T x) {
+#if defined(__CUDA_ARCH__)
   return isinf(x);
 #else
   return std::isinf(x);
@@ -75,8 +75,8 @@ HOSTDEVICE_DECL bool IsInf(T x) {
 template <
     typename T,
     typename std::enable_if<std::is_floating_point<T>::value, int>::type = 0>
-HOSTDEVICE_DECL bool IsNaN(T x) {
-#if defined(__CUDACC__)
+HOSTDEVICE_DECL bool IsNaN(const T x) {
+#if defined(__CUDA_ARCH__)
   return isnan(x);
 #else
   return std::isnan(x);
@@ -86,25 +86,25 @@ HOSTDEVICE_DECL bool IsNaN(T x) {
 template <
     typename T,
     typename std::enable_if<std::is_floating_point<T>::value, int>::type = 0>
-HOSTDEVICE_DECL bool IsFinite(T x) {
-#if defined(__CUDACC__)
+HOSTDEVICE_DECL bool IsFinite(const T x) {
+#if defined(__CUDA_ARCH__)
   return isfinite(x);
 #else
   return std::isfinite(x);
 #endif
 }
 
-inline bool IsInf(float16 x) {
-  return std::abs(convert::To<float>(x)) > HFLT_MAX;
+inline bool IsInf(const float16 x) {
+  return std::isinf(convert::To<float>(x));
 }
 
 inline bool IsNaN(float16 x) {
-  return IsNaN(convert::To<float>(x));
+  return std::isnan(convert::To<float>(x));
 }
 
 inline bool IsFinite(float16 x) {
   const float v = convert::To<float>(x);
-  return !(std::abs(v) > HFLT_MAX || IsNaN(v));
+  return !(std::isinf(v) || std::isnan(v));
 }
 
 template <typename T>
@@ -114,7 +114,7 @@ HOSTDEVICE_DECL bool IsAGeZeroAndALtB(const T a, const T b) {
 
 template <typename T>
 HOSTDEVICE_DECL T Sign(const T x) {
-  return x > T(0) ? T(1) : (x < T(0) ? T(-1) : T(0));
+  return (x > T(0)) - (x < T(0));
 }
 
 template <typename T>
@@ -123,7 +123,7 @@ HOSTDEVICE_DECL T Identity(const T x) {
 }
 
 template <typename T>
-HOSTDEVICE_DECL T Square(const T x) {
+HOSTDEVICE_DECL T Sqr(const T x) {
   return x * x;
 }
 
@@ -135,18 +135,43 @@ HOSTDEVICE_DECL T Cube(const T x) {
 /*
  * CUDA Functions.
  */
-
 #if defined(__CUDACC__)
-inline __device__ bool IsInf(half x) {
-#if __CUDA_ARCH__ >= 530
-  return __hisinf(x);
+template <typename T>
+inline __device__ T LDG(const T* ptr) {
+  return __ldg(ptr);
+}
+
+template <typename AccT, typename T>
+inline __device__ AccT LDGC(const T* ptr) {
+  return convert::To<AccT>(LDG(ptr));
+}
+
+template <>
+inline __device__ nv_bfloat16 LDG<nv_bfloat16>(const __nv_bfloat16* ptr) {
+#if __CUDA_ARCH__ >= 800
+  return __ldg(ptr);
 #else
-  float fp32 = __half2float(x);
-  return fp32 > HFLT_MAX || fp32 < HFLT_MAX;
+  return *ptr;
 #endif
 }
 
-inline __device__ bool IsNaN(half x) {
+inline __device__ bool IsInf(const half x) {
+#if __CUDA_ARCH__ >= 530
+  return __hisinf(x);
+#else
+  return isinf(__half2float(x));
+#endif
+}
+
+inline __device__ bool IsInf(const nv_bfloat16 x) {
+#if __CUDA_ARCH__ >= 800
+  return __hisinf(x);
+#else
+  return isinf(__bfloat162float(x));
+#endif
+}
+
+inline __device__ bool IsNaN(const half x) {
 #if __CUDA_ARCH__ >= 530
   return __hisnan(x);
 #else
@@ -154,7 +179,15 @@ inline __device__ bool IsNaN(half x) {
 #endif
 }
 
-inline __device__ bool IsFinite(half x) {
+inline __device__ bool IsNaN(const nv_bfloat16 x) {
+#if __CUDA_ARCH__ >= 800
+  return __hisnan(x);
+#else
+  return isnan(__bfloat162float(x));
+#endif
+}
+
+inline __device__ bool IsFinite(const half x) {
 #if __CUDA_ARCH__ >= 530
   return !(__hisinf(x) || __hisnan(x));
 #else
@@ -163,158 +196,15 @@ inline __device__ bool IsFinite(half x) {
 #endif
 }
 
-inline __device__ half Square(half x) {
-#if __CUDA_ARCH__ >= 530
-  return __hmul(x, x);
+inline __device__ bool IsFinite(const nv_bfloat16 x) {
+#if __CUDA_ARCH__ >= 800
+  return !(__hisinf(x) || __hisnan(x));
 #else
-  return __float2half(Square(__half2float(x)));
-#endif
-}
-
-inline __device__ half2 Square(half2 x) {
-#if __CUDA_ARCH__ >= 530
-  return __hmul2(x, x);
-#else
-  const float2 val = __half22float2(x);
-  return __floats2half2_rn(Square(val.x), Square(val.y));
-#endif
-}
-
-inline __device__ half Cube(half x) {
-#if __CUDA_ARCH__ >= 530
-  return __hmul(__hmul(x, x), x);
-#else
-  return __float2half(Cube(__half2float(x)));
-#endif
-}
-
-inline __device__ half2 Cube(half2 x) {
-#if __CUDA_ARCH__ >= 530
-  return __hmul2(__hmul2(x, x), x);
-#else
-  const float2 val = __half22float2(x);
-  return __floats2half2_rn(Cube(val.x), Cube(val.y));
+  const float v = __bfloat162float(x);
+  return !(isinf(v) || isnan(v));
 #endif
 }
 #endif // defined(__CUDACC__)
-
-/*
- * MLU Functions.
- */
-
-#if defined(__mlu_func__)
-template <typename DstT, typename SrcT>
-__mlu_func__ void Convert(DstT* dst, SrcT* src, int count) {
-  for (int i = 0; i < count; ++i) {
-    dst[i] = DstT(src[i]);
-  }
-}
-
-template <>
-__mlu_func__ void Convert<int, uint8_t>(int* dst, uint8_t* src, int count) {
-  __bang_uchar2int32(dst, src, count, 0);
-}
-
-template <>
-__mlu_func__ void Convert<half, uint8_t>(half* dst, uint8_t* src, int count) {
-  __bang_uchar2half(dst, src, count);
-}
-
-template <>
-__mlu_func__ void Convert<float, uint8_t>(float* dst, uint8_t* src, int count) {
-  __bang_uchar2float(dst, src, count);
-}
-
-template <>
-__mlu_func__ void Convert<int, int8_t>(int* dst, int8_t* src, int count) {
-  __bang_int82int32(dst, src, count, 0, 0);
-}
-
-template <>
-__mlu_func__ void Convert<int, char>(int* dst, char* src, int count) {
-  __bang_int82int32(dst, (int8_t*)src, count, 0, 0);
-}
-
-template <>
-__mlu_func__ void Convert<half, int8_t>(half* dst, int8_t* src, int count) {
-  __bang_int82half(dst, src, count, 0);
-}
-
-template <>
-__mlu_func__ void Convert<half, char>(half* dst, char* src, int count) {
-  __bang_int82half(dst, (int8_t*)src, count, 0);
-}
-
-template <>
-__mlu_func__ void Convert<float, int8_t>(float* dst, int8_t* src, int count) {
-  __bang_int82float(dst, src, count, 0);
-}
-
-template <>
-__mlu_func__ void Convert<float, char>(float* dst, char* src, int count) {
-  __bang_int82float(dst, (int8_t*)src, count, 0);
-}
-
-template <>
-__mlu_func__ void Convert<uint8_t, int>(uint8_t* dst, int* src, int count) {
-  __bang_int322uchar(dst, src, count, 0);
-}
-
-template <>
-__mlu_func__ void Convert<int8_t, int>(int8_t* dst, int* src, int count) {
-  __bang_int322int8(dst, src, count, 0, 0);
-}
-
-template <>
-__mlu_func__ void Convert<char, int>(char* dst, int* src, int count) {
-  __bang_int322int8((int8_t*)dst, src, count, 0, 0);
-}
-
-template <>
-__mlu_func__ void Convert<half, int>(half* dst, int* src, int count) {
-  __bang_int322half(dst, src, count, 0);
-}
-
-template <>
-__mlu_func__ void Convert<float, int>(float* dst, int* src, int count) {
-  __bang_int322float(dst, src, count, 0);
-}
-
-template <>
-__mlu_func__ void Convert<uint8_t, half>(uint8_t* dst, half* src, int count) {
-  __bang_half2uchar_dn(dst, src, count);
-}
-
-template <>
-__mlu_func__ void Convert<float, half>(float* dst, half* src, int count) {
-  __bang_half2float(dst, src, count);
-}
-
-template <>
-__mlu_func__ void Convert<uint8_t, float>(uint8_t* dst, float* src, int count) {
-  __bang_float2uchar(dst, src, count);
-}
-
-template <>
-__mlu_func__ void Convert<int8_t, float>(int8_t* dst, float* src, int count) {
-  __bang_float2int8_rn(dst, src, count, 0);
-}
-
-template <>
-__mlu_func__ void Convert<char, float>(char* dst, float* src, int count) {
-  __bang_float2int8_rn((int8_t*)dst, src, count, 0);
-}
-
-template <>
-__mlu_func__ void Convert<int, float>(int* dst, float* src, int count) {
-  __bang_float2int32(dst, src, count, 0);
-}
-
-template <>
-__mlu_func__ void Convert<half, float>(half* dst, float* src, int count) {
-  __bang_float2half_rn(dst, src, count);
-}
-#endif // defined(__mlu_func__)
 
 /*
  * Math Utilities.

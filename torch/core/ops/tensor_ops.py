@@ -291,6 +291,30 @@ def backward(self, gradient=None, retain_graph=False):
     return Function.backward([self], grads, retain_graph=retain_graph)
 
 
+def bfloat16(self):
+    """Return a bfloat16 tensor with the same data.
+
+    Returns
+    -------
+    dragon.vm.torch.Tensor
+        The output tensor.
+
+    """
+    return math_ops.cast(self, 'bfloat16')
+
+
+def bfloat16_(self):
+    """Cast to a bfloat16 tensor.
+
+    Returns
+    -------
+    dragon.vm.torch.Tensor
+        The output tensor.
+
+    """
+    return math_ops.cast(self, 'bfloat16', self)
+
+
 def bitwise_and(self, other):
     r"""Compute element-wise AND bitwise operation.
 
@@ -3231,6 +3255,8 @@ Tensor.atan2 = atan2
 Tensor.backward = backward
 Tensor.baddbmm = baddbmm
 Tensor.baddbmm_ = baddbmm_
+Tensor.bfloat16 = bfloat16
+Tensor.bfloat16_ = bfloat16_
 Tensor.bitwise_and = bitwise_and
 Tensor.bitwise_and_ = bitwise_and_
 Tensor.bitwise_not = bitwise_not

@@ -27,7 +27,7 @@ class MomentsOp final : public Operator<Context> {
   USE_OPERATOR_FUNCTIONS;
 
   void RunOnDevice() override {
-    DispatchHelper<dtypes::Accumulated>::Call(this, Input(0));
+    DispatchHelper<dtypes::Floating>::Call(this, Input(0));
   }
 
   template <typename T>

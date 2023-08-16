@@ -38,7 +38,7 @@ __mlu_entry__ void _MomentumSGD(
     __memcpy(y + i, Y, N_ram * sizeof(T), NRAM2GDRAM);
     // Update "y_copy".
     if (y_copy != nullptr) {
-      math::utils::Convert((CopyT*)scratch, Y, N_ram);
+      convert::To((CopyT*)scratch, Y, N_ram);
       __memcpy(y_copy + i, scratch, N_ram * sizeof(CopyT), NRAM2GDRAM);
     }
   }
@@ -74,7 +74,7 @@ __mlu_entry__ void _NesterovSGD(
     __memcpy(y + i, Y, N_ram * sizeof(T), NRAM2GDRAM);
     // Update "y_copy".
     if (y_copy != nullptr) {
-      math::utils::Convert((CopyT*)scratch, Y, N_ram);
+      convert::To((CopyT*)scratch, Y, N_ram);
       __memcpy(y_copy + i, scratch, N_ram * sizeof(CopyT), NRAM2GDRAM);
     }
   }
@@ -82,37 +82,39 @@ __mlu_entry__ void _NesterovSGD(
 
 } // namespace
 
-#define DEFINE_KERNEL_LAUNCHER(name, T, CopyT)                     \
-  template <>                                                      \
-  void name<T, CopyT, MLUContext>(                                 \
-      const int N,                                                 \
-      const float lr,                                              \
-      const float momentum,                                        \
-      const float wd,                                              \
-      const T* x,                                                  \
-      const T* g,                                                  \
-      T* m,                                                        \
-      T* y,                                                        \
-      CopyT* y_copy,                                               \
-      MLUContext* ctx) {                                           \
-    _##name<<<                                                     \
-        MLU_BLOCKS(N, BLOCK_THREADS),                              \
-        CNRT_FUNC_TYPE_BLOCK,                                      \
-        ctx->mlu_stream()>>>(                                      \
-        N,                                                         \
-        T(lr),                                                     \
-        T(momentum),                                               \
-        T(wd),                                                     \
-        x,                                                         \
-        g,                                                         \
-        m,                                                         \
-        y,                                                         \
-        reinterpret_cast<math::ScalarType<CopyT>::type*>(y_copy)); \
+#define DEFINE_KERNEL_LAUNCHER(name, T, CopyT)                        \
+  template <>                                                         \
+  void name<T, CopyT, MLUContext>(                                    \
+      const int N,                                                    \
+      const float lr,                                                 \
+      const float momentum,                                           \
+      const float wd,                                                 \
+      const T* x,                                                     \
+      const T* g,                                                     \
+      T* m,                                                           \
+      T* y,                                                           \
+      CopyT* y_copy,                                                  \
+      MLUContext* ctx) {                                              \
+    _##name<<<                                                        \
+        MLU_BLOCKS(N, BLOCK_THREADS),                                 \
+        CNRT_FUNC_TYPE_BLOCK,                                         \
+        ctx->mlu_stream()>>>(                                         \
+        N,                                                            \
+        T(lr),                                                        \
+        T(momentum),                                                  \
+        T(wd),                                                        \
+        x,                                                            \
+        g,                                                            \
+        m,                                                            \
+        y,                                                            \
+        reinterpret_cast<math::Traits<CopyT>::scalar_type*>(y_copy)); \
   }
 
 DEFINE_KERNEL_LAUNCHER(MomentumSGD, float, float16);
+DEFINE_KERNEL_LAUNCHER(MomentumSGD, float, bfloat16);
 DEFINE_KERNEL_LAUNCHER(MomentumSGD, float, float);
 DEFINE_KERNEL_LAUNCHER(NesterovSGD, float, float16);
+DEFINE_KERNEL_LAUNCHER(NesterovSGD, float, bfloat16);
 DEFINE_KERNEL_LAUNCHER(NesterovSGD, float, float);
 #undef DEFINE_KERNEL_LAUNCHER
 

@@ -19,11 +19,9 @@ from __future__ import division
 from __future__ import print_function
 
 import pathlib
-import sys
+import pickle
 
-from dragon.core.util import six
-
-PICKLE_MODULE = six.moves.pickle
+PICKLE_MODULE = pickle
 DEFAULT_PROTOCOL = 2
 
 
@@ -96,9 +94,7 @@ def _save(obj, f, pickle_module, pickle_protocol):
 def _with_file_like(f, mode, body):
     """Execute a body function with a file object for f."""
     new_fd = False
-    if isinstance(f, str) or \
-            (sys.version_info[0] == 2 and isinstance(f, unicode)) or \
-            (sys.version_info[0] == 3 and isinstance(f, pathlib.Path)):
+    if isinstance(f, str) or isinstance(f, pathlib.Path):
         new_fd = True
         f = open(f, mode)
     try:

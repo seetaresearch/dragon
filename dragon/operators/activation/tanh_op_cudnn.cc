@@ -12,10 +12,10 @@ void CuDNNTanhOp<Context>::DoRunWithType() {
   CUDNN_CHECK(cudnnActivationForward(
       ctx()->cudnn_handle(),
       act_desc_,
-      CuDNNType<T>::one,
+      CuDNNTraits<T>::one,
       input_desc_,
       X.template data<T, Context>(),
-      CuDNNType<T>::zero,
+      CuDNNTraits<T>::zero,
       input_desc_,
       Y->ReshapeLike(X)->template mutable_data<T, Context>()));
 }
@@ -28,14 +28,14 @@ void CuDNNTanhGradientOp<Context>::DoRunWithType() {
   CUDNN_CHECK(cudnnActivationBackward(
       ctx()->cudnn_handle(),
       this->act_desc_,
-      CuDNNType<T>::one,
+      CuDNNTraits<T>::one,
       this->input_desc_,
       Y.template data<T, Context>(),
       this->input_desc_,
       dY.template data<T, Context>(),
       this->input_desc_,
       Y.template data<T, Context>(),
-      CuDNNType<T>::zero,
+      CuDNNTraits<T>::zero,
       this->input_desc_,
       dX->ReshapeLike(Y)->template mutable_data<T, Context>()));
 }

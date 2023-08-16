@@ -8,22 +8,22 @@ namespace dragon {
 template <class Context>
 template <typename T>
 void BatchNormOp<Context>::RunTraining() {
-  using ParamT = typename math::AccumulatorType<T>::type;
-  INITIALIZE_TENSOR_VIA_SPEC(Input(1), vec64_t({C_}), ParamT);
-  INITIALIZE_TENSOR_VIA_SPEC(Input(2), vec64_t({C_}), ParamT);
-  INITIALIZE_TENSOR_VIA_SPEC(Input(3), vec64_t({C_}), ParamT);
-  INITIALIZE_TENSOR_VIA_SPEC(Input(4), vec64_t({C_}), ParamT);
+  using AccT = typename math::Traits<T>::accumulator_type;
+  INITIALIZE_TENSOR_VIA_SPEC(Input(1), vec64_t({C_}), AccT);
+  INITIALIZE_TENSOR_VIA_SPEC(Input(2), vec64_t({C_}), AccT);
+  INITIALIZE_TENSOR_VIA_SPEC(Input(3), vec64_t({C_}), AccT);
+  INITIALIZE_TENSOR_VIA_SPEC(Input(4), vec64_t({C_}), AccT);
 
   auto* X_mu = Output("X_mu")->Reshape({C_});
   auto* X_rsig = Output("X_rsig")->Reshape({C_});
   auto* X_params = Output("X_params")->Reshape({C_ * 2});
 
   auto* x = Input(0).template data<T, Context>();
-  auto* rm = Input(3).template mutable_data<ParamT, Context>();
-  auto* rv = Input(4).template mutable_data<ParamT, Context>();
-  auto* mu = X_mu->template mutable_data<ParamT, Context>();
-  auto* rsig = X_rsig->template mutable_data<ParamT, Context>();
-  auto* params = X_params->template mutable_data<ParamT, Context>();
+  auto* rm = Input(3).template mutable_data<AccT, Context>();
+  auto* rv = Input(4).template mutable_data<AccT, Context>();
+  auto* mu = X_mu->template mutable_data<AccT, Context>();
+  auto* rsig = X_rsig->template mutable_data<AccT, Context>();
+  auto* params = X_params->template mutable_data<AccT, Context>();
 
   // Compute moments.
   if (sync_stats_ > 0) {
@@ -75,8 +75,8 @@ void BatchNormOp<Context>::RunTraining() {
       x,
       mu,
       rsig,
-      Input(1).template data<ParamT, Context>(), // gamma
-      Input(2).template data<ParamT, Context>(), // beta
+      Input(1).template data<AccT, Context>(), // gamma
+      Input(2).template data<AccT, Context>(), // beta
       params,
       params, /* params + C_ */
       Output(0)->template mutable_data<T, Context>(),
@@ -86,15 +86,15 @@ void BatchNormOp<Context>::RunTraining() {
 template <class Context>
 template <typename T>
 void BatchNormOp<Context>::RunInference() {
-  using ParamT = typename math::AccumulatorType<T>::type;
-  INITIALIZE_TENSOR_VIA_SPEC(Input(1), vec64_t({C_}), ParamT);
-  INITIALIZE_TENSOR_VIA_SPEC(Input(2), vec64_t({C_}), ParamT);
-  INITIALIZE_TENSOR_VIA_SPEC(Input(3), vec64_t({C_}), ParamT);
-  INITIALIZE_TENSOR_VIA_SPEC(Input(4), vec64_t({C_}), ParamT);
+  using AccT = typename math::Traits<T>::accumulator_type;
+  INITIALIZE_TENSOR_VIA_SPEC(Input(1), vec64_t({C_}), AccT);
+  INITIALIZE_TENSOR_VIA_SPEC(Input(2), vec64_t({C_}), AccT);
+  INITIALIZE_TENSOR_VIA_SPEC(Input(3), vec64_t({C_}), AccT);
+  INITIALIZE_TENSOR_VIA_SPEC(Input(4), vec64_t({C_}), AccT);
 
   auto* X_params = Output("X_params")->Reshape({C_ * 3});
-  auto* rv = Input(4).template data<ParamT, Context>();
-  auto* params = X_params->template mutable_data<ParamT, Context>();
+  auto* rv = Input(4).template data<AccT, Context>();
+  auto* params = X_params->template mutable_data<AccT, Context>();
 
   // Compute stddev from variance.
   math::InvStd(C_, epsilon_, rv, params, ctx());
@@ -106,10 +106,10 @@ void BatchNormOp<Context>::RunInference() {
       S_,
       data_format(),
       Input(0).template data<T, Context>(),
-      Input(3).template data<ParamT, Context>(),
+      Input(3).template data<AccT, Context>(),
       params,
-      Input(1).template data<ParamT, Context>(), // gamma
-      Input(2).template data<ParamT, Context>(), // beta
+      Input(1).template data<AccT, Context>(), // gamma
+      Input(2).template data<AccT, Context>(), // beta
       params, /* params + C_ */
       params, /* params + C_ * 2 */
       Output(0)->template mutable_data<T, Context>(),
@@ -119,17 +119,17 @@ void BatchNormOp<Context>::RunInference() {
 template <class Context>
 template <typename T>
 void BatchNormGradientOp<Context>::RunTraining() {
-  using ParamT = typename math::AccumulatorType<T>::type;
+  using AccT = typename math::Traits<T>::accumulator_type;
   auto *dX = Output(0), *dW = Output(1), *dB = Output(2);
   auto &X_mu = Input("X_mu"), &X_rsig = Input("X_rsig");
   auto* X_params = Output("X_params")->Reshape({C_ * 2});
 
   auto* x = Input(0).template data<T, Context>();
-  auto* gamma = Input(1).template data<ParamT, Context>();
+  auto* gamma = Input(1).template data<AccT, Context>();
   auto* dy = Input(4).template data<T, Context>();
-  auto* mu = X_mu.template data<ParamT, Context>();
-  auto* rsig = X_rsig.template data<ParamT, Context>();
-  auto* params = X_params->template mutable_data<ParamT, Context>();
+  auto* mu = X_mu.template data<AccT, Context>();
+  auto* rsig = X_rsig.template data<AccT, Context>();
+  auto* params = X_params->template mutable_data<AccT, Context>();
 
   // Gradient w.r.t. affine transformation.
   kernels::BatchNormWGrad(
@@ -150,7 +150,7 @@ void BatchNormGradientOp<Context>::RunTraining() {
     math::Copy(
         C_,
         params,
-        dW->Reshape({C_})->template mutable_data<ParamT, Context>(),
+        dW->Reshape({C_})->template mutable_data<AccT, Context>(),
         ctx());
   }
 
@@ -161,7 +161,7 @@ void BatchNormGradientOp<Context>::RunTraining() {
         C_, // x_offset
         0, // y_offset
         params,
-        dB->Reshape({C_})->template mutable_data<ParamT, Context>(),
+        dB->Reshape({C_})->template mutable_data<AccT, Context>(),
         ctx());
   }
 
@@ -195,16 +195,16 @@ void BatchNormGradientOp<Context>::RunTraining() {
 template <class Context>
 template <typename T>
 void BatchNormGradientOp<Context>::RunInference() {
-  using ParamT = typename math::AccumulatorType<T>::type;
+  using AccT = typename math::Traits<T>::accumulator_type;
   auto *dX = Output(0), *dW = Output(1), *dB = Output(2);
   auto* X_params = Output("X_params")->Reshape({C_});
 
-  auto* rv = Input(3).template data<ParamT, Context>();
-  auto* params = X_params->template mutable_data<ParamT, Context>();
-  ParamT *dgamma = nullptr, *dbeta = nullptr;
+  auto* rv = Input(3).template data<AccT, Context>();
+  auto* params = X_params->template mutable_data<AccT, Context>();
+  AccT *dgamma = nullptr, *dbeta = nullptr;
   if (dW->has_name() || dB->has_name()) {
-    dgamma = dW->Reshape({C_})->template mutable_data<ParamT, Context>();
-    dbeta = dB->Reshape({C_})->template mutable_data<ParamT, Context>();
+    dgamma = dW->Reshape({C_})->template mutable_data<AccT, Context>();
+    dbeta = dB->Reshape({C_})->template mutable_data<AccT, Context>();
   }
 
   // Compute stddev from variance.
@@ -217,9 +217,9 @@ void BatchNormGradientOp<Context>::RunInference() {
       S_,
       data_format(),
       Input(0).template data<T, Context>(), // x
-      Input(2).template data<ParamT, Context>(), // mu
+      Input(2).template data<AccT, Context>(), // mu
       params, // rsig
-      Input(1).template data<ParamT, Context>(), // gamma
+      Input(1).template data<AccT, Context>(), // gamma
       Input(4).template data<T, Context>(), // dy
       dgamma,
       dbeta,

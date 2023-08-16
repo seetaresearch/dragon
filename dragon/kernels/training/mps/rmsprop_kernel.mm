@@ -105,6 +105,7 @@ INSTANTIATE_KERNEL(RMSprop, float, half);
   }
 
 DEFINE_KERNEL_LAUNCHER(RMSprop, float, float16);
+DEFINE_KERNEL_LAUNCHER(RMSprop, float, bfloat16);
 DEFINE_KERNEL_LAUNCHER(RMSprop, float, float);
 DEFINE_KERNEL_LAUNCHER(RMSprop, double, double);
 #undef DEFINE_KERNEL_LAUNCHER

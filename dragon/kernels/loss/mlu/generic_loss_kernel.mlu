@@ -23,7 +23,7 @@ __mlu_entry__ void _MaskLoss(
     __memcpy(L, loss + i, N_ram * sizeof(InputT), GDRAM2NRAM);
     __memcpy(Y, target + i, N_ram * sizeof(TargetT), GDRAM2NRAM);
     __bang_ne_scalar(Y, Y, ignore_index, N_ram);
-    math::utils::Convert(scratch, Y, N_ram);
+    convert::To(scratch, Y, N_ram);
     __bang_mul(L, L, scratch, N_ram);
     __memcpy(loss + i, L, N_ram * sizeof(InputT), NRAM2GDRAM);
   }

@@ -37,7 +37,9 @@ class ChannelNormOp final : public Operator<Context> {
   }
   USE_OPERATOR_FUNCTIONS;
 
-  void RunOnDevice() override;
+  void RunOnDevice() override {
+    DispatchHelper<dtypes::Numerical>::Call(this, Input(0));
+  }
 
   template <typename Tx, typename Ty>
   void DoRunWithTypeAndCast();
@@ -49,8 +51,6 @@ class ChannelNormOp final : public Operator<Context> {
   Tensor X_mean_, X_std_;
   DECLARE_OP_REPEATED_ARG(int64_t, perm);
 };
-
-DEFINE_OP_REPEATED_ARG(int64_t, ChannelNormOp, perm);
 
 } // namespace dragon
 

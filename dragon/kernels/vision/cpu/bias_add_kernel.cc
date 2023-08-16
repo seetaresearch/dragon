@@ -1,5 +1,5 @@
 #include "dragon/kernels/vision/op_kernels.h"
-#include "dragon/utils/device/common_eigen.h"
+#include "dragon/utils/math_functions.h"
 
 namespace dragon {
 
@@ -32,35 +32,26 @@ void _BiasAdd(
 
 } // namespace
 
-template <>
-void BiasAdd<float16, CPUContext>(
-    const int N,
-    const int S,
-    const int C,
-    const float16* x,
-    const float16* bias,
-    float16* y,
-    CPUContext* ctx) {
-  CPU_FP16_NOT_SUPPORTED;
-}
-
-#define DEFINE_KERNEL_LAUNCHER(T)  \
-  template <>                      \
-  void BiasAdd<T, CPUContext>(     \
-      const int N,                 \
-      const int S,                 \
-      const int C,                 \
-      const T* x,                  \
-      const T* bias,               \
-      T* y,                        \
-      CPUContext* ctx) {           \
-    _BiasAdd(N, S, C, x, bias, y); \
+#define DEFINE_KERNEL_LAUNCHER(T)                                         \
+  template <>                                                             \
+  void BiasAdd<T, CPUContext>(                                            \
+      const int N,                                                        \
+      const int S,                                                        \
+      const int C,                                                        \
+      const T* x,                                                         \
+      const T* bias,                                                      \
+      T* y,                                                               \
+      CPUContext* ctx) {                                                  \
+    using EigenT = math::Traits<T>::eigen_type;                           \
+    _BiasAdd(N, S, C, (const EigenT*)x, (const EigenT*)bias, (EigenT*)y); \
   }
 
 DEFINE_KERNEL_LAUNCHER(uint8_t);
 DEFINE_KERNEL_LAUNCHER(int8_t);
 DEFINE_KERNEL_LAUNCHER(int);
 DEFINE_KERNEL_LAUNCHER(int64_t);
+DEFINE_KERNEL_LAUNCHER(float16);
+DEFINE_KERNEL_LAUNCHER(bfloat16);
 DEFINE_KERNEL_LAUNCHER(float);
 DEFINE_KERNEL_LAUNCHER(double);
 #undef DEFINE_KERNEL_LAUNCHER

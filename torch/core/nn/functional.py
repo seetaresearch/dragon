@@ -823,44 +823,6 @@ def ctc_loss(input, target, padding_mask=-1, reduction='mean'):
         padding_mask=padding_mask, reduction=reduction.upper())
 
 
-def depthwise_conv2d(
-    input,
-    weight,
-    bias=None,
-    stride=1,
-    padding=0,
-    dilation=1,
-):
-    """Apply 2d depthwise convolution to input.
-
-    Parameters
-    ----------
-    input : dragon.vm.torch.Tensor
-        The input tensor.
-    weight : dragon.vm.torch.Tensor
-        The weight tensor.
-    bias : dragon.vm.torch.Tensor, optional
-        The bias tensor.
-    stride : Sequence[int], default=1
-        The stride of convolution window.
-    padding : Sequence[int], default=0
-        The zero padding size.
-    dilation : Sequence[int], default=1
-        The rate of dilated kernel.
-
-    Returns
-    -------
-    dragon.vm.torch.Tensor
-        The output tensor.
-
-    See Also
-    --------
-    `torch.nn.DepthwiseConv2d(...)`_
-
-    """
-    return _conv('DepthwiseConv', utils._pair, **locals())
-
-
 def dropout(input, p=0.5, training=True, inplace=False):
     """Set elements of the input to zero randomly.
     `[Srivastava et.al, 2014] <http://jmlr.org/papers/v15/srivastava14a.html>`_.

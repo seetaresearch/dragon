@@ -23,7 +23,9 @@ class NonZeroOp final : public Operator<Context> {
   SIMPLE_CTOR_DTOR(NonZeroOp);
   USE_OPERATOR_FUNCTIONS;
 
-  void RunOnDevice() override;
+  void RunOnDevice() override {
+    DispatchHelper<dtypes::Generic>::Call(this, Input(0));
+  }
 
   template <typename T>
   void DoRunWithType();

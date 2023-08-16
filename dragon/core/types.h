@@ -19,11 +19,6 @@
 
 #include "dragon/core/typeid.h"
 
-#ifndef HFLT_MAX
-#define HFLT_MAX 65504.F
-#define HFLT_MIN 6.10e-5F
-#endif
-
 namespace dragon {
 
 typedef std::vector<int> vec32_t;
@@ -33,10 +28,18 @@ typedef std::vector<int64_t> vec64_t;
 typedef struct __declspec(align(2)) {
   unsigned short x;
 } float16;
+
+typedef struct __declspec(align(2)) {
+  unsigned short x;
+} bfloat16;
 #else
 typedef struct {
   unsigned short x;
 } __attribute__((aligned(2))) float16;
+
+typedef struct {
+  unsigned short x;
+} __attribute__((aligned(2))) bfloat16;
 #endif
 
 /*! \brief Order in which the values are laid out in memory */
@@ -57,19 +60,19 @@ namespace dtypes {
 template <typename... Types>
 struct TypesBase {};
 
+// clang-format off
+
 /*! \brief Generic types */
-using Generic =
-    TypesBase<bool, uint8_t, int8_t, int, int64_t, float16, float, double>;
+using Generic = TypesBase<bool, uint8_t, int8_t, int, int64_t, float16, bfloat16, float, double>;
 
 /*! \brief Numerical types */
-using Numerical =
-    TypesBase<uint8_t, int8_t, int, int64_t, float16, float, double>;
+using Numerical = TypesBase<uint8_t, int8_t, int, int64_t, float16, bfloat16, float, double>;
 
 /*! \brief Unsigned types */
 using Unsigned = TypesBase<uint8_t>;
 
 /*! \brief Signed types */
-using Signed = TypesBase<int8_t, int, int64_t, float16, float, double>;
+using Signed = TypesBase<int8_t, int, int64_t, float16, bfloat16, float, double>;
 
 /*! \brief Bitwise types */
 using Bitwise = TypesBase<bool, uint8_t, int8_t, int, int64_t>;
@@ -78,13 +81,15 @@ using Bitwise = TypesBase<bool, uint8_t, int8_t, int, int64_t>;
 using Integral = TypesBase<uint8_t, int8_t, int, int64_t>;
 
 /*! \brief Floating types */
-using Floating = TypesBase<float16, float, double>;
+using Floating = TypesBase<float16, bfloat16, float, double>;
 
 /*! \brief Accumulated types */
-using Accumulated = TypesBase<int, int64_t, float16, float, double>;
+using Accumulated = TypesBase<int, int64_t, float16, bfloat16, float, double>;
 
 /*! \brief Loss types */
 using Loss = TypesBase<float, double>;
+
+// clang-format on
 
 /*! \brief Convert the type string to meta */
 inline const TypeMeta& to_meta(const std::string& type) {
@@ -96,6 +101,7 @@ inline const TypeMeta& to_meta(const std::string& type) {
       {"int32", TypeMeta::Make<int>()},
       {"int64", TypeMeta::Make<int64_t>()},
       {"float16", TypeMeta::Make<float16>()},
+      {"bfloat16", TypeMeta::Make<bfloat16>()},
       {"float32", TypeMeta::Make<float>()},
       {"float64", TypeMeta::Make<double>()},
       {"string", TypeMeta::Make<std::string>()},
@@ -114,6 +120,7 @@ inline const std::string& to_string(const TypeMeta& type) {
       {TypeMeta::Id<int>(), "int32"},
       {TypeMeta::Id<int64_t>(), "int64"},
       {TypeMeta::Id<float16>(), "float16"},
+      {TypeMeta::Id<bfloat16>(), "bfloat16"},
       {TypeMeta::Id<float>(), "float32"},
       {TypeMeta::Id<double>(), "float64"},
       {TypeMeta::Id<std::string>(), "string"},

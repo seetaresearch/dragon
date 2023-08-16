@@ -28,9 +28,11 @@ def get_build_info():
     * cpu_features
     * cuda_version
     * cudnn_version
+    * nccl_version
     * mps_version
     * cnrt_version
     * cnnl_version
+    * cncl_version
     * is_cuda_build
     * is_mps_build
     * is_mlu_build

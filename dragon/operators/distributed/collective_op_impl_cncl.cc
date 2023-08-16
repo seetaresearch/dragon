@@ -126,6 +126,7 @@ cnclDataType_t CNCLCollectiveOpImpl::data_type() {
       {TypeMeta::Id<int8_t>(), cnclInt8},
       {TypeMeta::Id<int>(), cnclInt32},
       {TypeMeta::Id<float16>(), cnclFloat16},
+      {TypeMeta::Id<bfloat16>(), cnclBfloat16},
       {TypeMeta::Id<float>(), cnclFloat32},
   };
   auto it = m.find(TypeMeta::Id<T>());
@@ -154,6 +155,7 @@ INSTANTIATE_API(uint8_t);
 INSTANTIATE_API(int);
 INSTANTIATE_API(int64_t);
 INSTANTIATE_API(float16);
+INSTANTIATE_API(bfloat16);
 INSTANTIATE_API(float);
 INSTANTIATE_API(double);
 #undef INSTANTIATE_API

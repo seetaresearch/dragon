@@ -30,10 +30,9 @@ class DLPackWrapper {
     void* data = nullptr;
     auto* memory = tensor_->memory(true);
     auto* dtype_ptr = dtypes::to_dlpack(tensor_->meta());
-    if (dtype_ptr == nullptr) {
-      LOG(FATAL) << "Type <" << ::dragon::dtypes::to_string(tensor_->meta())
-                 << "> is not supported by DLPack.";
-    }
+    CHECK(dtype_ptr) << "\nUnsupported "
+                     << ::dragon::dtypes::to_string(tensor_->meta())
+                     << " tensor to dlpack.";
     DLContext ctx;
     auto nbytes = tensor_->nbytes();
     switch (opt.device_type()) {

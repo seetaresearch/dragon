@@ -7,15 +7,15 @@ namespace dragon {
 template <class Context>
 template <typename T>
 void LayerNormOp<Context>::DoRunWithType() {
-  using ParamT = typename math::AccumulatorType<T>::type;
+  using AccT = typename math::Traits<T>::accumulator_type;
   auto &X = Input(0), *Y = Output(0);
   auto &W = Input(1), &B = Input(2);
   GET_OP_AXIS_ARG(axis, X.ndim(), -1);
 
   const auto N = X.count(0, axis);
   const auto C = X.count(axis);
-  INITIALIZE_TENSOR_VIA_SPEC(W, vec64_t({C}), ParamT);
-  INITIALIZE_TENSOR_VIA_SPEC(B, vec64_t({C}), ParamT);
+  INITIALIZE_TENSOR_VIA_SPEC(W, vec64_t({C}), AccT);
+  INITIALIZE_TENSOR_VIA_SPEC(B, vec64_t({C}), AccT);
   auto* X_mu = Output("X_mu")->Reshape({N});
   auto* X_rsig = Output("X_rsig")->Reshape({N});
 
@@ -24,10 +24,10 @@ void LayerNormOp<Context>::DoRunWithType() {
       C,
       epsilon_,
       X.template data<T, Context>(),
-      W.template data<ParamT, Context>(),
-      B.template data<ParamT, Context>(),
-      X_mu->template mutable_data<ParamT, Context>(),
-      X_rsig->template mutable_data<ParamT, Context>(),
+      W.template data<AccT, Context>(),
+      B.template data<AccT, Context>(),
+      X_mu->template mutable_data<AccT, Context>(),
+      X_rsig->template mutable_data<AccT, Context>(),
       Y->ReshapeLike(X)->template mutable_data<T, Context>(),
       ctx());
 }

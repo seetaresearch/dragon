@@ -1,8 +1,7 @@
 #include "dragon/utils/math/reduce.h"
-#include "dragon/utils/device/common_eigen.h"
 #include "dragon/utils/math/functional.h"
 #include "dragon/utils/math/transpose.h"
-#include "dragon/utils/math/utils.h"
+#include "dragon/utils/math/types.h"
 
 namespace dragon {
 
@@ -13,8 +12,10 @@ namespace {
 #define DEFINE_GLOBAL_REDUCE_FUNC(name, Expr)                                  \
   template <typename T>                                                        \
   void _GlobalReduce##name(const int N, const float scale, const T* x, T* y) { \
-    *y = ConstEigenVectorMap<T>(x, N).Expr();                                  \
-    if (scale != 1.f) y[0] *= T(scale);                                        \
+    using EigenT = typename math::Traits<T>::eigen_type;                       \
+    auto* y_alias = (EigenT*)y;                                                \
+    *y_alias = ConstEigenVectorMap<EigenT>((const EigenT*)x, N).Expr();        \
+    if (scale != 1.f) EigenVectorMap<EigenT>(y_alias, 1) *= EigenT(scale);     \
   }
 
 DEFINE_GLOBAL_REDUCE_FUNC(Max, maxCoeff);
@@ -28,9 +29,11 @@ DEFINE_GLOBAL_REDUCE_FUNC(L1, template lpNorm<1>);
   template <typename T>                                                      \
   void _RowwiseReduce##name(                                                 \
       const int rows, const int cols, const float scale, const T* x, T* y) { \
-    EigenVectorMap<T>(y, cols) =                                             \
-        ConstEigenMatrixMap<T>(x, cols, rows).rowwise().Expr();              \
-    if (scale != 1.f) EigenVectorMap<T>(y, cols) *= T(scale);                \
+    using EigenT = typename math::Traits<T>::eigen_type;                     \
+    ConstEigenMatrixMap<EigenT> X((const EigenT*)x, cols, rows);             \
+    EigenVectorMap<EigenT> Y((EigenT*)y, cols);                              \
+    Y = X.rowwise().Expr();                                                  \
+    if (scale != 1.f) Y *= EigenT(scale);                                    \
   }
 
 DEFINE_ROWWISE_REDUCE_FUNC(Max, maxCoeff);
@@ -44,9 +47,10 @@ DEFINE_ROWWISE_REDUCE_FUNC(L1, template lpNorm<1>);
   template <typename T>                                                      \
   void _ColwiseReduce##name(                                                 \
       const int rows, const int cols, const float scale, const T* x, T* y) { \
-    EigenVectorMap<T>(y, rows) =                                             \
-        ConstEigenMatrixMap<T>(x, cols, rows).colwise().Expr();              \
-    if (scale != 1.f) EigenVectorMap<T>(y, rows) *= T(scale);                \
+    using EigenT = typename math::Traits<T>::eigen_type;                     \
+    ConstEigenMatrixMap<EigenT> X((const EigenT*)x, cols, rows);             \
+    EigenVectorMap<T>(y, rows) = X.colwise().Expr();                         \
+    if (scale != 1.f) EigenVectorMap<T>(y, rows) *= EigenT(scale);           \
   }
 
 DEFINE_COLWISE_REDUCE_FUNC(Max, maxCoeff);
@@ -155,46 +159,31 @@ DEFINE_REDUCE_DISPATCHER(L1, math::AbsFunctor, math::PlusFunctor);
 
 } // namespace
 
-#define DEFINE_REDUCE_FUNC(name)                     \
-  template <>                                        \
-  DRAGON_API void Reduce##name<float16, CPUContext>( \
-      const int num_dims,                            \
-      const int64_t* dims,                           \
-      const int num_axes,                            \
-      const int64_t* axes,                           \
-      const float scale,                             \
-      const float16* x,                              \
-      float16* y,                                    \
-      CPUContext* ctx) {                             \
-    CPU_FP16_NOT_SUPPORTED;                          \
+#define DEFINE_REDUCE_FUNC(name, T)            \
+  template <>                                  \
+  DRAGON_API void Reduce##name<T, CPUContext>( \
+      const int num_dims,                      \
+      const int64_t* dims,                     \
+      const int num_axes,                      \
+      const int64_t* axes,                     \
+      const float scale,                       \
+      const T* x,                              \
+      T* y,                                    \
+      CPUContext* ctx) {                       \
+    CPU_UNSUPPORTED_DTYPE(T);                  \
   }
 
-DEFINE_REDUCE_FUNC(Max);
-DEFINE_REDUCE_FUNC(Min);
-DEFINE_REDUCE_FUNC(Sum);
-DEFINE_REDUCE_FUNC(SumSqr);
-DEFINE_REDUCE_FUNC(L1);
+DEFINE_REDUCE_FUNC(Max, float16);
+DEFINE_REDUCE_FUNC(Max, bfloat16);
+DEFINE_REDUCE_FUNC(Min, float16);
+DEFINE_REDUCE_FUNC(Min, bfloat16);
+DEFINE_REDUCE_FUNC(Sum, float16);
+DEFINE_REDUCE_FUNC(Sum, bfloat16);
+DEFINE_REDUCE_FUNC(SumSqr, float16);
+DEFINE_REDUCE_FUNC(SumSqr, bfloat16);
+DEFINE_REDUCE_FUNC(L1, float16);
+DEFINE_REDUCE_FUNC(L1, bfloat16);
 #undef DEFINE_REDUCE_FUNC
-
-template <>
-DRAGON_API void Sum<float16, CPUContext>(
-    const int N,
-    const float alpha,
-    const float16* x,
-    float16* y,
-    CPUContext* ctx) {
-  CPU_FP16_NOT_SUPPORTED;
-}
-
-template <>
-DRAGON_API float16 Sum<float16, CPUContext>(
-    const int N,
-    const float alpha,
-    const float16* x,
-    CPUContext* ctx) {
-  CPU_FP16_NOT_SUPPORTED;
-  return float16();
-}
 
 #define DEFINE_REDUCE_FUNC(name, T, kInit)                   \
   template <>                                                \
@@ -221,18 +210,18 @@ DRAGON_API float16 Sum<float16, CPUContext>(
         y);                                                  \
   }
 
-DEFINE_REDUCE_FUNC(Max, uint8_t, std::numeric_limits<uint8_t>::lowest());
-DEFINE_REDUCE_FUNC(Max, int8_t, std::numeric_limits<int8_t>::lowest());
-DEFINE_REDUCE_FUNC(Max, int, std::numeric_limits<int>::lowest());
-DEFINE_REDUCE_FUNC(Max, int64_t, std::numeric_limits<int64_t>::lowest());
-DEFINE_REDUCE_FUNC(Max, float, std::numeric_limits<float>::lowest());
-DEFINE_REDUCE_FUNC(Max, double, std::numeric_limits<double>::lowest());
-DEFINE_REDUCE_FUNC(Min, uint8_t, std::numeric_limits<uint8_t>::max());
-DEFINE_REDUCE_FUNC(Min, int8_t, std::numeric_limits<int8_t>::max());
-DEFINE_REDUCE_FUNC(Min, int, std::numeric_limits<int>::max());
-DEFINE_REDUCE_FUNC(Min, int64_t, std::numeric_limits<int64_t>::max());
-DEFINE_REDUCE_FUNC(Min, float, std::numeric_limits<float>::max());
-DEFINE_REDUCE_FUNC(Min, double, std::numeric_limits<double>::max());
+DEFINE_REDUCE_FUNC(Max, uint8_t, math::Traits<uint8_t>::Lowest());
+DEFINE_REDUCE_FUNC(Max, int8_t, math::Traits<int8_t>::Lowest());
+DEFINE_REDUCE_FUNC(Max, int, math::Traits<int>::Lowest());
+DEFINE_REDUCE_FUNC(Max, int64_t, math::Traits<int64_t>::Lowest());
+DEFINE_REDUCE_FUNC(Max, float, math::Traits<float>::Lowest());
+DEFINE_REDUCE_FUNC(Max, double, math::Traits<double>::Lowest());
+DEFINE_REDUCE_FUNC(Min, uint8_t, math::Traits<uint8_t>::Max());
+DEFINE_REDUCE_FUNC(Min, int8_t, math::Traits<int8_t>::Max());
+DEFINE_REDUCE_FUNC(Min, int, math::Traits<int>::Max());
+DEFINE_REDUCE_FUNC(Min, int64_t, math::Traits<int64_t>::Max());
+DEFINE_REDUCE_FUNC(Min, float, math::Traits<float>::Max());
+DEFINE_REDUCE_FUNC(Min, double, math::Traits<double>::Max());
 DEFINE_REDUCE_FUNC(Sum, int, int(0));
 DEFINE_REDUCE_FUNC(Sum, int64_t, int64_t(0));
 DEFINE_REDUCE_FUNC(Sum, float, 0.f);
@@ -249,18 +238,22 @@ DEFINE_REDUCE_FUNC(L1, double, 0.);
   template <>                                                              \
   DRAGON_API void Sum<T, CPUContext>(                                      \
       const int N, const float scale, const T* x, T* y, CPUContext* ctx) { \
-    T val = ConstEigenVectorArrayMap<T>(x, N).sum();                       \
-    *y = val * T(scale);                                                   \
+    vec64_t dims = {N}, axes = {0};                                        \
+    math::ReduceSum(1, dims.data(), 1, axes.data(), scale, x, y, ctx);     \
   }                                                                        \
   template <>                                                              \
   DRAGON_API T Sum<T, CPUContext>(                                         \
       const int N, const float scale, const T* x, CPUContext* ctx) {       \
-    T val = ConstEigenVectorArrayMap<T>(x, N).sum();                       \
-    return val * T(scale);                                                 \
+    T ret;                                                                 \
+    vec64_t dims = {N}, axes = {0};                                        \
+    math::ReduceSum(1, dims.data(), 1, axes.data(), scale, x, &ret, ctx);  \
+    return ret;                                                            \
   }
 
 DEFINE_SUM_FUNC(int);
 DEFINE_SUM_FUNC(int64_t);
+DEFINE_SUM_FUNC(float16);
+DEFINE_SUM_FUNC(bfloat16);
 DEFINE_SUM_FUNC(float);
 DEFINE_SUM_FUNC(double);
 #undef DEFINE_SUM_FUNC

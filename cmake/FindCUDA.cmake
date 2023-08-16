@@ -19,16 +19,22 @@ include(${PROJECT_SOURCE_DIR}/cmake/SelectCudaArch.cmake)
 
 # Set NVCC flags.
 CUDA_SELECT_NVCC_ARCH_FLAGS(CUDA_ARCH ${CUDA_ARCH})
-set(CUDA_NVCC_FLAGS "${CUDA_NVCC_FLAGS} ${CUDA_ARCH}")
+set(CUDA_NVCC_FLAGS "${CUDA_NVCC_FLAGS} ${CUDA_ARCH} -Wno-deprecated-gpu-targets")
 if (MSVC)
   # Suppress all warnings for msvc compiler.
   set(CUDA_NVCC_FLAGS "${CUDA_NVCC_FLAGS} -w")
 else()
   set(CUDA_NVCC_FLAGS "${CUDA_NVCC_FLAGS} -std=c++14")
+  set(CUDA_NVCC_FLAGS "${CUDA_NVCC_FLAGS} --compiler-options -Wno-attributes")
+endif()
+if (CUDA_VERSION VERSION_GREATER "10.5" AND CUDA_VERSION VERSION_LESS "11.5")
+  # Use custom CUB (>=1.13.0) for bfloat16 features with CUDA (<11.5)
+  set(CUDA_NVCC_FLAGS "${CUDA_NVCC_FLAGS} -I ${THIRD_PARTY_DIR}/cub")
+  add_definitions(-DTHRUST_IGNORE_CUB_VERSION_CHECK)
 endif()
 
 # Set include directory.
-set(CUDA_INCLUDE_DIR ${CUDA_INCLUDE_DIRS} ${THIRD_PARTY_DIR}/cub)
+set(CUDA_INCLUDE_DIR ${CUDA_INCLUDE_DIRS})
 
 # Set libraries.
 if (EXISTS "${CUDA_TOOLKIT_ROOT_DIR}/lib64")

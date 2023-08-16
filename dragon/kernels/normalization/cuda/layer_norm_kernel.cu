@@ -26,7 +26,7 @@ __global__ void _LayerNorm(
   CUDA_2D_KERNEL_LOOP1(i, N) {
     AccT m_val = AccT(0), v_val = AccT(0);
     CUDA_2D_KERNEL_LOOP2(j, C) {
-      const AccT val = convert::To<AccT>(__ldg(x + i * C + j));
+      const AccT val = math::utils::LDGC<AccT>(x + (i * C + j));
       m_val += val;
       v_val += val * val;
     }
@@ -39,41 +39,42 @@ __global__ void _LayerNorm(
     __syncthreads();
     CUDA_2D_KERNEL_LOOP2(j, C) {
       const int index = i * C + j;
-      m_val = convert::To<AccT>(__ldg(x + index));
+      m_val = math::utils::LDGC<AccT>(x + index);
       m_val = (m_val - block_mu) * block_rsig;
-      y[index] = convert::To<T>(fma(m_val, __ldg(gamma + j), __ldg(beta + j)));
+      y[index] = fma(m_val, __ldg(gamma + j), __ldg(beta + j));
     }
   }
 }
 
 } // namespace
 
-#define DEFINE_KERNEL_LAUNCHER(T, AccT)                        \
-  template <>                                                  \
-  void LayerNorm<T, AccT, CUDAContext>(                        \
-      const int N,                                             \
-      const int C,                                             \
-      const float epsilon,                                     \
-      const T* x,                                              \
-      const AccT* gamma,                                       \
-      const AccT* beta,                                        \
-      AccT* mu,                                                \
-      AccT* rsig,                                              \
-      T* y,                                                    \
-      CUDAContext* ctx) {                                      \
-    _LayerNorm<<<N, CUDA_THREADS, 0, ctx->cuda_stream()>>>(    \
-        N,                                                     \
-        C,                                                     \
-        AccT(epsilon),                                         \
-        reinterpret_cast<const math::ScalarType<T>::type*>(x), \
-        gamma,                                                 \
-        beta,                                                  \
-        mu,                                                    \
-        rsig,                                                  \
-        reinterpret_cast<math::ScalarType<T>::type*>(y));      \
+#define DEFINE_KERNEL_LAUNCHER(T, AccT)                           \
+  template <>                                                     \
+  void LayerNorm<T, AccT, CUDAContext>(                           \
+      const int N,                                                \
+      const int C,                                                \
+      const float epsilon,                                        \
+      const T* x,                                                 \
+      const AccT* gamma,                                          \
+      const AccT* beta,                                           \
+      AccT* mu,                                                   \
+      AccT* rsig,                                                 \
+      T* y,                                                       \
+      CUDAContext* ctx) {                                         \
+    _LayerNorm<<<N, CUDA_THREADS, 0, ctx->cuda_stream()>>>(       \
+        N,                                                        \
+        C,                                                        \
+        AccT(epsilon),                                            \
+        reinterpret_cast<const math::Traits<T>::scalar_type*>(x), \
+        gamma,                                                    \
+        beta,                                                     \
+        mu,                                                       \
+        rsig,                                                     \
+        reinterpret_cast<math::Traits<T>::scalar_type*>(y));      \
   }
 
 DEFINE_KERNEL_LAUNCHER(float16, float);
+DEFINE_KERNEL_LAUNCHER(bfloat16, float);
 DEFINE_KERNEL_LAUNCHER(float, float);
 DEFINE_KERNEL_LAUNCHER(double, double);
 #undef DEFINE_KERNEL_LAUNCHER

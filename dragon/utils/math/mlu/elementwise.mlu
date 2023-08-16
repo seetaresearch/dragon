@@ -121,7 +121,7 @@ __mlu_entry__ void _ApplyMask(
     const int N_ram = std::min(N - i, BLOCK_THREADS);
     __memcpy(Y, x + i, N_ram * sizeof(T), GDRAM2NRAM);
     __memcpy(M, mask + i, N_ram * sizeof(uint8_t), GDRAM2NRAM);
-    math::utils::Convert(X, M, N_ram);
+    convert::To(X, M, N_ram);
     __bang_mul_scalar(X, X, T(scale), N_ram);
     __bang_mul(Y, Y, X, N_ram);
     __memcpy(y + i, Y, N_ram * sizeof(T), NRAM2GDRAM);
@@ -211,7 +211,7 @@ _Div<float>(const int N, const float* a, const float* b, float* y) {
       __memcpy(Y, a + i, N_ram * sizeof(T), GDRAM2NRAM);                     \
       __memcpy(X, b + i, N_ram * sizeof(T), GDRAM2NRAM);                     \
       Func(Y, Y, X, N_ram);                                                  \
-      math::utils::Convert(Y_cast, Y, N_ram);                                \
+      convert::To(Y_cast, Y, N_ram);                                \
       __memcpy(y + i, Y_cast, N_ram, NRAM2GDRAM);                            \
     }                                                                        \
   }
@@ -226,44 +226,55 @@ DEFINE_BINARY_KERNEL(GreaterEqual, __bang_ge);
 
 } // namespace
 
-#define DEFINE_UNARY_FUNC(name, InputT, OutputT)                    \
-  template <>                                                       \
-  DRAGON_API void name<InputT, MLUContext>(                         \
-      const int N, const InputT* x, OutputT* y, MLUContext* ctx) {  \
-    _##name<<<                                                      \
-        MLU_BLOCKS(N, BLOCK_THREADS),                               \
-        CNRT_FUNC_TYPE_BLOCK,                                       \
-        ctx->mlu_stream()>>>(                                       \
-        N,                                                          \
-        reinterpret_cast<const math::ScalarType<InputT>::type*>(x), \
-        reinterpret_cast<math::ScalarType<OutputT>::type*>(y));     \
+#define DEFINE_UNARY_FUNC(name, InputT, OutputT)                       \
+  template <>                                                          \
+  DRAGON_API void name<InputT, MLUContext>(                            \
+      const int N, const InputT* x, OutputT* y, MLUContext* ctx) {     \
+    _##name<<<                                                         \
+        MLU_BLOCKS(N, BLOCK_THREADS),                                  \
+        CNRT_FUNC_TYPE_BLOCK,                                          \
+        ctx->mlu_stream()>>>(                                          \
+        N,                                                             \
+        reinterpret_cast<const math::Traits<InputT>::scalar_type*>(x), \
+        reinterpret_cast<math::Traits<OutputT>::scalar_type*>(y));     \
   }
 
 DEFINE_UNARY_FUNC(Neg, int8_t, int8_t);
 DEFINE_UNARY_FUNC(Neg, int, int);
 DEFINE_UNARY_FUNC(Neg, float16, float16);
+DEFINE_UNARY_FUNC(Neg, bfloat16, bfloat16);
 DEFINE_UNARY_FUNC(Neg, float, float);
 DEFINE_UNARY_FUNC(Abs, int8_t, int8_t);
 DEFINE_UNARY_FUNC(Abs, int, int);
 DEFINE_UNARY_FUNC(Abs, float16, float16);
+DEFINE_UNARY_FUNC(Abs, bfloat16, bfloat16);
 DEFINE_UNARY_FUNC(Abs, float, float);
 DEFINE_UNARY_FUNC(Square, float16, float16);
+DEFINE_UNARY_FUNC(Square, bfloat16, bfloat16);
 DEFINE_UNARY_FUNC(Square, float, float);
 DEFINE_UNARY_FUNC(Sign, float16, float16);
+DEFINE_UNARY_FUNC(Sign, bfloat16, bfloat16);
 DEFINE_UNARY_FUNC(Sign, float, float);
 DEFINE_UNARY_FUNC(Exp, float16, float16);
+DEFINE_UNARY_FUNC(Exp, bfloat16, bfloat16);
 DEFINE_UNARY_FUNC(Exp, float, float);
 DEFINE_UNARY_FUNC(Log, float16, float16);
+DEFINE_UNARY_FUNC(Log, bfloat16, bfloat16);
 DEFINE_UNARY_FUNC(Log, float, float);
 DEFINE_UNARY_FUNC(Inv, float16, float16);
+DEFINE_UNARY_FUNC(Inv, bfloat16, bfloat16);
 DEFINE_UNARY_FUNC(Inv, float, float);
+DEFINE_UNARY_FUNC(Sqrt, bfloat16, bfloat16);
 DEFINE_UNARY_FUNC(Sqrt, float16, float16);
 DEFINE_UNARY_FUNC(Sqrt, float, float);
 DEFINE_UNARY_FUNC(Rsqrt, float16, float16);
+DEFINE_UNARY_FUNC(Rsqrt, bfloat16, bfloat16);
 DEFINE_UNARY_FUNC(Rsqrt, float, float);
 DEFINE_UNARY_FUNC(Sin, float16, float16);
+DEFINE_UNARY_FUNC(Sin, bfloat16, bfloat16);
 DEFINE_UNARY_FUNC(Sin, float, float);
 DEFINE_UNARY_FUNC(Cos, float16, float16);
+DEFINE_UNARY_FUNC(Cos, bfloat16, bfloat16);
 DEFINE_UNARY_FUNC(Cos, float, float);
 DEFINE_UNARY_FUNC(Floor, float, float);
 DEFINE_UNARY_FUNC(Round, float, float);
@@ -299,11 +310,14 @@ DEFINE_UNARY_FUNC(Rsqrt, double, double);
 DEFINE_UNARY_FUNC(Sin, double, double);
 DEFINE_UNARY_FUNC(Cos, double, double);
 DEFINE_UNARY_FUNC(Ceil, float16, float16);
+DEFINE_UNARY_FUNC(Ceil, bfloat16, bfloat16);
 DEFINE_UNARY_FUNC(Ceil, float, float);
 DEFINE_UNARY_FUNC(Ceil, double, double);
 DEFINE_UNARY_FUNC(Floor, float16, float16);
+DEFINE_UNARY_FUNC(Floor, bfloat16, bfloat16);
 DEFINE_UNARY_FUNC(Floor, double, double);
 DEFINE_UNARY_FUNC(Round, float16, float16);
+DEFINE_UNARY_FUNC(Round, bfloat16, bfloat16);
 DEFINE_UNARY_FUNC(Round, double, double);
 #undef DEFINE_UNARY_FUNC
 
@@ -324,25 +338,6 @@ DEFINE_UNARY_FUNC(Round, double, double);
     }                                                                      \
   }
 
-template <>
-DRAGON_API void Set<float16, MLUContext>(
-    const int N,
-    const float16 value,
-    float16* y,
-    MLUContext* ctx) {
-  if (value.x == (unsigned short)0) {
-    CNRT_CHECK(cnrtMemsetAsync(y, 0, sizeof(float16) * N, ctx->mlu_stream()));
-  } else {
-    _Set<<<
-        MLU_BLOCKS(N, BLOCK_THREADS),
-        CNRT_FUNC_TYPE_BLOCK,
-        ctx->mlu_stream()>>>(
-        N,
-        (*reinterpret_cast<const half*>(&value)),
-        reinterpret_cast<half*>(y));
-  }
-}
-
 DEFINE_SET_FUNC(bool, int8_t, _Set);
 DEFINE_SET_FUNC(uint8_t, int8_t, _Set);
 DEFINE_SET_FUNC(int8_t, int8_t, _Set);
@@ -352,29 +347,51 @@ DEFINE_SET_FUNC(float, float, _Set);
 DEFINE_SET_FUNC(double, double, _Set_fallback);
 #undef DEFINE_SET_FUNC
 
-#define DEFINE_APPLY_MASK_FUNC(T)                              \
-  template <>                                                  \
-  DRAGON_API void ApplyMask<T, MLUContext>(                    \
-      const int N,                                             \
-      const float scale,                                       \
-      const uint8_t* mask,                                     \
-      const T* x,                                              \
-      T* y,                                                    \
-      MLUContext* ctx) {                                       \
-    _ApplyMask<<<                                              \
-        MLU_BLOCKS(N, BLOCK_THREADS),                          \
-        CNRT_FUNC_TYPE_BLOCK,                                  \
-        ctx->mlu_stream()>>>(                                  \
-        N,                                                     \
-        scale,                                                 \
-        mask,                                                  \
-        reinterpret_cast<const math::ScalarType<T>::type*>(x), \
-        reinterpret_cast<math::ScalarType<T>::type*>(y));      \
+#define DEFINE_SET_FUNC(T)                                                  \
+  template <>                                                               \
+  DRAGON_API void Set<T, MLUContext>(                                       \
+      const int N, const T value, T* y, MLUContext* ctx) {                  \
+    if (value.x == (unsigned short)0) {                                     \
+      CNRT_CHECK(cnrtMemsetAsync(y, 0, sizeof(T) * N, ctx->mlu_stream()));  \
+    } else {                                                                \
+      _Set<<<                                                               \
+          MLU_BLOCKS(N, BLOCK_THREADS),                                     \
+          CNRT_FUNC_TYPE_BLOCK,                                             \
+          ctx->mlu_stream()>>>(                                             \
+          N,                                                                \
+          (*reinterpret_cast<const math::Traits<T>::scalar_type*>(&value)), \
+          reinterpret_cast<math::Traits<T>::scalar_type*>(y));              \
+    }                                                                       \
+  }
+
+DEFINE_SET_FUNC(float16);
+DEFINE_SET_FUNC(bfloat16);
+#undef DEFINE_SET_FUNC
+
+#define DEFINE_APPLY_MASK_FUNC(T)                                 \
+  template <>                                                     \
+  DRAGON_API void ApplyMask<T, MLUContext>(                       \
+      const int N,                                                \
+      const float scale,                                          \
+      const uint8_t* mask,                                        \
+      const T* x,                                                 \
+      T* y,                                                       \
+      MLUContext* ctx) {                                          \
+    _ApplyMask<<<                                                 \
+        MLU_BLOCKS(N, BLOCK_THREADS),                             \
+        CNRT_FUNC_TYPE_BLOCK,                                     \
+        ctx->mlu_stream()>>>(                                     \
+        N,                                                        \
+        scale,                                                    \
+        mask,                                                     \
+        reinterpret_cast<const math::Traits<T>::scalar_type*>(x), \
+        reinterpret_cast<math::Traits<T>::scalar_type*>(y));      \
   }
 
 DEFINE_APPLY_MASK_FUNC(int8_t);
 DEFINE_APPLY_MASK_FUNC(int);
 DEFINE_APPLY_MASK_FUNC(float16);
+DEFINE_APPLY_MASK_FUNC(bfloat16);
 DEFINE_APPLY_MASK_FUNC(float);
 #undef DEFINE_APPLY_MASK_FUNC
 
@@ -406,14 +423,15 @@ DEFINE_APPLY_MASK_FUNC(double);
         CNRT_FUNC_TYPE_BLOCK,                                             \
         ctx->mlu_stream()>>>(                                             \
         N,                                                                \
-        convert::To<math::ScalarType<T>::type>(beta),                     \
-        reinterpret_cast<const math::ScalarType<T>::type*>(x),            \
-        reinterpret_cast<math::ScalarType<T>::type*>(y));                 \
+        convert::To<math::Traits<T>::scalar_type>(beta),                  \
+        reinterpret_cast<const math::Traits<T>::scalar_type*>(x),         \
+        reinterpret_cast<math::Traits<T>::scalar_type*>(y));              \
   }
 
 DEFINE_BIAS_FUNC(int8_t);
 DEFINE_BIAS_FUNC(int);
 DEFINE_BIAS_FUNC(float16);
+DEFINE_BIAS_FUNC(bfloat16);
 DEFINE_BIAS_FUNC(float);
 #undef DEFINE_BIAS_FUNC
 
@@ -440,12 +458,13 @@ DEFINE_BIAS_FUNC(double);
         CNRT_FUNC_TYPE_BLOCK,                                            \
         ctx->mlu_stream()>>>(                                            \
         N,                                                               \
-        convert::To<math::ScalarType<T>::type>(eps),                     \
-        reinterpret_cast<const math::ScalarType<T>::type*>(x),           \
-        reinterpret_cast<math::ScalarType<T>::type*>(y));                \
+        convert::To<math::Traits<T>::scalar_type>(eps),                  \
+        reinterpret_cast<const math::Traits<T>::scalar_type*>(x),        \
+        reinterpret_cast<math::Traits<T>::scalar_type*>(y));             \
   }
 
 DEFINE_INVSTD_FUNC(float16);
+DEFINE_INVSTD_FUNC(bfloat16);
 DEFINE_INVSTD_FUNC(float);
 #undef DEFINE_INVSTD_FUNC
 
@@ -460,22 +479,22 @@ DEFINE_INVSTD_FUNC(float);
 DEFINE_INVSTD_FUNC(double);
 #undef DEFINE_INVSTD_FUNC
 
-#define DEFINE_BINARY_FUNC(name, InputT, OutputT, Kernel)           \
-  template <>                                                       \
-  DRAGON_API void name<InputT, MLUContext>(                         \
-      const int N,                                                  \
-      const InputT* a,                                              \
-      const InputT* b,                                              \
-      OutputT* y,                                                   \
-      MLUContext* ctx) {                                            \
-    Kernel<<<                                                       \
-        MLU_BLOCKS(N, BLOCK_THREADS),                               \
-        CNRT_FUNC_TYPE_BLOCK,                                       \
-        ctx->mlu_stream()>>>(                                       \
-        N,                                                          \
-        reinterpret_cast<const math::ScalarType<InputT>::type*>(a), \
-        reinterpret_cast<const math::ScalarType<InputT>::type*>(b), \
-        reinterpret_cast<math::ScalarType<OutputT>::type*>(y));     \
+#define DEFINE_BINARY_FUNC(name, InputT, OutputT, Kernel)              \
+  template <>                                                          \
+  DRAGON_API void name<InputT, MLUContext>(                            \
+      const int N,                                                     \
+      const InputT* a,                                                 \
+      const InputT* b,                                                 \
+      OutputT* y,                                                      \
+      MLUContext* ctx) {                                               \
+    Kernel<<<                                                          \
+        MLU_BLOCKS(N, BLOCK_THREADS),                                  \
+        CNRT_FUNC_TYPE_BLOCK,                                          \
+        ctx->mlu_stream()>>>(                                          \
+        N,                                                             \
+        reinterpret_cast<const math::Traits<InputT>::scalar_type*>(a), \
+        reinterpret_cast<const math::Traits<InputT>::scalar_type*>(b), \
+        reinterpret_cast<math::Traits<OutputT>::scalar_type*>(y));     \
   }
 
 DEFINE_BINARY_FUNC(Add, uint8_t, uint8_t, _Add_fallback);
@@ -483,44 +502,56 @@ DEFINE_BINARY_FUNC(Add, int8_t, int8_t, _Add);
 DEFINE_BINARY_FUNC(Add, int, int, _Add);
 DEFINE_BINARY_FUNC(Add, int64_t, int64_t, _Add_fallback);
 DEFINE_BINARY_FUNC(Add, float16, float16, _Add);
+DEFINE_BINARY_FUNC(Add, bfloat16, bfloat16, _Add);
 DEFINE_BINARY_FUNC(Add, float, float, _Add);
 DEFINE_BINARY_FUNC(Sub, uint8_t, uint8_t, _Sub_fallback);
 DEFINE_BINARY_FUNC(Sub, int8_t, int8_t, _Sub);
 DEFINE_BINARY_FUNC(Sub, int, int, _Sub);
 DEFINE_BINARY_FUNC(Sub, int64_t, int64_t, _Sub_fallback);
 DEFINE_BINARY_FUNC(Sub, float16, float16, _Sub);
+DEFINE_BINARY_FUNC(Sub, bfloat16, bfloat16, _Sub);
 DEFINE_BINARY_FUNC(Sub, float, float, _Sub);
 DEFINE_BINARY_FUNC(Mul, uint8_t, uint8_t, _Mul_fallback);
 DEFINE_BINARY_FUNC(Mul, int8_t, int8_t, _Mul);
 DEFINE_BINARY_FUNC(Mul, int, int, _Mul);
 DEFINE_BINARY_FUNC(Mul, int64_t, int64_t, _Mul_fallback);
 DEFINE_BINARY_FUNC(Mul, float16, float16, _Mul);
+DEFINE_BINARY_FUNC(Mul, bfloat16, bfloat16, _Mul);
 DEFINE_BINARY_FUNC(Mul, float, float, _Mul);
 DEFINE_BINARY_FUNC(Div, uint8_t, uint8_t, _Div_fallback);
 DEFINE_BINARY_FUNC(Div, int8_t, int8_t, _Div_fallback);
 DEFINE_BINARY_FUNC(Div, int, int, _Div_fallback);
 DEFINE_BINARY_FUNC(Div, int64_t, int64_t, _Div_fallback);
 DEFINE_BINARY_FUNC(Div, float16, float16, _Div);
+DEFINE_BINARY_FUNC(Div, bfloat16, bfloat16, _Div);
 DEFINE_BINARY_FUNC(Div, float, float, _Div);
 DEFINE_BINARY_FUNC(Minimum, float16, float16, _Minimum);
+DEFINE_BINARY_FUNC(Minimum, bfloat16, bfloat16, _Minimum);
 DEFINE_BINARY_FUNC(Minimum, float, float, _Minimum);
 DEFINE_BINARY_FUNC(Maximum, float16, float16, _Maximum);
+DEFINE_BINARY_FUNC(Maximum, bfloat16, bfloat16, _Maximum);
 DEFINE_BINARY_FUNC(Maximum, float, float, _Maximum);
 DEFINE_BINARY_FUNC(Equal, int8_t, bool, _Equal);
 DEFINE_BINARY_FUNC(Equal, int, bool, _Equal);
 DEFINE_BINARY_FUNC(Equal, float16, bool, _Equal);
+DEFINE_BINARY_FUNC(Equal, bfloat16, bool, _Equal);
 DEFINE_BINARY_FUNC(Equal, float, bool, _Equal);
 DEFINE_BINARY_FUNC(NotEqual, int8_t, bool, _NotEqual);
 DEFINE_BINARY_FUNC(NotEqual, int, bool, _NotEqual);
 DEFINE_BINARY_FUNC(NotEqual, float16, bool, _NotEqual);
+DEFINE_BINARY_FUNC(NotEqual, bfloat16, bool, _NotEqual);
 DEFINE_BINARY_FUNC(NotEqual, float, bool, _NotEqual);
 DEFINE_BINARY_FUNC(Less, float16, bool, _Less);
+DEFINE_BINARY_FUNC(Less, bfloat16, bool, _Less);
 DEFINE_BINARY_FUNC(Less, float, bool, _Less);
 DEFINE_BINARY_FUNC(LessEqual, float16, bool, _LessEqual);
+DEFINE_BINARY_FUNC(LessEqual, bfloat16, bool, _LessEqual);
 DEFINE_BINARY_FUNC(LessEqual, float, bool, _LessEqual);
 DEFINE_BINARY_FUNC(Greater, float16, bool, _Greater);
+DEFINE_BINARY_FUNC(Greater, bfloat16, bool, _Greater);
 DEFINE_BINARY_FUNC(Greater, float, bool, _Greater);
 DEFINE_BINARY_FUNC(GreaterEqual, float16, bool, _GreaterEqual);
+DEFINE_BINARY_FUNC(GreaterEqual, bfloat16, bool, _GreaterEqual);
 DEFINE_BINARY_FUNC(GreaterEqual, float, bool, _GreaterEqual);
 #undef DEFINE_BINARY_FUNC
 

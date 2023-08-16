@@ -18,7 +18,7 @@ __global__ void _Dropout(
     uint8_t* mask) {
   CUDA_1D_KERNEL_LOOP(i, N) {
     const float alpha = float(mask[i] = (r[i] > ratio)) * scale;
-    y[i] = convert::To<T>(convert::To<float>(x[i]) * alpha);
+    y[i] = convert::To<float>(x[i]) * alpha;
   }
 }
 
@@ -35,7 +35,7 @@ __global__ void _DropPath(
   CUDA_1D_KERNEL_LOOP(index, NxC) {
     const int j = index / C;
     const float alpha = float(mask[j] = (r[j] > ratio)) * scale;
-    y[index] = convert::To<T>(convert::To<float>(x[index]) * alpha);
+    y[index] = convert::To<float>(x[index]) * alpha;
   }
 }
 
@@ -49,7 +49,7 @@ __global__ void _DropPathGrad(
     T* dx) {
   CUDA_1D_KERNEL_LOOP(index, NxC) {
     const float alpha = float(mask[index / C]) * scale;
-    dx[index] = convert::To<T>(convert::To<float>(dy[index]) * alpha);
+    dx[index] = convert::To<float>(dy[index]) * alpha;
   }
 }
 
@@ -71,12 +71,13 @@ __global__ void _DropPathGrad(
         ratio,                                                         \
         scale,                                                         \
         r,                                                             \
-        reinterpret_cast<const math::ScalarType<T>::type*>(x),         \
-        reinterpret_cast<math::ScalarType<T>::type*>(y),               \
+        reinterpret_cast<const math::Traits<T>::scalar_type*>(x),      \
+        reinterpret_cast<math::Traits<T>::scalar_type*>(y),            \
         mask);                                                         \
   }
 
 DEFINE_KERNEL_LAUNCHER(float16);
+DEFINE_KERNEL_LAUNCHER(bfloat16);
 DEFINE_KERNEL_LAUNCHER(float);
 DEFINE_KERNEL_LAUNCHER(double);
 #undef DEFINE_KERNEL_LAUNCHER
@@ -100,12 +101,13 @@ DEFINE_KERNEL_LAUNCHER(double);
         ratio,                                                            \
         scale,                                                            \
         r,                                                                \
-        reinterpret_cast<const math::ScalarType<T>::type*>(x),            \
-        reinterpret_cast<math::ScalarType<T>::type*>(y),                  \
+        reinterpret_cast<const math::Traits<T>::scalar_type*>(x),         \
+        reinterpret_cast<math::Traits<T>::scalar_type*>(y),               \
         mask);                                                            \
   }
 
 DEFINE_KERNEL_LAUNCHER(float16);
+DEFINE_KERNEL_LAUNCHER(bfloat16);
 DEFINE_KERNEL_LAUNCHER(float);
 DEFINE_KERNEL_LAUNCHER(double);
 #undef DEFINE_KERNEL_LAUNCHER
@@ -126,11 +128,12 @@ DEFINE_KERNEL_LAUNCHER(double);
         C,                                                                    \
         scale,                                                                \
         mask,                                                                 \
-        reinterpret_cast<const math::ScalarType<T>::type*>(dy),               \
-        reinterpret_cast<math::ScalarType<T>::type*>(dx));                    \
+        reinterpret_cast<const math::Traits<T>::scalar_type*>(dy),            \
+        reinterpret_cast<math::Traits<T>::scalar_type*>(dx));                 \
   }
 
 DEFINE_GRAD_KERNEL_LAUNCHER(float16);
+DEFINE_GRAD_KERNEL_LAUNCHER(bfloat16);
 DEFINE_GRAD_KERNEL_LAUNCHER(float);
 DEFINE_GRAD_KERNEL_LAUNCHER(double);
 #undef DEFINE_GRAD_KERNEL_LAUNCHER

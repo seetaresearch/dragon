@@ -236,11 +236,9 @@ void ConvOpBase<Context>::BwdBias(const T* dY, T* dB) {
   vec64_t dims, axes;
   const auto batch_size = Input(0).dim(0);
   if (data_format() == "NCHW") {
-    dims = {batch_size, out_channels_, out_dim_};
-    axes = {0, 2};
+    dims = {batch_size, out_channels_, out_dim_}, axes = {0, 2};
   } else if (data_format() == "NHWC") {
-    dims = {batch_size, out_dim_, out_channels_};
-    axes = {0, 1};
+    dims = {batch_size, out_dim_, out_channels_}, axes = {0, 1};
   }
   math::ReduceSum(3, dims.data(), 2, axes.data(), 1.f, dY, dB, ctx());
 }

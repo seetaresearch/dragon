@@ -227,11 +227,13 @@ DEFINE_KERNEL_LAUNCHER(ResizeLinear2d, false, int8_t, int8_t);
 DEFINE_KERNEL_LAUNCHER(ResizeLinear2d, false, int, int);
 DEFINE_KERNEL_LAUNCHER(ResizeLinear2d, false, int64_t, int64_t);
 DEFINE_KERNEL_LAUNCHER(ResizeLinear2d, false, float16, float16);
+DEFINE_KERNEL_LAUNCHER(ResizeLinear2d, false, bfloat16, bfloat16);
 DEFINE_KERNEL_LAUNCHER(ResizeLinear2d, false, float, float);
 DEFINE_KERNEL_LAUNCHER(ResizeLinear2d, false, double, double);
-DEFINE_KERNEL_LAUNCHER(ResizeLinear2dGrad, true, float16, float); // Grad
-DEFINE_KERNEL_LAUNCHER(ResizeLinear2dGrad, true, float, float); // Grad
-DEFINE_KERNEL_LAUNCHER(ResizeLinear2dGrad, true, double, float); // Grad
+DEFINE_KERNEL_LAUNCHER(ResizeLinear2dGrad, true, float16, float);
+DEFINE_KERNEL_LAUNCHER(ResizeLinear2dGrad, true, bfloat16, float);
+DEFINE_KERNEL_LAUNCHER(ResizeLinear2dGrad, true, float, float);
+DEFINE_KERNEL_LAUNCHER(ResizeLinear2dGrad, true, double, float);
 #undef DEFINE_KERNEL_LAUNCHER
 #undef DISPATCH_RESIZE_KERNEL
 

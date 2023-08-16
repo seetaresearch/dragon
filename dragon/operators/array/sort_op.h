@@ -25,7 +25,9 @@ class SortOp final : public Operator<Context> {
         descending_(OP_SINGLE_ARG(int64_t, "descending", 0)) {}
   USE_OPERATOR_FUNCTIONS;
 
-  void RunOnDevice() override;
+  void RunOnDevice() override {
+    DispatchHelper<dtypes::Numerical>::Call(this, Input(0));
+  }
 
   template <typename T>
   void DoRunWithType();

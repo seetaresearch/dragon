@@ -15,7 +15,7 @@ _ReciprocalGrad(const int N, const T* dy, const T* y, T* dx) {
   __nram__ T dX[BLOCK_THREADS], scratch[BLOCK_THREADS];
   MLU_1D_KERNEL_LOOP(i, N, BLOCK_THREADS) {
     const int N_ram = std::min(N - i, BLOCK_THREADS);
-    dx[i] = -dy[i] * math::utils::Square(y[i]);
+    dx[i] = -dy[i] * math::utils::Sqr(y[i]);
     __memcpy(scratch, y + i, N_ram * sizeof(T), GDRAM2NRAM);
     __bang_square(dX, scratch, N_ram);
     __memcpy(scratch, dy + i, N_ram * sizeof(T), GDRAM2NRAM);
@@ -78,18 +78,22 @@ __mlu_entry__ void _CosGrad(const int N, const T* dy, const T* x, T* dx) {
         CNRT_FUNC_TYPE_BLOCK,                                         \
         ctx->mlu_stream()>>>(                                         \
         N,                                                            \
-        reinterpret_cast<const math::ScalarType<T>::type*>(dy),       \
-        reinterpret_cast<const math::ScalarType<T>::type*>(x),        \
-        reinterpret_cast<math::ScalarType<T>::type*>(dx));            \
+        reinterpret_cast<const math::Traits<T>::scalar_type*>(dy),    \
+        reinterpret_cast<const math::Traits<T>::scalar_type*>(x),     \
+        reinterpret_cast<math::Traits<T>::scalar_type*>(dx));         \
   }
 
 DEFINE_GRAD_KERNEL_LAUNCHER(Reciprocal, float16);
+DEFINE_GRAD_KERNEL_LAUNCHER(Reciprocal, bfloat16);
 DEFINE_GRAD_KERNEL_LAUNCHER(Reciprocal, float);
 DEFINE_GRAD_KERNEL_LAUNCHER(Rsqrt, float16);
+DEFINE_GRAD_KERNEL_LAUNCHER(Rsqrt, bfloat16);
 DEFINE_GRAD_KERNEL_LAUNCHER(Rsqrt, float);
 DEFINE_GRAD_KERNEL_LAUNCHER(Sin, float16);
+DEFINE_GRAD_KERNEL_LAUNCHER(Sin, bfloat16);
 DEFINE_GRAD_KERNEL_LAUNCHER(Sin, float);
 DEFINE_GRAD_KERNEL_LAUNCHER(Cos, float16);
+DEFINE_GRAD_KERNEL_LAUNCHER(Cos, bfloat16);
 DEFINE_GRAD_KERNEL_LAUNCHER(Cos, float);
 #undef DEFINE_GRAD_KERNEL_LAUNCHER
 

@@ -139,9 +139,11 @@ INSTANTIATE_KERNEL(AdamW, float, half);
   }
 
 DEFINE_KERNEL_LAUNCHER(Adam, float, float16);
+DEFINE_KERNEL_LAUNCHER(Adam, float, bfloat16);
 DEFINE_KERNEL_LAUNCHER(Adam, float, float);
 DEFINE_KERNEL_LAUNCHER(Adam, double, double);
 DEFINE_KERNEL_LAUNCHER(AdamW, float, float16);
+DEFINE_KERNEL_LAUNCHER(AdamW, float, bfloat16);
 DEFINE_KERNEL_LAUNCHER(AdamW, float, float);
 DEFINE_KERNEL_LAUNCHER(AdamW, double, double);
 #undef DEFINE_KERNEL_LAUNCHER

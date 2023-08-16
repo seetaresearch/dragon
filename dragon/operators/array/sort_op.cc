@@ -20,21 +20,12 @@ void SortOp<Context>::DoRunWithType() {
       ctx());
 }
 
-template <class Context>
-void SortOp<Context>::RunOnDevice() {
-  DispatchHelper<dtypes::Numerical>::Call(this, Input(0));
-}
-
 DEPLOY_CPU_OPERATOR(Sort);
 #ifdef USE_CUDA
 DEPLOY_CUDA_OPERATOR(Sort);
 #endif
 
-OPERATOR_SCHEMA(Sort)
-    /* X */
-    .NumInputs(1)
-    /* Y_value, Y_index */
-    .NumOutputs(2);
+OPERATOR_SCHEMA(Sort).NumInputs(1).NumOutputs(2);
 
 NO_GRADIENT(Sort);
 

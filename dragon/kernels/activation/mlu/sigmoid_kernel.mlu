@@ -29,27 +29,28 @@ _HardSigmoidGrad(const int N, const T alpha, const T* dy, const T* y, T* dx) {
 
 } // namespace
 
-#define DEFINE_GRAD_KERNEL_LAUNCHER(T)                          \
-  template <>                                                   \
-  void HardSigmoidGrad<T, MLUContext>(                          \
-      const int N,                                              \
-      const float alpha,                                        \
-      const T* dy,                                              \
-      const T* y,                                               \
-      T* dx,                                                    \
-      MLUContext* ctx) {                                        \
-    _HardSigmoidGrad<<<                                         \
-        MLU_BLOCKS(N, BLOCK_THREADS),                           \
-        CNRT_FUNC_TYPE_BLOCK,                                   \
-        ctx->mlu_stream()>>>(                                   \
-        N,                                                      \
-        convert::To<math::ScalarType<T>::type>(alpha),          \
-        reinterpret_cast<const math::ScalarType<T>::type*>(dy), \
-        reinterpret_cast<const math::ScalarType<T>::type*>(y),  \
-        reinterpret_cast<math::ScalarType<T>::type*>(dx));      \
+#define DEFINE_GRAD_KERNEL_LAUNCHER(T)                             \
+  template <>                                                      \
+  void HardSigmoidGrad<T, MLUContext>(                             \
+      const int N,                                                 \
+      const float alpha,                                           \
+      const T* dy,                                                 \
+      const T* y,                                                  \
+      T* dx,                                                       \
+      MLUContext* ctx) {                                           \
+    _HardSigmoidGrad<<<                                            \
+        MLU_BLOCKS(N, BLOCK_THREADS),                              \
+        CNRT_FUNC_TYPE_BLOCK,                                      \
+        ctx->mlu_stream()>>>(                                      \
+        N,                                                         \
+        convert::To<math::Traits<T>::scalar_type>(alpha),          \
+        reinterpret_cast<const math::Traits<T>::scalar_type*>(dy), \
+        reinterpret_cast<const math::Traits<T>::scalar_type*>(y),  \
+        reinterpret_cast<math::Traits<T>::scalar_type*>(dx));      \
   }
 
 DEFINE_GRAD_KERNEL_LAUNCHER(float16);
+DEFINE_GRAD_KERNEL_LAUNCHER(bfloat16);
 DEFINE_GRAD_KERNEL_LAUNCHER(float);
 #undef DEFINE_GRAD_KERNEL_LAUNCHER
 #undef BLOCK_THREADS

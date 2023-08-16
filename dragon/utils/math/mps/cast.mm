@@ -67,14 +67,15 @@ INSTANTIATE_CAST_KERNEL(double, double);
     [encoder release];                                             \
   }
 
-#define DEFINE_CAST_FUNC_TO(T)  \
-  DEFINE_CAST_FUNC(T, bool);    \
-  DEFINE_CAST_FUNC(T, uint8_t); \
-  DEFINE_CAST_FUNC(T, int8_t);  \
-  DEFINE_CAST_FUNC(T, int);     \
-  DEFINE_CAST_FUNC(T, int64_t); \
-  DEFINE_CAST_FUNC(T, float16); \
-  DEFINE_CAST_FUNC(T, float);   \
+#define DEFINE_CAST_FUNC_TO(T)   \
+  DEFINE_CAST_FUNC(T, bool);     \
+  DEFINE_CAST_FUNC(T, uint8_t);  \
+  DEFINE_CAST_FUNC(T, int8_t);   \
+  DEFINE_CAST_FUNC(T, int);      \
+  DEFINE_CAST_FUNC(T, int64_t);  \
+  DEFINE_CAST_FUNC(T, float16);  \
+  DEFINE_CAST_FUNC(T, bfloat16); \
+  DEFINE_CAST_FUNC(T, float);    \
   DEFINE_CAST_FUNC(T, double);
 
 DEFINE_CAST_FUNC_TO(bool);
@@ -83,6 +84,7 @@ DEFINE_CAST_FUNC_TO(int8_t);
 DEFINE_CAST_FUNC_TO(int);
 DEFINE_CAST_FUNC_TO(int64_t);
 DEFINE_CAST_FUNC_TO(float16);
+DEFINE_CAST_FUNC_TO(bfloat16);
 DEFINE_CAST_FUNC_TO(float);
 DEFINE_CAST_FUNC_TO(double);
 #undef DEFINE_CAST_FUNC

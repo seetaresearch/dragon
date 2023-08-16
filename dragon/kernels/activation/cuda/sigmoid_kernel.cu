@@ -7,125 +7,177 @@ namespace kernels {
 
 namespace {
 
-template <typename T>
-__global__ void _Sigmoid(const int N, const T* x, T* y) {
-  CUDA_1D_KERNEL_LOOP(i, N) {
-    y[i] = T(1) / (T(1) + exp(-x[i]));
-  }
-}
-
-template <>
-__global__ void _Sigmoid<half>(const int N, const half* x, half* y) {
-  CUDA_1D_KERNEL_LOOP(i, N) {
-    y[i] = __float2half(1.f / (1.f + exp(-__half2float(x[i]))));
-  }
-}
-
-template <>
-__global__ void _Sigmoid<half2>(const int N, const half2* x, half2* y) {
-  CUDA_1D_KERNEL_LOOP(i, N) {
-    const float2 val = __half22float2(x[i]);
-    y[i] =
-        __floats2half2_rn(1.f / (1.f + exp(-val.x)), 1.f / (1.f + exp(-val.y)));
-  }
-}
+/*
+ * Sigmoid Kernels
+ */
 
 template <typename T, typename AccT>
-__global__ void
-_HardSigmoid(const int N, const AccT alpha, const AccT beta, const T* x, T* y) {
+__global__ void _Sigmoid(const int N, const T* x, T* y) {
   CUDA_1D_KERNEL_LOOP(i, N) {
-    const AccT s_val = fma(convert::To<AccT>(x[i]), alpha, beta);
-    y[i] = convert::To<T>(max(AccT(0), min(AccT(1), s_val)));
+    y[i] = AccT(1) / (AccT(1) + exp(-convert::To<AccT>(x[i])));
   }
 }
+
+template <typename T>
+__global__ void
+_HardSigmoid(const int N, const T alpha, const T beta, const T* x, T* y) {
+  CUDA_1D_KERNEL_LOOP(i, N) {
+    y[i] = max(T(0), min(fma(x[i], alpha, beta), T(1)));
+  }
+}
+
+template <>
+__global__ void _HardSigmoid<half>(
+    const int N,
+    const half alpha,
+    const half beta,
+    const half* x,
+    half* y) {
+#if __CUDA_ARCH__ >= 530
+  CUDA_1D_KERNEL_LOOP(i, N) {
+    y[i] = __hfma_sat(x[i], alpha, beta);
+  }
+#else
+  const float kAlpha = __half2float(alpha);
+  const float kBeta = __half2float(beta);
+  CUDA_1D_KERNEL_LOOP(i, N) {
+    y[i] = max(min(fmaf(__half2float(x[i]), kAlpha, kBeta), 1.f), 0.f);
+  }
+#endif
+}
+
+template <>
+__global__ void _HardSigmoid<nv_bfloat16>(
+    const int N,
+    const nv_bfloat16 alpha,
+    const nv_bfloat16 beta,
+    const nv_bfloat16* x,
+    nv_bfloat16* y) {
+#if __CUDA_ARCH__ >= 800
+  CUDA_1D_KERNEL_LOOP(i, N) {
+    y[i] = __hfma_sat(x[i], alpha, beta);
+  }
+#else
+  const float kAlpha = __bfloat162float(alpha);
+  const float kBeta = __bfloat162float(beta);
+  CUDA_1D_KERNEL_LOOP(i, N) {
+    y[i] = max(min(fmaf(__bfloat162float(x[i]), kAlpha, kBeta), 1.f), 0.f);
+  }
+#endif
+}
+
+/*
+ * SigmoidGrad Kernels
+ */
 
 template <typename T>
 __global__ void _SigmoidGrad(const int N, const T* dy, const T* y, T* dx) {
   CUDA_1D_KERNEL_LOOP(i, N) {
-    dx[i] = dy[i] * __ldg(y + i) * (1 - __ldg(y + i));
+    dx[i] = dy[i] * __ldg(y + i) * (T(1) - __ldg(y + i));
   }
 }
 
 template <>
 __global__ void
 _SigmoidGrad<half>(const int N, const half* dy, const half* y, half* dx) {
+#if __CUDA_ARCH__ >= 530
+  const half kOne = __float2half(1.f);
+  CUDA_1D_KERNEL_LOOP(i, N) {
+    dx[i] = dy[i] * __ldg(y + i) * (kOne - __ldg(y + i));
+  }
+#else
   CUDA_1D_KERNEL_LOOP(i, N) {
     const float val = __half2float(y[i]);
-    dx[i] = __float2half(__half2float(dy[i]) * val * (1.f - val));
+    dx[i] = __half2float(dy[i]) * val * (1.f - val);
   }
-} // SigmoidGrad
+#endif
+}
 
 template <>
-__global__ void
-_SigmoidGrad<half2>(const int N, const half2* dy, const half2* y, half2* dx) {
-  CUDA_1D_KERNEL_LOOP(i, N) {
-    const float2 val = __half22float2(y[i]);
-    const float2 grad = __half22float2(dy[i]);
-    dx[i] = __floats2half2_rn(
-        grad.x * val.x * (1.f - val.x), grad.y * val.y * (1.f - val.y));
-  }
-} // SigmoidGrad
-
-template <typename T, typename AccT>
-__global__ void _HardSigmoidGrad(
+__global__ void _SigmoidGrad<nv_bfloat16>(
     const int N,
-    const AccT alpha,
-    const T* dy,
-    const T* y,
-    T* dx) {
+    const nv_bfloat16* dy,
+    const nv_bfloat16* y,
+    nv_bfloat16* dx) {
+#if __CUDA_ARCH__ >= 800
+  const nv_bfloat16 kOne = __float2bfloat16(1.f);
   CUDA_1D_KERNEL_LOOP(i, N) {
-    const AccT val = convert::To<AccT>(y[i]);
-    dx[i] = convert::To<T>(
-        (val > AccT(0) && val < AccT(1)) ? convert::To<AccT>(dy[i]) * alpha
-                                         : AccT(0));
+    dx[i] = dy[i] * __ldg(y + i) * (kOne - __ldg(y + i));
   }
+#else
+  CUDA_1D_KERNEL_LOOP(i, N) {
+    const float val = __bfloat162float(y[i]);
+    dx[i] = __bfloat162float(dy[i]) * val * (1.f - val);
+  }
+#endif
+}
+
+template <typename T>
+__global__ void
+_HardSigmoidGrad(const int N, const T alpha, const T* dy, const T* y, T* dx) {
+  CUDA_1D_KERNEL_LOOP(i, N) {
+    dx[i] = (__ldg(y + i) > T(0) && __ldg(y + i) < T(1)) ? dy[i] * alpha : T(0);
+  }
+}
+
+template <>
+__global__ void _HardSigmoidGrad<half>(
+    const int N,
+    const half alpha,
+    const half* dy,
+    const half* y,
+    half* dx) {
+  const half kZero = __float2half(0.f);
+#if __CUDA_ARCH__ >= 530
+  const half kOne = __float2half(1.f);
+  CUDA_1D_KERNEL_LOOP(i, N) {
+    dx[i] = __ldg(y + i) > kZero && __ldg(y + i) < kOne ? dy[i] * alpha : kZero;
+  }
+#else
+  const float kAlpha = __half2float(alpha);
+  CUDA_1D_KERNEL_LOOP(i, N) {
+    const float val = __half2float(y[i]);
+    dx[i] = val > 0.f && val < 1.f ? __float2half(__half2float(dy[i]) * kAlpha)
+                                   : kZero;
+  }
+#endif
+}
+
+template <>
+__global__ void _HardSigmoidGrad<nv_bfloat16>(
+    const int N,
+    const nv_bfloat16 alpha,
+    const nv_bfloat16* dy,
+    const nv_bfloat16* y,
+    nv_bfloat16* dx) {
+  const nv_bfloat16 kZero = __float2bfloat16(0.f);
+#if __CUDA_ARCH__ >= 800
+  const nv_bfloat16 kOne = __float2bfloat16(1.f);
+  CUDA_1D_KERNEL_LOOP(i, N) {
+    dx[i] = __ldg(y + i) > kZero && __ldg(y + i) < kOne ? dy[i] * alpha : kZero;
+  }
+#else
+  const float kAlpha = __bfloat162float(alpha);
+  CUDA_1D_KERNEL_LOOP(i, N) {
+    const float val = __bfloat162float(y[i]);
+    dx[i] = val > 0.f && val < 1.f
+        ? __float2bfloat16(__bfloat162float(dy[i]) * kAlpha)
+        : kZero;
+  }
+#endif
 }
 
 } // namespace
 
-template <>
-void Sigmoid<float16, CUDAContext>(
-    const int N,
-    const float16* x,
-    float16* y,
-    CUDAContext* ctx) {
-  if ((N & 1) == 0) {
-    _Sigmoid<<<CUDA_BLOCKS(N >> 1), CUDA_THREADS, 0, ctx->cuda_stream()>>>(
-        N >> 1, reinterpret_cast<const half2*>(x), reinterpret_cast<half2*>(y));
-  } else {
-    _Sigmoid<<<CUDA_BLOCKS(N), CUDA_THREADS, 0, ctx->cuda_stream()>>>(
-        N, reinterpret_cast<const half*>(x), reinterpret_cast<half*>(y));
-  }
-}
-
-template <>
-void SigmoidGrad<float16, CUDAContext>(
-    const int N,
-    const float16* dy,
-    const float16* y,
-    float16* dx,
-    CUDAContext* ctx) {
-  if ((N & 1) == 0) {
-    _SigmoidGrad<<<CUDA_BLOCKS(N >> 1), CUDA_THREADS, 0, ctx->cuda_stream()>>>(
-        N >> 1,
-        reinterpret_cast<const half2*>(dy),
-        reinterpret_cast<const half2*>(y),
-        reinterpret_cast<half2*>(dx));
-  } else {
-    _SigmoidGrad<<<CUDA_BLOCKS(N), CUDA_THREADS, 0, ctx->cuda_stream()>>>(
-        N,
-        reinterpret_cast<const half*>(dy),
-        reinterpret_cast<const half*>(y),
-        reinterpret_cast<half*>(dx));
-  }
-} // SigmoidGrad
-
-#define DEFINE_KERNEL_LAUNCHER(T)                                      \
-  template <>                                                          \
-  void Sigmoid<T, CUDAContext>(                                        \
-      const int N, const T* x, T* y, CUDAContext* ctx) {               \
-    _Sigmoid<<<CUDA_BLOCKS(N), CUDA_THREADS, 0, ctx->cuda_stream()>>>( \
-        N, x, y);                                                      \
+#define DEFINE_KERNEL_LAUNCHER(T)                                             \
+  template <>                                                                 \
+  void Sigmoid<T, CUDAContext>(                                               \
+      const int N, const T* x, T* y, CUDAContext* ctx) {                      \
+    _Sigmoid<math::Traits<T>::scalar_type, math::Traits<T>::accumulator_type> \
+        <<<CUDA_BLOCKS(N), CUDA_THREADS, 0, ctx->cuda_stream()>>>(            \
+            N,                                                                \
+            reinterpret_cast<const math::Traits<T>::scalar_type*>(x),         \
+            reinterpret_cast<math::Traits<T>::scalar_type*>(y));              \
   }
 
 #define DEFINE_GRAD_KERNEL_LAUNCHER(T)                                     \
@@ -133,11 +185,18 @@ void SigmoidGrad<float16, CUDAContext>(
   void SigmoidGrad<T, CUDAContext>(                                        \
       const int N, const T* dy, const T* y, T* dx, CUDAContext* ctx) {     \
     _SigmoidGrad<<<CUDA_BLOCKS(N), CUDA_THREADS, 0, ctx->cuda_stream()>>>( \
-        N, dy, y, dx);                                                     \
+        N,                                                                 \
+        reinterpret_cast<const math::Traits<T>::scalar_type*>(dy),         \
+        reinterpret_cast<const math::Traits<T>::scalar_type*>(y),          \
+        reinterpret_cast<math::Traits<T>::scalar_type*>(dx));              \
   }
 
+DEFINE_KERNEL_LAUNCHER(float16);
+DEFINE_KERNEL_LAUNCHER(bfloat16);
 DEFINE_KERNEL_LAUNCHER(float);
 DEFINE_KERNEL_LAUNCHER(double);
+DEFINE_GRAD_KERNEL_LAUNCHER(float16);
+DEFINE_GRAD_KERNEL_LAUNCHER(bfloat16);
 DEFINE_GRAD_KERNEL_LAUNCHER(float);
 DEFINE_GRAD_KERNEL_LAUNCHER(double);
 #undef DEFINE_KERNEL_LAUNCHER
@@ -154,10 +213,10 @@ DEFINE_GRAD_KERNEL_LAUNCHER(double);
       CUDAContext* ctx) {                                                  \
     _HardSigmoid<<<CUDA_BLOCKS(N), CUDA_THREADS, 0, ctx->cuda_stream()>>>( \
         N,                                                                 \
-        convert::To<math::AccumulatorType<T>::type>(alpha),                \
-        convert::To<math::AccumulatorType<T>::type>(beta),                 \
-        reinterpret_cast<const math::ScalarType<T>::type*>(x),             \
-        reinterpret_cast<math::ScalarType<T>::type*>(y));                  \
+        convert::To<math::Traits<T>::scalar_type>(alpha),                  \
+        convert::To<math::Traits<T>::scalar_type>(beta),                   \
+        reinterpret_cast<const math::Traits<T>::scalar_type*>(x),          \
+        reinterpret_cast<math::Traits<T>::scalar_type*>(y));               \
   }
 
 #define DEFINE_GRAD_KERNEL_LAUNCHER(T)                                         \
@@ -171,16 +230,18 @@ DEFINE_GRAD_KERNEL_LAUNCHER(double);
       CUDAContext* ctx) {                                                      \
     _HardSigmoidGrad<<<CUDA_BLOCKS(N), CUDA_THREADS, 0, ctx->cuda_stream()>>>( \
         N,                                                                     \
-        convert::To<math::AccumulatorType<T>::type>(alpha),                    \
-        reinterpret_cast<const math::ScalarType<T>::type*>(dy),                \
-        reinterpret_cast<const math::ScalarType<T>::type*>(y),                 \
-        reinterpret_cast<math::ScalarType<T>::type*>(dx));                     \
+        convert::To<math::Traits<T>::scalar_type>(alpha),                      \
+        reinterpret_cast<const math::Traits<T>::scalar_type*>(dy),             \
+        reinterpret_cast<const math::Traits<T>::scalar_type*>(y),              \
+        reinterpret_cast<math::Traits<T>::scalar_type*>(dx));                  \
   }
 
 DEFINE_KERNEL_LAUNCHER(float16);
+DEFINE_KERNEL_LAUNCHER(bfloat16);
 DEFINE_KERNEL_LAUNCHER(float);
 DEFINE_KERNEL_LAUNCHER(double);
 DEFINE_GRAD_KERNEL_LAUNCHER(float16);
+DEFINE_GRAD_KERNEL_LAUNCHER(bfloat16);
 DEFINE_GRAD_KERNEL_LAUNCHER(float);
 DEFINE_GRAD_KERNEL_LAUNCHER(double);
 #undef DEFINE_KERNEL_LAUNCHER

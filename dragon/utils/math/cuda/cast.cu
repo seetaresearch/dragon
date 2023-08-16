@@ -17,14 +17,14 @@ __global__ void _Cast(const int N, const InputT* x, OutputT* y) {
 
 } // namespace
 
-#define DEFINE_CAST_FUNC(InputT, OutputT)                           \
-  template <>                                                       \
-  DRAGON_API void Cast<InputT, OutputT, CUDAContext>(               \
-      const int N, const InputT* x, OutputT* y, CUDAContext* ctx) { \
-    _Cast<<<CUDA_BLOCKS(N), CUDA_THREADS, 0, ctx->cuda_stream()>>>( \
-        N,                                                          \
-        reinterpret_cast<const ScalarType<InputT>::type*>(x),       \
-        reinterpret_cast<ScalarType<OutputT>::type*>(y));           \
+#define DEFINE_CAST_FUNC(InputT, OutputT)                              \
+  template <>                                                          \
+  DRAGON_API void Cast<InputT, OutputT, CUDAContext>(                  \
+      const int N, const InputT* x, OutputT* y, CUDAContext* ctx) {    \
+    _Cast<<<CUDA_BLOCKS(N), CUDA_THREADS, 0, ctx->cuda_stream()>>>(    \
+        N,                                                             \
+        reinterpret_cast<const math::Traits<InputT>::scalar_type*>(x), \
+        reinterpret_cast<math::Traits<OutputT>::scalar_type*>(y));     \
   }
 
 #define DEFINE_UNSUPPORTED_CAST_FUNC(InputT, OutputT)                    \
@@ -60,14 +60,25 @@ DEFINE_CAST_FUNC_TO(int64_t);
 DEFINE_CAST_FUNC_TO(float);
 DEFINE_CAST_FUNC_TO(double);
 DEFINE_CAST_FUNC(float16, float16);
+DEFINE_CAST_FUNC(float16, bfloat16);
 DEFINE_CAST_FUNC(float16, float);
+DEFINE_CAST_FUNC(bfloat16, float16);
+DEFINE_CAST_FUNC(bfloat16, bfloat16);
+DEFINE_CAST_FUNC(bfloat16, float);
 DEFINE_CAST_FUNC(float, float16);
+DEFINE_CAST_FUNC(float, bfloat16);
 DEFINE_UNSUPPORTED_CAST_FUNC(bool, float16);
+DEFINE_UNSUPPORTED_CAST_FUNC(bool, bfloat16);
 DEFINE_UNSUPPORTED_CAST_FUNC(uint8_t, float16);
+DEFINE_UNSUPPORTED_CAST_FUNC(uint8_t, bfloat16);
 DEFINE_UNSUPPORTED_CAST_FUNC(int8_t, float16);
+DEFINE_UNSUPPORTED_CAST_FUNC(int8_t, bfloat16);
 DEFINE_UNSUPPORTED_CAST_FUNC(int, float16);
+DEFINE_UNSUPPORTED_CAST_FUNC(int, bfloat16);
 DEFINE_UNSUPPORTED_CAST_FUNC(int64_t, float16);
+DEFINE_UNSUPPORTED_CAST_FUNC(int64_t, bfloat16);
 DEFINE_UNSUPPORTED_CAST_FUNC(double, float16);
+DEFINE_UNSUPPORTED_CAST_FUNC(double, bfloat16);
 #undef DEFINE_CAST_FUNC
 #undef DEFINE_UNSUPPORTED_CAST_FUNC
 #undef DEFINE_CAST_FUNC_TO

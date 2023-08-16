@@ -26,9 +26,7 @@ void _RMSprop(
     const T vi = v[i] = std::fma(alpha, v[i], (T(1) - alpha) * gi * gi);
     const T mi = m[i] = std::fma(momentum, m[i], gi / (std::sqrt(vi) + eps));
     y[i] -= lr * mi;
-    if (y_copy != nullptr) {
-      y_copy[i] = convert::To<CopyT>(y[i]);
-    }
+    if (y_copy != nullptr) y_copy[i] = convert::To<CopyT>(y[i]);
   }
 }
 
@@ -66,6 +64,7 @@ void _RMSprop(
   }
 
 DEFINE_KERNEL_LAUNCHER(RMSprop, float, float16);
+DEFINE_KERNEL_LAUNCHER(RMSprop, float, bfloat16);
 DEFINE_KERNEL_LAUNCHER(RMSprop, float, float);
 DEFINE_KERNEL_LAUNCHER(RMSprop, double, double);
 #undef DEFINE_KERNEL_LAUNCHER

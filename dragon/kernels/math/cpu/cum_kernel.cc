@@ -61,31 +61,30 @@ void _CumSumReverse(
 
 } // namespace
 
-#define DEFINE_KERNEL_LAUNCHER(T, AccT)                       \
-  template <>                                                 \
-  void CumSum<T, CPUContext>(                                 \
-      const int N,                                            \
-      const int S,                                            \
-      const int C,                                            \
-      const bool exclusive,                                   \
-      const bool reverse,                                     \
-      const T* x,                                             \
-      T* y,                                                   \
-      CPUContext* ctx) {                                      \
-    if (reverse) {                                            \
-      _CumSumReverse<T, AccT>(N, S, C, exclusive, x, y, ctx); \
-    } else {                                                  \
-      _CumSum<T, AccT>(N, S, C, exclusive, x, y, ctx);        \
-    }                                                         \
+#define DEFINE_KERNEL_LAUNCHER(T)                                        \
+  template <>                                                            \
+  void CumSum<T, CPUContext>(                                            \
+      const int N,                                                       \
+      const int S,                                                       \
+      const int C,                                                       \
+      const bool exclusive,                                              \
+      const bool reverse,                                                \
+      const T* x,                                                        \
+      T* y,                                                              \
+      CPUContext* ctx) {                                                 \
+    using AccT = math::Traits<T>::accumulator_type;                      \
+    if (!reverse) _CumSum<T, AccT>(N, S, C, exclusive, x, y, ctx);       \
+    if (reverse) _CumSumReverse<T, AccT>(N, S, C, exclusive, x, y, ctx); \
   }
 
-DEFINE_KERNEL_LAUNCHER(uint8_t, uint8_t);
-DEFINE_KERNEL_LAUNCHER(int8_t, int8_t);
-DEFINE_KERNEL_LAUNCHER(int, int);
-DEFINE_KERNEL_LAUNCHER(int64_t, int64_t);
-DEFINE_KERNEL_LAUNCHER(float16, float);
-DEFINE_KERNEL_LAUNCHER(float, float);
-DEFINE_KERNEL_LAUNCHER(double, double);
+DEFINE_KERNEL_LAUNCHER(uint8_t);
+DEFINE_KERNEL_LAUNCHER(int8_t);
+DEFINE_KERNEL_LAUNCHER(int);
+DEFINE_KERNEL_LAUNCHER(int64_t);
+DEFINE_KERNEL_LAUNCHER(float16);
+DEFINE_KERNEL_LAUNCHER(bfloat16);
+DEFINE_KERNEL_LAUNCHER(float);
+DEFINE_KERNEL_LAUNCHER(double);
 #undef DEFINE_KERNEL_LAUNCHER
 
 } // namespace kernels

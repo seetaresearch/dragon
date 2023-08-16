@@ -28,7 +28,6 @@ from dragon.vm.tensorflow.core.ops.nn_ops import conv2d_transpose
 from dragon.vm.tensorflow.core.ops.nn_ops import conv3d_transpose
 from dragon.vm.tensorflow.core.ops.nn_ops import convolution
 from dragon.vm.tensorflow.core.ops.nn_ops import conv_transpose
-from dragon.vm.tensorflow.core.ops.nn_ops import depthwise_conv2d
 from dragon.vm.tensorflow.core.ops.nn_ops import dropout
 from dragon.vm.tensorflow.core.ops.nn_ops import elu
 from dragon.vm.tensorflow.core.ops.nn_ops import fused_batch_norm

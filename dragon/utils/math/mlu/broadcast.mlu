@@ -1,5 +1,5 @@
-#include "dragon/utils/math/blas.h"
 #include "dragon/utils/math/broadcast.h"
+#include "dragon/utils/math/blas.h"
 #include "dragon/utils/math/elementwise.h"
 #include "dragon/utils/math/types.h"
 #include "dragon/utils/math/utils.h"
@@ -216,7 +216,7 @@ __mlu_entry__ void _ScalarBinaryDiv(const int N, const T* a, const T* b, T* y) {
       for (int i = taskId; i < N; i += taskDim) {                           \
         __memcpy(Y, offset_x2 + i * C, C_ram * sizeof(T), GDRAM2NRAM);      \
         VecFunc(Y, BroadcastA ? X : Y, BroadcastA ? Y : X, C_ram);          \
-        math::utils::Convert(Y_cast, Y, C_ram);                             \
+        convert::To(Y_cast, Y, C_ram);                             \
         __memcpy(offset_y + i * C, Y_cast, C_ram, NRAM2GDRAM);              \
       }                                                                     \
     }                                                                       \
@@ -235,7 +235,7 @@ __mlu_entry__ void _ScalarBinaryDiv(const int N, const T* a, const T* b, T* y) {
         __bang_write_value(X, C_ram, x1);                                   \
         __memcpy(Y, offset_x2 + j, C_ram * sizeof(T), GDRAM2NRAM);          \
         VecFunc(Y, BroadcastA ? X : Y, BroadcastA ? Y : X, C_ram);          \
-        math::utils::Convert(Y_cast, Y, C_ram);                             \
+        convert::To(Y_cast, Y, C_ram);                             \
         __memcpy(offset_y + j, Y_cast, C_ram, NRAM2GDRAM);                  \
       }                                                                     \
     }                                                                       \
@@ -250,7 +250,7 @@ __mlu_entry__ void _ScalarBinaryDiv(const int N, const T* a, const T* b, T* y) {
       const int N_ram = std::min(N - i, BLOCK_THREADS);                     \
       __memcpy(Y, (BroadcastA ? b : a) + i, N_ram * sizeof(T), GDRAM2NRAM); \
       VecFunc##_scalar(Y, Y, value, N_ram);                                 \
-      math::utils::Convert(Y_cast, Y, N_ram);                               \
+      convert::To(Y_cast, Y, N_ram);                               \
       __memcpy(y + i, Y_cast, N_ram, NRAM2GDRAM);                           \
     }                                                                       \
   }
@@ -314,127 +314,141 @@ DEFINE_SET_FUNC(int8_t, int8_t, _ColwiseSet);
 DEFINE_SET_FUNC(int, int, _ColwiseSet);
 DEFINE_SET_FUNC(int64_t, int64_t, _ColwiseSet_fallback);
 DEFINE_SET_FUNC(float16, half, _ColwiseSet);
+DEFINE_SET_FUNC(bfloat16, math::Traits<bfloat16>::scalar_type, _ColwiseSet);
 DEFINE_SET_FUNC(float, float, _ColwiseSet);
 DEFINE_SET_FUNC(double, double, _ColwiseSet_fallback);
 #undef DEFINE_SET_FUNC
 
-#define DEFINE_BINARY_FUNC(name, InputT, OutputT)                             \
-  template <>                                                                 \
-  DRAGON_API void name<InputT, MLUContext>(                                   \
-      const int a_ndim,                                                       \
-      const int64_t* a_dims,                                                  \
-      const int b_ndim,                                                       \
-      const int64_t* b_dims,                                                  \
-      const InputT* a,                                                        \
-      const InputT* b,                                                        \
-      OutputT* y,                                                             \
-      MLUContext* ctx) {                                                      \
-    int64_t rows, cols, broadcast_1st;                                        \
-    vec64_t A_dims(a_dims, a_dims + a_ndim);                                  \
-    vec64_t B_dims(b_dims, b_dims + b_ndim);                                  \
-    vec64_t A_broadcast_dims, B_broadcast_dims;                               \
-    math::utils::ComputeBroadcastDims(                                        \
-        A_dims, B_dims, A_broadcast_dims, B_broadcast_dims);                  \
-    if (A_broadcast_dims == B_broadcast_dims) {                               \
-      const auto N = math::utils::Prod(a_ndim, a_dims);                       \
-      name(N, a, b, y, ctx);                                                  \
-      return;                                                                 \
-    }                                                                         \
-    if (math::utils::IsRowwiseBroadcast(                                      \
-            A_dims, B_dims, &rows, &cols, &broadcast_1st)) {                  \
-      if (broadcast_1st > 0) {                                                \
-        if (cols == 1) {                                                      \
-          _ScalarBinary##name<math::ScalarType<InputT>::type, true>           \
-              <<<MLU_BLOCKS(), CNRT_FUNC_TYPE_BLOCK, ctx->mlu_stream()>>>(    \
-                  rows,                                                       \
-                  reinterpret_cast<const math::ScalarType<InputT>::type*>(a), \
-                  reinterpret_cast<const math::ScalarType<InputT>::type*>(b), \
-                  reinterpret_cast<math::ScalarType<OutputT>::type*>(y));     \
-        } else {                                                              \
-          _RowwiseBinary##name<math::ScalarType<InputT>::type, true>          \
-              <<<MLU_BLOCKS(), CNRT_FUNC_TYPE_UNION1, ctx->mlu_stream()>>>(   \
-                  rows,                                                       \
-                  cols,                                                       \
-                  reinterpret_cast<const math::ScalarType<InputT>::type*>(a), \
-                  reinterpret_cast<const math::ScalarType<InputT>::type*>(b), \
-                  reinterpret_cast<math::ScalarType<OutputT>::type*>(y));     \
-        }                                                                     \
-      } else {                                                                \
-        if (cols == 1) {                                                      \
-          _ScalarBinary##name<math::ScalarType<InputT>::type, false>          \
-              <<<MLU_BLOCKS(), CNRT_FUNC_TYPE_BLOCK, ctx->mlu_stream()>>>(    \
-                  rows,                                                       \
-                  reinterpret_cast<const math::ScalarType<InputT>::type*>(a), \
-                  reinterpret_cast<const math::ScalarType<InputT>::type*>(b), \
-                  reinterpret_cast<math::ScalarType<OutputT>::type*>(y));     \
-        } else {                                                              \
-          _RowwiseBinary##name<math::ScalarType<InputT>::type, false>         \
-              <<<MLU_BLOCKS(), CNRT_FUNC_TYPE_UNION1, ctx->mlu_stream()>>>(   \
-                  rows,                                                       \
-                  cols,                                                       \
-                  reinterpret_cast<const math::ScalarType<InputT>::type*>(a), \
-                  reinterpret_cast<const math::ScalarType<InputT>::type*>(b), \
-                  reinterpret_cast<math::ScalarType<OutputT>::type*>(y));     \
-        }                                                                     \
-      }                                                                       \
-      return;                                                                 \
-    }                                                                         \
-    if (math::utils::IsColwiseBroadcast(                                      \
-            A_dims, B_dims, &rows, &cols, &broadcast_1st)) {                  \
-      if (broadcast_1st > 0) {                                                \
-        _ColwiseBinary##name<math::ScalarType<InputT>::type, true>            \
-            <<<MLU_BLOCKS(), CNRT_FUNC_TYPE_BLOCK, ctx->mlu_stream()>>>(      \
-                rows,                                                         \
-                cols,                                                         \
-                reinterpret_cast<const math::ScalarType<InputT>::type*>(a),   \
-                reinterpret_cast<const math::ScalarType<InputT>::type*>(b),   \
-                reinterpret_cast<math::ScalarType<OutputT>::type*>(y));       \
-      } else {                                                                \
-        _ColwiseBinary##name<math::ScalarType<InputT>::type, false>           \
-            <<<MLU_BLOCKS(), CNRT_FUNC_TYPE_BLOCK, ctx->mlu_stream()>>>(      \
-                rows,                                                         \
-                cols,                                                         \
-                reinterpret_cast<const math::ScalarType<InputT>::type*>(a),   \
-                reinterpret_cast<const math::ScalarType<InputT>::type*>(b),   \
-                reinterpret_cast<math::ScalarType<OutputT>::type*>(y));       \
-      }                                                                       \
-      return;                                                                 \
-    }                                                                         \
-    NOT_IMPLEMENTED;                                                          \
+#define DEFINE_BINARY_FUNC(name, InputT, OutputT)                           \
+  template <>                                                               \
+  DRAGON_API void name<InputT, MLUContext>(                                 \
+      const int a_ndim,                                                     \
+      const int64_t* a_dims,                                                \
+      const int b_ndim,                                                     \
+      const int64_t* b_dims,                                                \
+      const InputT* a,                                                      \
+      const InputT* b,                                                      \
+      OutputT* y,                                                           \
+      MLUContext* ctx) {                                                    \
+    int64_t rows, cols, broadcast_1st;                                      \
+    vec64_t A_dims(a_dims, a_dims + a_ndim);                                \
+    vec64_t B_dims(b_dims, b_dims + b_ndim);                                \
+    vec64_t A_broadcast_dims, B_broadcast_dims;                             \
+    math::utils::ComputeBroadcastDims(                                      \
+        A_dims, B_dims, A_broadcast_dims, B_broadcast_dims);                \
+    if (A_broadcast_dims == B_broadcast_dims) {                             \
+      const auto N = math::utils::Prod(a_ndim, a_dims);                     \
+      name(N, a, b, y, ctx);                                                \
+      return;                                                               \
+    }                                                                       \
+    using InputScalarT = math::Traits<InputT>::scalar_type;                 \
+    using OutputScalarT = math::Traits<OutputT>::scalar_type;               \
+    if (math::utils::IsRowwiseBroadcast(                                    \
+            A_dims, B_dims, &rows, &cols, &broadcast_1st)) {                \
+      if (broadcast_1st > 0) {                                              \
+        if (cols == 1) {                                                    \
+          _ScalarBinary##name<InputScalarT, true>                           \
+              <<<MLU_BLOCKS(), CNRT_FUNC_TYPE_BLOCK, ctx->mlu_stream()>>>(  \
+                  rows,                                                     \
+                  reinterpret_cast<const InputScalarT*>(a),                 \
+                  reinterpret_cast<const InputScalarT*>(b),                 \
+                  reinterpret_cast<OutputScalarT*>(y));                     \
+        } else {                                                            \
+          _RowwiseBinary##name<InputScalarT, true>                          \
+              <<<MLU_BLOCKS(), CNRT_FUNC_TYPE_UNION1, ctx->mlu_stream()>>>( \
+                  rows,                                                     \
+                  cols,                                                     \
+                  reinterpret_cast<const InputScalarT*>(a),                 \
+                  reinterpret_cast<const InputScalarT*>(b),                 \
+                  reinterpret_cast<OutputScalarT*>(y));                     \
+        }                                                                   \
+      } else {                                                              \
+        if (cols == 1) {                                                    \
+          _ScalarBinary##name<InputScalarT, false>                          \
+              <<<MLU_BLOCKS(), CNRT_FUNC_TYPE_BLOCK, ctx->mlu_stream()>>>(  \
+                  rows,                                                     \
+                  reinterpret_cast<const InputScalarT*>(a),                 \
+                  reinterpret_cast<const InputScalarT*>(b),                 \
+                  reinterpret_cast<OutputScalarT*>(y));                     \
+        } else {                                                            \
+          _RowwiseBinary##name<InputScalarT, false>                         \
+              <<<MLU_BLOCKS(), CNRT_FUNC_TYPE_UNION1, ctx->mlu_stream()>>>( \
+                  rows,                                                     \
+                  cols,                                                     \
+                  reinterpret_cast<const InputScalarT*>(a),                 \
+                  reinterpret_cast<const InputScalarT*>(b),                 \
+                  reinterpret_cast<OutputScalarT*>(y));                     \
+        }                                                                   \
+      }                                                                     \
+      return;                                                               \
+    }                                                                       \
+    if (math::utils::IsColwiseBroadcast(                                    \
+            A_dims, B_dims, &rows, &cols, &broadcast_1st)) {                \
+      if (broadcast_1st > 0) {                                              \
+        _ColwiseBinary##name<InputScalarT, true>                            \
+            <<<MLU_BLOCKS(), CNRT_FUNC_TYPE_BLOCK, ctx->mlu_stream()>>>(    \
+                rows,                                                       \
+                cols,                                                       \
+                reinterpret_cast<const InputScalarT*>(a),                   \
+                reinterpret_cast<const InputScalarT*>(b),                   \
+                reinterpret_cast<OutputScalarT*>(y));                       \
+      } else {                                                              \
+        _ColwiseBinary##name<InputScalarT, false>                           \
+            <<<MLU_BLOCKS(), CNRT_FUNC_TYPE_BLOCK, ctx->mlu_stream()>>>(    \
+                rows,                                                       \
+                cols,                                                       \
+                reinterpret_cast<const InputScalarT*>(a),                   \
+                reinterpret_cast<const InputScalarT*>(b),                   \
+                reinterpret_cast<OutputScalarT*>(y));                       \
+      }                                                                     \
+      return;                                                               \
+    }                                                                       \
+    NOT_IMPLEMENTED;                                                        \
   }
 
 DEFINE_BINARY_FUNC(Add, int8_t, int8_t);
 DEFINE_BINARY_FUNC(Add, int, int);
 DEFINE_BINARY_FUNC(Add, float16, float16);
+DEFINE_BINARY_FUNC(Add, bfloat16, bfloat16);
 DEFINE_BINARY_FUNC(Add, float, float);
 DEFINE_BINARY_FUNC(Sub, int8_t, int8_t);
 DEFINE_BINARY_FUNC(Sub, int, int);
 DEFINE_BINARY_FUNC(Sub, float16, float16);
+DEFINE_BINARY_FUNC(Sub, bfloat16, bfloat16);
 DEFINE_BINARY_FUNC(Sub, float, float);
 DEFINE_BINARY_FUNC(Mul, int8_t, int8_t);
 DEFINE_BINARY_FUNC(Mul, int, int);
 DEFINE_BINARY_FUNC(Mul, float16, float16);
+DEFINE_BINARY_FUNC(Mul, bfloat16, bfloat16);
 DEFINE_BINARY_FUNC(Mul, float, float);
 DEFINE_BINARY_FUNC(Div, float, float);
 DEFINE_BINARY_FUNC(Minimum, float16, float16);
+DEFINE_BINARY_FUNC(Minimum, bfloat16, bfloat16);
 DEFINE_BINARY_FUNC(Minimum, float, float);
 DEFINE_BINARY_FUNC(Maximum, float16, float16);
+DEFINE_BINARY_FUNC(Maximum, bfloat16, bfloat16);
 DEFINE_BINARY_FUNC(Maximum, float, float);
 DEFINE_BINARY_FUNC(Equal, int8_t, bool);
 DEFINE_BINARY_FUNC(Equal, int, bool);
 DEFINE_BINARY_FUNC(Equal, float16, bool);
+DEFINE_BINARY_FUNC(Equal, bfloat16, bool);
 DEFINE_BINARY_FUNC(Equal, float, bool);
 DEFINE_BINARY_FUNC(NotEqual, int8_t, bool);
 DEFINE_BINARY_FUNC(NotEqual, int, bool);
 DEFINE_BINARY_FUNC(NotEqual, float16, bool);
+DEFINE_BINARY_FUNC(NotEqual, bfloat16, bool);
 DEFINE_BINARY_FUNC(NotEqual, float, bool);
 DEFINE_BINARY_FUNC(Less, float16, bool);
+DEFINE_BINARY_FUNC(Less, bfloat16, bool);
 DEFINE_BINARY_FUNC(Less, float, bool);
 DEFINE_BINARY_FUNC(LessEqual, float16, bool);
+DEFINE_BINARY_FUNC(LessEqual, bfloat16, bool);
 DEFINE_BINARY_FUNC(LessEqual, float, bool);
 DEFINE_BINARY_FUNC(Greater, float16, bool);
+DEFINE_BINARY_FUNC(Greater, bfloat16, bool);
 DEFINE_BINARY_FUNC(Greater, float, bool);
 DEFINE_BINARY_FUNC(GreaterEqual, float16, bool);
+DEFINE_BINARY_FUNC(GreaterEqual, bfloat16, bool);
 DEFINE_BINARY_FUNC(GreaterEqual, float, bool);
 #undef DEFINE_BINARY_FUNC
 
@@ -495,6 +509,7 @@ DEFINE_BINARY_FUNC(Div, int8_t, int8_t);
 DEFINE_BINARY_FUNC(Div, int, int);
 DEFINE_BINARY_FUNC(Div, int64_t, int64_t);
 DEFINE_BINARY_FUNC(Div, float16, float16);
+DEFINE_BINARY_FUNC(Div, bfloat16, bfloat16);
 DEFINE_BINARY_FUNC(Div, double, double);
 DEFINE_BINARY_FUNC(Minimum, uint8_t, uint8_t);
 DEFINE_BINARY_FUNC(Minimum, int8_t, int8_t);

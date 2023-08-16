@@ -17,9 +17,8 @@ void _Tile(
     T* y) {
   const auto N = math::utils::Prod(num_dims, y_dims);
   vec64_t index(num_dims, 0);
-  int64_t xi;
-  for (int i = 0; i < N; ++i) {
-    xi = 0;
+  for (int64_t i = 0; i < N; ++i) {
+    int64_t xi = 0;
     for (int d = num_dims - 1; d >= 0; --d) {
       xi += (index[d] % x_dims[d]) * x_strides[d];
     }
@@ -49,10 +48,10 @@ DEFINE_KERNEL_LAUNCHER(int8_t);
 DEFINE_KERNEL_LAUNCHER(int);
 DEFINE_KERNEL_LAUNCHER(int64_t);
 DEFINE_KERNEL_LAUNCHER(float16);
+DEFINE_KERNEL_LAUNCHER(bfloat16);
 DEFINE_KERNEL_LAUNCHER(float);
 DEFINE_KERNEL_LAUNCHER(double);
 #undef DEFINE_KERNEL_LAUNCHER
-#undef DEFINE_GRAD_KERNEL_LAUNCHER
 
 } // namespace kernels
 

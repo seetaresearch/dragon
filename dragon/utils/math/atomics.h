@@ -85,6 +85,27 @@ struct AtomicFloat16Functor {
 };
 
 template <typename T, class MathFunctor>
+struct AtomicBFloat16Functor {
+#if defined(__CUDACC__)
+  inline __device__ void operator()(T* address, T val) {
+    unsigned int* address_as_ui =
+        (unsigned int*)((char*)address - ((size_t)address & 2));
+    unsigned int old = *address_as_ui, assumed;
+    __nv_bfloat16_raw result;
+    do {
+      assumed = old;
+      result.x = (size_t)address & 2 ? (old >> 16) : (old & 0xffff);
+      result = math_functor_(nv_bfloat16(result), val);
+      old = (size_t)address & 2 ? (old & 0xffff) | (result.x << 16)
+                                : (old & 0xffff0000) | result.x;
+      old = atomicCAS(address_as_ui, assumed, old);
+    } while (assumed != old);
+  }
+#endif
+  MathFunctor math_functor_;
+};
+
+template <typename T, class MathFunctor>
 struct AtomicFloat64Functor {
 #if defined(__CUDACC__)
   inline __device__ void operator()(T* address, T val) {
@@ -136,17 +157,29 @@ inline __device__ void AtomicAdd(int64_t* address, int64_t val) {
       address, val);
 }
 
-#if __CUDA_ARCH__ < 700
 inline __device__ void AtomicAdd(half* address, half val) {
+#if __CUDA_ARCH__ >= 700
+  atomicAdd(address, val);
+#else
   AtomicFloat16Functor<half, PlusFunctor<half>>()(address, val);
-}
 #endif
+}
 
-#if __CUDA_ARCH__ < 600
-inline __device__ void AtomicAdd(double* address, double val) {
-  AtomicFloat64Functor<double, PlusFunctor<double>>()(address, val);
-}
+inline __device__ void AtomicAdd(nv_bfloat16* address, nv_bfloat16 val) {
+#if __CUDA_ARCH__ >= 800
+  atomicAdd(address, val);
+#else
+  AtomicBFloat16Functor<nv_bfloat16, PlusFunctor<nv_bfloat16>>()(address, val);
 #endif
+}
+
+inline __device__ void AtomicAdd(double* address, double val) {
+#if __CUDA_ARCH__ >= 600
+  atomicAdd(address, val);
+#else
+  AtomicFloat64Functor<double, PlusFunctor<double>>()(address, val);
+#endif
+}
 #endif
 
 } // namespace utils

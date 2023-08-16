@@ -280,9 +280,11 @@ void DispatchKernel(
   }
 
 DEFINE_KERNEL_LAUNCHER(L1Norm, float16, float);
+DEFINE_KERNEL_LAUNCHER(L1Norm, bfloat16, float);
 DEFINE_KERNEL_LAUNCHER(L1Norm, float, float);
 DEFINE_KERNEL_LAUNCHER(L1Norm, double, double);
 DEFINE_KERNEL_LAUNCHER(L2Norm, float16, float);
+DEFINE_KERNEL_LAUNCHER(L2Norm, bfloat16, float);
 DEFINE_KERNEL_LAUNCHER(L2Norm, float, float);
 DEFINE_KERNEL_LAUNCHER(L2Norm, double, double);
 #undef DEFINE_KERNEL_LAUNCHER
@@ -311,9 +313,11 @@ DEFINE_KERNEL_LAUNCHER(L2Norm, double, double);
   }
 
 DEFINE_GRAD_KERNEL_LAUNCHER(L1NormGrad, float16, float);
+DEFINE_GRAD_KERNEL_LAUNCHER(L1NormGrad, bfloat16, float);
 DEFINE_GRAD_KERNEL_LAUNCHER(L1NormGrad, float, float);
 DEFINE_GRAD_KERNEL_LAUNCHER(L1NormGrad, double, double);
 DEFINE_GRAD_KERNEL_LAUNCHER(L2NormGrad, float16, float);
+DEFINE_GRAD_KERNEL_LAUNCHER(L2NormGrad, bfloat16, float);
 DEFINE_GRAD_KERNEL_LAUNCHER(L2NormGrad, float, float);
 DEFINE_GRAD_KERNEL_LAUNCHER(L2NormGrad, double, double);
 #undef DEFINE_GRAD_KERNEL_LAUNCHER

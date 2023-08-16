@@ -96,14 +96,17 @@ MPSShape_t MPSGetShape(const vec64_t& dims) {
 
 MPSDataType_t MPSGetDataType(const TypeMeta& type) {
   static MPSDataType unknown_type = MPSDataTypeInvalid;
-  static std::unordered_map<TypeId, MPSDataType> m{
-      {TypeMeta::Id<bool>(), MPSDataTypeBool}, // macOS 12.0 or higher.
-      {TypeMeta::Id<uint8_t>(), MPSDataTypeUInt8},
-      {TypeMeta::Id<int8_t>(), MPSDataTypeInt8},
-      {TypeMeta::Id<int>(), MPSDataTypeInt32},
-      {TypeMeta::Id<int64_t>(), MPSDataTypeInt64},
-      {TypeMeta::Id<float16>(), MPSDataTypeFloat16},
-      {TypeMeta::Id<float>(), MPSDataTypeFloat32},
+  static std::unordered_map<TypeId, MPSDataType> m {
+    {TypeMeta::Id<bool>(), MPSDataTypeBool}, // macOS 12.0 or higher.
+        {TypeMeta::Id<uint8_t>(), MPSDataTypeUInt8},
+        {TypeMeta::Id<int8_t>(), MPSDataTypeInt8},
+        {TypeMeta::Id<int>(), MPSDataTypeInt32},
+        {TypeMeta::Id<int64_t>(), MPSDataTypeInt64},
+        {TypeMeta::Id<float16>(), MPSDataTypeFloat16},
+#if (MPS_OSX_VERSION_MAJOR >= 14)
+        {TypeMeta::Id<bfloat16>(), MPSDataTypeBFloat16},
+#endif
+        {TypeMeta::Id<float>(), MPSDataTypeFloat32},
   };
   auto it = m.find(type.id());
   return it != m.end() ? it->second : unknown_type;

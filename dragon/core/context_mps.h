@@ -320,6 +320,7 @@ class DRAGON_API MPSKernel {
         {TypeMeta::Id<int>(), "_int"},
         {TypeMeta::Id<int64_t>(), "_int64_t"},
         {TypeMeta::Id<float16>(), "_half"},
+        {TypeMeta::Id<bfloat16>(), "_bfloat"},
         {TypeMeta::Id<float>(), "_float"},
         {TypeMeta::Id<double>(), "_double"},
     };

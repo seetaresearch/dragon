@@ -62,7 +62,7 @@ void _GatherElements(
     T* y) {
   const auto N = math::utils::Prod(num_dims, y_dims);
   vec64_t dim_index(num_dims, 0);
-  for (int yi = 0; yi < N; ++yi) {
+  for (int64_t yi = 0; yi < N; ++yi) {
     int64_t xi = 0;
     for (int d = num_dims - 1; d >= 0; --d) {
       xi += (d == axis ? index[yi] : dim_index[d]) * x_strides[d];
@@ -94,11 +94,13 @@ DEFINE_KERNEL_LAUNCHER(Gather, int8_t, int8_t);
 DEFINE_KERNEL_LAUNCHER(Gather, int, int);
 DEFINE_KERNEL_LAUNCHER(Gather, int64_t, int64_t);
 DEFINE_KERNEL_LAUNCHER(Gather, float16, float16);
+DEFINE_KERNEL_LAUNCHER(Gather, bfloat16, bfloat16);
 DEFINE_KERNEL_LAUNCHER(Gather, float, float);
 DEFINE_KERNEL_LAUNCHER(Gather, double, double);
-DEFINE_KERNEL_LAUNCHER(GatherGrad, float16, float); // GatherGrad
-DEFINE_KERNEL_LAUNCHER(GatherGrad, float, float); // GatherGrad
-DEFINE_KERNEL_LAUNCHER(GatherGrad, double, float); // GatherGrad
+DEFINE_KERNEL_LAUNCHER(GatherGrad, float16, float);
+DEFINE_KERNEL_LAUNCHER(GatherGrad, bfloat16, float);
+DEFINE_KERNEL_LAUNCHER(GatherGrad, float, float);
+DEFINE_KERNEL_LAUNCHER(GatherGrad, double, float);
 #undef DEFINE_KERNEL_LAUNCHER
 
 #define DEFINE_KERNEL_LAUNCHER(T)                                    \
@@ -121,6 +123,7 @@ DEFINE_KERNEL_LAUNCHER(int8_t);
 DEFINE_KERNEL_LAUNCHER(int);
 DEFINE_KERNEL_LAUNCHER(int64_t);
 DEFINE_KERNEL_LAUNCHER(float16);
+DEFINE_KERNEL_LAUNCHER(bfloat16);
 DEFINE_KERNEL_LAUNCHER(float);
 DEFINE_KERNEL_LAUNCHER(double);
 #undef DEFINE_KERNEL_LAUNCHER

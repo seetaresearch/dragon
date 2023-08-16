@@ -4,25 +4,25 @@
 
 namespace dragon {
 
-float CNNLType<float>::oneval = 1.f;
-float CNNLType<float>::zeroval = 0.f;
-const void* CNNLType<float>::one = static_cast<void*>(&CNNLType<float>::oneval);
-const void* CNNLType<float>::zero =
-    static_cast<void*>(&CNNLType<float>::zeroval);
+float CNNLTraits<float>::oneval = 1.f;
+float CNNLTraits<float>::zeroval = 0.f;
+const void* CNNLTraits<float>::one = &CNNLTraits<float>::oneval;
+const void* CNNLTraits<float>::zero = &CNNLTraits<float>::zeroval;
 
-double CNNLType<double>::oneval = 1.0;
-double CNNLType<double>::zeroval = 0.0;
-const void* CNNLType<double>::one =
-    static_cast<void*>(&CNNLType<double>::oneval);
-const void* CNNLType<double>::zero =
-    static_cast<void*>(&CNNLType<double>::zeroval);
+double CNNLTraits<double>::oneval = 1.0;
+double CNNLTraits<double>::zeroval = 0.0;
+const void* CNNLTraits<double>::one = &CNNLTraits<double>::oneval;
+const void* CNNLTraits<double>::zero = &CNNLTraits<double>::zeroval;
 
-float CNNLType<float16>::oneval = 1.f;
-float CNNLType<float16>::zeroval = 0.f;
-const void* CNNLType<float16>::one =
-    static_cast<void*>(&CNNLType<float16>::oneval);
-const void* CNNLType<float16>::zero =
-    static_cast<void*>(&CNNLType<float16>::zeroval);
+float CNNLTraits<bfloat16>::oneval = 1.f;
+float CNNLTraits<bfloat16>::zeroval = 0.f;
+const void* CNNLTraits<bfloat16>::one = &CNNLTraits<bfloat16>::oneval;
+const void* CNNLTraits<bfloat16>::zero = &CNNLTraits<bfloat16>::zeroval;
+
+float CNNLTraits<float16>::oneval = 1.f;
+float CNNLTraits<float16>::zeroval = 0.f;
+const void* CNNLTraits<float16>::one = &CNNLTraits<float16>::oneval;
+const void* CNNLTraits<float16>::zero = &CNNLTraits<float16>::zeroval;
 
 const cnnlDataType_t& CNNLGetDataType(const TypeMeta& type) {
   static cnnlDataType_t unknown_type = CNNL_DTYPE_INVALID;
@@ -34,6 +34,7 @@ const cnnlDataType_t& CNNLGetDataType(const TypeMeta& type) {
       {TypeMeta::Id<int>(), CNNL_DTYPE_INT32},
       {TypeMeta::Id<int64_t>(), CNNL_DTYPE_INT64},
       {TypeMeta::Id<float16>(), CNNL_DTYPE_HALF},
+      {TypeMeta::Id<bfloat16>(), CNNL_DTYPE_BFLOAT16},
       {TypeMeta::Id<float>(), CNNL_DTYPE_FLOAT},
       {TypeMeta::Id<double>(), CNNL_DTYPE_DOUBLE},
   };
@@ -145,6 +146,7 @@ INSTANTIATE_API(short);
 INSTANTIATE_API(int);
 INSTANTIATE_API(int64_t);
 INSTANTIATE_API(float16);
+INSTANTIATE_API(bfloat16);
 INSTANTIATE_API(float);
 INSTANTIATE_API(double);
 #undef INSTANTIATE_API

@@ -99,7 +99,7 @@ __global__ void _GenericMoments(
 }
 
 template <typename T, typename AccT, int D>
-void _GenericMomentsImpl(
+void DispatchGenericMoments(
     const int* dims,
     const int num_axes,
     const int* axes,
@@ -108,76 +108,91 @@ void _GenericMomentsImpl(
     AccT* var,
     CUDAContext* ctx) {
   SimpleArray<int, D> transpose_axes;
-  SimpleArray<int, D> transpose_strides;
   SimpleArray<int, D> transpose_dims;
+  SimpleArray<int, D> transpose_strides;
   math::utils::TransposeAxesForReduce(D, num_axes, axes, transpose_axes.data);
   math::utils::ComputeTransposeStrides(
       D, dims, transpose_axes.data, transpose_strides.data);
   int rows = 1, cols = 1;
   const int pivot = D - num_axes;
-  for (int i = 0; i < pivot; ++i) {
-    rows *= dims[transpose_axes.data[i]];
-  }
-  for (int i = pivot; i < D; ++i) {
-    cols *= dims[transpose_axes.data[i]];
-  }
-  for (int i = 0; i < D; ++i) {
-    transpose_dims.data[i] = dims[transpose_axes.data[i]];
-  }
+  // clang-format off
+  for (int i = 0; i < pivot; ++i) rows *= dims[transpose_axes.data[i]];
+  for (int i = pivot; i < D; ++i) cols *= dims[transpose_axes.data[i]];
+  for (int i = 0; i < D; ++i) transpose_dims.data[i] = dims[transpose_axes.data[i]];
+  // clang-format on
   _GenericMoments<<<rows, CUDA_THREADS, 0, ctx->cuda_stream()>>>(
       rows, cols, transpose_dims, transpose_strides, x, mean, var);
 }
 
+template <typename T, typename AccT>
+void DispatchMoments(
+    const int num_dims,
+    const int64_t* dims,
+    const int num_axes,
+    const int64_t* axes,
+    const T* x,
+    AccT* mean,
+    AccT* var,
+    CUDAContext* ctx) {
+  int64_t rows, cols;
+  vec64_t out_dims(dims, dims + num_dims);
+  for (int i = 0; i < num_axes; ++i) {
+    out_dims[axes[i]] = 1;
+  }
+  if (math::utils::IsRowwiseReduce(
+          num_dims, dims, out_dims.data(), &rows, &cols)) {
+    return _RowwiseMoments<<<cols, CUDA_THREADS, 0, ctx->cuda_stream()>>>(
+        rows, cols, x, mean, var);
+  }
+  if (math::utils::IsColwiseReduce(
+          num_dims, dims, out_dims.data(), &rows, &cols)) {
+    return _ColwiseMoments<<<rows, CUDA_THREADS, 0, ctx->cuda_stream()>>>(
+        rows, cols, x, mean, var);
+  }
+  CUDA_TENSOR_DIMS_CHECK(num_dims);
+  DISPATCH_FUNC_BY_VALUE_WITH_TYPE_2(
+      DispatchGenericMoments,
+      T,
+      AccT,
+      num_dims,
+      vec32_t(dims, dims + num_dims).data(),
+      num_axes,
+      vec32_t(axes, axes + num_axes).data(),
+      x,
+      mean,
+      var,
+      ctx);
+}
+
 } // namespace
 
-#define DEFINE_KERNEL_LAUNCHER(T, AccT)                                      \
-  template <>                                                                \
-  void Moments<T, AccT, CUDAContext>(                                        \
-      const int num_dims,                                                    \
-      const int64_t* dims,                                                   \
-      const int num_axes,                                                    \
-      const int64_t* axes,                                                   \
-      const T* x,                                                            \
-      AccT* mean,                                                            \
-      AccT* var,                                                             \
-      CUDAContext* ctx) {                                                    \
-    vec64_t new_dims, new_axes;                                              \
-    math::utils::CollapseReduceAxes(                                         \
-        num_dims, dims, num_axes, axes, new_dims, new_axes);                 \
-    int num_new_dims = new_dims.size();                                      \
-    int64_t rows, cols;                                                      \
-    vec64_t out_dims(new_dims);                                              \
-    for (auto axis : new_axes) {                                             \
-      out_dims[axis] = 1;                                                    \
-    }                                                                        \
-    if (math::utils::IsRowwiseReduce(                                        \
-            num_new_dims, new_dims.data(), out_dims.data(), &rows, &cols)) { \
-      return _RowwiseMoments<<<cols, CUDA_THREADS, 0, ctx->cuda_stream()>>>( \
-          rows, cols, x, mean, var);                                         \
-    }                                                                        \
-    if (math::utils::IsColwiseReduce(                                        \
-            num_new_dims, new_dims.data(), out_dims.data(), &rows, &cols)) { \
-      return _ColwiseMoments<<<rows, CUDA_THREADS, 0, ctx->cuda_stream()>>>( \
-          rows, cols, x, mean, var);                                         \
-    }                                                                        \
-    CUDA_TENSOR_DIMS_CHECK(num_new_dims);                                    \
-    DISPATCH_FUNC_BY_VALUE_WITH_TYPE_2(                                      \
-        _GenericMomentsImpl,                                                 \
-        T,                                                                   \
-        AccT,                                                                \
-        num_new_dims,                                                        \
-        vec32_t({new_dims.begin(), new_dims.end()}).data(),                  \
-        new_axes.size(),                                                     \
-        vec32_t({new_axes.begin(), new_axes.end()}).data(),                  \
-        x,                                                                   \
-        mean,                                                                \
-        var,                                                                 \
-        ctx);                                                                \
+#define DEFINE_KERNEL_LAUNCHER(T, AccT)                      \
+  template <>                                                \
+  void Moments<T, AccT, CUDAContext>(                        \
+      const int num_dims,                                    \
+      const int64_t* dims,                                   \
+      const int num_axes,                                    \
+      const int64_t* axes,                                   \
+      const T* x,                                            \
+      AccT* mean,                                            \
+      AccT* var,                                             \
+      CUDAContext* ctx) {                                    \
+    vec64_t new_dims, new_axes;                              \
+    math::utils::CollapseReduceAxes(                         \
+        num_dims, dims, num_axes, axes, new_dims, new_axes); \
+    DispatchMoments(                                         \
+        new_dims.size(),                                     \
+        new_dims.data(),                                     \
+        new_axes.size(),                                     \
+        new_axes.data(),                                     \
+        x,                                                   \
+        mean,                                                \
+        var,                                                 \
+        ctx);                                                \
   }
 
-DEFINE_KERNEL_LAUNCHER(int, float);
-DEFINE_KERNEL_LAUNCHER(int64_t, double);
 DEFINE_KERNEL_LAUNCHER(float16, float);
+DEFINE_KERNEL_LAUNCHER(bfloat16, float);
 DEFINE_KERNEL_LAUNCHER(float, float);
 DEFINE_KERNEL_LAUNCHER(double, double);
 #undef DEFINE_KERNEL_LAUNCHER

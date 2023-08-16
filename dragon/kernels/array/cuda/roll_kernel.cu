@@ -30,15 +30,15 @@ __global__ void _Roll(
 }
 
 template <typename T, int D>
-void _RollImpl(
+void DispatchRoll(
     const int64_t* x_shifts,
     const int64_t* x_strides,
     const int64_t* y_dims,
     const T* x,
     T* y,
     CUDAContext* ctx) {
-  SimpleArray<int, D> X_shifts, X_strides, Y_dims;
   const auto N = math::utils::Prod(D, y_dims);
+  SimpleArray<int, D> X_shifts, X_strides, Y_dims;
   for (int i = 0; i < D; ++i) {
     X_shifts.data[i] = x_shifts[i];
     X_strides.data[i] = x_strides[i];
@@ -50,19 +50,19 @@ void _RollImpl(
 
 } // namespace
 
-#define DEFINE_KERNEL_LAUNCHER(T)                                        \
-  template <>                                                            \
-  void Roll<T, CUDAContext>(                                             \
-      const int num_dims,                                                \
-      const int64_t* x_shifts,                                           \
-      const int64_t* x_strides,                                          \
-      const int64_t* y_dims,                                             \
-      const T* x,                                                        \
-      T* y,                                                              \
-      CUDAContext* ctx) {                                                \
-    CUDA_TENSOR_DIMS_CHECK(num_dims);                                    \
-    DISPATCH_FUNC_BY_VALUE_WITH_TYPE_1(                                  \
-        _RollImpl, T, num_dims, x_shifts, x_strides, y_dims, x, y, ctx); \
+#define DEFINE_KERNEL_LAUNCHER(T)                                           \
+  template <>                                                               \
+  void Roll<T, CUDAContext>(                                                \
+      const int num_dims,                                                   \
+      const int64_t* x_shifts,                                              \
+      const int64_t* x_strides,                                             \
+      const int64_t* y_dims,                                                \
+      const T* x,                                                           \
+      T* y,                                                                 \
+      CUDAContext* ctx) {                                                   \
+    CUDA_TENSOR_DIMS_CHECK(num_dims);                                       \
+    DISPATCH_FUNC_BY_VALUE_WITH_TYPE_1(                                     \
+        DispatchRoll, T, num_dims, x_shifts, x_strides, y_dims, x, y, ctx); \
   }
 
 DEFINE_KERNEL_LAUNCHER(bool);
@@ -71,6 +71,7 @@ DEFINE_KERNEL_LAUNCHER(int8_t);
 DEFINE_KERNEL_LAUNCHER(int);
 DEFINE_KERNEL_LAUNCHER(int64_t);
 DEFINE_KERNEL_LAUNCHER(float16);
+DEFINE_KERNEL_LAUNCHER(bfloat16);
 DEFINE_KERNEL_LAUNCHER(float);
 DEFINE_KERNEL_LAUNCHER(double);
 #undef DEFINE_KERNEL_LAUNCHER

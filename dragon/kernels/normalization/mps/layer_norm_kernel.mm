@@ -131,6 +131,7 @@ INSTANTIATE_KERNEL(double, double);
   }
 
 DEFINE_KERNEL_LAUNCHER(float16, float);
+DEFINE_KERNEL_LAUNCHER(bfloat16, float);
 DEFINE_KERNEL_LAUNCHER(float, float);
 DEFINE_KERNEL_LAUNCHER(double, double);
 

@@ -17,6 +17,12 @@
 #include <cncl.h>
 #include <cnnl.h>
 #include <cnrt.h>
+#if (CNNL_MAJOR == 1) && (CNNL_MINOR < 17)
+#define CNNL_DTYPE_BFLOAT16 cnnlDataType_t(17)
+#endif
+#if (CNCL_MAJOR_VERSION == 1) && (CNCL_MINOR_VERSION < 9)
+#define cnclBfloat16 cnclDataType_t(11)
+#endif
 #else
 typedef struct cnrtQueue* cnrtQueue_t;
 typedef struct cnclComm* cnclComm_t;
@@ -28,7 +34,6 @@ typedef int cnclDataType_t;
 namespace dragon {
 
 #ifdef USE_MLU
-
 /*
  * Constants.
  */
@@ -149,33 +154,38 @@ class MLUDeviceGuard {
  */
 
 template <typename T>
-class CNNLType;
+class CNNLTraits;
 
 template <>
-class CNNLType<float16> {
+class CNNLTraits<float16> {
  public:
   static const cnnlDataType_t type = CNNL_DTYPE_HALF;
   static float oneval, zeroval;
   static const void *one, *zero;
-  typedef float BNParamType;
 };
 
 template <>
-class CNNLType<float> {
+class CNNLTraits<bfloat16> {
+ public:
+  static const cnnlDataType_t type = CNNL_DTYPE_BFLOAT16;
+  static float oneval, zeroval;
+  static const void *one, *zero;
+};
+
+template <>
+class CNNLTraits<float> {
  public:
   static const cnnlDataType_t type = CNNL_DTYPE_FLOAT;
   static float oneval, zeroval;
   static const void *one, *zero;
-  typedef float BNParamType;
 };
 
 template <>
-class CNNLType<double> {
+class CNNLTraits<double> {
  public:
   static const cnnlDataType_t type = CNNL_DTYPE_DOUBLE;
   static double oneval, zeroval;
   static const void *one, *zero;
-  typedef double BNParamType;
 };
 
 /*! \brief Return the cnnl data type by type */

@@ -46,7 +46,6 @@ class BiasAddGradientOp final : public Operator<Context> {
 };
 
 #ifdef USE_CUDNN
-
 template <class Context>
 class CuDNNBiasAddGradientOp final : public Operator<Context> {
  public:
@@ -73,7 +72,6 @@ class CuDNNBiasAddGradientOp final : public Operator<Context> {
   cudnnTensorDescriptor_t bias_desc_;
   cudnnTensorDescriptor_t input_desc_;
 };
-
 #endif // USE_CUDNN
 
 } // namespace dragon

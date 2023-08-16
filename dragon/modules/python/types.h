@@ -24,6 +24,7 @@ namespace python {
 namespace dtypes {
 
 inline const int to_npy(const TypeMeta& type) {
+  static int unknown_type = NPY_NOTYPE;
   static std::unordered_map<TypeId, int> m{
       {TypeMeta::Id<bool>(), NPY_BOOL},
       {TypeMeta::Id<uint8_t>(), NPY_UINT8},
@@ -36,7 +37,7 @@ inline const int to_npy(const TypeMeta& type) {
       {TypeMeta::Id<std::string>(), NPY_OBJECT},
   };
   auto it = m.find(type.id());
-  return it != m.end() ? it->second : -1;
+  return it != m.end() ? it->second : unknown_type;
 }
 
 inline const TypeMeta& from_npy(int type) {
@@ -65,6 +66,7 @@ inline DLDataType* to_dlpack(const TypeMeta& type) {
       {TypeMeta::Id<int>(), DLDataType{0, 32, 1}},
       {TypeMeta::Id<int64_t>(), DLDataType{0, 64, 1}},
       {TypeMeta::Id<float16>(), DLDataType{2, 16, 1}},
+      {TypeMeta::Id<bfloat16>(), DLDataType{4, 16, 1}},
       {TypeMeta::Id<float>(), DLDataType{2, 32, 1}},
       {TypeMeta::Id<double>(), DLDataType{2, 64, 1}},
   };
@@ -90,6 +92,10 @@ inline const TypeMeta& from_dlpack(const DLDataType& type) {
            {16, TypeMeta::Make<float16>()},
            {32, TypeMeta::Make<float>()},
            {64, TypeMeta::Make<double>()},
+       }},
+      {4,
+       std::unordered_map<int, TypeMeta>{
+           {16, TypeMeta::Make<bfloat16>()},
        }},
   };
   if (type.lanes != 1) return unknown_type;

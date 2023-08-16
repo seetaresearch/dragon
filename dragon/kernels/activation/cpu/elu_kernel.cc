@@ -1,72 +1,42 @@
 #include "dragon/kernels/activation/op_kernels.h"
-#include "dragon/utils/conversions.h"
-#include "dragon/utils/device/common_eigen.h"
+#include "dragon/utils/math_functions.h"
 
 namespace dragon {
 
 namespace kernels {
 
-namespace {
-
-template <typename T>
-void _Elu(const int N, const T alpha, const T* x, T* y) {
-  EigenVectorArrayMap<T>(y, N) =
-      ConstEigenVectorArrayMap<T>(x, N).unaryExpr([&](T a) {
-        return a > T(0) ? a : alpha * (std::exp(std::min(a, T(0))) - T(1));
-      });
-}
-
-template <>
-void _Elu<float16>(
-    const int N,
-    const float16 alpha,
-    const float16* x,
-    float16* y) {
-  CPU_FP16_NOT_SUPPORTED;
-}
-
-template <typename T>
-void _EluGrad(const int N, const T alpha, const T* dy, const T* y, T* dx) {
-  EigenVectorArrayMap<T>(dx, N) = ConstEigenVectorArrayMap<T>(dy, N) *
-      ConstEigenVectorArrayMap<T>(y, N).unaryExpr(
-          [&](T a) { return a > T(0) ? T(1) : alpha + a; });
-}
-
-template <>
-void _EluGrad<float16>(
-    const int N,
-    const float16 alpha,
-    const float16* dy,
-    const float16* y,
-    float16* dx) {
-  CPU_FP16_NOT_SUPPORTED;
-} // EluGrad
-
-} // namespace
-
 #define DEFINE_KERNEL_LAUNCHER(T)                                          \
   template <>                                                              \
   void Elu<T, CPUContext>(                                                 \
       const int N, const float alpha, const T* x, T* y, CPUContext* ctx) { \
-    _Elu(N, convert::To<T>(alpha), x, y);                                  \
+    using EigenT = math::Traits<T>::eigen_type;                            \
+    EigenVectorArrayMap<EigenT> Y((EigenT*)y, N);                          \
+    ConstEigenVectorArrayMap<EigenT> X((const EigenT*)x, N);               \
+    Y = (X > EigenT(0)).select(X, EigenT(alpha) * (X.exp() - EigenT(1)));  \
   }
 
-#define DEFINE_GRAD_KERNEL_LAUNCHER(T)             \
-  template <>                                      \
-  void EluGrad<T, CPUContext>(                     \
-      const int N,                                 \
-      const float alpha,                           \
-      const T* dy,                                 \
-      const T* y,                                  \
-      T* dx,                                       \
-      CPUContext* ctx) {                           \
-    _EluGrad(N, convert::To<T>(alpha), dy, y, dx); \
+#define DEFINE_GRAD_KERNEL_LAUNCHER(T)                         \
+  template <>                                                  \
+  void EluGrad<T, CPUContext>(                                 \
+      const int N,                                             \
+      const float alpha,                                       \
+      const T* dy,                                             \
+      const T* y,                                              \
+      T* dx,                                                   \
+      CPUContext* ctx) {                                       \
+    using EigenT = math::Traits<T>::eigen_type;                \
+    EigenVectorArrayMap<EigenT> dX((EigenT*)dx, N);            \
+    ConstEigenVectorArrayMap<EigenT> Y((const EigenT*)y, N);   \
+    ConstEigenVectorArrayMap<EigenT> dY((const EigenT*)dy, N); \
+    dX = (Y > EigenT(0)).select(dY, dY * (EigenT(alpha) + Y)); \
   }
 
 DEFINE_KERNEL_LAUNCHER(float16);
+DEFINE_KERNEL_LAUNCHER(bfloat16);
 DEFINE_KERNEL_LAUNCHER(float);
 DEFINE_KERNEL_LAUNCHER(double);
 DEFINE_GRAD_KERNEL_LAUNCHER(float16);
+DEFINE_GRAD_KERNEL_LAUNCHER(bfloat16);
 DEFINE_GRAD_KERNEL_LAUNCHER(float);
 DEFINE_GRAD_KERNEL_LAUNCHER(double);
 #undef DEFINE_KERNEL_LAUNCHER

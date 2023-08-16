@@ -168,8 +168,8 @@ class DRAGON_API CPUContext {
   unique_ptr<std::mt19937> rand_generator_;
 };
 
-#define CPU_FP16_NOT_SUPPORTED \
-  LOG(FATAL) << "FP16 is unsupported for CPUContext.";
+#define CPU_UNSUPPORTED_DTYPE(T) \
+  LOG(FATAL) << "Unsupported " << dtypes::to_string<T>() << " for CPUContext.";
 
 } // namespace dragon
 

@@ -316,35 +316,41 @@ void _Im2ColNdNHWC(
         y);                                            \
   }
 
-template <>
-void Col2Im2d<float16, CPUContext>(
-    const int C,
-    const int H,
-    const int W,
-    const int out_h,
-    const int out_w,
-    const int kernel_h,
-    const int kernel_w,
-    const int stride_h,
-    const int stride_w,
-    const int pad_h,
-    const int pad_w,
-    const int dilation_h,
-    const int dilation_w,
-    const string& data_format,
-    const float16* x,
-    float16* y,
-    CPUContext* ctx) {
-  CPU_FP16_NOT_SUPPORTED;
-}
-
 DEFINE_KERNEL_LAUNCHER(Im2Col2d, false, float16);
+DEFINE_KERNEL_LAUNCHER(Im2Col2d, false, bfloat16);
 DEFINE_KERNEL_LAUNCHER(Im2Col2d, false, float);
 DEFINE_KERNEL_LAUNCHER(Im2Col2d, false, double);
 DEFINE_KERNEL_LAUNCHER(Col2Im2d, true, float);
 DEFINE_KERNEL_LAUNCHER(Col2Im2d, true, double);
 #undef DEFINE_KERNEL_LAUNCHER
 #undef DISPATCH_CONV_KERNEL
+
+#define DEFINE_KERNEL_LAUNCHER(name, T) \
+  template <>                           \
+  void Col2Im2d<T, CPUContext>(         \
+      const int C,                      \
+      const int H,                      \
+      const int W,                      \
+      const int out_h,                  \
+      const int out_w,                  \
+      const int kernel_h,               \
+      const int kernel_w,               \
+      const int stride_h,               \
+      const int stride_w,               \
+      const int pad_h,                  \
+      const int pad_w,                  \
+      const int dilation_h,             \
+      const int dilation_w,             \
+      const string& data_format,        \
+      const T* x,                       \
+      T* y,                             \
+      CPUContext* ctx) {                \
+    CPU_UNSUPPORTED_DTYPE(T);           \
+  }
+
+DEFINE_KERNEL_LAUNCHER(Col2Im2d, float16);
+DEFINE_KERNEL_LAUNCHER(Col2Im2d, bfloat16);
+#undef DEFINE_KERNEL_LAUNCHER
 
 #define DISPATCH_CONV_KERNEL(name, kTransposed, T, ...)  \
   if (data_format == "NCHW") {                           \
@@ -412,11 +418,13 @@ DEFINE_KERNEL_LAUNCHER(Col2ImNd, true, double);
       const T* x,                                    \
       T* y,                                          \
       CPUContext* ctx) {                             \
-    CPU_FP16_NOT_SUPPORTED;                          \
+    CPU_UNSUPPORTED_DTYPE(float16);                  \
   }
 
 DEFINE_KERNEL_LAUNCHER(Im2ColNd, false, float16);
+DEFINE_KERNEL_LAUNCHER(Im2ColNd, false, bfloat16);
 DEFINE_KERNEL_LAUNCHER(Col2ImNd, true, float16);
+DEFINE_KERNEL_LAUNCHER(Col2ImNd, true, bfloat16);
 #undef DEFINE_KERNEL_LAUNCHER
 
 } // namespace kernels

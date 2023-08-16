@@ -2466,7 +2466,7 @@ class TestMathOps(OpTestCase):
         for execution in ('EAGER_MODE', 'GRAPH_MODE'):
             with execution_context().mode(execution):
                 for low, high in entries:
-                    data, grad = arange((6,)), arange((6,))
+                    data, grad = arange((6,), -1), arange((6,), -1)
                     if low is not None:
                         grad[grad < low] = 0
                     if high is not None:
@@ -5239,76 +5239,6 @@ class TestVisionOps(OpTestCase):
         dragon.mlu.set_cnnl_flags(True)
         with dragon.device('mlu'), self.cnnl_ws.as_default():
             self.test_conv3d_transpose(test_nchw=False)
-
-    def test_depthwise_conv2d(self, test_grad=False):
-        entries = [((2, 2, 2, 2), (2, 1, 1, 1), (2,), 1, 1, 0, 1, 'NCHW'),
-                   ((2, 2, 2, 2), (2, 1, 3, 3), (2,), 3, 1, 1, 1, 'NCHW'),
-                   ((2, 2, 2, 2), (2, 1, 1, 1), (2,), 1, 1, 0, 1, 'NHWC'),
-                   ((2, 2, 2, 2), (2, 1, 3, 3), (2,), 3, 1, 1, 1, 'NHWC')]
-        results = [[[[[0., 0.], [0., 0.]], [[0.14, 0.15], [0.16, 0.17]]],
-                    [[[0., 0.], [0., 0.]], [[0.22, 0.23], [0.24, 0.25]]]],
-                   [[[[0.43, 0.37], [0.25, 0.19]], [[3.47, 3.25], [2.81, 2.59]]],
-                    [[[2.35, 1.97], [1.21, 0.83]], [[8.27, 7.73], [6.65, 6.11]]]],
-                   [[[[0., 0.11], [0., 0.13]], [[0., 0.15], [0., 0.17]]],
-                    [[[0., 0.19], [0., 0.21]], [[0., 0.23], [0., 0.25]]]],
-                   [[[[0.86, 2.64], [0.74, 2.48]], [[0.5, 2.16], [0.38, 2.]]],
-                    [[[2.78, 7.44], [2.34, 6.96]], [[1.46, 6.], [1.02, 5.52]]]]]
-        grads1 = [[[[[0., 0.], [0., 0.]], [[0.04, 0.05], [0.06, 0.07]]],
-                   [[[0., 0.], [0., 0.]], [[0.12, 0.13], [0.14, 0.15]]]],
-                  [[[[0.05, 0.11], [0.23, 0.29]], [[2.35, 2.57], [3.01, 3.23]]],
-                   [[[0.69, 1.07], [1.83, 2.21]], [[5.87, 6.41], [7.49, 8.03]]]],
-                  [[[[0., 0.01], [0., 0.03]], [[0., 0.05], [0., 0.07]]],
-                   [[[0., 0.09], [0., 0.11]], [[0., 0.13], [0., 0.15]]]],
-                  [[[[0.1, 1.62], [0.22, 1.78]], [[0.46, 2.1], [0.58, 2.26]]],
-                   [[[0.74, 5.14], [1.18, 5.62]], [[2.06, 6.58], [2.5, 7.06]]]]]
-        grads2 = [[[[[3.8]]], [[[8.6]]]],
-                  [[[[0.88, 1.82, 0.92], [1.88, 3.8, 1.88], [0.92, 1.82, 0.88]]],
-                   [[[2.08, 4.22, 2.12], [4.28, 8.6, 4.28], [2.12, 4.22, 2.08]]]],
-                  [[[[5.6]]], [[[6.8]]]],
-                  [[[[1.12], [2.48], [1.28]], [[2.72], [5.6], [2.72]], [[1.28], [2.48], [1.12]]],
-                   [[[1.42], [3.08], [1.58]], [[3.32], [6.8], [3.32]], [[1.58], [3.08], [1.42]]]]]
-        grads3 = [[4.4, 7.6], [4.4, 7.6], [5.6, 6.4], [5.6, 6.4]]
-        for execution in ('EAGER_MODE', 'GRAPH_MODE'):
-            with execution_context().mode(execution):
-                for (x_shape, w_shape, b_shape, kernel_shape,
-                        strides, pads, dilations, data_format), \
-                        result, grad1, grad2, grad3 in zip(entries, results, grads1, grads2, grads3):
-                    data1, data2, data3 = arange(x_shape) * .1, arange(w_shape) * .1, arange(b_shape) * .1
-                    x, w, b = new_tensor(data1), new_tensor(data2), new_tensor(data3)
-                    with dragon.GradientTape() as tape:
-                        tape.watch([x, w, b])
-                        y = dragon.nn.depthwise_conv2d(
-                            [x, w, b],
-                            kernel_shape=kernel_shape,
-                            strides=strides,
-                            pads=pads,
-                            dilations=dilations,
-                            data_format=data_format,
-                        )
-                    if test_grad:
-                        data4 = arange(y.shape) * .1
-                        dy = new_tensor(data4)
-                        dx, dw, db = tape.gradient(y, [x, w, b], output_gradients=[dy])
-                        self.assertEqual(
-                            [y, dx, dw, db],
-                            [np.array(result),
-                             np.array(grad1),
-                             np.array(grad2).reshape(w_shape),
-                             np.array(grad3)])
-                    else:
-                        self.assertEqual(y, np.array(result), prec=1e-3)
-
-    @unittest.skipIf(not TEST_CUDA, 'CUDA unavailable')
-    def test_depthwise_conv2d_cuda(self):
-        dragon.cuda.set_cudnn_flags(False)
-        with dragon.device('cuda'):
-            self.test_depthwise_conv2d(test_grad=True)
-
-    @unittest.skipIf(not TEST_CUDA, 'CUDA unavailable')
-    def test_depthwise_conv2d_cudnn(self):
-        dragon.cuda.set_cudnn_flags(True)
-        with dragon.device('cuda'), self.cudnn_ws.as_default():
-            self.test_depthwise_conv2d(test_grad=True)
 
     def test_depth_to_space(self):
         n, co, si = 2, 2, 2

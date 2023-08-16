@@ -1,5 +1,5 @@
 #include "dragon/kernels/activation/op_kernels.h"
-#include "dragon/utils/device/common_eigen.h"
+#include "dragon/utils/math_functions.h"
 
 namespace dragon {
 
@@ -9,63 +9,42 @@ namespace {
 
 template <typename T>
 void _Silu(const int N, const T* x, T* y) {
-  ConstEigenVectorArrayMap<T> X(x, N);
-  EigenVectorArrayMap<T>(y, N) = X / (T(1) + (-X).exp());
+  using EigenT = typename math::Traits<T>::eigen_type;
+  EigenVectorArrayMap<EigenT> Y((EigenT*)y, N);
+  ConstEigenVectorArrayMap<EigenT> X((const EigenT*)x, N);
+  Y = X / (EigenT(1) + (-X).exp());
 }
 
 template <typename T>
 void _HardSwish(const int N, const T* x, T* y) {
-  const T kAlpha = 0.1666666666666667;
-  ConstEigenVectorArrayMap<T> X(x, N);
-  EigenVectorArrayMap<T>(y, N) =
-      X * ((X * kAlpha + T(0.5)).cwiseMin(T(1)).cwiseMax(T(0)));
-}
-
-template <>
-void _Silu<float16>(const int N, const float16* x, float16* y) {
-  CPU_FP16_NOT_SUPPORTED;
-}
-
-template <>
-void _HardSwish<float16>(const int N, const float16* x, float16* y) {
-  CPU_FP16_NOT_SUPPORTED;
+  using EigenT = typename math::Traits<T>::eigen_type;
+  const auto kAlpha = EigenT(0.166667), kBeta = EigenT(0.5);
+  EigenVectorArrayMap<EigenT> Y((EigenT*)y, N);
+  ConstEigenVectorArrayMap<EigenT> X((const EigenT*)x, N);
+  Y = X * ((X * kAlpha + kBeta).cwiseMin(EigenT(1)).cwiseMax(EigenT(0)));
 }
 
 template <typename T>
 void _SiluGrad(const int N, const T* dy, const T* x, T* dx) {
-  ConstEigenVectorArrayMap<T> X(x, N);
-  ConstEigenVectorArrayMap<T> dY(dy, N);
-  EigenVectorArrayMap<T> dX(dx, N);
-  dX = T(1) / (T(1) + (-X).exp());
-  dX = dY * dX * (X + T(1) - X * dX);
+  using EigenT = typename math::Traits<T>::eigen_type;
+  EigenVectorArrayMap<EigenT> dX((EigenT*)dx, N);
+  ConstEigenVectorArrayMap<EigenT> X((const EigenT*)x, N);
+  ConstEigenVectorArrayMap<EigenT> dY((const EigenT*)dy, N);
+  dX = EigenT(1) / (EigenT(1) + (-X).exp());
+  dX = dY * dX * (X + EigenT(1) - X * dX);
 }
-
-template <>
-void _SiluGrad<float16>(
-    const int N,
-    const float16* dy,
-    const float16* x,
-    float16* dx) {
-  CPU_FP16_NOT_SUPPORTED;
-} // SiluGrad
 
 template <typename T>
 void _HardSwishGrad(const int N, const T* dy, const T* x, T* dx) {
-  const T kAlpha2 = 0.3333333333333333;
-  EigenVectorArrayMap<T>(dx, N) = ConstEigenVectorArrayMap<T>(dy, N) *
-      ConstEigenVectorArrayMap<T>(x, N).unaryExpr([&](T a) {
-        return a < T(-3) ? T(0) : (a < T(3) ? a * kAlpha2 + T(0.5) : T(1));
-      });
+  using EigenT = typename math::Traits<T>::eigen_type;
+  EigenVectorArrayMap<EigenT> dX((EigenT*)dx, N);
+  ConstEigenVectorArrayMap<EigenT> X((const EigenT*)x, N);
+  ConstEigenVectorArrayMap<EigenT> dY((const EigenT*)dy, N);
+  // clang-format off
+  dX = (X < EigenT(-3)).select(EigenT(0),
+       (X < EigenT(3)).select(dY * (X * EigenT(0.333333) + EigenT(0.5)), dY));
+  // clang-format on
 }
-
-template <>
-void _HardSwishGrad<float16>(
-    const int N,
-    const float16* dy,
-    const float16* x,
-    float16* dx) {
-  CPU_FP16_NOT_SUPPORTED;
-} // HardSwishGrad
 
 } // namespace
 
@@ -83,15 +62,19 @@ void _HardSwishGrad<float16>(
   }
 
 DEFINE_KERNEL_LAUNCHER(Silu, float16);
+DEFINE_KERNEL_LAUNCHER(Silu, bfloat16);
 DEFINE_KERNEL_LAUNCHER(Silu, float);
 DEFINE_KERNEL_LAUNCHER(Silu, double);
 DEFINE_KERNEL_LAUNCHER(HardSwish, float16);
+DEFINE_KERNEL_LAUNCHER(HardSwish, bfloat16);
 DEFINE_KERNEL_LAUNCHER(HardSwish, float);
 DEFINE_KERNEL_LAUNCHER(HardSwish, double);
 DEFINE_GRAD_KERNEL_LAUNCHER(SiluGrad, float16);
+DEFINE_GRAD_KERNEL_LAUNCHER(SiluGrad, bfloat16);
 DEFINE_GRAD_KERNEL_LAUNCHER(SiluGrad, float);
 DEFINE_GRAD_KERNEL_LAUNCHER(SiluGrad, double);
 DEFINE_GRAD_KERNEL_LAUNCHER(HardSwishGrad, float16);
+DEFINE_GRAD_KERNEL_LAUNCHER(HardSwishGrad, bfloat16);
 DEFINE_GRAD_KERNEL_LAUNCHER(HardSwishGrad, float);
 DEFINE_GRAD_KERNEL_LAUNCHER(HardSwishGrad, double);
 #undef DEFINE_KERNEL_LAUNCHER

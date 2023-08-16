@@ -853,63 +853,6 @@ def conv3d_transpose(
     return conv_transpose(**locals())
 
 
-def depthwise_conv2d(
-    input,
-    filters,
-    strides=1,
-    padding='VALID',
-    data_format='NHWC',
-    dilations=1,
-    name=None,
-):
-    r"""Apply 2d depthwise convolution.
-    `[Chollet, 2016] <https://arxiv.org/abs/1610.02357>`_.
-
-    * If :attr:`data_format` is ``'NCHW'``, excepts input shape
-      :math:`(N, C_{\text{in}}, H, W)`, filters shape
-      :math:`(C_{\text{out}}, 1, H_{\text{f}}, W_{\text{f}})`,
-      and output shape is :math:`(N, C_{\text{out}}, H_{\text{out}}, W_{\text{out}})`.
-
-    * If :attr:`data_format` is ``'NHWC'``, excepts input shape
-      :math:`(N, H, W, C_{\text{in}})`, filters shape
-      :math:`(C_{\text{out}}, H_{\text{f}}, W_{\text{f}}, 1)`,
-      and output shape is :math:`(N, H_{\text{out}}, W_{\text{out}}, C_{\text{out}})`.
-
-    * :attr:`padding` could be ``'VALID'``, ``'SAME'`` or explicit padding size.
-
-    ```python
-    x = tf.ones((1, 2, 2, 2))
-    filters = tf.ones((2, 1, 1, 1))
-    y = tf.nn.depthwise_conv2d(x, filters)
-    assert y.shape == (1, 2, 2, 2)
-    ```
-
-    Parameters
-    ----------
-    input : dragon.Tensor
-       The input tensor.
-    filters : dragon.Tensor
-       The filters tensor.
-    strides : Union[int, Sequence[int]]
-        The stride of convolution window.
-    padding : Union[int, Sequence[int], str]
-        The padding algorithm or size.
-    data_format : str, optional, default='NHWC'
-        ``'NCHW'`` or ``'NHWC'``.
-    dilations : Union[int, Sequence[int]], optional, default=1
-        The rate of dilated filters.
-    name : str, optional
-        The operation name.
-
-    Returns
-    -------
-    dragon.Tensor
-        The output tensor.
-
-    """
-    return convolution(conv_type='depthwise_conv', **locals())
-
-
 def dropout(x, rate, name=None, **kwargs):
     r"""Set elements of input to zero randomly.
     `[Srivastava et.al, 2014] <http://jmlr.org/papers/v15/srivastava14a.html>`_.

@@ -1,6 +1,6 @@
 #include "dragon/utils/math/transform.h"
-#include "dragon/utils/device/common_eigen.h"
 #include "dragon/utils/math/reduce.h"
+#include "dragon/utils/math/types.h"
 
 namespace dragon {
 
@@ -45,7 +45,7 @@ void _AffineChannel(
 }
 
 template <typename T>
-void _AffineImpl(
+void DispatchAffine(
     const int num_dims,
     const int64_t* dims,
     const int num_axes,
@@ -69,46 +69,34 @@ void _AffineImpl(
 
 } // namespace
 
-template <>
-void Affine<float16, CPUContext>(
-    const int num_dims,
-    const int64_t* dims,
-    const int num_axes,
-    const int64_t* axes,
-    const float16* x,
-    const float16* scale,
-    const float16* bias,
-    float16* y,
-    CPUContext* ctx) {
-  CPU_FP16_NOT_SUPPORTED;
-}
-
-#define DEFINE_AFFINE_FUNC(T)                                \
-  template <>                                                \
-  void Affine<T, CPUContext>(                                \
-      const int num_dims,                                    \
-      const int64_t* dims,                                   \
-      const int num_axes,                                    \
-      const int64_t* axes,                                   \
-      const T* x,                                            \
-      const T* scale,                                        \
-      const T* bias,                                         \
-      T* y,                                                  \
-      CPUContext* ctx) {                                     \
-    vec64_t new_dims, new_axes;                              \
-    math::utils::CollapseReduceAxes(                         \
-        num_dims, dims, num_axes, axes, new_dims, new_axes); \
-    _AffineImpl(                                             \
-        new_dims.size(),                                     \
-        new_dims.data(),                                     \
-        new_axes.size(),                                     \
-        new_axes.data(),                                     \
-        x,                                                   \
-        scale,                                               \
-        bias,                                                \
-        y);                                                  \
+#define DEFINE_AFFINE_FUNC(T)                                        \
+  template <>                                                        \
+  void Affine<T, CPUContext>(                                        \
+      const int num_dims,                                            \
+      const int64_t* dims,                                           \
+      const int num_axes,                                            \
+      const int64_t* axes,                                           \
+      const T* x,                                                    \
+      const T* scale,                                                \
+      const T* bias,                                                 \
+      T* y,                                                          \
+      CPUContext* ctx) {                                             \
+    vec64_t new_dims, new_axes;                                      \
+    math::utils::CollapseReduceAxes(                                 \
+        num_dims, dims, num_axes, axes, new_dims, new_axes);         \
+    DispatchAffine(                                                  \
+        new_dims.size(),                                             \
+        new_dims.data(),                                             \
+        new_axes.size(),                                             \
+        new_axes.data(),                                             \
+        reinterpret_cast<const math::Traits<T>::eigen_type*>(x),     \
+        reinterpret_cast<const math::Traits<T>::eigen_type*>(scale), \
+        reinterpret_cast<const math::Traits<T>::eigen_type*>(bias),  \
+        reinterpret_cast<math::Traits<T>::eigen_type*>(y));          \
   }
 
+DEFINE_AFFINE_FUNC(float16);
+DEFINE_AFFINE_FUNC(bfloat16);
 DEFINE_AFFINE_FUNC(float);
 DEFINE_AFFINE_FUNC(double);
 #undef DEFINE_AFFINE_FUNC

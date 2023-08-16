@@ -92,10 +92,6 @@ vm.torch.nn
   : Compute ctc loss.
   `[Graves & Gomez, 2006] <http://www.cs.utoronto.ca/~graves/icml_2006.pdf>`_.
 
-  `class DepthwiseConv2d <nn/DepthwiseConv2d.html>`_
-  : Apply 2d depthwise convolution.
-  `[Chollet, 2016] <https://arxiv.org/abs/1610.02357>`_.
-
   `class DropBlock2d <nn/DropBlock2d.html>`_
   : Set blocks to zero randomly.
   `[Ghiasi et.al, 2018] <https://arxiv.org/abs/1810.12890>`_.
@@ -333,7 +329,6 @@ vm.torch.nn
   nn/CosineSimilarity
   nn/CrossEntropyLoss
   nn/CTCLoss
-  nn/DepthwiseConv2d
   nn/DropBlock2d
   nn/Dropout
   nn/DropPath

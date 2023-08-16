@@ -78,35 +78,33 @@ __global__ void _EdgePad(
 }
 
 template <typename T, int D>
-void _PadImpl(
+void DispatchPad(
+    const string& kernel,
     const int64_t* x_dims,
     const int64_t* x_strides,
     const int64_t* y_dims,
     const int64_t* pads,
     const float value,
-    const string& mode,
     const T* x,
     T* y,
     CUDAContext* ctx) {
-  SimpleArray<int, D> X_dims, X_strides, Y_dims, X_pads;
   const auto N = math::utils::Prod(D, y_dims);
+  SimpleArray<int, D> X_dims, X_strides, Y_dims, X_pads;
   for (int i = 0; i < D; ++i) {
-    X_dims.data[i] = x_dims[i];
-    X_strides.data[i] = x_strides[i];
-    Y_dims.data[i] = y_dims[i];
-    X_pads.data[i] = pads[i];
+    X_dims.data[i] = x_dims[i], Y_dims.data[i] = y_dims[i];
+    X_strides.data[i] = x_strides[i], X_pads.data[i] = pads[i];
   }
-  if (mode == "ConstPad") {
+  if (kernel == "ConstPad") {
     _ConstPad<<<CUDA_BLOCKS(N), CUDA_THREADS, 0, ctx->cuda_stream()>>>(
         N, X_dims, X_strides, Y_dims, X_pads, convert::To<T>(value), x, y);
-  } else if (mode == "ReflectPad") {
+  } else if (kernel == "ReflectPad") {
     _ReflectPad<<<CUDA_BLOCKS(N), CUDA_THREADS, 0, ctx->cuda_stream()>>>(
         N, X_dims, X_strides, Y_dims, X_pads, x, y);
-  } else if (mode == "EdgePad") {
+  } else if (kernel == "EdgePad") {
     _EdgePad<<<CUDA_BLOCKS(N), CUDA_THREADS, 0, ctx->cuda_stream()>>>(
         N, X_dims, X_strides, Y_dims, X_pads, x, y);
   } else {
-    LOG(FATAL) << "Unknown Pad: " << mode << ".";
+    LOG(FATAL) << "Unknown kernel: " << kernel << ".";
   }
 }
 
@@ -126,15 +124,15 @@ void _PadImpl(
       CUDAContext* ctx) {               \
     CUDA_TENSOR_DIMS_CHECK(num_dims);   \
     DISPATCH_FUNC_BY_VALUE_WITH_TYPE_1( \
-        _PadImpl,                       \
+        DispatchPad,                    \
         T,                              \
         num_dims,                       \
+        #name,                          \
         x_dims,                         \
         x_strides,                      \
         y_dims,                         \
         pads,                           \
         value,                          \
-        #name,                          \
         x,                              \
         y,                              \
         ctx);                           \
@@ -146,6 +144,7 @@ DEFINE_KERNEL_LAUNCHER(ConstPad, int8_t);
 DEFINE_KERNEL_LAUNCHER(ConstPad, int);
 DEFINE_KERNEL_LAUNCHER(ConstPad, int64_t);
 DEFINE_KERNEL_LAUNCHER(ConstPad, float16);
+DEFINE_KERNEL_LAUNCHER(ConstPad, bfloat16);
 DEFINE_KERNEL_LAUNCHER(ConstPad, float);
 DEFINE_KERNEL_LAUNCHER(ConstPad, double);
 #undef DEFINE_KERNEL_LAUNCHER
@@ -163,15 +162,15 @@ DEFINE_KERNEL_LAUNCHER(ConstPad, double);
       CUDAContext* ctx) {               \
     CUDA_TENSOR_DIMS_CHECK(num_dims);   \
     DISPATCH_FUNC_BY_VALUE_WITH_TYPE_1( \
-        _PadImpl,                       \
+        DispatchPad,                    \
         T,                              \
         num_dims,                       \
+        #name,                          \
         x_dims,                         \
         x_strides,                      \
         y_dims,                         \
         pads,                           \
         0.f,                            \
-        #name,                          \
         x,                              \
         y,                              \
         ctx);                           \
@@ -183,6 +182,7 @@ DEFINE_KERNEL_LAUNCHER(ReflectPad, int8_t);
 DEFINE_KERNEL_LAUNCHER(ReflectPad, int);
 DEFINE_KERNEL_LAUNCHER(ReflectPad, int64_t);
 DEFINE_KERNEL_LAUNCHER(ReflectPad, float16);
+DEFINE_KERNEL_LAUNCHER(ReflectPad, bfloat16);
 DEFINE_KERNEL_LAUNCHER(ReflectPad, float);
 DEFINE_KERNEL_LAUNCHER(ReflectPad, double);
 DEFINE_KERNEL_LAUNCHER(EdgePad, bool);
@@ -191,6 +191,7 @@ DEFINE_KERNEL_LAUNCHER(EdgePad, int8_t);
 DEFINE_KERNEL_LAUNCHER(EdgePad, int);
 DEFINE_KERNEL_LAUNCHER(EdgePad, int64_t);
 DEFINE_KERNEL_LAUNCHER(EdgePad, float16);
+DEFINE_KERNEL_LAUNCHER(EdgePad, bfloat16);
 DEFINE_KERNEL_LAUNCHER(EdgePad, float);
 DEFINE_KERNEL_LAUNCHER(EdgePad, double);
 #undef DEFINE_KERNEL_LAUNCHER

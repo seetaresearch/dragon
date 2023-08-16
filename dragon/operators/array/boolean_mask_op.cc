@@ -56,26 +56,14 @@ void BooleanMaskGradientOp<Context>::DoRunWithType() {
 }
 
 DEPLOY_CPU_OPERATOR(BooleanMask);
-#ifdef USE_CUDA
-DEPLOY_CUDA_OPERATOR(BooleanMask);
-#endif
-
 DEPLOY_CPU_OPERATOR(BooleanMaskGradient);
 #ifdef USE_CUDA
+DEPLOY_CUDA_OPERATOR(BooleanMask);
 DEPLOY_CUDA_OPERATOR(BooleanMaskGradient);
 #endif
 
-OPERATOR_SCHEMA(BooleanMask)
-    /* X, X_mask */
-    .NumInputs(2)
-    /* Y */
-    .NumOutputs(1);
-
-OPERATOR_SCHEMA(BooleanMaskGradient)
-    /* dY */
-    .NumInputs(1)
-    /* dX */
-    .NumOutputs(1);
+OPERATOR_SCHEMA(BooleanMask).NumInputs(2).NumOutputs(1);
+OPERATOR_SCHEMA(BooleanMaskGradient).NumInputs(1).NumOutputs(1);
 
 namespace {
 

@@ -59,9 +59,6 @@ dragon.nn
   `conv3d_transpose(...) <nn/conv3d_transpose.html>`_
   : Apply 3d deconvolution.
 
-  `depthwise_conv2d(...) <nn/depthwise_conv2d.html>`_
-  : Apply 2d depthwise convolution.
-
   `depth_to_space(...) <nn/depth_to_space.html>`_
   : Rearrange depth data into spatial blocks.
 
@@ -177,7 +174,6 @@ dragon.nn
   nn/conv2d_transpose
   nn/conv3d
   nn/conv3d_transpose
-  nn/depthwise_conv2d
   nn/depth_to_space
   nn/dropout
   nn/drop_block

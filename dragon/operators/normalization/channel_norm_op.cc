@@ -47,19 +47,16 @@ template <typename T>
 void ChannelNormOp<Context>::DoRunWithType() {
   if (data_type() == "float16") {
     DoRunWithTypeAndCast<T, float16>();
+  } else if (data_type() == "bfloat16") {
+    DoRunWithTypeAndCast<T, bfloat16>();
   } else if (data_type() == "float32") {
     DoRunWithTypeAndCast<T, float>();
   } else if (data_type() == "float64") {
     DoRunWithTypeAndCast<T, double>();
   } else {
     LOG(FATAL) << MessageForUnsupported(
-        data_type(), {"float16", "float32", "float64"});
+        data_type(), {"float16", "bfloat16", "float32", "float64"});
   }
-}
-
-template <class Context>
-void ChannelNormOp<Context>::RunOnDevice() {
-  DispatchHelper<dtypes::Numerical>::Call(this, Input(0));
 }
 
 DEPLOY_CPU_OPERATOR(ChannelNorm);
@@ -69,6 +66,8 @@ DEPLOY_CUDA_OPERATOR(ChannelNorm);
 #ifdef USE_MPS
 DEPLOY_MPS_OPERATOR(ChannelNorm, ChannelNorm);
 #endif
+
+DEFINE_OP_REPEATED_ARG(int64_t, ChannelNormOp, perm);
 
 OPERATOR_SCHEMA(ChannelNorm).NumInputs(1).NumOutputs(1);
 

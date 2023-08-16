@@ -19,9 +19,8 @@ void _ConstPad(
     T* y) {
   const auto N = math::utils::Prod(num_dims, y_dims);
   vec64_t index(num_dims, 0);
-  int64_t xi, d, r;
-  for (int yi = 0; yi < N; ++yi) {
-    xi = 0;
+  for (int64_t yi = 0; yi < N; ++yi) {
+    int64_t xi = 0, d, r;
     for (d = num_dims - 1; d >= 0; --d) {
       r = index[d] - pads[d];
       if (r < 0 || r >= x_dims[d]) break;
@@ -43,9 +42,8 @@ void _ReflectPad(
     T* y) {
   const auto N = math::utils::Prod(num_dims, y_dims);
   vec64_t index(num_dims, 0);
-  int64_t xi, d, r;
   for (int yi = 0; yi < N; ++yi) {
-    xi = 0;
+    int64_t xi = 0, d, r;
     for (d = num_dims - 1; d >= 0; --d) {
       r = index[d] - pads[d];
       r = std::max(r, -r);
@@ -68,9 +66,8 @@ void _EdgePad(
     T* y) {
   const auto N = math::utils::Prod(num_dims, y_dims);
   vec64_t index(num_dims, 0);
-  int64_t xi, d, r;
   for (int yi = 0; yi < N; ++yi) {
-    xi = 0;
+    int64_t xi = 0, d, r;
     for (d = num_dims - 1; d >= 0; --d) {
       r = std::min(x_dims[d] - 1, std::max(index[d] - pads[d], int64_t(0)));
       xi += r * x_strides[d];
@@ -125,6 +122,7 @@ DEFINE_CONST_KERNEL_LAUNCHER(int8_t);
 DEFINE_CONST_KERNEL_LAUNCHER(int);
 DEFINE_CONST_KERNEL_LAUNCHER(int64_t);
 DEFINE_CONST_KERNEL_LAUNCHER(float16);
+DEFINE_CONST_KERNEL_LAUNCHER(bfloat16);
 DEFINE_CONST_KERNEL_LAUNCHER(float);
 DEFINE_CONST_KERNEL_LAUNCHER(double);
 DEFINE_KERNEL_LAUNCHER(ReflectPad, bool);
@@ -133,6 +131,7 @@ DEFINE_KERNEL_LAUNCHER(ReflectPad, int8_t);
 DEFINE_KERNEL_LAUNCHER(ReflectPad, int);
 DEFINE_KERNEL_LAUNCHER(ReflectPad, int64_t);
 DEFINE_KERNEL_LAUNCHER(ReflectPad, float16);
+DEFINE_KERNEL_LAUNCHER(ReflectPad, bfloat16);
 DEFINE_KERNEL_LAUNCHER(ReflectPad, float);
 DEFINE_KERNEL_LAUNCHER(ReflectPad, double);
 DEFINE_KERNEL_LAUNCHER(EdgePad, bool);
@@ -141,6 +140,7 @@ DEFINE_KERNEL_LAUNCHER(EdgePad, int8_t);
 DEFINE_KERNEL_LAUNCHER(EdgePad, int);
 DEFINE_KERNEL_LAUNCHER(EdgePad, int64_t);
 DEFINE_KERNEL_LAUNCHER(EdgePad, float16);
+DEFINE_KERNEL_LAUNCHER(EdgePad, bfloat16);
 DEFINE_KERNEL_LAUNCHER(EdgePad, float);
 DEFINE_KERNEL_LAUNCHER(EdgePad, double);
 #undef DEFINE_CONST_KERNEL_LAUNCHER

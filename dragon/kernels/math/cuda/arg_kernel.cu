@@ -57,14 +57,14 @@ __global__ void _ArgReduce(
       const T* x,                                              \
       int64_t* y,                                              \
       CUDAContext* ctx) {                                      \
-    using ScalarT = math::ScalarType<T>::type;                 \
+    using ScalarT = math::Traits<T>::scalar_type;              \
     const auto NxS = N * S;                                    \
     _ArgReduce<<<NxS, CUDA_THREADS, 0, ctx->cuda_stream()>>>(  \
         NxS,                                                   \
         S,                                                     \
         C,                                                     \
         ArgFunctor<ScalarT, CompareFunctor<ScalarT>>(),        \
-        kInit,                                                 \
+        convert::To<ScalarT>(kInit),                           \
         reinterpret_cast<const ScalarT*>(x),                   \
         y);                                                    \
   }
@@ -73,72 +73,82 @@ DEFINE_KERNEL_LAUNCHER(
     ArgMax,
     uint8_t,
     math::GreaterFunctor,
-    std::numeric_limits<uint8_t>::lowest());
+    math::Traits<uint8_t>::Lowest());
 DEFINE_KERNEL_LAUNCHER(
     ArgMax,
     int8_t,
     math::GreaterFunctor,
-    std::numeric_limits<int8_t>::lowest());
+    math::Traits<int8_t>::Lowest());
 DEFINE_KERNEL_LAUNCHER(
     ArgMax,
     int,
     math::GreaterFunctor,
-    std::numeric_limits<int>::lowest());
+    math::Traits<int>::Lowest());
 DEFINE_KERNEL_LAUNCHER(
     ArgMax,
     int64_t,
     math::GreaterFunctor,
-    std::numeric_limits<int64_t>::lowest());
+    math::Traits<int64_t>::Lowest());
 DEFINE_KERNEL_LAUNCHER(
     ArgMax,
     float16,
     math::GreaterFunctor,
-    cub::Traits<half>::Lowest());
+    math::Traits<float16>::Lowest());
+DEFINE_KERNEL_LAUNCHER(
+    ArgMax,
+    bfloat16,
+    math::GreaterFunctor,
+    math::Traits<bfloat16>::Lowest());
 DEFINE_KERNEL_LAUNCHER(
     ArgMax,
     float,
     math::GreaterFunctor,
-    std::numeric_limits<float>::lowest());
+    math::Traits<float>::Lowest());
 DEFINE_KERNEL_LAUNCHER(
     ArgMax,
     double,
     math::GreaterFunctor,
-    std::numeric_limits<double>::lowest());
+    math::Traits<double>::Lowest());
 DEFINE_KERNEL_LAUNCHER(
     ArgMin,
     uint8_t,
     math::LessFunctor,
-    std::numeric_limits<uint8_t>::max());
+    math::Traits<uint8_t>::Max());
 DEFINE_KERNEL_LAUNCHER(
     ArgMin,
     int8_t,
     math::LessFunctor,
-    std::numeric_limits<int8_t>::max());
+    math::Traits<int8_t>::Max());
 DEFINE_KERNEL_LAUNCHER(
     ArgMin,
     int,
     math::LessFunctor,
-    std::numeric_limits<int>::max());
+    math::Traits<int>::Max());
 DEFINE_KERNEL_LAUNCHER(
     ArgMin,
     int64_t,
     math::LessFunctor,
-    std::numeric_limits<int64_t>::max());
+    math::Traits<int64_t>::Max());
 DEFINE_KERNEL_LAUNCHER(
     ArgMin,
     float16,
     math::LessFunctor,
-    cub::Traits<half>::Max());
+    math::Traits<float16>::Max());
+DEFINE_KERNEL_LAUNCHER(
+    ArgMin,
+    bfloat16,
+    math::LessFunctor,
+    math::Traits<bfloat16>::Max());
 DEFINE_KERNEL_LAUNCHER(
     ArgMin,
     float,
     math::LessFunctor,
-    std::numeric_limits<float>::max());
+    math::Traits<float>::Max());
 DEFINE_KERNEL_LAUNCHER(
     ArgMin,
     double,
     math::LessFunctor,
-    std::numeric_limits<double>::max());
+    math::Traits<double>::Max());
 #undef DEFINE_KERNEL_LAUNCHER
 
 } // namespace kernels

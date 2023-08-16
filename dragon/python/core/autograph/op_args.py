@@ -112,7 +112,7 @@ def concat_args(**kwargs):
     return {'axis': kwargs.get('axis', 0)}
 
 
-@register(['Conv', 'DepthwiseConv', 'Im2Col'])
+@register(['Conv', 'Im2Col'])
 def conv_args(**kwargs):
     return {
         'kernel_shape': kwargs.get('kernel_shape', 1),

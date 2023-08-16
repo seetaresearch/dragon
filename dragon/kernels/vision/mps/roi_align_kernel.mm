@@ -159,6 +159,7 @@ INSTANTIATE_KERNEL(double);
   }
 
 DEFINE_KERNEL_LAUNCHER(RoiAlign, float16, float16);
+DEFINE_KERNEL_LAUNCHER(RoiAlign, bfloat16, bfloat16);
 DEFINE_KERNEL_LAUNCHER(RoiAlign, float, float);
 DEFINE_KERNEL_LAUNCHER(RoiAlign, double, double);
 #undef DEFINE_KERNEL_LAUNCHER

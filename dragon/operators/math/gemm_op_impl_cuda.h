@@ -27,14 +27,16 @@ class CUDAGemmOpImpl {};
 
 template <typename T>
 cudaDataType_t CUDAGetGemmDataType() {
-  static cudaDataType_t unknown_type = CUDA_R_32F;
   static std::unordered_map<TypeId, cudaDataType_t> m{
       {TypeMeta::Id<float16>(), CUDA_R_16F},
+      {TypeMeta::Id<bfloat16>(), CUDA_R_16BF},
       {TypeMeta::Id<float>(), CUDA_R_32F},
       {TypeMeta::Id<double>(), CUDA_R_64F},
   };
   auto it = m.find(TypeMeta::Id<T>());
-  return it != m.end() ? it->second : unknown_type;
+  CHECK(it != m.end()) << "\nUnsupported " << dtypes::to_string<T>()
+                       << " GEMM.";
+  return it->second;
 }
 
 template <>
@@ -97,13 +99,13 @@ class CUDAGemmOpImpl<cublasLtMatmulAlgo_t> {
     if (TransB > 0) std::swap(K2, N);
     const auto& ABY_dtype = CUDAGetGemmDataType<T>();
     const auto& ABY_dprop = CUDAGetDeviceProp(ctx->device());
-    const auto compute_type =
-        ABY_dtype == CUDA_R_64F ? CUBLAS_COMPUTE_64F : CUBLAS_COMPUTE_32F;
+    const auto is_fp64 = ABY_dtype == CUDA_R_64F;
+    const auto compute_type = is_fp64 ? CUBLAS_COMPUTE_64F : CUBLAS_COMPUTE_32F;
     const auto scale_type = ABY_dtype == CUDA_R_64F ? CUDA_R_64F : CUDA_R_32F;
     beta32f_ = beta, beta64f_ = double(beta);
     alpha32f_ = alpha, alpha64f_ = double(alpha);
-    beta_ptr_ = ABY_dtype == CUDA_R_64F ? (float*)&beta64f_ : &beta32f_;
-    alpha_ptr_ = ABY_dtype == CUDA_R_64F ? (float*)&alpha64f_ : &alpha32f_;
+    beta_ptr_ = is_fp64 ? (float*)&beta64f_ : &beta32f_;
+    alpha_ptr_ = is_fp64 ? (float*)&alpha64f_ : &alpha32f_;
     scratch_size_ = 1024 * 1024 * (ABY_dprop.major >= 9 ? 32 : 4);
     CUBLAS_CHECK(cublasLtMatmulDescSetAttribute(
         mm_desc_,

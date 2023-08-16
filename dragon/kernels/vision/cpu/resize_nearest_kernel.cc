@@ -268,11 +268,13 @@ DEFINE_KERNEL_LAUNCHER(ResizeNearest2d, false, int8_t, int8_t);
 DEFINE_KERNEL_LAUNCHER(ResizeNearest2d, false, int, int);
 DEFINE_KERNEL_LAUNCHER(ResizeNearest2d, false, int64_t, int64_t);
 DEFINE_KERNEL_LAUNCHER(ResizeNearest2d, false, float16, float16);
+DEFINE_KERNEL_LAUNCHER(ResizeNearest2d, false, bfloat16, bfloat16);
 DEFINE_KERNEL_LAUNCHER(ResizeNearest2d, false, float, float);
 DEFINE_KERNEL_LAUNCHER(ResizeNearest2d, false, double, double);
-DEFINE_KERNEL_LAUNCHER(ResizeNearest2dGrad, true, float16, float); // Grad
-DEFINE_KERNEL_LAUNCHER(ResizeNearest2dGrad, true, float, float); // Grad
-DEFINE_KERNEL_LAUNCHER(ResizeNearest2dGrad, true, double, float); // Grad
+DEFINE_KERNEL_LAUNCHER(ResizeNearest2dGrad, true, float16, float);
+DEFINE_KERNEL_LAUNCHER(ResizeNearest2dGrad, true, bfloat16, float);
+DEFINE_KERNEL_LAUNCHER(ResizeNearest2dGrad, true, float, float);
+DEFINE_KERNEL_LAUNCHER(ResizeNearest2dGrad, true, double, float);
 #undef DEFINE_KERNEL_LAUNCHER
 
 #define DEFINE_KERNEL_LAUNCHER(name, kBackward, InputT, OutputT)   \
@@ -315,11 +317,13 @@ DEFINE_KERNEL_LAUNCHER(ResizeNearest3d, false, int8_t, int8_t);
 DEFINE_KERNEL_LAUNCHER(ResizeNearest3d, false, int, int);
 DEFINE_KERNEL_LAUNCHER(ResizeNearest3d, false, int64_t, int64_t);
 DEFINE_KERNEL_LAUNCHER(ResizeNearest3d, false, float16, float16);
+DEFINE_KERNEL_LAUNCHER(ResizeNearest3d, false, bfloat16, bfloat16);
 DEFINE_KERNEL_LAUNCHER(ResizeNearest3d, false, float, float);
 DEFINE_KERNEL_LAUNCHER(ResizeNearest3d, false, double, double);
-DEFINE_KERNEL_LAUNCHER(ResizeNearest3dGrad, true, float16, float); // Grad
-DEFINE_KERNEL_LAUNCHER(ResizeNearest3dGrad, true, float, float); // Grad
-DEFINE_KERNEL_LAUNCHER(ResizeNearest3dGrad, true, double, float); // Grad
+DEFINE_KERNEL_LAUNCHER(ResizeNearest3dGrad, true, float16, float);
+DEFINE_KERNEL_LAUNCHER(ResizeNearest3dGrad, true, bfloat16, float);
+DEFINE_KERNEL_LAUNCHER(ResizeNearest3dGrad, true, float, float);
+DEFINE_KERNEL_LAUNCHER(ResizeNearest3dGrad, true, double, float);
 #undef DISPATCH_RESIZE_KERNEL
 
 } // namespace kernels

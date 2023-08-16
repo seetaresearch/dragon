@@ -17,7 +17,7 @@ void _Roll(
     T* y) {
   const auto N = math::utils::Prod(num_dims, y_dims);
   vec64_t index(num_dims, 0);
-  for (int yi = 0; yi < N; ++yi) {
+  for (int64_t yi = 0; yi < N; ++yi) {
     int64_t xi = 0, r;
     for (int d = num_dims - 1; d >= 0; --d) {
       r = index[d] - x_shifts[d];
@@ -50,6 +50,7 @@ DEFINE_KERNEL_LAUNCHER(int8_t);
 DEFINE_KERNEL_LAUNCHER(int);
 DEFINE_KERNEL_LAUNCHER(int64_t);
 DEFINE_KERNEL_LAUNCHER(float16);
+DEFINE_KERNEL_LAUNCHER(bfloat16);
 DEFINE_KERNEL_LAUNCHER(float);
 DEFINE_KERNEL_LAUNCHER(double);
 #undef DEFINE_KERNEL_LAUNCHER

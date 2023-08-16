@@ -1,5 +1,6 @@
 #include "dragon/utils/math/reduce.h"
 #include "dragon/utils/math/transpose.h"
+#include "dragon/utils/math/types.h"
 #include "dragon/utils/math/utils.h"
 
 namespace dragon {
@@ -391,31 +392,26 @@ void DispatchReduce(
         ctx);                                                \
   }
 
-DEFINE_REDUCE_FUNC(
-    Max,
-    uint8_t,
-    uint8_t,
-    std::numeric_limits<uint8_t>::lowest());
-DEFINE_REDUCE_FUNC(Max, int8_t, int8_t, std::numeric_limits<int8_t>::lowest());
-DEFINE_REDUCE_FUNC(Max, int, int, std::numeric_limits<int>::lowest());
-DEFINE_REDUCE_FUNC(
-    Max,
-    int64_t,
-    int64_t,
-    std::numeric_limits<int64_t>::lowest());
-DEFINE_REDUCE_FUNC(Max, float16, float, -65505.f);
-DEFINE_REDUCE_FUNC(Max, float, float, std::numeric_limits<float>::lowest());
-DEFINE_REDUCE_FUNC(Max, double, double, std::numeric_limits<double>::lowest());
-DEFINE_REDUCE_FUNC(Min, uint8_t, uint8_t, std::numeric_limits<uint8_t>::max());
-DEFINE_REDUCE_FUNC(Min, int8_t, int8_t, std::numeric_limits<int8_t>::max());
-DEFINE_REDUCE_FUNC(Min, int, int, std::numeric_limits<int>::max());
-DEFINE_REDUCE_FUNC(Min, int64_t, int64_t, std::numeric_limits<int64_t>::max());
-DEFINE_REDUCE_FUNC(Min, float16, float, 65504.f);
-DEFINE_REDUCE_FUNC(Min, float, float, std::numeric_limits<float>::max());
-DEFINE_REDUCE_FUNC(Min, double, double, std::numeric_limits<double>::max());
+DEFINE_REDUCE_FUNC(Max, uint8_t, uint8_t, math::Traits<uint8_t>::Lowest());
+DEFINE_REDUCE_FUNC(Max, int8_t, int8_t, math::Traits<int8_t>::Lowest());
+DEFINE_REDUCE_FUNC(Max, int, int, math::Traits<int>::Lowest());
+DEFINE_REDUCE_FUNC(Max, int64_t, int64_t, math::Traits<int64_t>::Lowest());
+DEFINE_REDUCE_FUNC(Max, float16, float, math::Traits<float16>::Lowest());
+DEFINE_REDUCE_FUNC(Max, bfloat16, float, math::Traits<bfloat16>::Lowest());
+DEFINE_REDUCE_FUNC(Max, float, float, math::Traits<float>::Lowest());
+DEFINE_REDUCE_FUNC(Max, double, double, math::Traits<double>::Lowest());
+DEFINE_REDUCE_FUNC(Min, uint8_t, uint8_t, math::Traits<uint8_t>::Max());
+DEFINE_REDUCE_FUNC(Min, int8_t, int8_t, math::Traits<int8_t>::Max());
+DEFINE_REDUCE_FUNC(Min, int, int, math::Traits<int>::Max());
+DEFINE_REDUCE_FUNC(Min, int64_t, int64_t, math::Traits<int64_t>::Max());
+DEFINE_REDUCE_FUNC(Min, float16, float, math::Traits<float16>::Max());
+DEFINE_REDUCE_FUNC(Min, bfloat16, float, math::Traits<bfloat16>::Max());
+DEFINE_REDUCE_FUNC(Min, float, float, math::Traits<float>::Max());
+DEFINE_REDUCE_FUNC(Min, double, double, math::Traits<double>::Max());
 DEFINE_REDUCE_FUNC(Sum, int, int, int(0));
 DEFINE_REDUCE_FUNC(Sum, int64_t, int64_t, int64_t(0));
 DEFINE_REDUCE_FUNC(Sum, float16, float, 0.f);
+DEFINE_REDUCE_FUNC(Sum, bfloat16, float, 0.f);
 DEFINE_REDUCE_FUNC(Sum, float, float, 0.f);
 DEFINE_REDUCE_FUNC(Sum, double, double, 0.);
 #undef DEFINE_REDUCE_FUNC
@@ -431,6 +427,7 @@ DEFINE_REDUCE_FUNC(Sum, double, double, 0.);
 DEFINE_SUM_FUNC(int);
 DEFINE_SUM_FUNC(int64_t);
 DEFINE_SUM_FUNC(float16);
+DEFINE_SUM_FUNC(bfloat16);
 DEFINE_SUM_FUNC(float);
 DEFINE_SUM_FUNC(double);
 #undef DEFINE_SUM_FUNC

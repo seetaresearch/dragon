@@ -69,16 +69,19 @@ class CNNLReduceOpImpl {
     }
     CNNLSetTensorDesc<T>(input_desc_, input_dims);
     CNNLSetTensorDesc<T>(output_desc_, output_dims);
-    cnnlDataType_t tensor_type = CNNL_DTYPE_FLOAT;
-    if (reducer == CNNL_REDUCE_MAX || CNNL_REDUCE_MIN) {
-      tensor_type = CNNLGetDataType<T>();
+    cnnlDataType_t reduce_type = CNNLGetDataType<T>();
+    if (reduce_type == CNNL_DTYPE_HALF || reduce_type == CNNL_DTYPE_BFLOAT16) {
+      reduce_type = CNNL_DTYPE_FLOAT;
+    }
+    if (reducer == CNNL_REDUCE_MAX || reducer == CNNL_REDUCE_MIN) {
+      reduce_type = CNNLGetDataType<T>();
     }
     CNNL_CHECK(cnnlSetReduceDescriptor_v2(
         reduce_desc_,
         vec32_t({reduce_axes.begin(), reduce_axes.end()}).data(),
         reduce_axes.size(),
         reducer,
-        tensor_type,
+        reduce_type,
         CNNL_NOT_PROPAGATE_NAN,
         index_mode_,
         CNNL_32BIT_INDICES,

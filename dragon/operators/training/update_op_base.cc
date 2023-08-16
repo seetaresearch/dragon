@@ -38,6 +38,28 @@ void UpdateOpBase<Context>::TransformGrad(Tensor* dX) {
 }
 
 template <class Context>
+template <typename T>
+void UpdateOpBase<Context>::DoRunWithTensor(Tensor* dX, Tensor* X, Tensor* Y) {
+  using AccT = float;
+  auto* X_master = workspace()->CreateTensor(X->name() + "_master");
+  auto* dX_shared = ctx()->workspace()->CreateTensor("BufferShared");
+  if (X_master->count() != X->count()) {
+    math::Cast(
+        X->count(),
+        X->template data<T, Context>(),
+        X_master->ReshapeLike(*X)->template mutable_data<AccT, Context>(),
+        ctx());
+  }
+  math::Cast(
+      dX->count(),
+      dX->template data<T, Context>(),
+      dX_shared->ReshapeLike(*dX)->template mutable_data<AccT, Context>(),
+      ctx());
+  TransformGrad<AccT>(dX_shared);
+  ApplyUpdate(dX_shared, X_master, X);
+}
+
+template <class Context>
 void UpdateOpBase<Context>::RunOnDevice() {
   GetArguments();
   for (src_index_ = 0; src_index_ < InputSize(); ++src_index_) {
@@ -47,31 +69,17 @@ void UpdateOpBase<Context>::RunOnDevice() {
         << "\nWeight and grad should have the same dimensions."
         << "\nGot" << X->DimString() << " and " << dX.DimString();
     if (dX.template IsType<float16>()) {
-      auto* X_master = workspace()->CreateTensor(X->name() + "_master");
-      auto* X_grad = ctx()->workspace()->CreateTensor("BufferShared");
-      if (X_master->count() != X->count()) {
-        math::Cast(
-            X->count(),
-            X->template data<float16, Context>(),
-            X_master->ReshapeLike(*X)->template mutable_data<float, Context>(),
-            ctx());
-      }
-      math::Cast(
-          dX.count(),
-          dX.template data<float16, Context>(),
-          X_grad->ReshapeLike(dX)->template mutable_data<float, Context>(),
-          ctx());
-      TransformGrad<float>(X_grad);
-      ApplyUpdate(X_grad, X_master, X);
+      DoRunWithTensor<float16>(&dX, X, X);
+    } else if (dX.template IsType<bfloat16>()) {
+      DoRunWithTensor<bfloat16>(&dX, X, X);
     } else if (dX.template IsType<float>()) {
-      TransformGrad<float>(&dX);
-      ApplyUpdate(&dX, X, nullptr);
+      DoRunWithTensor<float>(&dX, X);
     } else if (dX.template IsType<double>()) {
-      TransformGrad<double>(&dX);
-      ApplyUpdate(&dX, X, nullptr);
+      DoRunWithTensor<double>(&dX, X);
     } else {
       LOG(FATAL) << MessageForUnsupported(
-          dtypes::to_string(dX.meta()), {"float16", "float32", "float64"});
+          dtypes::to_string(dX.meta()),
+          {"float16", "bfloat16", "float32", "float64"});
     }
   }
 }

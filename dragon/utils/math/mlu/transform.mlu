@@ -1,5 +1,5 @@
-#include "dragon/utils/math/reduce.h"
 #include "dragon/utils/math/transform.h"
+#include "dragon/utils/math/reduce.h"
 #include "dragon/utils/math/types.h"
 #include "dragon/utils/math/utils.h"
 
@@ -97,31 +97,31 @@ void DispatchAffine(
 
 } // namespace
 
-#define DEFINE_AFFINE_FUNC(T)                                      \
-  template <>                                                      \
-  void Affine<T, MLUContext>(                                      \
-      const int num_dims,                                          \
-      const int64_t* dims,                                         \
-      const int num_axes,                                          \
-      const int64_t* axes,                                         \
-      const T* x,                                                  \
-      const T* scale,                                              \
-      const T* bias,                                               \
-      T* y,                                                        \
-      MLUContext* ctx) {                                           \
-    vec64_t new_dims, new_axes;                                    \
-    math::utils::CollapseReduceAxes(                               \
-        num_dims, dims, num_axes, axes, new_dims, new_axes);       \
-    DispatchAffine(                                                \
-        new_dims.size(),                                           \
-        new_dims.data(),                                           \
-        new_axes.size(),                                           \
-        new_axes.data(),                                           \
-        reinterpret_cast<const math::ScalarType<T>::type*>(x),     \
-        reinterpret_cast<const math::ScalarType<T>::type*>(scale), \
-        reinterpret_cast<const math::ScalarType<T>::type*>(bias),  \
-        reinterpret_cast<math::ScalarType<T>::type*>(y),           \
-        ctx);                                                      \
+#define DEFINE_AFFINE_FUNC(T)                                         \
+  template <>                                                         \
+  void Affine<T, MLUContext>(                                         \
+      const int num_dims,                                             \
+      const int64_t* dims,                                            \
+      const int num_axes,                                             \
+      const int64_t* axes,                                            \
+      const T* x,                                                     \
+      const T* scale,                                                 \
+      const T* bias,                                                  \
+      T* y,                                                           \
+      MLUContext* ctx) {                                              \
+    vec64_t new_dims, new_axes;                                       \
+    math::utils::CollapseReduceAxes(                                  \
+        num_dims, dims, num_axes, axes, new_dims, new_axes);          \
+    DispatchAffine(                                                   \
+        new_dims.size(),                                              \
+        new_dims.data(),                                              \
+        new_axes.size(),                                              \
+        new_axes.data(),                                              \
+        reinterpret_cast<const math::Traits<T>::scalar_type*>(x),     \
+        reinterpret_cast<const math::Traits<T>::scalar_type*>(scale), \
+        reinterpret_cast<const math::Traits<T>::scalar_type*>(bias),  \
+        reinterpret_cast<math::Traits<T>::scalar_type*>(y),           \
+        ctx);                                                         \
   }
 
 template <>
@@ -139,6 +139,7 @@ void Affine<double, MLUContext>(
 }
 
 DEFINE_AFFINE_FUNC(float16);
+DEFINE_AFFINE_FUNC(bfloat16);
 DEFINE_AFFINE_FUNC(float);
 #undef DEFINE_AFFINE_FUNC
 #undef BLOCK_THREADS

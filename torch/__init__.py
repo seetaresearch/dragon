@@ -37,6 +37,7 @@ from dragon.vm.torch.core.autograd.grad_mode import set_grad_enabled
 from dragon.vm.torch.core.cpp import device
 from dragon.vm.torch.core.cpp import dtype
 from dragon.vm.torch.core.cpp import Size
+from dragon.vm.torch.core.tensor import BFloat16Tensor
 from dragon.vm.torch.core.tensor import BoolTensor
 from dragon.vm.torch.core.tensor import ByteTensor
 from dragon.vm.torch.core.tensor import CharTensor

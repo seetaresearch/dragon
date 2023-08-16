@@ -35,66 +35,82 @@ namespace dragon {
   } while (0)
 
 template <typename T>
-class CuDNNType;
+class CuDNNTraits;
 
 template <>
-class CuDNNType<float16> {
+class CuDNNTraits<float16> {
  public:
   static const cudnnDataType_t type = CUDNN_DATA_HALF;
   static float oneval, zeroval;
   static const void *one, *zero;
-  typedef float BNParamType;
 };
 
 template <>
-class CuDNNType<float> {
+class CuDNNTraits<bfloat16> {
+ public:
+  static const cudnnDataType_t type = CUDNN_DATA_BFLOAT16;
+  static float oneval, zeroval;
+  static const void *one, *zero;
+};
+
+template <>
+class CuDNNTraits<float> {
  public:
   static const cudnnDataType_t type = CUDNN_DATA_FLOAT;
   static float oneval, zeroval;
   static const void *one, *zero;
-  typedef float BNParamType;
 };
 
 template <>
-class CuDNNType<double> {
+class CuDNNTraits<double> {
  public:
   static const cudnnDataType_t type = CUDNN_DATA_DOUBLE;
   static double oneval, zeroval;
   static const void *one, *zero;
-  typedef double BNParamType;
 };
+
+/*! \brief Return the cudnn data type by type */
+DRAGON_API const cudnnDataType_t& CuDNNGetDataType(const TypeMeta& type);
+
+/*! \brief Return the cudnn data type by template type */
+template <typename T>
+const cudnnDataType_t& CuDNNGetDataType() {
+  return CuDNNGetDataType(TypeMeta::Make<T>());
+}
 
 /*! \brief Return the cudnn math type by template type */
 template <typename T>
-cudnnMathType_t CuDNNGetMathType();
+DRAGON_API cudnnMathType_t CuDNNGetMathType();
 
 /*! \brief Create a tensor desc */
-void CuDNNCreateTensorDesc(cudnnTensorDescriptor_t* desc);
+DRAGON_API void CuDNNCreateTensorDesc(cudnnTensorDescriptor_t* desc);
 
 /*! \brief Destroy a tensor desc */
-void CuDNNDestroyTensorDesc(cudnnTensorDescriptor_t desc);
+DRAGON_API void CuDNNDestroyTensorDesc(cudnnTensorDescriptor_t desc);
 
 /*! \brief Set a tensor desc with dims */
 template <typename T>
-void CuDNNSetTensorDesc(cudnnTensorDescriptor_t desc, const vec64_t& dims);
+DRAGON_API void CuDNNSetTensorDesc(
+    cudnnTensorDescriptor_t desc,
+    const vec64_t& dims);
 
 /*! \brief Set a tensor desc with dims and strides */
 template <typename T>
-void CuDNNSetTensorDesc(
+DRAGON_API void CuDNNSetTensorDesc(
     cudnnTensorDescriptor_t desc,
     const vec64_t& dims,
     const vec64_t& strides);
 
 /*! \brief Set a tensor desc with dims, data format and group */
 template <typename T>
-void CuDNNSetTensorDesc(
+DRAGON_API void CuDNNSetTensorDesc(
     cudnnTensorDescriptor_t desc,
     const vec64_t& dims,
     const string& data_format);
 
 /*! \brief Set a bias desc with expanding dimensions */
 template <typename T>
-void CuDNNSetBiasDesc(
+DRAGON_API void CuDNNSetBiasDesc(
     cudnnTensorDescriptor_t desc,
     const int num_dims,
     const int64_t N,
@@ -102,12 +118,12 @@ void CuDNNSetBiasDesc(
 
 /*! \brief Set a dropout desc */
 template <class Context>
-void CuDNNSetDropoutDesc(
+DRAGON_API void CuDNNSetDropoutDesc(
     cudnnDropoutDescriptor_t desc,
     const float ratio,
     Context* ctx);
 
-class CuDNNTensorDescs {
+class DRAGON_API CuDNNTensorDescs {
  public:
   CuDNNTensorDescs(int num_descs) {
     descs_.resize(num_descs);

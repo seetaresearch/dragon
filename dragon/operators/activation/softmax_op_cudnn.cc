@@ -27,10 +27,10 @@ void CuDNNSoftmaxOp<Context>::DoRunWithType() {
       ctx()->cudnn_handle(),
       CUDNN_SOFTMAX_ACCURATE,
       S == 1 ? CUDNN_SOFTMAX_MODE_INSTANCE : CUDNN_SOFTMAX_MODE_CHANNEL,
-      CuDNNType<T>::one,
+      CuDNNTraits<T>::one,
       input_desc_,
       X.template data<T, Context>(),
-      CuDNNType<T>::zero,
+      CuDNNTraits<T>::zero,
       input_desc_,
       Y->ReshapeLike(X)->template mutable_data<T, Context>()));
 }
@@ -58,12 +58,12 @@ void CuDNNSoftmaxGradientOp<Context>::DoRunWithType() {
       ctx()->cudnn_handle(),
       CUDNN_SOFTMAX_ACCURATE,
       S == 1 ? CUDNN_SOFTMAX_MODE_INSTANCE : CUDNN_SOFTMAX_MODE_CHANNEL,
-      CuDNNType<T>::one,
+      CuDNNTraits<T>::one,
       input_desc_,
       Y.template data<T, Context>(),
       input_desc_,
       dY.template data<T, Context>(),
-      CuDNNType<T>::zero,
+      CuDNNTraits<T>::zero,
       input_desc_,
       dX->ReshapeLike(Y)->template mutable_data<T, Context>()));
 }

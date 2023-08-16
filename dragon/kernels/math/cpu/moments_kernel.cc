@@ -81,7 +81,7 @@ void _GenericMoments(
 }
 
 template <typename T, typename AccT>
-void _Moments(
+void DispatchMoments(
     const int num_dims,
     const int64_t* dims,
     const int num_axes,
@@ -103,25 +103,20 @@ void _Moments(
           num_dims, dims, out_dims.data(), &rows, &cols)) {
     return _ColwiseMoments(rows, cols, x, mean, var);
   }
+  // clang-format off
   vec64_t transpose_axes(num_dims);
-  vec64_t transpose_strides(num_dims);
   vec64_t transpose_dims(num_dims);
+  vec64_t transpose_strides(num_dims);
   math::utils::TransposeAxesForReduce(
       num_dims, num_axes, axes, transpose_axes.data());
   math::utils::ComputeTransposeStrides(
       num_dims, dims, transpose_axes.data(), transpose_strides.data());
   rows = cols = 1;
   const int pivot = num_dims - num_axes;
-  for (int i = 0; i < pivot; ++i) {
-    rows *= dims[transpose_axes[i]];
-  }
-  for (int i = pivot; i < num_dims; ++i) {
-    cols *= dims[transpose_axes[i]];
-  }
-  for (int i = 0; i < num_dims; ++i) {
-    transpose_dims[i] = dims[transpose_axes[i]];
-  }
-  _GenericMoments(
+  for (int i = 0; i < pivot; ++i) rows *= dims[transpose_axes[i]];
+  for (int i = pivot; i < num_dims; ++i) cols *= dims[transpose_axes[i]];
+  for (int i = 0; i < num_dims; ++i) transpose_dims[i] = dims[transpose_axes[i]];
+  _GenericMoments( // clang-format on
       rows,
       cols,
       num_dims,
@@ -148,7 +143,7 @@ void _Moments(
     vec64_t new_dims, new_axes;                              \
     math::utils::CollapseReduceAxes(                         \
         num_dims, dims, num_axes, axes, new_dims, new_axes); \
-    _Moments(                                                \
+    DispatchMoments(                                         \
         new_dims.size(),                                     \
         new_dims.data(),                                     \
         new_axes.size(),                                     \
@@ -159,9 +154,8 @@ void _Moments(
         ctx);                                                \
   }
 
-DEFINE_KERNEL_LAUNCHER(int, float);
-DEFINE_KERNEL_LAUNCHER(int64_t, double);
 DEFINE_KERNEL_LAUNCHER(float16, float);
+DEFINE_KERNEL_LAUNCHER(bfloat16, float);
 DEFINE_KERNEL_LAUNCHER(float, float);
 DEFINE_KERNEL_LAUNCHER(double, double);
 #undef DEFINE__KERNEL_LAUNCHER

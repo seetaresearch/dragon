@@ -96,6 +96,17 @@ class Module(object):
         fn(self)
         return self
 
+    def bfloat16(self):
+        """Switch the buffers and parameters to ``bfloat16``.
+
+        Returns
+        -------
+        dragon.vm.torch.nn.Module
+            The self.
+
+        """
+        return self._apply(lambda t: t.bfloat16_() if t.is_floating_point() else t)
+
     def buffers(self, recurse=True):
         """Return an iterator over all buffers.
 

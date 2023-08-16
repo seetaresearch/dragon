@@ -14,63 +14,118 @@
 #define DRAGON_UTILS_MATH_TYPES_H_
 
 #include "dragon/core/types.h"
+#include "dragon/utils/device/common_eigen.h"
 
 namespace dragon {
 
 namespace math {
 
 /*
- * Type Classes.
+ * Type Traits.
  */
 
 template <typename T>
-class ScalarType {
+class Traits {
  public:
-  typedef T type;
-  typedef T type2;
+  using scalar_type = T;
+  using scalar2_type = T;
+  using eigen_type = T;
+  using accumulator_type = T;
+  static T Max() {
+    return std::numeric_limits<T>::max();
+  }
+  static T Lowest() {
+    return std::numeric_limits<T>::lowest();
+  }
+  static bool HasPack2() {
+    return sizeof(scalar2_type) != sizeof(scalar_type);
+  }
 };
 
+template <>
+class Traits<int8_t> {
+ public:
+#if defined(__mlu_func__)
+  using scalar_type = char;
+  using scalar2_type = char;
+#else
+  using scalar_type = int8_t;
+  using scalar2_type = int8_t;
+#endif
+  using eigen_type = int8_t;
+  using accumulator_type = int8_t;
+  static int8_t Max() {
+    return std::numeric_limits<int8_t>::max();
+  }
+  static int8_t Lowest() {
+    return std::numeric_limits<int8_t>::lowest();
+  }
+  static bool HasPack2() {
+    return false;
+  }
+};
+
+template <>
+class Traits<float16> {
+ public:
 #if defined(__CUDACC__)
-template <>
-class ScalarType<float16> {
- public:
-  typedef half type;
-  typedef half2 type2;
-};
+  using scalar_type = half;
+  using scalar2_type = half2;
+#elif defined(__mlu_func__)
+  using scalar_type = half;
+  using scalar2_type = half;
+#else
+  using scalar_type = float16;
+  using scalar2_type = float16;
 #endif
-
-#if defined(__mlu_host__)
-template <>
-class ScalarType<int8_t> {
- public:
-  typedef char type;
-  typedef char type2;
-};
-
-template <>
-class ScalarType<float16> {
- public:
-  typedef half type;
-  typedef half type2;
-};
+#if defined(EIGEN_WORLD_VERSION)
+  using eigen_type = Eigen::half;
+#else
+  using eigen_type = float16;
 #endif
-
-template <typename T>
-class AccumulatorType {
- public:
-  typedef float type;
+  using accumulator_type = float;
+  static float Max() {
+    return 65504.f;
+  }
+  static float Lowest() {
+    return -65505.f;
+  }
+  static bool HasPack2() {
+    return sizeof(scalar2_type) != sizeof(scalar_type);
+  }
 };
 
 template <>
-class AccumulatorType<int64_t> {
+class Traits<bfloat16> {
  public:
-  typedef double type;
-};
-
-template <>
-class AccumulatorType<double> {
- public:
-  typedef double type;
+#if defined(__CUDACC__)
+  using scalar_type = nv_bfloat16;
+  using scalar2_type = nv_bfloat162;
+#elif defined(__mlu_func__) && __BANG_ARCH__ >= 520
+  using scalar_type = bfloat16_t;
+  using scalar2_type = bfloat16_t;
+#elif defined(__mlu_func__) && __BANG_ARCH__ < 520
+  using scalar_type = half;
+  using scalar2_type = half;
+#else
+  using scalar_type = bfloat16;
+  using scalar2_type = bfloat16;
+#endif
+#if defined(EIGEN_WORLD_VERSION)
+  using eigen_type = Eigen::bfloat16;
+#else
+  using eigen_type = bfloat16;
+#endif
+  using accumulator_type = float;
+  static float Max() {
+    return std::numeric_limits<float>::max();
+  }
+  static float Lowest() {
+    return std::numeric_limits<float>::lowest();
+  }
+  static bool HasPack2() {
+    return sizeof(scalar2_type) != sizeof(scalar_type);
+  }
 };
 
 /*

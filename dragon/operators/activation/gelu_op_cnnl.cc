@@ -12,10 +12,10 @@ void CNNLGeluOp<Context>::DoRunWithType() {
   CNNL_CHECK(cnnlActivationForward(
       ctx()->cnnl_handle(),
       act_desc_,
-      CNNLType<T>::one,
+      CNNLTraits<T>::one,
       input_desc_,
       X.template data<T, Context>(),
-      CNNLType<T>::zero,
+      CNNLTraits<T>::zero,
       input_desc_,
       Y->ReshapeLike(X)->template mutable_data<T, Context>()));
 }
@@ -28,14 +28,14 @@ void CNNLGeluGradientOp<Context>::DoRunWithType() {
   CNNL_CHECK(cnnlActivationBackward(
       ctx()->cnnl_handle(),
       this->act_desc_,
-      CNNLType<T>::one,
+      CNNLTraits<T>::one,
       this->input_desc_,
       X.template data<T, Context>(),
       this->input_desc_,
       dY.template data<T, Context>(),
       this->input_desc_,
       X.template data<T, Context>(),
-      CNNLType<T>::zero,
+      CNNLTraits<T>::zero,
       this->input_desc_,
       dX->ReshapeLike(X)->template mutable_data<T, Context>()));
 }

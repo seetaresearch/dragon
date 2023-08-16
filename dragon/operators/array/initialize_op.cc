@@ -61,7 +61,7 @@ void GivenTensorFillOp<Context>::RunOnDevice() {
 template <class Context>
 template <typename T>
 void RangeOp<Context>::DoRunWithType() {
-  // Determine the slice arguments
+  // Determine the slice arguments.
   int num_args;
   double start = 0., limit, delta;
   slice(0, &num_args);
@@ -72,14 +72,12 @@ void RangeOp<Context>::DoRunWithType() {
   } else {
     LOG(FATAL) << "Unexcepted number of slice arguments: " << num_args;
   }
-
   // Determine the generating range.
   // Values are in a half-open interval: [start, stop)
   auto count = (int64_t)std::ceil((limit - start) / delta);
   CHECK_GT(count, 0) << "\nInvalid generating range: "
                      << "[" << start << ", " << limit
                      << ") with delta = " << delta << ".";
-
   kernels::Range(
       count,
       start,
@@ -93,8 +91,7 @@ template <typename T>
 void LinSpaceOp<Context>::DoRunWithType() {
   auto* Y = Output(0);
   GET_OP_AXIS_ARG(axis, Y->ndim(), 0);
-
-  // Determine the generating range
+  // Determine the generating range.
   // Values are in a interval: [start, stop]
   int num_starts;
   start(0, &num_starts);
@@ -106,7 +103,6 @@ void LinSpaceOp<Context>::DoRunWithType() {
         << "\nInvalid generating range: "
         << "[" << starts[i] << ", " << stops[i] << "].";
   }
-
   kernels::LinSpace(
       Y->dim(0),
       Y->ndim() > 1 ? Y->dim(1) : 1,

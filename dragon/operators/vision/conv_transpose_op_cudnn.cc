@@ -33,10 +33,10 @@ void CuDNNConvTransposeOp<Context>::DoRunWithType() {
     CuDNNSetBiasDesc<T>(Y_impl_.B_desc_, Y->ndim(), W.dim(1), data_format());
     CUDNN_CHECK(cudnnAddTensor(
         ctx()->cudnn_handle(),
-        CuDNNType<T>::one,
+        CuDNNTraits<T>::one,
         Y_impl_.B_desc_,
         Input(2).template data<T, Context>(),
-        CuDNNType<T>::one,
+        CuDNNTraits<T>::one,
         Y_impl_.X_desc_,
         Y->template mutable_data<T, Context>()));
   }
@@ -93,16 +93,22 @@ void CuDNNConvTransposeGradientOp<Context>::DoRunWithType() {
         ctx());
   }
 
-  if (HasBias()) {
+  if (HasBias() && TypeMeta::Id<T>() != TypeMeta::Id<bfloat16>()) {
     CuDNNSetBiasDesc<T>(dW_impl_.B_desc_, dY.ndim(), W.dim(1), data_format());
     CUDNN_CHECK(cudnnConvolutionBackwardBias(
         ctx()->cudnn_handle(),
-        CuDNNType<T>::one,
+        CuDNNTraits<T>::one,
         dW_impl_.X_desc_,
         dY.template data<T, Context>(),
-        CuDNNType<T>::zero,
+        CuDNNTraits<T>::zero,
         dW_impl_.B_desc_,
         Output(2)->template mutable_data<T, Context>()));
+  }
+
+  if (HasBias() && TypeMeta::Id<T>() == TypeMeta::Id<bfloat16>()) {
+    BwdBias( // CuDNN does not support bfloat16 reduction currently.
+        dY.template data<T, Context>(),
+        Output(2)->template mutable_data<T, Context>());
   }
 }
 

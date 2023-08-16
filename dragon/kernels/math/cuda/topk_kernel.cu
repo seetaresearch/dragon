@@ -142,7 +142,7 @@ __global__ void _GetTopK(
           reinterpret_cast<T*>(value),                \
           index)
 
-#define DEFINE_KERNEL_LAUNCHER(T, kLowest, kMax)                               \
+#define DEFINE_KERNEL_LAUNCHER(T)                                              \
   template <>                                                                  \
   void TopK<T, CUDAContext>(                                                   \
       const int N,                                                             \
@@ -154,7 +154,6 @@ __global__ void _GetTopK(
       T* value,                                                                \
       int64_t* index,                                                          \
       CUDAContext* ctx) {                                                      \
-    using ScalarT = math::ScalarType<T>::type;                                 \
     const int NxS = N * S;                                                     \
     if (NxS == 1 || C > CUDA_THREADS * 8) {                                    \
       const auto NxCxS = N * C * S;                                            \
@@ -168,7 +167,7 @@ __global__ void _GetTopK(
           S,                                                                   \
           C,                                                                   \
           largest,                                                             \
-          reinterpret_cast<ScalarT*>(scratch),                                 \
+          reinterpret_cast<math::Traits<T>::scalar_type*>(scratch),            \
           scratch2,                                                            \
           ctx);                                                                \
       if (NxS == 1) {                                                          \
@@ -180,50 +179,29 @@ __global__ void _GetTopK(
       }                                                                        \
       return;                                                                  \
     }                                                                          \
-    ScalarT init = largest > 0 ? kLowest : kMax;                               \
+    auto init = largest ? math::Traits<T>::Lowest() : math::Traits<T>::Max();  \
     if (C <= CUDA_THREADS) {                                                   \
-      DISPATCH_BLOCKSORT_KERNEL(ScalarT, 1);                                   \
+      DISPATCH_BLOCKSORT_KERNEL(math::Traits<T>::scalar_type, 1);              \
     } else if (C <= CUDA_THREADS * 2) {                                        \
-      DISPATCH_BLOCKSORT_KERNEL(ScalarT, 2);                                   \
+      DISPATCH_BLOCKSORT_KERNEL(math::Traits<T>::scalar_type, 2);              \
     } else if (C <= CUDA_THREADS * 4) {                                        \
-      DISPATCH_BLOCKSORT_KERNEL(ScalarT, 4);                                   \
+      DISPATCH_BLOCKSORT_KERNEL(math::Traits<T>::scalar_type, 4);              \
     } else if (C <= CUDA_THREADS * 8) {                                        \
-      DISPATCH_BLOCKSORT_KERNEL(ScalarT, 8);                                   \
+      DISPATCH_BLOCKSORT_KERNEL(math::Traits<T>::scalar_type, 8);              \
     } else {                                                                   \
       LOG(FATAL) << "Too larger dimension (> " << CUDA_THREADS * 8             \
                  << ") to launch the cuda kernel";                             \
     }                                                                          \
   }
 
-DEFINE_KERNEL_LAUNCHER(
-    uint8_t,
-    std::numeric_limits<uint8_t>::lowest(),
-    std::numeric_limits<uint8_t>::max());
-DEFINE_KERNEL_LAUNCHER(
-    int8_t,
-    std::numeric_limits<int8_t>::lowest(),
-    std::numeric_limits<int8_t>::max());
-DEFINE_KERNEL_LAUNCHER(
-    int,
-    std::numeric_limits<int>::lowest(),
-    std::numeric_limits<int>::max());
-DEFINE_KERNEL_LAUNCHER(
-    int64_t,
-    std::numeric_limits<int64_t>::lowest(),
-    std::numeric_limits<int64_t>::max());
-DEFINE_KERNEL_LAUNCHER(
-    float16,
-    cub::Traits<half>::Lowest(),
-    cub::Traits<half>::Max());
-DEFINE_KERNEL_LAUNCHER(
-    float,
-    std::numeric_limits<float>::lowest(),
-    std::numeric_limits<float>::max());
-DEFINE_KERNEL_LAUNCHER(
-    double,
-    std::numeric_limits<double>::lowest(),
-    std::numeric_limits<double>::max());
-
+DEFINE_KERNEL_LAUNCHER(uint8_t);
+DEFINE_KERNEL_LAUNCHER(int8_t);
+DEFINE_KERNEL_LAUNCHER(int);
+DEFINE_KERNEL_LAUNCHER(int64_t);
+DEFINE_KERNEL_LAUNCHER(float16);
+DEFINE_KERNEL_LAUNCHER(bfloat16);
+DEFINE_KERNEL_LAUNCHER(float);
+DEFINE_KERNEL_LAUNCHER(double);
 #undef DISPATCH_BLOCKSORT_KERNEL
 #undef DEFINE_KERNEL_LAUNCHER
 

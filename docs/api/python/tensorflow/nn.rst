@@ -45,10 +45,6 @@ vm.tensorflow.nn
   `conv_transpose(...) <nn/conv_transpose.html>`_
   : Apply n-dimension deconvolution.
 
-  `depthwise_conv2d(...) <nn/depthwise_conv2d.html>`_
-  : Apply 2d depthwise convolution.
-  `[Chollet, 2016] <https://arxiv.org/abs/1610.02357>`_.
-
   `depth_to_space(...) <nn/depth_to_space.html>`_
   : Rearrange depth data into spatial blocks.
 
@@ -143,7 +139,6 @@ vm.tensorflow.nn
   nn/conv3d_transpose
   nn/convolution
   nn/conv_transpose
-  nn/depthwise_conv2d
   nn/depth_to_space
   nn/dropout
   nn/elu

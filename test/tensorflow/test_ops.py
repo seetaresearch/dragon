@@ -375,7 +375,7 @@ class TestClipOps(OpTestCase):
     def test_clip_by_value(self):
         entries = [(None, None), (2, None), (None, 4), (2, 4)]
         for low, high in entries:
-            data = arange((6,))
+            data = arange((6,), -1)
             x = new_tensor(data)
             y = tf.clip_by_value(x, low, high)
             result = np.clip(data, low, high) if low or high else data

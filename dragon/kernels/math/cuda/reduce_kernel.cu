@@ -24,12 +24,12 @@ __global__ void _ReduceSumGrad(
       FIXED_DIVISOR_DIV_MOD(X_dims.data[d], tmp, &tmp, &r);
       yi += (r % Y_dims.data[d]) * Y_strides.data[d];
     }
-    dx[xi] = convert::To<T>(convert::To<AccT>(__ldg(dy + yi)) * scale);
+    dx[xi] = math::utils::LDGC<AccT>(dy + yi) * scale;
   }
 }
 
 template <typename T, typename AccT, int D>
-void _ReduceSumGradImpl(
+void DispatchReduceSumGrad(
     const int64_t* x_dims,
     const int64_t* y_dims,
     const int64_t* y_strides,
@@ -37,8 +37,8 @@ void _ReduceSumGradImpl(
     const T* dy,
     T* dx,
     CUDAContext* ctx) {
-  SimpleArray<int, D> X_dims, Y_dims, Y_strides;
   const auto N = math::utils::Prod(D, x_dims);
+  SimpleArray<int, D> X_dims, Y_dims, Y_strides;
   for (int i = 0; i < D; ++i) {
     X_dims.data[i] = x_dims[i];
     Y_dims.data[i] = y_dims[i];
@@ -50,33 +50,34 @@ void _ReduceSumGradImpl(
 
 } // namespace
 
-#define DEFINE_GRAD_KERNEL_LAUNCHER(T)                          \
-  template <>                                                   \
-  void ReduceSumGrad<T, CUDAContext>(                           \
-      const int num_dims,                                       \
-      const int64_t* x_dims,                                    \
-      const int64_t* y_dims,                                    \
-      const int64_t* y_strides,                                 \
-      const float scale,                                        \
-      const T* dy,                                              \
-      T* dx,                                                    \
-      CUDAContext* ctx) {                                       \
-    CUDA_TENSOR_DIMS_CHECK(num_dims);                           \
-    DISPATCH_FUNC_BY_VALUE_WITH_TYPE_2(                         \
-        _ReduceSumGradImpl,                                     \
-        math::ScalarType<T>::type,                              \
-        math::AccumulatorType<T>::type,                         \
-        num_dims,                                               \
-        x_dims,                                                 \
-        y_dims,                                                 \
-        y_strides,                                              \
-        convert::To<math::AccumulatorType<T>::type>(scale),     \
-        reinterpret_cast<const math::ScalarType<T>::type*>(dy), \
-        reinterpret_cast<math::ScalarType<T>::type*>(dx),       \
-        ctx);                                                   \
+#define DEFINE_GRAD_KERNEL_LAUNCHER(T)                             \
+  template <>                                                      \
+  void ReduceSumGrad<T, CUDAContext>(                              \
+      const int num_dims,                                          \
+      const int64_t* x_dims,                                       \
+      const int64_t* y_dims,                                       \
+      const int64_t* y_strides,                                    \
+      const float scale,                                           \
+      const T* dy,                                                 \
+      T* dx,                                                       \
+      CUDAContext* ctx) {                                          \
+    CUDA_TENSOR_DIMS_CHECK(num_dims);                              \
+    DISPATCH_FUNC_BY_VALUE_WITH_TYPE_2(                            \
+        DispatchReduceSumGrad,                                     \
+        math::Traits<T>::scalar_type,                              \
+        math::Traits<T>::accumulator_type,                         \
+        num_dims,                                                  \
+        x_dims,                                                    \
+        y_dims,                                                    \
+        y_strides,                                                 \
+        convert::To<math::Traits<T>::accumulator_type>(scale),     \
+        reinterpret_cast<const math::Traits<T>::scalar_type*>(dy), \
+        reinterpret_cast<math::Traits<T>::scalar_type*>(dx),       \
+        ctx);                                                      \
   }
 
 DEFINE_GRAD_KERNEL_LAUNCHER(float16);
+DEFINE_GRAD_KERNEL_LAUNCHER(bfloat16);
 DEFINE_GRAD_KERNEL_LAUNCHER(float);
 DEFINE_GRAD_KERNEL_LAUNCHER(double);
 #undef DEFINE_GRAD_KERNEL_LAUNCHER

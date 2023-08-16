@@ -8,19 +8,19 @@ namespace dragon {
 template <class Context>
 template <typename T>
 void GroupNormOp<Context>::DoRunWithType() {
-  using ParamT = typename math::AccumulatorType<T>::type;
+  using AccT = typename math::Traits<T>::accumulator_type;
   auto &X = Input(0), *Y = Output(0);
   auto &W = Input(1), &B = Input(2);
   GetBaseArguments();
 
-  INITIALIZE_TENSOR_VIA_SPEC(W, vec64_t({C_}), ParamT);
-  INITIALIZE_TENSOR_VIA_SPEC(B, vec64_t({C_}), ParamT);
+  INITIALIZE_TENSOR_VIA_SPEC(W, vec64_t({C_}), AccT);
+  INITIALIZE_TENSOR_VIA_SPEC(B, vec64_t({C_}), AccT);
   auto* X_mu = Output("X_mu")->Reshape({N_, G_});
   auto* X_rsig = Output("X_rsig")->Reshape({N_, G_});
 
   auto* x = X.template data<T, Context>();
-  auto* mu = X_mu->template mutable_data<ParamT, Context>();
-  auto* rsig = X_rsig->template mutable_data<ParamT, Context>();
+  auto* mu = X_mu->template mutable_data<AccT, Context>();
+  auto* rsig = X_rsig->template mutable_data<AccT, Context>();
 
   // Compute moments.
   if (data_format() == "NCHW") {
@@ -46,8 +46,8 @@ void GroupNormOp<Context>::DoRunWithType() {
       x,
       mu,
       rsig,
-      W.template data<ParamT, Context>(),
-      B.template data<ParamT, Context>(),
+      W.template data<AccT, Context>(),
+      B.template data<AccT, Context>(),
       Y->ReshapeLike(X)->template mutable_data<T, Context>(),
       ctx());
 }
@@ -55,14 +55,14 @@ void GroupNormOp<Context>::DoRunWithType() {
 template <class Context>
 template <typename T>
 void GroupNormGradientOp<Context>::DoRunWithType() {
-  using ParamT = typename math::AccumulatorType<T>::type;
+  using AccT = typename math::Traits<T>::accumulator_type;
   auto &X = Input(0), &W = Input(1), &dY = Input(2);
   auto &X_mu = Input("X_mu"), &X_rsig = Input("X_rsig");
   auto *dX = Output(0), *dW = Output(1), *dB = Output(2);
   GetBaseArguments();
 
   const auto NxG = N_ * G_; // Moment size.
-  auto* params = ctx()->workspace()->template data<ParamT, Context>(2 * NxG);
+  auto* params = ctx()->workspace()->template data<AccT, Context>(2 * NxG);
 
   // Gradient w.r.t. gamma, beta and input.
   kernels::GroupNormGrad(
@@ -72,14 +72,14 @@ void GroupNormGradientOp<Context>::DoRunWithType() {
       S_,
       data_format(),
       X.template data<T, Context>(),
-      X_mu.template data<ParamT, Context>(),
-      X_rsig.template data<ParamT, Context>(),
-      W.template data<ParamT, Context>(),
+      X_mu.template data<AccT, Context>(),
+      X_rsig.template data<AccT, Context>(),
+      W.template data<AccT, Context>(),
       dY.template data<T, Context>(),
       params,
       params, /* params + N_ * G_ */
-      dW->Reshape({C_})->template mutable_data<ParamT, Context>(),
-      dB->Reshape({C_})->template mutable_data<ParamT, Context>(),
+      dW->Reshape({C_})->template mutable_data<AccT, Context>(),
+      dB->Reshape({C_})->template mutable_data<AccT, Context>(),
       dX->ReshapeLike(X)->template mutable_data<T, Context>(),
       ctx());
 }

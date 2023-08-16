@@ -59,9 +59,6 @@ class DropBlockGradientOp final : public Operator<Context> {
   DECLARE_OP_SINGLE_ARG(float, ratio);
 };
 
-DEFINE_OP_SINGLE_ARG(float, DropBlockOp, ratio);
-DEFINE_OP_SINGLE_ARG(float, DropBlockGradientOp, ratio);
-
 } // namespace dragon
 
 #endif // DRAGON_OPERATORS_ACTIVATION_DROPBLOCK_OP_H_

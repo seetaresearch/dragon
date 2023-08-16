@@ -8,9 +8,10 @@ namespace kernels {
 
 namespace {
 
-__global__ void _Sequence(const int N, half* y) {
+template <typename T>
+__global__ void _Sequence(const int N, T* y) {
   CUDA_1D_KERNEL_LOOP(i, N) {
-    y[i] = __float2half(float(i));
+    y[i] = convert::To<T>(float(i));
   }
 }
 
@@ -96,16 +97,16 @@ _SetTrilu(const int nthreads, const int M, const int N, const int k, T* y) {
 
 } // namespace
 
-#define DEFINE_KERNEL_LAUNCHER(T)                                          \
-  template <>                                                              \
-  void Range<T, CUDAContext>(                                              \
-      const int N,                                                         \
-      const double start,                                                  \
-      const double delta,                                                  \
-      T* y,                                                                \
-      CUDAContext* ctx) {                                                  \
-    _Range<<<CUDA_BLOCKS(N), CUDA_THREADS, 0, ctx->cuda_stream()>>>(       \
-        N, start, delta, reinterpret_cast<math::ScalarType<T>::type*>(y)); \
+#define DEFINE_KERNEL_LAUNCHER(T)                                             \
+  template <>                                                                 \
+  void Range<T, CUDAContext>(                                                 \
+      const int N,                                                            \
+      const double start,                                                     \
+      const double delta,                                                     \
+      T* y,                                                                   \
+      CUDAContext* ctx) {                                                     \
+    _Range<<<CUDA_BLOCKS(N), CUDA_THREADS, 0, ctx->cuda_stream()>>>(          \
+        N, start, delta, reinterpret_cast<math::Traits<T>::scalar_type*>(y)); \
   }
 
 DEFINE_KERNEL_LAUNCHER(uint8_t);
@@ -113,51 +114,52 @@ DEFINE_KERNEL_LAUNCHER(int8_t);
 DEFINE_KERNEL_LAUNCHER(int);
 DEFINE_KERNEL_LAUNCHER(int64_t);
 DEFINE_KERNEL_LAUNCHER(float16);
+DEFINE_KERNEL_LAUNCHER(bfloat16);
 DEFINE_KERNEL_LAUNCHER(float);
 DEFINE_KERNEL_LAUNCHER(double);
 #undef DEFINE_KERNEL_LAUNCHER
 
-#define DEFINE_KERNEL_LAUNCHER(T)                           \
-  template <>                                               \
-  void LinSpace<T, CUDAContext>(                            \
-      const int N,                                          \
-      const int C,                                          \
-      const int axis,                                       \
-      const double* starts,                                 \
-      const double* stops,                                  \
-      T* y,                                                 \
-      CUDAContext* ctx) {                                   \
-    CUDA_TENSOR_DIMS_CHECK((axis == 0 ? C : N));            \
-    const auto NxC = N * C;                                 \
-    SimpleArray<double, CUDA_TENSOR_MAX_DIMS> Y_starts;     \
-    SimpleArray<double, CUDA_TENSOR_MAX_DIMS> Y_stops;      \
-    for (int i = 0; i < (axis == 0 ? C : N); ++i) {         \
-      Y_starts.data[i] = starts[i];                         \
-      Y_stops.data[i] = stops[i];                           \
-    }                                                       \
-    if (axis == 0) {                                        \
-      _RowwiseLinSpace<<<                                   \
-          CUDA_BLOCKS(NxC),                                 \
-          CUDA_THREADS,                                     \
-          0,                                                \
-          ctx->cuda_stream()>>>(                            \
-          N,                                                \
-          C,                                                \
-          Y_starts,                                         \
-          Y_stops,                                          \
-          reinterpret_cast<math::ScalarType<T>::type*>(y)); \
-    } else {                                                \
-      _ColwiseLinSpace<<<                                   \
-          CUDA_BLOCKS(NxC),                                 \
-          CUDA_THREADS,                                     \
-          0,                                                \
-          ctx->cuda_stream()>>>(                            \
-          NxC,                                              \
-          C,                                                \
-          Y_starts,                                         \
-          Y_stops,                                          \
-          reinterpret_cast<math::ScalarType<T>::type*>(y)); \
-    }                                                       \
+#define DEFINE_KERNEL_LAUNCHER(T)                              \
+  template <>                                                  \
+  void LinSpace<T, CUDAContext>(                               \
+      const int N,                                             \
+      const int C,                                             \
+      const int axis,                                          \
+      const double* starts,                                    \
+      const double* stops,                                     \
+      T* y,                                                    \
+      CUDAContext* ctx) {                                      \
+    CUDA_TENSOR_DIMS_CHECK((axis == 0 ? C : N));               \
+    const auto NxC = N * C;                                    \
+    SimpleArray<double, CUDA_TENSOR_MAX_DIMS> Y_starts;        \
+    SimpleArray<double, CUDA_TENSOR_MAX_DIMS> Y_stops;         \
+    for (int i = 0; i < (axis == 0 ? C : N); ++i) {            \
+      Y_starts.data[i] = starts[i];                            \
+      Y_stops.data[i] = stops[i];                              \
+    }                                                          \
+    if (axis == 0) {                                           \
+      _RowwiseLinSpace<<<                                      \
+          CUDA_BLOCKS(NxC),                                    \
+          CUDA_THREADS,                                        \
+          0,                                                   \
+          ctx->cuda_stream()>>>(                               \
+          N,                                                   \
+          C,                                                   \
+          Y_starts,                                            \
+          Y_stops,                                             \
+          reinterpret_cast<math::Traits<T>::scalar_type*>(y)); \
+    } else {                                                   \
+      _ColwiseLinSpace<<<                                      \
+          CUDA_BLOCKS(NxC),                                    \
+          CUDA_THREADS,                                        \
+          0,                                                   \
+          ctx->cuda_stream()>>>(                               \
+          NxC,                                                 \
+          C,                                                   \
+          Y_starts,                                            \
+          Y_stops,                                             \
+          reinterpret_cast<math::Traits<T>::scalar_type*>(y)); \
+    }                                                          \
   }
 
 DEFINE_KERNEL_LAUNCHER(uint8_t);
@@ -165,6 +167,7 @@ DEFINE_KERNEL_LAUNCHER(int8_t);
 DEFINE_KERNEL_LAUNCHER(int);
 DEFINE_KERNEL_LAUNCHER(int64_t);
 DEFINE_KERNEL_LAUNCHER(float16);
+DEFINE_KERNEL_LAUNCHER(bfloat16);
 DEFINE_KERNEL_LAUNCHER(float);
 DEFINE_KERNEL_LAUNCHER(double);
 #undef DEFINE_KERNEL_LAUNCHER
@@ -180,26 +183,29 @@ DEFINE_KERNEL_LAUNCHER(double);
     thrust::sort_by_key(policy, keys, keys + N, values);                \
   }
 
-template <>
-void Permutation<float16, CUDAContext>(
-    const int N,
-    const uint32_t* r,
-    float16* y,
-    CUDAContext* ctx) {
-  auto keys = thrust::device_ptr<uint32_t>(const_cast<uint32_t*>(r));
-  auto values = thrust::device_ptr<half>(reinterpret_cast<half*>(y));
-  auto policy = thrust::cuda::par.on(ctx->cuda_stream());
-  _Sequence<<<CUDA_BLOCKS(N), CUDA_THREADS, 0, ctx->cuda_stream()>>>(
-      N, reinterpret_cast<half*>(y));
-  thrust::sort_by_key(policy, keys, keys + N, values);
-}
-
 DEFINE_KERNEL_LAUNCHER(uint8_t);
 DEFINE_KERNEL_LAUNCHER(int8_t);
 DEFINE_KERNEL_LAUNCHER(int);
 DEFINE_KERNEL_LAUNCHER(int64_t);
 DEFINE_KERNEL_LAUNCHER(float);
 DEFINE_KERNEL_LAUNCHER(double);
+#undef DEFINE_KERNEL_LAUNCHER
+
+#define DEFINE_KERNEL_LAUNCHER(T)                                             \
+  template <>                                                                 \
+  void Permutation<T, CUDAContext>(                                           \
+      const int N, const uint32_t* r, T* y, CUDAContext* ctx) {               \
+    using ScalarT = math::Traits<T>::scalar_type;                             \
+    auto keys = thrust::device_ptr<uint32_t>(const_cast<uint32_t*>(r));       \
+    auto values = thrust::device_ptr<ScalarT>(reinterpret_cast<ScalarT*>(y)); \
+    auto policy = thrust::cuda::par.on(ctx->cuda_stream());                   \
+    _Sequence<<<CUDA_BLOCKS(N), CUDA_THREADS, 0, ctx->cuda_stream()>>>(       \
+        N, reinterpret_cast<ScalarT*>(y));                                    \
+    thrust::sort_by_key(policy, keys, keys + N, values);                      \
+  }
+
+DEFINE_KERNEL_LAUNCHER(float16);
+DEFINE_KERNEL_LAUNCHER(bfloat16);
 #undef DEFINE_KERNEL_LAUNCHER
 
 #define DEFINE_KERNEL_LAUNCHER(T)                                           \
@@ -214,13 +220,13 @@ DEFINE_KERNEL_LAUNCHER(double);
     const auto nthreads = batch_size * M;                                   \
     math::Set((nthreads * N), convert::To<T>(0.f), y, ctx);                 \
     if (k > 0) {                                                            \
-      _SetEye<T, true>                                                      \
+      _SetEye<math::Traits<T>::scalar_type, true>                           \
           <<<CUDA_BLOCKS(nthreads), CUDA_THREADS, 0, ctx->cuda_stream()>>>( \
-              nthreads, M, N, k, y);                                        \
+              nthreads, M, N, k, (math::Traits<T>::scalar_type*)y);         \
     } else {                                                                \
-      _SetEye<T, false>                                                     \
+      _SetEye<math::Traits<T>::scalar_type, false>                          \
           <<<CUDA_BLOCKS(nthreads), CUDA_THREADS, 0, ctx->cuda_stream()>>>( \
-              nthreads, M, N, -k, y);                                       \
+              nthreads, M, N, -k, (math::Traits<T>::scalar_type*)y);        \
     }                                                                       \
   }
 
@@ -230,6 +236,7 @@ DEFINE_KERNEL_LAUNCHER(int8_t);
 DEFINE_KERNEL_LAUNCHER(int);
 DEFINE_KERNEL_LAUNCHER(int64_t);
 DEFINE_KERNEL_LAUNCHER(float16);
+DEFINE_KERNEL_LAUNCHER(bfloat16);
 DEFINE_KERNEL_LAUNCHER(float);
 DEFINE_KERNEL_LAUNCHER(double);
 #undef DEFINE_KERNEL_LAUNCHER
@@ -248,13 +255,13 @@ DEFINE_KERNEL_LAUNCHER(double);
     const auto nthreads = batch_size * M * N;                               \
     math::Copy(nthreads, x, y, ctx);                                        \
     if (upper > 0) {                                                        \
-      _SetTrilu<T, true>                                                    \
+      _SetTrilu<math::Traits<T>::scalar_type, true>                         \
           <<<CUDA_BLOCKS(nthreads), CUDA_THREADS, 0, ctx->cuda_stream()>>>( \
-              nthreads, M, N, k, y);                                        \
+              nthreads, M, N, k, (math::Traits<T>::scalar_type*)y);         \
     } else {                                                                \
-      _SetTrilu<T, false>                                                   \
+      _SetTrilu<math::Traits<T>::scalar_type, false>                        \
           <<<CUDA_BLOCKS(nthreads), CUDA_THREADS, 0, ctx->cuda_stream()>>>( \
-              nthreads, M, N, k, y);                                        \
+              nthreads, M, N, k, (math::Traits<T>::scalar_type*)y);         \
     }                                                                       \
   }
 
@@ -264,6 +271,7 @@ DEFINE_KERNEL_LAUNCHER(int8_t);
 DEFINE_KERNEL_LAUNCHER(int);
 DEFINE_KERNEL_LAUNCHER(int64_t);
 DEFINE_KERNEL_LAUNCHER(float16);
+DEFINE_KERNEL_LAUNCHER(bfloat16);
 DEFINE_KERNEL_LAUNCHER(float);
 DEFINE_KERNEL_LAUNCHER(double);
 #undef DEFINE_KERNEL_LAUNCHER

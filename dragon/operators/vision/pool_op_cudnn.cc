@@ -69,10 +69,10 @@ void CuDNNPoolOp<Context>::DoRunWithType() {
   CUDNN_CHECK(cudnnPoolingForward(
       ctx()->cudnn_handle(),
       this->pool_desc_,
-      CuDNNType<T>::one,
+      CuDNNTraits<T>::one,
       this->input_desc_,
       X.template data<T, Context>(),
-      CuDNNType<T>::zero,
+      CuDNNTraits<T>::zero,
       this->output_desc_,
       Y->Reshape(out_shape_)->template mutable_data<T, Context>()));
 }
@@ -91,14 +91,14 @@ void CuDNNPoolGradientOp<Context>::DoRunWithType() {
   CUDNN_CHECK(cudnnPoolingBackward(
       ctx()->cudnn_handle(),
       this->pool_desc_,
-      CuDNNType<T>::one,
+      CuDNNTraits<T>::one,
       this->input_desc_,
       Y.template data<T, Context>(),
       this->input_desc_,
       dY.template data<T, Context>(),
       this->output_desc_,
       X.template data<T, Context>(),
-      CuDNNType<T>::zero,
+      CuDNNTraits<T>::zero,
       this->output_desc_,
       dX->ReshapeLike(X)->template mutable_data<T, Context>()));
 }

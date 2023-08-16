@@ -27,10 +27,10 @@ _RoiAlignIntp(const int H, const int W, float h, float w, const T* x) {
     ri = li = W - 1;
     w = (float)li;
   }
-  const float tl = convert::To<float>(__ldg(x + ti * W + li));
-  const float tr = convert::To<float>(__ldg(x + ti * W + ri));
-  const float bl = convert::To<float>(__ldg(x + bi * W + li));
-  const float br = convert::To<float>(__ldg(x + bi * W + ri));
+  const float tl = math::utils::LDGC<float>(x + (ti * W + li));
+  const float tr = math::utils::LDGC<float>(x + (ti * W + ri));
+  const float bl = math::utils::LDGC<float>(x + (bi * W + li));
+  const float br = math::utils::LDGC<float>(x + (bi * W + ri));
   const float v = h - ti;
   const float u = w - li;
   const float t = tl + (tr - tl) * u;
@@ -97,7 +97,7 @@ __global__ void _RoiAlign(
     const float* roi = rois + n * 5;
     const int batch_ind = roi[0];
     if (batch_ind < 0) {
-      y[yi] = convert::To<T>(0.f);
+      y[yi] = T(0.f);
       continue;
     }
 
@@ -107,21 +107,17 @@ __global__ void _RoiAlign(
     const float roi_wend = roi[3] * spatial_scale - roi_offset;
     const float roi_hend = roi[4] * spatial_scale - roi_offset;
 
-    const float roi_h =
-        aligned ? roi_hend - roi_hstart : max(roi_hend - roi_hstart, 1.f);
-    const float roi_w =
-        aligned ? roi_wend - roi_wstart : max(roi_wend - roi_wstart, 1.f);
+    // clang-format off
+    const float roi_h = aligned ? roi_hend - roi_hstart : max(roi_hend - roi_hstart, 1.f);
+    const float roi_w = aligned ? roi_wend - roi_wstart : max(roi_wend - roi_wstart, 1.f);
     const float bin_h = roi_h / float(out_h);
     const float bin_w = roi_w / float(out_w);
-
-    const int grid_h =
-        sampling_ratio > 0 ? sampling_ratio : int(ceil(roi_h / float(out_h)));
-    const int grid_w =
-        sampling_ratio > 0 ? sampling_ratio : int(ceil(roi_w / float(out_w)));
+    const int grid_h = sampling_ratio > 0 ? sampling_ratio : int(ceil(roi_h / float(out_h)));
+    const int grid_w = sampling_ratio > 0 ? sampling_ratio : int(ceil(roi_w / float(out_w)));
+    // clang-format on
 
     const float hstart = roi_hstart + h_out * bin_h;
     const float wstart = roi_wstart + w_out * bin_w;
-
     const T* offset_x = x + (batch_ind * C + c) * H * W;
     float val = 0.f;
     for (int i = 0; i < grid_h; i++) {
@@ -131,7 +127,7 @@ __global__ void _RoiAlign(
         val += _RoiAlignIntp(H, W, h, w, offset_x);
       }
     }
-    y[yi] = convert::To<T>(val / float(max(grid_h * grid_w, 1)));
+    y[yi] = val / float(max(grid_h * grid_w, 1));
   }
 }
 
@@ -165,24 +161,19 @@ __global__ void _RoiAlignGrad(
     const float roi_wend = roi[3] * spatial_scale - roi_offset;
     const float roi_hend = roi[4] * spatial_scale - roi_offset;
 
-    const float roi_h =
-        aligned ? roi_hend - roi_hstart : max(roi_hend - roi_hstart, 1.f);
-    const float roi_w =
-        aligned ? roi_wend - roi_wstart : max(roi_wend - roi_wstart, 1.f);
+    // clang-format off
+    const float roi_h = aligned ? roi_hend - roi_hstart : max(roi_hend - roi_hstart, 1.f);
+    const float roi_w = aligned ? roi_wend - roi_wstart : max(roi_wend - roi_wstart, 1.f);
     const float bin_w = roi_w / float(out_w);
     const float bin_h = roi_h / float(out_h);
-
-    const int grid_h =
-        sampling_ratio > 0 ? sampling_ratio : int(ceil(roi_h / float(out_h)));
-    const int grid_w =
-        sampling_ratio > 0 ? sampling_ratio : int(ceil(roi_w / float(out_w)));
+    const int grid_h = sampling_ratio > 0 ? sampling_ratio : int(ceil(roi_h / float(out_h)));
+    const int grid_w = sampling_ratio > 0 ? sampling_ratio : int(ceil(roi_w / float(out_w)));
+    // clang-format on
 
     const float hstart = roi_hstart + h_out * bin_h;
     const float wstart = roi_wstart + w_out * bin_w;
-
     float* offset_dx = dx + (batch_ind * C + c) * H * W;
     const float grad = convert::To<float>(dy[yi]) / float(grid_h * grid_w);
-
     for (int i = 0; i < grid_h; i++) {
       const float h = hstart + (i + .5f) * bin_h / grid_h;
       for (int j = 0; j < grid_w; j++) {
@@ -193,13 +184,13 @@ __global__ void _RoiAlignGrad(
         if (li >= 0 && ri >= 0 && ti >= 0 && bi >= 0) {
           const float db = grad * v;
           const float dt = grad * (1.f - v);
-          math::utils::AtomicAdd(offset_dx + ti * W + li, (1.f - u) * dt);
-          math::utils::AtomicAdd(offset_dx + ti * W + ri, u * dt);
-          math::utils::AtomicAdd(offset_dx + bi * W + li, (1.f - u) * db);
-          math::utils::AtomicAdd(offset_dx + bi * W + ri, u * db);
+          math::utils::AtomicAdd(offset_dx + (ti * W + li), (1.f - u) * dt);
+          math::utils::AtomicAdd(offset_dx + (ti * W + ri), u * dt);
+          math::utils::AtomicAdd(offset_dx + (bi * W + li), (1.f - u) * db);
+          math::utils::AtomicAdd(offset_dx + (bi * W + ri), u * db);
         }
-      } // End i
-    } // End j
+      }
+    }
   }
 }
 
@@ -232,17 +223,19 @@ __global__ void _RoiAlignGrad(
         spatial_scale,                                                       \
         sampling_ratio,                                                      \
         aligned,                                                             \
-        reinterpret_cast<const math::ScalarType<InputT>::type*>(x),          \
+        reinterpret_cast<const math::Traits<InputT>::scalar_type*>(x),       \
         rois,                                                                \
-        reinterpret_cast<math::ScalarType<OutputT>::type*>(y));              \
+        reinterpret_cast<math::Traits<OutputT>::scalar_type*>(y));           \
   }
 
 DEFINE_KERNEL_LAUNCHER(RoiAlign, float16, float16);
+DEFINE_KERNEL_LAUNCHER(RoiAlign, bfloat16, bfloat16);
 DEFINE_KERNEL_LAUNCHER(RoiAlign, float, float);
 DEFINE_KERNEL_LAUNCHER(RoiAlign, double, double);
-DEFINE_KERNEL_LAUNCHER(RoiAlignGrad, float16, float); // RoiAlignGrad
-DEFINE_KERNEL_LAUNCHER(RoiAlignGrad, float, float); // RoiAlignGrad
-DEFINE_KERNEL_LAUNCHER(RoiAlignGrad, double, float); // RoiAlignGrad
+DEFINE_KERNEL_LAUNCHER(RoiAlignGrad, float16, float);
+DEFINE_KERNEL_LAUNCHER(RoiAlignGrad, bfloat16, float);
+DEFINE_KERNEL_LAUNCHER(RoiAlignGrad, float, float);
+DEFINE_KERNEL_LAUNCHER(RoiAlignGrad, double, float);
 #undef DEFINE_KERNEL_LAUNCHER
 
 } // namespace kernels

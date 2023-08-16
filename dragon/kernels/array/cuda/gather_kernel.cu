@@ -104,8 +104,8 @@ void _GatherElementsImpl(
         C,                                                                \
         K,                                                                \
         index,                                                            \
-        reinterpret_cast<const math::ScalarType<InputT>::type*>(x),       \
-        reinterpret_cast<math::ScalarType<OutputT>::type*>(y));           \
+        reinterpret_cast<const math::Traits<InputT>::scalar_type*>(x),    \
+        reinterpret_cast<math::Traits<OutputT>::scalar_type*>(y));        \
   }
 
 DEFINE_KERNEL_LAUNCHER(Gather, bool, bool);
@@ -114,11 +114,13 @@ DEFINE_KERNEL_LAUNCHER(Gather, int8_t, int8_t);
 DEFINE_KERNEL_LAUNCHER(Gather, int, int);
 DEFINE_KERNEL_LAUNCHER(Gather, int64_t, int64_t);
 DEFINE_KERNEL_LAUNCHER(Gather, float16, float16);
+DEFINE_KERNEL_LAUNCHER(Gather, bfloat16, bfloat16);
 DEFINE_KERNEL_LAUNCHER(Gather, float, float);
 DEFINE_KERNEL_LAUNCHER(Gather, double, double);
-DEFINE_KERNEL_LAUNCHER(GatherGrad, float16, float); // GatherGrad
-DEFINE_KERNEL_LAUNCHER(GatherGrad, float, float); // GatherGrad
-DEFINE_KERNEL_LAUNCHER(GatherGrad, double, float); // GatherGrad
+DEFINE_KERNEL_LAUNCHER(GatherGrad, float16, float);
+DEFINE_KERNEL_LAUNCHER(GatherGrad, bfloat16, float);
+DEFINE_KERNEL_LAUNCHER(GatherGrad, float, float);
+DEFINE_KERNEL_LAUNCHER(GatherGrad, double, float);
 #undef DEFINE_KERNEL_LAUNCHER
 
 #define DEFINE_KERNEL_LAUNCHER(name, T) \
@@ -152,6 +154,7 @@ DEFINE_KERNEL_LAUNCHER(GatherElements, int8_t);
 DEFINE_KERNEL_LAUNCHER(GatherElements, int);
 DEFINE_KERNEL_LAUNCHER(GatherElements, int64_t);
 DEFINE_KERNEL_LAUNCHER(GatherElements, float16);
+DEFINE_KERNEL_LAUNCHER(GatherElements, bfloat16);
 DEFINE_KERNEL_LAUNCHER(GatherElements, float);
 DEFINE_KERNEL_LAUNCHER(GatherElements, double);
 #undef DEFINE_KERNEL_LAUNCHER

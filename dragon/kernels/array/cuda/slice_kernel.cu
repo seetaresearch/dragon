@@ -48,8 +48,8 @@ __global__ void _SliceGrad(
 }
 
 template <typename T, int D>
-void _SliceImpl(
-    const string& routine,
+void DispatchSlice(
+    const string& kernel,
     const int64_t* x_strides,
     const int64_t* y_dims,
     const int64_t* starts,
@@ -63,10 +63,10 @@ void _SliceImpl(
     Y_dims.data[i] = y_dims[i];
     X_starts.data[i] = starts[i];
   }
-  if (routine == "Slice") {
+  if (kernel == "Slice") {
     _Slice<<<CUDA_BLOCKS(N), CUDA_THREADS, 0, ctx->cuda_stream()>>>(
         N, X_strides, Y_dims, X_starts, x, y);
-  } else if (routine == "SliceGrad") {
+  } else if (kernel == "SliceGrad") {
     _SliceGrad<<<CUDA_BLOCKS(N), CUDA_THREADS, 0, ctx->cuda_stream()>>>(
         N, X_strides, Y_dims, X_starts, x, y);
   }
@@ -74,19 +74,28 @@ void _SliceImpl(
 
 } // namespace
 
-#define DEFINE_KERNEL_LAUNCHER(name, T)                                        \
-  template <>                                                                  \
-  void name<T, CUDAContext>(                                                   \
-      const int num_dims,                                                      \
-      const int64_t* x_strides,                                                \
-      const int64_t* y_dims,                                                   \
-      const int64_t* starts,                                                   \
-      const T* x,                                                              \
-      T* y,                                                                    \
-      CUDAContext* ctx) {                                                      \
-    CUDA_TENSOR_DIMS_CHECK(num_dims);                                          \
-    DISPATCH_FUNC_BY_VALUE_WITH_TYPE_1(                                        \
-        _SliceImpl, T, num_dims, #name, x_strides, y_dims, starts, x, y, ctx); \
+#define DEFINE_KERNEL_LAUNCHER(name, T) \
+  template <>                           \
+  void name<T, CUDAContext>(            \
+      const int num_dims,               \
+      const int64_t* x_strides,         \
+      const int64_t* y_dims,            \
+      const int64_t* starts,            \
+      const T* x,                       \
+      T* y,                             \
+      CUDAContext* ctx) {               \
+    CUDA_TENSOR_DIMS_CHECK(num_dims);   \
+    DISPATCH_FUNC_BY_VALUE_WITH_TYPE_1( \
+        DispatchSlice,                  \
+        T,                              \
+        num_dims,                       \
+        #name,                          \
+        x_strides,                      \
+        y_dims,                         \
+        starts,                         \
+        x,                              \
+        y,                              \
+        ctx);                           \
   }
 
 DEFINE_KERNEL_LAUNCHER(Slice, bool);
@@ -95,9 +104,11 @@ DEFINE_KERNEL_LAUNCHER(Slice, uint8_t);
 DEFINE_KERNEL_LAUNCHER(Slice, int);
 DEFINE_KERNEL_LAUNCHER(Slice, int64_t);
 DEFINE_KERNEL_LAUNCHER(Slice, float16);
+DEFINE_KERNEL_LAUNCHER(Slice, bfloat16);
 DEFINE_KERNEL_LAUNCHER(Slice, float);
 DEFINE_KERNEL_LAUNCHER(Slice, double);
 DEFINE_KERNEL_LAUNCHER(SliceGrad, float16);
+DEFINE_KERNEL_LAUNCHER(SliceGrad, bfloat16);
 DEFINE_KERNEL_LAUNCHER(SliceGrad, float);
 DEFINE_KERNEL_LAUNCHER(SliceGrad, double);
 #undef DEFINE_KERNEL_LAUNCHER

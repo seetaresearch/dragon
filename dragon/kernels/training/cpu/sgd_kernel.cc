@@ -22,9 +22,7 @@ void _MomentumSGD(
     const T gi = wd > T(0) ? std::fma(wd, x[i], g[i]) : g[i];
     const T mi = m[i] = std::fma(momentum, m[i], gi);
     y[i] -= lr * mi;
-    if (y_copy != nullptr) {
-      y_copy[i] = convert::To<CopyT>(y[i]);
-    }
+    if (y_copy != nullptr) y_copy[i] = convert::To<CopyT>(y[i]);
   }
 }
 
@@ -43,9 +41,7 @@ void _NesterovSGD(
     const T gi = wd > T(0) ? std::fma(wd, x[i], g[i]) : g[i];
     const T mi = m[i] = std::fma(momentum, m[i], gi);
     y[i] -= lr * std::fma(momentum, mi, gi);
-    if (y_copy != nullptr) {
-      y_copy[i] = convert::To<CopyT>(y[i]);
-    }
+    if (y_copy != nullptr) y_copy[i] = convert::To<CopyT>(y[i]);
   }
 }
 
@@ -77,9 +73,11 @@ void _NesterovSGD(
   }
 
 DEFINE_KERNEL_LAUNCHER(MomentumSGD, float, float16);
+DEFINE_KERNEL_LAUNCHER(MomentumSGD, float, bfloat16);
 DEFINE_KERNEL_LAUNCHER(MomentumSGD, float, float);
 DEFINE_KERNEL_LAUNCHER(MomentumSGD, double, double);
 DEFINE_KERNEL_LAUNCHER(NesterovSGD, float, float16);
+DEFINE_KERNEL_LAUNCHER(NesterovSGD, float, bfloat16);
 DEFINE_KERNEL_LAUNCHER(NesterovSGD, float, float);
 DEFINE_KERNEL_LAUNCHER(NesterovSGD, double, double);
 #undef DEFINE_KERNEL_LAUNCHER

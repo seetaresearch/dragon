@@ -18,7 +18,7 @@ void _ScatterElements(
     T* y) {
   const auto N = math::utils::Prod(num_dims, dims);
   vec64_t dim_index(num_dims, 0);
-  for (int i = 0; i < N; ++i) {
+  for (int64_t i = 0; i < N; ++i) {
     int64_t yi = 0;
     for (int d = num_dims - 1; d >= 0; --d) {
       yi += (d == axis ? index[i] : dim_index[d]) * y_strides[d];
@@ -40,7 +40,7 @@ void _ScatterElements(
     T* y) {
   const auto N = math::utils::Prod(num_dims, dims);
   vec64_t dim_index(num_dims, 0);
-  for (int i = 0; i < N; ++i) {
+  for (int64_t i = 0; i < N; ++i) {
     int64_t xi = 0, yi = 0;
     for (int d = num_dims - 1; d >= 0; --d) {
       xi += dim_index[d] * x_strides[d];
@@ -63,7 +63,7 @@ void _ScatterAdd(
     AccT* y) {
   const auto N = math::utils::Prod(num_dims, dims);
   vec64_t dim_index(num_dims, 0);
-  for (int i = 0; i < N; ++i) {
+  for (int64_t i = 0; i < N; ++i) {
     int64_t xi = 0, yi = 0;
     for (int d = num_dims - 1; d >= 0; --d) {
       xi += dim_index[d] * x_strides[d];
@@ -96,6 +96,7 @@ DEFINE_KERNEL_LAUNCHER(ScatterElements, int8_t);
 DEFINE_KERNEL_LAUNCHER(ScatterElements, int);
 DEFINE_KERNEL_LAUNCHER(ScatterElements, int64_t);
 DEFINE_KERNEL_LAUNCHER(ScatterElements, float16);
+DEFINE_KERNEL_LAUNCHER(ScatterElements, bfloat16);
 DEFINE_KERNEL_LAUNCHER(ScatterElements, float);
 DEFINE_KERNEL_LAUNCHER(ScatterElements, double);
 #undef DEFINE_KERNEL_LAUNCHER
@@ -121,6 +122,7 @@ DEFINE_KERNEL_LAUNCHER(ScatterElements, int8_t);
 DEFINE_KERNEL_LAUNCHER(ScatterElements, int);
 DEFINE_KERNEL_LAUNCHER(ScatterElements, int64_t);
 DEFINE_KERNEL_LAUNCHER(ScatterElements, float16);
+DEFINE_KERNEL_LAUNCHER(ScatterElements, bfloat16);
 DEFINE_KERNEL_LAUNCHER(ScatterElements, float);
 DEFINE_KERNEL_LAUNCHER(ScatterElements, double);
 #undef DEFINE_KERNEL_LAUNCHER
@@ -145,6 +147,7 @@ DEFINE_KERNEL_LAUNCHER(ScatterAdd, int8_t, int8_t);
 DEFINE_KERNEL_LAUNCHER(ScatterAdd, int, int)
 DEFINE_KERNEL_LAUNCHER(ScatterAdd, int64_t, int64_t)
 DEFINE_KERNEL_LAUNCHER(ScatterAdd, float16, float);
+DEFINE_KERNEL_LAUNCHER(ScatterAdd, bfloat16, float);
 DEFINE_KERNEL_LAUNCHER(ScatterAdd, float, float)
 DEFINE_KERNEL_LAUNCHER(ScatterAdd, double, float);
 #undef DEFINE_KERNEL_LAUNCHER

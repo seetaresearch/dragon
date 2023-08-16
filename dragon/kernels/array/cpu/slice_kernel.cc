@@ -17,9 +17,8 @@ void _Slice(
     T* y) {
   const auto N = math::utils::Prod(num_dims, y_dims);
   vec64_t index(num_dims, 0);
-  int xi;
-  for (int yi = 0; yi < N; ++yi) {
-    xi = 0;
+  for (int64_t yi = 0; yi < N; ++yi) {
+    int64_t xi = 0;
     for (int d = num_dims - 1; d >= 0; --d) {
       xi += (index[d] + starts[d]) * x_strides[d];
     }
@@ -38,9 +37,8 @@ void _SliceGrad(
     T* dx) {
   const auto N = math::utils::Prod(num_dims, y_dims);
   vec64_t index(num_dims, 0);
-  int xi;
-  for (int yi = 0; yi < N; ++yi) {
-    xi = 0;
+  for (int64_t yi = 0; yi < N; ++yi) {
+    int64_t xi = 0;
     for (int d = num_dims - 1; d >= 0; --d) {
       xi += (index[d] + starts[d]) * x_strides[d];
     }
@@ -70,9 +68,11 @@ DEFINE_KERNEL_LAUNCHER(Slice, int8_t);
 DEFINE_KERNEL_LAUNCHER(Slice, int);
 DEFINE_KERNEL_LAUNCHER(Slice, int64_t);
 DEFINE_KERNEL_LAUNCHER(Slice, float16);
+DEFINE_KERNEL_LAUNCHER(Slice, bfloat16);
 DEFINE_KERNEL_LAUNCHER(Slice, float);
 DEFINE_KERNEL_LAUNCHER(Slice, double);
 DEFINE_KERNEL_LAUNCHER(SliceGrad, float16);
+DEFINE_KERNEL_LAUNCHER(SliceGrad, bfloat16);
 DEFINE_KERNEL_LAUNCHER(SliceGrad, float);
 DEFINE_KERNEL_LAUNCHER(SliceGrad, double);
 #undef DEFINE_KERNEL_LAUNCHER

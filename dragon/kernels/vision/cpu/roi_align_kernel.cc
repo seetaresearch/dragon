@@ -72,20 +72,15 @@ void _RoiAlign(
     const float roi_wend = roi[3] * spatial_scale - roi_offset;
     const float roi_hend = roi[4] * spatial_scale - roi_offset;
 
-    const float roi_h =
-        aligned ? roi_hend - roi_hstart : std::max(roi_hend - roi_hstart, 1.f);
-    const float roi_w =
-        aligned ? roi_wend - roi_wstart : std::max(roi_wend - roi_wstart, 1.f);
+    // clang-format off
+    const float roi_h = aligned ? roi_hend - roi_hstart : std::max(roi_hend - roi_hstart, 1.f);
+    const float roi_w = aligned ? roi_wend - roi_wstart : std::max(roi_wend - roi_wstart, 1.f);
     const float bin_h = roi_h / float(out_h);
     const float bin_w = roi_w / float(out_w);
-
-    const int grid_h = sampling_ratio > 0
-        ? sampling_ratio
-        : int(std::ceil(roi_h / float(out_h)));
-    const int grid_w = sampling_ratio > 0
-        ? sampling_ratio
-        : int(std::ceil(roi_w / float(out_w)));
+    const int grid_h = sampling_ratio > 0 ? sampling_ratio : int(std::ceil(roi_h / float(out_h)));
+    const int grid_w = sampling_ratio > 0 ? sampling_ratio : int(std::ceil(roi_w / float(out_w)));    
     const float num_grids = std::max(float(grid_h * grid_w), 1.f);
+    // clang-format on
 
     const T* offset_x = x + batch_ind * CxHxW;
     for (int c = 0; c < C; ++c) {
@@ -164,9 +159,11 @@ void _RoiAlign(
   }
 
 DEFINE_KERNEL_LAUNCHER(float16);
+DEFINE_KERNEL_LAUNCHER(bfloat16);
 DEFINE_KERNEL_LAUNCHER(float);
 DEFINE_KERNEL_LAUNCHER(double);
 DEFINE_GRAD_KERNEL_LAUNCHER(float16);
+DEFINE_GRAD_KERNEL_LAUNCHER(bfloat16);
 DEFINE_GRAD_KERNEL_LAUNCHER(float);
 DEFINE_GRAD_KERNEL_LAUNCHER(double);
 #undef DEFINE_KERNEL_LAUNCHER

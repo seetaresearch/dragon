@@ -102,7 +102,10 @@ class GroupNorm(Module):
         if self.weight.device.type != 'mlu':
             lambda_source = inspect.getsource(fn)
             if 'half_()' in lambda_source:
-                return self  # Float32 parameters are required.
+                return self
+            if 'bfloat16_()' in lambda_source:
+                return self
+            # High precision parameters are required.
         return super(GroupNorm, self)._apply(fn)
 
 
@@ -174,7 +177,10 @@ class LayerNorm(Module):
         if self.weight.device.type != 'mlu':
             lambda_source = inspect.getsource(fn)
             if 'half_()' in lambda_source:
-                return self  # Float32 parameters are required.
+                return self
+            if 'bfloat16_()' in lambda_source:
+                return self
+            # High precision parameters are required.
         return super(LayerNorm, self)._apply(fn)
 
 

@@ -90,6 +90,7 @@ DEFINE_COPY_FUNC(uint8_t);
 DEFINE_COPY_FUNC(int);
 DEFINE_COPY_FUNC(int64_t);
 DEFINE_COPY_FUNC(float16);
+DEFINE_COPY_FUNC(bfloat16);
 DEFINE_COPY_FUNC(float);
 DEFINE_COPY_FUNC(double);
 #undef DEFINE_COPY_FUNC
@@ -112,34 +113,35 @@ DEFINE_COPY_FUNC(uint8_t);
 DEFINE_COPY_FUNC(int);
 DEFINE_COPY_FUNC(int64_t);
 DEFINE_COPY_FUNC(float16);
+DEFINE_COPY_FUNC(bfloat16);
 DEFINE_COPY_FUNC(float);
 DEFINE_COPY_FUNC(double);
 #undef DEFINE_COPY_FUNC
 
-#define DEFINE_COPY_MATRIX_FUNC(T)                                          \
-  template <>                                                               \
-  DRAGON_API void CopyMatrix<T, MLUContext>(                                \
-      const int M,                                                          \
-      const int N,                                                          \
-      const int ldx,                                                        \
-      const int ldy,                                                        \
-      const int x_offset,                                                   \
-      const int y_offset,                                                   \
-      const T* x,                                                           \
-      T* y,                                                                 \
-      MLUContext* ctx) {                                                    \
-    if (M <= 0 || N <= 0) return;                                           \
-    if (M == 1) {                                                           \
-      Copy(N, x_offset, y_offset, x, y, ctx);                               \
-      return;                                                               \
-    }                                                                       \
-    _CopyMatrix<<<MLU_BLOCKS(), CNRT_FUNC_TYPE_BLOCK, ctx->mlu_stream()>>>( \
-        M,                                                                  \
-        N,                                                                  \
-        ldx,                                                                \
-        ldy,                                                                \
-        reinterpret_cast<const math::ScalarType<T>::type*>(x + x_offset),   \
-        reinterpret_cast<math::ScalarType<T>::type*>(y + y_offset));        \
+#define DEFINE_COPY_MATRIX_FUNC(T)                                           \
+  template <>                                                                \
+  DRAGON_API void CopyMatrix<T, MLUContext>(                                 \
+      const int M,                                                           \
+      const int N,                                                           \
+      const int ldx,                                                         \
+      const int ldy,                                                         \
+      const int x_offset,                                                    \
+      const int y_offset,                                                    \
+      const T* x,                                                            \
+      T* y,                                                                  \
+      MLUContext* ctx) {                                                     \
+    if (M <= 0 || N <= 0) return;                                            \
+    if (M == 1) {                                                            \
+      Copy(N, x_offset, y_offset, x, y, ctx);                                \
+      return;                                                                \
+    }                                                                        \
+    _CopyMatrix<<<MLU_BLOCKS(), CNRT_FUNC_TYPE_BLOCK, ctx->mlu_stream()>>>(  \
+        M,                                                                   \
+        N,                                                                   \
+        ldx,                                                                 \
+        ldy,                                                                 \
+        reinterpret_cast<const math::Traits<T>::scalar_type*>(x + x_offset), \
+        reinterpret_cast<math::Traits<T>::scalar_type*>(y + y_offset));      \
   }
 
 DEFINE_COPY_MATRIX_FUNC(bool);
@@ -148,6 +150,7 @@ DEFINE_COPY_MATRIX_FUNC(uint8_t);
 DEFINE_COPY_MATRIX_FUNC(int);
 DEFINE_COPY_MATRIX_FUNC(int64_t);
 DEFINE_COPY_MATRIX_FUNC(float16);
+DEFINE_COPY_MATRIX_FUNC(bfloat16);
 DEFINE_COPY_MATRIX_FUNC(float);
 DEFINE_COPY_MATRIX_FUNC(double);
 #undef DEFINE_COPY_MATRIX_FUNC
@@ -162,9 +165,9 @@ DEFINE_COPY_MATRIX_FUNC(double);
           CNRT_FUNC_TYPE_BLOCK,                                            \
           ctx->mlu_stream()>>>(                                            \
           N,                                                               \
-          convert::To<math::ScalarType<T>::type>(alpha),                   \
-          reinterpret_cast<const math::ScalarType<T>::type*>(x),           \
-          reinterpret_cast<math::ScalarType<T>::type*>(y));                \
+          convert::To<math::Traits<T>::scalar_type>(alpha),                \
+          reinterpret_cast<const math::Traits<T>::scalar_type*>(x),        \
+          reinterpret_cast<math::Traits<T>::scalar_type*>(y));             \
       return;                                                              \
     }                                                                      \
     if (x != y) {                                                          \
@@ -180,6 +183,7 @@ DEFINE_COPY_MATRIX_FUNC(double);
 DEFINE_SCALE_FUNC(int8_t);
 DEFINE_SCALE_FUNC(int);
 DEFINE_SCALE_FUNC(float16);
+DEFINE_SCALE_FUNC(bfloat16);
 DEFINE_SCALE_FUNC(float);
 #undef DEFINE_SCALE_FUNC
 
@@ -215,14 +219,15 @@ DEFINE_SCALE_FUNC(double);
         CNRT_FUNC_TYPE_BLOCK,                                              \
         ctx->mlu_stream()>>>(                                              \
         N,                                                                 \
-        convert::To<math::ScalarType<T>::type>(alpha),                     \
-        reinterpret_cast<const math::ScalarType<T>::type*>(x),             \
-        reinterpret_cast<math::ScalarType<T>::type*>(y));                  \
+        convert::To<math::Traits<T>::scalar_type>(alpha),                  \
+        reinterpret_cast<const math::Traits<T>::scalar_type*>(x),          \
+        reinterpret_cast<math::Traits<T>::scalar_type*>(y));               \
   }
 
 DEFINE_AXPY_FUNC(int8_t);
 DEFINE_AXPY_FUNC(int);
 DEFINE_AXPY_FUNC(float16);
+DEFINE_AXPY_FUNC(bfloat16);
 DEFINE_AXPY_FUNC(float);
 #undef DEFINE_AXPY_FUNC
 
@@ -239,29 +244,30 @@ DEFINE_AXPY_FUNC(int64_t);
 DEFINE_AXPY_FUNC(double);
 #undef DEFINE_AXPY_FUNC
 
-#define DEFINE_AXPBY_FUNC(T)                                   \
-  template <>                                                  \
-  DRAGON_API void Axpby<T, MLUContext>(                        \
-      const int N,                                             \
-      const float alpha,                                       \
-      const T* x,                                              \
-      const float beta,                                        \
-      T* y,                                                    \
-      MLUContext* ctx) {                                       \
-    _Axpby<<<                                                  \
-        MLU_BLOCKS(N, BLOCK_THREADS),                          \
-        CNRT_FUNC_TYPE_BLOCK,                                  \
-        ctx->mlu_stream()>>>(                                  \
-        N,                                                     \
-        convert::To<math::ScalarType<T>::type>(alpha),         \
-        convert::To<math::ScalarType<T>::type>(beta),          \
-        reinterpret_cast<const math::ScalarType<T>::type*>(x), \
-        reinterpret_cast<math::ScalarType<T>::type*>(y));      \
+#define DEFINE_AXPBY_FUNC(T)                                      \
+  template <>                                                     \
+  DRAGON_API void Axpby<T, MLUContext>(                           \
+      const int N,                                                \
+      const float alpha,                                          \
+      const T* x,                                                 \
+      const float beta,                                           \
+      T* y,                                                       \
+      MLUContext* ctx) {                                          \
+    _Axpby<<<                                                     \
+        MLU_BLOCKS(N, BLOCK_THREADS),                             \
+        CNRT_FUNC_TYPE_BLOCK,                                     \
+        ctx->mlu_stream()>>>(                                     \
+        N,                                                        \
+        convert::To<math::Traits<T>::scalar_type>(alpha),         \
+        convert::To<math::Traits<T>::scalar_type>(beta),          \
+        reinterpret_cast<const math::Traits<T>::scalar_type*>(x), \
+        reinterpret_cast<math::Traits<T>::scalar_type*>(y));      \
   }
 
 DEFINE_AXPBY_FUNC(int8_t);
 DEFINE_AXPBY_FUNC(int);
 DEFINE_AXPBY_FUNC(float16);
+DEFINE_AXPBY_FUNC(bfloat16);
 DEFINE_AXPBY_FUNC(float);
 #undef DEFINE_AXPBY_FUNC
 
@@ -293,6 +299,7 @@ DEFINE_AXPBY_FUNC(double);
   }
 
 DEFINE_DOT_FUNC(float16);
+DEFINE_DOT_FUNC(bfloat16);
 DEFINE_DOT_FUNC(float);
 DEFINE_DOT_FUNC(double);
 #undef BLOCK_THREADS

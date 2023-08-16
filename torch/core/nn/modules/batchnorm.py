@@ -90,7 +90,10 @@ class _BatchNorm(Module):
     def _apply(self, fn):
         lambda_source = inspect.getsource(fn)
         if 'half_()' in lambda_source:
-            return self  # Float32 parameters are required.
+            return self
+        if 'bfloat16_()' in lambda_source:
+            return self
+        # High precision parameters are required.
         return super(_BatchNorm, self)._apply(fn)
 
     def _get_momentum(self):

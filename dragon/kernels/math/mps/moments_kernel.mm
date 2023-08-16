@@ -194,7 +194,7 @@ INSTANTIATE_KERNEL(double, double);
 )";
 
 template <typename T, typename AccT>
-void DispatchKernel(
+void DispatchMoments(
     const int num_dims,
     const int64_t* dims,
     const int num_axes,
@@ -252,26 +252,17 @@ void DispatchKernel(
         num_dims, dims, transpose_axes.data(), transpose_strides.data());
     rows = cols = 1;
     const int pivot = num_dims - num_axes;
-    for (int i = 0; i < pivot; ++i) {
-      rows *= dims[transpose_axes[i]];
-    }
-    for (int i = pivot; i < num_dims; ++i) {
-      cols *= dims[transpose_axes[i]];
-    }
-    for (int i = 0; i < num_dims; ++i) {
-      transpose_dims[i] = dims[transpose_axes[i]];
-    }
+    // clang-format off
+    for (int i = 0; i < pivot; ++i) rows *= dims[transpose_axes[i]];
+    for (int i = pivot; i < num_dims; ++i) cols *= dims[transpose_axes[i]];
+    for (int i = 0; i < num_dims; ++i) transpose_dims[i] = dims[transpose_axes[i]];
     auto kernel = MPSKernel::TypedString<T>("GenericMoments");
     const uint arg1 = num_dims, arg2 = cols;
     vector<uint32_t> arg3(MPS_TENSOR_MAX_DIMS, 0);
     vector<uint32_t> arg4(MPS_TENSOR_MAX_DIMS, 0);
-    for (size_t i = 0; i < transpose_dims.size(); ++i) {
-      arg3[i] = transpose_dims[i];
-    }
-    for (size_t i = 0; i < transpose_strides.size(); ++i) {
-      arg4[i] = transpose_strides[i];
-    }
-    args.emplace_back(MPSConstant(&arg1, MTLDataTypeUInt, 0));
+    for (size_t i = 0; i < transpose_dims.size(); ++i) arg3[i] = transpose_dims[i];
+    for (size_t i = 0; i < transpose_strides.size(); ++i) arg4[i] = transpose_strides[i];
+    args.emplace_back(MPSConstant(&arg1, MTLDataTypeUInt, 0)); // clang-format on
     args.emplace_back(MPSConstant(&arg2, MTLDataTypeUInt, 1));
     args.emplace_back(MPSConstant(arg3.data(), MTLDataTypeUInt4, {2, 3}));
     args.emplace_back(MPSConstant(arg4.data(), MTLDataTypeUInt4, {4, 5}));
@@ -303,7 +294,7 @@ void DispatchKernel(
     vec64_t new_dims, new_axes;                              \
     math::utils::CollapseReduceAxes(                         \
         num_dims, dims, num_axes, axes, new_dims, new_axes); \
-    DispatchKernel<T, AccT>(                                 \
+    DispatchMoments<T, AccT>(                                \
         new_dims.size(),                                     \
         new_dims.data(),                                     \
         new_axes.size(),                                     \
@@ -314,9 +305,8 @@ void DispatchKernel(
         ctx);                                                \
   }
 
-DEFINE_KERNEL_LAUNCHER(int, float);
-DEFINE_KERNEL_LAUNCHER(int64_t, double);
 DEFINE_KERNEL_LAUNCHER(float16, float);
+DEFINE_KERNEL_LAUNCHER(bfloat16, float);
 DEFINE_KERNEL_LAUNCHER(float, float);
 DEFINE_KERNEL_LAUNCHER(double, double);
 #undef DEFINE_KERNEL_LAUNCHER

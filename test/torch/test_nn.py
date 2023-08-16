@@ -96,7 +96,7 @@ class TestModule(unittest.TestCase):
         m.register_buffer('bias', torch.tensor([1]))
         m.bias = torch.tensor([1])
         m.sub2 = None
-        m.sub3 = torch.nn.Conv2d(2, 3, 3)
+        m.sub3 = torch.nn.Conv2d(2, 3, 3).bfloat16()
         m.cpu().float()
         self.assertEqual(m.train().training, True)
         self.assertEqual(m.eval().training, False)
@@ -448,23 +448,6 @@ class TestModules(OpTestCase):
             y, _ = m(a, b), repr(m)
             result = reduce(-data1[np.arange(2), data2], reduction=reduction)
             self.assertEqual(y, result)
-
-    def test_depthwise_conv2d(self):
-        entries = [((2, 2, 2, 2), (2, 1, 1, 1), (2,), 1, 1, 0, 1),
-                   ((2, 2, 2, 2), (2, 1, 3, 3), (2,), 3, 1, 1, 1)]
-        results = [[[[[0., 0.], [0., 0.]], [[0.14, 0.15], [0.16, 0.17]]],
-                    [[[0., 0.], [0., 0.]], [[0.22, 0.23], [0.24, 0.25]]]],
-                   [[[[0.43, 0.37], [0.25, 0.19]], [[3.47, 3.25], [2.81, 2.59]]],
-                    [[[2.35, 1.97], [1.21, 0.83]], [[8.27, 7.73], [6.65, 6.11]]]]]
-        for (x_shape, w_shape, b_shape, kernel_shape,
-                strides, pads, dilations), result in zip(entries, results):
-            data1, data2, data3 = arange(x_shape) * .1, arange(w_shape) * .1, arange(b_shape) * .1
-            x, w, b = new_tensor(data1), new_tensor(data2), new_tensor(data3)
-            m = torch.nn.DepthwiseConv2d(2, 2, kernel_shape, strides, pads)
-            m.weight.copy_(w)
-            m.bias.copy_(b)
-            y, _ = m(x), repr(m)
-            self.assertEqual(y, np.array(result), prec=1e-3)
 
     def test_dropout(self):
         p = 0.

@@ -9,15 +9,11 @@ template <class Context>
 template <typename T>
 void PReluOp<Context>::DoRunWithType() {
   auto &X = Input(0), &W = Input(1), *Y = Output(0);
-
   int64_t N, C, S;
-  if (W.count() > 1) {
-    // Channel-wise
-    if (X.ndim() == 1) {
-      // Per-activation
+  if (W.count() > 1) { // Channel-wise
+    if (X.ndim() == 1) { // Per-activation
       N = S = 1, C = X.count();
-    } else {
-      // Spatial
+    } else { // Spatial
       N = X.dim(0);
       if (data_format() == "NCHW") {
         C = X.dim(1), S = X.count(2);
@@ -26,8 +22,7 @@ void PReluOp<Context>::DoRunWithType() {
         S = X.count(1) / C;
       }
     }
-  } else {
-    // Channel-shared
+  } else { // Channel-shared
     C = S = 1, N = X.count();
   }
   INITIALIZE_TENSOR_VIA_SPEC(W, vec64_t({C}), T);
@@ -39,14 +34,8 @@ void PReluOp<Context>::DoRunWithType() {
       S == 1 ? "NHWC" : data_format(),
       X.template data<T, Context>(),
       W.template data<T, Context>(),
-      Y->template mutable_data<T, Context>(),
+      Y->ReshapeLike(X)->template mutable_data<T, Context>(),
       ctx());
-}
-
-template <class Context>
-void PReluOp<Context>::RunOnDevice() {
-  Output(0)->ReshapeLike(Input(0));
-  DispatchHelper<dtypes::Floating>::Call(this, Input(0));
 }
 
 template <class Context>
@@ -54,7 +43,6 @@ template <typename T>
 void PReluGradientOp<Context>::DoRunWithType() {
   auto &X = Input(0), &W = Input(1), &dY = Input(2);
   auto *dX = Output(0), *dW = Output(1);
-
   int64_t N, C, S;
   if (W.count() > 1) {
     if (X.ndim() == 1) {
@@ -98,18 +86,10 @@ void PReluGradientOp<Context>::DoRunWithType() {
   }
 }
 
-template <class Context>
-void PReluGradientOp<Context>::RunOnDevice() {
-  DispatchHelper<dtypes::Floating>::Call(this, Input(-1));
-}
-
 DEPLOY_CPU_OPERATOR(PRelu);
-#ifdef USE_CUDA
-DEPLOY_CUDA_OPERATOR(PRelu);
-#endif
-
 DEPLOY_CPU_OPERATOR(PReluGradient);
 #ifdef USE_CUDA
+DEPLOY_CUDA_OPERATOR(PRelu);
 DEPLOY_CUDA_OPERATOR(PReluGradient);
 #endif
 

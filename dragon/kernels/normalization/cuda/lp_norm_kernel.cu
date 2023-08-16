@@ -26,13 +26,11 @@ __global__ void _L1Norm(
       sum += abs(convert::To<AccT>(x[offset + j * S]));
     }
     sum = BlockReduce<AccT>(storage).Sum(sum);
-    if (threadIdx.x == 0) {
-      norm = max(sum / normalizer, epsilon);
-    }
+    if (threadIdx.x == 0) norm = max(sum / normalizer, epsilon);
     __syncthreads();
     CUDA_2D_KERNEL_LOOP2(j, C) {
       const auto index = offset + j * S;
-      y[index] = convert::To<T>(convert::To<AccT>(x[index]) / norm);
+      y[index] = convert::To<AccT>(x[index]) / norm;
     }
   }
 }
@@ -52,16 +50,14 @@ __global__ void _L2Norm(
     const auto offset = i / S * C * S + i % S;
     AccT sum = AccT(0);
     CUDA_2D_KERNEL_LOOP2(j, C) {
-      sum += math::utils::Square(convert::To<AccT>(x[offset + j * S]));
+      sum += math::utils::Sqr(convert::To<AccT>(x[offset + j * S]));
     }
     sum = BlockReduce<AccT>(storage).Sum(sum);
-    if (threadIdx.x == 0) {
-      norm = max(sqrt(sum / normalizer), epsilon);
-    }
+    if (threadIdx.x == 0) norm = max(sqrt(sum / normalizer), epsilon);
     __syncthreads();
     CUDA_2D_KERNEL_LOOP2(j, C) {
       const auto index = offset + j * S;
-      y[index] = convert::To<T>(convert::To<AccT>(x[index]) / norm);
+      y[index] = convert::To<AccT>(x[index]) / norm;
     }
   }
 }
@@ -96,9 +92,8 @@ __global__ void _L1NormGrad(
     __syncthreads();
     CUDA_2D_KERNEL_LOOP2(j, C) {
       const auto index = offset + j * S;
-      dx[index] = convert::To<T>(
-          (convert::To<AccT>(dy[index]) / norm) -
-          ((math::utils::Sign(convert::To<AccT>(x[index])) / norm2) * sum));
+      dx[index] = (convert::To<AccT>(dy[index]) / norm) -
+          ((math::utils::Sign(convert::To<AccT>(x[index])) / norm2) * sum);
     }
   }
 }
@@ -120,7 +115,7 @@ __global__ void _L2NormGrad(
     AccT val1 = AccT(0), val2 = AccT(0);
     CUDA_2D_KERNEL_LOOP2(j, C) {
       const auto index = offset + j * S;
-      val1 += math::utils::Square(convert::To<AccT>(x[index]));
+      val1 += math::utils::Sqr(convert::To<AccT>(x[index]));
       val2 += convert::To<AccT>(dy[index]) * convert::To<AccT>(x[index]);
     }
     val1 = BlockReduce<AccT>(storage).Sum(val1);
@@ -133,16 +128,37 @@ __global__ void _L2NormGrad(
     __syncthreads();
     CUDA_2D_KERNEL_LOOP2(j, C) {
       const auto index = offset + j * S;
-      dx[index] = convert::To<T>(
-          (convert::To<AccT>(dy[index]) / norm) -
-          ((convert::To<AccT>(x[index]) / norm3) * sum));
+      dx[index] = (convert::To<AccT>(dy[index]) / norm) -
+          ((convert::To<AccT>(x[index]) / norm3) * sum);
     }
   }
 }
 
 } // namespace
 
-#define DEFINE_KERNEL_LAUNCHER(name, T, AccT)                      \
+#define DEFINE_KERNEL_LAUNCHER(name, T, AccT)                     \
+  template <>                                                     \
+  void name<T, CUDAContext>(                                      \
+      const int N,                                                \
+      const int S,                                                \
+      const int C,                                                \
+      const float normalizer,                                     \
+      const float epsilon,                                        \
+      const T* x,                                                 \
+      T* y,                                                       \
+      CUDAContext* ctx) {                                         \
+    const auto NxS = N * S;                                       \
+    _##name<<<NxS, CUDA_THREADS, 0, ctx->cuda_stream()>>>(        \
+        NxS,                                                      \
+        S,                                                        \
+        C,                                                        \
+        AccT(normalizer),                                         \
+        AccT(epsilon),                                            \
+        reinterpret_cast<const math::Traits<T>::scalar_type*>(x), \
+        reinterpret_cast<math::Traits<T>::scalar_type*>(y));      \
+  }
+
+#define DEFINE_GRAD_KERNEL_LAUNCHER(name, T, AccT)                 \
   template <>                                                      \
   void name<T, CUDAContext>(                                       \
       const int N,                                                 \
@@ -150,56 +166,36 @@ __global__ void _L2NormGrad(
       const int C,                                                 \
       const float normalizer,                                      \
       const float epsilon,                                         \
+      const T* dy,                                                 \
       const T* x,                                                  \
-      T* y,                                                        \
+      T* dx,                                                       \
       CUDAContext* ctx) {                                          \
     const auto NxS = N * S;                                        \
-    _##name<math::ScalarType<T>::type, AccT>                       \
-        <<<NxS, CUDA_THREADS, 0, ctx->cuda_stream()>>>(            \
-            NxS,                                                   \
-            S,                                                     \
-            C,                                                     \
-            AccT(normalizer),                                      \
-            AccT(epsilon),                                         \
-            reinterpret_cast<const math::ScalarType<T>::type*>(x), \
-            reinterpret_cast<math::ScalarType<T>::type*>(y));      \
-  }
-
-#define DEFINE_GRAD_KERNEL_LAUNCHER(name, T, AccT)                  \
-  template <>                                                       \
-  void name<T, CUDAContext>(                                        \
-      const int N,                                                  \
-      const int S,                                                  \
-      const int C,                                                  \
-      const float normalizer,                                       \
-      const float epsilon,                                          \
-      const T* dy,                                                  \
-      const T* x,                                                   \
-      T* dx,                                                        \
-      CUDAContext* ctx) {                                           \
-    const auto NxS = N * S;                                         \
-    _##name<math::ScalarType<T>::type, AccT>                        \
-        <<<NxS, CUDA_THREADS, 0, ctx->cuda_stream()>>>(             \
-            NxS,                                                    \
-            S,                                                      \
-            C,                                                      \
-            AccT(normalizer),                                       \
-            AccT(epsilon),                                          \
-            reinterpret_cast<const math::ScalarType<T>::type*>(dy), \
-            reinterpret_cast<const math::ScalarType<T>::type*>(x),  \
-            reinterpret_cast<math::ScalarType<T>::type*>(dx));      \
+    _##name<<<NxS, CUDA_THREADS, 0, ctx->cuda_stream()>>>(         \
+        NxS,                                                       \
+        S,                                                         \
+        C,                                                         \
+        AccT(normalizer),                                          \
+        AccT(epsilon),                                             \
+        reinterpret_cast<const math::Traits<T>::scalar_type*>(dy), \
+        reinterpret_cast<const math::Traits<T>::scalar_type*>(x),  \
+        reinterpret_cast<math::Traits<T>::scalar_type*>(dx));      \
   }
 
 DEFINE_KERNEL_LAUNCHER(L1Norm, float16, float);
+DEFINE_KERNEL_LAUNCHER(L1Norm, bfloat16, float);
 DEFINE_KERNEL_LAUNCHER(L1Norm, float, float);
 DEFINE_KERNEL_LAUNCHER(L1Norm, double, double);
 DEFINE_KERNEL_LAUNCHER(L2Norm, float16, float);
+DEFINE_KERNEL_LAUNCHER(L2Norm, bfloat16, float);
 DEFINE_KERNEL_LAUNCHER(L2Norm, float, float);
 DEFINE_KERNEL_LAUNCHER(L2Norm, double, double);
 DEFINE_GRAD_KERNEL_LAUNCHER(L1NormGrad, float16, float);
+DEFINE_GRAD_KERNEL_LAUNCHER(L1NormGrad, bfloat16, float);
 DEFINE_GRAD_KERNEL_LAUNCHER(L1NormGrad, float, float);
 DEFINE_GRAD_KERNEL_LAUNCHER(L1NormGrad, double, double);
 DEFINE_GRAD_KERNEL_LAUNCHER(L2NormGrad, float16, float);
+DEFINE_GRAD_KERNEL_LAUNCHER(L2NormGrad, bfloat16, float);
 DEFINE_GRAD_KERNEL_LAUNCHER(L2NormGrad, float, float);
 DEFINE_GRAD_KERNEL_LAUNCHER(L2NormGrad, double, double);
 #undef DEFINE_KERNEL_LAUNCHER

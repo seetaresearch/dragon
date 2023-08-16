@@ -53,7 +53,6 @@ from dragon.core.ops.vision_ops import conv2d
 from dragon.core.ops.vision_ops import conv2d_transpose
 from dragon.core.ops.vision_ops import conv3d
 from dragon.core.ops.vision_ops import conv3d_transpose
-from dragon.core.ops.vision_ops import depthwise_conv2d
 from dragon.core.ops.vision_ops import depth_to_space
 from dragon.core.ops.vision_ops import pool
 from dragon.core.ops.vision_ops import pool1d

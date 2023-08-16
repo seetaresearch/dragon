@@ -82,10 +82,10 @@ DRAGON_API void ReduceL1(
 
 template <typename T, class Context>
 DRAGON_API void
-Sum(const int N, const float alpha, const T* x, T* y, Context* ctx);
+Sum(const int N, const float scale, const T* x, T* y, Context* ctx);
 
 template <typename T, class Context>
-DRAGON_API T Sum(const int N, const float alpha, const T* x, Context* ctx);
+DRAGON_API T Sum(const int N, const float scale, const T* x, Context* ctx);
 
 /*
  * Reduce Utilities.

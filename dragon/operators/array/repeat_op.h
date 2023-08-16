@@ -57,9 +57,6 @@ class RepeatGradientOp final : public Operator<Context> {
   DECLARE_OP_SINGLE_ARG(int64_t, repeats);
 };
 
-DEFINE_OP_SINGLE_ARG(int64_t, RepeatOp, repeats);
-DEFINE_OP_SINGLE_ARG(int64_t, RepeatGradientOp, repeats);
-
 } // namespace dragon
 
 #endif // DRAGON_OPERATORS_ARRAY_REPEAT_OP_H_

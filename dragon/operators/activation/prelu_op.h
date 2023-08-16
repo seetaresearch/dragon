@@ -23,7 +23,9 @@ class PReluOp final : public Operator<Context> {
   SIMPLE_CTOR_DTOR(PReluOp);
   USE_OPERATOR_FUNCTIONS;
 
-  void RunOnDevice() override;
+  void RunOnDevice() override {
+    DispatchHelper<dtypes::Floating>::Call(this, Input(0));
+  }
 
   template <typename T>
   void DoRunWithType();
@@ -35,7 +37,9 @@ class PReluGradientOp final : public Operator<Context> {
   SIMPLE_CTOR_DTOR(PReluGradientOp);
   USE_OPERATOR_FUNCTIONS;
 
-  void RunOnDevice() override;
+  void RunOnDevice() override {
+    DispatchHelper<dtypes::Floating>::Call(this, Input(0));
+  }
 
   template <typename T>
   void DoRunWithType();

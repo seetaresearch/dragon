@@ -40,11 +40,6 @@ void UniqueOp<Context>::DoRunWithType() {
   if (Y_counts) Y_counts->Reshape({num_values});
 }
 
-template <class Context>
-void UniqueOp<Context>::RunOnDevice() {
-  DispatchHelper<dtypes::Numerical>::Call(this, Input(0));
-}
-
 DEPLOY_CPU_OPERATOR(Unique);
 #ifdef USE_CUDA
 DEPLOY_CUDA_OPERATOR(Unique);

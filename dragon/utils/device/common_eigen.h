@@ -13,6 +13,8 @@
 #ifndef DRAGON_UTILS_DEVICE_COMMON_EIGEN_H_
 #define DRAGON_UTILS_DEVICE_COMMON_EIGEN_H_
 
+#if !defined(__CUDACC__) && !defined(__mlu_host__)
+
 #include <Eigen/Core>
 
 namespace dragon {
@@ -90,5 +92,7 @@ using ConstEigenMatrixMap =
     Eigen::Map<const Eigen::Matrix<T, Eigen::Dynamic, Eigen::Dynamic>>;
 
 } // namespace dragon
+
+#endif // !defined(__CUDACC__) && !defined(__mlu_host__)
 
 #endif // DRAGON_UTILS_DEVICE_COMMON_EIGEN_H_

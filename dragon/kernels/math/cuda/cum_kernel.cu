@@ -20,9 +20,8 @@ __global__ void _CumSum(
     y[offset] = exclusive ? convert::To<T>(AccT(0)) : x[offset];
     for (int j = 1; j < C; ++j) {
       const int index = offset + S;
-      y[index] = convert::To<T>(
-          convert::To<AccT>(y[offset]) +
-          convert::To<AccT>(x[exclusive ? offset : index]));
+      y[index] = convert::To<AccT>(y[offset]) +
+          convert::To<AccT>(x[exclusive ? offset : index]);
       offset = index;
     }
   }
@@ -41,9 +40,8 @@ __global__ void _CumSumReverse(
     y[offset] = exclusive ? convert::To<T>(AccT(0)) : x[offset];
     for (int j = C - 2; j >= 0; --j) {
       const int index = offset - S;
-      y[index] = convert::To<T>(
-          convert::To<AccT>(y[offset]) +
-          convert::To<AccT>(x[exclusive ? offset : index]));
+      y[index] = convert::To<AccT>(y[offset]) +
+          convert::To<AccT>(x[exclusive ? offset : index]);
       offset = index;
     }
   }
@@ -51,7 +49,7 @@ __global__ void _CumSumReverse(
 
 } // namespace
 
-#define DEFINE_KERNEL_LAUNCHER(T, AccT)                                \
+#define DEFINE_KERNEL_LAUNCHER(T)                                      \
   template <>                                                          \
   void CumSum<T, CUDAContext>(                                         \
       const int N,                                                     \
@@ -62,35 +60,28 @@ __global__ void _CumSumReverse(
       const T* x,                                                      \
       T* y,                                                            \
       CUDAContext* ctx) {                                              \
+    using ScalarT = math::Traits<T>::scalar_type;                      \
+    using AccT = math::Traits<T>::accumulator_type;                    \
     const auto NxS = N * S;                                            \
     if (reverse) {                                                     \
-      _CumSumReverse<math::ScalarType<T>::type, AccT>                  \
+      _CumSumReverse<ScalarT, AccT>                                    \
           <<<CUDA_BLOCKS(NxS), CUDA_THREADS, 0, ctx->cuda_stream()>>>( \
-              NxS,                                                     \
-              S,                                                       \
-              C,                                                       \
-              exclusive,                                               \
-              reinterpret_cast<const math::ScalarType<T>::type*>(x),   \
-              reinterpret_cast<math::ScalarType<T>::type*>(y));        \
+              NxS, S, C, exclusive, (const ScalarT*)x, (ScalarT*)y);   \
     } else {                                                           \
-      _CumSum<math::ScalarType<T>::type, AccT>                         \
+      _CumSum<ScalarT, AccT>                                           \
           <<<CUDA_BLOCKS(NxS), CUDA_THREADS, 0, ctx->cuda_stream()>>>( \
-              NxS,                                                     \
-              S,                                                       \
-              C,                                                       \
-              exclusive,                                               \
-              reinterpret_cast<const math::ScalarType<T>::type*>(x),   \
-              reinterpret_cast<math::ScalarType<T>::type*>(y));        \
+              NxS, S, C, exclusive, (const ScalarT*)x, (ScalarT*)y);   \
     }                                                                  \
   }
 
-DEFINE_KERNEL_LAUNCHER(uint8_t, uint8_t);
-DEFINE_KERNEL_LAUNCHER(int8_t, int8_t);
-DEFINE_KERNEL_LAUNCHER(int, int);
-DEFINE_KERNEL_LAUNCHER(int64_t, int64_t);
-DEFINE_KERNEL_LAUNCHER(float16, float);
-DEFINE_KERNEL_LAUNCHER(float, float);
-DEFINE_KERNEL_LAUNCHER(double, double);
+DEFINE_KERNEL_LAUNCHER(uint8_t);
+DEFINE_KERNEL_LAUNCHER(int8_t);
+DEFINE_KERNEL_LAUNCHER(int);
+DEFINE_KERNEL_LAUNCHER(int64_t);
+DEFINE_KERNEL_LAUNCHER(float16);
+DEFINE_KERNEL_LAUNCHER(bfloat16);
+DEFINE_KERNEL_LAUNCHER(float);
+DEFINE_KERNEL_LAUNCHER(double);
 #undef DEFINE_KERNEL_LAUNCHER
 
 } // namespace kernels

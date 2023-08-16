@@ -46,30 +46,31 @@ __mlu_entry__ void _ClipGrad(
 
 } // namespace
 
-#define DEFINE_KERNEL_LAUNCHER(T)                              \
-  template <>                                                  \
-  void Clip<T, MLUContext>(                                    \
-      const int N,                                             \
-      const float low,                                         \
-      const float high,                                        \
-      const T* x,                                              \
-      T* y,                                                    \
-      MLUContext* ctx) {                                       \
-    _Clip<<<                                                   \
-        MLU_BLOCKS(N, BLOCK_THREADS),                          \
-        CNRT_FUNC_TYPE_BLOCK,                                  \
-        ctx->mlu_stream()>>>(                                  \
-        N,                                                     \
-        convert::To<math::ScalarType<T>::type>(low),           \
-        convert::To<math::ScalarType<T>::type>(high),          \
-        reinterpret_cast<const math::ScalarType<T>::type*>(x), \
-        reinterpret_cast<math::ScalarType<T>::type*>(y));      \
+#define DEFINE_KERNEL_LAUNCHER(T)                                 \
+  template <>                                                     \
+  void Clip<T, MLUContext>(                                       \
+      const int N,                                                \
+      const float low,                                            \
+      const float high,                                           \
+      const T* x,                                                 \
+      T* y,                                                       \
+      MLUContext* ctx) {                                          \
+    _Clip<<<                                                      \
+        MLU_BLOCKS(N, BLOCK_THREADS),                             \
+        CNRT_FUNC_TYPE_BLOCK,                                     \
+        ctx->mlu_stream()>>>(                                     \
+        N,                                                        \
+        convert::To<math::Traits<T>::scalar_type>(low),           \
+        convert::To<math::Traits<T>::scalar_type>(high),          \
+        reinterpret_cast<const math::Traits<T>::scalar_type*>(x), \
+        reinterpret_cast<math::Traits<T>::scalar_type*>(y));      \
   }
 
 DEFINE_KERNEL_LAUNCHER(uint8_t);
 DEFINE_KERNEL_LAUNCHER(int8_t);
 DEFINE_KERNEL_LAUNCHER(int);
 DEFINE_KERNEL_LAUNCHER(float16);
+DEFINE_KERNEL_LAUNCHER(bfloat16);
 DEFINE_KERNEL_LAUNCHER(float);
 #undef DEFINE_KERNEL_LAUNCHER
 
@@ -90,26 +91,26 @@ DEFINE_KERNEL_LAUNCHER(int64_t);
 DEFINE_KERNEL_LAUNCHER(double);
 #undef DEFINE_KERNEL_LAUNCHER
 
-#define DEFINE_GRAD_KERNEL_LAUNCHER(T)                          \
-  template <>                                                   \
-  void ClipGrad<T, MLUContext>(                                 \
-      const int N,                                              \
-      const float low,                                          \
-      const float high,                                         \
-      const T* dy,                                              \
-      const T* x,                                               \
-      T* dx,                                                    \
-      MLUContext* ctx) {                                        \
-    _ClipGrad<<<                                                \
-        MLU_BLOCKS(N, BLOCK_THREADS),                           \
-        CNRT_FUNC_TYPE_BLOCK,                                   \
-        ctx->mlu_stream()>>>(                                   \
-        N,                                                      \
-        convert::To<math::ScalarType<T>::type>(low),            \
-        convert::To<math::ScalarType<T>::type>(high),           \
-        reinterpret_cast<const math::ScalarType<T>::type*>(dy), \
-        reinterpret_cast<const math::ScalarType<T>::type*>(x),  \
-        reinterpret_cast<math::ScalarType<T>::type*>(dx));      \
+#define DEFINE_GRAD_KERNEL_LAUNCHER(T)                             \
+  template <>                                                      \
+  void ClipGrad<T, MLUContext>(                                    \
+      const int N,                                                 \
+      const float low,                                             \
+      const float high,                                            \
+      const T* dy,                                                 \
+      const T* x,                                                  \
+      T* dx,                                                       \
+      MLUContext* ctx) {                                           \
+    _ClipGrad<<<                                                   \
+        MLU_BLOCKS(N, BLOCK_THREADS),                              \
+        CNRT_FUNC_TYPE_BLOCK,                                      \
+        ctx->mlu_stream()>>>(                                      \
+        N,                                                         \
+        convert::To<math::Traits<T>::scalar_type>(low),            \
+        convert::To<math::Traits<T>::scalar_type>(high),           \
+        reinterpret_cast<const math::Traits<T>::scalar_type*>(dy), \
+        reinterpret_cast<const math::Traits<T>::scalar_type*>(x),  \
+        reinterpret_cast<math::Traits<T>::scalar_type*>(dx));      \
   }
 
 template <>
@@ -125,6 +126,7 @@ void ClipGrad<double, MLUContext>(
 }
 
 DEFINE_GRAD_KERNEL_LAUNCHER(float16);
+DEFINE_GRAD_KERNEL_LAUNCHER(bfloat16);
 DEFINE_GRAD_KERNEL_LAUNCHER(float);
 #undef DEFINE_GRAD_KERNEL_LAUNCHER
 #undef BLOCK_THREADS

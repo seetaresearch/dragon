@@ -88,13 +88,15 @@ __global__ void _AdamW(
         m,                                                            \
         v,                                                            \
         y,                                                            \
-        reinterpret_cast<math::ScalarType<CopyT>::type*>(y_copy));    \
+        reinterpret_cast<math::Traits<CopyT>::scalar_type*>(y_copy)); \
   }
 
 DEFINE_KERNEL_LAUNCHER(Adam, float, float16);
+DEFINE_KERNEL_LAUNCHER(Adam, float, bfloat16);
 DEFINE_KERNEL_LAUNCHER(Adam, float, float);
 DEFINE_KERNEL_LAUNCHER(Adam, double, double);
 DEFINE_KERNEL_LAUNCHER(AdamW, float, float16);
+DEFINE_KERNEL_LAUNCHER(AdamW, float, bfloat16);
 DEFINE_KERNEL_LAUNCHER(AdamW, float, float);
 DEFINE_KERNEL_LAUNCHER(AdamW, double, double);
 #undef DEFINE_KERNEL_LAUNCHER

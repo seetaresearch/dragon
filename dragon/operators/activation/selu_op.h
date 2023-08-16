@@ -26,7 +26,9 @@ class SeluOp final : public Operator<Context> {
         gamma_(OP_SINGLE_ARG(float, "gamma", 1.0507f)) {}
   USE_OPERATOR_FUNCTIONS;
 
-  void RunOnDevice() override;
+  void RunOnDevice() override {
+    DispatchHelper<dtypes::Floating>::Call(this, Input(0));
+  }
 
   template <typename T>
   void DoRunWithType();
@@ -44,7 +46,9 @@ class SeluGradientOp final : public Operator<Context> {
         gamma_(OP_SINGLE_ARG(float, "gamma", 1.0507f)) {}
   USE_OPERATOR_FUNCTIONS;
 
-  void RunOnDevice() override;
+  void RunOnDevice() override {
+    DispatchHelper<dtypes::Floating>::Call(this, Input(0));
+  }
 
   template <typename T>
   void DoRunWithType();

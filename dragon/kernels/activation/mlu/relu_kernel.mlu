@@ -70,20 +70,21 @@ void Relu<double, MLUContext>(
           ctx->mlu_stream()>>>(                                            \
           N,                                                               \
           alpha,                                                           \
-          reinterpret_cast<const math::ScalarType<T>::type*>(x),           \
-          reinterpret_cast<math::ScalarType<T>::type*>(y));                \
+          reinterpret_cast<const math::Traits<T>::scalar_type*>(x),        \
+          reinterpret_cast<math::Traits<T>::scalar_type*>(y));             \
     } else {                                                               \
       _Relu<<<                                                             \
           MLU_BLOCKS(N, BLOCK_THREADS),                                    \
           CNRT_FUNC_TYPE_BLOCK,                                            \
           ctx->mlu_stream()>>>(                                            \
           alpha,                                                           \
-          reinterpret_cast<const math::ScalarType<T>::type*>(x),           \
-          reinterpret_cast<math::ScalarType<T>::type*>(y));                \
+          reinterpret_cast<const math::Traits<T>::scalar_type*>(x),        \
+          reinterpret_cast<math::Traits<T>::scalar_type*>(y));             \
     }                                                                      \
   }
 
 DEFINE_KERNEL_LAUNCHER(float16);
+DEFINE_KERNEL_LAUNCHER(bfloat16);
 DEFINE_KERNEL_LAUNCHER(float);
 #undef DEFINE_KERNEL_LAUNCHER
 
@@ -107,11 +108,12 @@ void ReluN<double, MLUContext>(
         ctx->mlu_stream()>>>(                                                  \
         N,                                                                     \
         max_value,                                                             \
-        reinterpret_cast<const math::ScalarType<T>::type*>(x),                 \
-        reinterpret_cast<math::ScalarType<T>::type*>(y));                      \
+        reinterpret_cast<const math::Traits<T>::scalar_type*>(x),              \
+        reinterpret_cast<math::Traits<T>::scalar_type*>(y));                   \
   }
 
 DEFINE_KERNEL_LAUNCHER(float16);
+DEFINE_KERNEL_LAUNCHER(bfloat16);
 DEFINE_KERNEL_LAUNCHER(float);
 #undef DEFINE_KERNEL_LAUNCHER
 #undef BLOCK_THREADS

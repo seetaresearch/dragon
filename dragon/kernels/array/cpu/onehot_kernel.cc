@@ -1,5 +1,5 @@
 #include "dragon/kernels/array/op_kernels.h"
-#include "dragon/utils/conversions.h"
+#include "dragon/utils/math_functions.h"
 
 namespace dragon {
 
@@ -9,20 +9,9 @@ namespace {
 
 template <typename T>
 void _SetOneHot(const int N, const int depth, const T value, const T* x, T* y) {
+  using AccT = typename math::Traits<T>::accumulator_type;
   for (int i = 0; i < N; ++i) {
-    y[i * depth + int(x[i])] = value;
-  }
-}
-
-template <>
-void _SetOneHot<float16>(
-    const int N,
-    const int depth,
-    const float16 value,
-    const float16* x,
-    float16* y) {
-  for (int i = 0; i < N; ++i) {
-    y[i * depth + int(convert::To<float>(x[i]))] = value;
+    y[i * depth + int(convert::To<AccT>(x[i]))] = value;
   }
 }
 
@@ -45,6 +34,7 @@ DEFINE_KERNEL_LAUNCHER(int8_t);
 DEFINE_KERNEL_LAUNCHER(int);
 DEFINE_KERNEL_LAUNCHER(int64_t);
 DEFINE_KERNEL_LAUNCHER(float16);
+DEFINE_KERNEL_LAUNCHER(bfloat16);
 DEFINE_KERNEL_LAUNCHER(float);
 DEFINE_KERNEL_LAUNCHER(double);
 #undef DEFINE_KERNEL_LAUNCHER

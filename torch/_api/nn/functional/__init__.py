@@ -37,7 +37,6 @@ from dragon.vm.torch.core.nn.functional import conv_transpose3d
 from dragon.vm.torch.core.nn.functional import cosine_similarity
 from dragon.vm.torch.core.nn.functional import cross_entropy
 from dragon.vm.torch.core.nn.functional import ctc_loss
-from dragon.vm.torch.core.nn.functional import depthwise_conv2d
 from dragon.vm.torch.core.nn.functional import drop_block2d
 from dragon.vm.torch.core.nn.functional import drop_path
 from dragon.vm.torch.core.nn.functional import dropout

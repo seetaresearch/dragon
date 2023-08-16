@@ -85,27 +85,6 @@ void _GroupNormGrad(
 
 } // namespace
 
-template <>
-void GroupNormGrad<float16, float, CPUContext>(
-    const int N,
-    const int G,
-    const int D,
-    const int S,
-    const string& data_format,
-    const float16* x,
-    const float* mu,
-    const float* rsig,
-    const float* gamma,
-    const float16* dy,
-    float* ds,
-    float* db,
-    float* dgamma,
-    float* dbeta,
-    float16* dx,
-    CPUContext* ctx) {
-  CPU_FP16_NOT_SUPPORTED;
-} // GroupNormBackward
-
 #define DEFINE_KERNEL_LAUNCHER(T, AccT)               \
   template <>                                         \
   void GroupNorm<T, AccT, CPUContext>(                \
@@ -168,11 +147,38 @@ void GroupNormGrad<float16, float, CPUContext>(
   }
 
 DEFINE_KERNEL_LAUNCHER(float16, float);
+DEFINE_KERNEL_LAUNCHER(bfloat16, float);
 DEFINE_KERNEL_LAUNCHER(float, float);
 DEFINE_KERNEL_LAUNCHER(double, double);
 DEFINE_GRAD_KERNEL_LAUNCHER(float, float);
 DEFINE_GRAD_KERNEL_LAUNCHER(double, double);
 #undef DEFINE_KERNEL_LAUNCHER
+#undef DEFINE_GRAD_KERNEL_LAUNCHER
+
+#define DEFINE_GRAD_KERNEL_LAUNCHER(T, AccT) \
+  template <>                                \
+  void GroupNormGrad<T, AccT, CPUContext>(   \
+      const int N,                           \
+      const int G,                           \
+      const int D,                           \
+      const int S,                           \
+      const string& data_format,             \
+      const T* x,                            \
+      const AccT* mu,                        \
+      const AccT* rsig,                      \
+      const AccT* gamma,                     \
+      const T* dy,                           \
+      AccT* ds,                              \
+      AccT* db,                              \
+      AccT* dgamma,                          \
+      AccT* dbeta,                           \
+      T* dx,                                 \
+      CPUContext* ctx) {                     \
+    CPU_UNSUPPORTED_DTYPE(T);                \
+  }
+
+DEFINE_GRAD_KERNEL_LAUNCHER(float16, float);
+DEFINE_GRAD_KERNEL_LAUNCHER(bfloat16, float);
 #undef DEFINE_GRAD_KERNEL_LAUNCHER
 
 } // namespace kernels

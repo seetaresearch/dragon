@@ -28,7 +28,9 @@ class LRNOp : public Operator<Context> {
         bias_(OP_SINGLE_ARG(float, "bias", 1.f)) {}
   USE_OPERATOR_FUNCTIONS;
 
-  void RunOnDevice() override;
+  void RunOnDevice() override {
+    DispatchHelper<dtypes::Floating>::Call(this, Input(0));
+  }
 
   template <typename T>
   void DoRunWithType();
@@ -49,7 +51,9 @@ class LRNGradientOp : public Operator<Context> {
         bias_(OP_SINGLE_ARG(float, "bias", 1.f)) {}
   USE_OPERATOR_FUNCTIONS;
 
-  void RunOnDevice() override;
+  void RunOnDevice() override {
+    DispatchHelper<dtypes::Floating>::Call(this, Input(0));
+  }
 
   template <typename T>
   void DoRunWithType();
@@ -60,7 +64,6 @@ class LRNGradientOp : public Operator<Context> {
 };
 
 #ifdef USE_CUDNN
-
 template <class Context>
 class CuDNNLRNOp final : public LRNOp<Context> {
  public:
@@ -77,7 +80,9 @@ class CuDNNLRNOp final : public LRNOp<Context> {
     CUDNN_CHECK(cudnnDestroyLRNDescriptor(lrn_desc_));
   }
 
-  void RunOnDevice() override;
+  void RunOnDevice() override {
+    DispatchHelper<dtypes::Floating>::Call(this, Input(0));
+  }
 
   template <typename T>
   void DoRunWithType();
@@ -104,7 +109,9 @@ class CuDNNLRNGradientOp final : public LRNGradientOp<Context> {
     CUDNN_CHECK(cudnnDestroyLRNDescriptor(lrn_desc_));
   }
 
-  void RunOnDevice() override;
+  void RunOnDevice() override {
+    DispatchHelper<dtypes::Floating>::Call(this, Input(0));
+  }
 
   template <typename T>
   void DoRunWithType();
@@ -113,7 +120,6 @@ class CuDNNLRNGradientOp final : public LRNGradientOp<Context> {
   cudnnTensorDescriptor_t input_desc_;
   cudnnLRNDescriptor_t lrn_desc_;
 };
-
 #endif // WITH CUDNN
 
 } // namespace dragon

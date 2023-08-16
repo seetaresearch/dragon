@@ -81,19 +81,24 @@ void _TopK(
 
 } // namespace
 
-template <>
-void TopK<float16, CPUContext>(
-    const int N,
-    const int S,
-    const int C,
-    const int K,
-    const int largest,
-    const float16* x,
-    float16* value,
-    int64_t* index,
-    CPUContext* ctx) {
-  CPU_FP16_NOT_SUPPORTED;
-}
+#define DEFINE_KERNEL_LAUNCHER(T) \
+  template <>                     \
+  void TopK<T, CPUContext>(       \
+      const int N,                \
+      const int S,                \
+      const int C,                \
+      const int K,                \
+      const int largest,          \
+      const T* x,                 \
+      T* value,                   \
+      int64_t* index,             \
+      CPUContext* ctx) {          \
+    CPU_UNSUPPORTED_DTYPE(T);     \
+  }
+
+DEFINE_KERNEL_LAUNCHER(float16);
+DEFINE_KERNEL_LAUNCHER(bfloat16);
+#undef DEFINE_KERNEL_LAUNCHER
 
 #define DEFINE_KERNEL_LAUNCHER(T)                                         \
   template <>                                                             \

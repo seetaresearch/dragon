@@ -29,7 +29,7 @@ __global__ void _RoiPool(
     const float* roi = rois + n * 5;
     const int batch_ind = roi[0];
     if (batch_ind < 0) {
-      y[yi] = convert::To<T>(0.f), index[yi] = -1;
+      y[yi] = T(0.f), index[yi] = -1;
       continue;
     }
 
@@ -47,7 +47,6 @@ __global__ void _RoiPool(
     int wstart = floor(bin_w * w_out);
     int hend = ceil(bin_h * (h_out + 1));
     int wend = ceil(bin_w * (w_out + 1));
-
     hstart = min(max(hstart + roi_hstart, 0), H);
     hend = min(max(hend + roi_hstart, 0), H);
     wstart = min(max(wstart + roi_wstart, 0), W);
@@ -60,7 +59,7 @@ __global__ void _RoiPool(
     for (int h = hstart; h < hend; ++h) {
       for (int w = wstart; w < wend; ++w) {
         const int xi = h * W + w;
-        const float val = convert::To<float>(__ldg(offset_x + xi));
+        const float val = math::utils::LDGC<float>(offset_x + xi);
         if (val > maxval) {
           maxval = val, maxidx = xi;
         }
@@ -123,18 +122,20 @@ __global__ void _RoiPoolGrad(
         out_h,                                                               \
         out_w,                                                               \
         spatial_scale,                                                       \
-        reinterpret_cast<const math::ScalarType<InputT>::type*>(x),          \
+        reinterpret_cast<const math::Traits<InputT>::scalar_type*>(x),       \
         rois,                                                                \
         index,                                                               \
-        reinterpret_cast<math::ScalarType<OutputT>::type*>(y));              \
+        reinterpret_cast<math::Traits<OutputT>::scalar_type*>(y));           \
   }
 
 DEFINE_KERNEL_LAUNCHER(RoiPool, float16, float16);
+DEFINE_KERNEL_LAUNCHER(RoiPool, bfloat16, bfloat16);
 DEFINE_KERNEL_LAUNCHER(RoiPool, float, float);
 DEFINE_KERNEL_LAUNCHER(RoiPool, double, double);
-DEFINE_KERNEL_LAUNCHER(RoiPoolGrad, float16, float); // RoiPoolGrad
-DEFINE_KERNEL_LAUNCHER(RoiPoolGrad, float, float); // RoiPoolGrad
-DEFINE_KERNEL_LAUNCHER(RoiPoolGrad, double, float); // RoiPoolGrad
+DEFINE_KERNEL_LAUNCHER(RoiPoolGrad, float16, float);
+DEFINE_KERNEL_LAUNCHER(RoiPoolGrad, bfloat16, float);
+DEFINE_KERNEL_LAUNCHER(RoiPoolGrad, float, float);
+DEFINE_KERNEL_LAUNCHER(RoiPoolGrad, double, float);
 #undef DEFINE_KERNEL_LAUNCHER
 
 } // namespace kernels

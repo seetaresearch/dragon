@@ -73,6 +73,9 @@ DEPLOY_CUDA_OPERATOR(DropBlock);
 DEPLOY_CUDA_OPERATOR(DropBlockGradient);
 #endif
 
+DEFINE_OP_SINGLE_ARG(float, DropBlockOp, ratio);
+DEFINE_OP_SINGLE_ARG(float, DropBlockGradientOp, ratio);
+
 OPERATOR_SCHEMA(DropBlock)
     /* X */
     .NumInputs(1)

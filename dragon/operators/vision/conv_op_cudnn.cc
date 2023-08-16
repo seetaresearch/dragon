@@ -80,6 +80,12 @@ void CuDNNConvGradientOp<Context>::DoRunWithType() {
         HasBias() ? Output(2)->template mutable_data<T, Context>() : nullptr,
         ctx());
   }
+
+  if (HasBias() && TypeMeta::Id<T>() == TypeMeta::Id<bfloat16>()) {
+    BwdBias( // CuDNN does not support bfloat16 reduction currently.
+        dY.template data<T, Context>(),
+        Output(2)->template mutable_data<T, Context>());
+  }
 }
 
 DEPLOY_CUDNN_OPERATOR(Conv);

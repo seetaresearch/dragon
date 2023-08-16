@@ -18,13 +18,16 @@ __global__ void _AffineChannel(
     const T* scale,
     const T* bias,
     T* y) {
-  auto op3 = math::FMAFunctor<T>();
-  auto op2 = math::MultipliesFunctor<T>();
+  const auto madd = math::FMAFunctor<T>();
+  const auto mul = math::MultipliesFunctor<T>();
   CUDA_1D_KERNEL_LOOP(i, NxC) {
     if (bias != nullptr) {
-      y[i] = op3(x[i], __ldg(scale + i % C), __ldg(bias + i % C));
+      y[i] = madd(
+          x[i],
+          math::utils::LDG(scale + i % C),
+          math::utils::LDG(bias + i % C));
     } else {
-      y[i] = op2(x[i], __ldg(scale + i % C));
+      y[i] = mul(x[i], math::utils::LDG(scale + i % C));
     }
   }
 }
@@ -38,14 +41,16 @@ __global__ void _AffineChannel(
     const T* scale,
     const T* bias,
     T* y) {
-  auto op3 = math::FMAFunctor<T>();
-  auto op2 = math::MultipliesFunctor<T>();
+  const auto madd = math::FMAFunctor<T>();
+  const auto mul = math::MultipliesFunctor<T>();
   CUDA_1D_KERNEL_LOOP(i, NxCxS) {
-    const int j = (i / S) % C;
     if (bias != nullptr) {
-      y[i] = op3(x[i], __ldg(scale + j), __ldg(bias + j));
+      y[i] = madd(
+          x[i],
+          math::utils::LDG(scale + i / S % C),
+          math::utils::LDG(bias + i / S % C));
     } else {
-      y[i] = op2(x[i], __ldg(scale + j));
+      y[i] = mul(x[i], math::utils::LDG(scale + i / S % C));
     }
   }
 }
@@ -81,34 +86,35 @@ void DispatchAffine(
 
 } // namespace
 
-#define DEFINE_AFFINE_FUNC(T)                                      \
-  template <>                                                      \
-  void Affine<T, CUDAContext>(                                     \
-      const int num_dims,                                          \
-      const int64_t* dims,                                         \
-      const int num_axes,                                          \
-      const int64_t* axes,                                         \
-      const T* x,                                                  \
-      const T* scale,                                              \
-      const T* bias,                                               \
-      T* y,                                                        \
-      CUDAContext* ctx) {                                          \
-    vec64_t new_dims, new_axes;                                    \
-    math::utils::CollapseReduceAxes(                               \
-        num_dims, dims, num_axes, axes, new_dims, new_axes);       \
-    DispatchAffine(                                                \
-        new_dims.size(),                                           \
-        new_dims.data(),                                           \
-        new_axes.size(),                                           \
-        new_axes.data(),                                           \
-        reinterpret_cast<const math::ScalarType<T>::type*>(x),     \
-        reinterpret_cast<const math::ScalarType<T>::type*>(scale), \
-        reinterpret_cast<const math::ScalarType<T>::type*>(bias),  \
-        reinterpret_cast<math::ScalarType<T>::type*>(y),           \
-        ctx);                                                      \
+#define DEFINE_AFFINE_FUNC(T)                                         \
+  template <>                                                         \
+  void Affine<T, CUDAContext>(                                        \
+      const int num_dims,                                             \
+      const int64_t* dims,                                            \
+      const int num_axes,                                             \
+      const int64_t* axes,                                            \
+      const T* x,                                                     \
+      const T* scale,                                                 \
+      const T* bias,                                                  \
+      T* y,                                                           \
+      CUDAContext* ctx) {                                             \
+    vec64_t new_dims, new_axes;                                       \
+    math::utils::CollapseReduceAxes(                                  \
+        num_dims, dims, num_axes, axes, new_dims, new_axes);          \
+    DispatchAffine(                                                   \
+        new_dims.size(),                                              \
+        new_dims.data(),                                              \
+        new_axes.size(),                                              \
+        new_axes.data(),                                              \
+        reinterpret_cast<const math::Traits<T>::scalar_type*>(x),     \
+        reinterpret_cast<const math::Traits<T>::scalar_type*>(scale), \
+        reinterpret_cast<const math::Traits<T>::scalar_type*>(bias),  \
+        reinterpret_cast<math::Traits<T>::scalar_type*>(y),           \
+        ctx);                                                         \
   }
 
 DEFINE_AFFINE_FUNC(float16);
+DEFINE_AFFINE_FUNC(bfloat16);
 DEFINE_AFFINE_FUNC(float);
 DEFINE_AFFINE_FUNC(double);
 #undef DEFINE_AFFINE_FUNC

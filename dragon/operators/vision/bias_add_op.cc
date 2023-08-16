@@ -9,7 +9,6 @@ template <class Context>
 template <typename T>
 void BiasAddOp<Context>::DoRunWithType() {
   auto &X = Input(0), &B = Input(1), *Y = Output(0, {0});
-
   int64_t N, C, S;
   if (data_format() == "NCHW") {
     N = X.dim(0), C = X.dim(1), S = X.count(2);
@@ -18,7 +17,6 @@ void BiasAddOp<Context>::DoRunWithType() {
   } else {
     LOG(FATAL) << "Unknown DataFormat: " << data_format();
   }
-
   INITIALIZE_TENSOR_VIA_SPEC(B, vec64_t({C}), T);
   kernels::BiasAdd(
       N,
@@ -34,11 +32,7 @@ template <class Context>
 template <typename T>
 void BiasAddGradientOp<Context>::DoRunWithType() {
   auto &dY = Input(0), *dX = Output(0), *dB = Output(1);
-
-  if (dX->has_name()) {
-    dX->ReshapeLike(dY)->CopyFrom(dY, ctx());
-  }
-
+  if (dX->has_name()) dX->ReshapeLike(dY)->CopyFrom(dY, ctx());
   if (dB->has_name()) {
     vec64_t dims, axes;
     if (data_format() == "NCHW") {

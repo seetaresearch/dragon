@@ -122,6 +122,7 @@ void DispatchAffine(
 
 DEFINE_AFFINE_FUNC(float);
 DEFINE_AFFINE_FUNC(float16);
+DEFINE_AFFINE_FUNC(bfloat16);
 DEFINE_AFFINE_FUNC(double);
 #undef DEFINE_AFFINE_FUNC
 

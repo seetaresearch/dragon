@@ -269,10 +269,13 @@ MTLComputePipelineState_t MPSKernel::GetState(
       auto* source = [NSString stringWithUTF8String:lib_source_.c_str()];
       auto* options = [[MTLCompileOptions alloc] init];
       // Metal 2.0: function constant
-      // Metal 2.2: host name attribute
+      // Metal 2.2: hostname attribute
       // Metal 2.3: int64 buffer
       // Metal 3.0: float32 atomic
-#if (MPS_OSX_VERSION_MAJOR >= 13)
+      // Metal 3.1: bfloat16
+#if (MPS_OSX_VERSION_MAJOR >= 14)
+      [options setLanguageVersion:MTLLanguageVersion3_1];
+#elif (MPS_OSX_VERSION_MAJOR >= 13)
       [options setLanguageVersion:MTLLanguageVersion3_0];
 #else
       [options setLanguageVersion:MTLLanguageVersion2_3];

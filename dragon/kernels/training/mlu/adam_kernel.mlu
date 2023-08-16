@@ -53,7 +53,7 @@ __mlu_entry__ void _Adam(
     __memcpy(y + i, Y, N_ram * sizeof(T), NRAM2GDRAM);
     // Update "y_copy".
     if (y_copy != nullptr) {
-      math::utils::Convert((CopyT*)scratch, Y, N_ram);
+      convert::To((CopyT*)scratch, Y, N_ram);
       __memcpy(y_copy + i, scratch, N_ram * sizeof(CopyT), NRAM2GDRAM);
     }
   }
@@ -103,7 +103,7 @@ __mlu_entry__ void _AdamW(
     __memcpy(y + i, Y, N_ram * sizeof(T), NRAM2GDRAM);
     // Update "y_copy".
     if (y_copy != nullptr) {
-      math::utils::Convert((CopyT*)scratch, Y, N_ram);
+      convert::To((CopyT*)scratch, Y, N_ram);
       __memcpy(y_copy + i, scratch, N_ram * sizeof(CopyT), NRAM2GDRAM);
     }
   }
@@ -111,43 +111,45 @@ __mlu_entry__ void _AdamW(
 
 } // namespace
 
-#define DEFINE_KERNEL_LAUNCHER(name, T, CopyT)                     \
-  template <>                                                      \
-  void name<T, CopyT, MLUContext>(                                 \
-      const int N,                                                 \
-      const float lr,                                              \
-      const float beta1,                                           \
-      const float beta2,                                           \
-      const float eps,                                             \
-      const float wd,                                              \
-      const T* x,                                                  \
-      const T* g,                                                  \
-      T* m,                                                        \
-      T* v,                                                        \
-      T* y,                                                        \
-      CopyT* y_copy,                                               \
-      MLUContext* ctx) {                                           \
-    _##name<<<                                                     \
-        MLU_BLOCKS(N, BLOCK_THREADS),                              \
-        CNRT_FUNC_TYPE_BLOCK,                                      \
-        ctx->mlu_stream()>>>(                                      \
-        N,                                                         \
-        T(lr),                                                     \
-        T(beta1),                                                  \
-        T(beta2),                                                  \
-        T(eps),                                                    \
-        T(wd),                                                     \
-        x,                                                         \
-        g,                                                         \
-        m,                                                         \
-        v,                                                         \
-        y,                                                         \
-        reinterpret_cast<math::ScalarType<CopyT>::type*>(y_copy)); \
+#define DEFINE_KERNEL_LAUNCHER(name, T, CopyT)                        \
+  template <>                                                         \
+  void name<T, CopyT, MLUContext>(                                    \
+      const int N,                                                    \
+      const float lr,                                                 \
+      const float beta1,                                              \
+      const float beta2,                                              \
+      const float eps,                                                \
+      const float wd,                                                 \
+      const T* x,                                                     \
+      const T* g,                                                     \
+      T* m,                                                           \
+      T* v,                                                           \
+      T* y,                                                           \
+      CopyT* y_copy,                                                  \
+      MLUContext* ctx) {                                              \
+    _##name<<<                                                        \
+        MLU_BLOCKS(N, BLOCK_THREADS),                                 \
+        CNRT_FUNC_TYPE_BLOCK,                                         \
+        ctx->mlu_stream()>>>(                                         \
+        N,                                                            \
+        T(lr),                                                        \
+        T(beta1),                                                     \
+        T(beta2),                                                     \
+        T(eps),                                                       \
+        T(wd),                                                        \
+        x,                                                            \
+        g,                                                            \
+        m,                                                            \
+        v,                                                            \
+        y,                                                            \
+        reinterpret_cast<math::Traits<CopyT>::scalar_type*>(y_copy)); \
   }
 
 DEFINE_KERNEL_LAUNCHER(Adam, float, float16);
+DEFINE_KERNEL_LAUNCHER(Adam, float, bfloat16);
 DEFINE_KERNEL_LAUNCHER(Adam, float, float);
 DEFINE_KERNEL_LAUNCHER(AdamW, float, float16);
+DEFINE_KERNEL_LAUNCHER(AdamW, float, bfloat16);
 DEFINE_KERNEL_LAUNCHER(AdamW, float, float);
 #undef DEFINE_KERNEL_LAUNCHER
 

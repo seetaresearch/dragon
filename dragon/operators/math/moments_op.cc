@@ -7,8 +7,8 @@ namespace dragon {
 template <class Context>
 template <typename T>
 void MomentsOp<Context>::DoRunWithType() {
-  using OutputT = typename math::AccumulatorType<T>::type;
-  auto &X = Input(0), *Y1 = Output(0), *Y2 = Output(1);
+  using AccT = typename math::Traits<T>::accumulator_type;
+  auto &X = Input(0), *Y_mean = Output(0), *Y_var = Output(1);
 
   // Compute reduce axes.
   vec64_t Y_dims(X.dims()), Y_shape(X.dims());
@@ -38,12 +38,12 @@ void MomentsOp<Context>::DoRunWithType() {
     math::Cast(
         1,
         X.template data<T, Context>(),
-        Y1->Reshape(Y_shape)->template mutable_data<OutputT, Context>(),
+        Y_mean->Reshape(Y_shape)->template mutable_data<AccT, Context>(),
         ctx());
     math::Set(
         1,
-        convert::To<OutputT>(0.f),
-        Y2->Reshape(Y_shape)->template mutable_data<OutputT, Context>(),
+        convert::To<AccT>(0.f),
+        Y_var->Reshape(Y_shape)->template mutable_data<AccT, Context>(),
         ctx());
   } else {
     kernels::Moments(
@@ -52,8 +52,8 @@ void MomentsOp<Context>::DoRunWithType() {
         reduce_axes.size(),
         reduce_axes.data(),
         X.template data<T, Context>(),
-        Y1->Reshape(Y_shape)->template mutable_data<OutputT, Context>(),
-        Y2->Reshape(Y_shape)->template mutable_data<OutputT, Context>(),
+        Y_mean->Reshape(Y_shape)->template mutable_data<AccT, Context>(),
+        Y_var->Reshape(Y_shape)->template mutable_data<AccT, Context>(),
         ctx());
   }
 }
@@ -66,11 +66,7 @@ DEPLOY_CUDA_OPERATOR(Moments);
 DEPLOY_MPS_OPERATOR(Moments, Moments);
 #endif
 
-OPERATOR_SCHEMA(Moments)
-    /* X */
-    .NumInputs(1)
-    /* Mean, Var */
-    .NumOutputs(2);
+OPERATOR_SCHEMA(Moments).NumInputs(1).NumOutputs(2);
 
 NO_GRADIENT(Moments);
 

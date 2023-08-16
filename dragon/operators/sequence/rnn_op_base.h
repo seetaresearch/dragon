@@ -107,14 +107,14 @@ class CuDNNRNNOpBase : public Operator<Context> {
         rnn_desc_,
         x_descs_->data()[0],
         &weight_size,
-        CuDNNType<T>::type));
+        CuDNNTraits<T>::type));
     int64_t weight_count = (int64_t)weight_size / sizeof(T);
     CHECK_EQ(Input(1).count(), weight_count)
         << "\nUnexpected count of weights: " << Input(1).count() << " vs. "
         << weight_count;
     CUDNN_CHECK(cudnnSetFilterNdDescriptor(
         weight_desc_,
-        CuDNNType<T>::type,
+        CuDNNTraits<T>::type,
         CUDNN_TENSOR_NCHW,
         3,
         vec32_t({int(weight_count), 1, 1}).data()));

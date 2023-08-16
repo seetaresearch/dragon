@@ -12,10 +12,10 @@ void CNNLHardSwishOp<Context>::DoRunWithType() {
   CNNL_CHECK(cnnlActivationForward(
       ctx()->cnnl_handle(),
       act_desc_,
-      CNNLType<T>::one,
+      CNNLTraits<T>::one,
       input_desc_,
       X.template data<T, Context>(),
-      CNNLType<T>::zero,
+      CNNLTraits<T>::zero,
       input_desc_,
       Y->ReshapeLike(X)->template mutable_data<T, Context>()));
 }

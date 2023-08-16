@@ -135,6 +135,7 @@ DEFINE_COPY_FUNC(uint8_t);
 DEFINE_COPY_FUNC(int);
 DEFINE_COPY_FUNC(int64_t);
 DEFINE_COPY_FUNC(float16);
+DEFINE_COPY_FUNC(bfloat16);
 DEFINE_COPY_FUNC(float);
 DEFINE_COPY_FUNC(double);
 #undef DEFINE_COPY_FUNC
@@ -165,6 +166,7 @@ DEFINE_COPY_FUNC(uint8_t);
 DEFINE_COPY_FUNC(int);
 DEFINE_COPY_FUNC(int64_t);
 DEFINE_COPY_FUNC(float16);
+DEFINE_COPY_FUNC(bfloat16);
 DEFINE_COPY_FUNC(float);
 DEFINE_COPY_FUNC(double);
 #undef DEFINE_COPY_FUNC
@@ -211,6 +213,7 @@ DEFINE_COPY_MATRIX_FUNC(uint8_t);
 DEFINE_COPY_MATRIX_FUNC(int);
 DEFINE_COPY_MATRIX_FUNC(int64_t);
 DEFINE_COPY_MATRIX_FUNC(float16);
+DEFINE_COPY_MATRIX_FUNC(bfloat16);
 DEFINE_COPY_MATRIX_FUNC(float);
 DEFINE_COPY_MATRIX_FUNC(double);
 #undef DEFINE_COPY_MATRIX_FUNC
@@ -232,8 +235,7 @@ DEFINE_COPY_MATRIX_FUNC(double);
       [encoder endEncoding];                                                \
       [encoder release];                                                    \
       return;                                                               \
-    }                                                                       \
-    if (x != y) {                                                           \
+    } else if (x != y) {                                                    \
       ctx->MemcpyAsync<MPSContext, MPSContext>(N * sizeof(T), y, x);        \
     }                                                                       \
   }
@@ -243,6 +245,7 @@ DEFINE_SCALE_FUNC(int8_t);
 DEFINE_SCALE_FUNC(int);
 DEFINE_SCALE_FUNC(int64_t);
 DEFINE_SCALE_FUNC(float16);
+DEFINE_SCALE_FUNC(bfloat16);
 DEFINE_SCALE_FUNC(float);
 DEFINE_SCALE_FUNC(double);
 #undef DEFINE_SCALE_FUNC

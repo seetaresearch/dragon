@@ -20,11 +20,6 @@ void CumSumOp<Context>::DoRunWithType() {
 }
 
 template <class Context>
-void CumSumOp<Context>::RunOnDevice() {
-  DispatchHelper<dtypes::Numerical>::Call(this, Input(0));
-}
-
-template <class Context>
 template <typename T>
 void CumSumGradientOp<Context>::DoRunWithType() {
   auto &dY = Input(0), *dX = Output(0);
@@ -41,31 +36,24 @@ void CumSumGradientOp<Context>::DoRunWithType() {
 }
 
 template <class Context>
+void CumSumOp<Context>::RunOnDevice() {
+  DispatchHelper<dtypes::Numerical>::Call(this, Input(0));
+}
+
+template <class Context>
 void CumSumGradientOp<Context>::RunOnDevice() {
   DispatchHelper<dtypes::Floating>::Call(this, Input(0));
 }
 
 DEPLOY_CPU_OPERATOR(CumSum);
-#ifdef USE_CUDA
-DEPLOY_CUDA_OPERATOR(CumSum);
-#endif
-
 DEPLOY_CPU_OPERATOR(CumSumGradient);
 #ifdef USE_CUDA
+DEPLOY_CUDA_OPERATOR(CumSum);
 DEPLOY_CUDA_OPERATOR(CumSumGradient);
 #endif
 
-OPERATOR_SCHEMA(CumSum)
-    /* X */
-    .NumInputs(1)
-    /* Y */
-    .NumOutputs(1);
-
-OPERATOR_SCHEMA(CumSumGradient)
-    /* dY */
-    .NumInputs(1)
-    /* dX */
-    .NumOutputs(1);
+OPERATOR_SCHEMA(CumSum).NumInputs(1).NumOutputs(1);
+OPERATOR_SCHEMA(CumSumGradient).NumInputs(1).NumOutputs(1);
 
 REGISTER_GRADIENT(CumSum, SimpleGradientMaker);
 

@@ -26,7 +26,9 @@ class UniqueOp final : public Operator<Context> {
         return_counts_(OP_SINGLE_ARG(int64_t, "return_counts", 0)) {}
   USE_OPERATOR_FUNCTIONS;
 
-  void RunOnDevice() override;
+  void RunOnDevice() override {
+    DispatchHelper<dtypes::Numerical>::Call(this, Input(0));
+  }
 
   template <typename T>
   void DoRunWithType();

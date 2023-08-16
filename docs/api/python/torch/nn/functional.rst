@@ -78,10 +78,6 @@ vm.torch.nn.functional
   : Compute ctc loss.
   `[Graves & Gomez, 2006] <http://www.cs.utoronto.ca/~graves/icml_2006.pdf>`_.
 
-  `depthwise_conv2d(...) <functional/depthwise_conv2d.html>`_
-  : Apply 2d depthwise convolution to input.
-  `[Chollet, 2016] <https://arxiv.org/abs/1610.02357>`_.
-
   `drop_block2d(...) <functional/drop_block2d.html>`_
   : Set blocks of input to zero randomly.
   `[Ghiasi et.al, 2018] <https://arxiv.org/abs/1810.12890>`_.
@@ -252,7 +248,6 @@ vm.torch.nn.functional
   functional/cosine_similarity
   functional/cross_entropy
   functional/ctc_loss
-  functional/depthwise_conv2d
   functional/drop_block2d
   functional/drop_path
   functional/dropout

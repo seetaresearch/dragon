@@ -6,7 +6,6 @@
 #include "dragon/utils/math/reduce.h"
 #include "dragon/utils/math/transpose.h"
 #include "dragon/utils/math/types.h"
-#include "dragon/utils/math/utils.h"
 
 namespace dragon {
 
@@ -226,68 +225,65 @@ DEFINE_REDUCE_DISPATCHER(L1, math::AbsFunctor, math::PlusFunctor);
 
 } // namespace
 
-#define DEFINE_REDUCE_FUNC(name, T, AccT, kInit)               \
-  template <>                                                  \
-  DRAGON_API void Reduce##name<T, CUDAContext>(                \
-      const int num_dims,                                      \
-      const int64_t* dims,                                     \
-      const int num_axes,                                      \
-      const int64_t* axes,                                     \
-      const float scale,                                       \
-      const T* x,                                              \
-      T* y,                                                    \
-      CUDAContext* ctx) {                                      \
-    vec64_t new_dims, new_axes;                                \
-    math::utils::CollapseReduceAxes(                           \
-        num_dims, dims, num_axes, axes, new_dims, new_axes);   \
-    auto reduce_type = _Reduce##name(                          \
-        new_dims.size(),                                       \
-        new_dims.data(),                                       \
-        new_axes.size(),                                       \
-        new_axes.data(),                                       \
-        convert::To<AccT>(kInit),                              \
-        convert::To<AccT>(scale),                              \
-        reinterpret_cast<const math::ScalarType<T>::type*>(x), \
-        reinterpret_cast<math::ScalarType<T>::type*>(y),       \
-        ctx);                                                  \
-    if (reduce_type == 0 && scale != 1.f) {                    \
-      math::Scale(1, scale, y, y, ctx);                        \
-    }                                                          \
+#define DEFINE_REDUCE_FUNC(name, T, AccT, kInit)                  \
+  template <>                                                     \
+  DRAGON_API void Reduce##name<T, CUDAContext>(                   \
+      const int num_dims,                                         \
+      const int64_t* dims,                                        \
+      const int num_axes,                                         \
+      const int64_t* axes,                                        \
+      const float scale,                                          \
+      const T* x,                                                 \
+      T* y,                                                       \
+      CUDAContext* ctx) {                                         \
+    vec64_t new_dims, new_axes;                                   \
+    math::utils::CollapseReduceAxes(                              \
+        num_dims, dims, num_axes, axes, new_dims, new_axes);      \
+    auto reduce_type = _Reduce##name(                             \
+        new_dims.size(),                                          \
+        new_dims.data(),                                          \
+        new_axes.size(),                                          \
+        new_axes.data(),                                          \
+        convert::To<AccT>(kInit),                                 \
+        convert::To<AccT>(scale),                                 \
+        reinterpret_cast<const math::Traits<T>::scalar_type*>(x), \
+        reinterpret_cast<math::Traits<T>::scalar_type*>(y),       \
+        ctx);                                                     \
+    if (reduce_type == 0 && scale != 1.f) {                       \
+      math::Scale(1, scale, y, y, ctx);                           \
+    }                                                             \
   }
 
-DEFINE_REDUCE_FUNC(
-    Max,
-    uint8_t,
-    uint8_t,
-    std::numeric_limits<uint8_t>::lowest());
-DEFINE_REDUCE_FUNC(Max, int8_t, int8_t, std::numeric_limits<int8_t>::lowest());
-DEFINE_REDUCE_FUNC(Max, int, int, std::numeric_limits<int>::lowest());
-DEFINE_REDUCE_FUNC(
-    Max,
-    int64_t,
-    int64_t,
-    std::numeric_limits<int64_t>::lowest());
+DEFINE_REDUCE_FUNC(Max, uint8_t, uint8_t, cub::Traits<uint8_t>::Lowest());
+DEFINE_REDUCE_FUNC(Max, int8_t, int8_t, cub::Traits<int8_t>::Lowest());
+DEFINE_REDUCE_FUNC(Max, int, int, cub::Traits<int>::Lowest());
+DEFINE_REDUCE_FUNC(Max, int64_t, int64_t, cub::Traits<int64_t>::Lowest());
 DEFINE_REDUCE_FUNC(Max, float16, float, cub::Traits<half>::Lowest());
-DEFINE_REDUCE_FUNC(Max, float, float, std::numeric_limits<float>::lowest());
-DEFINE_REDUCE_FUNC(Max, double, double, std::numeric_limits<double>::lowest());
-DEFINE_REDUCE_FUNC(Min, uint8_t, uint8_t, std::numeric_limits<uint8_t>::max());
-DEFINE_REDUCE_FUNC(Min, int8_t, int8_t, std::numeric_limits<int8_t>::max());
-DEFINE_REDUCE_FUNC(Min, int, int, std::numeric_limits<int>::max());
-DEFINE_REDUCE_FUNC(Min, int64_t, int64_t, std::numeric_limits<int64_t>::max());
+DEFINE_REDUCE_FUNC(Max, bfloat16, float, cub::Traits<float>::Lowest());
+DEFINE_REDUCE_FUNC(Max, float, float, cub::Traits<float>::Lowest());
+DEFINE_REDUCE_FUNC(Max, double, double, cub::Traits<double>::Lowest());
+DEFINE_REDUCE_FUNC(Min, uint8_t, uint8_t, cub::Traits<uint8_t>::Max());
+DEFINE_REDUCE_FUNC(Min, int8_t, int8_t, cub::Traits<int8_t>::Max());
+DEFINE_REDUCE_FUNC(Min, int, int, cub::Traits<int>::Max());
+DEFINE_REDUCE_FUNC(Min, int64_t, int64_t, cub::Traits<int64_t>::Max());
 DEFINE_REDUCE_FUNC(Min, float16, float, cub::Traits<half>::Max());
-DEFINE_REDUCE_FUNC(Min, float, float, std::numeric_limits<float>::max());
-DEFINE_REDUCE_FUNC(Min, double, double, std::numeric_limits<double>::max());
+DEFINE_REDUCE_FUNC(Min, bfloat16, float, cub::Traits<float>::Max());
+DEFINE_REDUCE_FUNC(Min, float, float, cub::Traits<float>::Max());
+DEFINE_REDUCE_FUNC(Min, double, double, cub::Traits<double>::Max());
 DEFINE_REDUCE_FUNC(Sum, int, int, int(0));
 DEFINE_REDUCE_FUNC(Sum, int64_t, int64_t, int64_t(0));
 DEFINE_REDUCE_FUNC(Sum, float16, float, 0.f);
+DEFINE_REDUCE_FUNC(Sum, bfloat16, float, 0.f);
 DEFINE_REDUCE_FUNC(Sum, float, float, 0.f);
 DEFINE_REDUCE_FUNC(Sum, double, double, 0.);
 DEFINE_REDUCE_FUNC(SumSqr, int, int, int(0));
 DEFINE_REDUCE_FUNC(SumSqr, int64_t, int64_t, int64_t(0));
 DEFINE_REDUCE_FUNC(SumSqr, float16, float, 0.f);
+DEFINE_REDUCE_FUNC(SumSqr, bfloat16, float, 0.f);
 DEFINE_REDUCE_FUNC(SumSqr, float, float, 0.f);
 DEFINE_REDUCE_FUNC(SumSqr, double, double, 0.);
 DEFINE_REDUCE_FUNC(L1, float16, float, 0.f);
+DEFINE_REDUCE_FUNC(L1, bfloat16, float, 0.f);
 DEFINE_REDUCE_FUNC(L1, float, float, 0.f);
 DEFINE_REDUCE_FUNC(L1, double, double, 0.);
 #undef DEFINE_REDUCE_FUNC
@@ -295,14 +291,15 @@ DEFINE_REDUCE_FUNC(L1, double, double, 0.);
 #define DEFINE_SUM_FUNC(T)                                                  \
   template <>                                                               \
   DRAGON_API void Sum<T, CUDAContext>(                                      \
-      const int N, const float alpha, const T* x, T* y, CUDAContext* ctx) { \
+      const int N, const float scale, const T* x, T* y, CUDAContext* ctx) { \
     vec64_t dims = {N}, axes = {0};                                         \
-    math::ReduceSum(1, dims.data(), 1, axes.data(), alpha, x, y, ctx);      \
+    math::ReduceSum(1, dims.data(), 1, axes.data(), scale, x, y, ctx);      \
   }
 
 DEFINE_SUM_FUNC(int);
 DEFINE_SUM_FUNC(int64_t);
 DEFINE_SUM_FUNC(float16);
+DEFINE_SUM_FUNC(bfloat16);
 DEFINE_SUM_FUNC(float);
 DEFINE_SUM_FUNC(double);
 #undef DEFINE_SUM_FUNC
@@ -310,9 +307,9 @@ DEFINE_SUM_FUNC(double);
 #define DEFINE_SUM_FUNC(T)                                            \
   template <>                                                         \
   DRAGON_API T Sum<T, CUDAContext>(                                   \
-      const int N, const float alpha, const T* x, CUDAContext* ctx) { \
+      const int N, const float scale, const T* x, CUDAContext* ctx) { \
     auto policy = thrust::cuda::par.on(ctx->cuda_stream());           \
-    auto val = thrust::reduce(policy, x, x + N) * alpha;              \
+    auto val = thrust::reduce(policy, x, x + N) * scale;              \
     return static_cast<T>(val);                                       \
   }
 

@@ -8,14 +8,7 @@ namespace kernels {
 namespace {
 
 template <typename T>
-void _Range(const int N, const double start, const double delta, T* y) {
-  for (int i = 0; i < N; ++i) {
-    y[i] = convert::To<T>(start + double(i) * delta);
-  }
-}
-
-template <typename T>
-void _RowwiseLinSpace(
+void _RowwiseLinSpaceInt(
     const int N,
     const int C,
     const double* starts,
@@ -24,9 +17,7 @@ void _RowwiseLinSpace(
   for (int i = 0; i < C; ++i) {
     const auto delta = (stops[i] - starts[i]) / double(N - 1);
     y[i] = convert::To<T>(starts[i]);
-    if (N > 1) {
-      y[i + (N - 1) * C] = convert::To<T>(stops[i]);
-    }
+    if (N > 1) y[i + (N - 1) * C] = convert::To<T>(stops[i]);
     for (int j = 1; j < N - 1; ++j) {
       y[i + j * C] = convert::To<T>(starts[i] + double(j) * delta);
     }
@@ -34,7 +25,27 @@ void _RowwiseLinSpace(
 }
 
 template <typename T>
-void _ColwiseLinSpace(
+void _RowwiseLinSpaceFloat(
+    const int N,
+    const int C,
+    const double* starts,
+    const double* stops,
+    T* y) {
+  using EigenT = typename math::Traits<T>::eigen_type;
+  if (C == 1) {
+    EigenVectorArrayMap<EigenT> Y((EigenT*)y, N);
+    Y.setLinSpaced(EigenT(starts[0]), EigenT(stops[0]));
+    return;
+  }
+  for (int i = 0; i < C; ++i) {
+    EigenStridedVectorArrayMap<EigenT> Y(
+        (EigenT*)(y + i), 1, N, EigenInnerStride(C));
+    Y.setLinSpaced(EigenT(starts[i]), EigenT(stops[i]));
+  }
+}
+
+template <typename T>
+void _ColwiseLinSpaceInt(
     const int N,
     const int C,
     const double* starts,
@@ -44,9 +55,7 @@ void _ColwiseLinSpace(
     const auto delta = (stops[i] - starts[i]) / double(C - 1);
     auto* offset_y = y + i * C;
     offset_y[0] = convert::To<T>(starts[i]);
-    if (C > 1) {
-      offset_y[C - 1] = convert::To<T>(stops[i]);
-    }
+    if (C > 1) offset_y[C - 1] = convert::To<T>(stops[i]);
     for (int j = 1; j < C - 1; ++j) {
       offset_y[j] = convert::To<T>(starts[i] + double(j) * delta);
     }
@@ -54,9 +63,16 @@ void _ColwiseLinSpace(
 }
 
 template <typename T>
-void _SwapByKey(const int N, const uint32_t* r, T* y) {
+void _ColwiseLinSpaceFloat(
+    const int N,
+    const int C,
+    const double* starts,
+    const double* stops,
+    T* y) {
+  using EigenT = typename math::Traits<T>::eigen_type;
   for (int i = 0; i < N; ++i) {
-    std::swap(y[i], y[i + (r[i] % (N - i))]);
+    EigenVectorArrayMap<EigenT> Y((EigenT*)(y + i * C), C);
+    Y.setLinSpaced(EigenT(starts[i]), EigenT(stops[i]));
   }
 }
 
@@ -135,15 +151,17 @@ void _SetTriluLower(
 
 } // namespace
 
-#define DEFINE_KERNEL_LAUNCHER(T) \
-  template <>                     \
-  void Range<T, CPUContext>(      \
-      const int N,                \
-      const double start,         \
-      const double delta,         \
-      T* y,                       \
-      CPUContext* ctx) {          \
-    _Range(N, start, delta, y);   \
+#define DEFINE_KERNEL_LAUNCHER(T)                                   \
+  template <>                                                       \
+  void Range<T, CPUContext>(                                        \
+      const int N,                                                  \
+      const double start,                                           \
+      const double delta,                                           \
+      T* y,                                                         \
+      CPUContext* ctx) {                                            \
+    using EigenT = typename math::Traits<T>::eigen_type;            \
+    EigenVectorArrayMap<EigenT> Y((EigenT*)y, N);                   \
+    Y.setLinSpaced(EigenT(start), EigenT(start + (N - 1) * delta)); \
   }
 
 DEFINE_KERNEL_LAUNCHER(uint8_t);
@@ -151,34 +169,36 @@ DEFINE_KERNEL_LAUNCHER(int8_t);
 DEFINE_KERNEL_LAUNCHER(int);
 DEFINE_KERNEL_LAUNCHER(int64_t);
 DEFINE_KERNEL_LAUNCHER(float16);
+DEFINE_KERNEL_LAUNCHER(bfloat16);
 DEFINE_KERNEL_LAUNCHER(float);
 DEFINE_KERNEL_LAUNCHER(double);
 #undef DEFINE_KERNEL_LAUNCHER
 
-#define DEFINE_KERNEL_LAUNCHER(T)               \
-  template <>                                   \
-  void LinSpace<T, CPUContext>(                 \
-      const int N,                              \
-      const int C,                              \
-      const int axis,                           \
-      const double* starts,                     \
-      const double* stops,                      \
-      T* y,                                     \
-      CPUContext* ctx) {                        \
-    if (axis == 0) {                            \
-      _RowwiseLinSpace(N, C, starts, stops, y); \
-    } else {                                    \
-      _ColwiseLinSpace(N, C, starts, stops, y); \
-    }                                           \
+#define DEFINE_KERNEL_LAUNCHER(T, Impl)       \
+  template <>                                 \
+  void LinSpace<T, CPUContext>(               \
+      const int N,                            \
+      const int C,                            \
+      const int axis,                         \
+      const double* starts,                   \
+      const double* stops,                    \
+      T* y,                                   \
+      CPUContext* ctx) {                      \
+    if (axis == 0) {                          \
+      _Rowwise##Impl(N, C, starts, stops, y); \
+    } else {                                  \
+      _Colwise##Impl(N, C, starts, stops, y); \
+    }                                         \
   }
 
-DEFINE_KERNEL_LAUNCHER(float16);
-DEFINE_KERNEL_LAUNCHER(uint8_t);
-DEFINE_KERNEL_LAUNCHER(int8_t);
-DEFINE_KERNEL_LAUNCHER(int);
-DEFINE_KERNEL_LAUNCHER(int64_t);
-DEFINE_KERNEL_LAUNCHER(float);
-DEFINE_KERNEL_LAUNCHER(double);
+DEFINE_KERNEL_LAUNCHER(uint8_t, LinSpaceInt);
+DEFINE_KERNEL_LAUNCHER(int8_t, LinSpaceInt);
+DEFINE_KERNEL_LAUNCHER(int, LinSpaceInt);
+DEFINE_KERNEL_LAUNCHER(int64_t, LinSpaceInt);
+DEFINE_KERNEL_LAUNCHER(float16, LinSpaceFloat);
+DEFINE_KERNEL_LAUNCHER(bfloat16, LinSpaceFloat);
+DEFINE_KERNEL_LAUNCHER(float, LinSpaceFloat);
+DEFINE_KERNEL_LAUNCHER(double, LinSpaceFloat);
 #undef DEFINE_KERNEL_LAUNCHER
 
 #define DEFINE_KERNEL_LAUNCHER(T)                              \
@@ -186,7 +206,9 @@ DEFINE_KERNEL_LAUNCHER(double);
   void Permutation<T, CPUContext>(                             \
       const int N, const uint32_t* r, T* y, CPUContext* ctx) { \
     kernels::Range(N, 0.f, 1.f, y, ctx);                       \
-    _SwapByKey(N, r, y);                                       \
+    for (int i = 0; i < N; ++i) {                              \
+      std::swap(y[i], y[i + (r[i] % (N - i))]);                \
+    }                                                          \
   }
 
 DEFINE_KERNEL_LAUNCHER(uint8_t);
@@ -194,6 +216,7 @@ DEFINE_KERNEL_LAUNCHER(int8_t);
 DEFINE_KERNEL_LAUNCHER(int);
 DEFINE_KERNEL_LAUNCHER(int64_t);
 DEFINE_KERNEL_LAUNCHER(float16);
+DEFINE_KERNEL_LAUNCHER(bfloat16);
 DEFINE_KERNEL_LAUNCHER(float);
 DEFINE_KERNEL_LAUNCHER(double);
 #undef DEFINE_KERNEL_LAUNCHER
@@ -221,6 +244,7 @@ DEFINE_KERNEL_LAUNCHER(int8_t);
 DEFINE_KERNEL_LAUNCHER(int);
 DEFINE_KERNEL_LAUNCHER(int64_t);
 DEFINE_KERNEL_LAUNCHER(float16);
+DEFINE_KERNEL_LAUNCHER(bfloat16);
 DEFINE_KERNEL_LAUNCHER(float);
 DEFINE_KERNEL_LAUNCHER(double);
 #undef DEFINE_KERNEL_LAUNCHER
@@ -250,6 +274,7 @@ DEFINE_KERNEL_LAUNCHER(int8_t);
 DEFINE_KERNEL_LAUNCHER(int);
 DEFINE_KERNEL_LAUNCHER(int64_t);
 DEFINE_KERNEL_LAUNCHER(float16);
+DEFINE_KERNEL_LAUNCHER(bfloat16);
 DEFINE_KERNEL_LAUNCHER(float);
 DEFINE_KERNEL_LAUNCHER(double);
 #undef DEFINE_KERNEL_LAUNCHER

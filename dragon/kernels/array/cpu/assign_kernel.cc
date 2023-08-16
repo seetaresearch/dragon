@@ -17,9 +17,8 @@ void _Assign(
     T* y) {
   const auto N = math::utils::Prod(num_dims, x_dims);
   vec64_t index(num_dims, 0);
-  int yi;
   for (int xi = 0; xi < N; ++xi) {
-    yi = 0;
+    int64_t yi = 0;
     for (int d = num_dims - 1; d >= 0; --d) {
       yi += (index[d] + starts[d]) * y_strides[d];
     }
@@ -49,6 +48,7 @@ DEFINE_KERNEL_LAUNCHER(int8_t);
 DEFINE_KERNEL_LAUNCHER(int);
 DEFINE_KERNEL_LAUNCHER(int64_t);
 DEFINE_KERNEL_LAUNCHER(float16);
+DEFINE_KERNEL_LAUNCHER(bfloat16);
 DEFINE_KERNEL_LAUNCHER(float);
 DEFINE_KERNEL_LAUNCHER(double);
 #undef DEFINE_KERNEL_LAUNCHER

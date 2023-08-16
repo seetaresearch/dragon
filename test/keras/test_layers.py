@@ -58,7 +58,6 @@ class TestLayers(unittest.TestCase):
                 x = x1 if num_axes == 1 else (x2 if num_axes == 2 else x3)
                 conv_layer = getattr(tf.keras.layers, conv_type.format(num_axes), None)
                 _ = conv_layer(filters=3, kernel_size=3)(x)
-        _ = tf.keras.layers.DepthwiseConv2D(kernel_size=3, padding=1)(x2)
         try:
             _ = tf.keras.layers.Conv2D(3, 3, 1).build((None, 3, 3, None))
         except ValueError:

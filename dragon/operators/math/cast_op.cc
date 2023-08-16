@@ -43,6 +43,7 @@ void CastOp<Context>::DoRunWithType() {
   } else if (MaybeConvert<T, int>()) {
   } else if (MaybeConvert<T, int64_t>()) {
   } else if (MaybeConvert<T, float16>()) {
+  } else if (MaybeConvert<T, bfloat16>()) {
   } else if (MaybeConvert<T, float>()) {
   } else if (MaybeConvert<T, double>()) {
   } else {
@@ -54,6 +55,7 @@ void CastOp<Context>::DoRunWithType() {
          "int32",
          "int64",
          "float16",
+         "bfloat16",
          "float32",
          "float64"});
   }
@@ -63,13 +65,31 @@ template <class Context>
 void CastOp<Context>::RunOnDevice() {
   auto& X = Input(0);
   Output("X_spec")->set_meta(X.meta());
-  DispatchHelper<dtypes::Generic>::Call(this, X);
+  DispatchHelper<dtypes::TypesBase<
+      bool,
+      uint8_t,
+      int8_t,
+      int,
+      int64_t,
+      float16,
+      bfloat16,
+      float,
+      double>>::Call(this, X);
 }
 
 template <class Context>
 void CastGradientOp<Context>::RunOnDevice() {
   this->data_type_ = dtypes::to_string(Input("X_spec").meta());
-  DispatchHelper<dtypes::Generic>::Call(this, Input(0));
+  DispatchHelper<dtypes::TypesBase<
+      bool,
+      uint8_t,
+      int8_t,
+      int,
+      int64_t,
+      float16,
+      bfloat16,
+      float,
+      double>>::Call(this, Input(0));
 }
 
 DEPLOY_CPU_OPERATOR(Cast);

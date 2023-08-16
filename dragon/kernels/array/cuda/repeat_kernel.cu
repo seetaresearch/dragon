@@ -15,12 +15,10 @@ __global__ void _Repeat(
     const int S2,
     const T* x,
     T* y) {
-  CUDA_1D_KERNEL_LOOP(yi, NxCxS2) {
-    const int k = yi % S1;
-    const int j = yi / S2 % C;
-    const int i = yi / S2 / C;
-    const int xi = (i * C + j) * S1 + k;
-    y[yi] = x[xi];
+  CUDA_1D_KERNEL_LOOP(index, NxCxS2) {
+    const int j = index / S2 % C;
+    const int i = index / S2 / C;
+    y[index] = x[(i * C + j) * S1 + index % S1];
   }
 }
 
@@ -34,10 +32,9 @@ __global__ void _RepeatGrad(
     T* dx) {
   const int repeats = S2 / S1;
   CUDA_1D_KERNEL_LOOP(xi, NxCxS1) {
-    const int k = xi % S1;
     const int j = xi / S1 % C;
     const int i = xi / S1 / C;
-    const T* offset_dy = dy + ((i * C + j) * S2 + k);
+    const T* offset_dy = dy + ((i * C + j) * S2 + xi % S1);
     AccT val = AccT(0);
     for (int r = 0; r < repeats; ++r) {
       val += convert::To<AccT>(offset_dy[r * S1]);
@@ -64,26 +61,28 @@ __global__ void _RepeatGrad(
         NxCxS2, C, S, S2, x, y);                                           \
   }
 
-#define DEFINE_GRAD_KERNEL_LAUNCHER(T)                                     \
-  template <>                                                              \
-  void RepeatGrad<T, CUDAContext>(                                         \
-      const int N,                                                         \
-      const int S,                                                         \
-      const int C,                                                         \
-      const int repeats,                                                   \
-      const T* dy,                                                         \
-      T* dx,                                                               \
-      CUDAContext* ctx) {                                                  \
-    const auto S2 = S * repeats;                                           \
-    const auto NxCxS = N * C * S;                                          \
-    _RepeatGrad<math::ScalarType<T>::type, math::AccumulatorType<T>::type> \
-        <<<CUDA_BLOCKS(NxCxS), CUDA_THREADS, 0, ctx->cuda_stream()>>>(     \
-            NxCxS,                                                         \
-            C,                                                             \
-            S,                                                             \
-            S2,                                                            \
-            reinterpret_cast<const math::ScalarType<T>::type*>(dy),        \
-            reinterpret_cast<math::ScalarType<T>::type*>(dx));             \
+#define DEFINE_GRAD_KERNEL_LAUNCHER(T)                                 \
+  template <>                                                          \
+  void RepeatGrad<T, CUDAContext>(                                     \
+      const int N,                                                     \
+      const int S,                                                     \
+      const int C,                                                     \
+      const int repeats,                                               \
+      const T* dy,                                                     \
+      T* dx,                                                           \
+      CUDAContext* ctx) {                                              \
+    const auto S2 = S * repeats;                                       \
+    const auto NxCxS = N * C * S;                                      \
+    _RepeatGrad<                                                       \
+        math::Traits<T>::scalar_type,                                  \
+        math::Traits<T>::accumulator_type>                             \
+        <<<CUDA_BLOCKS(NxCxS), CUDA_THREADS, 0, ctx->cuda_stream()>>>( \
+            NxCxS,                                                     \
+            C,                                                         \
+            S,                                                         \
+            S2,                                                        \
+            reinterpret_cast<const math::Traits<T>::scalar_type*>(dy), \
+            reinterpret_cast<math::Traits<T>::scalar_type*>(dx));      \
   }
 
 DEFINE_KERNEL_LAUNCHER(bool);
@@ -92,9 +91,11 @@ DEFINE_KERNEL_LAUNCHER(int8_t);
 DEFINE_KERNEL_LAUNCHER(int);
 DEFINE_KERNEL_LAUNCHER(int64_t);
 DEFINE_KERNEL_LAUNCHER(float16);
+DEFINE_KERNEL_LAUNCHER(bfloat16);
 DEFINE_KERNEL_LAUNCHER(float);
 DEFINE_KERNEL_LAUNCHER(double);
 DEFINE_GRAD_KERNEL_LAUNCHER(float16);
+DEFINE_GRAD_KERNEL_LAUNCHER(bfloat16);
 DEFINE_GRAD_KERNEL_LAUNCHER(float);
 DEFINE_GRAD_KERNEL_LAUNCHER(double);
 #undef DEFINE_KERNEL_LAUNCHER

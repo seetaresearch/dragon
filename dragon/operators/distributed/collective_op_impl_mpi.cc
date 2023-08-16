@@ -150,6 +150,7 @@ MPI_Datatype MPICollectiveOpImpl::data_type() {
       {TypeMeta::Id<int>(), MPI_INT},
       {TypeMeta::Id<int64_t>(), MPI_LONG_LONG},
       {TypeMeta::Id<float16>(), MPI_UNSIGNED_SHORT},
+      {TypeMeta::Id<bfloat16>(), MPI_UNSIGNED_SHORT},
       {TypeMeta::Id<float>(), MPI_FLOAT},
       {TypeMeta::Id<double>(), MPI_DOUBLE},
   };
@@ -181,6 +182,7 @@ INSTANTIATE_API(uint8_t);
 INSTANTIATE_API(int);
 INSTANTIATE_API(int64_t);
 INSTANTIATE_API(float16);
+INSTANTIATE_API(bfloat16);
 INSTANTIATE_API(float);
 INSTANTIATE_API(double);
 #undef INSTANTIATE_API
