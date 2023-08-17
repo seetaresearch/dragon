@@ -44,4 +44,4 @@ from dragon.vm.dali.core.framework.types import UINT16
 from dragon.vm.dali.core.framework.types import UINT32
 from dragon.vm.dali.core.framework.types import UINT64
 
-__all__ = [_s for _s in dir() if not _s.startswith('_')]
+__all__ = [_s for _s in dir() if not _s.startswith("_")]

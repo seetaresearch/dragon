@@ -19,8 +19,8 @@ from dragon.core.autograph.op_lib import OpLib
 from dragon.core.autograph.op_lib import OpSchema
 
 
-@OpSchema.convert_arg(name='shape', name_v2='dims')
-def glorot_normal(shape, scale=2.0, mode='fan_in', dtype='float32', **kwargs):
+@OpSchema.convert_arg(name="shape", name_v2="dims")
+def glorot_normal(shape, scale=2.0, mode="fan_in", dtype="float32", **kwargs):
     r"""Return a tensor initialized from the glorot normal distribution.
 
     .. math:: \text{out} \sim \mathcal{N}(0, \frac{scale}{\text{fan}})
@@ -43,16 +43,15 @@ def glorot_normal(shape, scale=2.0, mode='fan_in', dtype='float32', **kwargs):
 
     """
     args = OpSchema.parse_args(locals())
-    args['scale'] = float(scale)
-    args['mode'] = mode.lower()
+    args["scale"] = float(scale)
+    args["mode"] = mode.lower()
     if context.executing_eagerly():
-        return OpLib.execute(
-            'GlorotNormal', [], ndim=len(args['dims']), **args)
-    return OpLib.add('GlorotNormal', [], **args)
+        return OpLib.execute("GlorotNormal", [], ndim=len(args["dims"]), **args)
+    return OpLib.add("GlorotNormal", [], **args)
 
 
-@OpSchema.convert_arg(name='shape', name_v2='dims')
-def glorot_uniform(shape, mode='fan_in', scale=3.0, dtype='float32', **kwargs):
+@OpSchema.convert_arg(name="shape", name_v2="dims")
+def glorot_uniform(shape, mode="fan_in", scale=3.0, dtype="float32", **kwargs):
     r"""Return a tensor initialized from the glorot uniform distribution.
 
     .. math::
@@ -77,12 +76,11 @@ def glorot_uniform(shape, mode='fan_in', scale=3.0, dtype='float32', **kwargs):
 
     """
     args = OpSchema.parse_args(locals())
-    args['scale'] = float(scale)
-    args['mode'] = mode.lower()
+    args["scale"] = float(scale)
+    args["mode"] = mode.lower()
     if context.executing_eagerly():
-        return OpLib.execute(
-            'GlorotUniform', [], ndim=len(args['dims']), **args)
-    return OpLib.add('GlorotUniform', [], **args)
+        return OpLib.execute("GlorotUniform", [], ndim=len(args["dims"]), **args)
+    return OpLib.add("GlorotUniform", [], **args)
 
 
 @OpSchema.num_inputs(1)
@@ -110,12 +108,12 @@ def multinomial(inputs, sample_size=1, **kwargs):
 
     """
     if context.executing_eagerly():
-        return OpLib.execute('Multinomial', inputs, sample_size=sample_size)
-    return OpLib.add('Multinomial', inputs, sample_size=sample_size, **kwargs)
+        return OpLib.execute("Multinomial", inputs, sample_size=sample_size)
+    return OpLib.add("Multinomial", inputs, sample_size=sample_size, **kwargs)
 
 
-@OpSchema.convert_arg('limit')
-def permutation(limit, dtype='int64', **kwargs):
+@OpSchema.convert_arg("limit")
+def permutation(limit, dtype="int64", **kwargs):
     r"""Return a tensor with value in the permuted range.
 
     Set :attr:`limit` to determine a range :math:`[0, \text{limit})`:
@@ -138,15 +136,14 @@ def permutation(limit, dtype='int64', **kwargs):
 
     """
     args = OpSchema.parse_args(locals())
-    args['dtype'] = args['dtype'].lower()
+    args["dtype"] = args["dtype"].lower()
     if context.executing_eagerly():
-        return OpLib.execute(
-            'Permutation', [], dtype=dtype, limit=args['limit'])
-    return OpLib.add('Permutation', [], **args)
+        return OpLib.execute("Permutation", [], dtype=dtype, limit=args["limit"])
+    return OpLib.add("Permutation", [], **args)
 
 
-@OpSchema.convert_arg(name='shape', name_v2='dims')
-def random_normal(shape, mean=0, std=1, dtype='float32', **kwargs):
+@OpSchema.convert_arg(name="shape", name_v2="dims")
+def random_normal(shape, mean=0, std=1, dtype="float32", **kwargs):
     r"""Return a tensor initialized from the normal distribution.
 
     .. math:: \text{out} \sim \mathcal{N}(\mu, \sigma^{2})
@@ -169,16 +166,15 @@ def random_normal(shape, mean=0, std=1, dtype='float32', **kwargs):
 
     """
     args = OpSchema.parse_args(locals())
-    args['mean'] = float(mean)
-    args['std'] = float(std)
+    args["mean"] = float(mean)
+    args["std"] = float(std)
     if context.executing_eagerly():
-        return OpLib.execute(
-            'RandomNormal', [], ndim=len(args['dims']), **args)
-    return OpLib.add('RandomNormal', [], **args)
+        return OpLib.execute("RandomNormal", [], ndim=len(args["dims"]), **args)
+    return OpLib.add("RandomNormal", [], **args)
 
 
 @OpSchema.num_inputs(1)
-def random_normal_like(inputs, mean=0, std=1, dtype='float32', **kwargs):
+def random_normal_like(inputs, mean=0, std=1, dtype="float32", **kwargs):
     r"""Return a tensor initialized from the normal distribution with shape as the other.
 
     .. math:: \text{out} \sim \mathcal{N}(\mu, \sigma^{2})
@@ -202,14 +198,12 @@ def random_normal_like(inputs, mean=0, std=1, dtype='float32', **kwargs):
     """
     mean, std = float(mean), float(std)
     if context.executing_eagerly():
-        return OpLib.execute(
-            'RandomNormal', inputs, mean=mean, std=std, dtype=dtype)
-    return OpLib.add('RandomNormal', inputs,
-                     mean=mean, std=std, dtype=dtype, **kwargs)
+        return OpLib.execute("RandomNormal", inputs, mean=mean, std=std, dtype=dtype)
+    return OpLib.add("RandomNormal", inputs, mean=mean, std=std, dtype=dtype, **kwargs)
 
 
-@OpSchema.convert_arg(name='shape', name_v2='dims')
-def random_uniform(shape, low=0, high=1, dtype='float32', **kwargs):
+@OpSchema.convert_arg(name="shape", name_v2="dims")
+def random_uniform(shape, low=0, high=1, dtype="float32", **kwargs):
     r"""Return a tensor initialized from the uniform distribution.
 
     .. math:: \text{out} \sim \mathcal{U}(\alpha, \beta)
@@ -232,15 +226,14 @@ def random_uniform(shape, low=0, high=1, dtype='float32', **kwargs):
 
     """
     args = OpSchema.parse_args(locals())
-    args['low'], args['high'] = float(low), float(high)
+    args["low"], args["high"] = float(low), float(high)
     if context.executing_eagerly():
-        return OpLib.execute(
-            'RandomUniform', [], ndim=len(args['dims']), **args)
-    return OpLib.add('RandomUniform', [], **args)
+        return OpLib.execute("RandomUniform", [], ndim=len(args["dims"]), **args)
+    return OpLib.add("RandomUniform", [], **args)
 
 
 @OpSchema.num_inputs(1)
-def random_uniform_like(inputs, low=-1, high=1, dtype='float32', **kwargs):
+def random_uniform_like(inputs, low=-1, high=1, dtype="float32", **kwargs):
     r"""Return a tensor initialized from the uniform distribution with shape as the other.
 
     .. math:: \text{out} \sim \mathcal{U}(\alpha, \beta)
@@ -264,14 +257,12 @@ def random_uniform_like(inputs, low=-1, high=1, dtype='float32', **kwargs):
     """
     low, high = float(low), float(high)
     if context.executing_eagerly():
-        return OpLib.execute(
-            'RandomUniform', inputs, low=low, high=high, dtype=dtype)
-    return OpLib.add('RandomUniform', inputs,
-                     low=low, high=high, dtype=dtype, **kwargs)
+        return OpLib.execute("RandomUniform", inputs, low=low, high=high, dtype=dtype)
+    return OpLib.add("RandomUniform", inputs, low=low, high=high, dtype=dtype, **kwargs)
 
 
-@OpSchema.convert_arg(name='shape', name_v2='dims')
-def truncated_normal(shape, mean=0, std=1, dtype='float32', **kwargs):
+@OpSchema.convert_arg(name="shape", name_v2="dims")
+def truncated_normal(shape, mean=0, std=1, dtype="float32", **kwargs):
     r"""Return a tensor initialized from the truncated normal distribution.
 
     .. math:: \text{out} \sim \mathcal{TN}(\mu, \sigma^{2},
@@ -295,8 +286,7 @@ def truncated_normal(shape, mean=0, std=1, dtype='float32', **kwargs):
 
     """
     args = OpSchema.parse_args(locals())
-    args['mean'], args['std'] = float(mean), float(std)
+    args["mean"], args["std"] = float(mean), float(std)
     if context.executing_eagerly():
-        return OpLib.execute(
-            'TruncatedNormal', [], ndim=len(args['dims']), **args)
-    return OpLib.add('TruncatedNormal', [], **args)
+        return OpLib.execute("TruncatedNormal", [], ndim=len(args["dims"]), **args)
+    return OpLib.add("TruncatedNormal", [], **args)

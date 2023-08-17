@@ -45,7 +45,7 @@ class TransformerDecoder(Module):
         num_layers,
         dim_feedforward=2048,
         dropout=0.1,
-        activation='relu',
+        activation="relu",
         norm=None,
         norm_first=False,
     ):
@@ -72,15 +72,19 @@ class TransformerDecoder(Module):
 
         """
         super(TransformerDecoder, self).__init__()
-        self.layers = ModuleList([
-            TransformerDecoderLayer(
-                d_model=d_model,
-                nhead=nhead,
-                dim_feedforward=dim_feedforward,
-                dropout=dropout,
-                activation=activation,
-                norm_first=norm_first,
-            ) for _ in range(num_layers)])
+        self.layers = ModuleList(
+            [
+                TransformerDecoderLayer(
+                    d_model=d_model,
+                    nhead=nhead,
+                    dim_feedforward=dim_feedforward,
+                    dropout=dropout,
+                    activation=activation,
+                    norm_first=norm_first,
+                )
+                for _ in range(num_layers)
+            ]
+        )
         self.num_layers = num_layers
         self.norm = norm
 
@@ -95,11 +99,14 @@ class TransformerDecoder(Module):
     ):
         output = tgt
         for mod in self.layers:
-            output = mod(output, memory,
-                         tgt_mask=tgt_mask,
-                         memory_mask=memory_mask,
-                         tgt_key_padding_mask=tgt_key_padding_mask,
-                         memory_key_padding_mask=memory_key_padding_mask)
+            output = mod(
+                output,
+                memory,
+                tgt_mask=tgt_mask,
+                memory_mask=memory_mask,
+                tgt_key_padding_mask=tgt_key_padding_mask,
+                memory_key_padding_mask=memory_key_padding_mask,
+            )
         if self.norm is not None:
             output = self.norm(output)
         return output
@@ -126,7 +133,7 @@ class TransformerDecoderLayer(Module):
         nhead,
         dim_feedforward=2048,
         dropout=0.1,
-        activation='relu',
+        activation="relu",
         norm_first=False,
     ):
         """Create a ``TransformerDecoderLayer``.
@@ -174,18 +181,24 @@ class TransformerDecoderLayer(Module):
         if self.norm_first:
             tgt2 = self.norm1(tgt)
             tgt2 = self.self_attn(
-                tgt2, tgt2, tgt2,
+                tgt2,
+                tgt2,
+                tgt2,
                 attn_mask=tgt_mask,
                 key_padding_mask=tgt_key_padding_mask,
-                need_weights=False)[0]
+                need_weights=False,
+            )[0]
             tgt2 = self.dropout1(tgt2)
             tgt = tgt2.__iadd__(tgt)
             tgt2 = self.norm2(tgt)
             tgt2 = self.multihead_attn(
-                tgt2, memory, memory,
+                tgt2,
+                memory,
+                memory,
                 attn_mask=memory_mask,
                 key_padding_mask=memory_key_padding_mask,
-                need_weights=False)[0]
+                need_weights=False,
+            )[0]
             tgt2 = self.dropout2(tgt2)
             tgt = tgt2.__iadd__(tgt)
             tgt2 = self.norm3(tgt)
@@ -195,18 +208,24 @@ class TransformerDecoderLayer(Module):
             return tgt
 
         tgt2 = self.self_attn(
-            tgt, tgt, tgt,
+            tgt,
+            tgt,
+            tgt,
             attn_mask=tgt_mask,
             key_padding_mask=tgt_key_padding_mask,
-            need_weights=False)[0]
+            need_weights=False,
+        )[0]
         tgt2 = self.dropout1(tgt2)
         tgt2 += tgt
         tgt = self.norm1(tgt2)
         tgt2 = self.multihead_attn(
-            tgt, memory, memory,
+            tgt,
+            memory,
+            memory,
             attn_mask=memory_mask,
             key_padding_mask=memory_key_padding_mask,
-            need_weights=False)[0]
+            need_weights=False,
+        )[0]
         tgt2 = self.dropout2(tgt2)
         tgt2 += tgt
         tgt = self.norm2(tgt2)
@@ -238,7 +257,7 @@ class TransformerEncoder(Module):
         num_layers,
         dim_feedforward=2048,
         dropout=0.1,
-        activation='relu',
+        activation="relu",
         norm=None,
         norm_first=False,
     ):
@@ -265,15 +284,19 @@ class TransformerEncoder(Module):
 
         """
         super(TransformerEncoder, self).__init__()
-        self.layers = ModuleList([
-            TransformerEncoderLayer(
-                d_model=d_model,
-                nhead=nhead,
-                dim_feedforward=dim_feedforward,
-                dropout=dropout,
-                activation=activation,
-                norm_first=norm_first,
-            ) for _ in range(num_layers)])
+        self.layers = ModuleList(
+            [
+                TransformerEncoderLayer(
+                    d_model=d_model,
+                    nhead=nhead,
+                    dim_feedforward=dim_feedforward,
+                    dropout=dropout,
+                    activation=activation,
+                    norm_first=norm_first,
+                )
+                for _ in range(num_layers)
+            ]
+        )
         self.num_layers = num_layers
         self.norm = norm
 
@@ -306,7 +329,7 @@ class TransformerEncoderLayer(Module):
         nhead,
         dim_feedforward=2048,
         dropout=0.1,
-        activation='relu',
+        activation="relu",
         norm_first=False,
     ):
         """Create a ``TransformerEncoderLayer``.
@@ -343,10 +366,13 @@ class TransformerEncoderLayer(Module):
         if self.norm_first:
             src2 = self.norm1(src)
             src2 = self.self_attn(
-                src2, src2, src2,
+                src2,
+                src2,
+                src2,
                 attn_mask=src_mask,
                 key_padding_mask=src_key_padding_mask,
-                need_weights=False)[0]
+                need_weights=False,
+            )[0]
             src2 = self.dropout1(src2)
             src = src2.__iadd__(src)
             src2 = self.norm2(src)
@@ -356,10 +382,13 @@ class TransformerEncoderLayer(Module):
             return src
 
         src2 = self.self_attn(
-            src, src, src,
+            src,
+            src,
+            src,
             attn_mask=src_mask,
             key_padding_mask=src_key_padding_mask,
-            need_weights=False)[0]
+            need_weights=False,
+        )[0]
         src2 = self.dropout1(src2)
         src2 += src
         src = self.norm1(src2)
@@ -372,8 +401,8 @@ class TransformerEncoderLayer(Module):
 
 def _get_activation_fn(activation):
     """Return the activation function."""
-    if activation == 'relu':
+    if activation == "relu":
         return functional.relu
-    elif activation == 'gelu':
+    elif activation == "gelu":
         return functional.gelu
-    raise RuntimeError('Unknown activation: {}'.format(activation))
+    raise RuntimeError("Unknown activation: {}".format(activation))

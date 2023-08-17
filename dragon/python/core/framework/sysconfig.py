@@ -46,13 +46,13 @@ def get_build_info():
     """
     build_info = collections.OrderedDict()
     build_info_str = backend.GetBuildInformation()
-    for entry in build_info_str.split('\n'):
-        k, v = entry.split(':')
+    for entry in build_info_str.split("\n"):
+        k, v = entry.split(":")
         if len(v) > 0:
             build_info[k] = v[1:]
-    build_info['is_cuda_build'] = 'cuda_version' in build_info
-    build_info['is_mps_build'] = 'mps_version' in build_info
-    build_info['is_mlu_build'] = 'cnrt_version' in build_info
+    build_info["is_cuda_build"] = "cuda_version" in build_info
+    build_info["is_mps_build"] = "mps_version" in build_info
+    build_info["is_mlu_build"] = "cnrt_version" in build_info
     return build_info
 
 
@@ -66,7 +66,7 @@ def get_include():
 
     """
     core_root = os.path.dirname(os.path.dirname(__file__))
-    return os.path.join(os.path.dirname(core_root), 'include')
+    return os.path.join(os.path.dirname(core_root), "include")
 
 
 def get_lib():
@@ -79,4 +79,4 @@ def get_lib():
 
     """
     core_root = os.path.dirname(os.path.dirname(__file__))
-    return os.path.join(os.path.dirname(core_root), 'lib')
+    return os.path.join(os.path.dirname(core_root), "lib")

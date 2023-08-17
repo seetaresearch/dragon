@@ -37,8 +37,8 @@ def get_logger():
     try:
         if _logger:
             return _logger
-        logger = _logging.getLogger('dragon')
-        logger.setLevel('INFO')
+        logger = _logging.getLogger("dragon")
+        logger.setLevel("INFO")
         logger.propagate = False
         if True:
             # Determine whether we are in an interactive environment.
@@ -53,13 +53,13 @@ def get_logger():
             # If we are in an interactive environment (like Jupyter), set loglevel
             # to INFO and pipe the output to stdout.
             if _interactive:
-                logger.setLevel('INFO')
+                logger.setLevel("INFO")
                 _logging_target = _sys.stdout
             else:
                 _logging_target = _sys.stderr
             # Add the output handler.
             _handler = _logging.StreamHandler(_logging_target)
-            _handler.setFormatter(_logging.Formatter('%(levelname)s %(message)s'))
+            _handler.setFormatter(_logging.Formatter("%(levelname)s %(message)s"))
             logger.addHandler(_handler)
         _logger = logger
         return _logger

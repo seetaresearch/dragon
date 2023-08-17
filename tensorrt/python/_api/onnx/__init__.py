@@ -23,4 +23,4 @@ from dragon.vm.onnx.core.backend.tensorrt import run_node
 from dragon.vm.onnx.core.backend.tensorrt import supports_device
 
 # Attributes
-__all__ = [_s for _s in dir() if not _s.startswith('_')]
+__all__ = [_s for _s in dir() if not _s.startswith("_")]

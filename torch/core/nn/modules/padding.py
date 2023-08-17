@@ -29,30 +29,30 @@ class _ConstantPadNd(Module):
         self.value = value
 
     def extra_repr(self):
-        return 'padding={}, value={}'.format(self.padding, self.value)
+        return "padding={}, value={}".format(self.padding, self.value)
 
     def forward(self, input):
-        return functional.pad(input, self.padding, 'constant', self.value)
+        return functional.pad(input, self.padding, "constant", self.value)
 
 
 class _ReflectionPadNd(Module):
     """The base class of reflection pad."""
 
     def extra_repr(self):
-        return 'padding={}'.format(self.padding)
+        return "padding={}".format(self.padding)
 
     def forward(self, input):
-        return functional.pad(input, self.padding, 'reflect')
+        return functional.pad(input, self.padding, "reflect")
 
 
 class _ReplicationPadNd(Module):
     """The base class of replication pad."""
 
     def extra_repr(self):
-        return 'padding{}'.format(self.padding)
+        return "padding{}".format(self.padding)
 
     def forward(self, input):
-        return functional.pad(input, self.padding, 'replicate')
+        return functional.pad(input, self.padding, "replicate")
 
 
 class ConstantPad1d(_ConstantPadNd):
@@ -397,4 +397,4 @@ class ZeroPad2d(ConstantPad2d):
             The 2d padding sizes.
 
         """
-        super(ZeroPad2d, self).__init__(padding, 0.)
+        super(ZeroPad2d, self).__init__(padding, 0.0)

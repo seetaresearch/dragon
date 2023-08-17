@@ -17,4 +17,4 @@ from dragon.core.autograph.config import set_optimization
 from dragon.core.autograph.config import set_scheduler
 from dragon.core.autograph.config import set_verbosity
 
-__all__ = [_s for _s in dir() if not _s.startswith('_')]
+__all__ = [_s for _s in dir() if not _s.startswith("_")]

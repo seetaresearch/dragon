@@ -118,7 +118,7 @@ def memory_allocated(device_index=None):
     if device_index is None:
         device_index = current_device()
     current_ws = workspace.get_workspace()
-    return current_ws.memory_allocated('mps', device_index)
+    return current_ws.memory_allocated("mps", device_index)
 
 
 def set_default_device(device_index=0):
@@ -138,10 +138,10 @@ def set_default_device(device_index=0):
 
     """
     if device_index < 0:
-        config.config().device_type = 'cpu'
+        config.config().device_type = "cpu"
         config.config().device_index = 0
     else:
-        config.config().device_type = 'mps'
+        config.config().device_type = "mps"
         config.config().device_index = device_index
 
 

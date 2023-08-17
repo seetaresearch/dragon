@@ -25,31 +25,31 @@ class TestBackend(unittest.TestCase):
     """Test backend components."""
 
     def test_empty_group(self):
-        for backend in (None, 'AUTO', 'NCCL', 'CNCL', 'MPI', 'UNKNOWN', 0):
+        for backend in (None, "AUTO", "NCCL", "CNCL", "MPI", "UNKNOWN", 0):
             try:
                 group = dragon.distributed.new_group(backend=backend)
                 self.assertEqual(group.ranks, None)
                 self.assertEqual(group.size, 0)
-                self.assertEqual(group.arguments['backend'], group.backend)
-                self.assertEqual(repr(group), '%s:None' % group.backend)
+                self.assertEqual(group.arguments["backend"], group.backend)
+                self.assertEqual(repr(group), "%s:None" % group.backend)
                 with group.as_default():
                     self.assertEqual(dragon.distributed.get_group(), None)
                     self.assertEqual(dragon.distributed.get_backend(group), group.backend)
             except ValueError:
                 pass
 
-    @unittest.skipIf(not TEST_MPI, 'MPI unavailable')
+    @unittest.skipIf(not TEST_MPI, "MPI unavailable")
     def test_mpi_single_process(self):
         self.assertEqual(dragon.distributed.get_rank(), 0)
         self.assertEqual(dragon.distributed.get_world_size(), 1)
-        group = dragon.distributed.new_group(ranks=[0], backend='MPI')
+        group = dragon.distributed.new_group(ranks=[0], backend="MPI")
         with group.as_default():
             self.assertEqual(dragon.distributed.get_rank(group), 0)
 
-    @unittest.skipIf(not TEST_MPI, 'MPI unavailable')
+    @unittest.skipIf(not TEST_MPI, "MPI unavailable")
     def test_finalize(self):
         dragon.distributed.finalize()
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     run_tests()

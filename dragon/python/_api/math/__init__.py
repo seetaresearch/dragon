@@ -66,4 +66,4 @@ from dragon.core.ops.math_ops import sum
 from dragon.core.ops.math_ops import var
 from dragon.core.ops.sort_ops import top_k
 
-__all__ = [_s for _s in dir() if not _s.startswith('_')]
+__all__ = [_s for _s in dir() if not _s.startswith("_")]

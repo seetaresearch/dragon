@@ -33,9 +33,7 @@ class Registry(object):
     def get(self, name):
         """Return the registered function by name."""
         if not self.has(name):
-            raise KeyError(
-                "`%s` is not registered in <%s>."
-                % (name, self._name))
+            raise KeyError("`%s` is not registered in <%s>." % (name, self._name))
         return self._registry[name]
 
     def has(self, name):
@@ -44,12 +42,12 @@ class Registry(object):
 
     def register(self, name, func=None, **kwargs):
         """Register a function by name."""
+
         def decorated(inner_function):
-            for key in (name if isinstance(
-                    name, (tuple, list)) else [name]):
-                self._registry[key] = functools.partial(
-                    inner_function, **kwargs)
+            for key in name if isinstance(name, (tuple, list)) else [name]:
+                self._registry[key] = functools.partial(inner_function, **kwargs)
             return inner_function
+
         if func is not None:
             return decorated(func)
         return decorated

@@ -92,8 +92,13 @@ def sort(input, dim=-1, descending=False, out=None):
 
     """
     return Function.apply(
-        'Sort', input.device, [input],
-        outputs=out if out else [None, None], axis=dim, descending=descending)
+        "Sort",
+        input.device,
+        [input],
+        outputs=out if out else [None, None],
+        axis=dim,
+        descending=descending,
+    )
 
 
 def topk(input, k, dim=-1, largest=True, sorted=True, out=None):
@@ -138,6 +143,12 @@ def topk(input, k, dim=-1, largest=True, sorted=True, out=None):
 
     """
     return Function.apply(
-        'TopK', input.device, [input],
+        "TopK",
+        input.device,
+        [input],
         outputs=out if out else (None, None),
-        k=k, axis=dim, largest=largest, sorted=sorted)
+        k=k,
+        axis=dim,
+        largest=largest,
+        sorted=sorted,
+    )

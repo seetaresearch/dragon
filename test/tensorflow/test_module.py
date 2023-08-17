@@ -24,8 +24,8 @@ class TestModule(unittest.TestCase):
     """Test array ops."""
 
     def test_properties(self):
-        self.assertEqual(tf.Module(name='module1').name, 'module1')
-        self.assertEqual(tf.Module().name, 'module')
+        self.assertEqual(tf.Module(name="module1").name, "module1")
+        self.assertEqual(tf.Module().name, "module")
         m = tf.Module()
         m.module = tf.Module()
         m.weight1 = tf.Variable(1, trainable=True)
@@ -34,8 +34,8 @@ class TestModule(unittest.TestCase):
         self.assertEqual(len(m.trainable_variables), 1)
         self.assertEqual(len(m.submodules), 1)
         with m.name_scope:
-            self.assertEqual(tf.Variable(1, name='weight').name, 'module_1/weight')
+            self.assertEqual(tf.Variable(1, name="weight").name, "module_1/weight")
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     run_tests()

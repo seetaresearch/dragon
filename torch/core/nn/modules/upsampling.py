@@ -46,7 +46,7 @@ class Upsample(Module):
         self,
         size=None,
         scale_factor=None,
-        mode='nearest',
+        mode="nearest",
         align_corners=False,
     ):
         """Create an ``Upsample`` module.
@@ -83,10 +83,10 @@ class Upsample(Module):
 
     def extra_repr(self):
         if self.scale_factor is not None:
-            info = 'scale_factor=' + str(self.scale_factor)
+            info = "scale_factor=" + str(self.scale_factor)
         else:
-            info = 'size=' + str(self.size)
-        info += ', mode=' + self.mode
+            info = "size=" + str(self.size)
+        info += ", mode=" + self.mode
         return info
 
 
@@ -119,7 +119,8 @@ class UpsamplingBilinear2d(Upsample):
 
         """
         super(UpsamplingBilinear2d, self).__init__(
-            size, scale_factor, mode='linear', align_corners=True)
+            size, scale_factor, mode="linear", align_corners=True
+        )
 
 
 class UpsamplingNearest2d(Upsample):
@@ -150,5 +151,4 @@ class UpsamplingNearest2d(Upsample):
             The scale factor along each input dimension.
 
         """
-        super(UpsamplingNearest2d, self).__init__(
-            size, scale_factor, mode='nearest')
+        super(UpsamplingNearest2d, self).__init__(size, scale_factor, mode="nearest")

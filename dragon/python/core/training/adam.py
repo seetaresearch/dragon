@@ -51,10 +51,10 @@ class Adam(optimizer.Optimizer):
 
         """
         super(Adam, self).__init__(**kwargs)
-        self._set_hyper('lr', lr)
-        self._set_hyper('beta1', beta1)
-        self._set_hyper('beta2', beta2)
-        self._set_hyper('eps', eps)
+        self._set_hyper("lr", lr)
+        self._set_hyper("beta1", beta1)
+        self._set_hyper("beta2", beta2)
+        self._set_hyper("eps", eps)
 
 
 class AdamW(Adam):
@@ -75,15 +75,7 @@ class AdamW(Adam):
 
     """
 
-    def __init__(
-        self,
-        lr=0.001,
-        beta1=0.9,
-        beta2=0.999,
-        eps=1e-8,
-        weight_decay=0.01,
-        **kwargs
-    ):
+    def __init__(self, lr=0.001, beta1=0.9, beta2=0.999, eps=1e-8, weight_decay=0.01, **kwargs):
         r"""Create an ``AdamW`` updater.
 
         Parameters
@@ -100,5 +92,4 @@ class AdamW(Adam):
             The initial value to :math:`\lambda`.
 
         """
-        super(AdamW, self).__init__(
-            lr, beta1, beta2, eps, weight_decay=weight_decay, **kwargs)
+        super(AdamW, self).__init__(lr, beta1, beta2, eps, weight_decay=weight_decay, **kwargs)

@@ -16,4 +16,4 @@ from __future__ import print_function as _print_function
 
 from dragon.vm.torch.core.jit.trace import trace
 
-__all__ = [_s for _s in dir() if not _s.startswith('_')]
+__all__ = [_s for _s in dir() if not _s.startswith("_")]

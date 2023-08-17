@@ -84,12 +84,14 @@ class Layer(module.Module):
 
         """
         if self.trainable:
-            nested = self._gather_children_attribute('non_trainable_variables')
+            nested = self._gather_children_attribute("non_trainable_variables")
             weights = self._non_trainable_weights + nested
         else:
-            weights = (self._trainable_weights +
-                       self._non_trainable_weights +
-                       self._gather_children_attribute('variables'))
+            weights = (
+                self._trainable_weights
+                + self._non_trainable_weights
+                + self._gather_children_attribute("variables")
+            )
         return self._dedupe_weights(weights)
 
     @property
@@ -116,8 +118,7 @@ class Layer(module.Module):
         """
         for v in nest.flatten(value):
             if v is not None and not isinstance(v, input_spec.InputSpec):
-                raise TypeError('Value should be an instance of InputSpec. '
-                                'Got: {}'.format(v))
+                raise TypeError("Value should be an instance of InputSpec. " "Got: {}".format(v))
         self._input_spec = value
 
     @property
@@ -170,7 +171,7 @@ class Layer(module.Module):
 
         """
         if self.trainable:
-            nested = self._gather_children_attribute('trainable_variables')
+            nested = self._gather_children_attribute("trainable_variables")
             return self._dedupe_weights(self._trainable_weights + nested)
         return []
 
@@ -248,7 +249,7 @@ class Layer(module.Module):
             elif dtype.is_integer or dtype.is_unsigned or dtype.is_bool:
                 initializer = initializers.zeros()
             else:
-                raise ValueError('Excepted an initializer for variable.')
+                raise ValueError("Excepted an initializer for variable.")
         initial_value = initializer(shape, dtype=dtype)
         variable = Variable(initial_value, trainable=trainable)
         if regularizer is not None:
@@ -297,12 +298,12 @@ class Layer(module.Module):
 
         """
         if _is_hdf5_filepath(filepath):
-            raise ValueError('HDF5 format will be supported in the future.')
+            raise ValueError("HDF5 format will be supported in the future.")
         elif _is_pkl_filepath(filepath):
-            with open(filepath, 'rb') as f:
+            with open(filepath, "rb") as f:
                 saving.load_weights_from_pickle(f, self, verbose)
         else:
-            raise ValueError('TensorFlow format will never be supported.')
+            raise ValueError("TensorFlow format will never be supported.")
 
     def save_weights(self, filepath, save_format=None):
         """Save the value of weights into a binary file.
@@ -319,25 +320,26 @@ class Layer(module.Module):
         filepath_is_pkl = _is_pkl_filepath(filepath)
         if save_format is None:
             if filepath_is_h5:
-                save_format = 'h5'
+                save_format = "h5"
             elif filepath_is_pkl:
-                save_format = 'pkl'
+                save_format = "pkl"
             else:
-                save_format = 'tf'
+                save_format = "tf"
         else:
             user_format = save_format.lower().strip()
-            if user_format in ('tensorflow', 'tf'):
-                save_format = 'tf'
-            elif user_format in ('hdf5', 'h5', 'keras'):
-                save_format = 'h5'
+            if user_format in ("tensorflow", "tf"):
+                save_format = "tf"
+            elif user_format in ("hdf5", "h5", "keras"):
+                save_format = "h5"
             else:
-                raise ValueError('Unknown format "%s".\n'
-                                 'Excepted format in (tf, h5, pkl).' % (save_format,))
-        if save_format == 'tf':
-            raise ValueError('TensorFlow format will never be supported.')
-        if save_format == 'h5':
-            raise ValueError('HDF5 format will be supported in the future.')
-        with open(filepath, 'wb') as f:
+                raise ValueError(
+                    'Unknown format "%s".\n' "Excepted format in (tf, h5, pkl)." % (save_format,)
+                )
+        if save_format == "tf":
+            raise ValueError("TensorFlow format will never be supported.")
+        if save_format == "h5":
+            raise ValueError("HDF5 format will be supported in the future.")
+        with open(filepath, "wb") as f:
             saving.save_weights_to_pickle(f, self)
 
     @staticmethod
@@ -366,9 +368,11 @@ class Layer(module.Module):
 
     def _gather_children_attribute(self, attribute):
         """Return the attribute values of nested layers."""
-        assert attribute in {'variables',
-                             'trainable_variables',
-                             'non_trainable_variables'}
+        assert attribute in {
+            "variables",
+            "trainable_variables",
+            "non_trainable_variables",
+        }
         nested_layers = self._flatten_modules(recursive=False, include_self=False)
         values = (getattr(layer, attribute) for layer in nested_layers)
         return list(itertools.chain.from_iterable(values))
@@ -378,7 +382,7 @@ class Layer(module.Module):
             input_spec.assert_input_compatibility(self.input_spec, inputs, self.name)
             inputs_list = nest.flatten(inputs)
             input_shapes = None
-            if all(hasattr(x, 'shape') for x in inputs_list):
+            if all(hasattr(x, "shape") for x in inputs_list):
                 input_shapes = [x.shape for x in inputs_list]
                 if not nest.is_sequence(inputs):
                     input_shapes = input_shapes[0]
@@ -417,10 +421,9 @@ class Layer(module.Module):
 
 def _is_hdf5_filepath(filepath):
     """Predicate the filepath is a h5 file."""
-    return (filepath.endswith('.h5') or filepath.endswith('.hdf5') or
-            filepath.endswith('.keras'))
+    return filepath.endswith(".h5") or filepath.endswith(".hdf5") or filepath.endswith(".keras")
 
 
 def _is_pkl_filepath(filepath):
     """Predicate the filepath is a pickle file."""
-    return filepath.endswith('.pkl')
+    return filepath.endswith(".pkl")

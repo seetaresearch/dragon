@@ -17,4 +17,4 @@ from __future__ import print_function as _print_function
 from dragon.vm.torch.core.utils.dlpack import from_dlpack
 from dragon.vm.torch.core.utils.dlpack import to_dlpack
 
-__all__ = [_s for _s in dir() if not _s.startswith('_')]
+__all__ = [_s for _s in dir() if not _s.startswith("_")]

@@ -21,15 +21,8 @@ from dragon.core.autograph.op_lib import OpSchema
 
 
 @OpSchema.num_inputs(5)
-@OpSchema.convert_arg('momentum', as_target=False)
-def batch_norm(
-    inputs,
-    axis=-1,
-    momentum=0.9,
-    epsilon=1e-5,
-    use_stats=-1,
-    **kwargs
-):
+@OpSchema.convert_arg("momentum", as_target=False)
+def batch_norm(inputs, axis=-1, momentum=0.9, epsilon=1e-5, use_stats=-1, **kwargs):
     r"""Apply batch normalization.
     `[Ioffe & Szegedy, 2015] <https://arxiv.org/abs/1502.03167>`_.
 
@@ -64,25 +57,22 @@ def batch_norm(
 
     """
     args = OpSchema.parse_args(locals())
-    args['epsilon'] = float(epsilon)
+    args["epsilon"] = float(epsilon)
     if context.executing_eagerly():
         return OpLib.execute(
-            'BatchNorm', inputs, axis=axis, epsilon=args['epsilon'],
-            use_stats=use_stats, momentum=args['momentum'])
-    return OpLib.add('BatchNorm', **args)
+            "BatchNorm",
+            inputs,
+            axis=axis,
+            epsilon=args["epsilon"],
+            use_stats=use_stats,
+            momentum=args["momentum"],
+        )
+    return OpLib.add("BatchNorm", **args)
 
 
 @OpSchema.num_inputs(1)
-@OpSchema.convert_arg('perm')
-def channel_norm(
-    inputs,
-    mean,
-    std,
-    axis=-1,
-    dtype='float32',
-    perm=None,
-    **kwargs
-):
+@OpSchema.convert_arg("perm")
+def channel_norm(inputs, mean, std, axis=-1, dtype="float32", perm=None, **kwargs):
     """Apply normalization to each channel of input.
 
     :attr:`axis` can be negative:
@@ -128,11 +118,16 @@ def channel_norm(
     args = OpSchema.parse_args(locals())
     if context.executing_eagerly():
         return OpLib.execute(
-            'ChannelNorm', inputs,
-            axis=axis, mean=mean, std=std, dtype=dtype,
-            ndim=len(args['perm']) if perm is not None else 0,
-            perm=args['perm'])
-    return OpLib.add('ChannelNorm', **args)
+            "ChannelNorm",
+            inputs,
+            axis=axis,
+            mean=mean,
+            std=std,
+            dtype=dtype,
+            ndim=len(args["perm"]) if perm is not None else 0,
+            perm=args["perm"],
+        )
+    return OpLib.add("ChannelNorm", **args)
 
 
 @OpSchema.num_inputs(3)
@@ -174,10 +169,8 @@ def group_norm(inputs, axis=-1, group=0, epsilon=1e-5, **kwargs):
     """
     epsilon = float(epsilon)
     if context.executing_eagerly():
-        return OpLib.execute(
-            'GroupNorm', inputs, axis=axis, group=group, epsilon=epsilon)
-    return OpLib.add('GroupNorm', inputs, axis=axis,
-                     group=group, epsilon=epsilon, **kwargs)
+        return OpLib.execute("GroupNorm", inputs, axis=axis, group=group, epsilon=epsilon)
+    return OpLib.add("GroupNorm", inputs, axis=axis, group=group, epsilon=epsilon, **kwargs)
 
 
 @OpSchema.num_inputs(3)
@@ -237,21 +230,12 @@ def layer_norm(inputs, axis=-1, epsilon=1e-5, **kwargs):
     """
     epsilon = float(epsilon)
     if context.executing_eagerly():
-        return OpLib.execute(
-            'LayerNorm', inputs, axis=axis, epsilon=epsilon)
-    return OpLib.add('LayerNorm', inputs, axis=axis, epsilon=epsilon, **kwargs)
+        return OpLib.execute("LayerNorm", inputs, axis=axis, epsilon=epsilon)
+    return OpLib.add("LayerNorm", inputs, axis=axis, epsilon=epsilon, **kwargs)
 
 
 @OpSchema.num_inputs(1)
-def lp_norm(
-    inputs,
-    axis=-1,
-    end_axis=None,
-    p=2,
-    epsilon=1e-12,
-    reduction='sum',
-    **kwargs
-):
+def lp_norm(inputs, axis=-1, end_axis=None, p=2, epsilon=1e-12, reduction="sum", **kwargs):
     r"""Apply lp normalization.
 
     The normalization is defined as:
@@ -299,21 +283,29 @@ def lp_norm(
     reduction = reduction.upper()
     if context.executing_eagerly():
         return OpLib.execute(
-            'LpNorm', inputs, p=p, axis=axis, end_axis=end_axis,
-            epsilon=epsilon, reduction=reduction)
-    return OpLib.add('LpNorm', inputs, p=p, axis=axis, end_axis=end_axis,
-                     epsilon=epsilon, reduction=reduction, **kwargs)
+            "LpNorm",
+            inputs,
+            p=p,
+            axis=axis,
+            end_axis=end_axis,
+            epsilon=epsilon,
+            reduction=reduction,
+        )
+    return OpLib.add(
+        "LpNorm",
+        inputs,
+        p=p,
+        axis=axis,
+        end_axis=end_axis,
+        epsilon=epsilon,
+        reduction=reduction,
+        **kwargs
+    )
 
 
 @OpSchema.num_inputs(1)
 def local_response_norm(
-    inputs,
-    size=5,
-    alpha=0.0001,
-    beta=0.75,
-    bias=1.,
-    data_format='NCHW',
-    **kwargs
+    inputs, size=5, alpha=0.0001, beta=0.75, bias=1.0, data_format="NCHW", **kwargs
 ):
     r"""Apply local response normalization.
     `[Krizhevsky et.al, 2012] <http://www.cs.toronto.edu/~hinton/absps/imagenet.pdf>`_.
@@ -346,27 +338,35 @@ def local_response_norm(
         The output tensor.
 
     """
-    if data_format not in ('NCHW', 'NHWC'):
-        raise ValueError('Unsupported data format: %s' % data_format)
+    if data_format not in ("NCHW", "NHWC"):
+        raise ValueError("Unsupported data format: %s" % data_format)
     alpha, beta, bias = float(alpha), float(beta), float(bias)
     if context.executing_eagerly():
         return OpLib.execute(
-            'LRN', inputs, size=size, alpha=alpha, beta=beta,
-            bias=bias, data_format=data_format)
-    return OpLib.add('LRN', inputs, size=size, alpha=alpha, beta=beta,
-                     bias=bias, data_format=data_format, **kwargs)
+            "LRN",
+            inputs,
+            size=size,
+            alpha=alpha,
+            beta=beta,
+            bias=bias,
+            data_format=data_format,
+        )
+    return OpLib.add(
+        "LRN",
+        inputs,
+        size=size,
+        alpha=alpha,
+        beta=beta,
+        bias=bias,
+        data_format=data_format,
+        **kwargs
+    )
 
 
 @OpSchema.num_inputs(5)
-@OpSchema.convert_arg('momentum', as_target=False)
+@OpSchema.convert_arg("momentum", as_target=False)
 def sync_batch_norm(
-    inputs,
-    axis=-1,
-    momentum=0.9,
-    epsilon=1e-5,
-    use_stats=-1,
-    process_group=None,
-    **kwargs
+    inputs, axis=-1, momentum=0.9, epsilon=1e-5, use_stats=-1, process_group=None, **kwargs
 ):
     r"""Apply batch normalization with synced statistics.
     `[Ioffe & Szegedy, 2015] <https://arxiv.org/abs/1502.03167>`_.
@@ -404,16 +404,21 @@ def sync_batch_norm(
 
     """
     args = OpSchema.parse_args(locals())
-    args['epsilon'] = float(epsilon)
+    args["epsilon"] = float(epsilon)
     if process_group is None:
         process_group = distributed.get_group()
     if process_group is None:
-        raise ValueError('<process_group> is required.')
+        raise ValueError("<process_group> is required.")
     if context.executing_eagerly():
         return OpLib.execute(
-            'SyncBatchNorm', inputs, axis=axis, epsilon=args['epsilon'],
-            use_stats=use_stats, momentum=args['momentum'],
-            **process_group.arguments)
-    args.pop('process_group')
+            "SyncBatchNorm",
+            inputs,
+            axis=axis,
+            epsilon=args["epsilon"],
+            use_stats=use_stats,
+            momentum=args["momentum"],
+            **process_group.arguments
+        )
+    args.pop("process_group")
     args.update(process_group.arguments)
-    return OpLib.add('SyncBatchNorm', **args)
+    return OpLib.add("SyncBatchNorm", **args)

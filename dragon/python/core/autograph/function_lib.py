@@ -82,7 +82,8 @@ def class_method_to_instance_method(original_function, instance):
         original_function.run_function,
         type(original_function)(
             decorator.make_decorator(bound_method, bound_method_wrapper),
-            input_signature=original_function.input_signature),
+            input_signature=original_function.input_signature,
+        ),
     )
 
 
@@ -128,9 +129,10 @@ class FunctionSpec(object):
             # In this case, extra kwargs are forbidden.
             if len(args) > len(self._input_signature):
                 raise ValueError(
-                    'When <input_signature> is provided, '
-                    'only pass arguments covered by it.\n'
-                    'Received %d argument(s).' % len(args))
+                    "When <input_signature> is provided, "
+                    "only pass arguments covered by it.\n"
+                    "Received %d argument(s)." % len(args)
+                )
         # Determine the args from kwargs and default-values.
         if not kwargs:
             # The simplest case: args only.
@@ -141,8 +143,7 @@ class FunctionSpec(object):
         else:
             # Select from kwargs if defined in the spec.
             arg_indices_to_values = {
-                i: v for i, v in self._arg_indices_to_default_values.items()
-                if i >= len(args)
+                i: v for i, v in self._arg_indices_to_default_values.items() if i >= len(args)
             }
             extra_args = {}
             for arg, value in kwargs.items():
@@ -151,8 +152,7 @@ class FunctionSpec(object):
                     arg_indices_to_values[index] = value
                 else:
                     extra_args[arg] = value
-            args2 = tuple(arg_indices_to_values[key]
-                          for key in sorted(arg_indices_to_values))
+            args2 = tuple(arg_indices_to_values[key] for key in sorted(arg_indices_to_values))
             inputs, kwargs = args + args2, extra_args
         # Return the final inputs and kwargs.
         return inputs, kwargs
@@ -163,8 +163,7 @@ class FunctionGuard(object):
 
     def __init__(self, run_function, input_signature=None):
         self._run_function = run_function
-        self._spec = FunctionSpec.from_function_and_signature(
-            run_function, input_signature)
+        self._spec = FunctionSpec.from_function_and_signature(run_function, input_signature)
         self._attribute_cache = collections.defaultdict(dict)
         self._descriptor_cache = weakref.WeakKeyDictionary()
 
@@ -190,9 +189,9 @@ class FunctionGuard(object):
             if not isinstance(args[i], Tensor) and input_spec is None:
                 inputs.append(args[i])
                 continue
-            name = 'Input_%d' % (i + 1)
-            shape = getattr(args[i], 'shape', None)
-            dtype = getattr(args[i], 'dtype', None)
+            name = "Input_%d" % (i + 1)
+            shape = getattr(args[i], "shape", None)
+            dtype = getattr(args[i], "dtype", None)
             if input_spec is not None:
                 shape, dtype = input_spec.shape, input_spec.dtype
             inputs.append(Tensor(shape, dtype, name=name, symbolic=True))
@@ -209,31 +208,31 @@ class FunctionGuard(object):
         for obj in dummies:
             if isinstance(obj, GraphExec):
                 graphs.append(obj)
-        attributes['inputs'] = inputs
-        attributes['outputs'] = outputs
-        attributes['graphs'] = graphs
+        attributes["inputs"] = inputs
+        attributes["outputs"] = outputs
+        attributes["graphs"] = graphs
         return graphs
 
     def __call__(self, *args, **kwargs):
         """Call the built graphs."""
         execute_ws = workspace.get_workspace()
         attributes = self._attribute_cache[execute_ws]
-        graphs = attributes.get('graphs', None)
+        graphs = attributes.get("graphs", None)
         if graphs is None:
             graphs = self._build_graphs(*args, **kwargs)
-        inputs = attributes['inputs']
+        inputs = attributes["inputs"]
         values, _ = self._spec.separate_inputs(*args, **kwargs)
         for input, value in zip(inputs, values):
             if not isinstance(input, Tensor):
                 continue
-            if hasattr(value, 'numpy'):
+            if hasattr(value, "numpy"):
                 value = value.numpy()
             else:
                 value = numpy.array(value, copy=False)
             input._impl.FromNumpy(value)
         for graph in graphs:
             graph.run()
-        return attributes['outputs']
+        return attributes["outputs"]
 
     def __get__(self, instance, owner):
         """Override to patch the instance methods."""
@@ -241,8 +240,7 @@ class FunctionGuard(object):
         if instance not in self._descriptor_cache:
             if instance is None:
                 return self
-            self._descriptor_cache[instance] = \
-                class_method_to_instance_method(self, instance)
+            self._descriptor_cache[instance] = class_method_to_instance_method(self, instance)
         return self._descriptor_cache[instance]
 
 
@@ -294,10 +292,12 @@ def function(func=None, input_signature=None):
         A callable to execute the compiled function.
 
     """
+
     def decorated(inner_function):
         return decorator.make_decorator(
-            inner_function,
-            FunctionGuard(inner_function, input_signature))
+            inner_function, FunctionGuard(inner_function, input_signature)
+        )
+
     if func is not None:
         return decorated(func)
     return decorated

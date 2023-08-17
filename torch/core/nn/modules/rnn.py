@@ -52,10 +52,10 @@ class RNNBase(Module):
         self.dropout = dropout if dropout != 0 else None
         self.bidirectional = bidirectional
         if batch_first:
-            raise NotImplementedError('Batch first is not supported.')
+            raise NotImplementedError("Batch first is not supported.")
         if not bias:
-            raise NotImplementedError('Bias is required.')
-        self._num_gates = {'LSTM': 4, 'GRU': 3}.get(self.mode, 1)
+            raise NotImplementedError("Bias is required.")
+        self._num_gates = {"LSTM": 4, "GRU": 3}.get(self.mode, 1)
         self._weight_count = 0
         self._weight_shapes = []
         self.weight = self.flatten_parameters()
@@ -65,8 +65,9 @@ class RNNBase(Module):
         """Reset the parameters."""
         stddev = 1.0 / math.sqrt(self.hidden_size)
         for layer_id, param_id in itertools.product(
-                range(self.num_layers * (self.bidirectional + 1)),
-                range(self._num_gates * 2)):
+            range(self.num_layers * (self.bidirectional + 1)),
+            range(self._num_gates * 2),
+        ):
             i = layer_id * 2 + (param_id // self._num_gates)
             j = i + len(self._weight_shapes) // 2
             matrix_shape = self._weight_shapes[i][:]
@@ -75,10 +76,16 @@ class RNNBase(Module):
             bias_shape[0] //= self._num_gates
             self._set_parameter(
                 random_ops.uniform(-stddev, stddev, matrix_shape),
-                layer_id, param_id, 'matrix')
+                layer_id,
+                param_id,
+                "matrix",
+            )
             self._set_parameter(
                 random_ops.uniform(-stddev, stddev, bias_shape),
-                layer_id, param_id, 'bias')
+                layer_id,
+                param_id,
+                "bias",
+            )
 
     def flatten_parameters(self):
         """Flatten parameters into a single weights."""
@@ -86,8 +93,9 @@ class RNNBase(Module):
         matrix_shapes, bias_shapes = [], []
         for layer in range(self.num_layers):
             for direction in range(int(self.bidirectional) + 1):
-                layer_input_size = self.input_size if layer == 0 \
-                    else self.hidden_size * self.num_directions
+                layer_input_size = (
+                    self.input_size if layer == 0 else self.hidden_size * self.num_directions
+                )
                 w_ih_shape = [gate_size, layer_input_size]
                 w_hh_shape = [gate_size, self.hidden_size]
                 b_ih_shape, b_hh_shape = [gate_size], [gate_size]
@@ -101,39 +109,54 @@ class RNNBase(Module):
         return self.weight
 
     def extra_repr(self):
-        s = '{input_size}, {hidden_size}'
+        s = "{input_size}, {hidden_size}"
         if self.num_layers != 1:
-            s += ', num_layers={num_layers}'
+            s += ", num_layers={num_layers}"
         if self.bias is not True:
-            s += ', bias={bias}'
+            s += ", bias={bias}"
         if self.batch_first is not False:
-            s += ', batch_first={batch_first}'
+            s += ", batch_first={batch_first}"
         if self.dropout != 0:
-            s += ', dropout={dropout}'
+            s += ", dropout={dropout}"
         if self.bidirectional is not False:
-            s += ', bidirectional={bidirectional}'
+            s += ", bidirectional={bidirectional}"
         return s.format(**self.__dict__)
 
     def forward(self, input, hx=None):
         inputs = [input, self.weight]
         if hx is not None:
             inputs += nest.flatten(hx)
-        outputs = [None] * (3 if self.mode == 'LSTM' else 2)
+        outputs = [None] * (3 if self.mode == "LSTM" else 2)
         outputs = Function.apply(
-            'RNN', input.device, inputs, outputs=outputs,
-            rnn_mode=self.mode, bidirectional=self.bidirectional,
-            input_size=self.input_size, hidden_size=self.hidden_size,
-            dropout=self.dropout, phase='TRAIN' if self.training else 'TEST')
+            "RNN",
+            input.device,
+            inputs,
+            outputs=outputs,
+            rnn_mode=self.mode,
+            bidirectional=self.bidirectional,
+            input_size=self.input_size,
+            hidden_size=self.hidden_size,
+            dropout=self.dropout,
+            phase="TRAIN" if self.training else "TEST",
+        )
         output, hidden = outputs[0], outputs[1:]
         return output, hidden[0] if len(hidden) == 1 else hidden
 
-    def _set_parameter(self, data, layer_id=0, param_id=0, param_type='matrix'):
+    def _set_parameter(self, data, layer_id=0, param_id=0, param_type="matrix"):
         """Set the data of a parameter."""
         return Function.apply(
-            'RNNParamSet', data.device, [data], outputs=[self.weight],
-            rnn_mode=self.mode, bidirectional=self.bidirectional,
-            input_size=self.input_size, hidden_size=self.hidden_size,
-            layer_id=layer_id, param_id=param_id, param_type=param_type)
+            "RNNParamSet",
+            data.device,
+            [data],
+            outputs=[self.weight],
+            rnn_mode=self.mode,
+            bidirectional=self.bidirectional,
+            input_size=self.input_size,
+            hidden_size=self.hidden_size,
+            layer_id=layer_id,
+            param_id=param_id,
+            param_type=param_type,
+        )
 
 
 class RNN(RNNBase):
@@ -154,7 +177,7 @@ class RNN(RNNBase):
         self,
         input_size,
         hidden_size,
-        nonlinearity='relu',
+        nonlinearity="relu",
         num_layers=1,
         bias=True,
         batch_first=False,
@@ -183,10 +206,16 @@ class RNN(RNNBase):
             Whether to create a bidirectional rnn.
 
         """
-        mode = 'RNN_RELU' if nonlinearity == 'relu' else 'RNN_TANH'
+        mode = "RNN_RELU" if nonlinearity == "relu" else "RNN_TANH"
         super(RNN, self).__init__(
-            mode, input_size, hidden_size, num_layers,
-            bias, batch_first, dropout, bidirectional,
+            mode,
+            input_size,
+            hidden_size,
+            num_layers,
+            bias,
+            batch_first,
+            dropout,
+            bidirectional,
         )
 
 
@@ -233,8 +262,14 @@ class LSTM(RNNBase):
 
         """
         super(LSTM, self).__init__(
-            'LSTM', input_size, hidden_size, num_layers,
-            bias, batch_first, dropout, bidirectional,
+            "LSTM",
+            input_size,
+            hidden_size,
+            num_layers,
+            bias,
+            batch_first,
+            dropout,
+            bidirectional,
         )
 
 
@@ -251,6 +286,7 @@ class GRU(RNNBase):
     ```
 
     """
+
     def __init__(
         self,
         input_size,
@@ -282,8 +318,14 @@ class GRU(RNNBase):
 
         """
         super(GRU, self).__init__(
-            'GRU', input_size, hidden_size, num_layers,
-            bias, batch_first, dropout, bidirectional,
+            "GRU",
+            input_size,
+            hidden_size,
+            num_layers,
+            bias,
+            batch_first,
+            dropout,
+            bidirectional,
         )
 
 
@@ -299,16 +341,16 @@ class RNNCellBase(Module):
             self.bias_ih = Parameter(Tensor(num_chunks * hidden_size))
             self.bias_hh = Parameter(Tensor(num_chunks * hidden_size))
         else:
-            self.register_parameter('bias_ih', None)
-            self.register_parameter('bias_hh', None)
+            self.register_parameter("bias_ih", None)
+            self.register_parameter("bias_hh", None)
         self.reset_parameters()
 
     def extra_repr(self):
-        s = '{input_size}, {hidden_size}'
-        if 'bias' in self.__dict__ and self.bias is not True:
-            s += ', bias={bias}'
-        if 'nonlinearity' in self.__dict__ and self.nonlinearity != "tanh":
-            s += ', nonlinearity={nonlinearity}'
+        s = "{input_size}, {hidden_size}"
+        if "bias" in self.__dict__ and self.bias is not True:
+            s += ", bias={bias}"
+        if "nonlinearity" in self.__dict__ and self.nonlinearity != "tanh":
+            s += ", nonlinearity={nonlinearity}"
         return s.format(**self.__dict__)
 
     def reset_parameters(self):
@@ -344,14 +386,13 @@ class LSTMCell(RNNCellBase):
             ``True`` to use bias.
 
         """
-        super(LSTMCell, self).__init__(
-            input_size, hidden_size, bias, num_chunks=4)
+        super(LSTMCell, self).__init__(input_size, hidden_size, bias, num_chunks=4)
 
     def forward(self, input, hx=None):
         if hx is None:
             zeros = constant_ops.zeros(
-                input.size(0), self.hidden_size,
-                dtype=input.dtype, device=input.device)
+                input.size(0), self.hidden_size, dtype=input.dtype, device=input.device
+            )
             hx = (zeros, zeros)
         wx = functional.linear(input, self.weight_ih, self.bias_ih)
         wh = functional.linear(hx[0], self.weight_hh, self.bias_hh)

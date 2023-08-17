@@ -31,7 +31,7 @@ class RMSprop(optimizer.Optimizer):
                     m_{t} = \text{momentum} * m_{t-1} + \frac{g}{\sqrt{v_{t}} + \epsilon}
                 \end{cases}
 
-    """
+    """  # noqa: E501
 
     def __init__(self, lr=0.01, momentum=0, alpha=0.9, eps=1e-8, **kwargs):
         r"""Create a ``RMSProp`` optimizer.
@@ -49,7 +49,7 @@ class RMSprop(optimizer.Optimizer):
 
         """
         super(RMSprop, self).__init__(**kwargs)
-        self._set_hyper('lr', lr)
-        self._set_hyper('momentum', momentum)
-        self._set_hyper('alpha', alpha)
-        self._set_hyper('eps', eps)
+        self._set_hyper("lr", lr)
+        self._set_hyper("momentum", momentum)
+        self._set_hyper("alpha", alpha)
+        self._set_hyper("eps", eps)

@@ -31,7 +31,7 @@ class FunctionGuard(function_lib.FunctionGuard):
         input_signature = self._spec.input_signature
         args, kwargs = self._spec.separate_inputs(*args, **kwargs)
         inputs = []
-        with context.variable_scope('%s/Variable' % id(self)):
+        with context.variable_scope("%s/Variable" % id(self)):
             for i in range(self._spec.num_inputs):
                 input, input_spec = args[i], None
                 if input_signature is not None:
@@ -40,36 +40,38 @@ class FunctionGuard(function_lib.FunctionGuard):
                     inputs.append(input)
                     continue
                 input_spec = input_spec or {}
-                for k in ('shape', 'dtype', 'device'):
+                for k in ("shape", "dtype", "device"):
                     input_spec[k] = getattr(input, k, input_spec.get(k, None))
-                inputs.append(Tensor(*input_spec['shape'],
-                                     dtype=input_spec['dtype'],
-                                     device=input_spec['device']))
+                inputs.append(
+                    Tensor(
+                        *input_spec["shape"], dtype=input_spec["dtype"], device=input_spec["device"]
+                    )
+                )
                 if isinstance(input, Tensor):
                     inputs[-1].copy_(input)
             with tapes.Tape() as function_tape:
                 function_tape._tracing = True
-                attributes['inputs'] = inputs
-                attributes['outputs'] = self._run_function(*inputs, **kwargs)
-                attributes['operators'] = function_tape.get_elements()
-        return attributes['operators']
+                attributes["inputs"] = inputs
+                attributes["outputs"] = self._run_function(*inputs, **kwargs)
+                attributes["operators"] = function_tape.get_elements()
+        return attributes["operators"]
 
     def __call__(self, *args, **kwargs):
         """Call the traced function."""
         execute_ws = workspace.get_workspace()
         attributes = self._attribute_cache[execute_ws]
-        operators = attributes.get('operators', None)
+        operators = attributes.get("operators", None)
         if operators is None:
             operators = self._trace_operators(*args, **kwargs)
-        inputs = attributes['inputs']
+        inputs = attributes["inputs"]
         values, _ = self._spec.separate_inputs(*args, **kwargs)
         for input, value in zip(inputs, values):
             if not isinstance(input, Tensor):
                 continue
-            if hasattr(value, 'id'):
+            if hasattr(value, "id"):
                 execute_ws.set_alias(value.id, input.id)
         execute_ws.run_operator(operators)
-        return attributes['outputs']
+        return attributes["outputs"]
 
 
 def trace(func=None, example_inputs=None):
@@ -119,21 +121,23 @@ def trace(func=None, example_inputs=None):
         A callable to execute the traced function.
 
     """
+
     def decorated(inner_function):
         if example_inputs is not None:
             input_signatures = []
             for inp in nest.flatten(example_inputs):
                 if inp is not None:
-                    input_signatures.append({
-                        'shape': inp.shape,
-                        'dtype': inp.dtype,
-                        'device': inp.device})
+                    input_signatures.append(
+                        {"shape": inp.shape, "dtype": inp.dtype, "device": inp.device}
+                    )
                 else:
                     input_signatures.append(None)
         else:
             input_signatures = None
         return decorator.make_decorator(
-            inner_function, FunctionGuard(inner_function, input_signatures))
+            inner_function, FunctionGuard(inner_function, input_signatures)
+        )
+
     if func is not None:
         if isinstance(func, Module):
             func.forward = decorated(func.forward)

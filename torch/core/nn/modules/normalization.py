@@ -78,8 +78,8 @@ class GroupNorm(Module):
             self.weight = Parameter(Tensor(num_channels))
             self.bias = Parameter(Tensor(num_channels))
         else:
-            self.register_buffer('weight', constant_ops.ones(num_channels))
-            self.register_buffer('bias', constant_ops.zeros(num_channels))
+            self.register_buffer("weight", constant_ops.ones(num_channels))
+            self.register_buffer("bias", constant_ops.zeros(num_channels))
         self.reset_parameters()
 
     def reset_parameters(self):
@@ -88,22 +88,22 @@ class GroupNorm(Module):
             self.bias.data.zero_()
 
     def extra_repr(self):
-        return '{num_groups}, ' \
-               '{num_channels}, ' \
-               'eps={eps}, ' \
-               'affine={affine}' \
-               .format(**self.__dict__)
+        return (
+            "{num_groups}, "
+            "{num_channels}, "
+            "eps={eps}, "
+            "affine={affine}".format(**self.__dict__)
+        )
 
     def forward(self, input):
-        return functional.group_norm(
-            input, self.num_groups, self.weight, self.bias, self.eps)
+        return functional.group_norm(input, self.num_groups, self.weight, self.bias, self.eps)
 
     def _apply(self, fn):
-        if self.weight.device.type != 'mlu':
+        if self.weight.device.type != "mlu":
             lambda_source = inspect.getsource(fn)
-            if 'half_()' in lambda_source:
+            if "half_()" in lambda_source:
                 return self
-            if 'bfloat16_()' in lambda_source:
+            if "bfloat16_()" in lambda_source:
                 return self
             # High precision parameters are required.
         return super(GroupNorm, self)._apply(fn)
@@ -154,8 +154,8 @@ class LayerNorm(Module):
             self.weight = Parameter(Tensor(*self.normalized_shape))
             self.bias = Parameter(Tensor(*self.normalized_shape))
         else:
-            self.register_buffer('weight', constant_ops.ones(*self.normalized_shape))
-            self.register_buffer('bias', constant_ops.zeros(*self.normalized_shape))
+            self.register_buffer("weight", constant_ops.ones(*self.normalized_shape))
+            self.register_buffer("bias", constant_ops.zeros(*self.normalized_shape))
         self.reset_parameters()
 
     def reset_parameters(self):
@@ -164,21 +164,21 @@ class LayerNorm(Module):
             self.bias.data.zero_()
 
     def extra_repr(self):
-        return '{normalized_shape}, ' \
-               'eps={eps}, ' \
-               'elementwise_affine={elementwise_affine}' \
-               .format(**self.__dict__)
+        return (
+            "{normalized_shape}, "
+            "eps={eps}, "
+            "elementwise_affine={elementwise_affine}".format(**self.__dict__)
+        )
 
     def forward(self, input):
-        return functional.layer_norm(
-            input, self.normalized_shape, self.weight, self.bias, self.eps)
+        return functional.layer_norm(input, self.normalized_shape, self.weight, self.bias, self.eps)
 
     def _apply(self, fn):
-        if self.weight.device.type != 'mlu':
+        if self.weight.device.type != "mlu":
             lambda_source = inspect.getsource(fn)
-            if 'half_()' in lambda_source:
+            if "half_()" in lambda_source:
                 return self
-            if 'bfloat16_()' in lambda_source:
+            if "bfloat16_()" in lambda_source:
                 return self
             # High precision parameters are required.
         return super(LayerNorm, self)._apply(fn)
@@ -209,7 +209,7 @@ class LocalResponseNorm(Module):
 
     """
 
-    def __init__(self, size, alpha=0.0001, beta=0.75, k=1.):
+    def __init__(self, size, alpha=0.0001, beta=0.75, k=1.0):
         r"""Create a ``GroupNorm`` module.
 
         Parameters
@@ -231,8 +231,7 @@ class LocalResponseNorm(Module):
         self.k = k
 
     def extra_repr(self):
-        return '{size}, alpha={alpha}, beta={beta}, k={k}'.format(**self.__dict__)
+        return "{size}, alpha={alpha}, beta={beta}, k={k}".format(**self.__dict__)
 
     def forward(self, input):
-        return functional.local_response_norm(
-            input, self.size, self.alpha, self.beta, self.k)
+        return functional.local_response_norm(input, self.size, self.alpha, self.beta, self.k)

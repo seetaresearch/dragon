@@ -57,22 +57,24 @@ class Optimizer(object):
 
         """
         if isinstance(params, Tensor):
-            raise TypeError('<params> should be a sequence of tensors.')
-        defaults.update({
-            'grad_scale': kwargs.pop('grad_scale', 1),
-            'clip_norm': kwargs.pop('clip_norm', 0),
-            'clip_value': kwargs.pop('clip_value', 0),
-        })
-        self._update_pre_hook = kwargs.pop('update_pre_hook', None)
+            raise TypeError("<params> should be a sequence of tensors.")
+        defaults.update(
+            {
+                "grad_scale": kwargs.pop("grad_scale", 1),
+                "clip_norm": kwargs.pop("clip_norm", 0),
+                "clip_value": kwargs.pop("clip_value", 0),
+            }
+        )
+        self._update_pre_hook = kwargs.pop("update_pre_hook", None)
         if kwargs:
-            raise ValueError('Unexpected arguments: ' + ','.join(v for v in kwargs))
+            raise ValueError("Unexpected arguments: " + ",".join(v for v in kwargs))
         self.defaults = defaults
         self.param_groups = []
         param_groups = list(params)
         if len(param_groups) == 0:
-            raise ValueError('<params> is an empty sequence.')
+            raise ValueError("<params> is an empty sequence.")
         if not isinstance(param_groups[0], dict):
-            param_groups = [{'params': param_groups}]
+            param_groups = [{"params": param_groups}]
         for param_group in param_groups:
             self.add_param_group(param_group)
         self._op_type = self.__class__.__name__
@@ -96,34 +98,38 @@ class Optimizer(object):
 
         """
         if not isinstance(param_group, dict):
-            raise TypeError('Param group must be a dict.')
-        params = param_group['params']
+            raise TypeError("Param group must be a dict.")
+        params = param_group["params"]
         if isinstance(params, Tensor):
-            param_group['params'] = [params]
+            param_group["params"] = [params]
         elif isinstance(params, (set, dict)):
-            raise TypeError('Parameters should be organized in a sequence.')
+            raise TypeError("Parameters should be organized in a sequence.")
         else:
-            param_group['params'] = list(params)
-        for param in param_group['params']:
+            param_group["params"] = list(params)
+        for param in param_group["params"]:
             if not isinstance(param, Tensor):
-                raise TypeError('Optimizer can only optimize Tensors, '
-                                "but one of the params is " + str(type(param)))
+                raise TypeError(
+                    "Optimizer can only optimize Tensors, "
+                    "but one of the params is " + str(type(param))
+                )
             if not param.is_leaf:
                 raise ValueError("Optimize a non-leaf Tensor.")
         for name, default in self.defaults.items():
             if default is required and name not in param_group:
-                raise ValueError("Parameter group didn't specify a value of "
-                                 "required optimization parameter: " + name)
+                raise ValueError(
+                    "Parameter group didn't specify a value of "
+                    "required optimization parameter: " + name
+                )
             else:
                 param_group.setdefault(name, default)
-        if 'name' not in param_group:
+        if "name" not in param_group:
             default_ws = workspace.get_workspace()
-            param_group['name'] = default_ws.create_handle('Optimizer')
+            param_group["name"] = default_ws.create_handle("Optimizer")
         param_set = set()
         for group in self.param_groups:
-            param_set.update(set(group['params']))
-        if not param_set.isdisjoint(set(param_group['params'])):
-            raise ValueError('Some parameters appear in more than one parameter group.')
+            param_set.update(set(group["params"]))
+        if not param_set.isdisjoint(set(param_group["params"])):
+            raise ValueError("Some parameters appear in more than one parameter group.")
         self.param_groups.append(param_group)
 
     def step(self):
@@ -145,8 +151,8 @@ class Optimizer(object):
         for group in self.param_groups:
             params_with_grad, grads = [], []
             if dist_group is not None:
-                group['dist_size'] = dist_group.size
-            for p in group['params']:
+                group["dist_size"] = dist_group.size
+            for p in group["params"]:
                 g = self._get_grad(execute_ws, p, self._sums_grad)
                 if g is not None:
                     grads.append(g)
@@ -160,9 +166,15 @@ class Optimizer(object):
                 for g in grads:
                     reduce_grads_all[g.dtype].append(g)
             for grads in reduce_grads_all.values():
-                Function.apply('Collective', grads[0].device, grads,
-                               outputs=grads, operation='ALLREDUCE',
-                               reduction='SUM', **dist_group.arguments)
+                Function.apply(
+                    "Collective",
+                    grads[0].device,
+                    grads,
+                    outputs=grads,
+                    operation="ALLREDUCE",
+                    reduction="SUM",
+                    **dist_group.arguments
+                )
         for idx, group in enumerate(self.param_groups):
             self._update_group(group, params_all[idx], grads_all[idx])
         self._sums_grad = False
@@ -189,17 +201,22 @@ class Optimizer(object):
         grads_all, sum_grads_all = [], []
         for group in self.param_groups:
             grads, sum_grads = [], []
-            for p in group['params']:
+            for p in group["params"]:
                 g = self._get_grad(execute_ws, p)
                 if g is not None:
                     grads.append(g)
-                    sum_grads.append(g.id + '_sum')
+                    sum_grads.append(g.id + "_sum")
             grads_all.append(grads)
             sum_grads_all.append(sum_grads)
         for grads, sum_grads in zip(grads_all, sum_grads_all):
-            Function.apply('Axpby', grads[0].device,
-                           grads, outputs=sum_grads,
-                           alpha=1.0, beta=1.0 if self._sums_grad else 0.0)
+            Function.apply(
+                "Axpby",
+                grads[0].device,
+                grads,
+                outputs=sum_grads,
+                alpha=1.0,
+                beta=1.0 if self._sums_grad else 0.0,
+            )
         self._sums_grad = True
 
     def zero_grad(self, set_to_none=False):
@@ -232,7 +249,7 @@ class Optimizer(object):
         """
         execute_ws = workspace.get_workspace()
         for group in self.param_groups:
-            for p in group['params']:
+            for p in group["params"]:
                 g = self._get_grad(execute_ws, p)
                 if g is not None:
                     _ = g._impl.Reset() if set_to_none else g.zero_()
@@ -240,8 +257,8 @@ class Optimizer(object):
     @staticmethod
     def _get_grad(execute_ws, param, summed=False):
         """Return the grad of a parameter."""
-        impl = execute_ws.get_tensor(param.id + '_grad_sum') if summed else None
-        impl = execute_ws.get_tensor(param.id + '_grad') if impl is None else impl
+        impl = execute_ws.get_tensor(param.id + "_grad_sum") if summed else None
+        impl = execute_ws.get_tensor(param.id + "_grad") if impl is None else impl
         return Tensor(device=param.device, impl=impl) if impl else None
 
     def _update_group(self, group, params, grads):
@@ -253,26 +270,32 @@ class Optimizer(object):
         # Update hyper tensors with current value.
         for hyper_name in self._hyper_dict.keys():
             group_dict = self._hyper_dict[hyper_name]
-            group_name, new_value = group['name'], group[hyper_name]
+            group_name, new_value = group["name"], group[hyper_name]
             if group_name not in group_dict:
-                impl_name = group_name + '/' + hyper_name
+                impl_name = group_name + "/" + hyper_name
                 group_dict[group_name] = execute_ws.create_tensor(impl_name)
-            if hyper_name == 'grad_scale':
-                new_value = new_value / group.pop('dist_size', 1)
-            group_dict[group_name].FromNumpy(numpy.array(new_value, 'float32'), False)
+            if hyper_name == "grad_scale":
+                new_value = new_value / group.pop("dist_size", 1)
+            group_dict[group_name].FromNumpy(numpy.array(new_value, "float32"), False)
         # Apply update.
         if self._update_pre_hook is not None:
             self._update_pre_hook(grads)
-        Function.apply(self._op_type, params[0].device, grads,
-                       outputs=params, name=group['name'], weight_decay=None)
+        Function.apply(
+            self._op_type,
+            params[0].device,
+            grads,
+            outputs=params,
+            name=group["name"],
+            weight_decay=None,
+        )
 
     def __repr__(self):
-        format_string = self.__class__.__name__ + ' ('
+        format_string = self.__class__.__name__ + " ("
         for i, group in enumerate(self.param_groups):
-            format_string += '\n'
-            format_string += 'Parameter Group {0}\n'.format(i)
+            format_string += "\n"
+            format_string += "Parameter Group {0}\n".format(i)
             for key in sorted(group.keys()):
-                if key != 'params':
-                    format_string += '    {0}: {1}\n'.format(key, group[key])
-        format_string += ')'
+                if key != "params":
+                    format_string += "    {0}: {1}\n".format(key, group[key])
+        format_string += ")"
         return format_string

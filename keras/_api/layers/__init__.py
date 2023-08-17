@@ -77,4 +77,4 @@ from dragon.vm.keras.core.layers.reshaping import ZeroPadding1D
 from dragon.vm.keras.core.layers.reshaping import ZeroPadding2D
 from dragon.vm.keras.core.layers.reshaping import ZeroPadding3D
 
-__all__ = [_s for _s in dir() if not _s.startswith('_')]
+__all__ = [_s for _s in dir() if not _s.startswith("_")]

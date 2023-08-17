@@ -52,7 +52,7 @@ class ChannelShuffle(Module):
         self.dim = dim
 
     def extra_repr(self):
-        return 'groups={}, dim={}'.format(self.groups, self.dim)
+        return "groups={}, dim={}".format(self.groups, self.dim)
 
     def forward(self, input):
         return functional.channel_shuffle(input, self.groups, self.dim)

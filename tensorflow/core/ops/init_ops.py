@@ -50,7 +50,7 @@ class Constant(Initializer):
 
     """
 
-    def __init__(self, value=0, dtype='float32'):
+    def __init__(self, value=0, dtype="float32"):
         """Create a ``Constant`` initializer.
 
         Parameters
@@ -91,7 +91,7 @@ class RandomNormal(Initializer):
 
     """
 
-    def __init__(self, mean=0, stddev=1, dtype='float32'):
+    def __init__(self, mean=0, stddev=1, dtype="float32"):
         r"""Create a ``RandomNormal`` initializer.
 
         Parameters
@@ -124,8 +124,7 @@ class RandomNormal(Initializer):
         """
         dtype = dtype or self.dtype
         dtype = str(dtype) if dtype else dtype
-        return random_ops.random_normal(
-            shape, self.mean, self.stddev, dtype=dtype)
+        return random_ops.random_normal(shape, self.mean, self.stddev, dtype=dtype)
 
 
 class RandomUniform(Initializer):
@@ -135,7 +134,7 @@ class RandomUniform(Initializer):
 
     """
 
-    def __init__(self, minval=0, maxval=1, dtype='float32'):
+    def __init__(self, minval=0, maxval=1, dtype="float32"):
         r"""Create a ``RandomUniform`` initializer.
 
         Parameters
@@ -168,8 +167,7 @@ class RandomUniform(Initializer):
         """
         dtype = dtype or self.dtype
         dtype = str(dtype) if dtype else dtype
-        return random_ops.random_uniform(
-            shape, self.minval, self.maxval, dtype=dtype)
+        return random_ops.random_uniform(shape, self.minval, self.maxval, dtype=dtype)
 
 
 class TruncatedNormal(Initializer):
@@ -179,7 +177,7 @@ class TruncatedNormal(Initializer):
 
     """
 
-    def __init__(self, mean=0, stddev=1, dtype='float32'):
+    def __init__(self, mean=0, stddev=1, dtype="float32"):
         r"""Create a ``TruncatedNormal`` initializer.
 
         Parameters
@@ -212,8 +210,7 @@ class TruncatedNormal(Initializer):
         """
         dtype = dtype or self.dtype
         dtype = str(dtype) if dtype else dtype
-        return random_ops.truncated_normal(
-            shape, self.mean, self.stddev, dtype=dtype)
+        return random_ops.truncated_normal(shape, self.mean, self.stddev, dtype=dtype)
 
 
 class VarianceScaling(Initializer):
@@ -222,9 +219,9 @@ class VarianceScaling(Initializer):
     def __init__(
         self,
         scale=1.0,
-        mode='fan_out',
-        distribution='normal',
-        dtype='float32',
+        mode="fan_out",
+        distribution="normal",
+        dtype="float32",
     ):
         """Create a ``RandomNormal`` initializer.
 
@@ -240,13 +237,13 @@ class VarianceScaling(Initializer):
             The data type to set as default.
 
         """
-        if scale <= 0.:
-            raise ValueError('<scale> must be positive float.')
+        if scale <= 0.0:
+            raise ValueError("<scale> must be positive float.")
         mode = mode.lower()
-        if mode not in {'fan_in', 'fan_out', 'fan_avg'}:
-            raise ValueError('Invalid <mode> argument: ' + mode)
+        if mode not in {"fan_in", "fan_out", "fan_avg"}:
+            raise ValueError("Invalid <mode> argument: " + mode)
         distribution = distribution.lower()
-        if distribution not in {'normal', 'uniform'}:
+        if distribution not in {"normal", "uniform"}:
             raise ValueError("Invalid `distribution` argument:", distribution)
         self.scale = scale
         self.mode = mode
@@ -271,12 +268,14 @@ class VarianceScaling(Initializer):
         """
         dtype = dtype or self.dtype
         dtype = str(dtype) if dtype else dtype
-        if self.distribution == 'normal':
+        if self.distribution == "normal":
             return random_ops.glorot_normal(
-                shape, mode=self.mode, scale=self.scale * 2.0, dtype=dtype)
+                shape, mode=self.mode, scale=self.scale * 2.0, dtype=dtype
+            )
         else:
             return random_ops.glorot_uniform(
-                shape, mode=self.mode, scale=self.scale * 3.0, dtype=dtype)
+                shape, mode=self.mode, scale=self.scale * 3.0, dtype=dtype
+            )
 
 
 class GlorotNormal(VarianceScaling):
@@ -286,7 +285,7 @@ class GlorotNormal(VarianceScaling):
 
     """
 
-    def __init__(self, dtype='float32'):
+    def __init__(self, dtype="float32"):
         """Create a ``GlorotNormal`` initializer.
 
         Parameters
@@ -296,7 +295,8 @@ class GlorotNormal(VarianceScaling):
 
         """
         super(GlorotNormal, self).__init__(
-            scale=1.0, mode='fan_out', distribution='normal', dtype=dtype)
+            scale=1.0, mode="fan_out", distribution="normal", dtype=dtype
+        )
 
 
 class GlorotUniform(VarianceScaling):
@@ -307,7 +307,7 @@ class GlorotUniform(VarianceScaling):
 
     """
 
-    def __init__(self, dtype='float32'):
+    def __init__(self, dtype="float32"):
         """Create a ``GlorotUniform`` initializer.
 
         Parameters
@@ -317,7 +317,8 @@ class GlorotUniform(VarianceScaling):
 
         """
         super(GlorotUniform, self).__init__(
-            scale=1., mode='fan_out', distribution='uniform', dtype=dtype)
+            scale=1.0, mode="fan_out", distribution="uniform", dtype=dtype
+        )
 
 
 class Ones(Initializer):
@@ -327,7 +328,7 @@ class Ones(Initializer):
 
     """
 
-    def __init__(self, dtype='float32'):
+    def __init__(self, dtype="float32"):
         """Create a ``Ones`` initializer.
 
         Parameters
@@ -365,7 +366,7 @@ class Zeros(Initializer):
 
     """
 
-    def __init__(self, dtype='float32'):
+    def __init__(self, dtype="float32"):
         """Create a ``Zeros`` initializer.
 
         Parameters

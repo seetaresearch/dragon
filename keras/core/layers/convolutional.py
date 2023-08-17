@@ -33,14 +33,14 @@ class Conv(Layer):
         filters,
         kernel_size,
         strides=1,
-        padding='valid',
-        data_format='channels_last',
+        padding="valid",
+        data_format="channels_last",
         dilation_rate=1,
         groups=1,
         activation=None,
         use_bias=True,
-        kernel_initializer='glorot_uniform',
-        bias_initializer='zeros',
+        kernel_initializer="glorot_uniform",
+        bias_initializer="zeros",
         kernel_regularizer=None,
         bias_regularizer=None,
         trainable=True,
@@ -105,26 +105,29 @@ class Conv(Layer):
         input_channel = self._get_input_channel(input_shape)
         if input_channel % self.groups != 0:
             raise ValueError(
-                'The number of input channels should be divided by the groups. '
-                'Got groups={}, channels={}.'.format(self.groups, input_channel))
+                "The number of input channels should be divided by the groups. "
+                "Got groups={}, channels={}.".format(self.groups, input_channel)
+            )
         input_filters = input_channel // self.groups
         filters = input_filters if self.filters is None else self.filters
         input_filters = 1 if self.filters is None else input_filters
         self.kernel = self.add_weight(
-            name='kernel',
+            name="kernel",
             shape=(filters, input_filters) + self.kernel_size,
             initializer=self.kernel_initializer,
             regularizer=self.kernel_regularizer,
             trainable=True,
-            dtype=self.dtype)
+            dtype=self.dtype,
+        )
         if self.use_bias:
             self.bias = self.add_weight(
-                name='bias',
+                name="bias",
                 shape=(filters,),
                 initializer=self.bias_initializer,
                 regularizer=self.bias_regularizer,
                 trainable=True,
-                dtype=self.dtype)
+                dtype=self.dtype,
+            )
         else:
             self.bias = None
         self.built = True
@@ -132,34 +135,33 @@ class Conv(Layer):
     def call(self, inputs):
         pads, padding = self._get_legacy_pads()
         outputs = vision_ops.conv(
-            [inputs, self.kernel] +
-            ([self.bias] if self.use_bias else []),
+            [inputs, self.kernel] + ([self.bias] if self.use_bias else []),
             kernel_shape=self.kernel_size,
             strides=self.strides,
             pads=pads,
             dilations=self.dilation_rate,
             group=self.groups,
             padding=padding.upper(),
-            data_format=conv_utils.convert_data_format(self.data_format))
+            data_format=conv_utils.convert_data_format(self.data_format),
+        )
         if self.activation is not None:
             outputs = self.activation(outputs)
         return outputs
 
     def _get_channel_axis(self):
         """Return the channel axis."""
-        return 1 if self.data_format == 'channels_first' else -1
+        return 1 if self.data_format == "channels_first" else -1
 
     def _get_input_channel(self, input_shape):
         channel_axis = self._get_channel_axis()
         if input_shape.dims[channel_axis] is None:
-            raise ValueError('The channel dimension of the input '
-                             'should be defined, got None.')
+            raise ValueError("The channel dimension of the input " "should be defined, got None.")
         return int(input_shape[channel_axis])
 
     def _get_legacy_pads(self):
         pads, padding = 0, self.padding
         if not isinstance(self.padding, str):
-            pads, padding = self.padding, 'valid'
+            pads, padding = self.padding, "valid"
         return pads, padding
 
 
@@ -171,16 +173,16 @@ class Conv1D(Conv):
         filters,
         kernel_size,
         strides=1,
-        padding='valid',
+        padding="valid",
         data_format=None,
         dilation_rate=1,
         activation=None,
         use_bias=True,
-        kernel_initializer='glorot_uniform',
-        bias_initializer='zeros',
+        kernel_initializer="glorot_uniform",
+        bias_initializer="zeros",
         kernel_regularizer=None,
         bias_regularizer=None,
-        **kwargs
+        **kwargs,
     ):
         """Create a ``Conv1D`` Layer.
 
@@ -226,7 +228,8 @@ class Conv1D(Conv):
             bias_initializer=initializers.get(bias_initializer),
             kernel_regularizer=regularizers.get(kernel_regularizer),
             bias_regularizer=regularizers.get(bias_regularizer),
-            **kwargs)
+            **kwargs,
+        )
 
 
 class Conv2D(Conv):
@@ -237,16 +240,16 @@ class Conv2D(Conv):
         filters,
         kernel_size,
         strides=1,
-        padding='valid',
-        data_format='channels_last',
+        padding="valid",
+        data_format="channels_last",
         dilation_rate=1,
         activation=None,
         use_bias=True,
-        kernel_initializer='glorot_uniform',
-        bias_initializer='zeros',
+        kernel_initializer="glorot_uniform",
+        bias_initializer="zeros",
         kernel_regularizer=None,
         bias_regularizer=None,
-        **kwargs
+        **kwargs,
     ):
         """Create a ``Conv2D`` Layer.
 
@@ -292,7 +295,8 @@ class Conv2D(Conv):
             bias_initializer=initializers.get(bias_initializer),
             kernel_regularizer=regularizers.get(kernel_regularizer),
             bias_regularizer=regularizers.get(bias_regularizer),
-            **kwargs)
+            **kwargs,
+        )
 
 
 class Conv3D(Conv):
@@ -303,16 +307,16 @@ class Conv3D(Conv):
         filters,
         kernel_size,
         strides=1,
-        padding='valid',
-        data_format='channels_last',
+        padding="valid",
+        data_format="channels_last",
         dilation_rate=1,
         activation=None,
         use_bias=True,
-        kernel_initializer='glorot_uniform',
-        bias_initializer='zeros',
+        kernel_initializer="glorot_uniform",
+        bias_initializer="zeros",
         kernel_regularizer=None,
         bias_regularizer=None,
-        **kwargs
+        **kwargs,
     ):
         """Create a ``Conv3D`` Layer.
 
@@ -358,7 +362,8 @@ class Conv3D(Conv):
             bias_initializer=initializers.get(bias_initializer),
             kernel_regularizer=regularizers.get(kernel_regularizer),
             bias_regularizer=regularizers.get(bias_regularizer),
-            **kwargs)
+            **kwargs,
+        )
 
 
 class ConvTranspose(Conv):
@@ -370,17 +375,17 @@ class ConvTranspose(Conv):
         filters,
         kernel_size,
         strides=(1, 1),
-        padding='valid',
+        padding="valid",
         output_padding=None,
         data_format=None,
         dilation_rate=(1, 1),
         activation=None,
         use_bias=True,
-        kernel_initializer='glorot_uniform',
-        bias_initializer='zeros',
+        kernel_initializer="glorot_uniform",
+        bias_initializer="zeros",
         kernel_regularizer=None,
         bias_regularizer=None,
-        **kwargs
+        **kwargs,
     ):
         """Create a ``ConvTranspose`` Layer.
 
@@ -428,35 +433,38 @@ class ConvTranspose(Conv):
             bias_initializer=initializers.get(bias_initializer),
             kernel_regularizer=regularizers.get(kernel_regularizer),
             bias_regularizer=regularizers.get(bias_regularizer),
-            **kwargs)
+            **kwargs,
+        )
         self.output_padding = output_padding
         if self.output_padding is not None:
-            self.output_padding = conv_utils.normalize_tuple(
-                self.output_padding, self.rank)
+            self.output_padding = conv_utils.normalize_tuple(self.output_padding, self.rank)
 
     def build(self, input_shape):
         input_shape = tensor_shape.TensorShape(input_shape)
         input_channel = self._get_input_channel(input_shape)
         if input_channel % self.groups != 0:
             raise ValueError(
-                'The number of input channels should be divided by the groups. '
-                'Got groups={}, channels={}.'.format(self.groups, input_channel))
+                "The number of input channels should be divided by the groups. "
+                "Got groups={}, channels={}.".format(self.groups, input_channel)
+            )
         input_filters = input_channel // self.groups
         self.kernel = self.add_weight(
-            name='kernel',
+            name="kernel",
             shape=(input_filters, self.filters) + self.kernel_size,
             initializer=self.kernel_initializer,
             regularizer=self.kernel_regularizer,
             trainable=True,
-            dtype=self.dtype)
+            dtype=self.dtype,
+        )
         if self.use_bias:
             self.bias = self.add_weight(
-                name='bias',
+                name="bias",
                 shape=(self.filters,),
                 initializer=self.bias_initializer,
                 regularizer=self.bias_regularizer,
                 trainable=True,
-                dtype=self.dtype)
+                dtype=self.dtype,
+            )
         else:
             self.bias = None
         self.built = True
@@ -464,8 +472,7 @@ class ConvTranspose(Conv):
     def call(self, inputs):
         pads, padding = self._get_legacy_pads()
         outputs = vision_ops.conv_transpose(
-            [inputs, self.kernel] +
-            ([self.bias] if self.use_bias else []),
+            [inputs, self.kernel] + ([self.bias] if self.use_bias else []),
             kernel_shape=self.kernel_size,
             strides=self.strides,
             pads=pads,
@@ -474,7 +481,8 @@ class ConvTranspose(Conv):
             padding=padding.upper(),
             output_padding=self.output_padding,
             output_shape=None,
-            data_format=conv_utils.convert_data_format(self.data_format))
+            data_format=conv_utils.convert_data_format(self.data_format),
+        )
         if self.activation is not None:
             outputs = self.activation(outputs)
         return outputs
@@ -488,17 +496,17 @@ class Conv1DTranspose(ConvTranspose):
         filters,
         kernel_size,
         strides=1,
-        padding='valid',
+        padding="valid",
         output_padding=None,
         data_format=None,
         dilation_rate=1,
         activation=None,
         use_bias=True,
-        kernel_initializer='glorot_uniform',
-        bias_initializer='zeros',
+        kernel_initializer="glorot_uniform",
+        bias_initializer="zeros",
         kernel_regularizer=None,
         bias_regularizer=None,
-        **kwargs
+        **kwargs,
     ):
         """Create a ``Conv1DTranspose`` Layer.
 
@@ -547,7 +555,8 @@ class Conv1DTranspose(ConvTranspose):
             bias_initializer=initializers.get(bias_initializer),
             kernel_regularizer=regularizers.get(kernel_regularizer),
             bias_regularizer=regularizers.get(bias_regularizer),
-            **kwargs)
+            **kwargs,
+        )
 
 
 class Conv2DTranspose(ConvTranspose):
@@ -558,17 +567,17 @@ class Conv2DTranspose(ConvTranspose):
         filters,
         kernel_size,
         strides=1,
-        padding='valid',
+        padding="valid",
         output_padding=None,
         data_format=None,
         dilation_rate=1,
         activation=None,
         use_bias=True,
-        kernel_initializer='glorot_uniform',
-        bias_initializer='zeros',
+        kernel_initializer="glorot_uniform",
+        bias_initializer="zeros",
         kernel_regularizer=None,
         bias_regularizer=None,
-        **kwargs
+        **kwargs,
     ):
         """Create a ``Conv1DTranspose`` Layer.
 
@@ -617,7 +626,8 @@ class Conv2DTranspose(ConvTranspose):
             bias_initializer=initializers.get(bias_initializer),
             kernel_regularizer=regularizers.get(kernel_regularizer),
             bias_regularizer=regularizers.get(bias_regularizer),
-            **kwargs)
+            **kwargs,
+        )
 
 
 class Conv3DTranspose(ConvTranspose):
@@ -628,17 +638,17 @@ class Conv3DTranspose(ConvTranspose):
         filters,
         kernel_size,
         strides=1,
-        padding='valid',
+        padding="valid",
         output_padding=None,
         data_format=None,
         dilation_rate=1,
         activation=None,
         use_bias=True,
-        kernel_initializer='glorot_uniform',
-        bias_initializer='zeros',
+        kernel_initializer="glorot_uniform",
+        bias_initializer="zeros",
         kernel_regularizer=None,
         bias_regularizer=None,
-        **kwargs
+        **kwargs,
     ):
         """Create a ``Conv1DTranspose`` Layer.
 
@@ -687,4 +697,5 @@ class Conv3DTranspose(ConvTranspose):
             bias_initializer=initializers.get(bias_initializer),
             kernel_regularizer=regularizers.get(kernel_regularizer),
             bias_regularizer=regularizers.get(bias_regularizer),
-            **kwargs)
+            **kwargs,
+        )

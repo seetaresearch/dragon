@@ -29,4 +29,4 @@ from dragon.vm.keras.core.losses import mean_absolute_error
 from dragon.vm.keras.core.losses import mean_squared_error
 from dragon.vm.keras.core.losses import sparse_categorical_crossentropy
 
-__all__ = [_s for _s in dir() if not _s.startswith('_')]
+__all__ = [_s for _s in dir() if not _s.startswith("_")]

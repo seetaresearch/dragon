@@ -60,9 +60,6 @@ def get(identifier):
     elif callable(identifier):
         return identifier
     elif isinstance(identifier, six.string_types):
-        return generic_utils.deserialize_keras_object(
-            identifier, globals(), 'initializer')
+        return generic_utils.deserialize_keras_object(identifier, globals(), "initializer")
     else:
-        raise TypeError(
-            'Could not interpret the initializer identifier: {}.'
-            .format(identifier))
+        raise TypeError("Could not interpret the initializer identifier: {}.".format(identifier))

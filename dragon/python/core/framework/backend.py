@@ -20,19 +20,19 @@ import os
 import platform
 import sys
 
-_get_dlopen_flags = getattr(sys, 'getdlopenflags', None)
-_set_dlopen_flags = getattr(sys, 'setdlopenflags', None)
+_get_dlopen_flags = getattr(sys, "getdlopenflags", None)
+_set_dlopen_flags = getattr(sys, "setdlopenflags", None)
 
-if platform.system() == 'Windows':
-    package_root = os.path.abspath(os.path.dirname(__file__) + '/../..')
-    dll_paths = [os.path.join(package_root, 'lib')]
-    dll_paths = list(filter(os.path.exists, dll_paths)) + [os.environ['PATH']]
-    os.environ['PATH'] = ';'.join(dll_paths)
+if platform.system() == "Windows":
+    package_root = os.path.abspath(os.path.dirname(__file__) + "/../..")
+    dll_paths = [os.path.join(package_root, "lib")]
+    dll_paths = list(filter(os.path.exists, dll_paths)) + [os.environ["PATH"]]
+    os.environ["PATH"] = ";".join(dll_paths)
 
 try:
     from dragon.lib.libdragon_python import *  # noqa
 except ImportError as e:
-    print('Cannot import dragon. Error: {0}'.format(str(e)))
+    print("Cannot import dragon. Error: {0}".format(str(e)))
     sys.exit(1)
 
 
@@ -62,6 +62,6 @@ def load_library(library_location):
 
     """
     if not os.path.exists(library_location):
-        raise FileNotFoundError('Invalid path: %s' % library_location)
+        raise FileNotFoundError("Invalid path: %s" % library_location)
     with dlopen_guard():
         ctypes.cdll.LoadLibrary(library_location)

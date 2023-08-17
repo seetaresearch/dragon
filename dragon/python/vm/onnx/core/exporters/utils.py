@@ -17,7 +17,7 @@ from dragon.core.util.registry import Registry as _Registry
 from dragon.vm.onnx.core import helper
 
 # Global registry.py to store known exporters.
-_GLOBAL_REGISTERED_EXPORTERS = _Registry('exporters')
+_GLOBAL_REGISTERED_EXPORTERS = _Registry("exporters")
 register = _GLOBAL_REGISTERED_EXPORTERS.register
 
 
@@ -41,7 +41,7 @@ class TranslatorContext(object):
     def unique_name(self, name):
         self.blob_versions[name] += 1
         if self.blob_versions[name] > 1:
-            return name + '_%d' % (self.blob_versions[name] - 1)
+            return name + "_%d" % (self.blob_versions[name] - 1)
         return name
 
 
@@ -67,7 +67,7 @@ def translate(op_def, context):
         op_type=op_def.type,
         inputs=op_def.input,
         outputs=op_def.output,
-        name=op_def.name if op_def.name != '' else None
+        name=op_def.name if op_def.name != "" else None,
     )
     const_tensors = None
     return node, const_tensors
@@ -85,7 +85,7 @@ def registered_exporters():
     return _GLOBAL_REGISTERED_EXPORTERS.keys
 
 
-@register(['PythonPlugin', 'PythonPluginInfer'])
+@register(["PythonPlugin", "PythonPluginInfer"])
 def python_exporter(op_def, context):
     """Export the python operators."""
     return None, None

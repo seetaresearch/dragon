@@ -37,23 +37,26 @@ def load_weights_from_pickle(f, layer, verbose=False):
             weight_shape = list(weight.shape)
             if value_shape != weight_shape:
                 raise ValueError(
-                    'Shape of weight({}) is ({}), \n'
-                    'While load from shape of ({}).'
-                    .format(name, ', '.join(
-                        [str(d) for d in weight_shape]),
-                        ', '.join([str(d) for d in value_shape]))
+                    "Shape of weight({}) is ({}), \n"
+                    "While load from shape of ({}).".format(
+                        name,
+                        ", ".join([str(d) for d in weight_shape]),
+                        ", ".join([str(d) for d in value_shape]),
+                    )
                 )
             weight_impl = default_ws.get_tensor(weight.id)
             if weight_impl is not None:
                 weight_impl.FromNumpy(value.copy(), True)
                 if verbose:
                     logging.info(
-                        'Weight({}) loaded, Size: ({})'
-                        .format(name, ', '.join([str(d) for d in value_shape])))
+                        "Weight({}) loaded, Size: ({})".format(
+                            name, ", ".join([str(d) for d in value_shape])
+                        )
+                    )
             else:
                 logging.warning(
-                    'Weight({}) is not created '
-                    'in current workspace. Skip.'.format(name))
+                    "Weight({}) is not created " "in current workspace. Skip.".format(name)
+                )
 
 
 def save_weights_to_pickle(f, layer):

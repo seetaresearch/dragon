@@ -56,10 +56,9 @@ def argsort(inputs, axis=-1, descending=False, **kwargs):
     """
     if context.executing_eagerly():
         return OpLib.execute(
-            'Sort', inputs, outputs=[None, None], axis=axis,
-            descending=descending)[1]
-    return OpLib.add('Sort', inputs, axis=axis, descending=descending,
-                     num_outputs=2, **kwargs)[1]
+            "Sort", inputs, outputs=[None, None], axis=axis, descending=descending
+        )[1]
+    return OpLib.add("Sort", inputs, axis=axis, descending=descending, num_outputs=2, **kwargs)[1]
 
 
 @OpSchema.num_inputs(1)
@@ -99,11 +98,8 @@ def sort(inputs, axis=-1, descending=False, **kwargs):
 
     """
     if context.executing_eagerly():
-        return OpLib.execute(
-            'Sort', inputs, outputs=[None, None], axis=axis,
-            descending=descending)
-    return OpLib.add('Sort', inputs, axis=axis, descending=descending,
-                     num_outputs=2, **kwargs)
+        return OpLib.execute("Sort", inputs, outputs=[None, None], axis=axis, descending=descending)
+    return OpLib.add("Sort", inputs, axis=axis, descending=descending, num_outputs=2, **kwargs)
 
 
 @OpSchema.num_inputs(1)
@@ -148,7 +144,14 @@ def top_k(inputs, k=1, axis=-1, largest=True, sorted=True, **kwargs):
     """
     if context.executing_eagerly():
         return OpLib.execute(
-            'TopK', inputs, outputs=[None, None], k=k, axis=axis,
-            largest=largest, sorted=sorted)
-    return OpLib.add('TopK', inputs, num_outputs=2, k=k, axis=axis,
-                     largest=largest, sorted=sorted, **kwargs)
+            "TopK",
+            inputs,
+            outputs=[None, None],
+            k=k,
+            axis=axis,
+            largest=largest,
+            sorted=sorted,
+        )
+    return OpLib.add(
+        "TopK", inputs, num_outputs=2, k=k, axis=axis, largest=largest, sorted=sorted, **kwargs
+    )

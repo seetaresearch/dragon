@@ -24,4 +24,4 @@ from dragon.vm.torch.core.autograd.variable import Variable
 # Functions
 from dragon.vm.torch.core.autograd.functional import backward
 
-__all__ = [_s for _s in dir() if not _s.startswith('_')]
+__all__ = [_s for _s in dir() if not _s.startswith("_")]

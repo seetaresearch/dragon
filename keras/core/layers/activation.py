@@ -40,7 +40,7 @@ class ELU(Layer):
 
     """
 
-    def __init__(self, alpha=1., **kwargs):
+    def __init__(self, alpha=1.0, **kwargs):
         r"""Create an ``ELU`` layer.
 
         Parameters
@@ -51,11 +51,10 @@ class ELU(Layer):
         """
         super(ELU, self).__init__(**kwargs)
         self.alpha = alpha
-        self.inplace = kwargs.get('inplace', False)
+        self.inplace = kwargs.get("inplace", False)
 
     def call(self, inputs):
-        return activation_ops.elu(
-            inputs, alpha=self.alpha, inplace=self.inplace)
+        return activation_ops.elu(inputs, alpha=self.alpha, inplace=self.inplace)
 
 
 class LeakyReLU(Layer):
@@ -91,11 +90,10 @@ class LeakyReLU(Layer):
         """
         super(LeakyReLU, self).__init__(**kwargs)
         self.alpha = alpha
-        self.inplace = kwargs.get('inplace', False)
+        self.inplace = kwargs.get("inplace", False)
 
     def call(self, inputs):
-        return activation_ops.leaky_relu(
-            inputs, alpha=self.alpha, inplace=self.inplace)
+        return activation_ops.leaky_relu(inputs, alpha=self.alpha, inplace=self.inplace)
 
 
 class ReLU(Layer):
@@ -134,17 +132,21 @@ class ReLU(Layer):
         super(ReLU, self).__init__(**kwargs)
         self.max_value = max_value
         self.negative_slope = negative_slope
-        self.inplace = kwargs.get('inplace', False)
+        self.inplace = kwargs.get("inplace", False)
 
     def call(self, inputs):
         if self.max_value is None:
             return activation_ops.leaky_relu(
-                inputs, alpha=self.negative_slope, inplace=self.inplace)
+                inputs, alpha=self.negative_slope, inplace=self.inplace
+            )
         elif self.max_value == 6.0 and self.negative_slope == 0:
             return activation_ops.relu6(inputs, inplace=self.inplace)
         else:
-            raise ValueError('Unsupported ReLU with max_value={}, negative_slope={}'
-                             .format(self.max_value, self.negative_slope))
+            raise ValueError(
+                "Unsupported ReLU with max_value={}, negative_slope={}".format(
+                    self.max_value, self.negative_slope
+                )
+            )
 
 
 class SELU(Layer):
@@ -170,7 +172,7 @@ class SELU(Layer):
     def __init__(self, **kwargs):
         r"""Create an ``SELU`` layer."""
         super(SELU, self).__init__(**kwargs)
-        self.inplace = kwargs.get('inplace', False)
+        self.inplace = kwargs.get("inplace", False)
 
     def call(self, inputs):
         return activation_ops.selu(inputs, inplace=self.inplace)
@@ -203,8 +205,7 @@ class Softmax(Layer):
         """
         super(Softmax, self).__init__(**kwargs)
         self.axis = axis
-        self.inplace = kwargs.get('inplace', False)
+        self.inplace = kwargs.get("inplace", False)
 
     def call(self, inputs):
-        return activation_ops.softmax(
-            inputs, axis=self.axis, inplace=self.inplace)
+        return activation_ops.softmax(inputs, axis=self.axis, inplace=self.inplace)

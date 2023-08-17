@@ -46,7 +46,7 @@ class CNNLModule(object):
             ``True`` if available otherwise ``False``.
 
         """
-        return 'cnnl_version' in sysconfig.get_build_info()
+        return "cnnl_version" in sysconfig.get_build_info()
 
     @staticmethod
     def version():
@@ -58,9 +58,9 @@ class CNNLModule(object):
             The version number.
 
         """
-        version = sysconfig.get_build_info().get('cnnl_version', None)
+        version = sysconfig.get_build_info().get("cnnl_version", None)
         if version is not None:
-            major, minor, patch = [int(x) for x in version.split('.')]
+            major, minor, patch = [int(x) for x in version.split(".")]
             version = major * 1000 + minor * 100 + patch
         return version
 

@@ -111,4 +111,4 @@ from dragon.vm.torch.core.nn.modules.upsampling import UpsamplingBilinear2d
 from dragon.vm.torch.core.nn.modules.upsampling import UpsamplingNearest2d
 from dragon.vm.torch.core.nn.parameter import Parameter
 
-__all__ = [_s for _s in dir() if not _s.startswith('_')]
+__all__ = [_s for _s in dir() if not _s.startswith("_")]

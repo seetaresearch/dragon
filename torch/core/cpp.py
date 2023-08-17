@@ -49,13 +49,13 @@ class Size(tuple):
         return Size(super(Size, self).__getitem__(item))
 
     def __repr__(self):
-        return 'torch.Size([{}])'.format(', '.join([str(s) for s in self]))
+        return "torch.Size([{}])".format(", ".join([str(s) for s in self]))
 
 
 class device(object):
     """Represent the device spec."""
 
-    def __init__(self, type='cpu', index=0):
+    def __init__(self, type="cpu", index=0):
         """Create a ``device``.
 
         Parameters
@@ -120,7 +120,7 @@ class device(object):
         return self._type == other.type and self._index == other.index
 
     def __str__(self):
-        return '{}:{}'.format(self._type, self._index)
+        return "{}:{}".format(self._type, self._index)
 
     def __repr__(self):
         return "device(type='{}', index={})".format(self._type, self._index)
@@ -132,6 +132,8 @@ class dtype(str):
     Following data types are defined:
 
     * ``torch.float16`` or ``torch.half``: 16-bit half-precision floating-point.
+
+    * ``torch.bfloat16``: 16-bit brain floating-point.
 
     * ``torch.float32`` or ``torch.float``: 32-bit single-precision floating-point.
 

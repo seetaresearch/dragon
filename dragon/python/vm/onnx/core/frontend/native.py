@@ -18,6 +18,7 @@ import collections
 import itertools
 
 import numpy
+
 try:
     import onnx
 except ImportError:
@@ -39,22 +40,24 @@ from dragon.vm.onnx.core.exporters import utils as export_util
 class DragonFrontend(object):
     """Convert the format of IR from dragon to onnx."""
 
-    OPSET_VERSIONS = collections.OrderedDict([
-        (1, '1.0'),
-        (5, '1.1'),
-        (6, '1.1.2'),
-        (7, '1.2'),
-        (8, '1.3'),
-        (9, '1.4.1'),
-        (10, '1.5.0'),
-        (11, '1.6.0'),
-        (12, '1.7.0'),
-        (13, '1.8.0'),
-        (14, '1.9.0'),
-        (15, '1.10.0'),
-        (16, '1.11.0'),
-        (17, '1.12.0'),
-    ])
+    OPSET_VERSIONS = collections.OrderedDict(
+        [
+            (1, "1.0"),
+            (5, "1.1"),
+            (6, "1.1.2"),
+            (7, "1.2"),
+            (8, "1.3"),
+            (9, "1.4.1"),
+            (10, "1.5.0"),
+            (11, "1.6.0"),
+            (12, "1.7.0"),
+            (13, "1.8.0"),
+            (14, "1.9.0"),
+            (15, "1.10.0"),
+            (16, "1.11.0"),
+            (17, "1.12.0"),
+        ]
+    )
 
     @classmethod
     def graph_def_to_onnx_graph(
@@ -75,13 +78,13 @@ class DragonFrontend(object):
         value_info = {} if value_info is None else value_info
 
         if not nest.is_sequence(input_names):
-            raise ValueError('<input_names> should be a sequence.')
+            raise ValueError("<input_names> should be a sequence.")
         if not nest.is_sequence(output_names):
-            raise ValueError('<output_names> should be a sequence.')
+            raise ValueError("<output_names> should be a sequence.")
         if not isinstance(constants, dict):
-            raise ValueError('<constants> should be a dict with name -> value.')
+            raise ValueError("<constants> should be a dict with name -> value.")
         if not isinstance(value_info, dict):
-            raise ValueError('<value_info> should be a dict with name -> (dtype, shape).')
+            raise ValueError("<value_info> should be a dict with name -> (dtype, shape).")
 
         # Determine the opset version to select exporters.
         if opset_version is None:
@@ -111,11 +114,12 @@ class DragonFrontend(object):
 
         # Prepare to make the graph.
         onnx_graph = onnx.GraphProto(
-            name=graph_def.name if len(graph_def.name) > 0 else 'onnx-model')
+            name=graph_def.name if len(graph_def.name) > 0 else "onnx-model"
+        )
         blob_shapes, blob_names = {}, {}
         blob_versions = collections.defaultdict(
-            int, **dict((blob_aliases.get(k, k), 1)
-                        for k in helper.collect_inputs(graph_def)))
+            int, **dict((blob_aliases.get(k, k), 1) for k in helper.collect_inputs(graph_def))
+        )
         initializers, seen_initializers = [], set()
 
         # Build translator context.
@@ -148,16 +152,16 @@ class DragonFrontend(object):
 
             # Convert constant outputs if necessary.
             if None in nodes:
-                const_tensors = [helper.from_tensor(name, workspace)
-                                 for name in op.output]
+                const_tensors = [helper.from_tensor(name, workspace) for name in op.output]
             else:
                 onnx_graph.node.extend(nodes)
 
             # Merge constant tensors.
             if const_tensors is not None:
-                value_info = {**value_info,
-                              **dict((e.name, (e.data_type, e.dims))
-                                     for e in const_tensors)}
+                value_info = {
+                    **value_info,
+                    **dict((e.name, (e.data_type, e.dims)) for e in const_tensors),
+                }
                 for tensor in const_tensors:
                     if tensor.name not in seen_initializers:
                         initializers.append(tensor)
@@ -171,27 +175,36 @@ class DragonFrontend(object):
         # Add inputs.
         for name in helper.collect_inputs(onnx_graph):
             try:
-                onnx_graph.input.extend([
-                    helper.make_tensor_value_info(
-                        name=name,
-                        elem_type=value_info[name][0],
-                        shape=value_info[name][1])])
+                onnx_graph.input.extend(
+                    [
+                        helper.make_tensor_value_info(
+                            name=name,
+                            elem_type=value_info[name][0],
+                            shape=value_info[name][1],
+                        )
+                    ]
+                )
             except KeyError:
                 impl = workspace.get_tensor(name)
                 if impl is not None:
                     initializer = helper.from_tensor(name, workspace)
-                    onnx_graph.input.extend([
-                        helper.make_tensor_value_info(
-                            name=name,
-                            elem_type=initializer.data_type,
-                            shape=initializer.dims)])
+                    onnx_graph.input.extend(
+                        [
+                            helper.make_tensor_value_info(
+                                name=name,
+                                elem_type=initializer.data_type,
+                                shape=initializer.dims,
+                            )
+                        ]
+                    )
                     if name not in seen_initializers:
                         initializers.append(initializer)
                         seen_initializers.add(initializer.name)
                 else:
                     raise ValueError(
-                        'Info of tensor `{}` is missing, '
-                        'specify it in <value_info>.'.format(name))
+                        "Info of tensor `{}` is missing, "
+                        "specify it in <value_info>.".format(name)
+                    )
 
         # Add initializers.
         onnx_graph.initializer.extend(initializers)
@@ -201,9 +214,10 @@ class DragonFrontend(object):
             helper.make_tensor_value_info(
                 name=blob_names.get(name_v2, name_v2),
                 elem_type=value_info[name_v2][0],
-                shape=value_info[name_v2][1])
-            for name_v2 in [blob_aliases.get(name, name)
-                            for name in set(graph_def.output)])
+                shape=value_info[name_v2][1],
+            )
+            for name_v2 in [blob_aliases.get(name, name) for name in set(graph_def.output)]
+        )
 
         if verbose:
             print(helper.printable_graph(onnx_graph))
@@ -225,7 +239,7 @@ class DragonFrontend(object):
         enable_onnx_checker=True,
     ):
         opset_id = onnx.OperatorSetIdProto()
-        opset_id.domain = ''  # ONNX default domain
+        opset_id.domain = ""  # ONNX default domain
         opset_id.version = cls._check_opset_version(opset_version)
         model = helper.make_model(
             cls.graph_def_to_onnx_graph(
@@ -240,7 +254,7 @@ class DragonFrontend(object):
                 verbose,
             ),
             opset_imports=[opset_id],  # Current supported opset version
-            producer_name='onnx-dragon',  # Producer name
+            producer_name="onnx-dragon",  # Producer name
         )
         if enable_onnx_checker:
             onnx.checker.check_model(model)
@@ -252,17 +266,17 @@ class DragonFrontend(object):
             opset_version = list(cls.OPSET_VERSIONS.keys())[-1]
         else:
             if opset_version not in cls.OPSET_VERSIONS:
-                detail_msg = 'OpSet %d is not supported.\n' % opset_version
-                detail_msg += 'Following opset versions are available: {\n'
+                detail_msg = "OpSet %d is not supported.\n" % opset_version
+                detail_msg += "Following opset versions are available: {\n"
                 for k, v in cls.OPSET_VERSIONS.items():
-                    detail_msg += '  * Opset = %d, ONNX >= %s,\n' % (k, v)
-                raise ValueError(detail_msg + '}')
+                    detail_msg += "  * Opset = %d, ONNX >= %s,\n" % (k, v)
+                raise ValueError(detail_msg + "}")
         onnx_version = cls.OPSET_VERSIONS[opset_version]
         if version_parse(onnx.__version__) < version_parse(onnx_version):
             raise RuntimeError(
-                'OpSet {} requires ONNX version >= {} '
-                '({} currently installed.)'
-                .format(opset_version, onnx_version, onnx.__version__))
+                "OpSet {} requires ONNX version >= {} "
+                "({} currently installed.)".format(opset_version, onnx_version, onnx.__version__)
+            )
         return opset_version
 
     @staticmethod
@@ -274,13 +288,12 @@ class DragonFrontend(object):
         for name in op_def.input:
             inputs.append(blob_names[name] if name in blob_names else name)
         for name in op_def.output:
-            outputs.append(name + '_%d' % blob_versions[name]
-                           if blob_versions[name] > 0 else name)
-            if name != '':
+            outputs.append(name + "_%d" % blob_versions[name] if blob_versions[name] > 0 else name)
+            if name != "":
                 blob_versions[name] += 1
             blob_names[name] = outputs[-1]
-        op_def.ClearField('input')
-        op_def.ClearField('output')
+        op_def.ClearField("input")
+        op_def.ClearField("output")
         op_def.input.extend(inputs)
         op_def.output.extend(outputs)
 
@@ -291,7 +304,7 @@ class DragonFrontend(object):
         getter = export_util._GLOBAL_REGISTERED_EXPORTERS.try_get
         # Select the last versioned exporter if necessary.
         for i in range(context.opset_version, 0, -1):
-            versioned_op_type = op_def.type + '-%d' % i
+            versioned_op_type = op_def.type + "-%d" % i
             if getter(versioned_op_type) is not None:
                 translate_fn = getter(versioned_op_type)
                 break
@@ -374,8 +387,9 @@ def export(
     if isinstance(inputs, dict):
         if input_names is not None:
             raise ValueError(
-                'Excepted the input names from <inputs>.\n'
-                'You should set the <input_names> to None.')
+                "Excepted the input names from <inputs>.\n"
+                "You should set the <input_names> to None."
+            )
         inputs, input_names = list(inputs.values()), list(inputs.keys())
     else:
         inputs = nest.flatten(inputs)
@@ -384,8 +398,9 @@ def export(
     if isinstance(outputs, dict):
         if output_names is not None:
             raise ValueError(
-                'Excepted the output names from <outputs>.\n'
-                'You should set the <output_names> to None.')
+                "Excepted the output names from <outputs>.\n"
+                "You should set the <output_names> to None."
+            )
         outputs, output_names = list(outputs.values()), list(outputs.keys())
     else:
         outputs = nest.flatten(outputs)
@@ -393,8 +408,8 @@ def export(
     if eager_context.executing_eagerly():
         op_defs = []
         graph_tape = tapes.get_tape()
-        if not hasattr(graph_tape, '_exporting'):
-            raise RuntimeError('Please enter with ``onnx.frontend.record()``.')
+        if not hasattr(graph_tape, "_exporting"):
+            raise RuntimeError("Please enter with ``onnx.frontend.record()``.")
         for op_def in graph_tape.get_elements():
             op_defs.append(dragon_pb2.OperatorDef())
             op_defs[-1].ParseFromString(op_def.SerializeAs())
@@ -407,25 +422,26 @@ def export(
         graph = GraphLib.from_outputs(output_symbols)
         graph.run()
         graph_def = graph._def
-        graph_def.name = ''
+        graph_def.name = ""
 
     # Add inputs and outputs.
     for i, input in enumerate(inputs):
-        if hasattr(input, 'id'):
+        if hasattr(input, "id"):
             graph_def.input.extend([input.id])
         elif input_names is not None:
             graph_def.input.extend([input_names[i]])
 
     for i, output in enumerate(outputs):
-        if hasattr(output, 'id'):
+        if hasattr(output, "id"):
             graph_def.output.extend([output.id])
         elif output_names is not None:
             graph_def.output.extend([output_names[i]])
 
     # Make value info from inputs and outputs.
     value_names = graph_def.input[:] + graph_def.output[:]
-    value_info = dict([(k, (helper.tensor_type(v.dtype), v.shape))
-                       for k, v in zip(value_names, inputs + outputs)])
+    value_info = dict(
+        [(k, (helper.tensor_type(v.dtype), v.shape)) for k, v in zip(value_names, inputs + outputs)]
+    )
 
     # Extract the constants from inputs and outputs.
     constants = collections.OrderedDict()

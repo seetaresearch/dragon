@@ -20,7 +20,7 @@ from dragon.core.framework import proto_util
 class DeviceSpec(object):
     """Describe a computation device."""
 
-    def __init__(self, type='cpu', index=0):
+    def __init__(self, type="cpu", index=0):
         """Create a ``DeviceSpec``.
 
         Parameters
@@ -74,8 +74,7 @@ class DeviceSpec(object):
     def to_proto(self, serialized=True):
         """Return the device proto."""
         if self._proto is None:
-            self._proto = proto_util.get_device_option(
-                self._type, self._index)
+            self._proto = proto_util.get_device_option(self._type, self._index)
         if serialized:
             if self._serialized_proto is None:
                 self._serialized_proto = self._proto.SerializeToString()
@@ -86,7 +85,7 @@ class DeviceSpec(object):
         return self._type == other.type and self._index == other.index
 
     def __str__(self):
-        return '{}:{}'.format(self._type, self._index)
+        return "{}:{}".format(self._type, self._index)
 
     def __repr__(self):
-        return 'device(type={}, index={})'.format(self._type, self._index)
+        return "device(type={}, index={})".format(self._type, self._index)

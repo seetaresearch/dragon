@@ -29,7 +29,7 @@ TEST_CUDA = dragon.cuda.is_available()
 TEST_MPS = dragon.mps.is_available()
 TEST_MLU = dragon.mlu.is_available()
 TEST_MPI = dragon.distributed.is_mpi_available()
-TEST_CUDNN_CONV3D_NHWC = build_info.get('cudnn_version', '0.0.0') > '8.0.0'
+TEST_CUDNN_CONV3D_NHWC = build_info.get("cudnn_version", "0.0.0") > "8.0.0"
 
 
 def run_tests(argv=None):

@@ -20,39 +20,40 @@ from dragon.core.util import six
 
 def convert_data_format(data_format, ndim=4):
     """Return the tf data format."""
-    if data_format == 'channels_last':
+    if data_format == "channels_last":
         if ndim == 3:
-            return 'NWC'
+            return "NWC"
         elif ndim == 4:
-            return 'NHWC'
+            return "NHWC"
         elif ndim == 5:
-            return 'NDHWC'
+            return "NDHWC"
         else:
-            raise ValueError('Input rank not supported: ' + str(ndim))
-    elif data_format == 'channels_first':
+            raise ValueError("Input rank not supported: " + str(ndim))
+    elif data_format == "channels_first":
         if ndim == 3:
-            return 'NCW'
+            return "NCW"
         elif ndim == 4:
-            return 'NCHW'
+            return "NCHW"
         elif ndim == 5:
-            return 'NCDHW'
+            return "NCDHW"
         else:
-            raise ValueError('Input rank not supported: ' + str(ndim))
+            raise ValueError("Input rank not supported: " + str(ndim))
     else:
-        raise ValueError('Invalid data_format: ' + data_format)
+        raise ValueError("Invalid data_format: " + data_format)
 
 
 def normalize_data_format(value):
     """Normalize the keras data format."""
     if value is None:
-        value = 'channels_last'
+        value = "channels_last"
     data_format = value.lower()
-    if data_format not in {'channels_first', 'channels_last'}:
+    if data_format not in {"channels_first", "channels_last"}:
         raise ValueError(
-            'Excepted <data_format> as one of '
+            "Excepted <data_format> as one of "
             '"channels_first", '
             '"channels_last".'
-            ' Received: ' + str(value))
+            " Received: " + str(value)
+        )
     return data_format
 
 
@@ -60,10 +61,8 @@ def normalize_padding(value):
     """Return the padding descriptor."""
     if isinstance(value, six.string_types):
         value = value.lower()
-        if value not in {'valid', 'same'}:
-            raise ValueError(
-                'Excepted <padding> in "valid", "same".\n'
-                'Received: ' + str(value))
+        if value not in {"valid", "same"}:
+            raise ValueError('Excepted <padding> in "valid", "same".\n' "Received: " + str(value))
     return value
 
 
@@ -73,8 +72,9 @@ def normalize_tuple(value, rank):
     if len(value) > rank:
         return (value[i] for i in range(rank))
     else:
-        return tuple([value[i] for i in range(len(value))] +
-                     [value[-1] for _ in range(len(value), rank)])
+        return tuple(
+            [value[i] for i in range(len(value))] + [value[-1] for _ in range(len(value), rank)]
+        )
 
 
 def normalize_paddings(value, rank):
@@ -85,5 +85,6 @@ def normalize_paddings(value, rank):
         value = [normalize_tuple(v, 2) for v in value]
         if len(value) > rank:
             return tuple(value[i] for i in range(rank))
-        return tuple([value[i] for i in range(len(value))] +
-                     [value[-1] for _ in range(len(value), rank)])
+        return tuple(
+            [value[i] for i in range(len(value))] + [value[-1] for _ in range(len(value), rank)]
+        )

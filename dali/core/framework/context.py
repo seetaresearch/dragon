@@ -38,13 +38,15 @@ def device(device_type, device_index=0):
 
     """
     device_type = device_type.lower()
-    assert device_type in ('cpu', 'gpu', 'cuda')
-    if device_type == 'gpu':
-        device_type = 'cuda'
-    return _GLOBAL_DEVICE_STACK.get_controller({
-        'device_type': device_type,
-        'device_index': device_index,
-    })
+    assert device_type in ("cpu", "gpu", "cuda")
+    if device_type == "gpu":
+        device_type = "cuda"
+    return _GLOBAL_DEVICE_STACK.get_controller(
+        {
+            "device_type": device_type,
+            "device_index": device_index,
+        }
+    )
 
 
 def get_device():
@@ -66,11 +68,11 @@ def get_device_type(mixed=False):
         The current device type.
 
     """
-    device_type = get_device()['device_type']
-    if device_type == 'cuda':
-        return 'mixed' if mixed else 'gpu'
+    device_type = get_device()["device_type"]
+    if device_type == "cuda":
+        return "mixed" if mixed else "gpu"
     else:
-        return 'cpu'
+        return "cpu"
 
 
 def get_distributed_info(allowed=True):
@@ -94,6 +96,4 @@ def get_distributed_info(allowed=True):
     return 0, 1
 
 
-_GLOBAL_DEVICE_STACK = tls.Stack(
-    [{'device_type': 'cpu', 'device_index': 0}]
-)
+_GLOBAL_DEVICE_STACK = tls.Stack([{"device_type": "cpu", "device_index": 0}])

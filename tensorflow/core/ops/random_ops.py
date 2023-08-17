@@ -21,7 +21,7 @@ def random_normal(
     shape,
     mean=0,
     stddev=1,
-    dtype='float32',
+    dtype="float32",
     seed=None,
     name=None,
 ):
@@ -58,7 +58,7 @@ def random_uniform(
     shape,
     minval=0,
     maxval=1,
-    dtype='float32',
+    dtype="float32",
     seed=None,
     name=None,
 ):
@@ -95,7 +95,7 @@ def truncated_normal(
     shape,
     mean=0.0,
     stddev=1.0,
-    dtype='float32',
+    dtype="float32",
     seed=None,
     name=None,
 ):

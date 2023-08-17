@@ -45,7 +45,7 @@ def device(device_type, device_index=0):
     """
     device_type = device_type.lower()
     if device_type not in mapping.DEVICE_STRING_TO_DEVICE_TYPE:
-        raise ValueError('Unsupported device type: ' + device_type)
+        raise ValueError("Unsupported device type: " + device_type)
     device_type = mapping.DEVICE_STRING_TO_DEVICE_TYPE[device_type]
     spec = device_spec.DeviceSpec(device_type, device_index)
     return _GLOBAL_DEVICE_STACK.get_controller(spec)
@@ -85,10 +85,10 @@ def name_scope(name):
         The current nesting prefix.
 
     """
-    if name != '':
-        prefix = name + '/'
+    if name != "":
+        prefix = name + "/"
     else:
-        prefix = ''  # Avoid duplicated separators.
+        prefix = ""  # Avoid duplicated separators.
     default = get_name_scope() + prefix
     return _GLOBAL_NAME_SCOPE_STACK.get_controller(default)
 
@@ -98,24 +98,23 @@ def get_device():
     spec = _GLOBAL_DEVICE_STACK.get_default()
     if spec is None:
         cfg = config.config()
-        spec = device_spec.DeviceSpec(
-            cfg.device_type, cfg.device_index)
+        spec = device_spec.DeviceSpec(cfg.device_type, cfg.device_index)
     return spec
 
 
 def get_variable_scope(persistent=False):
     """Return the variable scope in current nesting."""
     base = _GLOBAL_VARIABLE_SCOPE_STACK.get_default()
-    return base + 'Ref' if persistent else base
+    return base + "Ref" if persistent else base
 
 
 def get_name_scope():
     """Return the name scope in current nesting."""
     ret = _GLOBAL_NAME_SCOPE_STACK.get_default()
-    return ret if ret is not None else ''
+    return ret if ret is not None else ""
 
 
 # Thread-local stack for nesting scope.
 _GLOBAL_DEVICE_STACK = tls.Stack()
-_GLOBAL_VARIABLE_SCOPE_STACK = tls.Stack(['Variable'])
+_GLOBAL_VARIABLE_SCOPE_STACK = tls.Stack(["Variable"])
 _GLOBAL_NAME_SCOPE_STACK = tls.Stack()

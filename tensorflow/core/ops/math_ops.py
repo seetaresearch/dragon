@@ -146,7 +146,7 @@ def argmax(input, axis=None, name=None, **kwargs):
         The index of maximum elements.
 
     """
-    kwargs.pop('output_type', None)
+    kwargs.pop("output_type", None)
     return math_ops.argmax(input, axis=axis, name=name)
 
 
@@ -347,8 +347,7 @@ def cumsum(x, axis=0, exclusive=False, reverse=False, name=None):
         The output tensor.
 
     """
-    return math_ops.cumsum(
-        x, axis, exclusive=exclusive, reverse=reverse, name=name)
+    return math_ops.cumsum(x, axis, exclusive=exclusive, reverse=reverse, name=name)
 
 
 def divide(x, y, name=None):
@@ -688,7 +687,7 @@ def less_equal(x, y, name=None):
     return math_ops.less_equal([x, y], name=name)
 
 
-def linspace(start, stop, num, dtype='int64', name=None, axis=0):
+def linspace(start, stop, num, dtype="int64", name=None, axis=0):
     r"""Generate evenly spaced values within intervals along the given axis.
 
     Interval :math:`[\text{start}, \text{stop})` is determined for ``num`` values:
@@ -726,8 +725,7 @@ def linspace(start, stop, num, dtype='int64', name=None, axis=0):
 
     """
     dtype = str(dtype) if dtype else dtype
-    return constant_ops.linspace(
-        start, stop, num, dtype=dtype, name=name, axis=axis)
+    return constant_ops.linspace(start, stop, num, dtype=dtype, name=name, axis=axis)
 
 
 def log(x, name=None):
@@ -933,7 +931,7 @@ def pow(x, y, name=None):
     return math_ops.pow([x, y], name=name)
 
 
-def range(start, limit=None, delta=1, dtype='int64', name=None):
+def range(start, limit=None, delta=1, dtype="int64", name=None):
     r"""Return a tensor of evenly spaced values within an interval.
 
     Specify ``start`` and ``limit`` to determine an interval:

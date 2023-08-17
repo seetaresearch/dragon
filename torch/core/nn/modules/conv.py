@@ -43,9 +43,9 @@ class _ConvNd(Module):
     ):
         super(_ConvNd, self).__init__()
         if in_channels % groups != 0:
-            raise ValueError('<in_channels> must be divisible by <groups>.')
+            raise ValueError("<in_channels> must be divisible by <groups>.")
         if out_channels % groups != 0:
-            raise ValueError('<out_channels> must be divisible by <groups>.')
+            raise ValueError("<out_channels> must be divisible by <groups>.")
         self.in_channels = in_channels
         self.out_channels = out_channels
         self.kernel_size = kernel_size
@@ -56,11 +56,9 @@ class _ConvNd(Module):
         self.output_padding = output_padding
         self.groups = groups
         if transposed:
-            self.weight = Parameter(Tensor(
-                in_channels, out_channels // groups, *kernel_size))
+            self.weight = Parameter(Tensor(in_channels, out_channels // groups, *kernel_size))
         else:
-            self.weight = Parameter(Tensor(
-                out_channels, in_channels // groups, *kernel_size))
+            self.weight = Parameter(Tensor(out_channels, in_channels // groups, *kernel_size))
         if bias:
             self.bias = Parameter(Tensor(out_channels))
         else:
@@ -71,26 +69,23 @@ class _ConvNd(Module):
         n = self.in_channels
         for k in self.kernel_size:
             n *= k
-        stddev = 1. / math.sqrt(n)
+        stddev = 1.0 / math.sqrt(n)
         self.weight.data.uniform_(-stddev, stddev)
         if self.bias is not None:
             self.bias.data.uniform_(-stddev, stddev)
 
     def extra_repr(self):
-        s = ('{in_channels}, '
-             '{out_channels}, '
-             'kernel_size={kernel_size}, '
-             'stride={stride}')
+        s = "{in_channels}, " "{out_channels}, " "kernel_size={kernel_size}, " "stride={stride}"
         if self.padding != (0,) * len(self.padding):
-            s += ', padding={padding}'
+            s += ", padding={padding}"
         if self.dilation != (1,) * len(self.dilation):
-            s += ', dilation={dilation}'
+            s += ", dilation={dilation}"
         if self.output_padding != (0,) * len(self.output_padding):
-            s += ', output_padding={output_padding}'
+            s += ", output_padding={output_padding}"
         if self.groups != 1:
-            s += ', groups={groups}'
+            s += ", groups={groups}"
         if self.bias is None:
-            s += ', bias=False'
+            s += ", bias=False"
         return s.format(**self.__dict__)
 
 

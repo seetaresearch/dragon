@@ -21,7 +21,7 @@ from __future__ import print_function
 from dragon.core.ops import constant_ops
 
 
-def eye(num_rows, num_columns=None, dtype='float32', name=None):
+def eye(num_rows, num_columns=None, dtype="float32", name=None):
     r"""Return a tensor constructed as the identity matrix.
 
     .. math:: \text{out} \leftarrow \text{diag}(1, 1, ..., 1)

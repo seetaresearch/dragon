@@ -57,7 +57,7 @@ class Loss(object):
             The loss.
 
         """
-        scope_name = 'lambda' if self.name == '<lambda>' else self.name
+        scope_name = "lambda" if self.name == "<lambda>" else self.name
         with context.name_scope(scope_name or self.__class__.__name__):
             return self.call(y_true, y_pred)
 
@@ -66,8 +66,7 @@ class LossFunctionWrapper(Loss):
     """Wrap loss class over the function."""
 
     def __init__(self, fn, reduction=Reduction.SUM, name=None, **kwargs):
-        super(LossFunctionWrapper, self).__init__(
-            reduction=reduction, name=name)
+        super(LossFunctionWrapper, self).__init__(reduction=reduction, name=name)
         self.fn = fn
         self._fn_kwargs = kwargs
 
@@ -105,7 +104,8 @@ class BinaryCrossentropy(LossFunctionWrapper):
 
         """
         super(BinaryCrossentropy, self).__init__(
-            binary_crossentropy, reduction=reduction, name=name)
+            binary_crossentropy, reduction=reduction, name=name
+        )
 
 
 class CategoricalCrossentropy(LossFunctionWrapper):
@@ -140,7 +140,8 @@ class CategoricalCrossentropy(LossFunctionWrapper):
 
         """
         super(CategoricalCrossentropy, self).__init__(
-            categorical_crossentropy, axis=axis, reduction=reduction, name=name)
+            categorical_crossentropy, axis=axis, reduction=reduction, name=name
+        )
 
 
 class MeanAbsoluteError(LossFunctionWrapper):
@@ -172,8 +173,7 @@ class MeanAbsoluteError(LossFunctionWrapper):
             The operation name.
 
         """
-        super(MeanAbsoluteError, self).__init__(
-            mean_absolute_error, reduction=reduction, name=name)
+        super(MeanAbsoluteError, self).__init__(mean_absolute_error, reduction=reduction, name=name)
 
 
 class MeanSquaredError(LossFunctionWrapper):
@@ -205,8 +205,7 @@ class MeanSquaredError(LossFunctionWrapper):
             The operation name.
 
         """
-        super(MeanSquaredError, self).__init__(
-            mean_squared_error, reduction=reduction, name=name)
+        super(MeanSquaredError, self).__init__(mean_squared_error, reduction=reduction, name=name)
 
 
 class SparseCategoricalCrossentropy(LossFunctionWrapper):
@@ -287,8 +286,7 @@ def binary_crossentropy(y_true, y_pred, reduction=Reduction.VALID):
         The output tensor.
 
     """
-    return loss_ops.sigmoid_cross_entropy_loss(
-        [y_pred, y_true], reduction=reduction.upper())
+    return loss_ops.sigmoid_cross_entropy_loss([y_pred, y_true], reduction=reduction.upper())
 
 
 def categorical_crossentropy(y_true, y_pred, axis=-1, reduction=Reduction.MEAN):
@@ -320,7 +318,8 @@ def categorical_crossentropy(y_true, y_pred, axis=-1, reduction=Reduction.MEAN):
 
     """
     return loss_ops.softmax_cross_entropy_loss(
-        [y_pred, y_true], axis=axis, reduction=reduction.upper())
+        [y_pred, y_true], axis=axis, reduction=reduction.upper()
+    )
 
 
 def mean_absolute_error(y_true, y_pred, reduction=Reduction.MEAN):
@@ -443,9 +442,6 @@ def get(identifier):
     elif callable(identifier):
         return identifier
     elif isinstance(identifier, six.string_types):
-        return generic_utils.deserialize_keras_object(
-            identifier, globals(), 'loss')
+        return generic_utils.deserialize_keras_object(identifier, globals(), "loss")
     else:
-        raise TypeError(
-            'Could not interpret the loss identifier: {}.'
-            .format(identifier))
+        raise TypeError("Could not interpret the loss identifier: {}.".format(identifier))

@@ -23,19 +23,20 @@ from dragon.core.util import decorator
 ArgSpec = _inspect.ArgSpec
 
 
-if hasattr(_inspect, 'FullArgSpec'):
+if hasattr(_inspect, "FullArgSpec"):
     FullArgSpec = _inspect.FullArgSpec
 else:
     FullArgSpec = collections.namedtuple(
-        'FullArgSpec', [
-            'args',
-            'varargs',
-            'varkw',
-            'defaults',
-            'kwonlyargs',
-            'kwonlydefaults',
-            'annotations',
-        ]
+        "FullArgSpec",
+        [
+            "args",
+            "varargs",
+            "varkw",
+            "defaults",
+            "kwonlyargs",
+            "kwonlydefaults",
+            "annotations",
+        ],
     )
 
 
@@ -53,7 +54,7 @@ def _convert_maybe_argspec_to_fullargspec(argspec):
     )
 
 
-if hasattr(_inspect, 'getfullargspec'):
+if hasattr(_inspect, "getfullargspec"):
     _getfullargspec = _inspect.getfullargspec
 
     def _getargspec(target):
@@ -63,8 +64,9 @@ if hasattr(_inspect, 'getfullargspec'):
             args=fullargspecs.args,
             varargs=fullargspecs.varargs,
             keywords=fullargspecs.varkw,
-            defaults=fullargspecs.defaults
+            defaults=fullargspecs.defaults,
         )
+
 else:
     _getargspec = _inspect.getargspec
 

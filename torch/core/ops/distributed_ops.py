@@ -40,13 +40,18 @@ def all_gather(tensor_list, tensor, group=None):
     if group is None:
         return tensor
     output_tensor = Function.apply(
-        'Collective', tensor.device, [tensor],
-        operation='ALLGATHER', **group.arguments)
+        "Collective", tensor.device, [tensor], operation="ALLGATHER", **group.arguments
+    )
     if len(tensor_list) > 0:
         return Function.apply(
-            'Split', output_tensor.device, [output_tensor],
+            "Split",
+            output_tensor.device,
+            [output_tensor],
             outputs=[None] * len(tensor_list),
-            axis=0, size_split=None, copy=True)
+            axis=0,
+            size_split=None,
+            copy=True,
+        )
     return [output_tensor]
 
 
@@ -72,11 +77,16 @@ def all_gather_into_tensor(output_tensor, input_tensor, group=None):
     if group is None:
         return input_tensor
     return Function.apply(
-        'Collective', input_tensor.device, [input_tensor],
-        outputs=[output_tensor], operation='ALLGATHER', **group.arguments)
+        "Collective",
+        input_tensor.device,
+        [input_tensor],
+        outputs=[output_tensor],
+        operation="ALLGATHER",
+        **group.arguments
+    )
 
 
-def all_reduce(tensor, op='sum', group=None):
+def all_reduce(tensor, op="sum", group=None):
     """Reduce tensor across all nodes.
 
     Parameters
@@ -98,11 +108,17 @@ def all_reduce(tensor, op='sum', group=None):
     if group is None:
         return tensor
     op = op.upper()
-    if op not in ('MEAN', 'SUM'):
-        raise ValueError('Unsupported reduction: ' + op)
+    if op not in ("MEAN", "SUM"):
+        raise ValueError("Unsupported reduction: " + op)
     return Function.apply(
-        'Collective', tensor.device, [tensor], outputs=[tensor],
-        operation='ALLREDUCE', reduction=op, **group.arguments)
+        "Collective",
+        tensor.device,
+        [tensor],
+        outputs=[tensor],
+        operation="ALLREDUCE",
+        reduction=op,
+        **group.arguments
+    )
 
 
 def broadcast(tensor, src=0, group=None):
@@ -127,11 +143,17 @@ def broadcast(tensor, src=0, group=None):
     if group is None:
         return tensor
     return Function.apply(
-        'Collective', tensor.device, [tensor], outputs=[tensor],
-        operation='BROADCAST', root=src, **group.arguments)
+        "Collective",
+        tensor.device,
+        [tensor],
+        outputs=[tensor],
+        operation="BROADCAST",
+        root=src,
+        **group.arguments
+    )
 
 
-def reduce_scatter(output, input_list, op='sum', group=None):
+def reduce_scatter(output, input_list, op="sum", group=None):
     """Reduce and scatter the tensor list across all nodes.
 
     Parameters
@@ -155,18 +177,24 @@ def reduce_scatter(output, input_list, op='sum', group=None):
     if group is None:
         return input_list
     op = op.upper()
-    if op not in ('SUM',):
-        raise ValueError('Unsupported reduction: ' + op)
+    if op not in ("SUM",):
+        raise ValueError("Unsupported reduction: " + op)
     if len(input_list) > 0:
-        input = Function.apply('Concat', input_list[0].device, input_list)
+        input = Function.apply("Concat", input_list[0].device, input_list)
     else:
         input = input_list[0]
     return Function.apply(
-        'Collective', input.device, [input], outputs=[output],
-        operation='REDUCESCATTER', reduction=op, **group.arguments)
+        "Collective",
+        input.device,
+        [input],
+        outputs=[output],
+        operation="REDUCESCATTER",
+        reduction=op,
+        **group.arguments
+    )
 
 
-def reduce_scatter_tensor(output, input, op='sum', group=None):
+def reduce_scatter_tensor(output, input, op="sum", group=None):
     """Reduce and scatter the tensor across all nodes.
 
     Parameters
@@ -190,8 +218,14 @@ def reduce_scatter_tensor(output, input, op='sum', group=None):
     if group is None:
         return input
     op = op.upper()
-    if op not in ('SUM',):
-        raise ValueError('Unsupported reduction: ' + op)
+    if op not in ("SUM",):
+        raise ValueError("Unsupported reduction: " + op)
     return Function.apply(
-        'Collective', input.device, [input], outputs=[output],
-        operation='REDUCESCATTER', reduction=op, **group.arguments)
+        "Collective",
+        input.device,
+        [input],
+        outputs=[output],
+        operation="REDUCESCATTER",
+        reduction=op,
+        **group.arguments
+    )

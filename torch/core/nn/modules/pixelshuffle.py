@@ -51,8 +51,8 @@ class PixelShuffle(Module):
         self.inplace = inplace
 
     def extra_repr(self):
-        inplace_str = ', inplace' if self.inplace else ''
-        return 'upscale_factor={}{}'.format(self.upscale_factor, inplace_str)
+        inplace_str = ", inplace" if self.inplace else ""
+        return "upscale_factor={}{}".format(self.upscale_factor, inplace_str)
 
     def forward(self, input):
         return functional.pixel_shuffle(input, self.upscale_factor)
@@ -91,8 +91,8 @@ class PixelUnshuffle(Module):
         self.inplace = inplace
 
     def extra_repr(self):
-        inplace_str = ', inplace' if self.inplace else ''
-        return 'downscale_factor={}{}'.format(self.downscale_factor, inplace_str)
+        inplace_str = ", inplace" if self.inplace else ""
+        return "downscale_factor={}{}".format(self.downscale_factor, inplace_str)
 
     def forward(self, input):
-        return functional.pixel_unshuffle(input, self. downscale_factor)
+        return functional.pixel_unshuffle(input, self.downscale_factor)

@@ -18,7 +18,8 @@ try:
     from nvidia.dali import ops
 except ImportError:
     from dragon.core.util import deprecation
-    ops = deprecation.not_installed('nvidia.dali')
+
+    ops = deprecation.not_installed("nvidia.dali")
 
 from dragon.core.util import six
 from dragon.vm.dali.core.framework import context
@@ -196,10 +197,10 @@ class CropMirrorNormalize(object):
         cls,
         crop=None,
         mirror=None,
-        mean=0.,
-        std=1.,
-        dtype='float32',
-        output_layout='CHW',
+        mean=0.0,
+        std=1.0,
+        dtype="float32",
+        output_layout="CHW",
         **kwargs
     ):
         """Create a ``CropMirrorNormalize`` operator.
@@ -341,7 +342,7 @@ class Paste(object):
     def __new__(
         cls,
         n_channels=3,
-        fill_value=(0., 0., 0.),
+        fill_value=(0.0, 0.0, 0.0),
         ratio=None,
         paste_x=None,
         paste_y=None,
@@ -405,7 +406,7 @@ class RandomBBoxCrop(object):
         thresholds=(0.0, 0.1, 0.3, 0.5, 0.7, 0.9),
         allow_no_crop=True,
         num_attempts=10,
-        bbox_layout='xyXY',
+        bbox_layout="xyXY",
         **kwargs
     ):
         """Create a ``RandomBBoxCrop`` operator.
@@ -438,7 +439,7 @@ class RandomBBoxCrop(object):
             allow_no_crop=allow_no_crop,
             num_attempts=num_attempts,
             bbox_layout=bbox_layout,
-            device='cpu',
+            device="cpu",
             **kwargs
         )
 
@@ -466,7 +467,7 @@ class RandomResizedCrop(object):
         interp_type=None,
         mag_filter=None,
         min_filter=None,
-        random_area=(0.08, 1.),
+        random_area=(0.08, 1.0),
         random_aspect_ratio=(0.75, 1.33),
         num_attempts=10,
         **kwargs
@@ -497,11 +498,11 @@ class RandomResizedCrop(object):
 
         """
         if isinstance(interp_type, six.string_types):
-            interp_type = getattr(types, 'INTERP_' + interp_type.upper())
+            interp_type = getattr(types, "INTERP_" + interp_type.upper())
         if isinstance(mag_filter, six.string_types):
-            mag_filter = getattr(types, 'INTERP_' + mag_filter.upper())
+            mag_filter = getattr(types, "INTERP_" + mag_filter.upper())
         if isinstance(min_filter, six.string_types):
-            min_filter = getattr(types, 'INTERP_' + min_filter.upper())
+            min_filter = getattr(types, "INTERP_" + min_filter.upper())
         return ops.RandomResizedCrop(
             size=size,
             interp_type=interp_type,
@@ -570,11 +571,11 @@ class Resize(object):
 
         """
         if isinstance(interp_type, six.string_types):
-            interp_type = getattr(types, 'INTERP_' + interp_type.upper())
+            interp_type = getattr(types, "INTERP_" + interp_type.upper())
         if isinstance(mag_filter, six.string_types):
-            mag_filter = getattr(types, 'INTERP_' + mag_filter.upper())
+            mag_filter = getattr(types, "INTERP_" + mag_filter.upper())
         if isinstance(min_filter, six.string_types):
-            min_filter = getattr(types, 'INTERP_' + min_filter.upper())
+            min_filter = getattr(types, "INTERP_" + min_filter.upper())
         return ops.Resize(
             size=size,
             resize_shorter=resize_shorter,
@@ -600,13 +601,7 @@ class Rotate(object):
 
     """
 
-    def __new__(
-        cls,
-        fill_value=0,
-        interp_type='linear',
-        keep_size=True,
-        **kwargs
-    ):
+    def __new__(cls, fill_value=0, interp_type="linear", keep_size=True, **kwargs):
         """Create a ``Rotate`` operator.
 
         Parameters
@@ -625,7 +620,7 @@ class Rotate(object):
 
         """
         if isinstance(interp_type, six.string_types):
-            interp_type = getattr(types, 'INTERP_' + interp_type.upper())
+            interp_type = getattr(types, "INTERP_" + interp_type.upper())
         return ops.Rotate(
             fill_value=fill_value,
             interp_type=interp_type,
@@ -647,7 +642,7 @@ class WarpAffine(object):
 
     """
 
-    def __new__(cls, fill_value=0, interp_type='linear', **kwargs):
+    def __new__(cls, fill_value=0, interp_type="linear", **kwargs):
         """Create a ``WarpAffine`` operator.
 
         Parameters
@@ -664,7 +659,7 @@ class WarpAffine(object):
 
         """
         if isinstance(interp_type, six.string_types):
-            interp_type = getattr(types, 'INTERP_' + interp_type.upper())
+            interp_type = getattr(types, "INTERP_" + interp_type.upper())
         return ops.WarpAffine(
             fill_value=fill_value,
             interp_type=interp_type,

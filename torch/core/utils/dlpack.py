@@ -34,9 +34,8 @@ def from_dlpack(dlpack):
 
     """
     default_ws = workspace.get_workspace()
-    impl = default_ws.create_tensor(scope='DLPack').FromDLPack(dlpack)
-    return Tensor(device=cpp.device(*impl.device),
-                  impl=impl, deleter=default_ws._handle_pool)
+    impl = default_ws.create_tensor(scope="DLPack").FromDLPack(dlpack)
+    return Tensor(device=cpp.device(*impl.device), impl=impl, deleter=default_ws._handle_pool)
 
 
 def to_dlpack(tensor):

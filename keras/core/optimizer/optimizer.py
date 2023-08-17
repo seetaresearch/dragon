@@ -30,15 +30,16 @@ class Optimizer(optimizer_v1.Optimizer):
 
         """
         self._name = name
-        clip_norm = kwargs.pop('clipnorm', 0)
-        clip_value = kwargs.pop('clipvalue', 0)
-        clip_norm = kwargs.pop('global_clipnorm', clip_norm)
-        super(Optimizer, self).__init__(clip_norm=clip_norm,
-                                        clip_value=clip_value)
+        clip_norm = kwargs.pop("clipnorm", 0)
+        clip_value = kwargs.pop("clipvalue", 0)
+        clip_norm = kwargs.pop("global_clipnorm", clip_norm)
+        super(Optimizer, self).__init__(clip_norm=clip_norm, clip_value=clip_value)
         self._iterations = 0
-        self._hyper_aliases = {'clipnorm': 'clip_norm',
-                               'clipvalue': 'clip_value',
-                               'global_clipnorm': 'clip_norm'}
+        self._hyper_aliases = {
+            "clipnorm": "clip_norm",
+            "clipvalue": "clip_value",
+            "global_clipnorm": "clip_norm",
+        }
 
     @property
     def iterations(self):
@@ -75,12 +76,12 @@ class Optimizer(optimizer_v1.Optimizer):
         return self
 
     def __getattr__(self, item):
-        aliases = self.__dict__.get('_hyper_aliases')
+        aliases = self.__dict__.get("_hyper_aliases")
         item = aliases.get(item, item)
         return super(Optimizer, self).__getattr__(item)
 
     def __setattr__(self, key, value):
-        aliases = self.__dict__.get('_hyper_aliases')
+        aliases = self.__dict__.get("_hyper_aliases")
         if aliases:
             key = aliases.get(key, key)
         super(Optimizer, self).__setattr__(key, value)

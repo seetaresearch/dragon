@@ -145,19 +145,20 @@ class Module(object):
         if name is None:
             self._name = workspace.get_workspace().unique_name(
                 name=camel_to_snake(self.__class__.__name__),
-                namespace='Object',
-                zero_based=zero_based)
+                namespace="Object",
+                zero_based=zero_based,
+            )
         else:
             if not valid_identifier(name):
-                raise ValueError('<name> should be a legal identifier.')
+                raise ValueError("<name> should be a legal identifier.")
             self._name = name
 
 
 def camel_to_snake(value):
     """Convert the name from camel-style to snake-style."""
-    intermediate = re.sub('(.)([A-Z][a-z0-9]+)', r'\1_\2', value)
-    insecure = re.sub('([a-z])([A-Z])', r'\1_\2', intermediate).lower()
-    if insecure[0] != '_':
+    intermediate = re.sub("(.)([A-Z][a-z0-9]+)", r"\1_\2", value)
+    insecure = re.sub("([a-z])([A-Z])", r"\1_\2", intermediate).lower()
+    if insecure[0] != "_":
         return insecure
     return insecure[2:]
 

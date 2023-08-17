@@ -19,14 +19,7 @@ from dragon.core.autograph.op_lib import OpLib
 from dragon.core.autograph.op_lib import OpSchema
 
 
-def python_plugin(
-    inputs,
-    module_name,
-    class_name,
-    num_outputs=1,
-    kwargs_str=None,
-    **kwargs
-):
+def python_plugin(inputs, module_name, class_name, num_outputs=1, kwargs_str=None, **kwargs):
     """Create a plugin operator from the python class.
 
     Parameters
@@ -49,10 +42,16 @@ def python_plugin(
 
     """
     if context.executing_eagerly():
-        raise RuntimeError('Excepted the graph execution mode.')
-    return OpLib.add('PythonPlugin', inputs, module_name=module_name,
-                     class_name=class_name, num_outputs=num_outputs,
-                     kwargs_str=kwargs_str, **kwargs)
+        raise RuntimeError("Excepted the graph execution mode.")
+    return OpLib.add(
+        "PythonPlugin",
+        inputs,
+        module_name=module_name,
+        class_name=class_name,
+        num_outputs=num_outputs,
+        kwargs_str=kwargs_str,
+        **kwargs
+    )
 
 
 @OpSchema.num_inputs(1)
@@ -73,5 +72,5 @@ def stop_gradient(inputs, **kwargs):
 
     """
     if context.executing_eagerly():
-        raise RuntimeError('Excepted the graph execution mode.')
-    return OpLib.add('GradientStop', inputs, **kwargs)
+        raise RuntimeError("Excepted the graph execution mode.")
+    return OpLib.add("GradientStop", inputs, **kwargs)

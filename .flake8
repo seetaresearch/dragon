@@ -1,6 +1,8 @@
 [flake8]
-max-line-length = 120
+max-line-length = 100
 ignore =
+    # whitespace before ':' (conflicted with Black)
+    E203,
     # ambiguous variable name
     E741,
     # ‘from module import *’ used; unable to detect undefined names

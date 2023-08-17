@@ -48,8 +48,9 @@ def is_sequence(input):
         ``True`` if input is a sequence otherwise ``False``.
 
     """
-    return (isinstance(input, six.collections_abc.Sequence) and
-            not isinstance(input, six.string_types))
+    return isinstance(input, six.collections_abc.Sequence) and not isinstance(
+        input, six.string_types
+    )
 
 
 def flatten(input):
@@ -66,6 +67,7 @@ def flatten(input):
         The flat list of input.
 
     """
+
     def append_items(iterable, output_list):
         for item in iterable:
             if is_sequence(item):
@@ -74,6 +76,7 @@ def flatten(input):
                 append_items(list(map(item.get, sorted(item.keys()))), output_list)
             else:
                 output_list.append(item)
+
     output_list = []
     if is_sequence(input):
         append_items(input, output_list)
@@ -129,10 +132,8 @@ def _yield_flatten_up_to(shallow_tree, input_tree, is_seq, path=()):
             sub_path = path + (shallow_key,)
             input_subtree = input_tree[shallow_key]
             for leaf_path, leaf_value in _yield_flatten_up_to(
-                    shallow_subtree,
-                    input_subtree,
-                    is_seq,
-                    path=sub_path):
+                shallow_subtree, input_subtree, is_seq, path=sub_path
+            ):
                 yield leaf_path, leaf_value
 
 

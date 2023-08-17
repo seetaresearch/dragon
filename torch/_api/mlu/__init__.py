@@ -26,4 +26,4 @@ from dragon.vm.torch.core.backends.mlu import memory_allocated
 from dragon.vm.torch.core.backends.mlu import set_device
 from dragon.vm.torch.core.backends.mlu import synchronize
 
-__all__ = [_s for _s in dir() if not _s.startswith('_')]
+__all__ = [_s for _s in dir() if not _s.startswith("_")]

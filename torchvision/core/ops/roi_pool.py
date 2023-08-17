@@ -43,6 +43,10 @@ def roi_pool(input, boxes, output_size, spatial_scale=1.0):
 
     """
     return torch.autograd.Function.apply(
-        'RoiPool', input.device, [input, boxes],
-        pooled_h=output_size[0], pooled_w=output_size[1],
-        spatial_scale=spatial_scale)
+        "RoiPool",
+        input.device,
+        [input, boxes],
+        pooled_h=output_size[0],
+        pooled_w=output_size[1],
+        spatial_scale=spatial_scale,
+    )

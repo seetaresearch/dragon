@@ -116,10 +116,10 @@ def export(
     if isinstance(args, dict):
         if input_names is not None:
             raise ValueError(
-                'Excepted the input names from <args>.\n'
-                'You should set the <input_names> to None.')
-        inputs, input_names, args = \
-            list(args.values()), list(args.keys()), [args]
+                "Excepted the input names from <args>.\n"
+                "You should set the <input_names> to None."
+            )
+        inputs, input_names, args = list(args.values()), list(args.keys()), [args]
     else:
         inputs = args = nest.flatten(args)
 
@@ -134,8 +134,9 @@ def export(
     if isinstance(outputs, dict):
         if output_names is not None:
             raise ValueError(
-                'Excepted the output names from <outputs>.\n'
-                'You should set the <output_names> to None.')
+                "Excepted the output names from <outputs>.\n"
+                "You should set the <output_names> to None."
+            )
         outputs, output_names = list(outputs.values()), list(outputs.keys())
     else:
         outputs = nest.flatten(outputs)
@@ -145,13 +146,13 @@ def export(
 
     # Add inputs and outputs.
     for i, input in enumerate(inputs):
-        if hasattr(input, 'id'):
+        if hasattr(input, "id"):
             graph_def.input.extend([input.id])
         elif input_names is not None:
             graph_def.input.extend([input_names[i]])
 
     for i, output in enumerate(outputs):
-        if hasattr(output, 'id'):
+        if hasattr(output, "id"):
             graph_def.output.extend([output.id])
         elif output_names is not None:
             graph_def.output.extend([output_names[i]])
@@ -164,8 +165,9 @@ def export(
 
     # Make value info from inputs and outputs.
     value_names = graph_def.input[:] + graph_def.output[:]
-    value_info = dict([(k, (helper.tensor_type(v.dtype), v.shape))
-                       for k, v in zip(value_names, inputs + outputs)])
+    value_info = dict(
+        [(k, (helper.tensor_type(v.dtype), v.shape)) for k, v in zip(value_names, inputs + outputs)]
+    )
 
     # Extract the constants from inputs and outputs.
     constants = collections.OrderedDict()

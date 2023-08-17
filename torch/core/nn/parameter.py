@@ -50,11 +50,10 @@ class Parameter(Tensor):
 
         """
         super(Parameter, self).__init__(
-            device=tensor.device,
-            impl=tensor._impl,
-            requires_grad=requires_grad)
+            device=tensor.device, impl=tensor._impl, requires_grad=requires_grad
+        )
         self._is_leaf = True
         self._wrapped_tensor = tensor
 
     def __repr__(self):
-        return 'Parameter containing:\n' + super(Parameter, self).__repr__()
+        return "Parameter containing:\n" + super(Parameter, self).__repr__()

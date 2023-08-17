@@ -38,8 +38,7 @@ def cat(tensors, dim=0, out=None):
         The output tensor.
 
     """
-    return Function.apply(
-        'Concat', tensors[0].device, tensors, outputs=[out], axis=dim)
+    return Function.apply("Concat", tensors[0].device, tensors, outputs=[out], axis=dim)
 
 
 def chunk(tensor, chunks, dim=0, copy=True):
@@ -79,8 +78,14 @@ def chunk(tensor, chunks, dim=0, copy=True):
 
     """
     return Function.apply(
-        'Split', tensor.device, [tensor], outputs=[None] * chunks,
-        axis=dim, num_splits=0, copy=copy)
+        "Split",
+        tensor.device,
+        [tensor],
+        outputs=[None] * chunks,
+        axis=dim,
+        num_splits=0,
+        copy=copy,
+    )
 
 
 def broadcast_to(input, shape):
@@ -117,8 +122,7 @@ def broadcast_to(input, shape):
         The output tensor.
 
     """
-    return Function.apply(
-        'Expand', input.device, [input], ndim=len(shape), dims=shape)
+    return Function.apply("Expand", input.device, [input], ndim=len(shape), dims=shape)
 
 
 def flatten(input, start_dim=0, end_dim=-1, out=None):
@@ -151,8 +155,13 @@ def flatten(input, start_dim=0, end_dim=-1, out=None):
 
     """
     return Function.apply(
-        'Flatten', input.device, [input], outputs=[out],
-        axis=start_dim, end_axis=end_dim)
+        "Flatten",
+        input.device,
+        [input],
+        outputs=[out],
+        axis=start_dim,
+        end_axis=end_dim,
+    )
 
 
 def flip(input, dims):
@@ -185,8 +194,11 @@ def flip(input, dims):
 
     """
     return Function.apply(
-        'Reverse', input.device, [input],
-        axes=nest.flatten(dims) if dims is not None else dims)
+        "Reverse",
+        input.device,
+        [input],
+        axes=nest.flatten(dims) if dims is not None else dims,
+    )
 
 
 def fliplr(input):
@@ -270,9 +282,7 @@ def gather(input, dim, index, out=None):
         The output tensor.
 
     """
-    return Function.apply(
-        'GatherElements', input.device, [input, index],
-        outputs=[out], axis=dim)
+    return Function.apply("GatherElements", input.device, [input, index], outputs=[out], axis=dim)
 
 
 def index_select(input, dim, index, out=None):
@@ -313,10 +323,15 @@ def index_select(input, dim, index, out=None):
     dims = [v if v >= 0 else v + ndim for v in nest.flatten(dim)]
     dims.sort()
     if dims[-1] != (dims[0] + len(dims) - 1):
-        raise ValueError('<dim> should be a continuous sequence.')
+        raise ValueError("<dim> should be a continuous sequence.")
     return Function.apply(
-        'Gather', input.device, [input, index], outputs=[out],
-        axis=dims[0], end_axis=dims[-1])
+        "Gather",
+        input.device,
+        [input, index],
+        outputs=[out],
+        axis=dims[0],
+        end_axis=dims[-1],
+    )
 
 
 def masked_fill(input, mask, value, out=None):
@@ -341,8 +356,7 @@ def masked_fill(input, mask, value, out=None):
     """
     if not isinstance(value, Tensor):
         value = constant_ops.scalar(value, input.dtype, input.device)
-    return Function.apply(
-        'Where', input.device, [mask, value, input], outputs=[out])
+    return Function.apply("Where", input.device, [mask, value, input], outputs=[out])
 
 
 def masked_select(input, mask, out=None):
@@ -363,8 +377,7 @@ def masked_select(input, mask, out=None):
         The output tensor.
 
     """
-    return Function.apply(
-        'BooleanMask', input.device, [input, mask], outputs=[out])
+    return Function.apply("BooleanMask", input.device, [input, mask], outputs=[out])
 
 
 def multinomial(input, num_samples, out=None):
@@ -393,8 +406,8 @@ def multinomial(input, num_samples, out=None):
 
     """
     return Function.apply(
-        'Multinomial', input.device, [input], outputs=[out],
-        sample_size=num_samples)
+        "Multinomial", input.device, [input], outputs=[out], sample_size=num_samples
+    )
 
 
 def narrow(input, dimension, start, length):
@@ -421,8 +434,8 @@ def narrow(input, dimension, start, length):
     starts = [0] * len(sizes)
     starts[dimension], sizes[dimension] = start, length
     return Function.apply(
-        'Slice', input.device, [input], ndim=len(starts),
-        starts=starts, sizes=sizes)
+        "Slice", input.device, [input], ndim=len(starts), starts=starts, sizes=sizes
+    )
 
 
 def nonzero(input, out=None):
@@ -443,7 +456,7 @@ def nonzero(input, out=None):
         The output tensor.
 
     """
-    return Function.apply('NonZero', input.device, [input], outputs=[out])
+    return Function.apply("NonZero", input.device, [input], outputs=[out])
 
 
 def permute(input, dims, out=None):
@@ -465,8 +478,8 @@ def permute(input, dims, out=None):
 
     """
     return Function.apply(
-        'Transpose', input.device, [input], outputs=[out],
-        ndim=len(dims), perm=dims)
+        "Transpose", input.device, [input], outputs=[out], ndim=len(dims), perm=dims
+    )
 
 
 def tile(input, reps):
@@ -485,8 +498,7 @@ def tile(input, reps):
         The output tensor.
 
     """
-    return Function.apply(
-        'Tile', input.device, [input], ndim=len(reps), repeats=reps)
+    return Function.apply("Tile", input.device, [input], ndim=len(reps), repeats=reps)
 
 
 def reshape(input, shape, out=None):
@@ -525,8 +537,8 @@ def reshape(input, shape, out=None):
 
     """
     return Function.apply(
-        'Reshape', input.device, [input], outputs=[out],
-        ndim=len(shape), dims=shape)
+        "Reshape", input.device, [input], outputs=[out], ndim=len(shape), dims=shape
+    )
 
 
 def roll(input, shifts, dims=None):
@@ -567,8 +579,8 @@ def roll(input, shifts, dims=None):
     shifts = nest.flatten(shifts)
     dims = nest.flatten(dims) if dims is not None else dims
     return Function.apply(
-        'Roll', input.device, [input],
-        num_shifts=len(shifts), shifts=shifts, axes=dims)
+        "Roll", input.device, [input], num_shifts=len(shifts), shifts=shifts, axes=dims
+    )
 
 
 def scatter(input, dim, index, src, out=None):
@@ -609,11 +621,10 @@ def scatter(input, dim, index, src, out=None):
 
     """
     if not isinstance(src, Tensor):
-        src = constant_ops.full_like(
-            index, src, dtype=input.dtype, device=input.device)
+        src = constant_ops.full_like(index, src, dtype=input.dtype, device=input.device)
     return Function.apply(
-        'ScatterElements', input.device, [input, index, src],
-        outputs=[out], axis=dim)
+        "ScatterElements", input.device, [input, index, src], outputs=[out], axis=dim
+    )
 
 
 def scatter_add(input, dim, index, src, out=None):
@@ -654,11 +665,8 @@ def scatter_add(input, dim, index, src, out=None):
 
     """
     if not isinstance(src, Tensor):
-        src = constant_ops.full_like(
-            index, src, dtype=input.dtype, device=input.device)
-    return Function.apply(
-        'ScatterAdd', input.device, [input, index, src],
-        outputs=[out], axis=dim)
+        src = constant_ops.full_like(index, src, dtype=input.dtype, device=input.device)
+    return Function.apply("ScatterAdd", input.device, [input, index, src], outputs=[out], axis=dim)
 
 
 def split(tensor, split_size_or_sections, dim=0, copy=True):
@@ -712,8 +720,15 @@ def split(tensor, split_size_or_sections, dim=0, copy=True):
             size_splits = [split_size_or_sections] * num_splits
             size_splits[-1] = size - (split_size_or_sections * (num_splits - 1))
     return Function.apply(
-        'Split', tensor.device, [tensor], outputs=[None] * num_splits,
-        axis=dim, num_splits=num_splits, split=size_splits, copy=copy)
+        "Split",
+        tensor.device,
+        [tensor],
+        outputs=[None] * num_splits,
+        axis=dim,
+        num_splits=num_splits,
+        split=size_splits,
+        copy=copy,
+    )
 
 
 def squeeze(input, dim=None, out=None):
@@ -753,8 +768,12 @@ def squeeze(input, dim=None, out=None):
 
     """
     return Function.apply(
-        'Squeeze', input.device, [input], outputs=[out],
-        axes=None if dim is None else nest.flatten(dim))
+        "Squeeze",
+        input.device,
+        [input],
+        outputs=[out],
+        axes=None if dim is None else nest.flatten(dim),
+    )
 
 
 def stack(tensors, dim=0, out=None):
@@ -792,8 +811,7 @@ def stack(tensors, dim=0, out=None):
         The output tensor.
 
     """
-    return Function.apply(
-        'Stack', tensors[0].device, tensors, outputs=[out], axis=dim)
+    return Function.apply("Stack", tensors[0].device, tensors, outputs=[out], axis=dim)
 
 
 def transpose(input, dim0, dim1, out=None):
@@ -826,8 +844,8 @@ def transpose(input, dim0, dim1, out=None):
     dims = list(range(input.ndimension()))
     dims[dim0], dims[dim1] = dims[dim1], dims[dim0]
     return Function.apply(
-        'Transpose', input.device, [input], outputs=[out],
-        ndim=len(dims), perm=dims)
+        "Transpose", input.device, [input], outputs=[out], ndim=len(dims), perm=dims
+    )
 
 
 def tril(input, diagonal=0, out=None):
@@ -862,9 +880,7 @@ def tril(input, diagonal=0, out=None):
         The output tensor.
 
     """
-    return Function.apply(
-        'Trilu', input.device, [input], outputs=[out],
-        k=diagonal, upper=False)
+    return Function.apply("Trilu", input.device, [input], outputs=[out], k=diagonal, upper=False)
 
 
 def triu(input, diagonal=0, out=None):
@@ -899,9 +915,7 @@ def triu(input, diagonal=0, out=None):
         The output tensor.
 
     """
-    return Function.apply(
-        'Trilu', input.device, [input], outputs=[out],
-        k=diagonal, upper=True)
+    return Function.apply("Trilu", input.device, [input], outputs=[out], k=diagonal, upper=True)
 
 
 def unbind(input, dim=0, copy=True):
@@ -940,8 +954,14 @@ def unbind(input, dim=0, copy=True):
     """
     num_outputs = input.size(dim)
     return Function.apply(
-        'Split', input.device, [input], outputs=[None] * num_outputs,
-        axis=dim, copy=copy, keepdims=False)
+        "Split",
+        input.device,
+        [input],
+        outputs=[None] * num_outputs,
+        axis=dim,
+        copy=copy,
+        keepdims=False,
+    )
 
 
 def unique(input, return_inverse=False, return_counts=False, **kwargs):
@@ -984,16 +1004,21 @@ def unique(input, return_inverse=False, return_counts=False, **kwargs):
         The counts tensor.
 
     """
-    if 'sorted' in kwargs:
-        kwargs.pop('sorted')
+    if "sorted" in kwargs:
+        kwargs.pop("sorted")
     num_outputs = 1
     if return_inverse:
         num_outputs += 1
     if return_counts:
         num_outputs += 1
     return Function.apply(
-        'Unique', input.device, [input], outputs=[None] * num_outputs,
-        return_inverse=return_inverse, return_counts=return_counts)
+        "Unique",
+        input.device,
+        [input],
+        outputs=[None] * num_outputs,
+        return_inverse=return_inverse,
+        return_counts=return_counts,
+    )
 
 
 def unsqueeze(input, dim, out=None):
@@ -1032,8 +1057,12 @@ def unsqueeze(input, dim, out=None):
 
     """
     return Function.apply(
-        'Unsqueeze', input.device, [input], outputs=[out],
-        axes=None if dim is None else nest.flatten(dim))
+        "Unsqueeze",
+        input.device,
+        [input],
+        outputs=[out],
+        axes=None if dim is None else nest.flatten(dim),
+    )
 
 
 def where(condition, x, y):
@@ -1061,5 +1090,4 @@ def where(condition, x, y):
         The output tensor.
 
     """
-    return Function.apply(
-        'Where', condition.device, [condition, x, y])
+    return Function.apply("Where", condition.device, [condition, x, y])

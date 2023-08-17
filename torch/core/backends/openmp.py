@@ -26,4 +26,4 @@ def is_available():
         ``True`` if built otherwise ``False``.
 
     """
-    return 'openmp' in sysconfig.get_build_info()['third_party']
+    return "openmp" in sysconfig.get_build_info()["third_party"]

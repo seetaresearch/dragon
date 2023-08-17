@@ -26,4 +26,4 @@ from dragon.core.device.mlu import set_device
 from dragon.core.device.mlu import set_random_seed
 from dragon.core.device.mlu import synchronize
 
-__all__ = [_s for _s in dir() if not _s.startswith('_')]
+__all__ = [_s for _s in dir() if not _s.startswith("_")]

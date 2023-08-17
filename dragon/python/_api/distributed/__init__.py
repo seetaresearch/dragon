@@ -28,4 +28,4 @@ from dragon.core.ops.distributed_ops import all_reduce
 from dragon.core.ops.distributed_ops import broadcast
 from dragon.core.ops.distributed_ops import reduce_scatter
 
-__all__ = [_s for _s in dir() if not _s.startswith('_')]
+__all__ = [_s for _s in dir() if not _s.startswith("_")]

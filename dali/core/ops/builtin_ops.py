@@ -18,7 +18,8 @@ try:
     from nvidia.dali import ops
 except ImportError:
     from dragon.core.util import deprecation
-    ops = deprecation.not_installed('nvidia.dali')
+
+    ops = deprecation.not_installed("nvidia.dali")
 
 from dragon.vm.dali.core.framework import context
 

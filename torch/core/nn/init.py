@@ -43,21 +43,21 @@ def calculate_gain(nonlinearity, param=None):
 
     """
     linear_fns = [
-        'linear',
-        'conv1d',
-        'conv2d',
-        'conv3d',
-        'conv_transpose1d',
-        'conv_transpose2d',
-        'conv_transpose3d',
+        "linear",
+        "conv1d",
+        "conv2d",
+        "conv3d",
+        "conv_transpose1d",
+        "conv_transpose2d",
+        "conv_transpose3d",
     ]
-    if nonlinearity in linear_fns or nonlinearity == 'sigmoid':
+    if nonlinearity in linear_fns or nonlinearity == "sigmoid":
         return 1
-    elif nonlinearity == 'tanh':
+    elif nonlinearity == "tanh":
         return 5.0 / 3
-    elif nonlinearity == 'relu':
+    elif nonlinearity == "relu":
         return math.sqrt(2.0)
-    elif nonlinearity == 'leaky_relu':
+    elif nonlinearity == "leaky_relu":
         if param is None:
             negative_slope = 0.01
         else:
@@ -65,9 +65,9 @@ def calculate_gain(nonlinearity, param=None):
                 negative_slope = float(param)
             except ValueError:
                 raise ValueError("Negative slope {} is not a valid number".format(param))
-        return math.sqrt(2.0 / (1 + negative_slope ** 2))
+        return math.sqrt(2.0 / (1 + negative_slope**2))
     else:
-        raise ValueError('Unsupported nonlinearity: ' + nonlinearity)
+        raise ValueError("Unsupported nonlinearity: " + nonlinearity)
 
 
 def constant_(tensor, val):
@@ -110,10 +110,10 @@ def dirac_(tensor, groups=1):
     """
     dimensions = tensor.ndimension()
     if dimensions not in [3, 4, 5]:
-        raise ValueError('Only tensors with 3, 4, or 5 dimensions are supported.')
+        raise ValueError("Only tensors with 3, 4, or 5 dimensions are supported.")
     sizes = tensor.size()
     if sizes[0] % groups != 0:
-        raise ValueError('Dimension 0 should be divisible by groups.')
+        raise ValueError("Dimension 0 should be divisible by groups.")
     out_channels_per_grp = sizes[0] // groups
     min_dim = min(out_channels_per_grp, sizes[1])
     with grad_mode.no_grad():
@@ -144,14 +144,13 @@ def eye_(tensor):
 
     """
     if tensor.ndimension() != 2:
-        raise ValueError('Only tensors with 2 dimensions are supported.')
+        raise ValueError("Only tensors with 2 dimensions are supported.")
     with grad_mode.no_grad():
-        constant_ops.eye(*tensor.shape, out=tensor,
-                         requires_grad=tensor.requires_grad)
+        constant_ops.eye(*tensor.shape, out=tensor, requires_grad=tensor.requires_grad)
     return tensor
 
 
-def kaiming_normal_(tensor, a=0, mode='fan_in', nonlinearity='leaky_relu'):
+def kaiming_normal_(tensor, a=0, mode="fan_in", nonlinearity="leaky_relu"):
     r"""Fill tensor from a kaiming normal distribution.
 
     .. math::
@@ -183,7 +182,7 @@ def kaiming_normal_(tensor, a=0, mode='fan_in', nonlinearity='leaky_relu'):
         return tensor.normal_(0, std)
 
 
-def kaiming_uniform_(tensor, a=0, mode='fan_in', nonlinearity='leaky_relu'):
+def kaiming_uniform_(tensor, a=0, mode="fan_in", nonlinearity="leaky_relu"):
     r"""Fill tensor from a kaiming uniform distribution.
 
     .. math::
@@ -311,9 +310,18 @@ def trunc_normal_(tensor, mean=0, std=1, a=-2, b=2):
     size = tensor.size()
     with grad_mode.no_grad():
         return Function.apply(
-            'TruncatedNormal', tensor.device, [], outputs=[tensor],
-            dtype=tensor.dtype, mean=float(mean), std=float(std),
-            low=float(a), high=float(b), ndim=len(size), dims=size)
+            "TruncatedNormal",
+            tensor.device,
+            [],
+            outputs=[tensor],
+            dtype=tensor.dtype,
+            mean=float(mean),
+            std=float(std),
+            low=float(a),
+            high=float(b),
+            ndim=len(size),
+            dims=size,
+        )
 
 
 def uniform_(tensor, a=0, b=1):
@@ -437,8 +445,8 @@ def _calculate_fan_in_and_fan_out(tensor):
 def _calculate_correct_fan(tensor, mode):
     """Return the fan value according to mode and tensor size."""
     mode = mode.lower()
-    valid_modes = ['fan_in', 'fan_out']
+    valid_modes = ["fan_in", "fan_out"]
     if mode not in valid_modes:
-        raise ValueError('Mode {} not supported, please use one of {}'.format(mode, valid_modes))
+        raise ValueError("Mode {} not supported, please use one of {}".format(mode, valid_modes))
     fan_in, fan_out = _calculate_fan_in_and_fan_out(tensor)
-    return fan_in if mode == 'fan_in' else fan_out
+    return fan_in if mode == "fan_in" else fan_out

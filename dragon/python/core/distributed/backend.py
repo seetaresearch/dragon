@@ -25,30 +25,30 @@ from dragon.core.util import tls
 class Backend(object):
     """An enum-like class of available backends: MPI and NCCL."""
 
-    UNDEFINED = 'UNDEFINED'
-    AUTO = 'AUTO'
-    MPI = 'MPI'
-    NCCL = 'NCCL'
-    CNCL = 'CNCL'
+    UNDEFINED = "UNDEFINED"
+    AUTO = "AUTO"
+    MPI = "MPI"
+    NCCL = "NCCL"
+    CNCL = "CNCL"
 
     def __new__(cls, name):
         if not isinstance(name, six.string_types):
-            raise ValueError('Backend name must be a string, but got: {}'.format(name))
+            raise ValueError("Backend name must be a string, but got: {}".format(name))
         value = getattr(Backend, name.upper(), Backend.UNDEFINED)
-        if value == 'AUTO':
+        if value == "AUTO":
             if is_nccl_available():
                 return Backend.NCCL
             elif is_cncl_available():
                 return Backend.CNCL
             return Backend.MPI
-        elif value == 'NCCL':
+        elif value == "NCCL":
             if not is_nccl_available():
-                raise ValueError('NCCL backend is not available.')
-        elif value == 'CNCL':
+                raise ValueError("NCCL backend is not available.")
+        elif value == "CNCL":
             if not is_cncl_available():
-                raise ValueError('CNCL backend is not available.')
+                raise ValueError("CNCL backend is not available.")
         elif value == Backend.UNDEFINED:
-            raise ValueError('Invalid backend: ' + name)
+            raise ValueError("Invalid backend: " + name)
         return value
 
 
@@ -59,15 +59,15 @@ class ProcessGroup(object):
         self._handle = handle
         self._ranks, self._comm = ranks, comm
         if backend is None:
-            self._backend = Backend('AUTO')
+            self._backend = Backend("AUTO")
         else:
             self._backend = Backend(backend)
         # Stored for executing the collective ops.
         self._arguments = {
-            'comm': self._comm,
-            'group': self._handle,
-            'backend': self._backend,
-            'ranks': self._ranks,
+            "comm": self._comm,
+            "group": self._handle,
+            "backend": self._backend,
+            "ranks": self._ranks,
         }
 
     @property
@@ -136,7 +136,7 @@ class ProcessGroup(object):
         return _GLOBAL_PROCESS_GROUP_STACK.get_controller(self)
 
     def __repr__(self):
-        return '{}:{}'.format(self._backend, self._handle)
+        return "{}:{}".format(self._backend, self._handle)
 
 
 def is_initialized():

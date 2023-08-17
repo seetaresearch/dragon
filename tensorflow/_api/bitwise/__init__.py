@@ -18,4 +18,4 @@ from dragon.vm.tensorflow.core.ops.bitwise_ops import bitwise_or
 from dragon.vm.tensorflow.core.ops.bitwise_ops import bitwise_xor
 from dragon.vm.tensorflow.core.ops.bitwise_ops import invert
 
-__all__ = [_s for _s in dir() if not _s.startswith('_')]
+__all__ = [_s for _s in dir() if not _s.startswith("_")]

@@ -88,19 +88,22 @@ class Iterator(object):
         if self._copies is None:
             self._copies = []
             for tensor in tensors:
-                self._copies.append(self.new_tensor(
-                    shape=tensor.shape(),
-                    dtype=types.np_dtype(tensor.dtype).__name__,
-                    device=self.new_device(
-                        device_type=('cuda' if isinstance(tensor, TensorGPU)
-                                     else 'cpu'),
-                        device_index=self._pipe.device_id or 0)))
+                self._copies.append(
+                    self.new_tensor(
+                        shape=tensor.shape(),
+                        dtype=types.np_dtype(tensor.dtype).__name__,
+                        device=self.new_device(
+                            device_type=("cuda" if isinstance(tensor, TensorGPU) else "cpu"),
+                            device_index=self._pipe.device_id or 0,
+                        ),
+                    )
+                )
         # Transfer the data: DALI -> Storage
         for i, tensor in enumerate(tensors):
             self._transfer_tensor(tensor, self._copies[i])
         return self._copies
 
-    def epoch_size(self, reader='Reader'):
+    def epoch_size(self, reader="Reader"):
         """Return the epoch size of specified reader.
 
         Parameters
@@ -205,19 +208,19 @@ class Iterator(object):
         """Transfer the dali tensor to the target."""
         target_shape = dali_tensor.shape()
         device = self.new_device(
-            device_type='cuda' if isinstance(
-                dali_tensor, TensorGPU) else 'cpu',
-            device_index=self._pipe.device_id or 0)
-        if hasattr(target_tensor, '_device'):
+            device_type="cuda" if isinstance(dali_tensor, TensorGPU) else "cpu",
+            device_index=self._pipe.device_id or 0,
+        )
+        if hasattr(target_tensor, "_device"):
             target_tensor._device = device
         impl = target_tensor._impl
         if target_shape != list(target_tensor.shape):
             new_capacity = not impl.Reshape(target_shape)
             if new_capacity:
-                impl.mutable_data('cpu')
-        if device.type == 'cuda':
+                impl.mutable_data("cpu")
+        if device.type == "cuda":
             impl.ToCUDA(device.index)
-            pointer = ctypes.c_void_p(impl.mutable_data('cuda'))
+            pointer = ctypes.c_void_p(impl.mutable_data("cuda"))
         else:
-            pointer = ctypes.c_void_p(impl.mutable_data('cpu'))
+            pointer = ctypes.c_void_p(impl.mutable_data("cpu"))
         dali_tensor.copy_to_external(pointer)

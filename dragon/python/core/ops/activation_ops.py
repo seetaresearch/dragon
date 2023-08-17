@@ -20,7 +20,7 @@ from dragon.core.autograph.op_lib import OpSchema
 
 
 @OpSchema.num_inputs(1)
-@OpSchema.convert_arg('ratio', as_target=False)
+@OpSchema.convert_arg("ratio", as_target=False)
 def dropout(inputs, ratio=0.5, inplace=False, **kwargs):
     r"""Set elements of input to zero randomly.
     `[Srivastava et.al, 2014] <http://jmlr.org/papers/v15/srivastava14a.html>`_.
@@ -54,22 +54,18 @@ def dropout(inputs, ratio=0.5, inplace=False, **kwargs):
     args = OpSchema.parse_args(locals())
     if context.executing_eagerly():
         return OpLib.execute(
-            'Dropout', inputs, outputs=inputs if inplace else [None],
-            ratio=args['ratio'])
-    args.pop('inplace')
-    return OpLib.add('Dropout', **args)
+            "Dropout",
+            inputs,
+            outputs=inputs if inplace else [None],
+            ratio=args["ratio"],
+        )
+    args.pop("inplace")
+    return OpLib.add("Dropout", **args)
 
 
 @OpSchema.num_inputs(1)
-@OpSchema.convert_arg('ratio', as_target=False)
-def drop_block(
-    inputs,
-    ratio=0.1,
-    block_size=1,
-    data_format='NCHW',
-    inplace=False,
-    **kwargs
-):
+@OpSchema.convert_arg("ratio", as_target=False)
+def drop_block(inputs, ratio=0.1, block_size=1, data_format="NCHW", inplace=False, **kwargs):
     r"""Set blocks of input to zero randomly.
     `[Ghiasi et.al, 2018] <https://arxiv.org/abs/1810.12890>`_.
 
@@ -111,15 +107,19 @@ def drop_block(
     args = OpSchema.parse_args(locals())
     if context.executing_eagerly():
         return OpLib.execute(
-            'DropBlock', inputs, outputs=inputs if inplace else [None],
-            block_size=block_size, data_format=data_format,
-            ratio=args['ratio'])
-    args.pop('inplace')
-    return OpLib.add('DropBlock', **args)
+            "DropBlock",
+            inputs,
+            outputs=inputs if inplace else [None],
+            block_size=block_size,
+            data_format=data_format,
+            ratio=args["ratio"],
+        )
+    args.pop("inplace")
+    return OpLib.add("DropBlock", **args)
 
 
 @OpSchema.num_inputs(1)
-@OpSchema.convert_arg('ratio', as_target=False)
+@OpSchema.convert_arg("ratio", as_target=False)
 def drop_path(inputs, ratio=0.2, inplace=False, **kwargs):
     r"""Set examples of the input to zero randomly.
     `[Larsson et.al, 2016] <https://arxiv.org/abs/1605.07648>`_.
@@ -153,10 +153,13 @@ def drop_path(inputs, ratio=0.2, inplace=False, **kwargs):
     args = OpSchema.parse_args(locals())
     if context.executing_eagerly():
         return OpLib.execute(
-            'DropPath', inputs, outputs=inputs if inplace else [None],
-            ratio=args['ratio'])
-    args.pop('inplace')
-    return OpLib.add('DropPath', **args)
+            "DropPath",
+            inputs,
+            outputs=inputs if inplace else [None],
+            ratio=args["ratio"],
+        )
+    args.pop("inplace")
+    return OpLib.add("DropPath", **args)
 
 
 @OpSchema.num_inputs(1)
@@ -197,9 +200,8 @@ def elu(inputs, alpha=1.0, inplace=False, **kwargs):
     """
     alpha = float(alpha)
     if context.executing_eagerly():
-        return OpLib.execute(
-            'Elu', inputs, outputs=inputs if inplace else [None], alpha=alpha)
-    return OpLib.add('Elu', inputs, alpha=alpha, **kwargs)
+        return OpLib.execute("Elu", inputs, outputs=inputs if inplace else [None], alpha=alpha)
+    return OpLib.add("Elu", inputs, alpha=alpha, **kwargs)
 
 
 @OpSchema.num_inputs(1)
@@ -232,8 +234,8 @@ def gelu(inputs, approximate=False, **kwargs):
 
     """
     if context.executing_eagerly():
-        return OpLib.execute('Gelu', inputs, approximate=approximate)
-    return OpLib.add('Gelu', inputs, approximate=approximate, **kwargs)
+        return OpLib.execute("Gelu", inputs, approximate=approximate)
+    return OpLib.add("Gelu", inputs, approximate=approximate, **kwargs)
 
 
 @OpSchema.num_inputs(1)
@@ -271,9 +273,13 @@ def hardsigmoid(inputs, alpha=0.2, beta=0.5, inplace=False, **kwargs):
     alpha, beta = float(alpha), float(beta)
     if context.executing_eagerly():
         return OpLib.execute(
-            'HardSigmoid', inputs, outputs=inputs if inplace else [None],
-            alpha=alpha, beta=beta)
-    return OpLib.add('HardSigmoid', inputs, alpha=alpha, beta=beta, **kwargs)
+            "HardSigmoid",
+            inputs,
+            outputs=inputs if inplace else [None],
+            alpha=alpha,
+            beta=beta,
+        )
+    return OpLib.add("HardSigmoid", inputs, alpha=alpha, beta=beta, **kwargs)
 
 
 @OpSchema.num_inputs(1)
@@ -304,8 +310,8 @@ def hardswish(inputs, **kwargs):
 
     """
     if context.executing_eagerly():
-        return OpLib.execute('HardSwish', inputs)
-    return OpLib.add('HardSwish', inputs, **kwargs)
+        return OpLib.execute("HardSwish", inputs)
+    return OpLib.add("HardSwish", inputs, **kwargs)
 
 
 @OpSchema.num_inputs(1)
@@ -345,9 +351,8 @@ def leaky_relu(inputs, alpha=0.2, inplace=False, **kwargs):
     """
     alpha = float(alpha)
     if context.executing_eagerly():
-        return OpLib.execute(
-            'Relu', inputs, outputs=inputs if inplace else [None], alpha=alpha)
-    return OpLib.add('Relu', inputs, alpha=alpha, **kwargs)
+        return OpLib.execute("Relu", inputs, outputs=inputs if inplace else [None], alpha=alpha)
+    return OpLib.add("Relu", inputs, alpha=alpha, **kwargs)
 
 
 @OpSchema.num_inputs(1)
@@ -382,14 +387,12 @@ def log_softmax(inputs, axis=-1, inplace=False, **kwargs):
 
     """
     if context.executing_eagerly():
-        return OpLib.execute(
-            'LogSoftmax', inputs,
-            outputs=inputs if inplace else [None], axis=axis)
-    return OpLib.add('LogSoftmax', inputs, axis=axis, **kwargs)
+        return OpLib.execute("LogSoftmax", inputs, outputs=inputs if inplace else [None], axis=axis)
+    return OpLib.add("LogSoftmax", inputs, axis=axis, **kwargs)
 
 
 @OpSchema.num_inputs(2)
-def prelu(inputs, data_format='NCHW', **kwargs):
+def prelu(inputs, data_format="NCHW", **kwargs):
     r"""Apply parametric rectified linear unit.
     `[He et.al, 2015] <https://arxiv.org/abs/1502.01852>`_.
 
@@ -424,8 +427,8 @@ def prelu(inputs, data_format='NCHW', **kwargs):
 
     """
     if context.executing_eagerly():
-        return OpLib.execute('PRelu', inputs, data_format=data_format)
-    return OpLib.add('PRelu', inputs, data_format=data_format, **kwargs)
+        return OpLib.execute("PRelu", inputs, data_format=data_format)
+    return OpLib.add("PRelu", inputs, data_format=data_format, **kwargs)
 
 
 @OpSchema.num_inputs(1)
@@ -463,9 +466,8 @@ def relu(inputs, inplace=False, **kwargs):
 
     """
     if context.executing_eagerly():
-        return OpLib.execute(
-            'Relu', inputs, outputs=inputs if inplace else [None], alpha=0.0)
-    return OpLib.add('Relu', inputs, alpha=0.0, **kwargs)
+        return OpLib.execute("Relu", inputs, outputs=inputs if inplace else [None], alpha=0.0)
+    return OpLib.add("Relu", inputs, alpha=0.0, **kwargs)
 
 
 @OpSchema.num_inputs(1)
@@ -504,9 +506,13 @@ def relu6(inputs, inplace=False, **kwargs):
     """
     if context.executing_eagerly():
         return OpLib.execute(
-            'Relu', inputs, outputs=inputs if inplace else [None],
-            alpha=0.0, max_value=6.0)
-    return OpLib.add('Relu', inputs, alpha=0.0, max_value=6.0, **kwargs)
+            "Relu",
+            inputs,
+            outputs=inputs if inplace else [None],
+            alpha=0.0,
+            max_value=6.0,
+        )
+    return OpLib.add("Relu", inputs, alpha=0.0, max_value=6.0, **kwargs)
 
 
 @OpSchema.num_inputs(1)
@@ -550,9 +556,13 @@ def selu(inputs, alpha=1.67326, gamma=1.0507, inplace=False, **kwargs):
     alpha, gamma = float(alpha), float(gamma)
     if context.executing_eagerly():
         return OpLib.execute(
-            'Selu', inputs, outputs=inputs if inplace else [None],
-            alpha=alpha, gamma=gamma)
-    return OpLib.add('Selu', inputs, alpha=alpha, gamma=gamma, **kwargs)
+            "Selu",
+            inputs,
+            outputs=inputs if inplace else [None],
+            alpha=alpha,
+            gamma=gamma,
+        )
+    return OpLib.add("Selu", inputs, alpha=alpha, gamma=gamma, **kwargs)
 
 
 @OpSchema.num_inputs(1)
@@ -584,9 +594,8 @@ def sigmoid(inputs, inplace=False, **kwargs):
 
     """
     if context.executing_eagerly():
-        return OpLib.execute(
-            'Sigmoid', inputs, outputs=inputs if inplace else [None])
-    return OpLib.add('Sigmoid', inputs, **kwargs)
+        return OpLib.execute("Sigmoid", inputs, outputs=inputs if inplace else [None])
+    return OpLib.add("Sigmoid", inputs, **kwargs)
 
 
 @OpSchema.num_inputs(1)
@@ -617,8 +626,8 @@ def silu(inputs, **kwargs):
 
     """
     if context.executing_eagerly():
-        return OpLib.execute('Silu', inputs)
-    return OpLib.add('Silu', inputs, **kwargs)
+        return OpLib.execute("Silu", inputs)
+    return OpLib.add("Silu", inputs, **kwargs)
 
 
 @OpSchema.num_inputs(1)
@@ -653,9 +662,8 @@ def softmax(inputs, axis=-1, inplace=False, **kwargs):
 
     """
     if context.executing_eagerly():
-        return OpLib.execute(
-            'Softmax', inputs, outputs=inputs if inplace else [None], axis=axis)
-    return OpLib.add('Softmax', inputs, axis=axis, **kwargs)
+        return OpLib.execute("Softmax", inputs, outputs=inputs if inplace else [None], axis=axis)
+    return OpLib.add("Softmax", inputs, axis=axis, **kwargs)
 
 
 @OpSchema.num_inputs(1)
@@ -687,6 +695,5 @@ def tanh(inputs, inplace=False, **kwargs):
 
     """
     if context.executing_eagerly():
-        return OpLib.execute(
-            'Tanh', inputs, outputs=inputs if inplace else [None])
-    return OpLib.add('Tanh', inputs, **kwargs)
+        return OpLib.execute("Tanh", inputs, outputs=inputs if inplace else [None])
+    return OpLib.add("Tanh", inputs, **kwargs)

@@ -28,4 +28,4 @@ from dragon.vm.torch.core.nn.init import xavier_normal_
 from dragon.vm.torch.core.nn.init import xavier_uniform_
 from dragon.vm.torch.core.nn.init import zeros_
 
-__all__ = [_s for _s in dir() if not _s.startswith('_')]
+__all__ = [_s for _s in dir() if not _s.startswith("_")]

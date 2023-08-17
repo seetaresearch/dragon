@@ -69,27 +69,26 @@ class Tensor(object):
 
     def __init__(self, *args, **kwargs):
         self._tape = None
-        self._device = kwargs.get('device', cpp.device())
-        self._impl = kwargs.get('impl', None)
-        self._deleter = kwargs.get('deleter', None)
-        self._requires_grad = kwargs.get('requires_grad', False)
+        self._device = kwargs.get("device", cpp.device())
+        self._impl = kwargs.get("impl", None)
+        self._deleter = kwargs.get("deleter", None)
+        self._requires_grad = kwargs.get("requires_grad", False)
         self._retains_grad = False
         if len(args) == 1:
             if isinstance(args[0], (list, tuple)):
-                dtype = kwargs.get('dtype', 'float32')
+                dtype = kwargs.get("dtype", "float32")
                 self._from_array(numpy.array(args[0], dtype))
             elif isinstance(args[0], numpy.ndarray):
-                dtype = kwargs.get('dtype', None)
-                self._from_array(numpy.array(
-                    args[0], dtype, copy=kwargs.get('copy', True)))
+                dtype = kwargs.get("dtype", None)
+                self._from_array(numpy.array(args[0], dtype, copy=kwargs.get("copy", True)))
             else:
                 if not isinstance(args[0], six.integer_types):
-                    raise ValueError('Excepted an integer as size.')
-                self._from_shape([args[0]], kwargs.get('dtype', 'float32'))
+                    raise ValueError("Excepted an integer as size.")
+                self._from_shape([args[0]], kwargs.get("dtype", "float32"))
         elif len(args) > 1:
             if not all(isinstance(arg, six.integer_types) for arg in args):
-                raise ValueError('Excepted integer(s) as sizes.')
-            self._from_shape(args, kwargs.get('dtype', 'float32'))
+                raise ValueError("Excepted integer(s) as sizes.")
+            self._from_shape(args, kwargs.get("dtype", "float32"))
 
     @property
     def data(self):
@@ -139,7 +138,7 @@ class Tensor(object):
         """
         if self._requires_grad:
             default_ws = workspace.get_workspace()
-            impl = default_ws.get_tensor(self.id + '_grad')
+            impl = default_ws.get_tensor(self.id + "_grad")
             if impl and impl.size > 0:
                 return Tensor(device=self.device, impl=impl)
         return None
@@ -840,8 +839,7 @@ class Tensor(object):
             The output tensor.
 
         """
-        self._impl.CopyFrom(
-            src._impl, self._device.to_proto(), src._device.to_proto())
+        self._impl.CopyFrom(src._impl, self._device.to_proto(), src._device.to_proto())
         return self
 
     def cos(self):
@@ -870,7 +868,7 @@ class Tensor(object):
 
         """
         self._impl.ToCPU()
-        self._device = cpp.device('cpu')
+        self._device = cpp.device("cpu")
         return self
 
     def cuda(self, device=None):
@@ -891,11 +889,11 @@ class Tensor(object):
             cfg = config.config()
             device = cfg.device_index
         if isinstance(device, cpp.device):
-            if device.type != 'cuda':
-                raise ValueError('Excepted cuda device, got: ' + device.type)
+            if device.type != "cuda":
+                raise ValueError("Excepted cuda device, got: " + device.type)
             device = device.index
         self._impl.ToCUDA(device)
-        self._device = cpp.device('cuda', device)
+        self._device = cpp.device("cuda", device)
         return self
 
     def cumsum(self, dim):
@@ -1433,7 +1431,7 @@ class Tensor(object):
             ``True`` if the data type is floating otherwise ``False``.
 
         """
-        return 'float' in self.dtype
+        return "float" in self.dtype
 
     def item(self):
         """Return the value as a python number.
@@ -1849,11 +1847,11 @@ class Tensor(object):
             cfg = config.config()
             device = cfg.device_index
         if isinstance(device, cpp.device):
-            if device.type != 'mlu':
-                raise ValueError('Excepted mlu device, got: ' + device.type)
+            if device.type != "mlu":
+                raise ValueError("Excepted mlu device, got: " + device.type)
             device = device.index
         self._impl.ToMLU(device)
-        self._device = cpp.device('mlu', device)
+        self._device = cpp.device("mlu", device)
         return self
 
     def mm(self, mat2):
@@ -1895,11 +1893,11 @@ class Tensor(object):
             cfg = config.config()
             device = cfg.device_index
         if isinstance(device, cpp.device):
-            if device.type != 'mps':
-                raise ValueError('Excepted mps device, got: ' + device.type)
+            if device.type != "mps":
+                raise ValueError("Excepted mps device, got: " + device.type)
             device = device.index
         self._impl.ToMPS(device)
-        self._device = cpp.device('mps', device)
+        self._device = cpp.device("mps", device)
         return self
 
     def mul(self, other):
@@ -2178,8 +2176,12 @@ class Tensor(object):
 
         """
         return self.new_full(
-            nest.flatten(size), fill_value=1, dtype=dtype, device=device,
-            requires_grad=requires_grad)
+            nest.flatten(size),
+            fill_value=1,
+            dtype=dtype,
+            device=device,
+            requires_grad=requires_grad,
+        )
 
     def new_tensor(self, data, dtype=None, device=None, requires_grad=False):
         """Return a tensor initializing from the given data.
@@ -2235,8 +2237,12 @@ class Tensor(object):
 
         """
         return self.new_full(
-            nest.flatten(size), fill_value=0, dtype=dtype, device=device,
-            requires_grad=requires_grad)
+            nest.flatten(size),
+            fill_value=0,
+            dtype=dtype,
+            device=device,
+            requires_grad=requires_grad,
+        )
 
     def nonzero(self):
         r"""Return the index of non-zero elements.
@@ -2254,7 +2260,7 @@ class Tensor(object):
 
         """
 
-    def norm(self, p='fro', dim=None, keepdim=False, out=None, dtype=None):
+    def norm(self, p="fro", dim=None, keepdim=False, out=None, dtype=None):
         """Return the norm of elements along the given dimension.
 
         Parameters
@@ -2472,7 +2478,7 @@ class Tensor(object):
     def retain_grad(self):
         """Retain grad for the non-leaf tensor."""
         if not self._requires_grad:
-            raise RuntimeError('Retain grad for a tensor that does not require.')
+            raise RuntimeError("Retain grad for a tensor that does not require.")
         self._retains_grad = True
 
     def roll(self, shifts, dims=None):
@@ -3015,8 +3021,8 @@ class Tensor(object):
             The output tensor.
 
         """
-        dtype = kwargs.get('dtype', None)
-        device = kwargs.get('device', None)
+        dtype = kwargs.get("dtype", None)
+        device = kwargs.get("device", None)
         for arg in args:
             if isinstance(arg, cpp.dtype):
                 dtype = arg
@@ -3026,18 +3032,18 @@ class Tensor(object):
                 dtype, device = arg.dtype, arg.device
                 break
             else:
-                raise ValueError('Unsupported conversion target.')
+                raise ValueError("Unsupported conversion target.")
         if device is not None:
-            if device.type == 'cpu':
+            if device.type == "cpu":
                 self.cpu()
-            elif device.type == 'cuda':
+            elif device.type == "cuda":
                 self.cuda(device.index)
-            elif device.type == 'mps':
+            elif device.type == "mps":
                 self.mps(device.index)
-            elif device.type == 'mlu':
+            elif device.type == "mlu":
                 self.mlu(device.index)
             else:
-                raise ValueError('Unsupported device type: ' + device.type)
+                raise ValueError("Unsupported device type: " + device.type)
         if dtype is not None:
             return self.type(dtype)
         return self
@@ -3853,12 +3859,11 @@ class Tensor(object):
         array = self.numpy()
         if len(array.shape) == 0:
             return str(array)
-        if self._device.type != 'cpu':
+        if self._device.type != "cpu":
             suffix_str = ", device='%s')" % self._device
         else:
-            suffix_str = ')'
-        debug_str = string.array_to_string(
-            array, prefix='tensor(', suffix=suffix_str)
+            suffix_str = ")"
+        debug_str = string.array_to_string(array, prefix="tensor(", suffix=suffix_str)
         del array
         return string.add_indent(debug_str, 7)
 
@@ -3963,7 +3968,7 @@ class BFloat16Tensor(object):
     """The bfloat16 tensor."""
 
     def __new__(cls, *args, **kwargs):
-        kwargs['dtype'] = 'bfloat16'
+        kwargs["dtype"] = "bfloat16"
         return Tensor(*args, **kwargs)
 
 
@@ -3971,7 +3976,7 @@ class BoolTensor(object):
     """The bool tensor."""
 
     def __new__(cls, *args, **kwargs):
-        kwargs['dtype'] = 'bool'
+        kwargs["dtype"] = "bool"
         return Tensor(*args, **kwargs)
 
 
@@ -3979,7 +3984,7 @@ class ByteTensor(object):
     """The uint8 tensor."""
 
     def __new__(cls, *args, **kwargs):
-        kwargs['dtype'] = 'uint8'
+        kwargs["dtype"] = "uint8"
         return Tensor(*args, **kwargs)
 
 
@@ -3987,7 +3992,7 @@ class CharTensor(object):
     """The int8 tensor."""
 
     def __new__(cls, *args, **kwargs):
-        kwargs['dtype'] = 'int8'
+        kwargs["dtype"] = "int8"
         return Tensor(*args, **kwargs)
 
 
@@ -3995,7 +4000,7 @@ class DoubleTensor(object):
     """The float64 tensor."""
 
     def __new__(cls, *args, **kwargs):
-        kwargs['dtype'] = 'float64'
+        kwargs["dtype"] = "float64"
         return Tensor(*args, **kwargs)
 
 
@@ -4003,7 +4008,7 @@ class FloatTensor(object):
     """The float32 tensor."""
 
     def __new__(cls, *args, **kwargs):
-        kwargs['dtype'] = 'float32'
+        kwargs["dtype"] = "float32"
         return Tensor(*args, **kwargs)
 
 
@@ -4011,7 +4016,7 @@ class HalfTensor(object):
     """The float16 tensor."""
 
     def __new__(cls, *args, **kwargs):
-        kwargs['dtype'] = 'float16'
+        kwargs["dtype"] = "float16"
         return Tensor(*args, **kwargs)
 
 
@@ -4019,11 +4024,11 @@ class IntTensor(object):
     """The int32 tensor."""
 
     def __new__(cls, *args, **kwargs):
-        kwargs['dtype'] = 'int32'
+        kwargs["dtype"] = "int32"
         return Tensor(*args, **kwargs)
 
 
 class LongTensor(object):
     def __new__(cls, *args, **kwargs):
-        kwargs['dtype'] = 'int64'
+        kwargs["dtype"] = "int64"
         return Tensor(*args, **kwargs)

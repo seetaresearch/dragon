@@ -27,11 +27,12 @@ try:
     from onnx.backend.base import namedtupledict
 except ImportError:
     from dragon.core.util import deprecation
-    onnx = deprecation.NotInstalled('onnx')
+
+    onnx = deprecation.NotInstalled("onnx")
     Backend = object
     ONNXBackendRep = object
-    Device = deprecation.NotInstalled('onnx')
-    DeviceType = deprecation.NotInstalled('onnx')
+    Device = deprecation.NotInstalled("onnx")
+    DeviceType = deprecation.NotInstalled("onnx")
     namedtupledict = collections.namedtuple
 
 from dragon.core.autograph.graph_lib import GraphLib
@@ -59,11 +60,11 @@ class BackendRep(ONNXBackendRep):
             device = Device(device)
         execute_ws = workspace.get_workspace()
         if device.type == DeviceType.CPU:
-            device_type, device_index = 'cpu', 0
+            device_type, device_index = "cpu", 0
         elif device.type == DeviceType.CUDA:
-            device_type, device_index = 'cuda', device.device_id
+            device_type, device_index = "cuda", device.device_id
         else:
-            raise ValueError('Unsupported device type: ' + device.type)
+            raise ValueError("Unsupported device type: " + device.type)
         with context.device(device_type, device_index):
             self._context = GraphLib.from_onnx(model)
         self._input_dict = collections.OrderedDict()
@@ -74,7 +75,7 @@ class BackendRep(ONNXBackendRep):
         for output in self._context._def.output:
             impl = execute_ws.get_tensor(output)
             self._output_dict[output] = Tensor(impl=impl)
-        self._output_tuple = namedtupledict('Outputs', self._context._def.output)
+        self._output_tuple = namedtupledict("Outputs", self._context._def.output)
 
     def run(self, inputs, **kwargs):
         """Run the model.
@@ -99,7 +100,7 @@ class BackendRep(ONNXBackendRep):
             for ref, value in zip(self._input_dict.values(), inputs):
                 ref._impl.FromNumpy(value)
         else:
-            raise ValueError('Excepted sequence or dict inputs.')
+            raise ValueError("Excepted sequence or dict inputs.")
         self._context.run()
         return self._output_tuple(*self._output_dict.values())
 
@@ -108,7 +109,7 @@ class DragonBackend(Backend):
     """ONNX-Dragon backend."""
 
     @classmethod
-    def prepare(cls, model, device='CPU:0', **kwargs):
+    def prepare(cls, model, device="CPU:0", **kwargs):
         """Create a backend to execute repeatedly.
 
         Parameters
@@ -125,11 +126,11 @@ class DragonBackend(Backend):
 
         """
         if not os.path.exists(model):
-            raise ValueError('Model({}) is not existed.'.format(model))
+            raise ValueError("Model({}) is not existed.".format(model))
         return BackendRep(model, device, **kwargs)
 
     @classmethod
-    def run_model(cls, model, inputs, device='CUDA:0', **kwargs):
+    def run_model(cls, model, inputs, device="CUDA:0", **kwargs):
         """Execute an onnx model once.
 
         Parameters

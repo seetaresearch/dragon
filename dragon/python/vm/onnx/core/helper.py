@@ -17,6 +17,7 @@ from __future__ import print_function
 import sys
 
 import numpy
+
 try:
     from onnx import mapping
     from onnx.backend.base import namedtupledict
@@ -30,16 +31,17 @@ try:
     from onnx.numpy_helper import from_array
 except ImportError:
     from dragon.core.util import deprecation
-    mapping = deprecation.NotInstalled('onnx')
-    namedtupledict = deprecation.not_installed('onnx')
-    make_attribute = deprecation.not_installed('onnx')
-    make_graph = deprecation.not_installed('onnx')
-    make_model = deprecation.not_installed('onnx')
-    make_node = deprecation.not_installed('onnx')
-    make_tensor = deprecation.not_installed('onnx')
-    make_tensor_value_info = deprecation.not_installed('onnx')
-    printable_graph = deprecation.not_installed('onnx')
-    from_array = deprecation.not_installed('onnx')
+
+    mapping = deprecation.NotInstalled("onnx")
+    namedtupledict = deprecation.not_installed("onnx")
+    make_attribute = deprecation.not_installed("onnx")
+    make_graph = deprecation.not_installed("onnx")
+    make_model = deprecation.not_installed("onnx")
+    make_node = deprecation.not_installed("onnx")
+    make_tensor = deprecation.not_installed("onnx")
+    make_tensor_value_info = deprecation.not_installed("onnx")
+    printable_graph = deprecation.not_installed("onnx")
+    from_array = deprecation.not_installed("onnx")
 
 
 def add_attribute(node_proto, name, value):
@@ -49,13 +51,13 @@ def add_attribute(node_proto, name, value):
 
 def collect_inputs(graph_def):
     """Return all input tensor names defined in the graph."""
-    collection, outputs = set(), {''}
-    if hasattr(graph_def, 'op'):
+    collection, outputs = set(), {""}
+    if hasattr(graph_def, "op"):
         ops = graph_def.op
-    elif hasattr(graph_def, 'node'):
+    elif hasattr(graph_def, "node"):
         ops = graph_def.node
     else:
-        raise ValueError('GraphDef dose not have attr <op> or <node>.')
+        raise ValueError("GraphDef dose not have attr <op> or <node>.")
     for op in ops:
         for input in op.input:
             if input not in outputs:
@@ -69,8 +71,8 @@ def fetch_argument(op_def, arg, ws):
     """Return the value of a tensor argument."""
     desc = arg if isinstance(arg, bytes) else arg.s
     if sys.version_info >= (3, 0):
-        desc = desc.decode('utf-8')
-    desc = desc.replace('$NAME', op_def.name)
+        desc = desc.decode("utf-8")
+    desc = desc.replace("$NAME", op_def.name)
     value = ws.get_tensor(desc).ToNumpy()
     if value.size == 1:
         return value.flatten()[0]
@@ -94,19 +96,26 @@ def from_tensor(tensor, ws):
 
 def make_model_from_node(node_proto, inputs, use_weights=True):
     """Make a model from the standalone node proto."""
-    output_dtype = 'float32'  # Dummy value only
+    output_dtype = "float32"  # Dummy value only
     output_shape = [-99]  # Dummy value only
-    graph_inputs = [make_tensor_value_info(
-        name, tensor_type(str(array.dtype)), array.shape)
-        for name, array in zip(node_proto.input, inputs)]
-    graph_outputs = [make_tensor_value_info(
-        name, tensor_type(output_dtype), output_shape)
-        for name in node_proto.output]
+    graph_inputs = [
+        make_tensor_value_info(name, tensor_type(str(array.dtype)), array.shape)
+        for name, array in zip(node_proto.input, inputs)
+    ]
+    graph_outputs = [
+        make_tensor_value_info(name, tensor_type(output_dtype), output_shape)
+        for name in node_proto.output
+    ]
     if use_weights:
-        initializers = [make_tensor(
-            name, tensor_type(str(array.dtype)), array.shape,
-            array.flatten().tolist())
-            for name, array in zip(node_proto.input[1:], inputs[1:])]
+        initializers = [
+            make_tensor(
+                name,
+                tensor_type(str(array.dtype)),
+                array.shape,
+                array.flatten().tolist(),
+            )
+            for name, array in zip(node_proto.input[1:], inputs[1:])
+        ]
     else:
         initializers = []
     graph = make_graph(

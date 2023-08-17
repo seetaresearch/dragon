@@ -44,7 +44,7 @@ def is_built():
         ``True`` if built otherwise ``False``.
 
     """
-    return sysconfig.get_build_info()['is_cuda_build']
+    return sysconfig.get_build_info()["is_cuda_build"]
 
 
 # Module instances.

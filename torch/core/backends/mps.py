@@ -60,7 +60,7 @@ def get_device_family(device=None):
 
     """
     device = -1 if device is None else device
-    device_index = device.index if hasattr(device, 'index') else device
+    device_index = device.index if hasattr(device, "index") else device
     return backend.mpsGetDeviceFamily(device_index)
 
 
@@ -81,7 +81,7 @@ def get_device_name(device=None):
 
     """
     device = -1 if device is None else device
-    device_index = device.index if hasattr(device, 'index') else device
+    device_index = device.index if hasattr(device, "index") else device
     return backend.mpsGetDeviceName(device_index)
 
 
@@ -106,7 +106,7 @@ def is_built():
         ``True`` if built otherwise ``False``.
 
     """
-    return sysconfig.get_build_info()['is_mps_build']
+    return sysconfig.get_build_info()["is_mps_build"]
 
 
 def manual_seed(seed, device_index=None):
@@ -155,11 +155,11 @@ def memory_allocated(device=None):
         The total number of allocated bytes.
 
     """
-    device_index = device.index if hasattr(device, 'index') else device
+    device_index = device.index if hasattr(device, "index") else device
     if device_index is None:
         device_index = backend.mpsGetDevice()
     current_ws = workspace.get_workspace()
-    return current_ws.memory_allocated('mps', device_index)
+    return current_ws.memory_allocated("mps", device_index)
 
 
 def set_device(device):
@@ -171,7 +171,7 @@ def set_device(device):
         The device to set.
 
     """
-    device_index = device.index if hasattr(device, 'index') else device
+    device_index = device.index if hasattr(device, "index") else device
     backend.mpsSetDevice(device_index)
 
 
@@ -187,5 +187,5 @@ def synchronize(device=None):
 
     """
     device = -1 if device is None else device
-    device_index = device.index if hasattr(device, 'index') else device
+    device_index = device.index if hasattr(device, "index") else device
     backend.mpsStreamSynchronize(device_index, 0)

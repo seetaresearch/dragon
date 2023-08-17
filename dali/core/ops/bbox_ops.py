@@ -18,7 +18,8 @@ try:
     from nvidia.dali import ops
 except ImportError:
     from dragon.core.util import deprecation
-    ops = deprecation.not_installed('nvidia.dali')
+
+    ops = deprecation.not_installed("nvidia.dali")
 
 from dragon.vm.dali.core.framework import context
 
@@ -86,14 +87,7 @@ class BBoxPaste(object):
 
     """
 
-    def __new__(
-        cls,
-        ltrb=True,
-        ratio=None,
-        paste_x=None,
-        paste_y=None,
-        **kwargs
-    ):
+    def __new__(cls, ltrb=True, ratio=None, paste_x=None, paste_y=None, **kwargs):
         """Create a ``BBoxPaste`` operator.
 
         Parameters
@@ -114,10 +108,5 @@ class BBoxPaste(object):
 
         """
         return ops.BBoxPaste(
-            ltrb=ltrb,
-            ratio=ratio,
-            paste_x=paste_x,
-            paste_y=paste_y,
-            device='cpu',
-            **kwargs
+            ltrb=ltrb, ratio=ratio, paste_x=paste_x, paste_y=paste_y, device="cpu", **kwargs
         )

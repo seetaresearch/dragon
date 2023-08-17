@@ -269,8 +269,12 @@ def baddbmm_(self, batch1, batch2, beta=1, alpha=1):
 
     """
     return math_ops.baddbmm(
-        self, batch1, batch2,
-        beta=beta, alpha=alpha, out=self,
+        self,
+        batch1,
+        batch2,
+        beta=beta,
+        alpha=alpha,
+        out=self,
     )
 
 
@@ -286,7 +290,7 @@ def backward(self, gradient=None, retain_graph=False):
 
     """
     if not self.requires_grad:
-        raise ValueError('Backward from a tensor that does not requires grad.')
+        raise ValueError("Backward from a tensor that does not requires grad.")
     grads = [] if gradient is None else [gradient]
     return Function.backward([self], grads, retain_graph=retain_graph)
 
@@ -300,7 +304,7 @@ def bfloat16(self):
         The output tensor.
 
     """
-    return math_ops.cast(self, 'bfloat16')
+    return math_ops.cast(self, "bfloat16")
 
 
 def bfloat16_(self):
@@ -312,7 +316,7 @@ def bfloat16_(self):
         The output tensor.
 
     """
-    return math_ops.cast(self, 'bfloat16', self)
+    return math_ops.cast(self, "bfloat16", self)
 
 
 def bitwise_and(self, other):
@@ -521,7 +525,7 @@ def bool(self):
         The output tensor.
 
     """
-    return math_ops.cast(self, 'bool')
+    return math_ops.cast(self, "bool")
 
 
 def bool_(self):
@@ -533,7 +537,7 @@ def bool_(self):
         The output tensor.
 
     """
-    return math_ops.cast(self, 'bool', self)
+    return math_ops.cast(self, "bool", self)
 
 
 def byte(self):
@@ -545,7 +549,7 @@ def byte(self):
         The output tensor.
 
     """
-    return math_ops.cast(self, 'uint8')
+    return math_ops.cast(self, "uint8")
 
 
 def byte_(self):
@@ -557,7 +561,7 @@ def byte_(self):
         The output tensor.
 
     """
-    return math_ops.cast(self, 'uint8', self)
+    return math_ops.cast(self, "uint8", self)
 
 
 def ceil(self):
@@ -605,7 +609,7 @@ def char(self):
         The output tensor.
 
     """
-    return math_ops.cast(self, 'int8')
+    return math_ops.cast(self, "int8")
 
 
 def char_(self):
@@ -617,7 +621,7 @@ def char_(self):
         The output tensor.
 
     """
-    return math_ops.cast(self, 'int8', self)
+    return math_ops.cast(self, "int8", self)
 
 
 def chunk(self, chunks, dim=0, copy=True):
@@ -781,7 +785,7 @@ def double(self):
         The output tensor.
 
     """
-    return math_ops.cast(self, 'float64')
+    return math_ops.cast(self, "float64")
 
 
 def double_(self):
@@ -793,7 +797,7 @@ def double_(self):
         The output tensor.
 
     """
-    return math_ops.cast(self, 'float64', self)
+    return math_ops.cast(self, "float64", self)
 
 
 def eq(self, other):
@@ -890,8 +894,15 @@ def fill_(self, value):
     """
     size = self.size()
     return Function.apply(
-        'Fill', self.device, [], outputs=[self],
-        dtype=self.dtype, value=float(value), ndim=len(size), dims=size)
+        "Fill",
+        self.device,
+        [],
+        outputs=[self],
+        dtype=self.dtype,
+        value=float(value),
+        ndim=len(size),
+        dims=size,
+    )
 
 
 def flatten(self, start_dim=0, end_dim=-1):
@@ -1002,7 +1013,7 @@ def _float(self):
         The output tensor.
 
     """
-    return math_ops.cast(self, 'float32')
+    return math_ops.cast(self, "float32")
 
 
 def _float_(self):
@@ -1014,7 +1025,7 @@ def _float_(self):
         The output tensor.
 
     """
-    return math_ops.cast(self, 'float32', self)
+    return math_ops.cast(self, "float32", self)
 
 
 def floor(self):
@@ -1115,27 +1126,27 @@ def getitem(self, item):
     """
     gather_args = []
     if isinstance(item, Tensor):
-        if item.dtype == 'bool' or item.dtype == 'uint8':
+        if item.dtype == "bool" or item.dtype == "uint8":
             return self.masked_select(item)
-        elif item.dtype in ('int32', 'int64'):
+        elif item.dtype in ("int32", "int64"):
             gather_args.append((0, item))
         else:
-            raise TypeError('Unsupported index type: ' + item.dtype)
+            raise TypeError("Unsupported index type: " + item.dtype)
     if isinstance(item, tuple):
         for i, elem in enumerate(item):
             if isinstance(elem, Tensor):
-                if elem.dtype in ('int32', 'int64'):
+                if elem.dtype in ("int32", "int64"):
                     gather_args.append((i, elem))
                 else:
-                    raise TypeError('Unsupported index type: ' + elem.dtype)
+                    raise TypeError("Unsupported index type: " + elem.dtype)
     if len(gather_args) == 1:
         return self.index_select(*gather_args[0])
     elif len(gather_args) > 1:
         raise NotImplementedError
     starts, sizes = _process_index(item)
     return Function.apply(
-        'Slice', self.device, [self], ndim=len(starts),
-        starts=starts, sizes=sizes)
+        "Slice", self.device, [self], ndim=len(starts), starts=starts, sizes=sizes
+    )
 
 
 def gt(self, other):
@@ -1170,7 +1181,7 @@ def half(self):
         The output tensor.
 
     """
-    return math_ops.cast(self, 'float16')
+    return math_ops.cast(self, "float16")
 
 
 def half_(self):
@@ -1182,7 +1193,7 @@ def half_(self):
         The output tensor.
 
     """
-    return math_ops.cast(self, 'float16', self)
+    return math_ops.cast(self, "float16", self)
 
 
 def index_select(self, dim, index):
@@ -1213,7 +1224,7 @@ def _int(self):
         The output tensor.
 
     """
-    return math_ops.cast(self, 'int32')
+    return math_ops.cast(self, "int32")
 
 
 def _int_(self):
@@ -1225,7 +1236,7 @@ def _int_(self):
         The output tensor.
 
     """
-    return math_ops.cast(self, 'int32', self)
+    return math_ops.cast(self, "int32", self)
 
 
 def isfinite(self):
@@ -1458,7 +1469,7 @@ def long(self):
         The output tensor.
 
     """
-    return math_ops.cast(self, 'int64')
+    return math_ops.cast(self, "int64")
 
 
 def long_(self):
@@ -1470,7 +1481,7 @@ def long_(self):
         The output tensor.
 
     """
-    return math_ops.cast(self, 'int64', self)
+    return math_ops.cast(self, "int64", self)
 
 
 def lt(self, other):
@@ -2049,7 +2060,7 @@ def nonzero(self):
     return array_ops.nonzero(self)
 
 
-def norm(self, p='fro', dim=None, keepdim=False, out=None, dtype=None):
+def norm(self, p="fro", dim=None, keepdim=False, out=None, dtype=None):
     """Return the norm of elements along the given dimension.
 
     Parameters
@@ -2096,9 +2107,16 @@ def normal_(self, mean=0, std=1):
     """
     size = self.size()
     return Function.apply(
-        'RandomNormal', self.device, [], outputs=[self],
-        dtype=self.dtype, mean=float(mean), std=float(std),
-        ndim=len(size), dims=size)
+        "RandomNormal",
+        self.device,
+        [],
+        outputs=[self],
+        dtype=self.dtype,
+        mean=float(mean),
+        std=float(std),
+        ndim=len(size),
+        dims=size,
+    )
 
 
 def permute(self, *dims):
@@ -2398,15 +2416,15 @@ def scatter_(self, dim, index, src, reduce=None):
 
     """
     if reduce:
-        if reduce == 'add':
+        if reduce == "add":
             return self.scatter_add_(dim, index, src)
-        elif reduce == 'multiply':
+        elif reduce == "multiply":
             to_mul = constant_ops.ones_like(self, self.dtype, device=self.device)
             with grad_mode.no_grad():
                 to_mul.scatter_(dim, index, src)
             return math_ops.mul(self, to_mul, self)
         else:
-            raise ValueError('Unknown reduction: ' + reduce)
+            raise ValueError("Unknown reduction: " + reduce)
     return array_ops.scatter(self, dim, index, src, self)
 
 
@@ -2477,8 +2495,14 @@ def setitem(self, key, value):
         _, value = constant_ops.remove_scalars(self, value)
         starts, sizes = _process_index(key)
         return Function.apply(
-            'Assign', self.device, [self, value], outputs=[self],
-            ndim=len(starts), starts=starts, sizes=sizes)
+            "Assign",
+            self.device,
+            [self, value],
+            outputs=[self],
+            ndim=len(starts),
+            starts=starts,
+            sizes=sizes,
+        )
 
 
 def sigmoid(self):
@@ -3083,9 +3107,16 @@ def uniform_(self, low=0, high=1):
     """
     size = self.size()
     return Function.apply(
-        'RandomUniform', self.device, [], outputs=[self],
-        dtype=self.dtype, low=float(low), high=float(high),
-        ndim=len(size), dims=size)
+        "RandomUniform",
+        self.device,
+        [],
+        outputs=[self],
+        dtype=self.dtype,
+        low=float(low),
+        high=float(high),
+        ndim=len(size),
+        dims=size,
+    )
 
 
 def unique(self, return_inverse=False, return_counts=False, **kwargs):
@@ -3214,7 +3245,7 @@ def _process_index(item):
     """Process and normalize the index."""
     if not isinstance(item, (slice, tuple)):
         if not isinstance(item, int):
-            raise ValueError('The index should be a integer.')
+            raise ValueError("The index should be a integer.")
         item = (item,)
     if not isinstance(item, tuple):
         item = tuple([item])
@@ -3231,15 +3262,16 @@ def _process_index(item):
                 sizes.append(ele.stop - starts[-1])
                 if sizes[-1] == 0:
                     raise ValueError(
-                        'The starts and ends of dim {} can not be equal'
-                        ', got {}:{}.'.format(i, starts[-1], ele.stop))
+                        "The starts and ends of dim {} can not be equal"
+                        ", got {}:{}.".format(i, starts[-1], ele.stop)
+                    )
             if ele.step is not None:
                 raise NotImplementedError
         elif isinstance(ele, int):
             starts.append(ele)
             sizes.append(0)
         else:
-            raise TypeError('Unsupported index type: {}'.format(type(ele)))
+            raise TypeError("Unsupported index type: {}".format(type(ele)))
     return starts, sizes
 
 
@@ -3394,8 +3426,8 @@ Tensor.unsqueeze_ = unsqueeze_
 Tensor.where = where
 Tensor.var = var
 Tensor.__getitem__ = getitem
-Tensor.__radd__ = lambda self, value: math_ops._binary_func(value, self, 'Add')
-Tensor.__rmul__ = lambda self, value: math_ops._binary_func(value, self, 'Mul')
-Tensor.__rsub__ = lambda self, value: math_ops._binary_func(value, self, 'Sub')
-Tensor.__rtruediv__ = lambda self, value: math_ops._binary_func(value, self, 'Div')
+Tensor.__radd__ = lambda self, value: math_ops._binary_func(value, self, "Add")
+Tensor.__rmul__ = lambda self, value: math_ops._binary_func(value, self, "Mul")
+Tensor.__rsub__ = lambda self, value: math_ops._binary_func(value, self, "Sub")
+Tensor.__rtruediv__ = lambda self, value: math_ops._binary_func(value, self, "Div")
 Tensor.__setitem__ = setitem

@@ -23,4 +23,4 @@ from dragon.core.util.logging import set_directory
 from dragon.core.util.logging import set_verbosity
 from dragon.core.util.logging import warning
 
-__all__ = [_s for _s in dir() if not _s.startswith('_')]
+__all__ = [_s for _s in dir() if not _s.startswith("_")]

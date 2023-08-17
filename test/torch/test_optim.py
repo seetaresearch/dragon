@@ -40,27 +40,29 @@ class TestOptimizer(unittest.TestCase):
         except TypeError:
             pass
         try:
-            optimizer.add_param_group({'params': {'param': weight}})
+            optimizer.add_param_group({"params": {"param": weight}})
         except TypeError:
             pass
         try:
-            optimizer.add_param_group({'params': buffer})
+            optimizer.add_param_group({"params": buffer})
         except ValueError:
             pass
         try:
-            optimizer.add_param_group({'params': weight})
+            optimizer.add_param_group({"params": weight})
         except ValueError:
             pass
         _ = repr(optimizer)
 
     def test_adam(self):
         weight = torch.ones(1, requires_grad=True)
-        entries = [(-0.1, (0., 0.), 1e-8, False),
-                   (0.1, (0., 0.), -1e-8, False),
-                   (0.1, (-0.9, 0.), 1e-8, False),
-                   (0.1, (0.9, -0.999), 1e-8, False),
-                   (0.1, (0.9, 0.999), 1e-8, False),
-                   (0.1, (0.9, 0.999), 1e-8, True)]
+        entries = [
+            (-0.1, (0.0, 0.0), 1e-8, False),
+            (0.1, (0.0, 0.0), -1e-8, False),
+            (0.1, (-0.9, 0.0), 1e-8, False),
+            (0.1, (0.9, -0.999), 1e-8, False),
+            (0.1, (0.9, 0.999), 1e-8, False),
+            (0.1, (0.9, 0.999), 1e-8, True),
+        ]
         for lr, betas, eps, amsgrad in entries:
             try:
                 _ = torch.optim.Adam([weight], lr=lr, betas=betas, eps=eps, amsgrad=amsgrad)
@@ -70,8 +72,12 @@ class TestOptimizer(unittest.TestCase):
 
     def test_lars(self):
         weight = torch.ones(1, requires_grad=True)
-        entries = [(-0.1, 0, 0.001), (0.1, -0.1, 0.001),
-                   (0.1, 0, -0.001), (0.1, 0.9, 0.001)]
+        entries = [
+            (-0.1, 0, 0.001),
+            (0.1, -0.1, 0.001),
+            (0.1, 0, -0.001),
+            (0.1, 0.9, 0.001),
+        ]
         for lr, momentum, trust_coef in entries:
             try:
                 _ = torch.optim.LARS([weight], lr=lr, momentum=momentum, trust_coef=trust_coef)
@@ -80,17 +86,24 @@ class TestOptimizer(unittest.TestCase):
 
     def test_rmsprop(self):
         weight = torch.ones(1, requires_grad=True)
-        entries = [(-0.1, (0., 0.), 1e-8, False),
-                   (0.1, (0., 0.), -1e-8, False),
-                   (0.1, (-0.99, 0.), 1e-8, False),
-                   (0.1, (0.99, -0.9), 1e-8, False),
-                   (0.1, (0.99, 0.9), 1e-8, False),
-                   (0.1, (0.99, 0.9), 1e-8, True)]
+        entries = [
+            (-0.1, (0.0, 0.0), 1e-8, False),
+            (0.1, (0.0, 0.0), -1e-8, False),
+            (0.1, (-0.99, 0.0), 1e-8, False),
+            (0.1, (0.99, -0.9), 1e-8, False),
+            (0.1, (0.99, 0.9), 1e-8, False),
+            (0.1, (0.99, 0.9), 1e-8, True),
+        ]
         for lr, (alpha, momentum), eps, centered in entries:
             try:
                 _ = torch.optim.RMSprop(
-                    [weight], lr=lr, alpha=alpha, eps=eps,
-                    momentum=momentum, centered=centered)
+                    [weight],
+                    lr=lr,
+                    alpha=alpha,
+                    eps=eps,
+                    momentum=momentum,
+                    centered=centered,
+                )
             except ValueError:
                 pass
 
@@ -112,7 +125,7 @@ class TestOptimizer(unittest.TestCase):
         optimizer.step()
         self.assertLessEqual(float(weight1) - 0.8, 1e-5)
         optimizer.zero_grad()
-        self.assertLessEqual(float(weight1.grad) - 0., 1e-5)
+        self.assertLessEqual(float(weight1.grad) - 0.0, 1e-5)
         optimizer.zero_grad(set_to_none=True)
         self.assertEqual(weight1.grad, None)
         for i in range(3):
@@ -123,5 +136,5 @@ class TestOptimizer(unittest.TestCase):
         self.assertLessEqual(float(weight1) - 0.6, 1e-5)
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     run_tests()

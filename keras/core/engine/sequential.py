@@ -36,10 +36,14 @@ class Sequential(base_layer.Layer):
 
     """
 
-    _MODULE_IGNORED_PROPERTIES = frozenset(itertools.chain((
-        '_layer_call_argspecs',
-        base_layer.Layer._MODULE_IGNORED_PROPERTIES,
-    )))
+    _MODULE_IGNORED_PROPERTIES = frozenset(
+        itertools.chain(
+            (
+                "_layer_call_argspecs",
+                base_layer.Layer._MODULE_IGNORED_PROPERTIES,
+            )
+        )
+    )
 
     def __init__(self, layers=None, name=None):
         """Create a ``Sequential`` layer.
@@ -81,9 +85,11 @@ class Sequential(base_layer.Layer):
 
         """
         if not isinstance(layer, base_layer.Layer):
-            raise TypeError('Excepted the <layer> should be '
-                            'an instance of <tf.keras.layers.Layer>, '
-                            'Got: ' + str(layer))
+            raise TypeError(
+                "Excepted the <layer> should be "
+                "an instance of <tf.keras.layers.Layer>, "
+                "Got: " + str(layer)
+            )
         self.built = False
         if layer._name is None:
             layer._name = str(len(self._layers))
@@ -96,8 +102,8 @@ class Sequential(base_layer.Layer):
         for layer in self._layers:
             kwargs = {}
             argspec = self._layer_call_argspecs[layer].args
-            if 'training' in argspec:
-                kwargs['training'] = training
+            if "training" in argspec:
+                kwargs["training"] = training
             outputs = layer(inputs, **kwargs)
             inputs = outputs
         return outputs
@@ -105,7 +111,7 @@ class Sequential(base_layer.Layer):
     def pop(self):
         """Remove the last layer in the stack."""
         if not self._layers:
-            raise TypeError('There are no layers in the model.')
+            raise TypeError("There are no layers in the model.")
         layer = self._layers.pop()
         self._layer_call_argspecs.pop(layer)
         if not self._layers:

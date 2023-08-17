@@ -18,7 +18,8 @@ try:
     from nvidia.dali import ops
 except ImportError:
     from dragon.core.util import deprecation
-    ops = deprecation.not_installed('nvidia.dali')
+
+    ops = deprecation.not_installed("nvidia.dali")
 
 from dragon.core.util import six
 from dragon.vm.dali.core.framework import context
@@ -53,11 +54,7 @@ class Cast(object):
         """
         if isinstance(dtype, six.string_types):
             dtype = getattr(types, dtype.upper())
-        return ops.Cast(
-            dtype=dtype,
-            device=context.get_device_type(),
-            **kwargs
-        )
+        return ops.Cast(dtype=dtype, device=context.get_device_type(), **kwargs)
 
 
 class Erase(object):
@@ -78,12 +75,7 @@ class Erase(object):
     """
 
     def __new__(
-        cls,
-        axes=(0, 1),
-        fill_value=0,
-        normalized_anchor=True,
-        normalized_shape=True,
-        **kwargs
+        cls, axes=(0, 1), fill_value=0, normalized_anchor=True, normalized_shape=True, **kwargs
     ):
         """Create an ``Erase`` operator.
 
@@ -229,11 +221,7 @@ class Reshape(object):
             The operator.
 
         """
-        return ops.Reshape(
-            shape=shape,
-            device=context.get_device_type(),
-            **kwargs
-        )
+        return ops.Reshape(shape=shape, device=context.get_device_type(), **kwargs)
 
 
 class Slice(object):
@@ -258,13 +246,7 @@ class Slice(object):
 
     """
 
-    def __new__(
-        cls,
-        axes=(1, 0),
-        normalized_anchor=True,
-        normalized_shape=True,
-        **kwargs
-    ):
+    def __new__(cls, axes=(1, 0), normalized_anchor=True, normalized_shape=True, **kwargs):
         """Create a ``Slice`` operator.
 
         Parameters

@@ -23,9 +23,12 @@ from dragon.vm import torch
 class TestJit(unittest.TestCase):
     """Test jit component."""
 
-    @torch.jit.trace(example_inputs=[
-        torch.Tensor(1, dtype=torch.int64),
-        torch.Tensor(1, dtype=torch.int64)])
+    @torch.jit.trace(
+        example_inputs=[
+            torch.Tensor(1, dtype=torch.int64),
+            torch.Tensor(1, dtype=torch.int64),
+        ]
+    )
     def func1(self, a, b, **kwargs):
         return a + b
 
@@ -61,5 +64,5 @@ class TestJit(unittest.TestCase):
             pass
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     run_tests()

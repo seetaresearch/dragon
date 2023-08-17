@@ -87,16 +87,15 @@ def constant(
         shape=initial_value.shape,
         dtype=initial_value.dtype,
         impl=default_ws.create_tensor(
-            scope='Tensor' if symbolic
-            else framework_context.get_variable_scope())
-        .FromNumpy(initial_value, copy),
+            scope="Tensor" if symbolic else framework_context.get_variable_scope()
+        ).FromNumpy(initial_value, copy),
         deleter=None if symbolic else default_ws._handle_pool,
         symbolic=symbolic,
         name=name,
     )
 
 
-def eye(n, m=None, k=0, dtype='float32', **kwargs):
+def eye(n, m=None, k=0, dtype="float32", **kwargs):
     r"""Return a tensor constructed as the identity matrix.
 
     .. math:: \text{out} \leftarrow \text{diag}(1, 1, ..., 1)
@@ -135,12 +134,12 @@ def eye(n, m=None, k=0, dtype='float32', **kwargs):
     """
     dims = (n, n if m is None else m)
     if context.executing_eagerly():
-        return OpLib.execute('Eye', [], ndim=2, dims=dims, k=k, dtype=dtype)
-    return OpLib.add('Eye', [], dims=dims, k=k, dtype=dtype, **kwargs)
+        return OpLib.execute("Eye", [], ndim=2, dims=dims, k=k, dtype=dtype)
+    return OpLib.add("Eye", [], dims=dims, k=k, dtype=dtype, **kwargs)
 
 
 @OpSchema.num_inputs(1)
-def eye_like(inputs, k=0, dtype='float32', **kwargs):
+def eye_like(inputs, k=0, dtype="float32", **kwargs):
     r"""Return a tensor of identity matrix with shape as the other.
 
     .. math:: \text{out} \leftarrow \text{diag}(1, 1, ..., 1)
@@ -176,12 +175,12 @@ def eye_like(inputs, k=0, dtype='float32', **kwargs):
 
     """
     if context.executing_eagerly():
-        return OpLib.execute('Eye', inputs, k=k, dtype=dtype)
-    return OpLib.add('Eye', inputs, k=k, dtype=dtype, **kwargs)
+        return OpLib.execute("Eye", inputs, k=k, dtype=dtype)
+    return OpLib.add("Eye", inputs, k=k, dtype=dtype, **kwargs)
 
 
-@OpSchema.convert_arg(name='shape', name_v2='dims')
-def fill(shape, value=0, dtype='float32', **kwargs):
+@OpSchema.convert_arg(name="shape", name_v2="dims")
+def fill(shape, value=0, dtype="float32", **kwargs):
     r"""Return a tensor filled with the scalar value.
 
     .. math:: \text{out} \leftarrow \text{value}
@@ -202,13 +201,13 @@ def fill(shape, value=0, dtype='float32', **kwargs):
 
     """
     args = OpSchema.parse_args(locals())
-    args['value'] = float(value)
+    args["value"] = float(value)
     if context.executing_eagerly():
-        return OpLib.execute('Fill', [], ndim=len(args['dims']), **args)
-    return OpLib.add('Fill', [], **args)
+        return OpLib.execute("Fill", [], ndim=len(args["dims"]), **args)
+    return OpLib.add("Fill", [], **args)
 
 
-def linspace(start, stop, num, dtype='int64', axis=0, **kwargs):
+def linspace(start, stop, num, dtype="int64", axis=0, **kwargs):
     r"""Generate evenly spaced values within intervals along the given axis.
 
     Range :math:`[\text{start}, \text{stop})` is determined for :attr:`num` values:
@@ -253,14 +252,23 @@ def linspace(start, stop, num, dtype='int64', axis=0, **kwargs):
     dims.insert(axis, num)
     if context.executing_eagerly():
         return OpLib.execute(
-            'LinSpace', [], ndim=len(dims), num_intervals=len(starts),
-            axis=axis, dtype=dtype, dims=dims, start=starts, stop=stops)
-    return OpLib.add('LinSpace', [], axis=axis, dtype=dtype, dims=dims,
-                     start=starts, stop=stops, **kwargs)
+            "LinSpace",
+            [],
+            ndim=len(dims),
+            num_intervals=len(starts),
+            axis=axis,
+            dtype=dtype,
+            dims=dims,
+            start=starts,
+            stop=stops,
+        )
+    return OpLib.add(
+        "LinSpace", [], axis=axis, dtype=dtype, dims=dims, start=starts, stop=stops, **kwargs
+    )
 
 
-@OpSchema.convert_arg(name='shape', name_v2='dims')
-def ones(shape, dtype='float32', **kwargs):
+@OpSchema.convert_arg(name="shape", name_v2="dims")
+def ones(shape, dtype="float32", **kwargs):
     r"""Return a tensor filled with ones.
 
     .. math:: \text{out} \leftarrow 1
@@ -286,7 +294,7 @@ def ones(shape, dtype='float32', **kwargs):
 
 
 @OpSchema.num_inputs(1)
-def ones_like(inputs, dtype='float32', **kwargs):
+def ones_like(inputs, dtype="float32", **kwargs):
     r"""Return a tensor of ones with shape as the other.
 
     .. math:: \text{out} \leftarrow 1
@@ -312,11 +320,11 @@ def ones_like(inputs, dtype='float32', **kwargs):
 
     """
     if context.executing_eagerly():
-        return OpLib.execute('Fill', inputs, value=1.0, dtype=dtype)
-    return OpLib.add('Fill', inputs, value=1.0, dtype=dtype, **kwargs)
+        return OpLib.execute("Fill", inputs, value=1.0, dtype=dtype)
+    return OpLib.add("Fill", inputs, value=1.0, dtype=dtype, **kwargs)
 
 
-def range(start, limit=None, delta=1, dtype='int64', **kwargs):
+def range(start, limit=None, delta=1, dtype="int64", **kwargs):
     """Return a tensor of evenly spaced values within an interval.
 
     Use :attr:`start` and :attr:`limit` for a simple range:
@@ -359,13 +367,12 @@ def range(start, limit=None, delta=1, dtype='int64', **kwargs):
     if limit is not None:
         slice.insert(1, float(limit))
     if context.executing_eagerly():
-        return OpLib.execute(
-            'Range', [], num_args=len(slice), dtype=dtype, slice=slice)
-    return OpLib.add('Range', [], slice=slice, dtype=dtype, **kwargs)
+        return OpLib.execute("Range", [], num_args=len(slice), dtype=dtype, slice=slice)
+    return OpLib.add("Range", [], slice=slice, dtype=dtype, **kwargs)
 
 
-@OpSchema.convert_arg(name='shape', name_v2='dims')
-def zeros(shape, dtype='float32', **kwargs):
+@OpSchema.convert_arg(name="shape", name_v2="dims")
+def zeros(shape, dtype="float32", **kwargs):
     r"""Return a tensor filled with zeros.
 
     .. math:: \text{out} \leftarrow 0
@@ -391,7 +398,7 @@ def zeros(shape, dtype='float32', **kwargs):
 
 
 @OpSchema.num_inputs(1)
-def zeros_like(inputs, dtype='float32', **kwargs):
+def zeros_like(inputs, dtype="float32", **kwargs):
     r"""Return a tensor of zeros with shape as the other.
 
     .. math:: \text{out} \leftarrow 0
@@ -417,8 +424,8 @@ def zeros_like(inputs, dtype='float32', **kwargs):
 
     """
     if context.executing_eagerly():
-        return OpLib.execute('Fill', inputs, value=0.0, dtype=dtype)
-    return OpLib.add('Fill', inputs, value=0.0, dtype=dtype, **kwargs)
+        return OpLib.execute("Fill", inputs, value=0.0, dtype=dtype)
+    return OpLib.add("Fill", inputs, value=0.0, dtype=dtype, **kwargs)
 
 
 def remove_scalars(inputs):
@@ -438,10 +445,8 @@ def scalar(input, dtype):
     try:
         input = float(input)
     except (TypeError, ValueError):
-        raise ValueError(
-            '<input> should be a python number, got {}.'
-            .format(type(input).__name__))
-    cached_name = '%s(%s)' % (dtype, input)
+        raise ValueError("<input> should be a python number, got {}.".format(type(input).__name__))
+    cached_name = "%s(%s)" % (dtype, input)
     default_ws = workspace.get_workspace()
     impl = default_ws.get_tensor(cached_name)
     if impl is None:

@@ -48,11 +48,11 @@ def ctc_loss(inputs, padding_mask=-1, **kwargs):
     inputs[0] = activation_ops.softmax(inputs[0], axis=2)
     if context.executing_eagerly():
         raise NotImplementedError
-    return OpLib.add('CTCLoss', inputs, padding_mask=padding_mask, **kwargs)
+    return OpLib.add("CTCLoss", inputs, padding_mask=padding_mask, **kwargs)
 
 
 @OpSchema.num_inputs(1, 2)
-def l1_loss(inputs, reduction='mean', **kwargs):
+def l1_loss(inputs, reduction="mean", **kwargs):
     r"""Compute element-wise absolute value difference.
 
     The **L1Loss** function is defined as:
@@ -82,12 +82,12 @@ def l1_loss(inputs, reduction='mean', **kwargs):
     """
     reduction = reduction.upper()
     if context.executing_eagerly():
-        return OpLib.execute('L1Loss', inputs, reduction=reduction)
-    return OpLib.add('L1Loss', inputs, reduction=reduction, **kwargs)
+        return OpLib.execute("L1Loss", inputs, reduction=reduction)
+    return OpLib.add("L1Loss", inputs, reduction=reduction, **kwargs)
 
 
 @OpSchema.num_inputs(min_num=1, max_num=2)
-def l2_loss(inputs, reduction='mean', **kwargs):
+def l2_loss(inputs, reduction="mean", **kwargs):
     r"""Compute element-wise squared error.
 
     The **L2Loss** function is defined as:
@@ -117,12 +117,12 @@ def l2_loss(inputs, reduction='mean', **kwargs):
     """
     reduction = reduction.upper()
     if context.executing_eagerly():
-        return OpLib.execute('L2Loss', inputs, reduction=reduction)
-    return OpLib.add('L2Loss', inputs, reduction=reduction, **kwargs)
+        return OpLib.execute("L2Loss", inputs, reduction=reduction)
+    return OpLib.add("L2Loss", inputs, reduction=reduction, **kwargs)
 
 
 @OpSchema.num_inputs(2)
-def nll_loss(inputs, axis=-1, ignore_index=None, reduction='valid', **kwargs):
+def nll_loss(inputs, axis=-1, ignore_index=None, reduction="valid", **kwargs):
     """Compute negative likelihood loss.
 
     Examples:
@@ -154,14 +154,15 @@ def nll_loss(inputs, axis=-1, ignore_index=None, reduction='valid', **kwargs):
     reduction = reduction.upper()
     if context.executing_eagerly():
         return OpLib.execute(
-            'NLLLoss', inputs, axis=axis, ignore_index=ignore_index,
-            reduction=reduction)
-    return OpLib.add('NLLLoss', inputs, axis=axis, ignore_index=ignore_index,
-                     reduction=reduction, **kwargs)
+            "NLLLoss", inputs, axis=axis, ignore_index=ignore_index, reduction=reduction
+        )
+    return OpLib.add(
+        "NLLLoss", inputs, axis=axis, ignore_index=ignore_index, reduction=reduction, **kwargs
+    )
 
 
 @OpSchema.num_inputs(2)
-def sigmoid_cross_entropy_loss(inputs, reduction='valid', **kwargs):
+def sigmoid_cross_entropy_loss(inputs, reduction="valid", **kwargs):
     """Compute sigmoid cross entropy.
 
     Examples:
@@ -187,21 +188,13 @@ def sigmoid_cross_entropy_loss(inputs, reduction='valid', **kwargs):
     """
     reduction = reduction.upper()
     if context.executing_eagerly():
-        return OpLib.execute(
-            'SigmoidCrossEntropyLoss', inputs, reduction=reduction)
-    return OpLib.add('SigmoidCrossEntropyLoss', inputs,
-                     reduction=reduction, **kwargs)
+        return OpLib.execute("SigmoidCrossEntropyLoss", inputs, reduction=reduction)
+    return OpLib.add("SigmoidCrossEntropyLoss", inputs, reduction=reduction, **kwargs)
 
 
 @OpSchema.num_inputs(2)
 def sigmoid_focal_loss(
-    inputs,
-    axis=-1,
-    alpha=0.25,
-    gamma=2.0,
-    start_index=0,
-    reduction='valid',
-    **kwargs
+    inputs, axis=-1, alpha=0.25, gamma=2.0, start_index=0, reduction="valid", **kwargs
 ):
     """Compute sigmoid focal loss.
     `[Lin et.al, 2017] <https://arxiv.org/abs/1708.02002>`_.
@@ -239,15 +232,28 @@ def sigmoid_focal_loss(
     reduction = reduction.upper()
     if context.executing_eagerly():
         return OpLib.execute(
-            'SigmoidFocalLoss', inputs, axis=axis, alpha=alpha, gamma=gamma,
-            start_index=start_index, reduction=reduction)
-    return OpLib.add('SigmoidFocalLoss', inputs, axis=axis,
-                     alpha=alpha, gamma=gamma, start_index=start_index,
-                     reduction=reduction, **kwargs)
+            "SigmoidFocalLoss",
+            inputs,
+            axis=axis,
+            alpha=alpha,
+            gamma=gamma,
+            start_index=start_index,
+            reduction=reduction,
+        )
+    return OpLib.add(
+        "SigmoidFocalLoss",
+        inputs,
+        axis=axis,
+        alpha=alpha,
+        gamma=gamma,
+        start_index=start_index,
+        reduction=reduction,
+        **kwargs
+    )
 
 
 @OpSchema.num_inputs(1, 2)
-def smooth_l1_loss(inputs, beta=1.0, reduction='mean', **kwargs):
+def smooth_l1_loss(inputs, beta=1.0, reduction="mean", **kwargs):
     r"""Compute element-wise error transited from L1 and L2.
     `[Girshick, 2015] <https://arxiv.org/abs/1504.08083>`_.
 
@@ -286,20 +292,12 @@ def smooth_l1_loss(inputs, beta=1.0, reduction='mean', **kwargs):
     beta = float(beta)
     reduction = reduction.upper()
     if context.executing_eagerly():
-        return OpLib.execute(
-            'SmoothL1Loss', inputs, beta=beta, reduction=reduction)
-    return OpLib.add('SmoothL1Loss', inputs, beta=beta,
-                     reduction=reduction, **kwargs)
+        return OpLib.execute("SmoothL1Loss", inputs, beta=beta, reduction=reduction)
+    return OpLib.add("SmoothL1Loss", inputs, beta=beta, reduction=reduction, **kwargs)
 
 
 @OpSchema.num_inputs(2)
-def softmax_cross_entropy_loss(
-    inputs,
-    axis=-1,
-    ignore_index=None,
-    reduction='valid',
-    **kwargs
-):
+def softmax_cross_entropy_loss(inputs, axis=-1, ignore_index=None, reduction="valid", **kwargs):
     """Compute softmax cross entropy.
 
     Both sparse or dense targets are supported:
@@ -332,7 +330,17 @@ def softmax_cross_entropy_loss(
     reduction = reduction.upper()
     if context.executing_eagerly():
         return OpLib.execute(
-            'SoftmaxCrossEntropyLoss', inputs, axis=axis,
-            ignore_index=ignore_index, reduction=reduction)
-    return OpLib.add('SoftmaxCrossEntropyLoss', inputs, axis=axis,
-                     ignore_index=ignore_index, reduction=reduction, **kwargs)
+            "SoftmaxCrossEntropyLoss",
+            inputs,
+            axis=axis,
+            ignore_index=ignore_index,
+            reduction=reduction,
+        )
+    return OpLib.add(
+        "SoftmaxCrossEntropyLoss",
+        inputs,
+        axis=axis,
+        ignore_index=ignore_index,
+        reduction=reduction,
+        **kwargs
+    )

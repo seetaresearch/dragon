@@ -31,8 +31,8 @@ def avg_pool(
     input,
     ksize,
     strides,
-    padding='VALID',
-    data_format='NHWC',
+    padding="VALID",
+    data_format="NHWC",
     name=None,
 ):
     r"""Apply n-dimension average pooling.
@@ -83,24 +83,25 @@ def avg_pool(
     else:
         num_total_dims = len(ksize)
     num_spatial_dims = num_total_dims - 2
-    data_format = data_format if data_format else 'NHWC'
-    start_axis = 2 if data_format.startswith('NC') else 1
+    data_format = data_format if data_format else "NHWC"
+    start_axis = 2 if data_format.startswith("NC") else 1
     normalize_spatial_args = functools.partial(
         _normalize_spatial_args,
         num_total_dims=num_total_dims,
         num_spatial_dims=num_spatial_dims,
-        start_axis=start_axis)
-    ksize = normalize_spatial_args('ksize', ksize)
-    strides = normalize_spatial_args('strides', strides)
-    padding, pads = normalize_spatial_args('padding', padding)
-    return getattr(vision_ops, 'pool{}d'.format(num_spatial_dims))(
+        start_axis=start_axis,
+    )
+    ksize = normalize_spatial_args("ksize", ksize)
+    strides = normalize_spatial_args("strides", strides)
+    padding, pads = normalize_spatial_args("padding", padding)
+    return getattr(vision_ops, "pool{}d".format(num_spatial_dims))(
         input,
-        kernel_shape=ksize[start_axis:start_axis + num_spatial_dims],
-        strides=strides[start_axis:start_axis + num_spatial_dims],
+        kernel_shape=ksize[start_axis : start_axis + num_spatial_dims],
+        strides=strides[start_axis : start_axis + num_spatial_dims],
         padding=padding,
         pads=pads,
-        mode='avg',
-        data_format='NCHW' if data_format.startswith('NC') else 'NHWC',
+        mode="avg",
+        data_format="NCHW" if data_format.startswith("NC") else "NHWC",
         name=name,
     )
 
@@ -109,8 +110,8 @@ def avg_pool1d(
     input,
     ksize,
     strides,
-    padding='VALID',
-    data_format='NHWC',
+    padding="VALID",
+    data_format="NHWC",
     name=None,
 ):
     r"""Apply 1d average pooling.
@@ -152,10 +153,10 @@ def avg_pool1d(
         The output tensor.
 
     """
-    start_axis = 2 if data_format.startswith('NC') else 1
+    start_axis = 2 if data_format.startswith("NC") else 1
     return avg_pool(
         input=input,
-        ksize=_normalize_spatial_args('ksize', ksize, 3, 1, start_axis),
+        ksize=_normalize_spatial_args("ksize", ksize, 3, 1, start_axis),
         strides=strides,
         padding=padding,
         data_format=data_format,
@@ -167,8 +168,8 @@ def avg_pool2d(
     input,
     ksize,
     strides,
-    padding='VALID',
-    data_format='NHWC',
+    padding="VALID",
+    data_format="NHWC",
     name=None,
 ):
     r"""Apply 2d average pooling.
@@ -212,10 +213,10 @@ def avg_pool2d(
         The output tensor.
 
     """
-    start_axis = 2 if data_format.startswith('NC') else 1
+    start_axis = 2 if data_format.startswith("NC") else 1
     return avg_pool(
         input=input,
-        ksize=_normalize_spatial_args('ksize', ksize, 4, 2, start_axis),
+        ksize=_normalize_spatial_args("ksize", ksize, 4, 2, start_axis),
         strides=strides,
         padding=padding,
         data_format=data_format,
@@ -227,8 +228,8 @@ def avg_pool3d(
     input,
     ksize,
     strides,
-    padding='VALID',
-    data_format='NHWC',
+    padding="VALID",
+    data_format="NHWC",
     name=None,
 ):
     r"""Apply 3d average pooling.
@@ -272,10 +273,10 @@ def avg_pool3d(
         The output tensor.
 
     """
-    start_axis = 2 if data_format.startswith('NC') else 1
+    start_axis = 2 if data_format.startswith("NC") else 1
     return avg_pool(
         input=input,
-        ksize=_normalize_spatial_args('ksize', ksize, 5, 3, start_axis),
+        ksize=_normalize_spatial_args("ksize", ksize, 5, 3, start_axis),
         strides=strides,
         padding=padding,
         data_format=data_format,
@@ -283,7 +284,7 @@ def avg_pool3d(
     )
 
 
-def bias_add(value, bias, data_format='NHWC', name=None):
+def bias_add(value, bias, data_format="NHWC", name=None):
     """Add the bias across channels to input.
 
     Parameters
@@ -307,14 +308,7 @@ def bias_add(value, bias, data_format='NHWC', name=None):
 
 
 def convolution(
-    input,
-    filters,
-    strides=1,
-    padding='VALID',
-    data_format='NHWC',
-    dilations=1,
-    name=None,
-    **kwargs
+    input, filters, strides=1, padding="VALID", data_format="NHWC", dilations=1, name=None, **kwargs
 ):
     r"""Apply n-dimension convolution.
 
@@ -366,28 +360,29 @@ def convolution(
     """
     num_total_dims = len(filters.shape)
     num_spatial_dims = num_total_dims - 2
-    data_format = data_format if data_format else 'NHWC'
-    channel_axis = 1 if data_format.startswith('NC') else -1
-    start_axis = 2 if data_format.startswith('NC') else 1
+    data_format = data_format if data_format else "NHWC"
+    channel_axis = 1 if data_format.startswith("NC") else -1
+    start_axis = 2 if data_format.startswith("NC") else 1
     normalize_spatial_args = functools.partial(
         _normalize_spatial_args,
         num_total_dims=num_total_dims,
         num_spatial_dims=num_spatial_dims,
-        start_axis=start_axis)
-    strides = normalize_spatial_args('strides', strides)
-    dilations = normalize_spatial_args('dilations', dilations)
-    padding, pads = normalize_spatial_args('padding', padding)
-    return getattr(vision_ops, '{}{}d'.format(
-        kwargs.get('conv_type', 'conv'), num_spatial_dims))(
-            [input, filters],
-            kernel_shape=filters.shape[-num_spatial_dims:],
-            strides=strides[start_axis:start_axis + num_spatial_dims],
-            dilations=dilations[start_axis:start_axis + num_spatial_dims],
-            padding=padding,
-            pads=pads,
-            group=input.shape[channel_axis] // filters.shape[1],
-            data_format='NCHW' if data_format.startswith('NC') else 'NHWC',
-            name=name)
+        start_axis=start_axis,
+    )
+    strides = normalize_spatial_args("strides", strides)
+    dilations = normalize_spatial_args("dilations", dilations)
+    padding, pads = normalize_spatial_args("padding", padding)
+    return getattr(vision_ops, "{}{}d".format(kwargs.get("conv_type", "conv"), num_spatial_dims))(
+        [input, filters],
+        kernel_shape=filters.shape[-num_spatial_dims:],
+        strides=strides[start_axis : start_axis + num_spatial_dims],
+        dilations=dilations[start_axis : start_axis + num_spatial_dims],
+        padding=padding,
+        pads=pads,
+        group=input.shape[channel_axis] // filters.shape[1],
+        data_format="NCHW" if data_format.startswith("NC") else "NHWC",
+        name=name,
+    )
 
 
 def conv_transpose(
@@ -395,9 +390,9 @@ def conv_transpose(
     filters,
     output_shape=None,
     strides=1,
-    padding='SAME',
+    padding="SAME",
     output_padding=None,
-    data_format='NHWC',
+    data_format="NHWC",
     dilations=1,
     name=None,
 ):
@@ -458,31 +453,32 @@ def conv_transpose(
     elif input.shape is not None:
         num_total_dims = len(input.shape)
     else:
-        raise ValueError('Rank of <input> or <filters> must be known.')
+        raise ValueError("Rank of <input> or <filters> must be known.")
     num_spatial_dims = num_total_dims - 2
-    data_format = data_format if data_format else 'NHWC'
-    start_axis = 2 if data_format.startswith('NC') else 1
+    data_format = data_format if data_format else "NHWC"
+    start_axis = 2 if data_format.startswith("NC") else 1
     normalize_spatial_args = functools.partial(
         _normalize_spatial_args,
         num_total_dims=num_total_dims,
         num_spatial_dims=num_spatial_dims,
-        start_axis=start_axis)
-    strides = normalize_spatial_args('strides', strides)
-    dilations = normalize_spatial_args('dilations', dilations)
-    padding, pads = normalize_spatial_args('padding', padding)
-    if padding == 'SAME' and output_shape is None:
-        raise ValueError('Excepted <output_shape> for same padding.')
-    output_shape = normalize_spatial_args('output_shape', output_shape)
-    return getattr(vision_ops, 'conv{}d_transpose'.format(num_spatial_dims))(
+        start_axis=start_axis,
+    )
+    strides = normalize_spatial_args("strides", strides)
+    dilations = normalize_spatial_args("dilations", dilations)
+    padding, pads = normalize_spatial_args("padding", padding)
+    if padding == "SAME" and output_shape is None:
+        raise ValueError("Excepted <output_shape> for same padding.")
+    output_shape = normalize_spatial_args("output_shape", output_shape)
+    return getattr(vision_ops, "conv{}d_transpose".format(num_spatial_dims))(
         [input, filters],
-        kernel_shape=filters.shape[start_axis:start_axis + num_spatial_dims],
-        strides=strides[start_axis:start_axis + num_spatial_dims],
-        dilations=dilations[start_axis:start_axis + num_spatial_dims],
+        kernel_shape=filters.shape[start_axis : start_axis + num_spatial_dims],
+        strides=strides[start_axis : start_axis + num_spatial_dims],
+        dilations=dilations[start_axis : start_axis + num_spatial_dims],
         padding=padding,
         output_padding=output_padding,
         output_shape=output_shape,
         pads=pads,
-        data_format='NCHW' if data_format.startswith('NC') else 'NHWC',
+        data_format="NCHW" if data_format.startswith("NC") else "NHWC",
         name=name,
     )
 
@@ -491,8 +487,8 @@ def conv1d(
     input,
     filters,
     strides=1,
-    padding='VALID',
-    data_format='NHWC',
+    padding="VALID",
+    data_format="NHWC",
     dilations=None,
     name=None,
 ):
@@ -549,8 +545,8 @@ def conv2d(
     input,
     filters,
     strides=1,
-    padding='VALID',
-    data_format='NHWC',
+    padding="VALID",
+    data_format="NHWC",
     dilations=None,
     name=None,
 ):
@@ -608,7 +604,7 @@ def conv3d(
     filters,
     strides,
     padding,
-    data_format='NHWC',
+    data_format="NHWC",
     dilations=1,
     name=None,
 ):
@@ -657,7 +653,7 @@ def conv3d(
     dragon.Tensor
         The output tensor.
 
-    """
+    """  # noqa: E501
     return convolution(**locals())
 
 
@@ -666,9 +662,9 @@ def conv1d_transpose(
     filters,
     output_shape=None,
     strides=1,
-    padding='SAME',
+    padding="SAME",
     output_padding=None,
-    data_format='NHWC',
+    data_format="NHWC",
     dilations=None,
     name=None,
 ):
@@ -730,9 +726,9 @@ def conv2d_transpose(
     filters,
     output_shape=None,
     strides=1,
-    padding='SAME',
+    padding="SAME",
     output_padding=None,
-    data_format='NHWC',
+    data_format="NHWC",
     dilations=None,
     name=None,
 ):
@@ -794,9 +790,9 @@ def conv3d_transpose(
     filters,
     output_shape=None,
     strides=1,
-    padding='SAME',
+    padding="SAME",
     output_padding=None,
-    data_format='NHWC',
+    data_format="NHWC",
     dilations=None,
     name=None,
 ):
@@ -849,7 +845,7 @@ def conv3d_transpose(
     dragon.Tensor
         The output tensor.
 
-    """
+    """  # noqa: E501
     return conv_transpose(**locals())
 
 
@@ -886,7 +882,7 @@ def dropout(x, rate, name=None, **kwargs):
     return activation_ops.dropout(x, rate, name=name, **kwargs)
 
 
-def elu(features, alpha=1., name=None, **kwargs):
+def elu(features, alpha=1.0, name=None, **kwargs):
     r"""Apply exponential linear unit.
     `[Clevert et.al, 2015] <https://arxiv.org/abs/1511.07289>`_.
 
@@ -931,7 +927,7 @@ def fused_batch_norm(
     mean,
     variance,
     epsilon=0.001,
-    data_format='NHWC',
+    data_format="NHWC",
     is_training=True,
     name=None,
     exponential_avg_factor=1.0,
@@ -979,13 +975,9 @@ def fused_batch_norm(
         The output tensor.
 
     """
-    return normalization_ops.batch_norm([
-        x,
-        scale,
-        offset,
-        mean,
-        variance],
-        axis=1 if data_format.startswith('NC') else -1,
+    return normalization_ops.batch_norm(
+        [x, scale, offset, mean, variance],
+        axis=1 if data_format.startswith("NC") else -1,
         momentum=1 - exponential_avg_factor,
         epsilon=epsilon,
         use_stats=not is_training,
@@ -1053,7 +1045,7 @@ def l2_loss(t, name=None):
         The output tensor.
 
     """
-    return loss_ops.l2_loss(t, reduction='sum', name=name) * 0.5
+    return loss_ops.l2_loss(t, reduction="sum", name=name) * 0.5
 
 
 def l2_normalize(x, axis=None, epsilon=1e-12, name=None):
@@ -1097,8 +1089,7 @@ def l2_normalize(x, axis=None, epsilon=1e-12, name=None):
         The output tensor.
 
     """
-    return normalization_ops.lp_norm(
-        x, p=2, axis=axis, epsilon=epsilon, name=name)
+    return normalization_ops.lp_norm(x, p=2, axis=axis, epsilon=epsilon, name=name)
 
 
 def leaky_relu(features, alpha=0.2, name=None, **kwargs):
@@ -1134,10 +1125,10 @@ def leaky_relu(features, alpha=0.2, name=None, **kwargs):
 def local_response_normalization(
     input,
     depth_radius=5,
-    bias=1.,
-    alpha=1.,
+    bias=1.0,
+    alpha=1.0,
     beta=0.5,
-    data_format='NHWC',
+    data_format="NHWC",
     name=None,
 ):
     r"""Apply local response normalization.
@@ -1221,8 +1212,8 @@ def max_pool(
     input,
     ksize,
     strides,
-    padding='VALID',
-    data_format='NHWC',
+    padding="VALID",
+    data_format="NHWC",
     name=None,
 ):
     r"""Apply n-dimension max pooling.
@@ -1273,24 +1264,25 @@ def max_pool(
     else:
         num_total_dims = len(ksize)
     num_spatial_dims = num_total_dims - 2
-    data_format = data_format if data_format else 'NHWC'
-    start_axis = 2 if data_format.startswith('NC') else 1
+    data_format = data_format if data_format else "NHWC"
+    start_axis = 2 if data_format.startswith("NC") else 1
     normalize_spatial_args = functools.partial(
         _normalize_spatial_args,
         num_total_dims=num_total_dims,
         num_spatial_dims=num_spatial_dims,
-        start_axis=start_axis)
-    ksize = normalize_spatial_args('ksize', ksize)
-    strides = normalize_spatial_args('strides', strides)
-    padding, pads = normalize_spatial_args('padding', padding)
-    return getattr(vision_ops, 'pool{}d'.format(num_spatial_dims))(
+        start_axis=start_axis,
+    )
+    ksize = normalize_spatial_args("ksize", ksize)
+    strides = normalize_spatial_args("strides", strides)
+    padding, pads = normalize_spatial_args("padding", padding)
+    return getattr(vision_ops, "pool{}d".format(num_spatial_dims))(
         input,
-        kernel_shape=ksize[start_axis:start_axis + num_spatial_dims],
-        strides=strides[start_axis:start_axis + num_spatial_dims],
+        kernel_shape=ksize[start_axis : start_axis + num_spatial_dims],
+        strides=strides[start_axis : start_axis + num_spatial_dims],
         padding=padding,
         pads=pads,
-        mode='max',
-        data_format='NCHW' if data_format.startswith('NC') else 'NHWC',
+        mode="max",
+        data_format="NCHW" if data_format.startswith("NC") else "NHWC",
         name=name,
     )
 
@@ -1299,8 +1291,8 @@ def max_pool1d(
     input,
     ksize,
     strides,
-    padding='VALID',
-    data_format='NHWC',
+    padding="VALID",
+    data_format="NHWC",
     name=None,
 ):
     r"""Apply 1d max pooling.
@@ -1344,10 +1336,10 @@ def max_pool1d(
         The output tensor.
 
     """
-    start_axis = 2 if data_format.startswith('NC') else 1
+    start_axis = 2 if data_format.startswith("NC") else 1
     return max_pool(
         input=input,
-        ksize=_normalize_spatial_args('ksize', ksize, 3, 1, start_axis),
+        ksize=_normalize_spatial_args("ksize", ksize, 3, 1, start_axis),
         strides=strides,
         padding=padding,
         data_format=data_format,
@@ -1359,8 +1351,8 @@ def max_pool2d(
     input,
     ksize,
     strides,
-    padding='VALID',
-    data_format='NHWC',
+    padding="VALID",
+    data_format="NHWC",
     name=None,
 ):
     r"""Apply 2d max pooling.
@@ -1404,10 +1396,10 @@ def max_pool2d(
         The output tensor.
 
     """
-    start_axis = 2 if data_format.startswith('NC') else 1
+    start_axis = 2 if data_format.startswith("NC") else 1
     return max_pool(
         input=input,
-        ksize=_normalize_spatial_args('ksize', ksize, 4, 2, start_axis),
+        ksize=_normalize_spatial_args("ksize", ksize, 4, 2, start_axis),
         strides=strides,
         padding=padding,
         data_format=data_format,
@@ -1419,8 +1411,8 @@ def max_pool3d(
     input,
     ksize,
     strides,
-    padding='VALID',
-    data_format='NHWC',
+    padding="VALID",
+    data_format="NHWC",
     name=None,
 ):
     r"""Apply 3d max pooling.
@@ -1464,10 +1456,10 @@ def max_pool3d(
         The output tensor.
 
     """
-    start_axis = 2 if data_format.startswith('NC') else 1
+    start_axis = 2 if data_format.startswith("NC") else 1
     return max_pool(
         input=input,
-        ksize=_normalize_spatial_args('ksize', ksize, 5, 3, start_axis),
+        ksize=_normalize_spatial_args("ksize", ksize, 5, 3, start_axis),
         strides=strides,
         padding=padding,
         data_format=data_format,
@@ -1640,8 +1632,7 @@ def sigmoid_cross_entropy_with_logits(labels=None, logits=None, name=None):
         The output tensor.
 
     """
-    return loss_ops.sigmoid_cross_entropy_loss(
-        [logits, labels], reduction='none', name=name)
+    return loss_ops.sigmoid_cross_entropy_loss([logits, labels], reduction="none", name=name)
 
 
 def silu(features):
@@ -1733,7 +1724,8 @@ def softmax_cross_entropy_with_logits(labels, logits, name=None):
 
     """
     return loss_ops.softmax_cross_entropy_loss(
-        [logits, labels], axis=-1, reduction='none', name=name)
+        [logits, labels], axis=-1, reduction="none", name=name
+    )
 
 
 def sparse_softmax_cross_entropy_with_logits(labels, logits, name=None):
@@ -1763,7 +1755,8 @@ def sparse_softmax_cross_entropy_with_logits(labels, logits, name=None):
 
     """
     return loss_ops.softmax_cross_entropy_loss(
-        [logits, labels], axis=-1, reduction='none', name=name)
+        [logits, labels], axis=-1, reduction="none", name=name
+    )
 
 
 def top_k(input, k=1, sorted=True, name=None):
@@ -1796,7 +1789,7 @@ def _normalize_spatial_args(
     num_spatial_dims,
     start_axis,
 ):
-    if name in ('ksize', 'strides', 'dilations'):
+    if name in ("ksize", "strides", "dilations"):
         if values is None:
             return [1] * num_total_dims
         else:
@@ -1808,17 +1801,19 @@ def _normalize_spatial_args(
                         values = values * num_spatial_dims
                     else:
                         raise ValueError(
-                            'Except 1, {} or {} values for <{}>.'
-                            .format(num_spatial_dims, num_spatial_dims * 2, name))
-                defaults[start_axis:start_axis + len(values)] = values
+                            "Except 1, {} or {} values for <{}>.".format(
+                                num_spatial_dims, num_spatial_dims * 2, name
+                            )
+                        )
+                defaults[start_axis : start_axis + len(values)] = values
                 return defaults
             return values
-    elif name == 'padding':
+    elif name == "padding":
         if isinstance(values, six.string_types):
             padding, pads = values.upper(), 0
         else:
             padding_tuple = nest.flatten(values)
-            padding = 'VALID'
+            padding = "VALID"
             if len(padding_tuple) == 1:
                 pads = padding_tuple[0]
             elif len(padding_tuple) == num_spatial_dims:
@@ -1831,15 +1826,16 @@ def _normalize_spatial_args(
                 pads = pads_l + pads_r
             else:
                 raise ValueError(
-                    'Except 1, {} or {} values if <padding> set as explict pads.'
-                    .format(num_spatial_dims, num_spatial_dims * 2))
+                    "Except 1, {} or {} values if <padding> set as explict pads.".format(
+                        num_spatial_dims, num_spatial_dims * 2
+                    )
+                )
         return padding, pads
-    elif name == 'output_shape':
+    elif name == "output_shape":
         if values is not None:
             if types.is_tensor(values):
                 values = values.numpy().tolist()
             values = nest.flatten(values)
             if len(values) != num_spatial_dims:
-                raise ValueError('Except {} values for <output_shape>.'
-                                 .format(num_spatial_dims))
+                raise ValueError("Except {} values for <output_shape>.".format(num_spatial_dims))
         return values

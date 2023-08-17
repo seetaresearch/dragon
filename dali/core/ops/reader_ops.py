@@ -22,8 +22,9 @@ try:
     from nvidia.dali import tfrecord as tfrec
 except ImportError:
     from dragon.core.util import deprecation
-    ops = deprecation.NotInstalled('nvidia.dali')
-    tfrec = deprecation.NotInstalled('nvidia.dali')
+
+    ops = deprecation.NotInstalled("nvidia.dali")
+    tfrec = deprecation.NotInstalled("nvidia.dali")
 
 
 class TFRecordReader(object):
@@ -47,13 +48,7 @@ class TFRecordReader(object):
     """
 
     def __new__(
-        cls,
-        path,
-        shard_id=0,
-        num_shards=1,
-        random_shuffle=False,
-        initial_fill=1024,
-        **kwargs
+        cls, path, shard_id=0, num_shards=1, random_shuffle=False, initial_fill=1024, **kwargs
     ):
         """Create a ``TFRecordReader``.
 
@@ -92,19 +87,19 @@ class TFRecordReader(object):
     def check_files(path):
         data_files, index_files, meta_data_file = [], [], None
         for file in os.listdir(path):
-            if file.endswith('.data'):
+            if file.endswith(".data"):
                 data_files.append(file)
-            elif file.endswith('.index'):
+            elif file.endswith(".index"):
                 index_files.append(file)
-            elif file == 'METADATA':
+            elif file == "METADATA":
                 meta_data_file = file
         if meta_data_file is None:
-            raise FileNotFoundError('Excepted meta data file: %s' % meta_data_file)
-        with open(os.path.join(path, meta_data_file), 'r') as f:
-            features = json.load(f)['features']
+            raise FileNotFoundError("Excepted meta data file: %s" % meta_data_file)
+        with open(os.path.join(path, meta_data_file), "r") as f:
+            features = json.load(f)["features"]
             for k in list(features.keys()):
                 shape, dtype, default_value = features[k]
-                dtype = getattr(tfrec, 'string' if dtype == 'bytes' else dtype)
+                dtype = getattr(tfrec, "string" if dtype == "bytes" else dtype)
                 if shape is None:
                     features[k] = tfrec.VarLenFeature(dtype, default_value)
                 else:

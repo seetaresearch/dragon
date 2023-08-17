@@ -57,4 +57,4 @@ from dragon.vm.tensorflow.core.ops.math_ops import tanh
 from dragon.vm.tensorflow.core.ops.nn_ops import l2_normalize
 from dragon.vm.tensorflow.core.ops.nn_ops import top_k
 
-__all__ = [_s for _s in dir() if not _s.startswith('_')]
+__all__ = [_s for _s in dir() if not _s.startswith("_")]

@@ -18,7 +18,8 @@ try:
     from nvidia.dali import ops
 except ImportError:
     from dragon.core.util import deprecation
-    ops = deprecation.not_installed('nvidia.dali')
+
+    ops = deprecation.not_installed("nvidia.dali")
 
 from dragon.core.util import six
 from dragon.vm.dali.core.framework import types
@@ -54,8 +55,7 @@ class CoinFlip(object):
         """
         if isinstance(dtype, six.string_types):
             dtype = getattr(types, dtype.upper())
-        return ops.random.CoinFlip(probability=probability,
-                                   dtype=dtype, **kwargs)
+        return ops.random.CoinFlip(probability=probability, dtype=dtype, **kwargs)
 
 
 class Uniform(object):
@@ -70,7 +70,7 @@ class Uniform(object):
 
     """
 
-    def __new__(cls, range=(-1., 1.), dtype=None, **kwargs):
+    def __new__(cls, range=(-1.0, 1.0), dtype=None, **kwargs):
         """Create an ``Uniform`` operator.
 
         Parameters

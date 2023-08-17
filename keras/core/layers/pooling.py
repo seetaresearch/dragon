@@ -34,7 +34,7 @@ class Pooling(Layer):
         pool_function,
         pool_size,
         strides,
-        padding='valid',
+        padding="valid",
         data_format=None,
         name=None,
         **kwargs
@@ -53,7 +53,7 @@ class Pooling(Layer):
     def call(self, inputs):
         pads, padding = 0, self.padding
         if not isinstance(self.padding, str):
-            pads, padding = self.padding, 'valid'
+            pads, padding = self.padding, "valid"
         return self.pool_function(
             inputs,
             kernel_shape=self.pool_size,
@@ -68,12 +68,7 @@ class AveragePooling1D(Pooling):
     """1D average pooling layer."""
 
     def __init__(
-        self,
-        pool_size=2,
-        strides=None,
-        padding='valid',
-        data_format='channels_last',
-        **kwargs
+        self, pool_size=2, strides=None, padding="valid", data_format="channels_last", **kwargs
     ):
         """Create a ``AveragePooling1D`` Layer.
 
@@ -91,7 +86,7 @@ class AveragePooling1D(Pooling):
         """
         super(AveragePooling1D, self).__init__(
             rank=1,
-            pool_function=functools.partial(vision_ops.pool, mode='avg'),
+            pool_function=functools.partial(vision_ops.pool, mode="avg"),
             pool_size=pool_size,
             strides=strides,
             padding=padding,
@@ -104,12 +99,7 @@ class AveragePooling2D(Pooling):
     """2D average pooling layer."""
 
     def __init__(
-        self,
-        pool_size=2,
-        strides=None,
-        padding='valid',
-        data_format='channels_last',
-        **kwargs
+        self, pool_size=2, strides=None, padding="valid", data_format="channels_last", **kwargs
     ):
         """Create a ``AveragePooling2D`` Layer.
 
@@ -127,7 +117,7 @@ class AveragePooling2D(Pooling):
         """
         super(AveragePooling2D, self).__init__(
             rank=2,
-            pool_function=functools.partial(vision_ops.pool, mode='avg'),
+            pool_function=functools.partial(vision_ops.pool, mode="avg"),
             pool_size=pool_size,
             strides=strides,
             padding=padding,
@@ -140,12 +130,7 @@ class AveragePooling3D(Pooling):
     """3D average pooling layer."""
 
     def __init__(
-        self,
-        pool_size=2,
-        strides=None,
-        padding='valid',
-        data_format='channels_last',
-        **kwargs
+        self, pool_size=2, strides=None, padding="valid", data_format="channels_last", **kwargs
     ):
         """Create a ``AveragePooling3D`` Layer.
 
@@ -163,7 +148,7 @@ class AveragePooling3D(Pooling):
         """
         super(AveragePooling3D, self).__init__(
             rank=3,
-            pool_function=functools.partial(vision_ops.pool, mode='avg'),
+            pool_function=functools.partial(vision_ops.pool, mode="avg"),
             pool_size=pool_size,
             strides=strides,
             padding=padding,
@@ -186,11 +171,10 @@ class GlobalAveragePooling1D(Pooling):
         """
         super(GlobalAveragePooling1D, self).__init__(
             rank=1,
-            pool_function=functools.partial(
-                vision_ops.pool1d, mode='avg', global_pool=True),
+            pool_function=functools.partial(vision_ops.pool1d, mode="avg", global_pool=True),
             pool_size=0,
             strides=1,
-            padding='valid',
+            padding="valid",
             data_format=data_format,
             **kwargs
         )
@@ -210,11 +194,10 @@ class GlobalAveragePooling2D(Pooling):
         """
         super(GlobalAveragePooling2D, self).__init__(
             rank=2,
-            pool_function=functools.partial(
-                vision_ops.pool2d, mode='avg', global_pool=True),
+            pool_function=functools.partial(vision_ops.pool2d, mode="avg", global_pool=True),
             pool_size=0,
             strides=1,
-            padding='valid',
+            padding="valid",
             data_format=data_format,
             **kwargs
         )
@@ -234,11 +217,10 @@ class GlobalAveragePooling3D(Pooling):
         """
         super(GlobalAveragePooling3D, self).__init__(
             rank=3,
-            pool_function=functools.partial(
-                vision_ops.pool3d, mode='avg', global_pool=True),
+            pool_function=functools.partial(vision_ops.pool3d, mode="avg", global_pool=True),
             pool_size=0,
             strides=1,
-            padding='valid',
+            padding="valid",
             data_format=data_format,
             **kwargs
         )
@@ -258,11 +240,10 @@ class GlobalMaxPooling1D(Pooling):
         """
         super(GlobalMaxPooling1D, self).__init__(
             rank=1,
-            pool_function=functools.partial(
-                vision_ops.pool1d, mode='max', global_pool=True),
+            pool_function=functools.partial(vision_ops.pool1d, mode="max", global_pool=True),
             pool_size=0,
             strides=1,
-            padding='valid',
+            padding="valid",
             data_format=data_format,
             **kwargs
         )
@@ -282,11 +263,10 @@ class GlobalMaxPooling2D(Pooling):
         """
         super(GlobalMaxPooling2D, self).__init__(
             rank=2,
-            pool_function=functools.partial(
-                vision_ops.pool2d, mode='max', global_pool=True),
+            pool_function=functools.partial(vision_ops.pool2d, mode="max", global_pool=True),
             pool_size=0,
             strides=1,
-            padding='valid',
+            padding="valid",
             data_format=data_format,
             **kwargs
         )
@@ -306,11 +286,10 @@ class GlobalMaxPooling3D(Pooling):
         """
         super(GlobalMaxPooling3D, self).__init__(
             rank=3,
-            pool_function=functools.partial(
-                vision_ops.pool3d, mode='max', global_pool=True),
+            pool_function=functools.partial(vision_ops.pool3d, mode="max", global_pool=True),
             pool_size=0,
             strides=1,
-            padding='valid',
+            padding="valid",
             data_format=data_format,
             **kwargs
         )
@@ -319,14 +298,7 @@ class GlobalMaxPooling3D(Pooling):
 class MaxPooling1D(Pooling):
     """1D max pooling layer."""
 
-    def __init__(
-        self,
-        pool_size=2,
-        strides=None,
-        padding='valid',
-        data_format=None,
-        **kwargs
-    ):
+    def __init__(self, pool_size=2, strides=None, padding="valid", data_format=None, **kwargs):
         """Create a ``MaxPooling1D`` Layer.
 
         Parameters
@@ -343,7 +315,7 @@ class MaxPooling1D(Pooling):
         """
         super(MaxPooling1D, self).__init__(
             rank=1,
-            pool_function=functools.partial(vision_ops.pool, mode='max'),
+            pool_function=functools.partial(vision_ops.pool, mode="max"),
             pool_size=pool_size,
             strides=strides,
             padding=padding,
@@ -355,14 +327,7 @@ class MaxPooling1D(Pooling):
 class MaxPooling2D(Pooling):
     """2D max pooling layer."""
 
-    def __init__(
-        self,
-        pool_size=2,
-        strides=None,
-        padding='valid',
-        data_format=None,
-        **kwargs
-    ):
+    def __init__(self, pool_size=2, strides=None, padding="valid", data_format=None, **kwargs):
         """Create a ``MaxPooling2D`` Layer.
 
         Parameters
@@ -379,7 +344,7 @@ class MaxPooling2D(Pooling):
         """
         super(MaxPooling2D, self).__init__(
             rank=2,
-            pool_function=functools.partial(vision_ops.pool, mode='max'),
+            pool_function=functools.partial(vision_ops.pool, mode="max"),
             pool_size=pool_size,
             strides=strides,
             padding=padding,
@@ -391,14 +356,7 @@ class MaxPooling2D(Pooling):
 class MaxPooling3D(Pooling):
     """3D max pooling layer."""
 
-    def __init__(
-        self,
-        pool_size=2,
-        strides=None,
-        padding='valid',
-        data_format=None,
-        **kwargs
-    ):
+    def __init__(self, pool_size=2, strides=None, padding="valid", data_format=None, **kwargs):
         """Create a ``MaxPooling3D`` Layer.
 
         Parameters
@@ -415,7 +373,7 @@ class MaxPooling3D(Pooling):
         """
         super(MaxPooling3D, self).__init__(
             rank=3,
-            pool_function=functools.partial(vision_ops.pool, mode='max'),
+            pool_function=functools.partial(vision_ops.pool, mode="max"),
             pool_size=pool_size,
             strides=strides,
             padding=padding,

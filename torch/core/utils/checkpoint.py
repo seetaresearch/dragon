@@ -31,12 +31,11 @@ class CheckpointFunction(object):
     @staticmethod
     def apply(function, *args, **kwargs):
         """Apply function and create a checkpoint."""
-        kwargs.pop('preserve_rng_state', True)
-        variable_scope = kwargs.pop('variable_scope', 'Buffer')
+        kwargs.pop("preserve_rng_state", True)
+        variable_scope = kwargs.pop("variable_scope", "Buffer")
         original_variable_scope = context.get_variable_scope(True)
         if kwargs:
-            raise ValueError('Unexpected keyword arguments: ' +
-                             ','.join(arg for arg in kwargs))
+            raise ValueError("Unexpected keyword arguments: " + ",".join(arg for arg in kwargs))
 
         # Run function.
         graph_tape = tapes.Tape()
@@ -58,15 +57,18 @@ class CheckpointFunction(object):
 
         # Fill tape with function context.
         op_tape = tapes.OrderedTape()
-        op_handle = workspace.get_workspace().create_handle('Checkpoint')
-        op_tape.add_element(proto_util.make_operator_def(
-            op_type='Checkpoint',
-            name=op_handle,
-            inputs=[input.id for input in tensor_inputs],
-            outputs=[output.id for output in tensor_outputs],
-            defs=[v.SerializeAs() for v in graph_tape.get_elements()],
-            buffer_scope=variable_scope,
-            to_impl=True))
+        op_handle = workspace.get_workspace().create_handle("Checkpoint")
+        op_tape.add_element(
+            proto_util.make_operator_def(
+                op_type="Checkpoint",
+                name=op_handle,
+                inputs=[input.id for input in tensor_inputs],
+                outputs=[output.id for output in tensor_outputs],
+                defs=[v.SerializeAs() for v in graph_tape.get_elements()],
+                buffer_scope=variable_scope,
+                to_impl=True,
+            )
+        )
         op_tape.add_handle(op_handle)
         op_tape.merge_handles(graph_tape.get_handles())
 
@@ -119,6 +121,7 @@ def checkpoint_sequential(functions, input, segments=1, **kwargs):
         The function outputs.
 
     """
+
     def run_function(start, end, functions):
         def forward(input):
             for j in range(start, end):
@@ -126,13 +129,13 @@ def checkpoint_sequential(functions, input, segments=1, **kwargs):
             with no_checkpoint():
                 input = functions[end](input)
             return input
+
         return forward
 
-    preserve_rng_state = kwargs.pop('preserve_rng_state', True)
-    variable_scope = kwargs.pop('variable_scope', 'Buffer')
+    preserve_rng_state = kwargs.pop("preserve_rng_state", True)
+    variable_scope = kwargs.pop("variable_scope", "Buffer")
     if kwargs:
-        raise ValueError('Unexpected keyword arguments: ' +
-                         ','.join(arg for arg in kwargs))
+        raise ValueError("Unexpected keyword arguments: " + ",".join(arg for arg in kwargs))
 
     if isinstance(functions, Sequential):
         functions = list(functions.children())
@@ -144,22 +147,26 @@ def checkpoint_sequential(functions, input, segments=1, **kwargs):
     if nest.is_sequence(segments):
         size_segments = segments
         if sum(size_segments) != len(functions):
-            raise ValueError('Failed to chunk {} functions into {} segments.'
-                             .format(len(functions), segments))
+            raise ValueError(
+                "Failed to chunk {} functions into {} segments.".format(len(functions), segments)
+            )
     else:
         size = (len(functions) + segments - 1) // segments
         last_size = len(functions) - size * (segments - 1)
         if last_size <= 0:
-            raise ValueError('Failed to chunk {} functions into {} segments.'
-                             .format(len(functions), segments))
+            raise ValueError(
+                "Failed to chunk {} functions into {} segments.".format(len(functions), segments)
+            )
         size_segments = [size] * (segments - 1) + [last_size]
 
     for size in size_segments:
         end = start + size - 1
         input = checkpoint(
-            run_function(start, end, functions), input,
+            run_function(start, end, functions),
+            input,
             preserve_rng_state=preserve_rng_state,
-            variable_scope=variable_scope)
+            variable_scope=variable_scope,
+        )
         start = end + 1
     return input
 
@@ -173,10 +180,9 @@ class no_checkpoint(decorator._DecoratorContextManager):
 
     def __enter__(self):
         graph_tape = tapes.get_tape()
-        if hasattr(graph_tape, '_checkpointing'):
+        if hasattr(graph_tape, "_checkpointing"):
             self._checkpointing = True
-            context._GLOBAL_VARIABLE_SCOPE_STACK.push(
-                graph_tape._original_variable_scope)
+            context._GLOBAL_VARIABLE_SCOPE_STACK.push(graph_tape._original_variable_scope)
 
     def __exit__(self, *args):
         if self._checkpointing:

@@ -22,4 +22,4 @@ from dragon.vm.torch.core.backends import mlu
 from dragon.vm.torch.core.backends import mps
 from dragon.vm.torch.core.backends import openmp
 
-__all__ = [_s for _s in dir() if not _s.startswith('_')]
+__all__ = [_s for _s in dir() if not _s.startswith("_")]

@@ -40,8 +40,7 @@ def save(obj, f, pickle_module=PICKLE_MODULE, pickle_protocol=DEFAULT_PROTOCOL):
         The optional pickle protocol.
 
     """
-    return _with_file_like(
-        f, 'wb', lambda f: _save(obj, f, pickle_module, pickle_protocol))
+    return _with_file_like(f, "wb", lambda f: _save(obj, f, pickle_module, pickle_protocol))
 
 
 def load(f, pickle_module=PICKLE_MODULE):
@@ -61,11 +60,9 @@ def load(f, pickle_module=PICKLE_MODULE):
 
     """
     try:
-        return _with_file_like(
-            f, 'rb', lambda f: pickle_module.load(f))
+        return _with_file_like(f, "rb", lambda f: pickle_module.load(f))
     except UnicodeDecodeError:
-        return _with_file_like(
-            f, 'rb', lambda f: pickle_module.load(f, encoding='bytes'))
+        return _with_file_like(f, "rb", lambda f: pickle_module.load(f, encoding="bytes"))
 
 
 def _save_dict(obj):
@@ -74,8 +71,8 @@ def _save_dict(obj):
     for k, v in obj.items():
         if isinstance(v, dict):
             py_dict[k] = _save_dict(v)
-        elif hasattr(v, 'numpy'):
-            py_dict[k] = getattr(v, 'numpy')()
+        elif hasattr(v, "numpy"):
+            py_dict[k] = getattr(v, "numpy")()
         else:
             py_dict[k] = v
     return py_dict
@@ -85,8 +82,8 @@ def _save(obj, f, pickle_module, pickle_protocol):
     """Pickle the object into binary file."""
     if isinstance(obj, dict):
         pickle_module.dump(_save_dict(obj), f, pickle_protocol)
-    elif hasattr(obj, 'numpy'):
-        pickle_module.dump(getattr(obj, 'numpy')(), f, pickle_protocol)
+    elif hasattr(obj, "numpy"):
+        pickle_module.dump(getattr(obj, "numpy")(), f, pickle_protocol)
     else:
         pickle_module.dump(obj, f, pickle_protocol)
 

@@ -51,9 +51,9 @@ def make_argument(key, value):
         argument.strings.extend([v.SerializeToString() for v in value])
     else:
         raise ValueError(
-            'Unknown argument type: '
-            'key = {}, value = {}, value_type = {}.'
-            .format(key, value, type(value).__name__))
+            "Unknown argument type: "
+            "key = {}, value = {}, value_type = {}.".format(key, value, type(value).__name__)
+        )
     return argument
 
 
@@ -61,7 +61,7 @@ def make_operator_def(
     op_type,
     inputs=(),
     outputs=(),
-    name='',
+    name="",
     device_option=None,
     arg=None,
     cache_key=None,
@@ -74,9 +74,9 @@ def make_operator_def(
     op_def.output.extend(outputs)
     if device_option is not None:
         op_def.device_option.CopyFrom(device_option)
-    if 'random_seed' in kwargs:
-        op_def.device_option.random_seed = kwargs['random_seed']
-        del kwargs['random_seed']
+    if "random_seed" in kwargs:
+        op_def.device_option.random_seed = kwargs["random_seed"]
+        del kwargs["random_seed"]
     if arg is not None:
         op_def.arg.extend(arg)
     for k, v in kwargs.items():
@@ -84,7 +84,7 @@ def make_operator_def(
             continue
         op_def.arg.add().CopyFrom(make_argument(k, v))
     if cache_key is not None:
-        op_def.arg.add().CopyFrom(make_argument('cache_key', cache_key))
+        op_def.arg.add().CopyFrom(make_argument("cache_key", cache_key))
     if to_impl:
         impl = backend.OperatorDef()
         impl.ParseFrom(op_def.SerializeToString())
@@ -128,7 +128,7 @@ def get_global_device_option():
 
 _MAX_NUM_OF_DEVICES = 16
 _ALL_DEVICE_OPTIONS = {}
-_DEVICE_TO_IDENTIFIER = {'cpu': 0, 'cuda': 1, 'mps': 2, 'mlu': 3}
+_DEVICE_TO_IDENTIFIER = {"cpu": 0, "cuda": 1, "mps": 2, "mlu": 3}
 
 for i in range(_MAX_NUM_OF_DEVICES):
     for device, identifier in _DEVICE_TO_IDENTIFIER.items():

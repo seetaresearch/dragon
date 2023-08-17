@@ -18,10 +18,10 @@ from __future__ import print_function
 class Reduction(object):
     """The reduction for cost."""
 
-    NONE = 'none'
-    SUM = 'sum'
-    MEAN = 'mean'
-    VALID = 'valid'
+    NONE = "none"
+    SUM = "sum"
+    MEAN = "mean"
+    VALID = "valid"
 
     @classmethod
     def all(cls):
@@ -30,4 +30,4 @@ class Reduction(object):
     @classmethod
     def validate(cls, key):
         if key not in cls.all():
-            raise ValueError('Invalid Reduction Key %s.' % key)
+            raise ValueError("Invalid Reduction Key %s." % key)

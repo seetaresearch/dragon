@@ -18,4 +18,4 @@ from dragon.vm.torch.core.utils.checkpoint import checkpoint
 from dragon.vm.torch.core.utils.checkpoint import checkpoint_sequential
 from dragon.vm.torch.core.utils.checkpoint import no_checkpoint
 
-__all__ = [_s for _s in dir() if not _s.startswith('_')]
+__all__ = [_s for _s in dir() if not _s.startswith("_")]

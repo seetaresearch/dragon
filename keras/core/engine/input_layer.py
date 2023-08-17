@@ -23,14 +23,7 @@ from dragon.vm.tensorflow.core.framework import tensor_shape
 from dragon.vm.tensorflow.core.ops import array_ops
 
 
-def Input(
-    shape=None,
-    batch_size=None,
-    name=None,
-    dtype=None,
-    tensor=None,
-    **kwargs
-):
+def Input(shape=None, batch_size=None, name=None, dtype=None, tensor=None, **kwargs):
     """Create a symbolic tensor as the placeholder.
 
     Examples:
@@ -66,10 +59,10 @@ def Input(
         The output tensor.
 
     """
-    if 'batch_shape' in kwargs:
-        batch_shape = kwargs.pop('batch_shape')
+    if "batch_shape" in kwargs:
+        batch_shape = kwargs.pop("batch_shape")
         if shape and batch_shape:
-            raise ValueError('Specify <shape> or <batch_shape>, not both.')
+            raise ValueError("Specify <shape> or <batch_shape>, not both.")
         shape = batch_shape
     else:
         if shape is not None:
@@ -82,14 +75,13 @@ def Input(
         if tensor is not None:
             dtype = tensor.dtype
         else:
-            dtype = 'float32'
+            dtype = "float32"
     if shape is None:
         if tensor is None:
-            raise ValueError('Specify either <shape> or <tensor>.')
+            raise ValueError("Specify either <shape> or <tensor>.")
         else:
             shape = tensor.shape
-    placeholder = array_ops.placeholder(
-        dtype=dtype, shape=shape, name=name if name else 'input')
+    placeholder = array_ops.placeholder(dtype=dtype, shape=shape, name=name if name else "input")
     if tensor is not None:
         workspace.get_workspace().set_alias(tensor, placeholder.id)
     return placeholder

@@ -26,7 +26,7 @@ class _Loss(Module):
         self,
         size_average=None,
         reduce=None,
-        reduction='mean',
+        reduction="mean",
     ):
         super(_Loss, self).__init__()
         if size_average is not None or reduce is not None:
@@ -43,10 +43,10 @@ class _WeightedLoss(_Loss):
         weight=None,
         size_average=None,
         reduce=None,
-        reduction='mean',
+        reduction="mean",
     ):
         super(_WeightedLoss, self).__init__(size_average, reduce, reduction)
-        self.register_buffer('weight', weight)
+        self.register_buffer("weight", weight)
 
 
 class CTCLoss(_Loss):
@@ -75,7 +75,7 @@ class CTCLoss(_Loss):
 
     """
 
-    def __init__(self, padding_mask=-1, reduction='mean'):
+    def __init__(self, padding_mask=-1, reduction="mean"):
         """Create ``CTCLoss`` module.
 
         Parameters
@@ -91,7 +91,8 @@ class CTCLoss(_Loss):
 
     def forward(self, input, target):
         return functional.ctc_loss(
-            input, target,
+            input,
+            target,
             padding_mask=self.padding_mask,
             reduction=self.reduction,
         )
@@ -124,7 +125,7 @@ class NLLLoss(_WeightedLoss):
         size_average=None,
         ignore_index=None,
         reduce=None,
-        reduction='mean',
+        reduction="mean",
     ):
         """Create a ``NLLLoss`` module.
 
@@ -142,13 +143,13 @@ class NLLLoss(_WeightedLoss):
             The reduce method.
 
         """
-        super(NLLLoss, self).__init__(
-            weight, size_average, reduce, reduction)
+        super(NLLLoss, self).__init__(weight, size_average, reduce, reduction)
         self.ignore_index = ignore_index
 
     def forward(self, input, target):
         return functional.nll_loss(
-            input, target,
+            input,
+            target,
             reduction=self.reduction,
             ignore_index=self.ignore_index,
         )
@@ -175,7 +176,7 @@ class BCEWithLogitsLoss(_WeightedLoss):
         weight=None,
         size_average=None,
         reduce=None,
-        reduction='mean',
+        reduction="mean",
         pos_weight=None,
     ):
         """Create a ``BCEWithLogitsLoss`` module.
@@ -192,12 +193,10 @@ class BCEWithLogitsLoss(_WeightedLoss):
             The reduce method.
 
         """
-        super(BCEWithLogitsLoss, self).__init__(
-            weight, size_average, reduce, reduction)
+        super(BCEWithLogitsLoss, self).__init__(weight, size_average, reduce, reduction)
 
     def forward(self, input, target):
-        return functional.binary_cross_entropy_with_logits(
-            input, target, reduction=self.reduction)
+        return functional.binary_cross_entropy_with_logits(input, target, reduction=self.reduction)
 
 
 class CrossEntropyLoss(_WeightedLoss):
@@ -229,7 +228,7 @@ class CrossEntropyLoss(_WeightedLoss):
         size_average=None,
         ignore_index=None,
         reduce=None,
-        reduction='mean',
+        reduction="mean",
     ):
         """Create a ``CrossEntropyLoss`` module.
 
@@ -249,14 +248,14 @@ class CrossEntropyLoss(_WeightedLoss):
             The reduce method.
 
         """
-        super(CrossEntropyLoss, self).__init__(
-            weight, size_average, reduce, reduction)
+        super(CrossEntropyLoss, self).__init__(weight, size_average, reduce, reduction)
         self.dim = dim
         self.ignore_index = ignore_index
 
     def forward(self, input, target):
         return functional.cross_entropy(
-            input, target,
+            input,
+            target,
             dim=self.dim,
             reduction=self.reduction,
             ignore_index=self.ignore_index,
@@ -287,7 +286,7 @@ class KLDivLoss(_Loss):
         self,
         size_average=None,
         reduce=None,
-        reduction='mean',
+        reduction="mean",
         log_target=False,
     ):
         """Create a ``KDivLoss`` module.
@@ -309,7 +308,8 @@ class KLDivLoss(_Loss):
 
     def forward(self, input, target):
         return functional.kl_div(
-            input, target,
+            input,
+            target,
             reduction=self.reduction,
             log_target=self.log_target,
         )
@@ -335,7 +335,7 @@ class L1Loss(_Loss):
 
     """
 
-    def __init__(self, size_average=None, reduce=None, reduction='mean'):
+    def __init__(self, size_average=None, reduce=None, reduction="mean"):
         """Create a ``L1Loss`` module.
 
         Parameters
@@ -374,7 +374,7 @@ class MSELoss(_Loss):
 
     """
 
-    def __init__(self, size_average=None, reduce=None, reduction='mean'):
+    def __init__(self, size_average=None, reduce=None, reduction="mean"):
         """Create a ``MSELoss`` module.
 
         Parameters
@@ -421,10 +421,10 @@ class SmoothL1Loss(_Loss):
 
     def __init__(
         self,
-        beta=1.,
+        beta=1.0,
         size_average=None,
         reduce=None,
-        reduction='mean',
+        reduction="mean",
     ):
         """Create a ``SmoothL1Loss`` module.
 
@@ -445,7 +445,8 @@ class SmoothL1Loss(_Loss):
 
     def forward(self, input, target):
         return functional.smooth_l1_loss(
-            input, target,
+            input,
+            target,
             beta=self.beta,
             reduction=self.reduction,
         )
@@ -477,12 +478,12 @@ class SigmoidFocalLoss(_WeightedLoss):
     def __init__(
         self,
         alpha=0.25,
-        gamma=2.,
+        gamma=2.0,
         weight=None,
         size_average=None,
         start_index=0,
         reduce=None,
-        reduction='mean',
+        reduction="mean",
     ):
         """Create a ``SigmoidFocalLoss`` module.
 
@@ -504,14 +505,14 @@ class SigmoidFocalLoss(_WeightedLoss):
             The reduce method.
 
         """
-        super(SigmoidFocalLoss, self).__init__(
-            weight, size_average, reduce, reduction)
+        super(SigmoidFocalLoss, self).__init__(weight, size_average, reduce, reduction)
         self.alpha, self.gamma = alpha, gamma
         self.start_index = start_index
 
     def forward(self, input, target):
         return functional.sigmoid_focal_loss(
-            input, target,
+            input,
+            target,
             alpha=self.alpha,
             gamma=self.gamma,
             reduction=self.reduction,

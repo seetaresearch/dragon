@@ -79,7 +79,7 @@ class CuDNNModule(object):
             ``True`` if available otherwise ``False``.
 
         """
-        return 'cudnn_version' in sysconfig.get_build_info()
+        return "cudnn_version" in sysconfig.get_build_info()
 
     @staticmethod
     def version():
@@ -91,9 +91,9 @@ class CuDNNModule(object):
             The version number.
 
         """
-        version = sysconfig.get_build_info().get('cudnn_version', None)
+        version = sysconfig.get_build_info().get("cudnn_version", None)
         if version is not None:
-            major, minor, patch = [int(x) for x in version.split('.')]
+            major, minor, patch = [int(x) for x in version.split(".")]
             version = major * 1000 + minor * 100 + patch
         return version
 

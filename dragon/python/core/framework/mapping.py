@@ -16,9 +16,9 @@ from __future__ import print_function
 
 # Mapping to store the supported device types
 DEVICE_STRING_TO_DEVICE_TYPE = {
-    'cpu': 'cpu',
-    'gpu': 'cuda',
-    'cuda': 'cuda',
-    'mps': 'mps',
-    'mlu': 'mlu',
+    "cpu": "cpu",
+    "gpu": "cuda",
+    "cuda": "cuda",
+    "mps": "mps",
+    "mlu": "mlu",
 }

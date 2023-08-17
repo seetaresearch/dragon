@@ -39,7 +39,7 @@ def set_optimization(level=1):
     config.config().graph_optimization = level
 
 
-def set_scheduler(scheduler='SIMPLE'):
+def set_scheduler(scheduler="SIMPLE"):
     """Set the scheduler for symbolic graph.
 
     Parameters
@@ -48,12 +48,12 @@ def set_scheduler(scheduler='SIMPLE'):
         The scheduler type.
 
     """
-    if scheduler not in ('SIMPLE', 'FUSION'):
-        raise ValueError('Unsupported scheduler: ' + scheduler)
-    if scheduler == 'SIMPLE':
-        config.config().graph_type = ''
-    elif scheduler == 'FUSION':
-        config.config().graph_type = 'FusionGraph'
+    if scheduler not in ("SIMPLE", "FUSION"):
+        raise ValueError("Unsupported scheduler: " + scheduler)
+    if scheduler == "SIMPLE":
+        config.config().graph_type = ""
+    elif scheduler == "FUSION":
+        config.config().graph_type = "FusionGraph"
 
 
 def set_verbosity(level=1):

@@ -27,8 +27,8 @@ class _ThreadLocalData(threading.local):
 
     def __init__(self):
         super(_ThreadLocalData, self).__init__()
-        self.mode = 'EAGER_MODE'
-        self.is_eager = self.mode == 'EAGER_MODE'
+        self.mode = "EAGER_MODE"
+        self.is_eager = self.mode == "EAGER_MODE"
 
 
 class Context(object):
@@ -48,7 +48,7 @@ class Context(object):
         old_mode = ctx.mode
         old_is_eager = ctx.is_eager
         ctx.mode = mode
-        ctx.is_eager = mode == 'EAGER_MODE'
+        ctx.is_eager = mode == "EAGER_MODE"
         try:
             yield
         finally:
@@ -81,7 +81,7 @@ def context_safe():
 
 def eager_mode():
     """Context-manager set the eager execution mode."""
-    return context().mode('EAGER_MODE')
+    return context().mode("EAGER_MODE")
 
 
 def executing_eagerly():
@@ -91,4 +91,4 @@ def executing_eagerly():
 
 def graph_mode():
     """Context-manager to set the graph execution mode."""
-    return context().mode('GRAPH_M0DE')
+    return context().mode("GRAPH_M0DE")

@@ -16,4 +16,5 @@ from __future__ import print_function as _print_function
 
 # Attributes
 from dragon.vm.onnx.core import exporters as _import_exporters
-__all__ = [_s for _s in dir() if not _s.startswith('_')]
+
+__all__ = [_s for _s in dir() if not _s.startswith("_")]

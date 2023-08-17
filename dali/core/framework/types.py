@@ -60,7 +60,8 @@ try:
 
 except ImportError:
     from dragon.core.util import deprecation
-    dali_types = deprecation.NotInstalled('nvidia.dali')
+
+    dali_types = deprecation.NotInstalled("nvidia.dali")
 
     NO_DALI = -1
 

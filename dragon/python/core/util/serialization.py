@@ -21,19 +21,19 @@ from typing import Text
 
 def save_bytes(str, f):
     """Save bytes to the file."""
-    if hasattr(f, 'write') and callable(cast(IO[bytes], f).write):
+    if hasattr(f, "write") and callable(cast(IO[bytes], f).write):
         cast(IO[bytes], f).write(str)
     else:
-        with open(cast(Text, f), 'wb') as writable:
+        with open(cast(Text, f), "wb") as writable:
             writable.write(str)
 
 
 def load_bytes(f):
     """Load bytes from the file."""
-    if hasattr(f, 'read') and callable(cast(IO[bytes], f).read):
+    if hasattr(f, "read") and callable(cast(IO[bytes], f).read):
         s = cast(IO[bytes], f).read()
     else:
-        with open(cast(Text, f), 'rb') as readable:
+        with open(cast(Text, f), "rb") as readable:
             s = readable.read()
     return s
 
@@ -41,27 +41,21 @@ def load_bytes(f):
 def serialize_proto(proto):
     """Serialize the protocol buffer object."""
     if proto is None:
-        return b''
+        return b""
     elif isinstance(proto, bytes):
         return proto
-    elif (hasattr(proto, 'SerializeToString') and
-          callable(proto.SerializeToString)):
+    elif hasattr(proto, "SerializeToString") and callable(proto.SerializeToString):
         result = proto.SerializeToString()
         return result
     else:
-        raise ValueError(
-            'No <SerializeToString> method. Type is {}'
-            .format(type(proto)))
+        raise ValueError("No <SerializeToString> method. Type is {}".format(type(proto)))
 
 
 def deserialize_proto(s, proto):
     """Deserialize the protocol buffer object."""
     if not isinstance(s, bytes):
-        raise ValueError('Excepted serialized bytes, got: {}'.format(type(s)))
-    if not (hasattr(proto, 'ParseFromString') and
-            callable(proto.ParseFromString)):
-        raise ValueError(
-            'No <ParseFromString> method. Type is {}'
-            .format(type(proto)))
+        raise ValueError("Excepted serialized bytes, got: {}".format(type(s)))
+    if not (hasattr(proto, "ParseFromString") and callable(proto.ParseFromString)):
+        raise ValueError("No <ParseFromString> method. Type is {}".format(type(proto)))
     proto.ParseFromString(s)
     return proto

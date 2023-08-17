@@ -381,6 +381,7 @@ DEPLOY_MLU_OPERATOR(Less);
 DEPLOY_MLU_OPERATOR(LessEqual);
 DEPLOY_MLU_OPERATOR(Greater);
 DEPLOY_MLU_OPERATOR(GreaterEqual);
+DEPLOY_MLU_OPERATOR(Axpby);
 #endif
 
 OPERATOR_SCHEMA(Neg).NumInputs(1).NumOutputs(1).AllowInplace({{0, 0}});

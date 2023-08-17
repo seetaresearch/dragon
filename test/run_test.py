@@ -20,30 +20,30 @@ import subprocess
 import argparse
 
 TESTS_AND_SOURCES = [
-    ('dragon/test_autograph', 'dragon.core'),
-    ('dragon/test_device', 'dragon.core'),
-    ('dragon/test_distributed', 'dragon.core'),
-    ('dragon/test_framework', 'dragon.core'),
-    ('dragon/test_ops', 'dragon.core'),
-    ('dragon/test_util', 'dragon.core'),
-    ('keras/test_engine', 'dragon.vm.keras.core'),
-    ('keras/test_layers', 'dragon.vm.keras.core'),
-    ('keras/test_nn', 'dragon.vm.keras.core'),
-    ('keras/test_optimizer', 'dragon.vm.keras.core'),
-    ('tensorflow/test_eager', 'dragon.vm.tensorflow.core'),
-    ('tensorflow/test_framework', 'dragon.vm.tensorflow.core'),
-    ('tensorflow/test_module', 'dragon.vm.tensorflow.core'),
-    ('tensorflow/test_ops', 'dragon.vm.tensorflow.core'),
-    ('torch/test_autograd', 'dragon.vm.torch.core'),
-    ('torch/test_backends', 'dragon.vm.torch.core'),
-    ('torch/test_jit', 'dragon.vm.torch.core'),
-    ('torch/test_nn', 'dragon.vm.torch.core'),
-    ('torch/test_ops', 'dragon.vm.torch.core'),
-    ('torch/test_optim', 'dragon.vm.torch.core'),
-    ('torch/test_torch', 'dragon.vm.torch.core'),
+    ("dragon/test_autograph", "dragon.core"),
+    ("dragon/test_device", "dragon.core"),
+    ("dragon/test_distributed", "dragon.core"),
+    ("dragon/test_framework", "dragon.core"),
+    ("dragon/test_ops", "dragon.core"),
+    ("dragon/test_util", "dragon.core"),
+    ("keras/test_engine", "dragon.vm.keras.core"),
+    ("keras/test_layers", "dragon.vm.keras.core"),
+    ("keras/test_nn", "dragon.vm.keras.core"),
+    ("keras/test_optimizer", "dragon.vm.keras.core"),
+    ("tensorflow/test_eager", "dragon.vm.tensorflow.core"),
+    ("tensorflow/test_framework", "dragon.vm.tensorflow.core"),
+    ("tensorflow/test_module", "dragon.vm.tensorflow.core"),
+    ("tensorflow/test_ops", "dragon.vm.tensorflow.core"),
+    ("torch/test_autograd", "dragon.vm.torch.core"),
+    ("torch/test_backends", "dragon.vm.torch.core"),
+    ("torch/test_jit", "dragon.vm.torch.core"),
+    ("torch/test_nn", "dragon.vm.torch.core"),
+    ("torch/test_ops", "dragon.vm.torch.core"),
+    ("torch/test_optim", "dragon.vm.torch.core"),
+    ("torch/test_torch", "dragon.vm.torch.core"),
 ]
 
-DISTRIBUTED_BLOCKLIST = ['dragon/test_distributed']
+DISTRIBUTED_BLOCKLIST = ["dragon/test_distributed"]
 
 TESTS = [t[0] for t in TESTS_AND_SOURCES]
 SOURCES = [t[1] for t in TESTS_AND_SOURCES]
@@ -51,42 +51,33 @@ SOURCES = [t[1] for t in TESTS_AND_SOURCES]
 
 def parse_args():
     parser = argparse.ArgumentParser(
-        description='run the unittests',
-        epilog='where TESTS is any of: {}'.format(', '.join(TESTS)))
+        description="run the unittests",
+        epilog="where TESTS is any of: {}".format(", ".join(TESTS)),
+    )
+    parser.add_argument("-v", "--verbose", action="store_true", help="print verbose information")
+    parser.add_argument("-q", "--quiet", action="store_true", help="print error information only")
+    parser.add_argument("-c", "--coverage", action="store_true", help="run coverage for unittests")
     parser.add_argument(
-        '-v',
-        '--verbose',
-        action='store_true',
-        help='print verbose information')
-    parser.add_argument(
-        '-q',
-        '--quiet',
-        action='store_true',
-        help='print error information only')
-    parser.add_argument(
-        '-c',
-        '--coverage',
-        action='store_true',
-        help='run coverage for unittests')
-    parser.add_argument(
-        '-x',
-        '--exclude',
-        nargs='+',
+        "-x",
+        "--exclude",
+        nargs="+",
         choices=TESTS,
-        metavar='TESTS',
+        metavar="TESTS",
         default=[],
-        help='select a set of tests to exclude')
+        help="select a set of tests to exclude",
+    )
     parser.add_argument(
-        '--ignore-distributed-blocklist',
-        action='store_true',
-        help='always run block-listed distributed tests')
+        "--ignore-distributed-blocklist",
+        action="store_true",
+        help="always run block-listed distributed tests",
+    )
     return parser.parse_args()
 
 
 def get_base_command(args):
     """Return the base running command."""
     if args.coverage:
-        executable = ['coverage', 'run', '--parallel-mode']
+        executable = ["coverage", "run", "--parallel-mode"]
     else:
         executable = [sys.executable]
     return executable
@@ -109,23 +100,22 @@ def main():
     base_command = get_base_command(args)
     tests, sources = get_selected_tests(args, TESTS, SOURCES)
     for i, test in enumerate(tests):
-        if (test in DISTRIBUTED_BLOCKLIST and
-                not args.ignore_distributed_blocklist):
+        if test in DISTRIBUTED_BLOCKLIST and not args.ignore_distributed_blocklist:
             continue
         command = base_command[:]
         if args.coverage:
             if sources[i]:
-                command.extend(['--source ', sources[i]])
-        command.append(test + '.py')
+                command.extend(["--source ", sources[i]])
+        command.append(test + ".py")
         if args.verbose:
-            command.append('--verbose')
+            command.append("--verbose")
         elif args.quiet:
-            command.append('--quiet')
-        subprocess.call(' '.join(command), shell=True)
+            command.append("--quiet")
+        subprocess.call(" ".join(command), shell=True)
     if args.coverage:
-        subprocess.call(['coverage', 'combine'])
-        subprocess.call(['coverage', 'html'])
+        subprocess.call(["coverage", "combine"])
+        subprocess.call(["coverage", "html"])
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     main()

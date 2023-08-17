@@ -46,8 +46,8 @@ def abs(inputs, **kwargs):
 
     """
     if context.executing_eagerly():
-        return OpLib.execute('Abs', inputs)
-    return OpLib.add('Abs', inputs, **kwargs)
+        return OpLib.execute("Abs", inputs)
+    return OpLib.add("Abs", inputs, **kwargs)
 
 
 @OpSchema.num_inputs(2)
@@ -78,8 +78,8 @@ def add(inputs, **kwargs):
     """
     inputs = constant_ops.remove_scalars(inputs)
     if context.executing_eagerly():
-        return OpLib.execute('Add', inputs)
-    return OpLib.add('Add', inputs, **kwargs)
+        return OpLib.execute("Add", inputs)
+    return OpLib.add("Add", inputs, **kwargs)
 
 
 @OpSchema.num_inputs(2, 3)
@@ -100,10 +100,10 @@ def affine(inputs, axis=-1, **kwargs):
 
     """
     axes = nest.flatten(axis)
-    outputs = kwargs.pop('outputs', [None])
+    outputs = kwargs.pop("outputs", [None])
     if context.executing_eagerly():
-        return OpLib.execute('Affine', inputs, outputs=outputs, axes=axes)
-    return OpLib.add('Affine', inputs, axes=axes, **kwargs)
+        return OpLib.execute("Affine", inputs, outputs=outputs, axes=axes)
+    return OpLib.add("Affine", inputs, axes=axes, **kwargs)
 
 
 @OpSchema.num_inputs(1)
@@ -135,8 +135,8 @@ def argmax(inputs, axis=0, keepdims=False, **kwargs):
 
     """
     if context.executing_eagerly():
-        return OpLib.execute('ArgMax', inputs, axis=axis, keepdims=keepdims)
-    return OpLib.add('ArgMax', inputs, axis=axis, keepdims=keepdims, **kwargs)
+        return OpLib.execute("ArgMax", inputs, axis=axis, keepdims=keepdims)
+    return OpLib.add("ArgMax", inputs, axis=axis, keepdims=keepdims, **kwargs)
 
 
 @OpSchema.num_inputs(1)
@@ -168,8 +168,8 @@ def argmin(inputs, axis=0, keepdims=False, **kwargs):
 
     """
     if context.executing_eagerly():
-        return OpLib.execute('ArgMin', inputs, axis=axis, keepdims=keepdims)
-    return OpLib.add('ArgMin', inputs, axis=axis, keepdims=keepdims, **kwargs)
+        return OpLib.execute("ArgMin", inputs, axis=axis, keepdims=keepdims)
+    return OpLib.add("ArgMin", inputs, axis=axis, keepdims=keepdims, **kwargs)
 
 
 @OpSchema.num_inputs(2)
@@ -199,8 +199,8 @@ def atan2(inputs, **kwargs):
     """
     inputs = constant_ops.remove_scalars(inputs)
     if context.executing_eagerly():
-        return OpLib.execute('Atan2', inputs)
-    return OpLib.add('Atan2', inputs, **kwargs)
+        return OpLib.execute("Atan2", inputs)
+    return OpLib.add("Atan2", inputs, **kwargs)
 
 
 @OpSchema.num_inputs(2)
@@ -230,8 +230,8 @@ def bitwise_and(inputs, **kwargs):
     """
     inputs = constant_ops.remove_scalars(inputs)
     if context.executing_eagerly():
-        return OpLib.execute('BitwiseAnd', inputs)
-    return OpLib.add('BitwiseAnd', inputs, **kwargs)
+        return OpLib.execute("BitwiseAnd", inputs)
+    return OpLib.add("BitwiseAnd", inputs, **kwargs)
 
 
 @OpSchema.num_inputs(2)
@@ -261,8 +261,8 @@ def bitwise_or(inputs, **kwargs):
     """
     inputs = constant_ops.remove_scalars(inputs)
     if context.executing_eagerly():
-        return OpLib.execute('BitwiseOr', inputs)
-    return OpLib.add('BitwiseOr', inputs, **kwargs)
+        return OpLib.execute("BitwiseOr", inputs)
+    return OpLib.add("BitwiseOr", inputs, **kwargs)
 
 
 @OpSchema.num_inputs(2)
@@ -292,8 +292,8 @@ def bitwise_xor(inputs, **kwargs):
     """
     inputs = constant_ops.remove_scalars(inputs)
     if context.executing_eagerly():
-        return OpLib.execute('BitwiseXor', inputs)
-    return OpLib.add('BitwiseXor', inputs, **kwargs)
+        return OpLib.execute("BitwiseXor", inputs)
+    return OpLib.add("BitwiseXor", inputs, **kwargs)
 
 
 @OpSchema.num_inputs(1)
@@ -323,9 +323,8 @@ def cast(inputs, dtype, copy=True, **kwargs):
 
     """
     if context.executing_eagerly():
-        return OpLib.execute(
-            'Cast', inputs, outputs=[None] if copy else inputs, dtype=dtype)
-    return OpLib.add('Cast', inputs, dtype=dtype, **kwargs)
+        return OpLib.execute("Cast", inputs, outputs=[None] if copy else inputs, dtype=dtype)
+    return OpLib.add("Cast", inputs, dtype=dtype, **kwargs)
 
 
 @OpSchema.num_inputs(1)
@@ -353,8 +352,8 @@ def ceil(inputs, **kwargs):
 
     """
     if context.executing_eagerly():
-        return OpLib.execute('Ceil', inputs)
-    return OpLib.add('Ceil', inputs, **kwargs)
+        return OpLib.execute("Ceil", inputs)
+    return OpLib.add("Ceil", inputs, **kwargs)
 
 
 @OpSchema.num_inputs(1)
@@ -390,8 +389,8 @@ def clip(inputs, low=None, high=None, **kwargs):
     low = float(low) if low is not None else None
     high = float(high) if high is not None else None
     if context.executing_eagerly():
-        return OpLib.execute('Clip', inputs, low=low, high=high)
-    return OpLib.add('Clip', inputs, low=low, high=high, **kwargs)
+        return OpLib.execute("Clip", inputs, low=low, high=high)
+    return OpLib.add("Clip", inputs, low=low, high=high, **kwargs)
 
 
 @OpSchema.num_inputs(1)
@@ -419,8 +418,8 @@ def cos(inputs, **kwargs):
 
     """
     if context.executing_eagerly():
-        return OpLib.execute('Cos', inputs)
-    return OpLib.add('Cos', inputs, **kwargs)
+        return OpLib.execute("Cos", inputs)
+    return OpLib.add("Cos", inputs, **kwargs)
 
 
 @OpSchema.num_inputs(1)
@@ -470,10 +469,8 @@ def cumsum(inputs, axis=0, exclusive=False, reverse=False, **kwargs):
 
     """
     if context.executing_eagerly():
-        return OpLib.execute('CumSum', inputs, axis=axis,
-                             exclusive=exclusive, reverse=reverse)
-    return OpLib.add('CumSum', inputs, axis=axis,
-                     exclusive=exclusive, reverse=reverse, **kwargs)
+        return OpLib.execute("CumSum", inputs, axis=axis, exclusive=exclusive, reverse=reverse)
+    return OpLib.add("CumSum", inputs, axis=axis, exclusive=exclusive, reverse=reverse, **kwargs)
 
 
 @OpSchema.num_inputs(2)
@@ -504,8 +501,8 @@ def div(inputs, **kwargs):
     """
     inputs = constant_ops.remove_scalars(inputs)
     if context.executing_eagerly():
-        return OpLib.execute('Div', inputs)
-    return OpLib.add('Div', inputs, **kwargs)
+        return OpLib.execute("Div", inputs)
+    return OpLib.add("Div", inputs, **kwargs)
 
 
 @OpSchema.num_inputs(2)
@@ -537,8 +534,8 @@ def equal(inputs, **kwargs):
     """
     inputs = constant_ops.remove_scalars(inputs)
     if context.executing_eagerly():
-        return OpLib.execute('Equal', inputs)
-    return OpLib.add('Equal', inputs, **kwargs)
+        return OpLib.execute("Equal", inputs)
+    return OpLib.add("Equal", inputs, **kwargs)
 
 
 @OpSchema.num_inputs(1)
@@ -566,8 +563,8 @@ def exp(inputs, **kwargs):
 
     """
     if context.executing_eagerly():
-        return OpLib.execute('Exp', inputs)
-    return OpLib.add('Exp', inputs, **kwargs)
+        return OpLib.execute("Exp", inputs)
+    return OpLib.add("Exp", inputs, **kwargs)
 
 
 @OpSchema.num_inputs(1)
@@ -595,8 +592,8 @@ def floor(inputs, **kwargs):
 
     """
     if context.executing_eagerly():
-        return OpLib.execute('Floor', inputs)
-    return OpLib.add('Floor', inputs, **kwargs)
+        return OpLib.execute("Floor", inputs)
+    return OpLib.add("Floor", inputs, **kwargs)
 
 
 @OpSchema.num_inputs(2, 3)
@@ -627,10 +624,16 @@ def gemm(inputs, alpha=1, beta=1, transpose_a=False, transpose_b=False, **kwargs
     alpha, beta = float(alpha), float(beta)
     if context.executing_eagerly():
         return OpLib.execute(
-            'Gemm', inputs, alpha=alpha, beta=beta,
-            transA=transpose_a, transB=transpose_b)
-    return OpLib.add('Gemm', inputs, alpha=alpha, beta=beta,
-                     transA=transpose_a, transB=transpose_b, **kwargs)
+            "Gemm",
+            inputs,
+            alpha=alpha,
+            beta=beta,
+            transA=transpose_a,
+            transB=transpose_b,
+        )
+    return OpLib.add(
+        "Gemm", inputs, alpha=alpha, beta=beta, transA=transpose_a, transB=transpose_b, **kwargs
+    )
 
 
 @OpSchema.num_inputs(2)
@@ -662,8 +665,8 @@ def greater(inputs, **kwargs):
     """
     inputs = constant_ops.remove_scalars(inputs)
     if context.executing_eagerly():
-        return OpLib.execute('Greater', inputs)
-    return OpLib.add('Greater', inputs, **kwargs)
+        return OpLib.execute("Greater", inputs)
+    return OpLib.add("Greater", inputs, **kwargs)
 
 
 @OpSchema.num_inputs(2)
@@ -695,8 +698,8 @@ def greater_equal(inputs, **kwargs):
     """
     inputs = constant_ops.remove_scalars(inputs)
     if context.executing_eagerly():
-        return OpLib.execute('GreaterEqual', inputs)
-    return OpLib.add('GreaterEqual', inputs, **kwargs)
+        return OpLib.execute("GreaterEqual", inputs)
+    return OpLib.add("GreaterEqual", inputs, **kwargs)
 
 
 @OpSchema.num_inputs(1)
@@ -729,8 +732,8 @@ def invert(inputs, **kwargs):
 
     """
     if context.executing_eagerly():
-        return OpLib.execute('BitwiseNot', inputs)
-    return OpLib.add('BitwiseNot', inputs, **kwargs)
+        return OpLib.execute("BitwiseNot", inputs)
+    return OpLib.add("BitwiseNot", inputs, **kwargs)
 
 
 @OpSchema.num_inputs(1)
@@ -758,8 +761,8 @@ def is_finite(inputs, **kwargs):
 
     """
     if context.executing_eagerly():
-        return OpLib.execute('IsFinite', inputs)
-    return OpLib.add('IsFinite', inputs, **kwargs)
+        return OpLib.execute("IsFinite", inputs)
+    return OpLib.add("IsFinite", inputs, **kwargs)
 
 
 @OpSchema.num_inputs(1)
@@ -787,8 +790,8 @@ def is_inf(inputs, **kwargs):
 
     """
     if context.executing_eagerly():
-        return OpLib.execute('IsInf', inputs)
-    return OpLib.add('IsInf', inputs, **kwargs)
+        return OpLib.execute("IsInf", inputs)
+    return OpLib.add("IsInf", inputs, **kwargs)
 
 
 @OpSchema.num_inputs(1)
@@ -816,8 +819,8 @@ def is_nan(inputs, **kwargs):
 
     """
     if context.executing_eagerly():
-        return OpLib.execute('IsNaN', inputs)
-    return OpLib.add('IsNaN', inputs, **kwargs)
+        return OpLib.execute("IsNaN", inputs)
+    return OpLib.add("IsNaN", inputs, **kwargs)
 
 
 @OpSchema.num_inputs(2)
@@ -849,8 +852,8 @@ def less(inputs, **kwargs):
     """
     inputs = constant_ops.remove_scalars(inputs)
     if context.executing_eagerly():
-        return OpLib.execute('Less', inputs)
-    return OpLib.add('Less', inputs, **kwargs)
+        return OpLib.execute("Less", inputs)
+    return OpLib.add("Less", inputs, **kwargs)
 
 
 @OpSchema.num_inputs(2)
@@ -882,8 +885,8 @@ def less_equal(inputs, **kwargs):
     """
     inputs = constant_ops.remove_scalars(inputs)
     if context.executing_eagerly():
-        return OpLib.execute('LessEqual', inputs)
-    return OpLib.add('LessEqual', inputs, **kwargs)
+        return OpLib.execute("LessEqual", inputs)
+    return OpLib.add("LessEqual", inputs, **kwargs)
 
 
 @OpSchema.num_inputs(1)
@@ -911,8 +914,8 @@ def log(inputs, **kwargs):
 
     """
     if context.executing_eagerly():
-        return OpLib.execute('Log', inputs)
-    return OpLib.add('Log', inputs, **kwargs)
+        return OpLib.execute("Log", inputs)
+    return OpLib.add("Log", inputs, **kwargs)
 
 
 @OpSchema.num_inputs(2)
@@ -945,8 +948,8 @@ def logical_and(inputs, **kwargs):
     """
     inputs = constant_ops.remove_scalars(inputs)
     if context.executing_eagerly():
-        return OpLib.execute('And', inputs)
-    return OpLib.add('And', inputs, **kwargs)
+        return OpLib.execute("And", inputs)
+    return OpLib.add("And", inputs, **kwargs)
 
 
 @OpSchema.num_inputs(1)
@@ -976,8 +979,8 @@ def logical_not(inputs, **kwargs):
 
     """
     if context.executing_eagerly():
-        return OpLib.execute('Not', inputs)
-    return OpLib.add('Not', inputs, **kwargs)
+        return OpLib.execute("Not", inputs)
+    return OpLib.add("Not", inputs, **kwargs)
 
 
 @OpSchema.num_inputs(2)
@@ -1010,8 +1013,8 @@ def logical_or(inputs, **kwargs):
     """
     inputs = constant_ops.remove_scalars(inputs)
     if context.executing_eagerly():
-        return OpLib.execute('Or', inputs)
-    return OpLib.add('Or', inputs, **kwargs)
+        return OpLib.execute("Or", inputs)
+    return OpLib.add("Or", inputs, **kwargs)
 
 
 @OpSchema.num_inputs(2)
@@ -1044,8 +1047,8 @@ def logical_xor(inputs, **kwargs):
     """
     inputs = constant_ops.remove_scalars(inputs)
     if context.executing_eagerly():
-        return OpLib.execute('Xor', inputs)
-    return OpLib.add('Xor', inputs, **kwargs)
+        return OpLib.execute("Xor", inputs)
+    return OpLib.add("Xor", inputs, **kwargs)
 
 
 @OpSchema.num_inputs(2)
@@ -1096,8 +1099,8 @@ def matmul(inputs, **kwargs):
     """
     inputs = constant_ops.remove_scalars(inputs)
     if context.executing_eagerly():
-        return OpLib.execute('MatMul', inputs)
-    return OpLib.add('MatMul', inputs, **kwargs)
+        return OpLib.execute("MatMul", inputs)
+    return OpLib.add("MatMul", inputs, **kwargs)
 
 
 @OpSchema.num_inputs(1)
@@ -1138,9 +1141,8 @@ def max(inputs, axis=None, keepdims=False, **kwargs):
     """
     axes = None if axis is None else nest.flatten(axis)
     if context.executing_eagerly():
-        return OpLib.execute('ReduceMax', inputs, axes=axes, keepdims=keepdims)
-    return OpLib.add('ReduceMax', inputs,
-                     axes=axes, keepdims=keepdims, **kwargs)
+        return OpLib.execute("ReduceMax", inputs, axes=axes, keepdims=keepdims)
+    return OpLib.add("ReduceMax", inputs, axes=axes, keepdims=keepdims, **kwargs)
 
 
 @OpSchema.num_inputs(2)
@@ -1162,8 +1164,8 @@ def maximum(inputs, **kwargs):
     """
     inputs = constant_ops.remove_scalars(inputs)
     if context.executing_eagerly():
-        return OpLib.execute('Maximum', inputs)
-    return OpLib.add('Maximum', inputs, **kwargs)
+        return OpLib.execute("Maximum", inputs)
+    return OpLib.add("Maximum", inputs, **kwargs)
 
 
 @OpSchema.num_inputs(1)
@@ -1204,9 +1206,8 @@ def mean(inputs, axis=None, keepdims=False, **kwargs):
     """
     axes = None if axis is None else nest.flatten(axis)
     if context.executing_eagerly():
-        return OpLib.execute('ReduceMean', inputs, axes=axes, keepdims=keepdims)
-    return OpLib.add('ReduceMean', inputs,
-                     axes=axes, keepdims=keepdims, **kwargs)
+        return OpLib.execute("ReduceMean", inputs, axes=axes, keepdims=keepdims)
+    return OpLib.add("ReduceMean", inputs, axes=axes, keepdims=keepdims, **kwargs)
 
 
 @OpSchema.num_inputs(1)
@@ -1247,9 +1248,8 @@ def min(inputs, axis=None, keepdims=False, **kwargs):
     """
     axes = None if axis is None else nest.flatten(axis)
     if context.executing_eagerly():
-        return OpLib.execute('ReduceMin', inputs, axes=axes, keepdims=keepdims)
-    return OpLib.add('ReduceMin', inputs,
-                     axes=axes, keepdims=keepdims, **kwargs)
+        return OpLib.execute("ReduceMin", inputs, axes=axes, keepdims=keepdims)
+    return OpLib.add("ReduceMin", inputs, axes=axes, keepdims=keepdims, **kwargs)
 
 
 @OpSchema.num_inputs(2)
@@ -1271,8 +1271,8 @@ def minimum(inputs, **kwargs):
     """
     inputs = constant_ops.remove_scalars(inputs)
     if context.executing_eagerly():
-        return OpLib.execute('Minimum', inputs)
-    return OpLib.add('Minimum', inputs, **kwargs)
+        return OpLib.execute("Minimum", inputs)
+    return OpLib.add("Minimum", inputs, **kwargs)
 
 
 @OpSchema.num_inputs(1)
@@ -1321,11 +1321,8 @@ def moments(inputs, axis=None, keepdims=False, **kwargs):
     """
     axes = None if axis is None else nest.flatten(axis)
     if context.executing_eagerly():
-        return OpLib.execute(
-            'Moments', inputs, outputs=[None, None],
-            axes=axes, keepdims=keepdims)
-    return OpLib.add('Moments', inputs, num_outputs=2,
-                     axes=axes, keepdims=keepdims, **kwargs)
+        return OpLib.execute("Moments", inputs, outputs=[None, None], axes=axes, keepdims=keepdims)
+    return OpLib.add("Moments", inputs, num_outputs=2, axes=axes, keepdims=keepdims, **kwargs)
 
 
 @OpSchema.num_inputs(2)
@@ -1356,12 +1353,12 @@ def mul(inputs, **kwargs):
     """
     inputs = constant_ops.remove_scalars(inputs)
     if context.executing_eagerly():
-        return OpLib.execute('Mul', inputs)
-    return OpLib.add('Mul', inputs, **kwargs)
+        return OpLib.execute("Mul", inputs)
+    return OpLib.add("Mul", inputs, **kwargs)
 
 
 @OpSchema.num_inputs(1)
-def nan_to_num(inputs, nan=0., pos_inf=None, neg_inf=None, copy=True, **kwargs):
+def nan_to_num(inputs, nan=0.0, pos_inf=None, neg_inf=None, copy=True, **kwargs):
     """Replace NaN or infinity elements with given value.
 
     ```python
@@ -1393,10 +1390,14 @@ def nan_to_num(inputs, nan=0., pos_inf=None, neg_inf=None, copy=True, **kwargs):
     neg_inf = float(neg_inf) if neg_inf is not None else neg_inf
     if context.executing_eagerly():
         return OpLib.execute(
-            'NaNToNum', inputs, outputs=[None] if copy else inputs,
-            nan=nan, pos_inf=pos_inf, neg_inf=neg_inf)
-    return OpLib.add('NaNToNum', inputs, nan=nan,
-                     pos_inf=pos_inf, neg_inf=neg_inf, **kwargs)
+            "NaNToNum",
+            inputs,
+            outputs=[None] if copy else inputs,
+            nan=nan,
+            pos_inf=pos_inf,
+            neg_inf=neg_inf,
+        )
+    return OpLib.add("NaNToNum", inputs, nan=nan, pos_inf=pos_inf, neg_inf=neg_inf, **kwargs)
 
 
 @OpSchema.num_inputs(1)
@@ -1422,8 +1423,8 @@ def negative(inputs, **kwargs):
 
     """
     if context.executing_eagerly():
-        return OpLib.execute('Neg', inputs)
-    return OpLib.add('Neg', inputs, **kwargs)
+        return OpLib.execute("Neg", inputs)
+    return OpLib.add("Neg", inputs, **kwargs)
 
 
 @OpSchema.num_inputs(1)
@@ -1464,12 +1465,12 @@ def norm(inputs, ord=None, axis=None, keepdims=False, **kwargs):
         The output tensor.
 
     """
-    if ord is None or ord == 2 or ord == 'fro':
-        op_type = 'ReduceL2'
+    if ord is None or ord == 2 or ord == "fro":
+        op_type = "ReduceL2"
     elif ord == 1:
-        op_type = 'ReduceL1'
+        op_type = "ReduceL1"
     else:
-        raise ValueError('Unsupported norm order: ' + str(ord))
+        raise ValueError("Unsupported norm order: " + str(ord))
     axes = None if axis is None else nest.flatten(axis)
     if context.executing_eagerly():
         return OpLib.execute(op_type, inputs, axes=axes, keepdims=keepdims)
@@ -1505,8 +1506,8 @@ def not_equal(inputs, **kwargs):
     """
     inputs = constant_ops.remove_scalars(inputs)
     if context.executing_eagerly():
-        return OpLib.execute('NotEqual', inputs)
-    return OpLib.add('NotEqual', inputs, **kwargs)
+        return OpLib.execute("NotEqual", inputs)
+    return OpLib.add("NotEqual", inputs, **kwargs)
 
 
 @OpSchema.num_inputs(2)
@@ -1537,8 +1538,8 @@ def pow(inputs, **kwargs):
     """
     inputs = constant_ops.remove_scalars(inputs)
     if context.executing_eagerly():
-        return OpLib.execute('Pow', inputs)
-    return OpLib.add('Pow', inputs, **kwargs)
+        return OpLib.execute("Pow", inputs)
+    return OpLib.add("Pow", inputs, **kwargs)
 
 
 @OpSchema.num_inputs(1)
@@ -1566,8 +1567,8 @@ def reciprocal(inputs, **kwargs):
 
     """
     if context.executing_eagerly():
-        return OpLib.execute('Reciprocal', inputs)
-    return OpLib.add('Reciprocal', inputs, **kwargs)
+        return OpLib.execute("Reciprocal", inputs)
+    return OpLib.add("Reciprocal", inputs, **kwargs)
 
 
 @OpSchema.num_inputs(1)
@@ -1595,8 +1596,8 @@ def round(inputs, **kwargs):
 
     """
     if context.executing_eagerly():
-        return OpLib.execute('Round', inputs)
-    return OpLib.add('Round', inputs, **kwargs)
+        return OpLib.execute("Round", inputs)
+    return OpLib.add("Round", inputs, **kwargs)
 
 
 @OpSchema.num_inputs(1)
@@ -1624,8 +1625,8 @@ def rsqrt(inputs, **kwargs):
 
     """
     if context.executing_eagerly():
-        return OpLib.execute('Rsqrt', inputs)
-    return OpLib.add('Rsqrt', inputs, **kwargs)
+        return OpLib.execute("Rsqrt", inputs)
+    return OpLib.add("Rsqrt", inputs, **kwargs)
 
 
 @OpSchema.num_inputs(1)
@@ -1659,8 +1660,8 @@ def sign(inputs, **kwargs):
 
     """
     if context.executing_eagerly():
-        return OpLib.execute('Sign', inputs)
-    return OpLib.add('Sign', inputs, **kwargs)
+        return OpLib.execute("Sign", inputs)
+    return OpLib.add("Sign", inputs, **kwargs)
 
 
 @OpSchema.num_inputs(1)
@@ -1688,8 +1689,8 @@ def sin(inputs, **kwargs):
 
     """
     if context.executing_eagerly():
-        return OpLib.execute('Sin', inputs)
-    return OpLib.add('Sin', inputs, **kwargs)
+        return OpLib.execute("Sin", inputs)
+    return OpLib.add("Sin", inputs, **kwargs)
 
 
 @OpSchema.num_inputs(1)
@@ -1717,8 +1718,8 @@ def sqrt(inputs, **kwargs):
 
     """
     if context.executing_eagerly():
-        return OpLib.execute('Sqrt', inputs)
-    return OpLib.add('Sqrt', inputs, **kwargs)
+        return OpLib.execute("Sqrt", inputs)
+    return OpLib.add("Sqrt", inputs, **kwargs)
 
 
 @OpSchema.num_inputs(1)
@@ -1746,8 +1747,8 @@ def square(inputs, **kwargs):
 
     """
     if context.executing_eagerly():
-        return OpLib.execute('Square', inputs)
-    return OpLib.add('Square', inputs, **kwargs)
+        return OpLib.execute("Square", inputs)
+    return OpLib.add("Square", inputs, **kwargs)
 
 
 @OpSchema.num_inputs(2)
@@ -1778,8 +1779,8 @@ def sub(inputs, **kwargs):
     """
     inputs = constant_ops.remove_scalars(inputs)
     if context.executing_eagerly():
-        return OpLib.execute('Sub', inputs)
-    return OpLib.add('Sub', inputs, **kwargs)
+        return OpLib.execute("Sub", inputs)
+    return OpLib.add("Sub", inputs, **kwargs)
 
 
 @OpSchema.num_inputs(1)
@@ -1820,9 +1821,8 @@ def sum(inputs, axis=None, keepdims=False, **kwargs):
     """
     axes = None if axis is None else nest.flatten(axis)
     if context.executing_eagerly():
-        return OpLib.execute('ReduceSum', inputs, axes=axes, keepdims=keepdims)
-    return OpLib.add('ReduceSum', inputs,
-                     axes=axes, keepdims=keepdims, **kwargs)
+        return OpLib.execute("ReduceSum", inputs, axes=axes, keepdims=keepdims)
+    return OpLib.add("ReduceSum", inputs, axes=axes, keepdims=keepdims, **kwargs)
 
 
 @OpSchema.num_inputs(1)
@@ -1863,6 +1863,5 @@ def var(inputs, axis=None, keepdims=False, **kwargs):
     """
     axes = None if axis is None else nest.flatten(axis)
     if context.executing_eagerly():
-        return OpLib.execute('ReduceVar', inputs, axes=axes, keepdims=keepdims)
-    return OpLib.add('ReduceVar', inputs,
-                     axes=axes, keepdims=keepdims, **kwargs)
+        return OpLib.execute("ReduceVar", inputs, axes=axes, keepdims=keepdims)
+    return OpLib.add("ReduceVar", inputs, axes=axes, keepdims=keepdims, **kwargs)

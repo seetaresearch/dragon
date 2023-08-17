@@ -55,9 +55,9 @@ class Variable(Tensor):
         super(Variable, self).__init__(
             shape=value.shape,
             dtype=value.dtype,
-            impl=default_ws.create_tensor(
-                scope=context.get_variable_scope())
-            .FromNumpy(value, True),
+            impl=default_ws.create_tensor(scope=context.get_variable_scope()).FromNumpy(
+                value, True
+            ),
             deleter=default_ws._handle_pool,
             name=name,
         )
@@ -78,12 +78,13 @@ class Variable(Tensor):
     def __repr__(self):
         array = self.numpy()
         content_str, shape = str(array), array.shape
-        numpy_str = '{}, dtype={}'.format(content_str, array.dtype)
+        numpy_str = "{}, dtype={}".format(content_str, array.dtype)
         del array  # DECREF
         if len(shape) == 0:
             return content_str
-        shape_str = ('(' + ', '.join(
-            [str(dim) for dim in shape])) + \
-            (',)' if len(shape) == 1 else ')')
-        return '<tf.Variable {} shape={} dtype={}, numpy=\n{}>' \
-            .format(self.name, shape_str, self.dtype, numpy_str)
+        shape_str = ("(" + ", ".join([str(dim) for dim in shape])) + (
+            ",)" if len(shape) == 1 else ")"
+        )
+        return "<tf.Variable {} shape={} dtype={}, numpy=\n{}>".format(
+            self.name, shape_str, self.dtype, numpy_str
+        )

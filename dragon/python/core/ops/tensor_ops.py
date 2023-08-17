@@ -39,7 +39,7 @@ def add(self, other):
     `dragon.math.add(...)`_
 
     """
-    return _apply_binary_op([self, other], 'Add')
+    return _apply_binary_op([self, other], "Add")
 
 
 def _and(self, other):
@@ -60,7 +60,7 @@ def _and(self, other):
     `dragon.bitwise.bitwise_and(...)`_
 
     """
-    return _apply_binary_op([self, other], 'BitwiseAnd')
+    return _apply_binary_op([self, other], "BitwiseAnd")
 
 
 def astype(self, dtype, copy=True):
@@ -84,9 +84,8 @@ def astype(self, dtype, copy=True):
 
     """
     if context.executing_eagerly():
-        return OpLib.execute(
-            'Cast', [self], outputs=[None] if copy else [self], dtype=dtype)
-    return OpLib.add('Cast', [self], dtype=dtype)
+        return OpLib.execute("Cast", [self], outputs=[None] if copy else [self], dtype=dtype)
+    return OpLib.add("Cast", [self], dtype=dtype)
 
 
 def copy(self):
@@ -102,7 +101,7 @@ def copy(self):
     `dragon.identity(...)`_
 
     """
-    return _apply_unary_op([self], 'Identity')
+    return _apply_unary_op([self], "Identity")
 
 
 def div(self, other):
@@ -123,7 +122,7 @@ def div(self, other):
     `dragon.math.div(...)`_
 
     """
-    return _apply_binary_op([self, other], 'Div')
+    return _apply_binary_op([self, other], "Div")
 
 
 def eq(self, other):
@@ -144,7 +143,7 @@ def eq(self, other):
     `dragon.math.equal(...)`_
 
     """
-    return _apply_binary_op([self, other], 'Equal')
+    return _apply_binary_op([self, other], "Equal")
 
 
 def fill(self, value):
@@ -167,7 +166,7 @@ def fill(self, value):
     `dragon.fill(...)`_
 
     """
-    return _apply_init_op(self, 'Fill', value=float(value))
+    return _apply_init_op(self, "Fill", value=float(value))
 
 
 def ge(self, other):
@@ -188,7 +187,7 @@ def ge(self, other):
     `dragon.math.greater_equal(...)`_
 
     """
-    return _apply_binary_op([self, other], 'GreaterEqual')
+    return _apply_binary_op([self, other], "GreaterEqual")
 
 
 def getitem(self, item):
@@ -207,37 +206,35 @@ def getitem(self, item):
     """
     gather_args = []
     if isinstance(item, Tensor):
-        if item.dtype == 'bool' or item.dtype == 'uint8':
+        if item.dtype == "bool" or item.dtype == "uint8":
             if context.executing_eagerly():
-                return OpLib.execute('BooleanMask', [self, item])
-            return OpLib.add('BooleanMask', [self, item])
-        elif item.dtype in ('int32', 'int64'):
+                return OpLib.execute("BooleanMask", [self, item])
+            return OpLib.add("BooleanMask", [self, item])
+        elif item.dtype in ("int32", "int64"):
             gather_args.append((0, item))
         else:
-            raise TypeError('Unsupported index type: ' + item.dtype)
+            raise TypeError("Unsupported index type: " + item.dtype)
     if isinstance(item, tuple):
         for i, elem in enumerate(item):
             if isinstance(elem, Tensor):
-                if elem.dtype in ('int32', 'int64'):
+                if elem.dtype in ("int32", "int64"):
                     gather_args.append((i, elem))
                 else:
-                    raise TypeError('Unsupported index type: ' + elem.dtype)
+                    raise TypeError("Unsupported index type: " + elem.dtype)
     if len(gather_args) == 1:
         axis, index = gather_args[0]
         if context.executing_eagerly():
-            return OpLib.execute(
-                'Gather', [self, index], axis=axis, end_axis=None)
-        return OpLib.add('Gather', [self, index], axis=axis)
+            return OpLib.execute("Gather", [self, index], axis=axis, end_axis=None)
+        return OpLib.add("Gather", [self, index], axis=axis)
     elif len(gather_args) > 1:
         raise NotImplementedError
     starts, sizes = _process_index(item)
     if context.executing_eagerly():
-        return OpLib.execute(
-            'Slice', [self], ndim=len(starts), starts=starts, sizes=sizes)
-    return OpLib.add('Slice', [self], starts=starts, sizes=sizes)
+        return OpLib.execute("Slice", [self], ndim=len(starts), starts=starts, sizes=sizes)
+    return OpLib.add("Slice", [self], starts=starts, sizes=sizes)
 
 
-def glorot_normal(self, mode='fan_in', scale=2.0):
+def glorot_normal(self, mode="fan_in", scale=2.0):
     r"""Fill self from a glorot normal distribution.
 
     .. math:: \text{self} \sim \mathcal{N}(0, \frac{scale}{\text{fan}})
@@ -259,11 +256,10 @@ def glorot_normal(self, mode='fan_in', scale=2.0):
     `dragon.random.glorot_normal(...)`_
 
     """
-    return _apply_init_op(self, 'GlorotNormal',
-                          mode=mode.lower(), scale=float(scale))
+    return _apply_init_op(self, "GlorotNormal", mode=mode.lower(), scale=float(scale))
 
 
-def glorot_uniform(self, mode='fan_in', scale=3.0):
+def glorot_uniform(self, mode="fan_in", scale=3.0):
     r"""Fill self from a glorot uniform distribution.
 
     .. math:: \text{self} \sim \mathcal{U}(-\sqrt{\frac{scale}{\text{fan}}},
@@ -286,8 +282,7 @@ def glorot_uniform(self, mode='fan_in', scale=3.0):
     `dragon.random.glorot_uniform(...)`_
 
     """
-    return _apply_init_op(self, 'GlorotUniform',
-                          mode=mode.lower(), scale=float(scale))
+    return _apply_init_op(self, "GlorotUniform", mode=mode.lower(), scale=float(scale))
 
 
 def gt(self, other):
@@ -308,7 +303,7 @@ def gt(self, other):
     `dragon.math.greater(...)`_
 
     """
-    return _apply_binary_op([self, other], 'Greater')
+    return _apply_binary_op([self, other], "Greater")
 
 
 def iadd(self, other):
@@ -329,7 +324,7 @@ def iadd(self, other):
     `dragon.math.add(...)`_
 
     """
-    return _apply_binary_op([self, other], 'Add', [self])
+    return _apply_binary_op([self, other], "Add", [self])
 
 
 def iand(self, other):
@@ -350,7 +345,7 @@ def iand(self, other):
     `dragon.bitwise.bitwise_and(...)`_
 
     """
-    return _apply_binary_op([self, other], 'BitwiseAnd', [self])
+    return _apply_binary_op([self, other], "BitwiseAnd", [self])
 
 
 def idiv(self, other):
@@ -371,7 +366,7 @@ def idiv(self, other):
     `dragon.math.div(...)`_
 
     """
-    return _apply_binary_op([self, other], 'Div', [self])
+    return _apply_binary_op([self, other], "Div", [self])
 
 
 def imul(self, other):
@@ -392,7 +387,7 @@ def imul(self, other):
     `dragon.math.mul(...)`_
 
     """
-    return _apply_binary_op([self, other], 'Mul', [self])
+    return _apply_binary_op([self, other], "Mul", [self])
 
 
 def invert(self):
@@ -408,7 +403,7 @@ def invert(self):
     `dragon.bitwise.invert(...)`_
 
     """
-    return _apply_unary_op([self], 'BitwiseNot')
+    return _apply_unary_op([self], "BitwiseNot")
 
 
 def ior(self, other):
@@ -429,7 +424,7 @@ def ior(self, other):
     `dragon.bitwise.bitwise_or(...)`_
 
     """
-    return _apply_binary_op([self, other], 'BitwiseOr', [self])
+    return _apply_binary_op([self, other], "BitwiseOr", [self])
 
 
 def isub(self, other):
@@ -450,7 +445,7 @@ def isub(self, other):
     `dragon.math.sub(...)`_
 
     """
-    return _apply_binary_op([self, other], 'Sub', [self])
+    return _apply_binary_op([self, other], "Sub", [self])
 
 
 def ixor(self, other):
@@ -471,7 +466,7 @@ def ixor(self, other):
     `dragon.bitwise.bitwise_xor(...)`_
 
     """
-    return _apply_binary_op([self, other], 'BitwiseXor', [self])
+    return _apply_binary_op([self, other], "BitwiseXor", [self])
 
 
 def le(self, other):
@@ -492,7 +487,7 @@ def le(self, other):
     `dragon.math.less_equal(...)`_
 
     """
-    return _apply_binary_op([self, other], 'LessEqual')
+    return _apply_binary_op([self, other], "LessEqual")
 
 
 def lt(self, other):
@@ -513,7 +508,7 @@ def lt(self, other):
     `dragon.math.less(...)`_
 
     """
-    return _apply_binary_op([self, other], 'Less')
+    return _apply_binary_op([self, other], "Less")
 
 
 def matmul(self, other):
@@ -534,7 +529,7 @@ def matmul(self, other):
     `dragon.math.matmul(...)`_
 
     """
-    return _apply_binary_op([self, other], 'MatMul')
+    return _apply_binary_op([self, other], "MatMul")
 
 
 def mul(self, other):
@@ -555,7 +550,7 @@ def mul(self, other):
     `dragon.math.mul(...)`_
 
     """
-    return _apply_binary_op([self, other], 'Mul')
+    return _apply_binary_op([self, other], "Mul")
 
 
 def ne(self, other):
@@ -576,7 +571,7 @@ def ne(self, other):
     `dragon.math.not_equal(...)`_
 
     """
-    return _apply_binary_op([self, other], 'NotEqual')
+    return _apply_binary_op([self, other], "NotEqual")
 
 
 def neg(self):
@@ -592,7 +587,7 @@ def neg(self):
     `dragon.math.negative(...)`_
 
     """
-    return _apply_unary_op([self], 'Neg')
+    return _apply_unary_op([self], "Neg")
 
 
 def normal(self, mean=0, std=1):
@@ -617,8 +612,7 @@ def normal(self, mean=0, std=1):
     `dragon.random.normal(...)`_
 
     """
-    return _apply_init_op(self, 'RandomNormal',
-                          mean=float(mean), std=float(std))
+    return _apply_init_op(self, "RandomNormal", mean=float(mean), std=float(std))
 
 
 def _or(self, other):
@@ -639,7 +633,7 @@ def _or(self, other):
     `dragon.bitwise.bitwise_or(...)`_
 
     """
-    return _apply_binary_op([self, other], 'BitwiseOr')
+    return _apply_binary_op([self, other], "BitwiseOr")
 
 
 def radd(self, other):
@@ -660,7 +654,7 @@ def radd(self, other):
     `dragon.math.add(...)`_
 
     """
-    return _apply_binary_op([other, self], 'Add')
+    return _apply_binary_op([other, self], "Add")
 
 
 def rand(self, other):
@@ -681,7 +675,7 @@ def rand(self, other):
     `dragon.bitwise.bitwise_and(...)`_
 
     """
-    return _apply_binary_op([other, self], 'BitwiseAnd')
+    return _apply_binary_op([other, self], "BitwiseAnd")
 
 
 def rdiv(self, other):
@@ -702,7 +696,7 @@ def rdiv(self, other):
     `dragon.math.div(...)`_
 
     """
-    return _apply_binary_op([other, self], 'Div')
+    return _apply_binary_op([other, self], "Div")
 
 
 def reshape(self, shape, copy=True):
@@ -746,7 +740,7 @@ def rmul(self, other):
     `dragon.math.mul(...)`_
 
     """
-    return _apply_binary_op([other, self], 'Mul')
+    return _apply_binary_op([other, self], "Mul")
 
 
 def ror(self, other):
@@ -767,7 +761,7 @@ def ror(self, other):
     `dragon.bitwise.bitwise_or(...)`_
 
     """
-    return _apply_binary_op([other, self], 'BitwiseOr')
+    return _apply_binary_op([other, self], "BitwiseOr")
 
 
 def rsub(self, other):
@@ -788,7 +782,7 @@ def rsub(self, other):
     `dragon.math.sub(...)`_
 
     """
-    return _apply_binary_op([other, self], 'Sub')
+    return _apply_binary_op([other, self], "Sub")
 
 
 def rxor(self, other):
@@ -809,7 +803,7 @@ def rxor(self, other):
     `dragon.bitwise.bitwise_xor(...)`_
 
     """
-    return _apply_binary_op([other, self], 'BitwiseXor')
+    return _apply_binary_op([other, self], "BitwiseXor")
 
 
 def setitem(self, key, value):
@@ -826,22 +820,28 @@ def setitem(self, key, value):
     if context.executing_eagerly():
         value = constant_ops.scalar(value, self.dtype)
         if isinstance(key, Tensor):
-            return OpLib.execute('Where', [key, value, self], outputs=[self])
+            return OpLib.execute("Where", [key, value, self], outputs=[self])
         else:
             starts, sizes = _process_index(key)
             return OpLib.execute(
-                'Assign', [self, value], outputs=[self],
+                "Assign",
+                [self, value],
+                outputs=[self],
                 ndim=len(starts) if starts is not None else 0,
-                starts=starts, sizes=sizes)
+                starts=starts,
+                sizes=sizes,
+            )
     else:
         if isinstance(key, Tensor):
             raise RuntimeError(
-                'Assigning via mask is an ambiguous behavior in graph mode. '
-                'Use `dragon.where(...)` instead.')
+                "Assigning via mask is an ambiguous behavior in graph mode. "
+                "Use `dragon.where(...)` instead."
+            )
         else:
             raise RuntimeError(
-                'Assigning via slices is an ambiguous behavior in graph mode. '
-                'Use `dragon.assign(...)` instead.')
+                "Assigning via slices is an ambiguous behavior in graph mode. "
+                "Use `dragon.assign(...)` instead."
+            )
 
 
 def sub(self, other):
@@ -862,7 +862,7 @@ def sub(self, other):
     `dragon.math.sub(...)`_
 
     """
-    return _apply_binary_op([self, other], 'Sub')
+    return _apply_binary_op([self, other], "Sub")
 
 
 def transpose(self, perm=None, copy=True):
@@ -911,8 +911,7 @@ def truncated_normal(self, mean=0, std=1):
     `dragon.random.truncated_normal(...)`_
 
     """
-    return _apply_init_op(
-        self, 'TruncatedNormal', mean=float(mean), std=float(std))
+    return _apply_init_op(self, "TruncatedNormal", mean=float(mean), std=float(std))
 
 
 def uniform(self, low=0, high=1):
@@ -937,8 +936,7 @@ def uniform(self, low=0, high=1):
     `dragon.random.uniform(...)`_
 
     """
-    return _apply_init_op(
-        self, 'RandomUniform', low=float(low), high=float(high))
+    return _apply_init_op(self, "RandomUniform", low=float(low), high=float(high))
 
 
 def xor(self, other):
@@ -959,7 +957,7 @@ def xor(self, other):
     `dragon.bitwise.bitwise_xor(...)`_
 
     """
-    return _apply_binary_op([self, other], 'BitwiseXor')
+    return _apply_binary_op([self, other], "BitwiseXor")
 
 
 def _apply_binary_op(inputs, op_type, outputs=(None,)):
@@ -974,10 +972,10 @@ def _apply_init_op(self, op_type, **kwargs):
     """Apply initialization operator."""
     shape = self.shape
     if shape is None or None in shape:
-        raise ValueError('Excepted the certain shape to initialize data.')
+        raise ValueError("Excepted the certain shape to initialize data.")
     return OpLib.execute(
-        op_type, [], outputs=[self], dtype=self.dtype,
-        ndim=len(shape), dims=shape, **kwargs)
+        op_type, [], outputs=[self], dtype=self.dtype, ndim=len(shape), dims=shape, **kwargs
+    )
 
 
 def _apply_unary_op(inputs, op_type, outputs=(None,)):
@@ -991,7 +989,7 @@ def _process_index(item):
     """Process and normalize the index."""
     if not isinstance(item, (slice, tuple)):
         if not isinstance(item, int):
-            raise ValueError('The index should be a integer.')
+            raise ValueError("The index should be a integer.")
         item = (item,)
     if not isinstance(item, tuple):
         item = tuple([item])
@@ -1008,15 +1006,16 @@ def _process_index(item):
                 sizes.append(elem.stop - starts[-1])
                 if sizes[-1] == 0:
                     raise ValueError(
-                        'The starts and ends of axis {} can not be equal'
-                        ', got {}:{}.'.format(i, starts[-1], elem.stop))
+                        "The starts and ends of axis {} can not be equal"
+                        ", got {}:{}.".format(i, starts[-1], elem.stop)
+                    )
             if elem.step is not None:
                 raise NotImplementedError
         elif isinstance(elem, int):
             starts.append(elem)
             sizes.append(0)
         else:
-            raise TypeError('Unsupported index type: {}'.format(type(elem)))
+            raise TypeError("Unsupported index type: {}".format(type(elem)))
     return starts, sizes
 
 

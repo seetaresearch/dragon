@@ -21,15 +21,14 @@ from dragon.core.util import six
 def deserialize_keras_object(
     identifier,
     module_objects,
-    printable_module_name='object',
+    printable_module_name="object",
 ):
     """Deserialize the keras object."""
     if isinstance(identifier, six.string_types):
         object_name = identifier
         obj = module_objects.get(object_name)
         if obj is None:
-            raise ValueError(
-                'Unknown ' + printable_module_name + ': ' + object_name)
+            raise ValueError("Unknown " + printable_module_name + ": " + object_name)
         if inspect.isclass(obj):
             return obj()
         return obj
@@ -37,5 +36,5 @@ def deserialize_keras_object(
         return identifier
     else:
         raise TypeError(
-            'Could not interpret the {} identifier: {}.'
-            .format(printable_module_name, identifier))
+            "Could not interpret the {} identifier: {}.".format(printable_module_name, identifier)
+        )

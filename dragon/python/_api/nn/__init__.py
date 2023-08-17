@@ -60,4 +60,4 @@ from dragon.core.ops.vision_ops import pool2d
 from dragon.core.ops.vision_ops import pool3d
 from dragon.core.ops.vision_ops import space_to_depth
 
-__all__ = [_s for _s in dir() if not _s.startswith('_')]
+__all__ = [_s for _s in dir() if not _s.startswith("_")]

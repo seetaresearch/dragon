@@ -133,5 +133,5 @@ class TestCNNL(unittest.TestCase):
         self.assertEqual(torch.backends.cnnl.enabled, True)
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     run_tests()

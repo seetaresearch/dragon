@@ -149,7 +149,7 @@ def memory_allocated(device_index=None):
     if device_index is None:
         device_index = current_device()
     current_ws = workspace.get_workspace()
-    return current_ws.memory_allocated('cuda', device_index)
+    return current_ws.memory_allocated("cuda", device_index)
 
 
 def set_cublas_flags(allow_tf32=None):
@@ -188,7 +188,8 @@ def set_cudnn_flags(
         -1 if enabled is None else enabled,
         -1 if benchmark is None else benchmark,
         -1 if deterministic is None else deterministic,
-        -1 if allow_tf32 is None else allow_tf32)
+        -1 if allow_tf32 is None else allow_tf32,
+    )
 
 
 def set_default_device(device_index=0):
@@ -208,10 +209,10 @@ def set_default_device(device_index=0):
 
     """
     if device_index < 0:
-        config.config().device_type = 'cpu'
+        config.config().device_type = "cpu"
         config.config().device_index = 0
     else:
-        config.config().device_type = 'cuda'
+        config.config().device_type = "cuda"
         config.config().device_index = device_index
 
 

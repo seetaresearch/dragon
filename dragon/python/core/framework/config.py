@@ -25,11 +25,11 @@ class Config(object):
     def __init__(self):
         # Device type.
         # Enumeration in ('cpu', 'cuda', 'mps', 'mlu').
-        self.device_type = 'cpu'
+        self.device_type = "cpu"
         # Device index.
         self.device_index = 0
         # Graph type for various scheduling.
-        self.graph_type = ''
+        self.graph_type = ""
         # Graph optimization level.
         self.graph_optimization = 3
         # Graph verbosity level.

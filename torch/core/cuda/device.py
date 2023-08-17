@@ -58,7 +58,7 @@ def get_device_capability(device=None):
 
     """
     device = -1 if device is None else device
-    device_index = device.index if hasattr(device, 'index') else device
+    device_index = device.index if hasattr(device, "index") else device
     return backend.cudaGetDeviceCapability(device_index)
 
 
@@ -79,7 +79,7 @@ def get_device_name(device=None):
 
     """
     device = -1 if device is None else device
-    device_index = device.index if hasattr(device, 'index') else device
+    device_index = device.index if hasattr(device, "index") else device
     return backend.cudaGetDeviceName(device_index)
 
 
@@ -104,7 +104,7 @@ def set_device(device):
         The device to set.
 
     """
-    device_index = device.index if hasattr(device, 'index') else device
+    device_index = device.index if hasattr(device, "index") else device
     backend.cudaSetDevice(device_index)
 
 
@@ -120,5 +120,5 @@ def synchronize(device=None):
 
     """
     device = -1 if device is None else device
-    device_index = device.index if hasattr(device, 'index') else device
+    device_index = device.index if hasattr(device, "index") else device
     backend.cudaStreamSynchronize(device_index, 0)

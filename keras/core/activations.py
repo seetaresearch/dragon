@@ -19,7 +19,7 @@ from dragon.core.util import six
 from dragon.vm.keras.core.utils import generic_utils
 
 
-def elu(x, alpha=1., **kwargs):
+def elu(x, alpha=1.0, **kwargs):
     r"""Apply exponential linear unit to input.
     `[Clevert et.al, 2015] <https://arxiv.org/abs/1511.07289>`_.
 
@@ -171,9 +171,9 @@ def relu(x, alpha=0, max_value=None, **kwargs):
     """
     if max_value is not None:
         if alpha != 0:
-            raise ValueError('Set either <alpha> or <max_value>.')
+            raise ValueError("Set either <alpha> or <max_value>.")
         if max_value != 6:
-            raise ValueError('<max_value> can only be set to 6.')
+            raise ValueError("<max_value> can only be set to 6.")
         return activation_ops.relu6(x, **kwargs)
     return activation_ops.leaky_relu(x, alpha=alpha, **kwargs)
 
@@ -344,9 +344,6 @@ def get(identifier):
     elif callable(identifier):
         return identifier
     elif isinstance(identifier, six.string_types):
-        return generic_utils.deserialize_keras_object(
-            identifier, globals(), 'activation')
+        return generic_utils.deserialize_keras_object(identifier, globals(), "activation")
     else:
-        raise TypeError(
-            'Could not interpret the activation identifier: {}.'
-            .format(identifier))
+        raise TypeError("Could not interpret the activation identifier: {}.".format(identifier))

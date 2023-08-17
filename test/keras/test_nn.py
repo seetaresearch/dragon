@@ -62,12 +62,12 @@ class TestFunctions(unittest.TestCase):
         _ = tf.keras.losses.SparseCategoricalCrossentropy()(y2, x)
         _ = tf.keras.losses.get(None)
         _ = tf.keras.losses.get(tf.keras.losses.mean_absolute_error)
-        _ = tf.keras.losses.get('mean_squared_error')
+        _ = tf.keras.losses.get("mean_squared_error")
         try:
             _ = tf.keras.losses.get(1)
         except TypeError:
             pass
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     run_tests()

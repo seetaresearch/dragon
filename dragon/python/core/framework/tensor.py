@@ -25,14 +25,7 @@ from dragon.core.util import string
 class Tensor(types.TensorBase):
     """A multi-dimensional array for computation."""
 
-    def __init__(
-        self,
-        shape=None,
-        dtype='float32',
-        name=None,
-        symbolic=False,
-        **kwargs
-    ):
+    def __init__(self, shape=None, dtype="float32", name=None, symbolic=False, **kwargs):
         """Create a ``Tensor``.
 
         Parameters
@@ -50,8 +43,8 @@ class Tensor(types.TensorBase):
         self._shape = None if shape is None else tuple(shape)
         self._dtype = None if dtype is None else str(dtype)
         self._is_variable = not symbolic
-        self._impl = kwargs.get('impl', None)
-        self._deleter = kwargs.get('deleter', None)
+        self._impl = kwargs.get("impl", None)
+        self._deleter = kwargs.get("deleter", None)
         self._tape = None
         self._grad = None
         self._grad_tape = None
@@ -60,13 +53,13 @@ class Tensor(types.TensorBase):
             default_ws = workspace.get_workspace()
             if self._is_variable:
                 if self._shape is None or None in self._shape:
-                    raise ValueError('Excepted the certain shape to create data.')
+                    raise ValueError("Excepted the certain shape to create data.")
                 var_scope = context.get_variable_scope()
                 self._impl = default_ws.create_tensor(scope=var_scope)
                 self._impl.FromShape(self._shape, self._dtype)
                 self._deleter = default_ws._handle_pool
             else:
-                self._impl = default_ws.create_tensor(scope='Tensor')
+                self._impl = default_ws.create_tensor(scope="Tensor")
                 self._deleter = None
         self._name = context.get_name_scope() + name if name else None
 
@@ -177,7 +170,7 @@ class Tensor(types.TensorBase):
         if self._shape is None:
             return 0
         if None in self._shape:
-            return float('inf')
+            return float("inf")
         return math_util.prod(self._shape)
 
     @property
@@ -248,7 +241,7 @@ class Tensor(types.TensorBase):
 
         """
 
-    def glorot_normal(self, mode='fan_in', scale=2.0):
+    def glorot_normal(self, mode="fan_in", scale=2.0):
         r"""Fill self from a glorot normal distribution.
 
         .. math:: \text{self} \sim \mathcal{N}(0, \frac{scale}{\text{fan}})
@@ -271,7 +264,7 @@ class Tensor(types.TensorBase):
 
         """
 
-    def glorot_uniform(self, mode='fan_in', scale=3.0):
+    def glorot_uniform(self, mode="fan_in", scale=3.0):
         r"""Fill self from a glorot uniform distribution.
 
         .. math:: \text{self} \sim \mathcal{U}(-\sqrt{\frac{scale}{\text{fan}}},
@@ -304,7 +297,7 @@ class Tensor(types.TensorBase):
             The value.
 
         """
-        return float(self) if 'float' in self.dtype else int(self)
+        return float(self) if "float" in self.dtype else int(self)
 
     def normal(self, mean=0, std=1):
         r"""Fill self from a normal distribution.
@@ -856,25 +849,27 @@ class Tensor(types.TensorBase):
         """
 
     def __repr__(self):
-        prefix_str = 'dragon.Tensor('
-        main_str = ('shape=(' +
-                    ', '.join(['?' if str(dim) == 'None'
-                               else str(dim) for dim in self.shape]) +
-                    (',)' if len(self.shape) == 1 else ')')) \
-            if self.shape is not None else 'shape=None'
-        main_str += ', dtype={}'.format(self.dtype)
+        prefix_str = "dragon.Tensor("
+        main_str = (
+            (
+                "shape=("
+                + ", ".join(["?" if str(dim) == "None" else str(dim) for dim in self.shape])
+                + (",)" if len(self.shape) == 1 else ")")
+            )
+            if self.shape is not None
+            else "shape=None"
+        )
+        main_str += ", dtype={}".format(self.dtype)
         if self._is_variable:
             array = self.numpy()
             device = self.device
-            main_str = string.array_to_string(
-                array, prefix=prefix_str, suffix=', ' + main_str)
+            main_str = string.array_to_string(array, prefix=prefix_str, suffix=", " + main_str)
             del array
-            if device.type != 'cpu':
-                main_str += ', device=%s' % str(device)
+            if device.type != "cpu":
+                main_str += ", device=%s" % str(device)
         else:
             main_str = prefix_str + main_str
-        main_str += (')' if self._name is None
-                     else ', name="{}")'.format(self._name))
+        main_str += ")" if self._name is None else ', name="{}")'.format(self._name)
         return string.add_indent(main_str, 14)
 
     def __rtruediv__(self, other):

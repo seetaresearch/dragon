@@ -64,13 +64,13 @@ class DropBlock2d(Module):
         self.inplace = inplace
 
     def extra_repr(self):
-        inplace_str = ', inplace' if self.inplace else ''
-        return 'p={}, block_size={}{}' \
-               .format(self.p, self.block_size, inplace_str)
+        inplace_str = ", inplace" if self.inplace else ""
+        return "p={}, block_size={}{}".format(self.p, self.block_size, inplace_str)
 
     def forward(self, input):
         return functional.drop_block2d(
-            input, self.p,
+            input,
+            self.p,
             block_size=self.block_size,
             training=self.training,
             inplace=self.inplace,
@@ -120,8 +120,8 @@ class Dropout(Module):
         self.inplace = inplace
 
     def extra_repr(self):
-        inplace_str = ', inplace' if self.inplace else ''
-        return 'p={}{}'.format(self.p, inplace_str)
+        inplace_str = ", inplace" if self.inplace else ""
+        return "p={}{}".format(self.p, inplace_str)
 
     def forward(self, input):
         return functional.dropout(input, self.p, self.training, self.inplace)
@@ -165,8 +165,8 @@ class DropPath(Module):
         self.inplace = inplace
 
     def extra_repr(self):
-        inplace_str = ', inplace' if self.inplace else ''
-        return 'p={}{}'.format(self.p, inplace_str)
+        inplace_str = ", inplace" if self.inplace else ""
+        return "p={}{}".format(self.p, inplace_str)
 
     def forward(self, input):
         return functional.drop_path(input, self.p, self.training, self.inplace)

@@ -35,7 +35,7 @@ class Regularizer(object):
             The output tensor.
 
         """
-        if hasattr(self, 'l2'):
+        if hasattr(self, "l2"):
             x._weight_decay = self.l2
         return x
 
@@ -147,14 +147,11 @@ def get(identifier):
     elif callable(identifier):
         return identifier
     elif isinstance(identifier, six.string_types):
-        if identifier == 'l1_l2':
+        if identifier == "l1_l2":
             return L1L2(l1=0.01, l2=0.01)
-        return generic_utils.deserialize_keras_object(
-            identifier, globals(), 'regularizer')
+        return generic_utils.deserialize_keras_object(identifier, globals(), "regularizer")
     else:
-        raise TypeError(
-            'Could not interpret the regularizer identifier: {}.'
-            .format(identifier))
+        raise TypeError("Could not interpret the regularizer identifier: {}.".format(identifier))
 
 
 # Aliases

@@ -65,8 +65,8 @@ class GradientTape(object):
         # Check the pushed tape.
         if self._tape is None:
             raise RuntimeError(
-                'GradientTape.gradient(...) can only be called '
-                'once on non-persistent tapes.')
+                "GradientTape.gradient(...) can only be called " "once on non-persistent tapes."
+            )
 
         # Stop recording if not persistent.
         if self._recording and not self._persistent:
@@ -79,8 +79,9 @@ class GradientTape(object):
             for y, grad_y in zip(ys, nest.flatten(output_gradients)):
                 if grad_y.shape != y.shape:
                     raise ValueError(
-                        'Excepted the dimensions of output gradient is {}, '
-                        'got {}.'.format(y.shape, grad_y.shape))
+                        "Excepted the dimensions of output gradient is {}, "
+                        "got {}.".format(y.shape, grad_y.shape)
+                    )
                 grad_ys.append(grad_y)
 
         # Record or compute the gradient of inputs.
@@ -89,11 +90,14 @@ class GradientTape(object):
         if not context.executing_eagerly():
             for x in xs:
                 self._tape.add_source(x)
-                grad_xs.append(Tensor(
-                    shape=x.shape,
-                    dtype=x.dtype,
-                    impl=execute_ws.create_tensor(x.id + '_grad'),
-                    symbolic=True))
+                grad_xs.append(
+                    Tensor(
+                        shape=x.shape,
+                        dtype=x.dtype,
+                        impl=execute_ws.create_tensor(x.id + "_grad"),
+                        symbolic=True,
+                    )
+                )
             for i, y in enumerate(ys):
                 y._grad_tape = self._tape
                 y._grad = grad_ys[i] if i < len(grad_ys) else None
@@ -102,9 +106,10 @@ class GradientTape(object):
                 op_defs=self._tape.get_elements(),
                 targets=[y.id for y in ys],
                 sources=[x.id for x in xs],
-                grad_targets=[dy.id for dy in grad_ys])
+                grad_targets=[dy.id for dy in grad_ys],
+            )
             for x in xs:
-                impl = execute_ws.get_tensor(x.id + '_grad')
+                impl = execute_ws.get_tensor(x.id + "_grad")
                 grad_xs.append(Tensor(impl=impl) if impl else None)
 
         # Remove tape if not persistent.
@@ -123,7 +128,7 @@ class GradientTape(object):
     def stop_recording(self):
         """Temporarily stop the recording."""
         if self._tape is None:
-            raise ValueError('Missing the recording tape.')
+            raise ValueError("Missing the recording tape.")
         self._pop_tape()
         try:
             yield
@@ -141,22 +146,22 @@ class GradientTape(object):
         """
         if self._tape is None:
             raise RuntimeError(
-                'GradientTape.gradient can only be called '
-                'once on non-persistent tapes.')
+                "GradientTape.gradient can only be called " "once on non-persistent tapes."
+            )
         for var in nest.flatten(tensor):
             self._tape.add_target(id(var))
 
     def _pop_tape(self):
         """Pop the pushed tape."""
         if not self._recording:
-            raise ValueError('Tape is not recording.')
+            raise ValueError("Tape is not recording.")
         tapes.pop_tape()
         self._recording = False
 
     def _push_tape(self):
         """Push the tape."""
         if self._recording:
-            raise ValueError('Tape is already recording.')
+            raise ValueError("Tape is already recording.")
         if self._tape is None:
             self._tape = tapes.Tape()
         tapes.push_new_tape(self._tape)

@@ -43,7 +43,7 @@ def abs(input, out=None):
         The output tensor.
 
     """
-    return _unary_func(input, 'Abs', out)
+    return _unary_func(input, "Abs", out)
 
 
 def add(input, other, out=None):
@@ -66,7 +66,7 @@ def add(input, other, out=None):
         The output tensor.
 
     """
-    return _binary_func(input, other, 'Add', out)
+    return _binary_func(input, other, "Add", out)
 
 
 def addmm(input, mat1, mat2, beta=1, alpha=1, out=None):
@@ -96,8 +96,13 @@ def addmm(input, mat1, mat2, beta=1, alpha=1, out=None):
 
     """
     return Function.apply(
-        'Gemm', input.device, [mat1, mat2, input], outputs=[out],
-        alpha=float(alpha), beta=float(beta))
+        "Gemm",
+        input.device,
+        [mat1, mat2, input],
+        outputs=[out],
+        alpha=float(alpha),
+        beta=float(beta),
+    )
 
 
 def argmax(input, dim, keepdim=False, out=None):
@@ -130,8 +135,8 @@ def argmax(input, dim, keepdim=False, out=None):
 
     """
     return Function.apply(
-        'ArgMax', input.device, [input], outputs=[out],
-        axis=dim, keepdims=keepdim)
+        "ArgMax", input.device, [input], outputs=[out], axis=dim, keepdims=keepdim
+    )
 
 
 def argmin(input, dim, keepdim=False, out=None):
@@ -164,8 +169,8 @@ def argmin(input, dim, keepdim=False, out=None):
 
     """
     return Function.apply(
-        'ArgMin', input.device, [input], outputs=[out],
-        axis=dim, keepdims=keepdim)
+        "ArgMin", input.device, [input], outputs=[out], axis=dim, keepdims=keepdim
+    )
 
 
 def atan2(input, other, out=None):
@@ -196,7 +201,7 @@ def atan2(input, other, out=None):
         The output tensor.
 
     """
-    return _binary_func(input, other, 'Atan2', out)
+    return _binary_func(input, other, "Atan2", out)
 
 
 def baddbmm(input, batch1, batch2, beta=1, alpha=1, out=None):
@@ -261,7 +266,7 @@ def bitwise_and(input, other, out=None):
         The output tensor.
 
     """
-    return _binary_func(input, other, 'BitwiseAnd', out)
+    return _binary_func(input, other, "BitwiseAnd", out)
 
 
 def bitwise_not(input, out=None):
@@ -294,7 +299,7 @@ def bitwise_not(input, out=None):
         The output tensor.
 
     """
-    return _unary_func(input, 'BitwiseNot', out)
+    return _unary_func(input, "BitwiseNot", out)
 
 
 def bitwise_or(input, other, out=None):
@@ -325,7 +330,7 @@ def bitwise_or(input, other, out=None):
         The output tensor.
 
     """
-    return _binary_func(input, other, 'BitwiseOr', out)
+    return _binary_func(input, other, "BitwiseOr", out)
 
 
 def bitwise_xor(input, other, out=None):
@@ -356,7 +361,7 @@ def bitwise_xor(input, other, out=None):
         The output tensor.
 
     """
-    return _binary_func(input, other, 'BitwiseXor', out)
+    return _binary_func(input, other, "BitwiseXor", out)
 
 
 def bmm(input, mat2, out=None):
@@ -379,11 +384,10 @@ def bmm(input, mat2, out=None):
         The output tensor.
 
     """
-    return Function.apply(
-        'MatMul', input.device, [input, mat2], outputs=[out])
+    return Function.apply("MatMul", input.device, [input, mat2], outputs=[out])
 
 
-def cast(input, dtype='float32', out=None):
+def cast(input, dtype="float32", out=None):
     """Cast the data type of input.
 
     Parameters
@@ -401,8 +405,7 @@ def cast(input, dtype='float32', out=None):
         The output tensor.
 
     """
-    return Function.apply(
-        'Cast', input.device, [input], outputs=[out], dtype=dtype)
+    return Function.apply("Cast", input.device, [input], outputs=[out], dtype=dtype)
 
 
 def ceil(input, out=None):
@@ -430,7 +433,7 @@ def ceil(input, out=None):
         The output tensor.
 
     """
-    return _unary_func(input, 'Ceil', out)
+    return _unary_func(input, "Ceil", out)
 
 
 def clamp(input, min=None, max=None, out=None):
@@ -457,8 +460,7 @@ def clamp(input, min=None, max=None, out=None):
     """
     low = float(min) if min is not None else None
     high = float(max) if max is not None else None
-    return Function.apply(
-        'Clip', input.device, [input], outputs=[out], low=low, high=high)
+    return Function.apply("Clip", input.device, [input], outputs=[out], low=low, high=high)
 
 
 def cos(input, out=None):
@@ -486,7 +488,7 @@ def cos(input, out=None):
         The output tensor.
 
     """
-    return _unary_func(input, 'Cos', out)
+    return _unary_func(input, "Cos", out)
 
 
 def cumsum(input, dim, out=None):
@@ -516,8 +518,7 @@ def cumsum(input, dim, out=None):
         The output tensor.
 
     """
-    return Function.apply(
-        'CumSum', input.device, [input], outputs=[out], axis=dim)
+    return Function.apply("CumSum", input.device, [input], outputs=[out], axis=dim)
 
 
 def div(input, other, out=None):
@@ -540,7 +541,7 @@ def div(input, other, out=None):
         The output tensor.
 
     """
-    return _binary_func(input, other, 'Div', out)
+    return _binary_func(input, other, "Div", out)
 
 
 def eq(input, other, out=None):
@@ -563,7 +564,7 @@ def eq(input, other, out=None):
         The output tensor.
 
     """
-    return _binary_func(input, other, 'Equal', out)
+    return _binary_func(input, other, "Equal", out)
 
 
 def exp(input, out=None):
@@ -584,7 +585,7 @@ def exp(input, out=None):
         The output tensor.
 
     """
-    return _unary_func(input, 'Exp', out)
+    return _unary_func(input, "Exp", out)
 
 
 def floor(input, out=None):
@@ -612,7 +613,7 @@ def floor(input, out=None):
         The output tensor.
 
     """
-    return _unary_func(input, 'Floor', out)
+    return _unary_func(input, "Floor", out)
 
 
 def ge(input, other, out=None):
@@ -635,7 +636,7 @@ def ge(input, other, out=None):
         The output tensor.
 
     """
-    return _binary_func(input, other, 'GreaterEqual', out)
+    return _binary_func(input, other, "GreaterEqual", out)
 
 
 def gt(input, other, out=None):
@@ -658,7 +659,7 @@ def gt(input, other, out=None):
         The output byte tensor.
 
     """
-    return _binary_func(input, other, 'Greater', out)
+    return _binary_func(input, other, "Greater", out)
 
 
 def isfinite(input):
@@ -684,7 +685,7 @@ def isfinite(input):
         The output tensor.
 
     """
-    return _unary_func(input, 'IsFinite')
+    return _unary_func(input, "IsFinite")
 
 
 def isinf(input):
@@ -710,7 +711,7 @@ def isinf(input):
         The output tensor.
 
     """
-    return _unary_func(input, 'IsInf')
+    return _unary_func(input, "IsInf")
 
 
 def isnan(input):
@@ -736,7 +737,7 @@ def isnan(input):
         The output tensor.
 
     """
-    return _unary_func(input, 'IsNaN')
+    return _unary_func(input, "IsNaN")
 
 
 def le(input, other, out=None):
@@ -759,7 +760,7 @@ def le(input, other, out=None):
         The output byte tensor.
 
     """
-    return _binary_func(input, other, 'LessEqual', out)
+    return _binary_func(input, other, "LessEqual", out)
 
 
 def log(input, out=None):
@@ -780,7 +781,7 @@ def log(input, out=None):
         The output tensor.
 
     """
-    return _unary_func(input, 'Log', out)
+    return _unary_func(input, "Log", out)
 
 
 def logical_and(input, other, out=None):
@@ -814,7 +815,7 @@ def logical_and(input, other, out=None):
         The output tensor.
 
     """
-    return _binary_func(input, other, 'And', out)
+    return _binary_func(input, other, "And", out)
 
 
 def logical_not(input, out=None):
@@ -844,7 +845,7 @@ def logical_not(input, out=None):
         The output tensor.
 
     """
-    return _unary_func(input, 'Not', out)
+    return _unary_func(input, "Not", out)
 
 
 def logical_or(input, other, out=None):
@@ -878,7 +879,7 @@ def logical_or(input, other, out=None):
         The output tensor.
 
     """
-    return _binary_func(input, other, 'Or', out)
+    return _binary_func(input, other, "Or", out)
 
 
 def logical_xor(input, other, out=None):
@@ -912,7 +913,7 @@ def logical_xor(input, other, out=None):
         The output tensor.
 
     """
-    return _binary_func(input, other, 'Xor', out)
+    return _binary_func(input, other, "Xor", out)
 
 
 def logsumexp(input, dim, keepdim=False, out=None):
@@ -960,7 +961,7 @@ def lt(input, other, out=None):
         The output byte tensor.
 
     """
-    return _binary_func(input, other, 'Less', out)
+    return _binary_func(input, other, "Less", out)
 
 
 def matmul(input, other, out=None):
@@ -1012,8 +1013,7 @@ def matmul(input, other, out=None):
         The output tensor.
 
     """
-    return Function.apply(
-        'MatMul', input.device, [input, other], outputs=[out])
+    return Function.apply("MatMul", input.device, [input, other], outputs=[out])
 
 
 def max(input, dim=None, keepdim=False, out=None):
@@ -1056,8 +1056,8 @@ def max(input, dim=None, keepdim=False, out=None):
     keepdim = keepdim if dim is not None else False
     dim = nest.flatten(dim) if dim is not None else dim
     return Function.apply(
-        'ReduceMax', input.device, [input], outputs=[out],
-        axes=dim, keepdims=keepdim)
+        "ReduceMax", input.device, [input], outputs=[out], axes=dim, keepdims=keepdim
+    )
 
 
 def maximum(input, other, out=None):
@@ -1080,7 +1080,7 @@ def maximum(input, other, out=None):
         The output tensor.
 
     """
-    return _binary_func(input, other, 'Maximum', out)
+    return _binary_func(input, other, "Maximum", out)
 
 
 def mean(input, dim=None, keepdim=False, out=None):
@@ -1123,8 +1123,8 @@ def mean(input, dim=None, keepdim=False, out=None):
     keepdim = keepdim if dim is not None else False
     dim = nest.flatten(dim) if dim is not None else dim
     return Function.apply(
-        'ReduceMean', input.device, [input], outputs=[out],
-        axes=dim, keepdims=keepdim)
+        "ReduceMean", input.device, [input], outputs=[out], axes=dim, keepdims=keepdim
+    )
 
 
 def min(input, dim=None, keepdim=False, out=None):
@@ -1167,8 +1167,8 @@ def min(input, dim=None, keepdim=False, out=None):
     keepdim = keepdim if dim is not None else False
     dim = nest.flatten(dim) if dim is not None else dim
     return Function.apply(
-        'ReduceMin', input.device, [input], outputs=[out],
-        axes=dim, keepdims=keepdim)
+        "ReduceMin", input.device, [input], outputs=[out], axes=dim, keepdims=keepdim
+    )
 
 
 def minimum(input, other, out=None):
@@ -1191,7 +1191,7 @@ def minimum(input, other, out=None):
         The output tensor.
 
     """
-    return _binary_func(input, other, 'Minimum', out)
+    return _binary_func(input, other, "Minimum", out)
 
 
 def mm(input, mat2, out=None):
@@ -1214,8 +1214,7 @@ def mm(input, mat2, out=None):
         The output tensor.
 
     """
-    return Function.apply(
-        'Gemm', input.device, [input, mat2], outputs=[out])
+    return Function.apply("Gemm", input.device, [input, mat2], outputs=[out])
 
 
 def mul(input, other, out=None):
@@ -1238,7 +1237,7 @@ def mul(input, other, out=None):
         The output tensor.
 
     """
-    return _binary_func(input, other, 'Mul', out)
+    return _binary_func(input, other, "Mul", out)
 
 
 def nan_to_num(input, nan=0.0, posinf=None, neginf=None, out=None):
@@ -1271,10 +1270,14 @@ def nan_to_num(input, nan=0.0, posinf=None, neginf=None, out=None):
 
     """
     return Function.apply(
-        'NaNToNum', input.device, [input], outputs=[out],
+        "NaNToNum",
+        input.device,
+        [input],
+        outputs=[out],
         nan=float(nan) if nan is not None else nan,
         pos_inf=float(posinf) if posinf is not None else posinf,
-        neg_inf=float(neginf) if neginf is not None else neginf)
+        neg_inf=float(neginf) if neginf is not None else neginf,
+    )
 
 
 def ne(input, other, out=None):
@@ -1297,7 +1300,7 @@ def ne(input, other, out=None):
         The output byte tensor.
 
     """
-    return _binary_func(input, other, 'NotEqual', out)
+    return _binary_func(input, other, "NotEqual", out)
 
 
 def neg(input, out=None):
@@ -1318,10 +1321,10 @@ def neg(input, out=None):
         The output tensor.
 
     """
-    return _unary_func(input, 'Neg', out)
+    return _unary_func(input, "Neg", out)
 
 
-def norm(input, p='fro', dim=None, keepdim=False, out=None, dtype=None):
+def norm(input, p="fro", dim=None, keepdim=False, out=None, dtype=None):
     """Compute the norm value of elements along the given dimension.
 
     :attr:`dim` could be negative or ``None``:
@@ -1362,18 +1365,16 @@ def norm(input, p='fro', dim=None, keepdim=False, out=None, dtype=None):
         The output tensor.
 
     """
-    if p is None or p == 2 or p == 'fro':
-        op_type = 'ReduceL2'
+    if p is None or p == 2 or p == "fro":
+        op_type = "ReduceL2"
     elif p == 1:
-        op_type = 'ReduceL1'
+        op_type = "ReduceL1"
     else:
-        raise ValueError('Unsupported norm order: ' + str(p))
+        raise ValueError("Unsupported norm order: " + str(p))
     input = input.to(dtype=dtype)
     keepdim = keepdim if dim is not None else False
     dim = nest.flatten(dim) if dim is not None else dim
-    return Function.apply(
-        op_type, input.device, [input], outputs=[out],
-        axes=dim, keepdims=keepdim)
+    return Function.apply(op_type, input.device, [input], outputs=[out], axes=dim, keepdims=keepdim)
 
 
 def pow(input, exponent, out=None):
@@ -1405,7 +1406,7 @@ def pow(input, exponent, out=None):
         The output tensor.
 
     """
-    return _binary_func(input, exponent, 'Pow', out)
+    return _binary_func(input, exponent, "Pow", out)
 
 
 def reciprocal(input, out=None):
@@ -1433,7 +1434,7 @@ def reciprocal(input, out=None):
         The output tensor.
 
     """
-    return _unary_func(input, 'Reciprocal', out)
+    return _unary_func(input, "Reciprocal", out)
 
 
 def round(input, out=None):
@@ -1461,7 +1462,7 @@ def round(input, out=None):
         The output tensor.
 
     """
-    return _unary_func(input, 'Round', out)
+    return _unary_func(input, "Round", out)
 
 
 def rsqrt(input, out=None):
@@ -1489,7 +1490,7 @@ def rsqrt(input, out=None):
         The output tensor.
 
     """
-    return _unary_func(input, 'Rsqrt', out)
+    return _unary_func(input, "Rsqrt", out)
 
 
 def sigmoid(input, out=None):
@@ -1510,7 +1511,7 @@ def sigmoid(input, out=None):
         The output tensor.
 
     """
-    return _unary_func(input, 'Sigmoid', out)
+    return _unary_func(input, "Sigmoid", out)
 
 
 def sign(input, out=None):
@@ -1544,7 +1545,7 @@ def sign(input, out=None):
         The output tensor.
 
     """
-    return _unary_func(input, 'Sign', out)
+    return _unary_func(input, "Sign", out)
 
 
 def sin(input, out=None):
@@ -1572,7 +1573,7 @@ def sin(input, out=None):
         The output tensor.
 
     """
-    return _unary_func(input, 'Sin', out)
+    return _unary_func(input, "Sin", out)
 
 
 def sqrt(input, out=None):
@@ -1600,7 +1601,7 @@ def sqrt(input, out=None):
         The output tensor.
 
     """
-    return _unary_func(input, 'Sqrt', out)
+    return _unary_func(input, "Sqrt", out)
 
 
 def square(input, out=None):
@@ -1628,7 +1629,7 @@ def square(input, out=None):
         The output tensor.
 
     """
-    return _unary_func(input, 'Square', out)
+    return _unary_func(input, "Square", out)
 
 
 def sub(input, other, out=None):
@@ -1651,7 +1652,7 @@ def sub(input, other, out=None):
         The output tensor.
 
     """
-    return _binary_func(input, other, 'Sub', out)
+    return _binary_func(input, other, "Sub", out)
 
 
 def sum(input, dim=None, keepdim=False, out=None):
@@ -1694,8 +1695,8 @@ def sum(input, dim=None, keepdim=False, out=None):
     keepdim = keepdim if dim is not None else False
     dim = nest.flatten(dim) if dim is not None else dim
     return Function.apply(
-        'ReduceSum', input.device, [input], outputs=[out],
-        axes=dim, keepdims=keepdim)
+        "ReduceSum", input.device, [input], outputs=[out], axes=dim, keepdims=keepdim
+    )
 
 
 def tanh(input, out=None):
@@ -1717,7 +1718,7 @@ def tanh(input, out=None):
         The output tensor.
 
     """
-    return _unary_func(input, 'Tanh', out)
+    return _unary_func(input, "Tanh", out)
 
 
 def var(input, dim=None, keepdim=False, out=None):
@@ -1760,8 +1761,8 @@ def var(input, dim=None, keepdim=False, out=None):
     keepdim = keepdim if dim is not None else False
     dim = nest.flatten(dim) if dim is not None else dim
     return Function.apply(
-        'ReduceVar', input.device, [input], outputs=[out],
-        axes=dim, keepdims=keepdim)
+        "ReduceVar", input.device, [input], outputs=[out], axes=dim, keepdims=keepdim
+    )
 
 
 def var_mean(input, dim=None, keepdim=False, out=None):
@@ -1804,19 +1805,21 @@ def var_mean(input, dim=None, keepdim=False, out=None):
     keepdim = keepdim if dim is not None else False
     dim = nest.flatten(dim) if dim is not None else dim
     return Function.apply(
-        'Moments', input.device, [input],
+        "Moments",
+        input.device,
+        [input],
         outputs=out if out else [None, None],
-        axes=dim, keepdims=keepdim)[::-1]
+        axes=dim,
+        keepdims=keepdim,
+    )[::-1]
 
 
 def _binary_func(input, value, op_type, out=None):
     """Compute a binary function."""
     input, value = constant_ops.remove_scalars(input, value)
-    return Function.apply(
-        op_type, input.device, [input, value], outputs=[out])
+    return Function.apply(op_type, input.device, [input, value], outputs=[out])
 
 
 def _unary_func(input, op_type, out=None):
     """Compute a unary function."""
-    return Function.apply(
-        op_type, input.device, [input], outputs=[out])
+    return Function.apply(op_type, input.device, [input], outputs=[out])

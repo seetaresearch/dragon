@@ -17,7 +17,7 @@ from __future__ import print_function
 from dragon.core.ops import constant_ops
 
 
-def constant(value, dtype=None, shape=None, name='Const'):
+def constant(value, dtype=None, shape=None, name="Const"):
     """Return a tensor initialized from the value.
 
     Examples:

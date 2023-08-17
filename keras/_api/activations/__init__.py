@@ -25,4 +25,4 @@ from dragon.vm.keras.core.activations import softmax
 from dragon.vm.keras.core.activations import swish
 from dragon.vm.keras.core.activations import tanh
 
-__all__ = [_s for _s in dir() if not _s.startswith('_')]
+__all__ = [_s for _s in dir() if not _s.startswith("_")]

@@ -24,11 +24,12 @@ try:
     from onnx.backend.base import DeviceType
 except ImportError:
     from dragon.core.util import deprecation
-    onnx = deprecation.NotInstalled('onnx')
+
+    onnx = deprecation.NotInstalled("onnx")
     Backend = object
     ONNXBackendRep = object
-    Device = deprecation.NotInstalled('onnx')
-    DeviceType = deprecation.NotInstalled('onnx')
+    Device = deprecation.NotInstalled("onnx")
+    DeviceType = deprecation.NotInstalled("onnx")
 
 from dragon.core.device import cuda
 from dragon.core.util import six
@@ -75,7 +76,8 @@ class BackendRep(ONNXBackendRep):
         self._builder = trt.Builder(self._logger)
         self._builder_config = self._builder.create_builder_config()
         self._network = self._builder.create_network(
-            flags=1 << (int(trt.NetworkDefinitionCreationFlag.EXPLICIT_BATCH)))
+            flags=1 << (int(trt.NetworkDefinitionCreationFlag.EXPLICIT_BATCH))
+        )
         self._parser = trt.OnnxParser(self._network, self._logger)
 
         if not isinstance(model, six.string_types):
@@ -83,16 +85,20 @@ class BackendRep(ONNXBackendRep):
         else:
             model_str = model
 
-        if not trt.init_libnvinfer_plugins(TRT_LOGGER, ''):
+        if not trt.init_libnvinfer_plugins(TRT_LOGGER, ""):
             msg = "Failed to initialize TensorRT's plugin library."
             raise RuntimeError(msg)
 
         if not self._parser.parse(model_str):
             error = self._parser.get_error(0)
             msg = "While parsing node #%i:\n" % error.node()
-            msg += ("%s:%i In function %s:\n[%i] %s" %
-                    (error.file(), error.line(), error.func(),
-                     error.code(), error.desc()))
+            msg += "%s:%i In function %s:\n[%i] %s" % (
+                error.file(),
+                error.line(),
+                error.func(),
+                error.code(),
+                error.desc(),
+            )
             raise RuntimeError(msg)
 
         if max_workspace_size is None:
@@ -152,14 +158,12 @@ class BackendRep(ONNXBackendRep):
         """
         if isinstance(inputs, numpy.ndarray):
             inputs = [inputs]
-        outputs = self._engine.run(
-            inputs, optimization_profile=optimization_profile)
+        outputs = self._engine.run(inputs, optimization_profile=optimization_profile)
         output_names = [output.name for output in self._engine.outputs]
         for i, (name, array) in enumerate(zip(output_names, outputs)):
-            if self._output_dtypes[name] == onnx.TensorProto.INT64 and \
-                    array.dtype == numpy.int32:
+            if self._output_dtypes[name] == onnx.TensorProto.INT64 and array.dtype == numpy.int32:
                 outputs[i] = numpy.array(outputs[i], dtype=numpy.int64)
-        return onnx_helper.namedtupledict('Outputs', output_names)(*outputs)
+        return onnx_helper.namedtupledict("Outputs", output_names)(*outputs)
 
     def _add_optimization_profiles(self, profiles):
         """Add optimization profiles into builder config."""
@@ -169,7 +173,7 @@ class BackendRep(ONNXBackendRep):
             for input_name, selectors in profile.items():
                 min_shape, opt_shape, max_shape = selectors
                 if min_shape is None:
-                    raise ValueError('Excepted the min shape for a valid profile.')
+                    raise ValueError("Excepted the min shape for a valid profile.")
                 opt_shape = min_shape if opt_shape is None else opt_shape
                 max_shape = min_shape if max_shape is None else max_shape
                 profile = self._builder.create_optimization_profile()
@@ -193,7 +197,7 @@ class TensorRTBackend(Backend):
     """ONNX-TensorRT backend."""
 
     @classmethod
-    def prepare(cls, model, device='CUDA:0', **kwargs):
+    def prepare(cls, model, device="CUDA:0", **kwargs):
         """Create a backend to execute repeatedly.
 
         Parameters
@@ -212,7 +216,7 @@ class TensorRTBackend(Backend):
         return BackendRep(model, device, **kwargs)
 
     @classmethod
-    def run_model(cls, model, inputs, device='CUDA:0', **kwargs):
+    def run_model(cls, model, inputs, device="CUDA:0", **kwargs):
         """Execute an onnx model once.
 
         Parameters
@@ -233,7 +237,7 @@ class TensorRTBackend(Backend):
         return cls.prepare(model, device, **kwargs).run(inputs)
 
     @classmethod
-    def run_node(cls, node, inputs, device='CUDA:0', **kwargs):
+    def run_node(cls, node, inputs, device="CUDA:0", **kwargs):
         """Execute an onnx node once.
 
         Parameters

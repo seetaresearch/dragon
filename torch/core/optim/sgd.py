@@ -61,14 +61,7 @@ class SGD(Optimizer):
     """
 
     def __init__(
-        self,
-        params,
-        lr=required,
-        momentum=0,
-        dampening=0,
-        weight_decay=0,
-        nesterov=False,
-        **kwargs
+        self, params, lr=required, momentum=0, dampening=0, weight_decay=0, nesterov=False, **kwargs
     ):
         r"""Create a ``SGD`` optimizer.
 
@@ -89,16 +82,21 @@ class SGD(Optimizer):
 
         """
         if lr is not required and lr < 0:
-            raise ValueError('Invalid learning rate: {}'.format(lr))
+            raise ValueError("Invalid learning rate: {}".format(lr))
         if momentum < 0:
-            raise ValueError('Invalid momentum: {}'.format(momentum))
+            raise ValueError("Invalid momentum: {}".format(momentum))
         if nesterov and (momentum <= 0 or dampening != 0):
-            raise ValueError('Nesterov momentum requires a momentum and zero dampening.')
-        defaults = dict(lr=lr, momentum=momentum, dampening=dampening,
-                        nesterov=nesterov, weight_decay=weight_decay)
+            raise ValueError("Nesterov momentum requires a momentum and zero dampening.")
+        defaults = dict(
+            lr=lr,
+            momentum=momentum,
+            dampening=dampening,
+            nesterov=nesterov,
+            weight_decay=weight_decay,
+        )
         super(SGD, self).__init__(params, defaults, **kwargs)
-        self._op_type = 'NesterovSGD' if nesterov else 'MomentumSGD'
-        self._hyper_dict.pop('dampening')  # Unsupported.
+        self._op_type = "NesterovSGD" if nesterov else "MomentumSGD"
+        self._hyper_dict.pop("dampening")  # Unsupported.
 
 
 class LARS(Optimizer):
@@ -114,15 +112,7 @@ class LARS(Optimizer):
 
     """
 
-    def __init__(
-        self,
-        params,
-        lr=required,
-        momentum=0,
-        trust_coef=0.001,
-        weight_decay=0,
-        **kwargs
-    ):
+    def __init__(self, params, lr=required, momentum=0, trust_coef=0.001, weight_decay=0, **kwargs):
         r"""Create a ``LARS`` optimizer.
 
         Parameters
@@ -140,11 +130,10 @@ class LARS(Optimizer):
 
         """
         if lr is not required and lr < 0:
-            raise ValueError('Invalid learning rate: {}'.format(lr))
+            raise ValueError("Invalid learning rate: {}".format(lr))
         if momentum < 0:
-            raise ValueError('Invalid momentum: {}'.format(momentum))
+            raise ValueError("Invalid momentum: {}".format(momentum))
         if trust_coef < 0:
-            raise ValueError('Invalid trust coefficient: {}'.format(trust_coef))
-        defaults = dict(lr=lr, momentum=momentum, weight_decay=weight_decay,
-                        trust_coef=trust_coef)
+            raise ValueError("Invalid trust coefficient: {}".format(trust_coef))
+        defaults = dict(lr=lr, momentum=momentum, weight_decay=weight_decay, trust_coef=trust_coef)
         super(LARS, self).__init__(params, defaults, **kwargs)

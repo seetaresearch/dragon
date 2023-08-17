@@ -18,4 +18,4 @@ from dragon.vm.keras.core.optimizer.gradient_descent import SGD
 from dragon.vm.keras.core.optimizer.optimizer import Optimizer
 from dragon.vm.keras.core.optimizer.rmsprop import RMSprop
 
-__all__ = [_s for _s in dir() if not _s.startswith('_')]
+__all__ = [_s for _s in dir() if not _s.startswith("_")]

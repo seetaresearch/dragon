@@ -16,4 +16,4 @@ from __future__ import print_function as _print_function
 from dragon.core.framework.dlpack import from_dlpack
 from dragon.core.framework.dlpack import to_dlpack
 
-__all__ = [_s for _s in dir() if not _s.startswith('_')]
+__all__ = [_s for _s in dir() if not _s.startswith("_")]

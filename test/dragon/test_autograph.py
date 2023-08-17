@@ -30,15 +30,14 @@ class TestConfig(unittest.TestCase):
         self.assertEqual(config.config().graph_optimization, 1)
 
     def test_scheduler(self):
-        for scheduler in ('SIMPLE', 'FUSION', 'KNOWN', 'SIMPLE'):
+        for scheduler in ("SIMPLE", "FUSION", "KNOWN", "SIMPLE"):
             try:
                 dragon.autograph.set_scheduler(scheduler)
-                if scheduler == 'FUSION':
-                    self.assertEqual(config.config().graph_type, 'FusionGraph')
+                if scheduler == "FUSION":
+                    self.assertEqual(config.config().graph_type, "FusionGraph")
                 else:
-                    self.assertEqual(config.config().graph_type, '')
+                    self.assertEqual(config.config().graph_type, "")
             except ValueError:
-
                 pass
 
     def test_verbosity(self):
@@ -50,11 +49,13 @@ class TestConfig(unittest.TestCase):
 class TestFunction(unittest.TestCase):
     """Test graph function."""
 
-    @dragon.function(input_signature=[
-        dragon.Tensor((1,), dtype='int32'),
-        dragon.Tensor((1,), dtype='int32'),
-        dragon.Tensor((1,), dtype='int32'),
-    ])
+    @dragon.function(
+        input_signature=[
+            dragon.Tensor((1,), dtype="int32"),
+            dragon.Tensor((1,), dtype="int32"),
+            dragon.Tensor((1,), dtype="int32"),
+        ]
+    )
     def func1(self, a, b, c=0, **kwargs):
         _ = kwargs
         return a + b + c
@@ -63,11 +64,15 @@ class TestFunction(unittest.TestCase):
         @dragon.function(input_signature=[dragon.Tensor(None, symbolic=True)])
         def func2(a, b):
             return a + b
+
         self.assertEqual(self.func1([1, 2], [3, 4]).numpy().tolist(), [4, 6])
         self.assertEqual(self.func1([1, 2], b=[3, 4]).numpy().tolist(), [4, 6])
         self.assertEqual(self.func1([1, 2], b=[3, 4], c=1).numpy().tolist(), [5, 7])
         self.assertEqual(self.func1([1, 2], b=[3, 4], c=1).numpy().tolist(), [5, 7])
-        self.assertEqual(self.func1([1, 2], [3, 4], executing_stage='forward').numpy().tolist(), [4, 6])
+        self.assertEqual(
+            self.func1([1, 2], [3, 4], executing_stage="forward").numpy().tolist(),
+            [4, 6],
+        )
         dragon.function(func=lambda: dragon.optimizers.SGD())()
         try:
             self.func1(1, 2, 3, 4)
@@ -84,13 +89,13 @@ class TestFunction(unittest.TestCase):
             _ = optimizer.op_type
         except KeyError:
             pass
-        var = dragon.constant(1, dtype='float32')
-        grad = dragon.constant(1, dtype='float32')
+        var = dragon.constant(1, dtype="float32")
+        grad = dragon.constant(1, dtype="float32")
         with dragon.eager_mode():
             optimizer.apply_gradients([(grad, var)])
         with dragon.graph_mode():
             optimizer.apply_gradients([(grad, var)]).run()
-        self.assertEqual(float(var), -1.)
+        self.assertEqual(float(var), -1.0)
 
 
 class TestOpSpec(unittest.TestCase):
@@ -104,47 +109,36 @@ class TestOpSpec(unittest.TestCase):
 
     def test_arg_reduce(self):
         with dragon.graph_mode():
-            self.assertEqual(dragon.math.argmax(
-                self.sym1, axis=0, keepdims=True).shape, None)
-            self.assertEqual(dragon.math.argmax(
-                self.sym1, axis=0, keepdims=False).shape, None)
-            self.assertEqual(dragon.math.argmax(
-                self.sym2, axis=0, keepdims=True).shape, (1,))
-            self.assertEqual(dragon.math.argmax(
-                self.sym2, axis=0, keepdims=False).shape, ())
+            self.assertEqual(dragon.math.argmax(self.sym1, axis=0, keepdims=True).shape, None)
+            self.assertEqual(dragon.math.argmax(self.sym1, axis=0, keepdims=False).shape, None)
+            self.assertEqual(dragon.math.argmax(self.sym2, axis=0, keepdims=True).shape, (1,))
+            self.assertEqual(dragon.math.argmax(self.sym2, axis=0, keepdims=False).shape, ())
 
     def test_binary_ops(self):
         with dragon.graph_mode():
-            self.assertEqual(dragon.math.add(
-                [self.sym1, self.sym1]).shape, None)
-            self.assertEqual(dragon.math.add(
-                [self.sym2, self.sym2]).shape, (1,))
-            self.assertEqual(dragon.math.add(
-                [self.sym2, self.sym3]).shape, (1, None))
-            self.assertEqual(dragon.math.add(
-                [self.sym3, self.sym2]).shape, (1, None))
-            self.assertEqual(dragon.math.equal(
-                [self.sym1, self.sym1]).shape, None)
+            self.assertEqual(dragon.math.add([self.sym1, self.sym1]).shape, None)
+            self.assertEqual(dragon.math.add([self.sym2, self.sym2]).shape, (1,))
+            self.assertEqual(dragon.math.add([self.sym2, self.sym3]).shape, (1, None))
+            self.assertEqual(dragon.math.add([self.sym3, self.sym2]).shape, (1, None))
+            self.assertEqual(dragon.math.equal([self.sym1, self.sym1]).shape, None)
 
     def test_boolean_mask(self):
         with dragon.graph_mode():
-            self.assertEqual(dragon.boolean_mask(
-                [self.sym1, self.sym1]).shape, (None,))
+            self.assertEqual(dragon.boolean_mask([self.sym1, self.sym1]).shape, (None,))
 
     def test_broadcast(self):
         with dragon.graph_mode():
-            self.assertEqual(dragon.broadcast_to(
-                self.sym1, shape=(1,)).shape, None)
-            self.assertEqual(dragon.broadcast_to(
-                self.sym2, shape=(1, 2)).shape, (1, 2))
-            self.assertEqual(dragon.broadcast_to(
-                self.sym3, shape=(2,)).shape, self.sym3.shape[:-1] + (2,))
-            self.assertEqual(dragon.broadcast_to(
-                self.sym3, shape=(-1, 2, 2)).shape, (1, 2, 2))
+            self.assertEqual(dragon.broadcast_to(self.sym1, shape=(1,)).shape, None)
+            self.assertEqual(dragon.broadcast_to(self.sym2, shape=(1, 2)).shape, (1, 2))
+            self.assertEqual(
+                dragon.broadcast_to(self.sym3, shape=(2,)).shape,
+                self.sym3.shape[:-1] + (2,),
+            )
+            self.assertEqual(dragon.broadcast_to(self.sym3, shape=(-1, 2, 2)).shape, (1, 2, 2))
 
     def test_cast(self):
         with dragon.graph_mode():
-            self.assertEqual(dragon.cast(self.sym1, 'float32').shape, None)
+            self.assertEqual(dragon.cast(self.sym1, "float32").shape, None)
 
     def test_concat(self):
         with dragon.graph_mode():
@@ -156,23 +150,32 @@ class TestOpSpec(unittest.TestCase):
     def test_conv(self):
         w = dragon.Tensor((3, 3, 3, 3))
         with dragon.graph_mode():
-            self.assertEqual(dragon.nn.conv2d(
-                [self.sym1, self.sym1]).shape, None)
-            self.assertEqual(dragon.nn.conv2d(
-                [self.sym4, w]).shape, (self.sym4.shape[0], w.shape[0], None, None))
-            self.assertEqual(dragon.nn.conv2d(
-                [w, w], kernel_shape=1, out_channels=w.shape[0]).shape, w.shape)
-            self.assertEqual(dragon.nn.conv2d(
-                [w, w], kernel_shape=1, padding='SAME').shape, w.shape)
-            self.assertEqual(dragon.nn.conv2d_transpose(
-                [self.sym4, w], out_channels=w.shape[1]).shape,
-                (self.sym4.shape[0], w.shape[1], None, None))
-            self.assertEqual(dragon.nn.conv2d_transpose(
-                [w, w], output_padding=(2, 2), kernel_shape=1).shape,
-                (w.shape[0], w.shape[1], w.shape[2] + 2, w.shape[3] + 2))
-            self.assertEqual(dragon.nn.conv2d_transpose(
-                [w, w], output_shape=(4, 4), output_padding=(2, 2), kernel_shape=1).shape,
-                (w.shape[0], w.shape[1], 6, 6))
+            self.assertEqual(dragon.nn.conv2d([self.sym1, self.sym1]).shape, None)
+            self.assertEqual(
+                dragon.nn.conv2d([self.sym4, w]).shape,
+                (self.sym4.shape[0], w.shape[0], None, None),
+            )
+            self.assertEqual(
+                dragon.nn.conv2d([w, w], kernel_shape=1, out_channels=w.shape[0]).shape,
+                w.shape,
+            )
+            self.assertEqual(
+                dragon.nn.conv2d([w, w], kernel_shape=1, padding="SAME").shape, w.shape
+            )
+            self.assertEqual(
+                dragon.nn.conv2d_transpose([self.sym4, w], out_channels=w.shape[1]).shape,
+                (self.sym4.shape[0], w.shape[1], None, None),
+            )
+            self.assertEqual(
+                dragon.nn.conv2d_transpose([w, w], output_padding=(2, 2), kernel_shape=1).shape,
+                (w.shape[0], w.shape[1], w.shape[2] + 2, w.shape[3] + 2),
+            )
+            self.assertEqual(
+                dragon.nn.conv2d_transpose(
+                    [w, w], output_shape=(4, 4), output_padding=(2, 2), kernel_shape=1
+                ).shape,
+                (w.shape[0], w.shape[1], 6, 6),
+            )
 
     def test_depth_to_space(self):
         func1 = functools.partial(dragon.nn.depth_to_space, block_size=1)
@@ -181,52 +184,59 @@ class TestOpSpec(unittest.TestCase):
             for func in (func1, func2):
                 self.assertEqual(func(self.sym1).shape, None)
                 self.assertEqual(func(self.sym2).shape, None)
-                self.assertEqual(func(self.sym4, data_format='NCHW').shape,
-                                 (self.sym4.shape[0],) + (None,) * (len(self.sym4.shape) - 1))
-                self.assertEqual(func(self.sym4, data_format='NCHW').shape,
-                                 (self.sym4.shape[0],) + (None,) * (len(self.sym4.shape) - 1))
-                self.assertEqual(func(dragon.Tensor((1, 2, 3)), data_format='NCHW').shape,
-                                 dragon.Tensor((1, 2, 3)).shape)
-                self.assertEqual(func(dragon.Tensor((1, 2, 3)), data_format='NHWC').shape,
-                                 dragon.Tensor((1, 2, 3)).shape)
+                self.assertEqual(
+                    func(self.sym4, data_format="NCHW").shape,
+                    (self.sym4.shape[0],) + (None,) * (len(self.sym4.shape) - 1),
+                )
+                self.assertEqual(
+                    func(self.sym4, data_format="NCHW").shape,
+                    (self.sym4.shape[0],) + (None,) * (len(self.sym4.shape) - 1),
+                )
+                self.assertEqual(
+                    func(dragon.Tensor((1, 2, 3)), data_format="NCHW").shape,
+                    dragon.Tensor((1, 2, 3)).shape,
+                )
+                self.assertEqual(
+                    func(dragon.Tensor((1, 2, 3)), data_format="NHWC").shape,
+                    dragon.Tensor((1, 2, 3)).shape,
+                )
 
     def test_eltwise_loss(self):
         with dragon.graph_mode():
-            self.assertEqual(dragon.losses.l2_loss(
-                [self.sym1, self.sym1]).shape, ())
-            self.assertEqual(dragon.losses.l2_loss(
-                [self.sym1, self.sym1], reduction='none').shape, None)
+            self.assertEqual(dragon.losses.l2_loss([self.sym1, self.sym1]).shape, ())
+            self.assertEqual(
+                dragon.losses.l2_loss([self.sym1, self.sym1], reduction="none").shape,
+                None,
+            )
 
     def test_expand_dims(self):
         with dragon.graph_mode():
-            self.assertEqual(dragon.expand_dims(
-                self.sym1, axis=1).shape, None)
-            self.assertEqual(dragon.expand_dims(
-                self.sym2, axis=1).shape, (1, 1))
-            self.assertEqual(dragon.expand_dims(
-                self.sym2, axis=-1).shape, (1, 1))
-            self.assertEqual(dragon.expand_dims(
-                self.sym3, axis=0).shape, (1, 1, None))
-            self.assertEqual(dragon.expand_dims(
-                self.sym3, axis=(0, 3)).shape, (1, 1, None, 1))
-            self.assertEqual(dragon.expand_dims(
-                self.sym3, axis=(0, 3, 5)).shape, (1, 1, None, 1))
+            self.assertEqual(dragon.expand_dims(self.sym1, axis=1).shape, None)
+            self.assertEqual(dragon.expand_dims(self.sym2, axis=1).shape, (1, 1))
+            self.assertEqual(dragon.expand_dims(self.sym2, axis=-1).shape, (1, 1))
+            self.assertEqual(dragon.expand_dims(self.sym3, axis=0).shape, (1, 1, None))
+            self.assertEqual(dragon.expand_dims(self.sym3, axis=(0, 3)).shape, (1, 1, None, 1))
+            self.assertEqual(dragon.expand_dims(self.sym3, axis=(0, 3, 5)).shape, (1, 1, None, 1))
 
     def test_extract_patches(self):
         with dragon.graph_mode():
             self.assertEqual(dragon.vision.extract_patches(self.sym1).shape, None)
-            self.assertEqual(dragon.vision.extract_patches(self.sym4).shape,
-                             (self.sym4.shape[0], None, None, None))
+            self.assertEqual(
+                dragon.vision.extract_patches(self.sym4).shape,
+                (self.sym4.shape[0], None, None, None),
+            )
 
     def test_init_ops(self):
-        init_funcs_v1 = [dragon.fill,
-                         dragon.ones,
-                         dragon.random.glorot_normal,
-                         dragon.random.glorot_uniform,
-                         dragon.random.normal,
-                         dragon.random.uniform,
-                         dragon.random.truncated_normal,
-                         dragon.zeros]
+        init_funcs_v1 = [
+            dragon.fill,
+            dragon.ones,
+            dragon.random.glorot_normal,
+            dragon.random.glorot_uniform,
+            dragon.random.normal,
+            dragon.random.uniform,
+            dragon.random.truncated_normal,
+            dragon.zeros,
+        ]
         for func in init_funcs_v1:
             with dragon.graph_mode():
                 self.assertEqual(func(shape=self.sym1.shape).shape, None)
@@ -234,70 +244,60 @@ class TestOpSpec(unittest.TestCase):
 
     def test_flatten(self):
         with dragon.graph_mode():
-            self.assertEqual(dragon.flatten(
-                self.sym1, axis=1).shape, None)
-            self.assertEqual(dragon.flatten(
-                self.sym4, axis=1, end_axis=3).shape, (1, None))
-            self.assertEqual(dragon.flatten(
-                self.sym4, axis=1, end_axis=-1).shape, (1, None))
+            self.assertEqual(dragon.flatten(self.sym1, axis=1).shape, None)
+            self.assertEqual(dragon.flatten(self.sym4, axis=1, end_axis=3).shape, (1, None))
+            self.assertEqual(dragon.flatten(self.sym4, axis=1, end_axis=-1).shape, (1, None))
 
     def test_gather(self):
         with dragon.graph_mode():
-            self.assertEqual(dragon.gather(
-                [self.sym1, self.sym1]).shape, None)
-            self.assertEqual(dragon.gather(
-                [self.sym1, self.sym2], axis=-1).shape, None)
-            self.assertEqual(dragon.gather(
-                [self.sym3, self.sym2], axis=1).shape, (1, 1))
+            self.assertEqual(dragon.gather([self.sym1, self.sym1]).shape, None)
+            self.assertEqual(dragon.gather([self.sym1, self.sym2], axis=-1).shape, None)
+            self.assertEqual(dragon.gather([self.sym3, self.sym2], axis=1).shape, (1, 1))
 
     def test_gather_elements(self):
         with dragon.graph_mode():
-            self.assertEqual(dragon.gather_elements(
-                [self.sym1, self.sym1]).shape, None)
-            self.assertEqual(dragon.gather_elements(
-                [self.sym1, self.sym2], axis=0).shape, self.sym2.shape)
-            self.assertEqual(dragon.gather_elements(
-                [self.sym1, self.sym3], axis=1).shape, self.sym3.shape)
+            self.assertEqual(dragon.gather_elements([self.sym1, self.sym1]).shape, None)
+            self.assertEqual(
+                dragon.gather_elements([self.sym1, self.sym2], axis=0).shape,
+                self.sym2.shape,
+            )
+            self.assertEqual(
+                dragon.gather_elements([self.sym1, self.sym3], axis=1).shape,
+                self.sym3.shape,
+            )
 
     def test_gemm(self):
         w = dragon.Tensor((3, 2), symbolic=True)
         with dragon.graph_mode():
-            self.assertEqual(dragon.math.gemm(
-                [self.sym1, w]).shape, None)
-            self.assertEqual(dragon.math.gemm(
-                [self.sym3, w], transpose_a=True).shape, (None, 2))
-            self.assertEqual(dragon.math.gemm(
-                [self.sym1, self.sym1]).shape, None)
-            self.assertEqual(dragon.math.gemm(
-                [w, self.sym1], transpose_b=True).shape, None)
+            self.assertEqual(dragon.math.gemm([self.sym1, w]).shape, None)
+            self.assertEqual(dragon.math.gemm([self.sym3, w], transpose_a=True).shape, (None, 2))
+            self.assertEqual(dragon.math.gemm([self.sym1, self.sym1]).shape, None)
+            self.assertEqual(dragon.math.gemm([w, self.sym1], transpose_b=True).shape, None)
 
     def test_linspace(self):
         with dragon.graph_mode():
-            self.assertEqual(dragon.linspace(
-                start=1, stop=5, num=3).shape, (3,))
-            self.assertEqual(dragon.linspace(
-                start=(1, 2), stop=(3, 4), num=3, axis=1).shape, (2, 3))
-            self.assertEqual(dragon.linspace(
-                start=(1, 2), stop=(3, 4), num=3, axis=0).shape, (3, 2))
+            self.assertEqual(dragon.linspace(start=1, stop=5, num=3).shape, (3,))
+            self.assertEqual(
+                dragon.linspace(start=(1, 2), stop=(3, 4), num=3, axis=1).shape, (2, 3)
+            )
+            self.assertEqual(
+                dragon.linspace(start=(1, 2), stop=(3, 4), num=3, axis=0).shape, (3, 2)
+            )
 
     def test_matmul(self):
         with dragon.graph_mode():
-            self.assertEqual(dragon.math.matmul(
-                [self.sym1, self.sym1]).shape, None)
-            self.assertEqual(dragon.math.matmul(
-                [self.sym1, self.sym2]).shape, None)
-            self.assertEqual(dragon.math.matmul(
-                [self.sym1, self.sym3]).shape, None)
-            self.assertEqual(dragon.math.matmul(
-                [self.sym2, self.sym3]).shape, (None,))
-            self.assertEqual(dragon.math.matmul(
-                [self.sym3, self.sym2]).shape, (1,))
-            self.assertEqual(dragon.math.matmul(
-                [self.sym3, self.sym3]).shape, (1, None))
-            self.assertEqual(dragon.math.matmul(
-                [self.sym4, self.sym3]).shape, (1, None, None, None))
-            self.assertEqual(dragon.math.matmul(
-                [self.sym4, self.sym4]).shape, (1, None, None, None))
+            self.assertEqual(dragon.math.matmul([self.sym1, self.sym1]).shape, None)
+            self.assertEqual(dragon.math.matmul([self.sym1, self.sym2]).shape, None)
+            self.assertEqual(dragon.math.matmul([self.sym1, self.sym3]).shape, None)
+            self.assertEqual(dragon.math.matmul([self.sym2, self.sym3]).shape, (None,))
+            self.assertEqual(dragon.math.matmul([self.sym3, self.sym2]).shape, (1,))
+            self.assertEqual(dragon.math.matmul([self.sym3, self.sym3]).shape, (1, None))
+            self.assertEqual(
+                dragon.math.matmul([self.sym4, self.sym3]).shape, (1, None, None, None)
+            )
+            self.assertEqual(
+                dragon.math.matmul([self.sym4, self.sym4]).shape, (1, None, None, None)
+            )
 
     def test_moments(self):
         with dragon.graph_mode():
@@ -308,10 +308,14 @@ class TestOpSpec(unittest.TestCase):
             self.assertEqual(dragon.nn.moments(self.sym2, axis=0)[0].shape, ())
             self.assertEqual(dragon.nn.moments(self.sym2, axis=1)[0].shape, (1,))
             self.assertEqual(dragon.nn.moments(self.sym2, axis=0, keepdims=True)[0].shape, (1,))
-            self.assertEqual(dragon.nn.moments(
-                dragon.Tensor(None, 'float64', symbolic=True))[0].dtype, 'float64')
-            self.assertEqual(dragon.nn.moments(
-                dragon.Tensor(None, 'int64', symbolic=True))[0].dtype, 'float64')
+            self.assertEqual(
+                dragon.nn.moments(dragon.Tensor(None, "float64", symbolic=True))[0].dtype,
+                "float64",
+            )
+            self.assertEqual(
+                dragon.nn.moments(dragon.Tensor(None, "int64", symbolic=True))[0].dtype,
+                "float64",
+            )
 
     def test_multinomial(self):
         with dragon.graph_mode():
@@ -346,7 +350,7 @@ class TestOpSpec(unittest.TestCase):
             self.assertEqual(func(self.sym4).shape, (1, None, None, None))
             self.assertEqual(func(self.sym4, global_pool=True).shape, (1, None, 1, 1))
             self.assertEqual(func(dragon.Tensor((1, 3, 4, 4))).shape, (1, 3, 4, 4))
-            self.assertEqual(func(dragon.Tensor((1, 3, 4, 4)), padding='SAME').shape, (1, 3, 4, 4))
+            self.assertEqual(func(dragon.Tensor((1, 3, 4, 4)), padding="SAME").shape, (1, 3, 4, 4))
 
     def test_predicative(self):
         with dragon.graph_mode():
@@ -386,20 +390,25 @@ class TestOpSpec(unittest.TestCase):
 
     def test_resize(self):
         with dragon.graph_mode():
-            self.assertEqual(dragon.vision.resize(
-                self.sym4, sizes=(1,)).shape, (1, None, 1, 1))
-            self.assertEqual(dragon.vision.resize(
-                self.sym4, sizes=(1, 1)).shape, (1, None, 1, 1))
-            self.assertEqual(dragon.vision.resize(
-                self.sym4, sizes=(1, 1, 1, 1)).shape, (1, None, 1, 1))
-            self.assertEqual(dragon.vision.resize(
-                self.sym4, scales=(1,)).shape, (1, None, None, None))
-            self.assertEqual(dragon.vision.resize(
-                self.sym4, scales=(1, 1)).shape, (1, None, None, None))
-            self.assertEqual(dragon.vision.resize(
-                self.sym4, scales=(1, 1, 1, 1)).shape, (1, None, None, None))
-            self.assertEqual(dragon.vision.resize(
-                self.sym5, sizes=(1, 1, 1, 1)).shape, None)
+            self.assertEqual(dragon.vision.resize(self.sym4, sizes=(1,)).shape, (1, None, 1, 1))
+            self.assertEqual(dragon.vision.resize(self.sym4, sizes=(1, 1)).shape, (1, None, 1, 1))
+            self.assertEqual(
+                dragon.vision.resize(self.sym4, sizes=(1, 1, 1, 1)).shape,
+                (1, None, 1, 1),
+            )
+            self.assertEqual(
+                dragon.vision.resize(self.sym4, scales=(1,)).shape,
+                (1, None, None, None),
+            )
+            self.assertEqual(
+                dragon.vision.resize(self.sym4, scales=(1, 1)).shape,
+                (1, None, None, None),
+            )
+            self.assertEqual(
+                dragon.vision.resize(self.sym4, scales=(1, 1, 1, 1)).shape,
+                (1, None, None, None),
+            )
+            self.assertEqual(dragon.vision.resize(self.sym5, sizes=(1, 1, 1, 1)).shape, None)
 
     def test_roi_pool(self):
         rois = dragon.Tensor((2, 5))
@@ -416,12 +425,22 @@ class TestOpSpec(unittest.TestCase):
 
     def test_softmax_loss(self):
         with dragon.graph_mode():
-            self.assertEqual(dragon.losses.softmax_cross_entropy_loss(
-                [self.sym1, self.sym1]).shape, ())
-            self.assertEqual(dragon.losses.softmax_cross_entropy_loss(
-                [self.sym1, self.sym1], reduction='none').shape, None)
-            self.assertEqual(dragon.losses.softmax_cross_entropy_loss(
-                [self.sym3, self.sym1], reduction='none').shape, (self.sym3.shape[0],))
+            self.assertEqual(
+                dragon.losses.softmax_cross_entropy_loss([self.sym1, self.sym1]).shape,
+                (),
+            )
+            self.assertEqual(
+                dragon.losses.softmax_cross_entropy_loss(
+                    [self.sym1, self.sym1], reduction="none"
+                ).shape,
+                None,
+            )
+            self.assertEqual(
+                dragon.losses.softmax_cross_entropy_loss(
+                    [self.sym3, self.sym1], reduction="none"
+                ).shape,
+                (self.sym3.shape[0],),
+            )
 
     def test_sort(self):
         with dragon.graph_mode():
@@ -455,10 +474,8 @@ class TestOpSpec(unittest.TestCase):
 
     def test_tile(self):
         with dragon.graph_mode():
-            self.assertEqual(dragon.tile(
-                self.sym1, repeats=(1, 2)).shape, None)
-            self.assertEqual(dragon.tile(
-                self.sym3, repeats=(1, 2)).shape, (1, None))
+            self.assertEqual(dragon.tile(self.sym1, repeats=(1, 2)).shape, None)
+            self.assertEqual(dragon.tile(self.sym3, repeats=(1, 2)).shape, (1, None))
 
     def test_topk(self):
         with dragon.graph_mode():
@@ -475,9 +492,10 @@ class TestOpSpec(unittest.TestCase):
             self.assertEqual(dragon.unique(self.sym1).shape, (None,))
             self.assertEqual(dragon.unique(self.sym1, return_counts=True)[1].shape, (None,))
             self.assertEqual(dragon.unique(self.sym1, return_inverse=True)[1].shape, None)
-            self.assertEqual(dragon.unique(self.sym1,
-                                           return_inverse=True,
-                                           return_counts=True)[1].shape, None)
+            self.assertEqual(
+                dragon.unique(self.sym1, return_inverse=True, return_counts=True)[1].shape,
+                None,
+            )
 
 
 class TestOpSpecWithTensorDesc(unittest.TestCase):
@@ -491,50 +509,57 @@ class TestOpSpecWithTensorDesc(unittest.TestCase):
 
     def test_broadcast_to(self):
         with dragon.graph_mode():
-            self.assertEqual(dragon.broadcast_to(
-                self.sym1, shape=self.shape1).shape, None)
-            self.assertEqual(dragon.broadcast_to(
-                self.sym2, shape=self.shape1).shape, (None,) * len(self.sym2.shape))
+            self.assertEqual(dragon.broadcast_to(self.sym1, shape=self.shape1).shape, None)
+            self.assertEqual(
+                dragon.broadcast_to(self.sym2, shape=self.shape1).shape,
+                (None,) * len(self.sym2.shape),
+            )
 
     def test_channel_norm(self):
-        func = functools.partial(dragon.nn.channel_norm,
-                                 mean=(1., 1., 1.), std=(1., 1., 1.))
+        func = functools.partial(dragon.nn.channel_norm, mean=(1.0, 1.0, 1.0), std=(1.0, 1.0, 1.0))
         with dragon.graph_mode():
             self.assertEqual(func(self.sym1).shape, None)
             self.assertEqual(func(self.sym1, perm=self.shape1).shape, None)
             self.assertEqual(func(self.sym2).shape, self.sym2.shape)
-            self.assertEqual(func(self.sym2, perm=self.shape1).shape,
-                             (None,) * len(self.sym2.shape))
+            self.assertEqual(
+                func(self.sym2, perm=self.shape1).shape, (None,) * len(self.sym2.shape)
+            )
 
     def test_conv_transpose(self):
         w = dragon.Tensor((3, 3, 3, 3))
         with dragon.graph_mode():
-            self.assertEqual(dragon.nn.conv2d_transpose(
-                [self.sym1, self.sym1]).shape, None)
-            self.assertEqual(dragon.nn.conv2d_transpose(
-                [self.sym3, self.sym1]).shape, None)
-            self.assertEqual(dragon.nn.conv2d_transpose(
-                [self.sym3, w]).shape, (self.sym3.shape[0], w.shape[0], None, None))
-            self.assertEqual(dragon.nn.conv2d_transpose(
-                [w, w], output_padding=self.shape1).shape,
-                (w.shape[0], w.shape[0], None, None))
-            self.assertEqual(dragon.nn.conv2d_transpose(
-                [w, w], output_shape=self.shape1).shape,
-                (w.shape[0], w.shape[0], None, None))
+            self.assertEqual(dragon.nn.conv2d_transpose([self.sym1, self.sym1]).shape, None)
+            self.assertEqual(dragon.nn.conv2d_transpose([self.sym3, self.sym1]).shape, None)
+            self.assertEqual(
+                dragon.nn.conv2d_transpose([self.sym3, w]).shape,
+                (self.sym3.shape[0], w.shape[0], None, None),
+            )
+            self.assertEqual(
+                dragon.nn.conv2d_transpose([w, w], output_padding=self.shape1).shape,
+                (w.shape[0], w.shape[0], None, None),
+            )
+            self.assertEqual(
+                dragon.nn.conv2d_transpose([w, w], output_shape=self.shape1).shape,
+                (w.shape[0], w.shape[0], None, None),
+            )
 
     def test_init_ops(self):
-        init_funcs_v1 = [dragon.fill,
-                         dragon.ones,
-                         dragon.random.glorot_normal,
-                         dragon.random.glorot_uniform,
-                         dragon.random.normal,
-                         dragon.random.uniform,
-                         dragon.random.truncated_normal,
-                         dragon.zeros]
-        init_funcs_v2 = [dragon.ones_like,
-                         dragon.random.normal_like,
-                         dragon.random.uniform_like,
-                         dragon.zeros_like]
+        init_funcs_v1 = [
+            dragon.fill,
+            dragon.ones,
+            dragon.random.glorot_normal,
+            dragon.random.glorot_uniform,
+            dragon.random.normal,
+            dragon.random.uniform,
+            dragon.random.truncated_normal,
+            dragon.zeros,
+        ]
+        init_funcs_v2 = [
+            dragon.ones_like,
+            dragon.random.normal_like,
+            dragon.random.uniform_like,
+            dragon.zeros_like,
+        ]
         for func in init_funcs_v1:
             with dragon.graph_mode():
                 self.assertEqual(func(shape=self.shape1).shape, None)
@@ -549,51 +574,56 @@ class TestOpSpecWithTensorDesc(unittest.TestCase):
 
     def test_repeat(self):
         with dragon.graph_mode():
-            self.assertEqual(dragon.repeat(
-                self.sym1, repeats=self.shape1).shape, None)
-            self.assertEqual(dragon.repeat(
-                self.sym2, repeats=self.shape1).shape, None)
+            self.assertEqual(dragon.repeat(self.sym1, repeats=self.shape1).shape, None)
+            self.assertEqual(dragon.repeat(self.sym2, repeats=self.shape1).shape, None)
 
     def test_reshape(self):
         with dragon.graph_mode():
-            self.assertEqual(dragon.reshape(
-                self.sym1, shape=self.shape1).shape, None)
-            self.assertEqual(dragon.reshape(
-                self.sym2, shape=self.shape1).shape, None)
+            self.assertEqual(dragon.reshape(self.sym1, shape=self.shape1).shape, None)
+            self.assertEqual(dragon.reshape(self.sym2, shape=self.shape1).shape, None)
 
     def test_resize(self):
         with dragon.graph_mode():
-            self.assertEqual(dragon.vision.resize(
-                self.sym1, sizes=self.shape1).shape, None)
-            self.assertEqual(dragon.vision.resize(
-                self.sym1, scales=self.shape1).shape, None)
-            self.assertEqual(dragon.vision.resize(
-                self.sym2, sizes=self.shape1).shape, (None,) * len(self.sym2.shape))
-            self.assertEqual(dragon.vision.resize(
-                self.sym2, scales=self.shape1).shape, (None,) * len(self.sym2.shape))
+            self.assertEqual(dragon.vision.resize(self.sym1, sizes=self.shape1).shape, None)
+            self.assertEqual(dragon.vision.resize(self.sym1, scales=self.shape1).shape, None)
+            self.assertEqual(
+                dragon.vision.resize(self.sym2, sizes=self.shape1).shape,
+                (None,) * len(self.sym2.shape),
+            )
+            self.assertEqual(
+                dragon.vision.resize(self.sym2, scales=self.shape1).shape,
+                (None,) * len(self.sym2.shape),
+            )
 
     def test_slice(self):
         with dragon.graph_mode():
-            self.assertEqual(dragon.slice(
-                self.sym1, starts=self.shape1, sizes=self.shape1).shape, None)
-            self.assertEqual(dragon.slice(
-                self.sym2, starts=self.shape1, sizes=self.shape1).shape, None)
+            self.assertEqual(
+                dragon.slice(self.sym1, starts=self.shape1, sizes=self.shape1).shape,
+                None,
+            )
+            self.assertEqual(
+                dragon.slice(self.sym2, starts=self.shape1, sizes=self.shape1).shape,
+                None,
+            )
 
     def test_tile(self):
         with dragon.graph_mode():
-            self.assertEqual(dragon.tile(
-                self.sym1, repeats=self.shape1).shape, None)
-            self.assertEqual(dragon.tile(
-                self.sym2, repeats=self.shape1).shape, (None,) * len(self.sym2.shape))
+            self.assertEqual(dragon.tile(self.sym1, repeats=self.shape1).shape, None)
+            self.assertEqual(
+                dragon.tile(self.sym2, repeats=self.shape1).shape,
+                (None,) * len(self.sym2.shape),
+            )
 
     def test_transpose(self):
         with dragon.graph_mode():
             self.assertEqual(dragon.transpose(self.sym1).shape, None)
             self.assertEqual(dragon.transpose(self.sym1, perm=self.shape1).shape, None)
             self.assertEqual(dragon.transpose(self.sym2).shape, self.sym2.shape[::-1])
-            self.assertEqual(dragon.transpose(
-                self.sym2, perm=self.shape1).shape, (None,) * len(self.sym2.shape))
+            self.assertEqual(
+                dragon.transpose(self.sym2, perm=self.shape1).shape,
+                (None,) * len(self.sym2.shape),
+            )
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     run_tests()

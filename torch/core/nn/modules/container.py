@@ -32,8 +32,10 @@ class Container(Module):
 
     def __init__(self, **kwargs):
         super(Container, self).__init__()
-        warnings.warn("nn.Container is deprecated. All of it's functionality "
-                      "is now implemented in nn.Module. Subclass that instead.")
+        warnings.warn(
+            "nn.Container is deprecated. All of it's functionality "
+            "is now implemented in nn.Module. Subclass that instead."
+        )
         for key, value in kwargs.items():
             self.add_module(key, value)
 
@@ -76,7 +78,7 @@ class Sequential(Module):
         size = len(self)
         i = operator.index(index)
         if not -size <= i < size:
-            raise IndexError('Index {} is out of range'.format(i))
+            raise IndexError("Index {} is out of range".format(i))
         i %= size
         return next(itertools.islice(iterator, i, None))
 
@@ -91,8 +93,7 @@ class Sequential(Module):
 
     def __getitem__(self, item):
         if isinstance(item, slice):
-            return Sequential(collections.OrderedDict(
-                list(self._modules.items())[item]))
+            return Sequential(collections.OrderedDict(list(self._modules.items())[item]))
         else:
             return self._get_item_by_index(self._modules.values(), item)
 
@@ -142,8 +143,10 @@ class ModuleList(Module):
 
         """
         if not isinstance(modules, six.collections_abc.Iterable):
-            raise TypeError("ModuleList.extend should be called with an "
-                            "Sequence, but got " + type(modules).__name__)
+            raise TypeError(
+                "ModuleList.extend should be called with an "
+                "Sequence, but got " + type(modules).__name__
+            )
         offset = len(self)
         for i, module in enumerate(modules):
             self.add_module(str(offset + i), module)
@@ -168,7 +171,7 @@ class ModuleList(Module):
         """Return the absolute index for the list of functions"""
         i = operator.index(index)
         if not (-len(self) <= i < len(self)):
-            raise IndexError('Index {} is out of range'.format(i))
+            raise IndexError("Index {} is out of range".format(i))
         if i < 0:
             i += len(self)
         return str(i)
@@ -199,5 +202,4 @@ class ModuleList(Module):
         else:
             del self._modules[self._get_abs_string_index(item)]
         str_indices = [str(i) for i in range(len(self._modules))]
-        self._modules = collections.OrderedDict(
-            list(zip(str_indices, self._modules.values())))
+        self._modules = collections.OrderedDict(list(zip(str_indices, self._modules.values())))

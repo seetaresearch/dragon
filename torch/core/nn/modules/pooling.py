@@ -26,7 +26,7 @@ class _AdaptivePoolNd(Module):
         self.output_size = output_size
 
     def extra_repr(self):
-        return 'output_size={}'.format(self.output_size)
+        return "output_size={}".format(self.output_size)
 
 
 class _PoolNd(Module):
@@ -46,11 +46,12 @@ class _PoolNd(Module):
         self.ceil_mode = ceil_mode
 
     def extra_repr(self):
-        return 'kernel_size={kernel_size}, ' \
-               'stride={stride}, ' \
-               'padding={padding}, ' \
-               'ceil_mode={ceil_mode}' \
-               .format(**self.__dict__)
+        return (
+            "kernel_size={kernel_size}, "
+            "stride={stride}, "
+            "padding={padding}, "
+            "ceil_mode={ceil_mode}".format(**self.__dict__)
+        )
 
 
 class AdaptiveAvgPool1d(_AdaptivePoolNd):

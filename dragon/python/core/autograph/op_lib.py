@@ -32,14 +32,14 @@ class OpExec(object):
 
     def __init__(self, op_type):
         self._op_type = op_type
-        self._ignore_keys = {'outputs'}
+        self._ignore_keys = {"outputs"}
         def_args = {}
         def_args_getter = OpSchema.get_args(op_type)
         if def_args_getter is not None:
             def_args = def_args_getter()
         for k, v in def_args.items():
-            if k.endswith('_desc'):
-                self._ignore_keys.add(k.split('_desc')[0])
+            if k.endswith("_desc"):
+                self._ignore_keys.add(k.split("_desc")[0])
         self._config_cache = {}
 
     @classmethod
@@ -55,10 +55,10 @@ class OpExec(object):
     def get_config(self, **kwargs):
         """Return the execution config."""
         device = context.get_device()
-        cache_key = self._op_type + '/' + str(device)
+        cache_key = self._op_type + "/" + str(device)
         for k, v in kwargs.items():
             if k not in self._ignore_keys:
-                cache_key += '/' + str(v)
+                cache_key += "/" + str(v)
         try:
             return self._config_cache[cache_key]
         except KeyError:
@@ -66,23 +66,27 @@ class OpExec(object):
             def_args_getter = OpSchema.get_args(self._op_type)
             if def_args_getter is not None:
                 def_args = def_args_getter(**kwargs)
-            device = def_args.pop('device', device)
-            no_grad = def_args.pop('no_grad', False)
+            device = def_args.pop("device", device)
+            no_grad = def_args.pop("no_grad", False)
             for k, v in def_args.items():
-                if k.endswith('_desc') and v:
-                    name = k.split('_desc')[0]
+                if k.endswith("_desc") and v:
+                    name = k.split("_desc")[0]
                     feed_dict[name] = v
-                    def_args[k] = '$NAME/' + name
+                    def_args[k] = "$NAME/" + name
             op_def = proto_util.make_operator_def(
                 op_type=self._op_type,
-                name=kwargs.get('name', ''),
+                name=kwargs.get("name", ""),
                 device_option=device.to_proto(False),
                 cache_key=cache_key,
-                to_impl=True, **def_args)
-            config = {'def': op_def,
-                      'device': device,
-                      'no_grad': no_grad,
-                      'feed_dict': feed_dict}
+                to_impl=True,
+                **def_args
+            )
+            config = {
+                "def": op_def,
+                "device": device,
+                "no_grad": no_grad,
+                "feed_dict": feed_dict,
+            }
             self._config_cache[cache_key] = config
             return config
 
@@ -102,24 +106,26 @@ class OpLib(object):
         inputs = nest.flatten(inputs)
         for input in inputs:
             op_tape.add_source(input)
-            if graph_tape and (input.requires_grad or
-                               graph_tape.is_target(id(input))):
+            if graph_tape and (input.requires_grad or graph_tape.is_target(id(input))):
                 enable_grad = True
 
         # Add extra inputs.
-        for input in nest.flatten(kwargs.pop('extra_inputs', [])):
+        for input in nest.flatten(kwargs.pop("extra_inputs", [])):
             op_tape.add_source(input)
             op_tape.add_target(input.id)
 
         # Add outputs.
-        name = kwargs.pop('name', None)
-        num_outputs = kwargs.pop('num_outputs', 1)
+        name = kwargs.pop("name", None)
+        num_outputs = kwargs.pop("num_outputs", 1)
         outputs = []
         for i in range(num_outputs):
-            outputs.append(Tensor(
-                impl=execute_ws.create_tensor(scope='Tensor'),
-                name=name if name else op_type + ':%d' % i,
-                symbolic=True))
+            outputs.append(
+                Tensor(
+                    impl=execute_ws.create_tensor(scope="Tensor"),
+                    name=name if name else op_type + ":%d" % i,
+                    symbolic=True,
+                )
+            )
 
         # Create def.
         op_def = proto_util.make_operator_def(
@@ -127,7 +133,9 @@ class OpLib(object):
             inputs=[input.id for input in inputs],
             outputs=[output.id for output in outputs],
             device_option=proto_util.get_default_device_option(),
-            name=execute_ws.create_handle('Op'), **kwargs)
+            name=execute_ws.create_handle("Op"),
+            **kwargs
+        )
 
         # Record def.
         op_tape.add_element(op_def)
@@ -141,7 +149,7 @@ class OpLib(object):
         # Add spec to outputs.
         add_output_spec = OpSchema.get_spec(op_type)
         if add_output_spec is None:
-            add_output_spec = OpSchema.get_spec('Unchanged')
+            add_output_spec = OpSchema.get_spec("Unchanged")
         outputs = add_output_spec(kwargs, inputs, outputs)
 
         # Return single or repeated outputs.
@@ -165,38 +173,41 @@ class OpLib(object):
         enable_grad = False
         for input in inputs:
             input_names.append(input.id)
-            if graph_tape and (input.requires_grad or
-                               graph_tape.is_target(id(input))):
+            if graph_tape and (input.requires_grad or graph_tape.is_target(id(input))):
                 enable_grad = True
 
         # Unify grad modes.
-        no_grad = run_config['no_grad']
+        no_grad = run_config["no_grad"]
         enable_grad = enable_grad and not no_grad
-        if hasattr(graph_tape, '_exporting'):
+        if hasattr(graph_tape, "_exporting"):
             # Ensure the intermediates saved for the exporting graph.
             no_grad, enable_grad = False, True
 
         # Add outputs.
         outputs, output_names = [], []
-        output_specs = list(kwargs.get('outputs', [None]))
+        output_specs = list(kwargs.get("outputs", [None]))
         for i, spec in enumerate(output_specs):
             if spec is None:
-                outputs.append(Tensor(
-                    device=run_config['device'].copy(),
-                    impl=execute_ws.create_tensor(
-                        scope=context.get_variable_scope(enable_grad)),
-                    deleter=execute_ws._handle_pool))
+                outputs.append(
+                    Tensor(
+                        device=run_config["device"].copy(),
+                        impl=execute_ws.create_tensor(
+                            scope=context.get_variable_scope(enable_grad)
+                        ),
+                        deleter=execute_ws._handle_pool,
+                    )
+                )
                 output_names.append(outputs[i].id)
             else:
                 assert isinstance(spec, Tensor)
                 outputs.append(spec)
                 output_names.append(spec.id)
                 if enable_grad and output_names[-1] not in input_names:
-                    raise RuntimeError('Output that requires gradient is not in inputs.')
+                    raise RuntimeError("Output that requires gradient is not in inputs.")
 
         # Specialize def for given inputs and outputs.
-        op_name = ''  # Optional operator name.
-        op_def = run_config['def'].DeriveTo(input_names, output_names)
+        op_name = ""  # Optional operator name.
+        op_def = run_config["def"].DeriveTo(input_names, output_names)
 
         # Record def if grad is enabled.
         if len(inputs) > 0 and not no_grad:
@@ -214,8 +225,8 @@ class OpLib(object):
                     output._requires_grad = False
 
         # Emit to dispatch this execution.
-        for feed_key, value_type in run_config['feed_dict'].items():
-            dest = execute_ws.create_tensor(op_name + '/' + feed_key)
+        for feed_key, value_type in run_config["feed_dict"].items():
+            dest = execute_ws.create_tensor(op_name + "/" + feed_key)
             dest.FromNumpy(numpy.array(kwargs[feed_key], value_type), True)
         execute_ws.run_operator(op_def)
 

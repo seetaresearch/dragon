@@ -59,7 +59,7 @@ def get_device_capability(device=None):
 
     """
     device = -1 if device is None else device
-    device_index = device.index if hasattr(device, 'index') else device
+    device_index = device.index if hasattr(device, "index") else device
     return backend.mluGetDeviceCapability(device_index)
 
 
@@ -80,7 +80,7 @@ def get_device_name(device=None):
 
     """
     device = -1 if device is None else device
-    device_index = device.index if hasattr(device, 'index') else device
+    device_index = device.index if hasattr(device, "index") else device
     return backend.mluGetDeviceName(device_index)
 
 
@@ -142,11 +142,11 @@ def memory_allocated(device=None):
         The total number of allocated bytes.
 
     """
-    device_index = device.index if hasattr(device, 'index') else device
+    device_index = device.index if hasattr(device, "index") else device
     if device_index is None:
         device_index = backend.mluGetDevice()
     current_ws = workspace.get_workspace()
-    return current_ws.memory_allocated('mlu', device_index)
+    return current_ws.memory_allocated("mlu", device_index)
 
 
 def set_device(device):
@@ -158,7 +158,7 @@ def set_device(device):
         The device to set.
 
     """
-    device_index = device.index if hasattr(device, 'index') else device
+    device_index = device.index if hasattr(device, "index") else device
     backend.mluSetDevice(device_index)
 
 
@@ -174,5 +174,5 @@ def synchronize(device=None):
 
     """
     device = -1 if device is None else device
-    device_index = device.index if hasattr(device, 'index') else device
+    device_index = device.index if hasattr(device, "index") else device
     backend.mluStreamSynchronize(device_index, 0)

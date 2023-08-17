@@ -43,4 +43,4 @@ from dragon.vm.dali.core.ops.random_ops import CoinFlip
 from dragon.vm.dali.core.ops.random_ops import Uniform
 from dragon.vm.dali.core.ops.reader_ops import TFRecordReader
 
-__all__ = [_s for _s in dir() if not _s.startswith('_')]
+__all__ = [_s for _s in dir() if not _s.startswith("_")]

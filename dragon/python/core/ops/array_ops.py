@@ -24,8 +24,8 @@ from dragon.core.util import six
 
 
 @OpSchema.num_inputs(2)
-@OpSchema.convert_arg('starts')
-@OpSchema.convert_arg('sizes')
+@OpSchema.convert_arg("starts")
+@OpSchema.convert_arg("sizes")
 def assign(inputs, starts=None, sizes=None, copy=False, **kwargs):
     r"""Assign the value to input.
 
@@ -51,12 +51,17 @@ def assign(inputs, starts=None, sizes=None, copy=False, **kwargs):
     args = OpSchema.parse_args(locals())
     inputs = constant_ops.remove_scalars(inputs)
     if context.executing_eagerly():
-        starts = args['starts'] if starts is not None else [0]
-        sizes = args['sizes'] if sizes is not None else [-1]
+        starts = args["starts"] if starts is not None else [0]
+        sizes = args["sizes"] if sizes is not None else [-1]
         return OpLib.execute(
-            'Assign', inputs, outputs=[None if copy else inputs[0]],
-            ndim=len(starts), starts=starts, sizes=sizes)
-    return OpLib.add('Assign', **args)
+            "Assign",
+            inputs,
+            outputs=[None if copy else inputs[0]],
+            ndim=len(starts),
+            starts=starts,
+            sizes=sizes,
+        )
+    return OpLib.add("Assign", **args)
 
 
 @OpSchema.num_inputs(2)
@@ -75,12 +80,12 @@ def boolean_mask(inputs, **kwargs):
 
     """
     if context.executing_eagerly():
-        return OpLib.execute('BooleanMask', inputs)
-    return OpLib.add('BooleanMask', inputs, **kwargs)
+        return OpLib.execute("BooleanMask", inputs)
+    return OpLib.add("BooleanMask", inputs, **kwargs)
 
 
 @OpSchema.num_inputs(1)
-@OpSchema.convert_arg(name='shape', name_v2='dims')
+@OpSchema.convert_arg(name="shape", name_v2="dims")
 def broadcast_to(inputs, shape, **kwargs):
     """Broadcast input to the given shape.
 
@@ -117,9 +122,8 @@ def broadcast_to(inputs, shape, **kwargs):
     """
     args = OpSchema.parse_args(locals())
     if context.executing_eagerly():
-        return OpLib.execute(
-            'Expand', inputs, ndim=len(args['dims']), dims=args['dims'])
-    return OpLib.add('Expand', **args)
+        return OpLib.execute("Expand", inputs, ndim=len(args["dims"]), dims=args["dims"])
+    return OpLib.add("Expand", **args)
 
 
 @OpSchema.num_inputs(1)
@@ -150,8 +154,8 @@ def channel_shuffle(inputs, axis=-1, group=1, **kwargs):
 
     """
     if context.executing_eagerly():
-        return OpLib.execute('ChannelShuffle', inputs, axis=axis, group=group)
-    return OpLib.add('ChannelShuffle', inputs, axis=axis, group=group, **kwargs)
+        return OpLib.execute("ChannelShuffle", inputs, axis=axis, group=group)
+    return OpLib.add("ChannelShuffle", inputs, axis=axis, group=group, **kwargs)
 
 
 @OpSchema.num_inputs(1, 2147483647)
@@ -189,8 +193,8 @@ def concat(inputs, axis=0, **kwargs):
 
     """
     if context.executing_eagerly():
-        return OpLib.execute('Concat', inputs, axis=axis)
-    return OpLib.add('Concat', inputs, axis=axis, **kwargs)
+        return OpLib.execute("Concat", inputs, axis=axis)
+    return OpLib.add("Concat", inputs, axis=axis, **kwargs)
 
 
 @OpSchema.num_inputs(1)
@@ -231,9 +235,8 @@ def expand_dims(inputs, axis, copy=True, **kwargs):
     """
     axes = None if axis is None else nest.flatten(axis)
     if context.executing_eagerly():
-        return OpLib.execute(
-            'Unsqueeze', inputs, outputs=[None] if copy else inputs, axes=axes)
-    return OpLib.add('Unsqueeze', inputs, axes=axes, **kwargs)
+        return OpLib.execute("Unsqueeze", inputs, outputs=[None] if copy else inputs, axes=axes)
+    return OpLib.add("Unsqueeze", inputs, axes=axes, **kwargs)
 
 
 @OpSchema.num_inputs(1)
@@ -269,9 +272,13 @@ def flatten(inputs, axis=0, end_axis=-1, copy=True, **kwargs):
     """
     if context.executing_eagerly():
         return OpLib.execute(
-            'Flatten', inputs, outputs=[None] if copy else inputs,
-            axis=axis, end_axis=end_axis)
-    return OpLib.add('Flatten', inputs, axis=axis, end_axis=end_axis, **kwargs)
+            "Flatten",
+            inputs,
+            outputs=[None] if copy else inputs,
+            axis=axis,
+            end_axis=end_axis,
+        )
+    return OpLib.add("Flatten", inputs, axis=axis, end_axis=end_axis, **kwargs)
 
 
 @OpSchema.num_inputs(2)
@@ -309,8 +316,8 @@ def gather(inputs, axis=0, end_axis=None, **kwargs):
 
     """
     if context.executing_eagerly():
-        return OpLib.execute('Gather', inputs, axis=axis, end_axis=end_axis)
-    return OpLib.add('Gather', inputs, axis=axis, end_axis=end_axis, **kwargs)
+        return OpLib.execute("Gather", inputs, axis=axis, end_axis=end_axis)
+    return OpLib.add("Gather", inputs, axis=axis, end_axis=end_axis, **kwargs)
 
 
 @OpSchema.num_inputs(2)
@@ -349,8 +356,8 @@ def gather_elements(inputs, axis=0, **kwargs):
 
     """
     if context.executing_eagerly():
-        return OpLib.execute('GatherElements', inputs, axis=axis)
-    return OpLib.add('GatherElements', inputs, axis=axis, **kwargs)
+        return OpLib.execute("GatherElements", inputs, axis=axis)
+    return OpLib.add("GatherElements", inputs, axis=axis, **kwargs)
 
 
 @OpSchema.num_inputs(1)
@@ -382,8 +389,8 @@ def identity(inputs, **kwargs):
 
     """
     if context.executing_eagerly():
-        return OpLib.execute('Identity', inputs)
-    return OpLib.add('Identity', inputs, **kwargs)
+        return OpLib.execute("Identity", inputs)
+    return OpLib.add("Identity", inputs, **kwargs)
 
 
 @OpSchema.num_inputs(1)
@@ -404,8 +411,8 @@ def nonzero(inputs, **kwargs):
 
     """
     if context.executing_eagerly():
-        return OpLib.execute('NonZero', inputs)
-    return OpLib.add('NonZero', inputs, **kwargs)
+        return OpLib.execute("NonZero", inputs)
+    return OpLib.add("NonZero", inputs, **kwargs)
 
 
 @OpSchema.num_inputs(1)
@@ -452,15 +459,14 @@ def one_hot(inputs, depth, on_value=1, off_value=0, **kwargs):
     """
     on_value, off_value = float(on_value), float(off_value)
     if context.executing_eagerly():
-        return OpLib.execute(
-            'OneHot', inputs, depth=depth,
-            on_value=on_value, off_value=off_value)
-    return OpLib.add('OneHot', inputs, depth=depth, on_value=on_value,
-                     off_value=off_value, **kwargs)
+        return OpLib.execute("OneHot", inputs, depth=depth, on_value=on_value, off_value=off_value)
+    return OpLib.add(
+        "OneHot", inputs, depth=depth, on_value=on_value, off_value=off_value, **kwargs
+    )
 
 
 @OpSchema.num_inputs(1)
-def pad(inputs, pads, mode='constant', value=0, **kwargs):
+def pad(inputs, pads, mode="constant", value=0, **kwargs):
     """Pad the input according to the given sizes.
 
     :attr:`pads` should be a sequence with :math:`N` tuples,
@@ -508,14 +514,12 @@ def pad(inputs, pads, mode='constant', value=0, **kwargs):
         pads_end.append(v2)
     pads = pads_begin + pads_end
     if context.executing_eagerly():
-        return OpLib.execute(
-            'Pad', inputs, mode=mode, value=value,
-            ndim=len(pads_begin), pads=pads)
-    return OpLib.add('Pad', inputs, value=value, mode=mode, pads=pads, **kwargs)
+        return OpLib.execute("Pad", inputs, mode=mode, value=value, ndim=len(pads_begin), pads=pads)
+    return OpLib.add("Pad", inputs, value=value, mode=mode, pads=pads, **kwargs)
 
 
 @OpSchema.num_inputs(1)
-@OpSchema.convert_arg('repeats')
+@OpSchema.convert_arg("repeats")
 def repeat(inputs, axis=None, repeats=1, **kwargs):
     """Repeat the elements along the given axis.
 
@@ -549,13 +553,12 @@ def repeat(inputs, axis=None, repeats=1, **kwargs):
     """
     args = OpSchema.parse_args(locals())
     if context.executing_eagerly():
-        return OpLib.execute(
-            'Repeat', inputs, axis=axis, repeats=args['repeats'])
-    return OpLib.add('Repeat', **args)
+        return OpLib.execute("Repeat", inputs, axis=axis, repeats=args["repeats"])
+    return OpLib.add("Repeat", **args)
 
 
 @OpSchema.num_inputs(1)
-@OpSchema.convert_arg(name='shape', name_v2='dims')
+@OpSchema.convert_arg(name="shape", name_v2="dims")
 def reshape(inputs, shape, copy=True, **kwargs):
     """Change the dimensions of input.
 
@@ -594,10 +597,14 @@ def reshape(inputs, shape, copy=True, **kwargs):
     args = OpSchema.parse_args(locals())
     if context.executing_eagerly():
         return OpLib.execute(
-            'Reshape', inputs, outputs=[None] if copy else inputs,
-            ndim=len(args['dims']), dims=args['dims'])
-    args.pop('copy')
-    return OpLib.add('Reshape', **args)
+            "Reshape",
+            inputs,
+            outputs=[None] if copy else inputs,
+            ndim=len(args["dims"]),
+            dims=args["dims"],
+        )
+    args.pop("copy")
+    return OpLib.add("Reshape", **args)
 
 
 @OpSchema.num_inputs(1)
@@ -632,12 +639,12 @@ def reverse(inputs, axis, **kwargs):
     """
     axes = nest.flatten(axis) if axis is not None else axis
     if context.executing_eagerly():
-        return OpLib.execute('Reverse', inputs, axes=axes)
-    return OpLib.add('Reverse', inputs, axes=axes, **kwargs)
+        return OpLib.execute("Reverse", inputs, axes=axes)
+    return OpLib.add("Reverse", inputs, axes=axes, **kwargs)
 
 
 @OpSchema.num_inputs(1)
-@OpSchema.convert_arg('shift', name_v2='shifts')
+@OpSchema.convert_arg("shift", name_v2="shifts")
 def roll(inputs, shift, axis=None, **kwargs):
     """Roll elements along the given axis.
 
@@ -676,13 +683,17 @@ def roll(inputs, shift, axis=None, **kwargs):
     args = OpSchema.parse_args(locals())
     axes = nest.flatten(axis) if axis is not None else axis
     if isinstance(shift, six.integer_types):
-        args['shifts'] = nest.flatten(shift)
+        args["shifts"] = nest.flatten(shift)
     if context.executing_eagerly():
         return OpLib.execute(
-            'Roll', inputs, num_shifts=len(args['shifts']),
-            shifts=args['shifts'], axes=axes)
-    args.pop('axis')
-    return OpLib.add('Roll', axes=axes, **args)
+            "Roll",
+            inputs,
+            num_shifts=len(args["shifts"]),
+            shifts=args["shifts"],
+            axes=axes,
+        )
+    args.pop("axis")
+    return OpLib.add("Roll", axes=axes, **args)
 
 
 @OpSchema.num_inputs(3)
@@ -725,9 +736,9 @@ def scatter_add(inputs, axis=0, copy=True, **kwargs):
     """
     if context.executing_eagerly():
         return OpLib.execute(
-            'ScatterAdd', inputs,
-            outputs=[None] if copy else [inputs[0]], axis=axis)
-    return OpLib.add('ScatterAdd', inputs, axis=axis, **kwargs)
+            "ScatterAdd", inputs, outputs=[None] if copy else [inputs[0]], axis=axis
+        )
+    return OpLib.add("ScatterAdd", inputs, axis=axis, **kwargs)
 
 
 @OpSchema.num_inputs(3)
@@ -770,9 +781,12 @@ def scatter_elements(inputs, axis=0, copy=True, **kwargs):
     """
     if context.executing_eagerly():
         return OpLib.execute(
-            'ScatterElements', inputs,
-            outputs=[None] if copy else [inputs[0]], axis=axis)
-    return OpLib.add('ScatterElements', inputs, axis=axis, **kwargs)
+            "ScatterElements",
+            inputs,
+            outputs=[None] if copy else [inputs[0]],
+            axis=axis,
+        )
+    return OpLib.add("ScatterElements", inputs, axis=axis, **kwargs)
 
 
 @OpSchema.num_inputs(1)
@@ -799,13 +813,13 @@ def shape(inputs, **kwargs):
 
     """
     if context.executing_eagerly():
-        return OpLib.execute('Shape', inputs)
-    return OpLib.add('Shape', inputs, **kwargs)
+        return OpLib.execute("Shape", inputs)
+    return OpLib.add("Shape", inputs, **kwargs)
 
 
 @OpSchema.num_inputs(1)
-@OpSchema.convert_arg('starts')
-@OpSchema.convert_arg('sizes')
+@OpSchema.convert_arg("starts")
+@OpSchema.convert_arg("sizes")
 def slice(inputs, starts, sizes, **kwargs):
     """Select the elements according to the given sections.
 
@@ -845,9 +859,13 @@ def slice(inputs, starts, sizes, **kwargs):
     args = OpSchema.parse_args(locals())
     if context.executing_eagerly():
         return OpLib.execute(
-            'Slice', inputs, ndim=len(args['starts']),
-            starts=args['starts'], sizes=args['sizes'])
-    return OpLib.add('Slice', **args)
+            "Slice",
+            inputs,
+            ndim=len(args["starts"]),
+            starts=args["starts"],
+            sizes=args["sizes"],
+        )
+    return OpLib.add("Slice", **args)
 
 
 @OpSchema.num_inputs(1)
@@ -897,10 +915,17 @@ def split(inputs, num_or_size_splits, axis=0, copy=True, **kwargs):
         num, num_splits = num_or_size_splits, 0
     if context.executing_eagerly():
         return OpLib.execute(
-            'Split', inputs, outputs=[None] * num, axis=axis,
-            num_splits=num_splits, split=size_splits, copy=copy)
-    return OpLib.add('Split', inputs, num_outputs=num, axis=axis,
-                     split=size_splits, copy=copy, **kwargs)
+            "Split",
+            inputs,
+            outputs=[None] * num,
+            axis=axis,
+            num_splits=num_splits,
+            split=size_splits,
+            copy=copy,
+        )
+    return OpLib.add(
+        "Split", inputs, num_outputs=num, axis=axis, split=size_splits, copy=copy, **kwargs
+    )
 
 
 @OpSchema.num_inputs(1)
@@ -942,9 +967,8 @@ def squeeze(inputs, axis=None, copy=True, **kwargs):
     """
     axes = None if axis is None else nest.flatten(axis)
     if context.executing_eagerly():
-        return OpLib.execute(
-            'Squeeze', inputs, outputs=[None] if copy else inputs, axes=axes)
-    return OpLib.add('Squeeze', inputs, axes=axes, **kwargs)
+        return OpLib.execute("Squeeze", inputs, outputs=[None] if copy else inputs, axes=axes)
+    return OpLib.add("Squeeze", inputs, axes=axes, **kwargs)
 
 
 @OpSchema.num_inputs(1, 2147483647)
@@ -982,12 +1006,12 @@ def stack(inputs, axis=0, **kwargs):
 
     """
     if context.executing_eagerly():
-        return OpLib.execute('Stack', inputs, axis=axis)
-    return OpLib.add('Stack', inputs, axis=axis, **kwargs)
+        return OpLib.execute("Stack", inputs, axis=axis)
+    return OpLib.add("Stack", inputs, axis=axis, **kwargs)
 
 
 @OpSchema.num_inputs(1)
-@OpSchema.convert_arg(name='repeats')
+@OpSchema.convert_arg(name="repeats")
 def tile(inputs, repeats, **kwargs):
     """Repeat elements along each axis of input.
 
@@ -1013,13 +1037,12 @@ def tile(inputs, repeats, **kwargs):
     """
     args = OpSchema.parse_args(locals())
     if context.executing_eagerly():
-        return OpLib.execute(
-            'Tile', inputs, ndim=len(args['repeats']), repeats=args['repeats'])
-    return OpLib.add('Tile', **args)
+        return OpLib.execute("Tile", inputs, ndim=len(args["repeats"]), repeats=args["repeats"])
+    return OpLib.add("Tile", **args)
 
 
 @OpSchema.num_inputs(1)
-@OpSchema.convert_arg('perm')
+@OpSchema.convert_arg("perm")
 def transpose(inputs, perm=None, copy=True, **kwargs):
     """Permute the dimensions of input.
 
@@ -1052,11 +1075,13 @@ def transpose(inputs, perm=None, copy=True, **kwargs):
     args = OpSchema.parse_args(locals())
     if context.executing_eagerly():
         return OpLib.execute(
-            'Transpose', inputs,
+            "Transpose",
+            inputs,
             outputs=[None] if copy else inputs,
-            ndim=len(args['perm']) if perm is not None else 0,
-            perm=args['perm'])
-    return OpLib.add('Transpose', **args)
+            ndim=len(args["perm"]) if perm is not None else 0,
+            perm=args["perm"],
+        )
+    return OpLib.add("Transpose", **args)
 
 
 @OpSchema.num_inputs(1)
@@ -1093,10 +1118,8 @@ def tril(inputs, k=0, copy=True, **kwargs):
 
     """
     if context.executing_eagerly():
-        return OpLib.execute(
-            'Trilu', inputs, outputs=[None] if copy else inputs,
-            k=k, upper=False)
-    return OpLib.add('Trilu', inputs, k=k, upper=False, **kwargs)
+        return OpLib.execute("Trilu", inputs, outputs=[None] if copy else inputs, k=k, upper=False)
+    return OpLib.add("Trilu", inputs, k=k, upper=False, **kwargs)
 
 
 @OpSchema.num_inputs(1)
@@ -1133,10 +1156,8 @@ def triu(inputs, k=0, copy=True, **kwargs):
 
     """
     if context.executing_eagerly():
-        return OpLib.execute(
-            'Trilu', inputs, outputs=[None] if copy else inputs,
-            k=k, upper=True)
-    return OpLib.add('Trilu', inputs, k=k, upper=True, **kwargs)
+        return OpLib.execute("Trilu", inputs, outputs=[None] if copy else inputs, k=k, upper=True)
+    return OpLib.add("Trilu", inputs, k=k, upper=True, **kwargs)
 
 
 @OpSchema.num_inputs(1)
@@ -1183,11 +1204,20 @@ def unique(inputs, return_inverse=False, return_counts=False, **kwargs):
     num_outputs = 1 + return_inverse + return_counts
     if context.executing_eagerly():
         return OpLib.execute(
-            'Unique', inputs, outputs=[None] * num_outputs,
-            return_inverse=return_inverse, return_counts=return_counts)
-    return OpLib.add('Unique', inputs, num_outputs=num_outputs,
-                     return_inverse=return_inverse,
-                     return_counts=return_counts, **kwargs)
+            "Unique",
+            inputs,
+            outputs=[None] * num_outputs,
+            return_inverse=return_inverse,
+            return_counts=return_counts,
+        )
+    return OpLib.add(
+        "Unique",
+        inputs,
+        num_outputs=num_outputs,
+        return_inverse=return_inverse,
+        return_counts=return_counts,
+        **kwargs
+    )
 
 
 @OpSchema.num_inputs(1)
@@ -1230,10 +1260,16 @@ def unstack(inputs, axis=0, num=None, copy=True, **kwargs):
     num_outputs = num or inputs[0].shape[axis]
     if context.executing_eagerly():
         return OpLib.execute(
-            'Split', inputs, outputs=[None] * num_outputs,
-            axis=axis, copy=copy, keepdims=False)
-    return OpLib.add('Split', inputs, num_outputs=num_outputs,
-                     axis=axis, copy=copy, keepdims=False, **kwargs)
+            "Split",
+            inputs,
+            outputs=[None] * num_outputs,
+            axis=axis,
+            copy=copy,
+            keepdims=False,
+        )
+    return OpLib.add(
+        "Split", inputs, num_outputs=num_outputs, axis=axis, copy=copy, keepdims=False, **kwargs
+    )
 
 
 @OpSchema.num_inputs(1, 3)
@@ -1283,5 +1319,5 @@ def where(inputs, **kwargs):
         return nonzero(inputs, **kwargs)
     args = OpSchema.parse_args(locals())
     if context.executing_eagerly():
-        return OpLib.execute('Where', inputs)
-    return OpLib.add('Where', inputs, **kwargs)
+        return OpLib.execute("Where", inputs)
+    return OpLib.add("Where", inputs, **kwargs)

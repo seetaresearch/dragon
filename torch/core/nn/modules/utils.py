@@ -23,8 +23,8 @@ from dragon.core.util import six
 
 
 def _get_adaptive_pool_args(input, output_sizes):
-    axis = 1 if input.device.type == 'mlu' else 2
-    input_sizes = input.size()[axis:axis + len(output_sizes)]
+    axis = 1 if input.device.type == "mlu" else 2
+    input_sizes = input.size()[axis : axis + len(output_sizes)]
     stride, kernel_size = [], []
     for input_size, output_size in zip(input_sizes, output_sizes):
         if output_size == 1:
@@ -33,7 +33,7 @@ def _get_adaptive_pool_args(input, output_sizes):
         else:
             stride.append(input_size // output_size)
             kernel_size.append(input_size - (output_size - 1) * stride[-1])
-    return {'kernel_size': kernel_size, 'stride': stride}
+    return {"kernel_size": kernel_size, "stride": stride}
 
 
 def _ntuple(n):
@@ -41,6 +41,7 @@ def _ntuple(n):
         if isinstance(x, six.collections_abc.Sequence):
             return x
         return tuple(itertools.repeat(x, n))
+
     return parse
 
 

@@ -133,9 +133,7 @@ void* MPSContext::New(size_t size) {
   auto* device = objects().devices_[current_device()];
   auto* data = [device newBufferWithLength:size
                                    options:MTLResourceStorageModePrivate];
-  if (!data) {
-    LOG(FATAL) << "\nAllocate device buffer with " << size << " bytes failed.";
-  }
+  CHECK(data) << "\nAllocate device buffer with " << size << " bytes failed.";
   return data;
 }
 
@@ -145,9 +143,7 @@ void* MPSContext::NewShared(size_t size) {
                                    options:[device hasUnifiedMemory]
                                        ? MTLResourceStorageModeShared
                                        : MTLResourceStorageModeManaged];
-  if (!data) {
-    LOG(FATAL) << "\nAllocate shared buffer with " << size << " bytes failed.";
-  }
+  CHECK(data) << "\nAllocate shared buffer with " << size << " bytes failed.";
   return data;
 }
 
@@ -158,9 +154,7 @@ void* MPSContext::NewSharedFromBytes(size_t size, const void* src) {
                                   options:[device hasUnifiedMemory]
                                       ? MTLResourceStorageModeShared
                                       : MTLResourceStorageModeManaged];
-  if (!data) {
-    LOG(FATAL) << "\nAllocate shared buffer with " << size << " bytes failed.";
-  }
+  CHECK(data) << "\nAllocate shared buffer with " << size << " bytes failed.";
   return data;
 }
 
@@ -169,10 +163,8 @@ void* MPSContext::NewSharedFromBuffer(const void* src) {
   auto* src_data = id<MTLBuffer>(src);
   auto* dest_data = [device newBufferWithLength:src_data.length
                                         options:MTLResourceStorageModeShared];
-  if (!dest_data) {
-    LOG(FATAL) << "\nAllocate shared buffer with " << src_data.length
-               << " bytes failed.";
-  }
+  CHECK(dest_data) << "\nAllocate shared buffer with " << src_data.length
+                   << " bytes failed.";
   Memcpy<MPSContext, MPSContext>(dest_data.length, dest_data, src_data);
   return dest_data;
 }

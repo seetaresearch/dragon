@@ -32,8 +32,8 @@ PY3 = sys.version_info[0] == 3
 
 
 if PY3:
-    integer_types = int,
-    string_types = str,
+    integer_types = (int,)
+    string_types = (str,)
 else:
     integer_types = (int, long)
     string_types = (str, unicode)
@@ -41,23 +41,27 @@ else:
 
 if PY3:
     import collections.abc
+
     collections_abc = collections.abc
 else:
     import collections
+
     collections_abc = collections
 
 
 if PY3:
+
     def get_unbound_function(unbound):
         return unbound
+
 else:
+
     def get_unbound_function(unbound):
         return unbound.im_func
 
 
 def with_metaclass(meta, *bases):
     class MetaClass(meta):
-
         def __new__(cls, name, this_bases, d):
             return meta(name, bases, d)
 
@@ -65,7 +69,7 @@ def with_metaclass(meta, *bases):
         def __prepare__(cls, name, this_bases):
             return meta.__prepare__(name, bases)
 
-    return type.__new__(MetaClass, 'TemporaryClass', (), {})
+    return type.__new__(MetaClass, "TemporaryClass", (), {})
 
 
 def _import_module(name):
@@ -75,7 +79,6 @@ def _import_module(name):
 
 
 class _LazyDescr(object):
-
     def __init__(self, name):
         self.name = name
 
@@ -127,6 +130,7 @@ class _LazyModule(types.ModuleType):
 
 class _MovedItems(_LazyModule):
     """Lazy loading of moved objects"""
+
     __path__ = []  # mark as package
 
 
@@ -185,16 +189,17 @@ class _SixMetaPathImporter(object):
         Required, if is_package is implemented"""
         self.__get_module(fullname)  # eventually raises ImportError
         return None
+
     get_source = get_code  # same as get_code
 
 
 _importer = _SixMetaPathImporter(__name__)
-_moved_attributes = [MovedModule('pickle', 'cPickle', 'pickle')]
+_moved_attributes = [MovedModule("pickle", "cPickle", "pickle")]
 for attr in _moved_attributes:
     setattr(_MovedItems, attr.name, attr)
     if isinstance(attr, MovedModule):
         _importer._add_module(attr, "moves." + attr.name)
 del attr
 _MovedItems._moved_attributes = _moved_attributes
-moves = _MovedItems(__name__ + '.moves')
-_importer._add_module(moves, 'moves')
+moves = _MovedItems(__name__ + ".moves")
+_importer._add_module(moves, "moves")

@@ -24,14 +24,16 @@ try:
     from pycuda import gpuarray
     from pycuda import autoinit
     import tensorrt as trt
+
     TRT_LOGGER = trt.Logger(trt.Logger.WARNING)
 except ImportError:
     from dragon.core.util import deprecation
-    driver = deprecation.NotInstalled('pycuda')
-    gpuarray = deprecation.NotInstalled('pycuda')
-    autoinit = deprecation.NotInstalled('pycuda')
-    trt = deprecation.NotInstalled('tensorrt')
-    TRT_LOGGER = deprecation.NotInstalled('tensorrt')
+
+    driver = deprecation.NotInstalled("pycuda")
+    gpuarray = deprecation.NotInstalled("pycuda")
+    autoinit = deprecation.NotInstalled("pycuda")
+    trt = deprecation.NotInstalled("tensorrt")
+    TRT_LOGGER = deprecation.NotInstalled("tensorrt")
 
 from dragon.core.framework import device_spec
 from dragon.core.framework import workspace
@@ -65,21 +67,21 @@ class Binding(object):
             self._name = idx_or_name
             self._index = cuda_engine.get_binding_index(self._name)
             if self._index == -1:
-                raise IndexError('Binding name not found: %s' % self._name)
+                raise IndexError("Binding name not found: %s" % self._name)
         else:
             self._index = idx_or_name
             self._name = cuda_engine.get_binding_name(self._index)
             if self._name is None:
-                raise IndexError('Binding index out of range: %i' % self._index)
+                raise IndexError("Binding index out of range: %i" % self._index)
 
         dtype_map = {
-            trt.DataType.FLOAT: 'float32',
-            trt.DataType.HALF: 'float16',
-            trt.DataType.INT8: 'int8',
+            trt.DataType.FLOAT: "float32",
+            trt.DataType.HALF: "float16",
+            trt.DataType.INT8: "int8",
         }
 
-        if hasattr(trt.DataType, 'INT32'):
-            dtype_map[trt.DataType.INT32] = 'int32'
+        if hasattr(trt.DataType, "INT32"):
+            dtype_map[trt.DataType.INT32] = "int32"
 
         self._is_input = cuda_engine.binding_is_input(self._index)
         self._dtype = dtype_map[cuda_engine.get_binding_dtype(self._index)]
@@ -115,12 +117,11 @@ class Binding(object):
 
         """
         if self._device_tensor is None:
-            spec = device_spec.DeviceSpec('cuda', self.device_id)
+            spec = device_spec.DeviceSpec("cuda", self.device_id)
             self._device_opt = spec.to_proto(serialized=True)
             default_ws = workspace.get_workspace()
-            impl = default_ws.create_tensor(scope='DLPack')
-            impl.FromPointer(self._shape, self._dtype,
-                             self._device_opt, self.device_buffer.ptr)
+            impl = default_ws.create_tensor(scope="DLPack")
+            impl.FromPointer(self._shape, self._dtype, self._device_opt, self.device_buffer.ptr)
             self._device_tensor = Tensor(impl=impl, deleter=default_ws._handle_pool)
         return self._device_tensor._impl.ToDLPack(self._device_opt, True)
 
@@ -173,12 +174,11 @@ class Binding(object):
 
         """
         if self._host_tensor is None:
-            spec = device_spec.DeviceSpec('cpu')
+            spec = device_spec.DeviceSpec("cpu")
             self._host_opt = spec.to_proto(serialized=True)
             default_ws = workspace.get_workspace()
-            impl = default_ws.create_tensor(scope='DLPack')
-            impl.FromPointer(self._shape, self._dtype,
-                             self._host_opt, self.host_buffer.ctypes.data)
+            impl = default_ws.create_tensor(scope="DLPack")
+            impl.FromPointer(self._shape, self._dtype, self._host_opt, self.host_buffer.ctypes.data)
             self._host_tensor = Tensor(impl=impl, deleter=default_ws._handle_pool)
         return self._host_tensor._impl.ToDLPack(self._host_opt, True)
 
@@ -274,8 +274,7 @@ class Binding(object):
                 else:
                     raise ValueError(
                         'Wrong shape for input "%s".\n'
-                        'Expected %s, got %s.' %
-                        (self._name, self._shape, new_shape)
+                        "Expected %s, got %s." % (self._name, self._shape, new_shape)
                     )
         else:
             new_shape = tuple(self._context.get_binding_shape(self._index))
@@ -306,23 +305,26 @@ class Engine(object):
 
         # Create bindings.
         num_binding = self._cuda_engine.num_bindings
-        self._bindings = [Binding(cuda_engine, self._context, i, device_id)
-                          for i in range(num_binding)]
+        self._bindings = [
+            Binding(cuda_engine, self._context, i, device_id) for i in range(num_binding)
+        ]
         self._inputs = [b for b in self._bindings if b.is_input]
         self._outputs = [b for b in self._bindings if not b.is_input]
 
         # Report the engine info.
-        logging.info('TensorRT engine built.')
-        binding_info = 'InputInfo: {\n'
+        logging.info("TensorRT engine built.")
+        binding_info = "InputInfo: {\n"
         for b in self._inputs:
-            binding_info += '  * Binding("{}", shape={}, dtype={})\n' \
-                            .format(b.name, b.shape, b.dtype)
-        logging.info(binding_info + '}')
-        binding_info = 'OutputInfo: {\n'
+            binding_info += '  * Binding("{}", shape={}, dtype={})\n'.format(
+                b.name, b.shape, b.dtype
+            )
+        logging.info(binding_info + "}")
+        binding_info = "OutputInfo: {\n"
         for b in self._outputs:
-            binding_info += '  * Binding("{}", shape={}, dtype={})\n' \
-                            .format(b.name, b.shape, b.dtype)
-        logging.info(binding_info + '}')
+            binding_info += '  * Binding("{}", shape={}, dtype={})\n'.format(
+                b.name, b.shape, b.dtype
+            )
+        logging.info(binding_info + "}")
 
     @property
     def cuda_engine(self):
@@ -382,8 +384,8 @@ class Engine(object):
         """
         if len(inputs) < len(self.inputs):
             raise ValueError(
-                'Not enough inputs. Expected %i, got %i.'
-                % (len(self.inputs), len(inputs)))
+                "Not enough inputs. Expected %i, got %i." % (len(self.inputs), len(inputs))
+            )
         if isinstance(inputs, dict):
             inputs = [inputs[b.name] for b in self.inputs]
 
@@ -419,19 +421,18 @@ def check_input_validity(index, array, binding):
     """Check the input validity."""
     binding._set_shape(array.shape)
     if array.dtype != binding.dtype:
-        if array.dtype == numpy.int64 and \
-                binding.dtype == numpy.int32:
-            casted_array = numpy.array(array, copy=True, dtype='int32')
+        if array.dtype == numpy.int64 and binding.dtype == numpy.int32:
+            casted_array = numpy.array(array, copy=True, dtype="int32")
             if numpy.equal(array, casted_array).all():
                 array = casted_array
             else:
                 raise TypeError(
-                    'Wrong dtype for input %i.\n'
-                    'Expected %s, got %s. Cannot safely cast.' %
-                    (index, binding.dtype, array.dtype))
+                    "Wrong dtype for input %i.\n"
+                    "Expected %s, got %s. Cannot safely cast." % (index, binding.dtype, array.dtype)
+                )
         else:
             raise TypeError(
-                'Wrong dtype for input %i.\n'
-                'Expected %s, got %s.' %
-                (index, binding.dtype, array.dtype))
+                "Wrong dtype for input %i.\n"
+                "Expected %s, got %s." % (index, binding.dtype, array.dtype)
+            )
     return array

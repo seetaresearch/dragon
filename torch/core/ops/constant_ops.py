@@ -28,7 +28,7 @@ def arange(
     end=None,
     step=1,
     out=None,
-    dtype='int64',
+    dtype="int64",
     device=None,
     requires_grad=False,
 ):
@@ -81,8 +81,14 @@ def arange(
         slice_args = start, end, step
     device = out.device if out else (device or cpp.device())
     out = Function.apply(
-        'Range', device, [], outputs=[out],
-        dtype=dtype, num_args=len(slice_args), slice=slice_args)
+        "Range",
+        device,
+        [],
+        outputs=[out],
+        dtype=dtype,
+        num_args=len(slice_args),
+        slice=slice_args,
+    )
     out._requires_grad = requires_grad
     return out
 
@@ -109,7 +115,7 @@ def empty(*size, dtype=None, device=None, requires_grad=False):
     """
     return Tensor(
         *size,
-        dtype=dtype if dtype else 'float32',
+        dtype=dtype if dtype else "float32",
         device=cpp.device() if device is None else device,
         requires_grad=requires_grad,
     )
@@ -119,7 +125,7 @@ def eye(
     n,
     m=None,
     out=None,
-    dtype='float32',
+    dtype="float32",
     device=None,
     requires_grad=False,
 ):
@@ -157,8 +163,7 @@ def eye(
     """
     m = n if m is None else m
     device = out.device if out else (device or cpp.device())
-    out = Function.apply(
-        'Eye', device, [], outputs=[out], dtype=dtype, ndim=2, dims=(n, m))
+    out = Function.apply("Eye", device, [], outputs=[out], dtype=dtype, ndim=2, dims=(n, m))
     out._requires_grad = requires_grad
     return out
 
@@ -178,7 +183,7 @@ def from_numpy(ndarray):
 
     """
     if not isinstance(ndarray, numpy.ndarray):
-        raise TypeError('<ndarray> should be a numpy array.')
+        raise TypeError("<ndarray> should be a numpy array.")
     return Tensor(ndarray, copy=False)
 
 
@@ -186,7 +191,7 @@ def full(
     size,
     fill_value,
     out=None,
-    dtype='int64',
+    dtype="int64",
     device=None,
     requires_grad=False,
 ):
@@ -222,8 +227,15 @@ def full(
     size = nest.flatten(size)
     device = out.device if out else (device or cpp.device())
     out = Function.apply(
-        'Fill', device, [], outputs=[out],
-        dtype=dtype, value=float(fill_value), ndim=len(size), dims=size)
+        "Fill",
+        device,
+        [],
+        outputs=[out],
+        dtype=dtype,
+        value=float(fill_value),
+        ndim=len(size),
+        dims=size,
+    )
     out._requires_grad = requires_grad
     return out
 
@@ -232,7 +244,7 @@ def full_like(
     input,
     fill_value,
     out=None,
-    dtype='int64',
+    dtype="int64",
     device=None,
     requires_grad=False,
 ):
@@ -266,8 +278,7 @@ def full_like(
 
     """
     device = out.device if out else (device or cpp.device())
-    out = Function.apply(
-        'Fill', device, [input], dtype=dtype, value=float(fill_value))
+    out = Function.apply("Fill", device, [input], dtype=dtype, value=float(fill_value))
     out._requires_grad = requires_grad
     return out
 
@@ -277,7 +288,7 @@ def linspace(
     end,
     steps=100,
     out=None,
-    dtype='int64',
+    dtype="int64",
     dim=0,
     device=None,
     requires_grad=False,
@@ -331,14 +342,23 @@ def linspace(
     size.insert(dim, steps)
     device = out.device if out else (device or cpp.device())
     out = Function.apply(
-        'LinSpace', device, [], outputs=[out],
-        dtype=dtype, axis=dim, ndim=len(size), num_intervals=len(starts),
-        dims=size, start=starts, stop=ends)
+        "LinSpace",
+        device,
+        [],
+        outputs=[out],
+        dtype=dtype,
+        axis=dim,
+        ndim=len(size),
+        num_intervals=len(starts),
+        dims=size,
+        start=starts,
+        stop=ends,
+    )
     out._requires_grad = requires_grad
     return out
 
 
-def ones(*size, out=None, dtype='float32', device=None, requires_grad=False):
+def ones(*size, out=None, dtype="float32", device=None, requires_grad=False):
     r"""Return a tensor filled with ones.
 
     .. math:: \text{out} \leftarrow 1
@@ -365,13 +385,20 @@ def ones(*size, out=None, dtype='float32', device=None, requires_grad=False):
     size = nest.flatten(size)
     device = out.device if out else (device or cpp.device())
     out = Function.apply(
-        'Fill', device, [], outputs=[out],
-        dtype=dtype, value=1.0, ndim=len(size), dims=size)
+        "Fill",
+        device,
+        [],
+        outputs=[out],
+        dtype=dtype,
+        value=1.0,
+        ndim=len(size),
+        dims=size,
+    )
     out._requires_grad = requires_grad
     return out
 
 
-def ones_like(input, dtype='float32', device=None, requires_grad=False):
+def ones_like(input, dtype="float32", device=None, requires_grad=False):
     r"""Return a tensor of ones with shape as the other.
 
     .. math:: \text{out} \leftarrow 1
@@ -394,8 +421,7 @@ def ones_like(input, dtype='float32', device=None, requires_grad=False):
 
     """
     device = device or input.device
-    out = Function.apply(
-        'Fill', device, [input], dtype=dtype, value=1.0)
+    out = Function.apply("Fill", device, [input], dtype=dtype, value=1.0)
     out._requires_grad = requires_grad
     return out
 
@@ -433,7 +459,7 @@ def tensor(data, dtype=None, device=None, requires_grad=False):
     )
 
 
-def zeros(*size, out=None, dtype='float32', device=None, requires_grad=False):
+def zeros(*size, out=None, dtype="float32", device=None, requires_grad=False):
     r"""Return a tensor filled with zeros.
 
     .. math:: \text{out} \leftarrow 0
@@ -460,13 +486,20 @@ def zeros(*size, out=None, dtype='float32', device=None, requires_grad=False):
     size = nest.flatten(size)
     device = out.device if out else (device or cpp.device())
     out = Function.apply(
-        'Fill', device, [], outputs=[out],
-        dtype=dtype, value=0.0, ndim=len(size), dims=size)
+        "Fill",
+        device,
+        [],
+        outputs=[out],
+        dtype=dtype,
+        value=0.0,
+        ndim=len(size),
+        dims=size,
+    )
     out._requires_grad = requires_grad
     return out
 
 
-def zeros_like(input, dtype='float32', device=None, requires_grad=False):
+def zeros_like(input, dtype="float32", device=None, requires_grad=False):
     r"""Return a tensor of zeros with shape as the other.
 
     .. math:: \text{out} \leftarrow 0
@@ -489,8 +522,7 @@ def zeros_like(input, dtype='float32', device=None, requires_grad=False):
 
     """
     device = device or input.device
-    out = Function.apply(
-        'Fill', device, [input], dtype=dtype, value=0.0)
+    out = Function.apply("Fill", device, [input], dtype=dtype, value=0.0)
     out._requires_grad = requires_grad
     return out
 
@@ -525,10 +557,8 @@ def scalar(input, dtype, device):
     try:
         input = float(input)
     except (TypeError, ValueError):
-        raise ValueError(
-            '<input> should be a python number, got {}.'
-            .format(type(input).__name__))
-    cached_name = '%s(%s)' % (dtype, input)
+        raise ValueError("<input> should be a python number, got {}.".format(type(input).__name__))
+    cached_name = "%s(%s)" % (dtype, input)
     default_ws = workspace.get_workspace()
     impl = default_ws.get_tensor(cached_name)
     if impl is None:

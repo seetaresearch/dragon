@@ -51,4 +51,4 @@ from dragon.vm.tensorflow.core.ops.nn_ops import softmax
 from dragon.vm.tensorflow.core.ops.nn_ops import softmax_cross_entropy_with_logits
 from dragon.vm.tensorflow.core.ops.nn_ops import sparse_softmax_cross_entropy_with_logits
 
-__all__ = [_s for _s in dir() if not _s.startswith('_')]
+__all__ = [_s for _s in dir() if not _s.startswith("_")]

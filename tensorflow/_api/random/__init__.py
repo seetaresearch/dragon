@@ -17,4 +17,4 @@ from dragon.vm.tensorflow.core.ops.random_ops import truncated_normal
 from dragon.vm.tensorflow.core.ops.random_ops import random_normal as normal
 from dragon.vm.tensorflow.core.ops.random_ops import random_uniform as uniform
 
-__all__ = [_s for _s in dir() if not _s.startswith('_')]
+__all__ = [_s for _s in dir() if not _s.startswith("_")]

@@ -24,4 +24,4 @@ from dragon.vm.onnx.core.frontend.native import export
 from dragon.vm.onnx.core.frontend.native import record
 
 # Attributes
-__all__ = [_s for _s in dir() if not _s.startswith('_')]
+__all__ = [_s for _s in dir() if not _s.startswith("_")]

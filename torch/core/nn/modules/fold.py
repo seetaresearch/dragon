@@ -62,12 +62,12 @@ class Unfold(Module):
         self.stride = stride
 
     def extra_repr(self):
-        return 'kernel_size={kernel_size}, ' \
-               'dilation={dilation}, ' \
-               'padding={padding}, ' \
-               'stride={stride}' \
-               .format(**self.__dict__)
+        return (
+            "kernel_size={kernel_size}, "
+            "dilation={dilation}, "
+            "padding={padding}, "
+            "stride={stride}".format(**self.__dict__)
+        )
 
     def forward(self, input):
-        return functional.unfold(
-            input, self.kernel_size, self.dilation, self.padding, self.stride)
+        return functional.unfold(input, self.kernel_size, self.dilation, self.padding, self.stride)

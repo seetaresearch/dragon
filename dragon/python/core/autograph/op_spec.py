@@ -19,16 +19,16 @@ import math
 from dragon.core.util import math_util
 from dragon.core.util import registry
 
-_GLOBAL_REGISTERED_SPECS = registry.Registry('OpSpec')
+_GLOBAL_REGISTERED_SPECS = registry.Registry("OpSpec")
 get = _GLOBAL_REGISTERED_SPECS.try_get
 register = _GLOBAL_REGISTERED_SPECS.register
 
 
-@register(['ArgMax', 'ArgMin'])
+@register(["ArgMax", "ArgMin"])
 def arg_reduce_spec(args, inputs, outputs):
-    outputs[0]._dtype = 'int64'
-    axis = args['axis']
-    if args['keepdims']:
+    outputs[0]._dtype = "int64"
+    axis = args["axis"]
+    if args["keepdims"]:
         try:
             out_shape = list(inputs[0].shape[:])
             out_shape[axis] = 1
@@ -73,17 +73,21 @@ def binary_shape_spec(inputs, outputs):
     return outputs
 
 
-@register(['Add',
-           'Atan2',
-           'BitwiseAnd',
-           'BitwiseOr',
-           'BitwiseXor',
-           'Div',
-           'Maximum',
-           'Minimum',
-           'Mul',
-           'Pow',
-           'Sub'])
+@register(
+    [
+        "Add",
+        "Atan2",
+        "BitwiseAnd",
+        "BitwiseOr",
+        "BitwiseXor",
+        "Div",
+        "Maximum",
+        "Minimum",
+        "Mul",
+        "Pow",
+        "Sub",
+    ]
+)
 def binary_math_spec(args, inputs, outputs):
     outputs = binary_shape_spec(inputs, outputs)
     outputs[0]._dtype = inputs[0].dtype
@@ -92,31 +96,35 @@ def binary_math_spec(args, inputs, outputs):
     return outputs
 
 
-@register(['And',
-           'Or',
-           'Xor',
-           'Equal',
-           'Greater',
-           'GreaterEqual',
-           'Less',
-           'LessEqual',
-           'NotEqual'])
+@register(
+    [
+        "And",
+        "Or",
+        "Xor",
+        "Equal",
+        "Greater",
+        "GreaterEqual",
+        "Less",
+        "LessEqual",
+        "NotEqual",
+    ]
+)
 def binary_compare_spec(args, inputs, outputs):
     outputs = binary_shape_spec(inputs, outputs)
-    outputs[0]._dtype = 'bool'
+    outputs[0]._dtype = "bool"
     return outputs
 
 
-@register('BooleanMask')
+@register("BooleanMask")
 def boolean_mask_spec(args, inputs, outputs):
     outputs[0]._dtype = inputs[0].dtype
     outputs[0]._shape = (None,)
     return outputs
 
 
-@register('Cast')
+@register("Cast")
 def cast_spec(args, inputs, outputs):
-    outputs[0]._dtype = args['dtype']
+    outputs[0]._dtype = args["dtype"]
     try:
         outputs[0]._shape = inputs[0].shape[:]
     except (TypeError, IndexError):
@@ -124,10 +132,10 @@ def cast_spec(args, inputs, outputs):
     return outputs
 
 
-@register('Concat')
+@register("Concat")
 def concat_spec(args, inputs, outputs):
     outputs[0]._dtype = inputs[0].dtype
-    axis = args['axis']
+    axis = args["axis"]
     out_shape = None
     for input in inputs:
         if out_shape is None and input.shape is not None:
@@ -156,27 +164,27 @@ def concat_spec(args, inputs, outputs):
     return outputs
 
 
-@register('Conv')
+@register("Conv")
 def conv_spec(args, inputs, outputs):
     outputs[0]._dtype = inputs[0].dtype
     try:
         out_shape = list(inputs[0].shape[:])
         num_axes = len(out_shape) - 2
-        channel_axis = 1 if args['data_format'] == 'NCHW' else -1
-        spatial_axis = 2 if args['data_format'] == 'NCHW' else 1
-        if 'out_channels' in args:
-            out_shape[channel_axis] = args['out_channels']
+        channel_axis = 1 if args["data_format"] == "NCHW" else -1
+        spatial_axis = 2 if args["data_format"] == "NCHW" else 1
+        if "out_channels" in args:
+            out_shape[channel_axis] = args["out_channels"]
         else:
             out_shape[channel_axis] = inputs[1].shape[0]
         for i in range(num_axes):
             try:
-                k = args['kernel_shape'][i]
-                s = args['strides'][i]
-                d = args['dilations'][i]
+                k = args["kernel_shape"][i]
+                s = args["strides"][i]
+                d = args["dilations"][i]
                 in_size = out_shape[i + spatial_axis]
                 k_size = d * (k - 1) + 1
-                if 'SAME' not in args['padding']:
-                    pad_size = args['pads'][i] + args['pads'][i + num_axes]
+                if "SAME" not in args["padding"]:
+                    pad_size = args["pads"][i] + args["pads"][i + num_axes]
                     out_size = (in_size + pad_size - k_size) // s + 1
                 else:
                     out_size = (in_size + s - 1) // s
@@ -189,40 +197,39 @@ def conv_spec(args, inputs, outputs):
     return outputs
 
 
-@register('ConvTranspose')
+@register("ConvTranspose")
 def conv_transpose_spec(args, inputs, outputs):
     outputs[0]._dtype = inputs[0].dtype
     try:
         out_shape = list(inputs[0].shape[:])
         num_axes = len(out_shape) - 2
-        channel_axis = 1 if args['data_format'] == 'NCHW' else -1
-        spatial_axis = 2 if args['data_format'] == 'NCHW' else 1
-        if 'out_channels' in args:
-            out_shape[channel_axis] = args['out_channels']
+        channel_axis = 1 if args["data_format"] == "NCHW" else -1
+        spatial_axis = 2 if args["data_format"] == "NCHW" else 1
+        if "out_channels" in args:
+            out_shape[channel_axis] = args["out_channels"]
         else:
             out_shape[channel_axis] = inputs[1].shape[1]
         for i in range(num_axes):
-            if ('output_padding_desc' in args or
-                    'output_shape_desc' in args):
+            if "output_padding_desc" in args or "output_shape_desc" in args:
                 out_shape[i + spatial_axis] = None
                 continue
             try:
-                k = args['kernel_shape'][i]
-                s = args['strides'][i]
-                d = args['dilations'][i]
+                k = args["kernel_shape"][i]
+                s = args["strides"][i]
+                d = args["dilations"][i]
                 in_size = out_shape[i + spatial_axis]
                 k_size = d * (k - 1) + 1
                 out_size = None
-                if 'SAME' not in args['padding']:
-                    pad_size = args['pads'][i] + args['pads'][i + num_axes]
+                if "SAME" not in args["padding"]:
+                    pad_size = args["pads"][i] + args["pads"][i + num_axes]
                     out_size = s * (in_size - 1) + k_size - pad_size
-                    if 'output_padding' in args and args['output_padding']:
-                        out_size += args['output_padding'][i]
+                    if "output_padding" in args and args["output_padding"]:
+                        out_size += args["output_padding"][i]
                 else:
-                    if 'output_shape' in args and args['output_shape']:
-                        out_size = args['output_shape'][i]
-                        if 'output_padding' in args and args['output_padding']:
-                            out_size += args['output_padding'][i]
+                    if "output_shape" in args and args["output_shape"]:
+                        out_size = args["output_shape"][i]
+                        if "output_padding" in args and args["output_padding"]:
+                            out_size += args["output_padding"][i]
             except (IndexError, TypeError):
                 out_size = None
             out_shape[i + spatial_axis] = out_size
@@ -232,24 +239,24 @@ def conv_transpose_spec(args, inputs, outputs):
     return outputs
 
 
-@register('DepthToSpace')
+@register("DepthToSpace")
 def depth_to_space_spec(args, inputs, outputs):
     outputs[0]._dtype = inputs[0].dtype
     try:
-        bs = args['block_size']
+        bs = args["block_size"]
         out_shape = list(inputs[0].shape[:])
         num_axes = len(out_shape) - 2
         if len(out_shape) < 3:
             return outputs
-        if args['data_format'] == 'NCHW':
+        if args["data_format"] == "NCHW":
             if out_shape[1] is not None:
-                out_shape[1] //= (bs ** num_axes)
+                out_shape[1] //= bs**num_axes
             for i in range(2, len(out_shape)):
                 if out_shape[i] is not None:
                     out_shape[i] *= bs
-        elif args['data_format'] == 'NHWC':
+        elif args["data_format"] == "NHWC":
             if out_shape[-1] is not None:
-                out_shape[-1] //= (bs ** num_axes)
+                out_shape[-1] //= bs**num_axes
             for i in range(1, len(out_shape) - 1):
                 if out_shape[i] is not None:
                     out_shape[i] *= bs
@@ -259,15 +266,19 @@ def depth_to_space_spec(args, inputs, outputs):
     return outputs
 
 
-@register(['CTCLoss',
-           'L1Loss',
-           'L2Loss',
-           'SigmoidCrossEntropyLoss',
-           'SigmoidFocalLoss',
-           'SmoothL1Loss'])
+@register(
+    [
+        "CTCLoss",
+        "L1Loss",
+        "L2Loss",
+        "SigmoidCrossEntropyLoss",
+        "SigmoidFocalLoss",
+        "SmoothL1Loss",
+    ]
+)
 def eltwise_loss_spec(args, inputs, outputs):
-    outputs[0]._dtype, outputs[0]._shape = 'float32', ()
-    if args['reduction'].upper() == 'NONE':
+    outputs[0]._dtype, outputs[0]._shape = "float32", ()
+    if args["reduction"].upper() == "NONE":
         try:
             outputs[0]._shape = inputs[0].shape[:]
         except TypeError:
@@ -275,16 +286,16 @@ def eltwise_loss_spec(args, inputs, outputs):
     return outputs
 
 
-@register('Expand')
+@register("Expand")
 def expand_spec(args, inputs, outputs):
     outputs[0]._dtype = inputs[0].dtype
     try:
         out_shape = None
-        if 'dims_desc' in args:
+        if "dims_desc" in args:
             out_shape = [None] * len(inputs[0].shape)
-        elif 'dims' in args:
+        elif "dims" in args:
             in_shape = list(inputs[0].shape[:])
-            dims = args['dims']
+            dims = args["dims"]
             out_shape = list(dims[:])
             if len(dims) < len(in_shape):
                 num_keep = len(in_shape) - len(dims)
@@ -301,23 +312,23 @@ def expand_spec(args, inputs, outputs):
     return outputs
 
 
-@register('Im2Col')
+@register("Im2Col")
 def im2col_spec(args, inputs, outputs):
     outputs[0]._dtype = inputs[0].dtype
     try:
         out_shape = list(inputs[0].shape[:])
         num_axes = len(out_shape) - 2
-        channel_axis = 1 if args['data_format'] == 'NCHW' else -1
-        spatial_axis = 2 if args['data_format'] == 'NCHW' else 1
+        channel_axis = 1 if args["data_format"] == "NCHW" else -1
+        spatial_axis = 2 if args["data_format"] == "NCHW" else 1
         for i in range(num_axes):
             try:
-                k = args['kernel_shape'][i]
-                s = args['strides'][i]
-                d = args['dilations'][i]
+                k = args["kernel_shape"][i]
+                s = args["strides"][i]
+                d = args["dilations"][i]
                 in_size = out_shape[i + spatial_axis]
                 k_size = d * (k - 1) + 1
-                if 'SAME' not in args['padding']:
-                    pad_size = args['pads'][i] + args['pads'][i + num_axes]
+                if "SAME" not in args["padding"]:
+                    pad_size = args["pads"][i] + args["pads"][i + num_axes]
                     out_size = (in_size + pad_size - k_size) // s + 1
                 else:
                     out_size = (in_size + s - 1) // s
@@ -332,18 +343,22 @@ def im2col_spec(args, inputs, outputs):
     return outputs
 
 
-@register(['Eye',
-           'Fill',
-           'GlorotNormal',
-           'GlorotUniform',
-           'RandomNormal',
-           'RandomUniform',
-           'TruncatedNormal'])
+@register(
+    [
+        "Eye",
+        "Fill",
+        "GlorotNormal",
+        "GlorotUniform",
+        "RandomNormal",
+        "RandomUniform",
+        "TruncatedNormal",
+    ]
+)
 def fill_spec(args, inputs, outputs):
-    outputs[0]._dtype = args['dtype']
+    outputs[0]._dtype = args["dtype"]
     try:
-        if 'dims' in args:
-            outputs[0]._shape = tuple(args['dims'][:])
+        if "dims" in args:
+            outputs[0]._shape = tuple(args["dims"][:])
         else:
             outputs[0]._shape = tuple(inputs[0].shape[:])
     except (TypeError, KeyError, IndexError):
@@ -351,40 +366,40 @@ def fill_spec(args, inputs, outputs):
     return outputs
 
 
-@register('Flatten')
+@register("Flatten")
 def flatten_spec(args, inputs, outputs):
     outputs[0]._dtype = inputs[0].dtype
-    axis = args['axis']
-    end_axis = args.get('end_axis', None)
+    axis = args["axis"]
+    end_axis = args.get("end_axis", None)
     end_axis = axis if end_axis is None else end_axis
     try:
         in_shape = list(inputs[0].shape[:])
-        out_shape = in_shape[: axis]
+        out_shape = in_shape[:axis]
         num_axes = len(in_shape[axis:end_axis]) + 1
         try:
-            out_shape += [math_util.prod(in_shape[axis:axis + num_axes])]
+            out_shape += [math_util.prod(in_shape[axis : axis + num_axes])]
         except TypeError:
             out_shape += [None]
-        out_shape += in_shape[axis + num_axes:]
+        out_shape += in_shape[axis + num_axes :]
         outputs[0]._shape = tuple(out_shape)
     except (TypeError, IndexError):
         outputs[0]._shape = None
     return outputs
 
 
-@register('Gemm')
+@register("Gemm")
 def gemm_spec(args, inputs, outputs):
     outputs[0]._dtype = inputs[0].dtype
     out_shape = []
     try:
-        if args['transA']:
+        if args["transA"]:
             out_shape.append(inputs[0].shape[-1])
         else:
             out_shape.extend(inputs[0].shape[:-1])
     except (TypeError, IndexError):
         return outputs
     try:
-        if args['transB']:
+        if args["transB"]:
             out_shape.extend(inputs[1].shape[:-1])
         else:
             out_shape.append(inputs[1].shape[1])
@@ -394,13 +409,13 @@ def gemm_spec(args, inputs, outputs):
     return outputs
 
 
-@register('ChannelNorm')
+@register("ChannelNorm")
 def channel_normalize_spec(args, inputs, outputs):
-    outputs[0]._dtype = args['dtype']
+    outputs[0]._dtype = args["dtype"]
     try:
         out_shape = list(inputs[0].shape[:])
-        if 'perm' in args:
-            perm = args['perm']
+        if "perm" in args:
+            perm = args["perm"]
             if perm is None:
                 perm = list(range(len(inputs[0].shape)))
             out_shape = list(inputs[0].shape[:])
@@ -414,11 +429,11 @@ def channel_normalize_spec(args, inputs, outputs):
     return outputs
 
 
-@register('Gather')
+@register("Gather")
 def gather_spec(args, inputs, outputs):
     outputs[0]._dtype = inputs[0].dtype
-    axis = args['axis']
-    end_axis = args.get('end_axis', None)
+    axis = args["axis"]
+    end_axis = args.get("end_axis", None)
     end_axis = axis if end_axis is None else end_axis
     try:
         try:
@@ -426,17 +441,14 @@ def gather_spec(args, inputs, outputs):
         except TypeError:
             index_shape = [None]
         num_axes = len(inputs[0].shape[axis:end_axis]) + 1
-        out_shape = \
-            inputs[0].shape[:axis] + \
-            index_shape[:] + \
-            inputs[0].shape[axis + num_axes:]
+        out_shape = inputs[0].shape[:axis] + index_shape[:] + inputs[0].shape[axis + num_axes :]
     except TypeError:
         out_shape = None
     outputs[0]._shape = out_shape
     return outputs
 
 
-@register('GatherElements')
+@register("GatherElements")
 def gather_elements_spec(args, inputs, outputs):
     outputs[0]._dtype = inputs[0].dtype
     try:
@@ -446,9 +458,9 @@ def gather_elements_spec(args, inputs, outputs):
     return outputs
 
 
-@register(['IsFinite', 'IsInf', 'IsNaN', 'Not'])
+@register(["IsFinite", "IsInf", "IsNaN", "Not"])
 def is_spec(args, inputs, outputs):
-    outputs[0]._dtype = 'bool'
+    outputs[0]._dtype = "bool"
     try:
         outputs[0]._shape = inputs[0].shape[:]
     except TypeError:
@@ -456,14 +468,14 @@ def is_spec(args, inputs, outputs):
     return outputs
 
 
-@register('LinSpace')
+@register("LinSpace")
 def linspace_spec(args, inputs, outputs):
-    outputs[0]._dtype = args['dtype']
-    outputs[0]._shape = tuple(args['dims'])
+    outputs[0]._dtype = args["dtype"]
+    outputs[0]._shape = tuple(args["dims"])
     return outputs
 
 
-@register('MatMul')
+@register("MatMul")
 def matmul_spec(args, inputs, outputs):
     outputs[0]._dtype = inputs[0].dtype
     try:
@@ -491,15 +503,15 @@ def matmul_spec(args, inputs, outputs):
     return outputs
 
 
-@register('Moments')
+@register("Moments")
 def moments_spec(args, inputs, outputs):
-    out_dtype = 'float32'
-    if inputs[0].dtype == 'float64':
-        out_dtype = 'float64'
-    elif inputs[0].dtype == 'int64':
-        out_dtype = 'float64'
+    out_dtype = "float32"
+    if inputs[0].dtype == "float64":
+        out_dtype = "float64"
+    elif inputs[0].dtype == "int64":
+        out_dtype = "float64"
     outputs[0]._dtype = outputs[1]._dtype = out_dtype
-    axes, keepdims = args['axes'], args['keepdims']
+    axes, keepdims = args["axes"], args["keepdims"]
     try:
         out_shape = list(inputs[0].shape[:])
         for axis in axes:
@@ -523,21 +535,21 @@ def moments_spec(args, inputs, outputs):
     return outputs
 
 
-@register('Multinomial')
+@register("Multinomial")
 def multinomial_spec(args, inputs, outputs):
-    outputs[0]._dtype = 'int64'
+    outputs[0]._dtype = "int64"
     try:
         out_shape = list(inputs[0].shape[:])
-        out_shape[-1] = args['num_samples']
+        out_shape[-1] = args["num_samples"]
         outputs[0]._shape = tuple(out_shape)
     except TypeError:
         outputs[0]._shape = None
     return outputs
 
 
-@register('NonZero')
+@register("NonZero")
 def non_zero_spec(args, inputs, outputs):
-    outputs[0]._dtype = 'int64'
+    outputs[0]._dtype = "int64"
     try:
         outputs[0]._shape = (None, len(inputs[0].shape))
     except TypeError:
@@ -545,27 +557,27 @@ def non_zero_spec(args, inputs, outputs):
     return outputs
 
 
-@register('OneHot')
+@register("OneHot")
 def one_hot_spec(args, inputs, outputs):
     outputs[0]._dtype = inputs[0].dtype
     try:
-        outputs[0]._shape = inputs[0].shape[:] + (args['depth'],)
+        outputs[0]._shape = inputs[0].shape[:] + (args["depth"],)
     except TypeError:
         pass
     return outputs
 
 
-@register('Pad')
+@register("Pad")
 def pad_spec(args, inputs, outputs):
     outputs[0]._dtype = inputs[0].dtype
-    pads, num_dims = args['pads'], len(args['pads']) // 2
+    pads, num_dims = args["pads"], len(args["pads"]) // 2
     out_shape = None
     try:
         out_shape = list(inputs[0].shape[:])
         for i in range(num_dims):
             if i < len(out_shape):
                 try:
-                    out_shape[i] += (pads[i] + pads[i + num_dims])
+                    out_shape[i] += pads[i] + pads[i + num_dims]
                 except TypeError:
                     out_shape[i] = None
         outputs[0]._shape = tuple(out_shape)
@@ -574,33 +586,33 @@ def pad_spec(args, inputs, outputs):
     return outputs
 
 
-@register('Permutation')
+@register("Permutation")
 def permutation_spec(args, inputs, outputs):
-    outputs[0]._dtype = args['dtype']
-    if 'limit_desc' in args:
+    outputs[0]._dtype = args["dtype"]
+    if "limit_desc" in args:
         outputs[0]._shape = (None,)
     else:
-        outputs[0]._shape = (args['limit'],)
+        outputs[0]._shape = (args["limit"],)
     return outputs
 
 
-@register('Pool')
+@register("Pool")
 def pool_spec(args, inputs, outputs):
     outputs[0]._dtype = inputs[0].dtype
     out_shape = None
     try:
         out_shape = list(inputs[0].shape[:])
         num_axes = len(out_shape) - 2
-        spatial_axis = 2 if args['data_format'] == 'NCHW' else 1
+        spatial_axis = 2 if args["data_format"] == "NCHW" else 1
         for i in range(num_axes):
-            if not args['global_pool']:
+            if not args["global_pool"]:
                 try:
-                    k = args['kernel_shape'][i]
-                    s = args['strides'][i]
+                    k = args["kernel_shape"][i]
+                    s = args["strides"][i]
                     in_size = out_shape[i + spatial_axis]
-                    if 'SAME' not in args['padding']:
-                        floor_or_ceil = math.ceil if args['ceil_mode'] else math.floor
-                        pad_size = args['pads'][i] + args['pads'][i + num_axes]
+                    if "SAME" not in args["padding"]:
+                        floor_or_ceil = math.ceil if args["ceil_mode"] else math.floor
+                        pad_size = args["pads"][i] + args["pads"][i + num_axes]
                         out_size = float(in_size + pad_size - k) / float(s) + 1
                         out_size = floor_or_ceil(out_size)
                     else:
@@ -616,15 +628,15 @@ def pool_spec(args, inputs, outputs):
     return outputs
 
 
-@register(['PythonPlugin', 'PythonPluginInfer'])
+@register(["PythonPlugin", "PythonPluginInfer"])
 def python_spec(args, inputs, outputs):
     return outputs
 
 
-@register('Range')
+@register("Range")
 def range_spec(args, inputs, outputs):
-    outputs[0]._dtype = args['dtype']
-    slice_args = args['slice']
+    outputs[0]._dtype = args["dtype"]
+    slice_args = args["slice"]
     if len(slice_args) == 2:
         start, (limit, delta) = 0, slice_args
     else:
@@ -636,16 +648,20 @@ def range_spec(args, inputs, outputs):
     return outputs
 
 
-@register(['ReduceMax',
-           'ReduceMean',
-           'ReduceMin',
-           'ReduceSum',
-           'ReduceVar',
-           'ReduceL1',
-           'ReduceL2'])
+@register(
+    [
+        "ReduceMax",
+        "ReduceMean",
+        "ReduceMin",
+        "ReduceSum",
+        "ReduceVar",
+        "ReduceL1",
+        "ReduceL2",
+    ]
+)
 def reduce_spec(args, inputs, outputs):
     outputs[0]._dtype = inputs[0].dtype
-    axes, keepdims = args['axes'], args['keepdims']
+    axes, keepdims = args["axes"], args["keepdims"]
     if axes is None:
         outputs[0]._shape = ()
     else:
@@ -667,12 +683,12 @@ def reduce_spec(args, inputs, outputs):
     return outputs
 
 
-@register('Repeat')
+@register("Repeat")
 def repeat_spec(args, inputs, outputs):
     outputs[0]._dtype = inputs[0].dtype
-    if 'repeats_desc' in args:
+    if "repeats_desc" in args:
         return outputs
-    axis, repeats = args['axis'], args['repeats']
+    axis, repeats = args["axis"], args["repeats"]
     if axis is None:
         try:
             num_elements = math_util.prod(inputs[0].shape[:])
@@ -693,11 +709,11 @@ def repeat_spec(args, inputs, outputs):
     return outputs
 
 
-@register('Reshape')
+@register("Reshape")
 def reshape_spec(args, inputs, outputs):
     outputs[0]._dtype = inputs[0].dtype
     try:
-        shape = args['dims']
+        shape = args["dims"]
         out_shape = []
         n_elements, n_elements_known = None, None
         try:
@@ -727,34 +743,34 @@ def reshape_spec(args, inputs, outputs):
     return outputs
 
 
-@register('Resize')
+@register("Resize")
 def resize_spec(args, inputs, outputs):
     outputs[0]._dtype = inputs[0].dtype
     try:
         out_shape = list(inputs[0].shape[:])
-        if 'sizes_desc' in args or 'scales_desc' in args:
+        if "sizes_desc" in args or "scales_desc" in args:
             outputs[0]._shape = (None,) * len(out_shape)
             return outputs
         num_axes = len(out_shape) - 2
-        axis = len(out_shape) - 2 if args['data_format'] == 'NCHW' else 1
+        axis = len(out_shape) - 2 if args["data_format"] == "NCHW" else 1
         try:
             for i in range(num_axes):
                 j = axis + i
-                if args['sizes'] is not None:
-                    if len(args['sizes']) == 1:
-                        out_shape[j] = args['sizes'][0]
-                    elif len(args['sizes']) == num_axes:
-                        out_shape[j] = args['sizes'][i]
+                if args["sizes"] is not None:
+                    if len(args["sizes"]) == 1:
+                        out_shape[j] = args["sizes"][0]
+                    elif len(args["sizes"]) == num_axes:
+                        out_shape[j] = args["sizes"][i]
                     else:
-                        out_shape[j] = args['sizes'][j]
-                elif args['scales'] is not None:
+                        out_shape[j] = args["sizes"][j]
+                elif args["scales"] is not None:
                     try:
-                        if len(args['scales']) == 1:
-                            out_shape[j] = int(out_shape[j] * args['scales'][0])
-                        elif len(args['scales']) == num_axes:
-                            out_shape[j] = int(out_shape[j] * args['scales'][i])
+                        if len(args["scales"]) == 1:
+                            out_shape[j] = int(out_shape[j] * args["scales"][0])
+                        elif len(args["scales"]) == num_axes:
+                            out_shape[j] = int(out_shape[j] * args["scales"][i])
                         else:
-                            out_shape[j] = int(out_shape[j] * args['scales'][j])
+                            out_shape[j] = int(out_shape[j] * args["scales"][j])
                     except TypeError:
                         out_shape[j] = None
         except IndexError:
@@ -765,14 +781,14 @@ def resize_spec(args, inputs, outputs):
     return outputs
 
 
-@register(['RoiPool', 'RoiAlign'])
+@register(["RoiPool", "RoiAlign"])
 def roi_pool_spec(args, inputs, outputs):
     outputs[0]._dtype = inputs[0].dtype
-    pool_h, pool_w = args['pooled_h'], args['pooled_w']
-    data_format = args.pop('data_format', 'NCHW')
+    pool_h, pool_w = args["pooled_h"], args["pooled_w"]
+    data_format = args.pop("data_format", "NCHW")
     try:
         out_shape = list(inputs[0].shape[:])
-        if data_format == 'NCHW':
+        if data_format == "NCHW":
             out_shape[2:4] = pool_h, pool_w
         else:
             out_shape[1:3] = pool_h, pool_w
@@ -786,9 +802,9 @@ def roi_pool_spec(args, inputs, outputs):
     return outputs
 
 
-@register('Shape')
+@register("Shape")
 def shape_spec(args, inputs, outputs):
-    outputs[0]._dtype = 'int64'
+    outputs[0]._dtype = "int64"
     try:
         outputs[0]._shape = (len(inputs[0].shape),)
     except TypeError:
@@ -796,12 +812,12 @@ def shape_spec(args, inputs, outputs):
     return outputs
 
 
-@register('Slice')
+@register("Slice")
 def slice_spec(args, inputs, outputs):
     outputs[0]._dtype = inputs[0].dtype
-    if 'starts_desc' in args or 'sizes_desc' in args:
+    if "starts_desc" in args or "sizes_desc" in args:
         return outputs
-    starts, sizes = list(args['starts']), list(args['sizes'])
+    starts, sizes = list(args["starts"]), list(args["sizes"])
     try:
         in_shape = inputs[0].shape[:]
         ndim = len(in_shape)
@@ -821,11 +837,11 @@ def slice_spec(args, inputs, outputs):
     return outputs
 
 
-@register(['NLLLoss', 'SoftmaxCrossEntropyLoss'])
+@register(["NLLLoss", "SoftmaxCrossEntropyLoss"])
 def softmax_loss_spec(args, inputs, outputs):
-    outputs[0]._dtype = 'float32'
-    axis, reduction = args['axis'], args['reduction']
-    if reduction.upper() != 'NONE':
+    outputs[0]._dtype = "float32"
+    axis, reduction = args["axis"], args["reduction"]
+    if reduction.upper() != "NONE":
         outputs[0]._shape = ()
     else:
         try:
@@ -837,10 +853,10 @@ def softmax_loss_spec(args, inputs, outputs):
     return outputs
 
 
-@register('Sort')
+@register("Sort")
 def sort_spec(args, inputs, outputs):
     outputs[0]._dtype = inputs[0].dtype
-    outputs[1]._dtype = 'int64'
+    outputs[1]._dtype = "int64"
     try:
         out_shape = list(inputs[0].shape[:])
         outputs[0]._shape = tuple(out_shape[:])
@@ -850,24 +866,24 @@ def sort_spec(args, inputs, outputs):
     return outputs
 
 
-@register('SpaceToDepth')
+@register("SpaceToDepth")
 def space_to_depth_spec(args, inputs, outputs):
     outputs[0]._dtype = inputs[0].dtype
     try:
-        bs = args['block_size']
+        bs = args["block_size"]
         out_shape = list(inputs[0].shape[:])
         num_axes = len(out_shape) - 2
         if len(out_shape) < 3:
             return outputs
-        if args['data_format'] == 'NCHW':
+        if args["data_format"] == "NCHW":
             if out_shape[1] is not None:
-                out_shape[1] *= (bs ** num_axes)
+                out_shape[1] *= bs**num_axes
             for i in range(2, len(out_shape)):
                 if out_shape[i] is not None:
                     out_shape[i] //= bs
-        elif args['data_format'] == 'NHWC':
+        elif args["data_format"] == "NHWC":
             if out_shape[-1] is not None:
-                out_shape[-1] *= (bs ** num_axes)
+                out_shape[-1] *= bs**num_axes
             for i in range(1, len(out_shape) - 1):
                 if out_shape[i] is not None:
                     out_shape[i] //= bs
@@ -877,14 +893,14 @@ def space_to_depth_spec(args, inputs, outputs):
     return outputs
 
 
-@register('Split')
+@register("Split")
 def split_spec(args, inputs, outputs):
     num_outputs = len(outputs)
     for i in range(num_outputs):
         outputs[i]._dtype = inputs[0].dtype
-    axis = args['axis']
-    keepdims = args.get('keepdims', True)
-    size_splits = args.get('split', None)
+    axis = args["axis"]
+    keepdims = args.get("keepdims", True)
+    size_splits = args.get("split", None)
     for i in range(len(outputs)):
         try:
             if axis >= len(inputs[0].shape[:]):
@@ -892,7 +908,7 @@ def split_spec(args, inputs, outputs):
             out_shape = list(inputs[0].shape[:])
         except TypeError:
             return outputs
-        if 'split_desc' in args:
+        if "split_desc" in args:
             out_shape[axis] = None
         elif size_splits is not None:
             out_shape[axis] = size_splits[i]
@@ -911,10 +927,10 @@ def split_spec(args, inputs, outputs):
     return outputs
 
 
-@register('Squeeze')
+@register("Squeeze")
 def squeeze_spec(args, inputs, outputs):
     outputs[0]._dtype = inputs[0].dtype
-    axes = [] if args['axes'] is None else args['axes']
+    axes = [] if args["axes"] is None else args["axes"]
     try:
         out_shape = []
         for i, dim in enumerate(inputs[0].shape[:]):
@@ -934,10 +950,10 @@ def squeeze_spec(args, inputs, outputs):
     return outputs
 
 
-@register('Stack')
+@register("Stack")
 def stack_spec(args, inputs, outputs):
     outputs[0]._dtype = inputs[0].dtype
-    axis = args['axis']
+    axis = args["axis"]
     out_shape = None
     for input in inputs:
         if out_shape is None and input.shape is not None:
@@ -954,7 +970,7 @@ def stack_spec(args, inputs, outputs):
         pass
     try:
         while axis < 0:
-            axis += (len(out_shape) + 1)
+            axis += len(out_shape) + 1
         if axis < 0 or axis >= len(out_shape):
             out_shape.append(len(inputs))
         else:
@@ -965,13 +981,13 @@ def stack_spec(args, inputs, outputs):
     return outputs
 
 
-@register('Tile')
+@register("Tile")
 def tile_spec(args, inputs, outputs):
     outputs[0]._dtype = inputs[0].dtype
     try:
         out_shape = list(inputs[0].shape[:])
-        if 'repeats' in args:
-            repeats = args['repeats']
+        if "repeats" in args:
+            repeats = args["repeats"]
             num_repeats = len(repeats)
             num_dims = max(num_repeats, len(out_shape))
             start_axis = num_dims - len(out_shape)
@@ -990,13 +1006,13 @@ def tile_spec(args, inputs, outputs):
     return outputs
 
 
-@register('Transpose')
+@register("Transpose")
 def transpose_spec(args, inputs, outputs):
     outputs[0]._dtype = inputs[0].dtype
     try:
         out_shape = list(inputs[0].shape[:])
-        if 'perm' in args:
-            perm = args['perm']
+        if "perm" in args:
+            perm = args["perm"]
             if perm is None:
                 perm = list(range(((len(inputs[0].shape)) - 1), -1, -1))
             out_shape = list(inputs[0].shape[:])
@@ -1010,11 +1026,11 @@ def transpose_spec(args, inputs, outputs):
     return outputs
 
 
-@register('TopK')
+@register("TopK")
 def top_k_spec(args, inputs, outputs):
     outputs[0]._dtype = inputs[0].dtype
-    outputs[1]._dtype = 'int64'
-    k, axis = args['k'], args['axis']
+    outputs[1]._dtype = "int64"
+    k, axis = args["k"], args["axis"]
     axis = -1 if axis is None else axis
     try:
         out_shape = list(inputs[0].shape[:])
@@ -1026,7 +1042,7 @@ def top_k_spec(args, inputs, outputs):
     return outputs
 
 
-@register('Unchanged')
+@register("Unchanged")
 def unchanged_spec(args, inputs, outputs):
     outputs[0]._dtype = inputs[0].dtype
     try:
@@ -1036,13 +1052,13 @@ def unchanged_spec(args, inputs, outputs):
     return outputs
 
 
-@register('Unique')
+@register("Unique")
 def unique_spec(args, inputs, outputs):
-    return_inverse = args['return_inverse']
-    return_counts = args['return_counts']
+    return_inverse = args["return_inverse"]
+    return_counts = args["return_counts"]
     outputs[0]._dtype = inputs[0].dtype
     for i in range(1, len(outputs)):
-        outputs[i]._dtype = 'int64'
+        outputs[i]._dtype = "int64"
     outputs[0]._shape = (None,)
     if len(outputs) == 2:
         if return_inverse:
@@ -1061,10 +1077,10 @@ def unique_spec(args, inputs, outputs):
     return outputs
 
 
-@register('Unsqueeze')
+@register("Unsqueeze")
 def unsqueeze_spec(args, inputs, outputs):
     outputs[0]._dtype = inputs[0].dtype
-    axes = [] if args['axes'] is None else args['axes']
+    axes = [] if args["axes"] is None else args["axes"]
     try:
         out_shape = list(inputs[0].shape[:]) + [0] * len(axes)
         out_rank = len(out_shape)
@@ -1088,7 +1104,7 @@ def unsqueeze_spec(args, inputs, outputs):
     return outputs
 
 
-@register('Where')
+@register("Where")
 def where_spec(args, inputs, outputs):
     outputs = binary_shape_spec(inputs[1:], outputs)
     outputs[0]._dtype = inputs[1].dtype

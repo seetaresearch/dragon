@@ -23,13 +23,14 @@ from dragon.vm import tensorflow as tf
 class TestFunction(unittest.TestCase):
     """Test function."""
 
-    def __init__(self, method_name='runTest'):
+    def __init__(self, method_name="runTest"):
         super(TestFunction, self).__init__(method_name)
         self.model = tf.keras.layers.ReLU()
 
     def test_def_function(self):
         def add(a, b):
             return a + b
+
         self.assertEqual(tf.function(add)(1, 2), 3)
         model_func = tf.function(self.model)
         self.assertEqual(model_func(tf.constant(-1, dtype=tf.float32)), 0)
@@ -46,5 +47,5 @@ class TestGradientTape(unittest.TestCase):
         _ = tape.gradient(y, x)[0]
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     run_tests()

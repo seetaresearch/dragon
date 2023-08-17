@@ -17,7 +17,7 @@ from __future__ import print_function
 from dragon.core.ops import sort_ops
 
 
-def argsort(values, axis=-1, direction='ASCENDING', name=None):
+def argsort(values, axis=-1, direction="ASCENDING", name=None):
     """Return the index of sorted elements along the given axis.
 
     By default, the last axis is chosen:
@@ -53,12 +53,12 @@ def argsort(values, axis=-1, direction='ASCENDING', name=None):
         The output tensor.
 
     """
-    descending = direction == 'DESCENDING'
+    descending = direction == "DESCENDING"
     value_and_index = sort_ops.sort(values, axis, descending, name=name)
     return value_and_index[1]
 
 
-def sort(values, axis=-1, direction='ASCENDING', name=None):
+def sort(values, axis=-1, direction="ASCENDING", name=None):
     """Return the sorted elements along the given axis.
 
     By default, the last axis is chosen:
@@ -94,6 +94,6 @@ def sort(values, axis=-1, direction='ASCENDING', name=None):
         The output tensor.
 
     """
-    descending = direction == 'DESCENDING'
+    descending = direction == "DESCENDING"
     value_and_index = sort_ops.sort(values, axis, descending, name=name)
     return value_and_index[0]

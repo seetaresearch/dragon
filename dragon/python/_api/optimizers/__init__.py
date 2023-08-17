@@ -19,4 +19,4 @@ from dragon.core.training.optimizer import Optimizer
 from dragon.core.training.rmsprop import RMSprop
 from dragon.core.training.sgd import SGD
 
-__all__ = [_s for _s in dir() if not _s.startswith('_')]
+__all__ = [_s for _s in dir() if not _s.startswith("_")]

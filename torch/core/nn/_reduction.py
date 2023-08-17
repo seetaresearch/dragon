@@ -22,16 +22,17 @@ from dragon.core.util import logging
 
 
 def legacy_get_string(size_average, reduce, emit_warning=True):
-    warning = "size_average and reduce args will be deprecated," \
-              " please use reduction='{}' instead."
+    warning = (
+        "size_average and reduce args will be deprecated," " please use reduction='{}' instead."
+    )
     size_average = True if size_average is None else size_average
     reduce = True if reduce is None else reduce
     if size_average and reduce:
-        ret = 'mean'
+        ret = "mean"
     elif reduce:
-        ret = 'sum'
+        ret = "sum"
     else:
-        ret = 'none'
+        ret = "none"
     if emit_warning:
         logging.warning(warning.format(ret))
     return ret

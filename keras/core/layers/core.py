@@ -41,7 +41,7 @@ class Activation(Layer):
         """
         super(Activation, self).__init__(**kwargs)
         self.activation = activations.get(activation)
-        self.inplace = kwargs.get('inplace', False)
+        self.inplace = kwargs.get("inplace", False)
 
     def call(self, inputs):
         if self.inplace:
@@ -57,8 +57,8 @@ class Dense(Layer):
         units,
         activation=None,
         use_bias=True,
-        kernel_initializer='glorot_uniform',
-        bias_initializer='zeros',
+        kernel_initializer="glorot_uniform",
+        bias_initializer="zeros",
         kernel_regularizer=None,
         bias_regularizer=None,
         **kwargs
@@ -84,7 +84,7 @@ class Dense(Layer):
 
         """
         super(Dense, self).__init__(**kwargs)
-        self.input_dim = kwargs.get('input_dim', None)
+        self.input_dim = kwargs.get("input_dim", None)
         self.units = int(units)
         self.activation = activations.get(activation)
         self.use_bias = use_bias
@@ -100,33 +100,33 @@ class Dense(Layer):
         dtype = dtypes.as_dtype(self.dtype or dtypes.float32)
         if not (dtype.is_floating or dtype.is_complex):
             raise TypeError(
-                'Unable to build `Dense` layer with non-floating point '
-                'dtype %s' % (dtype,))
+                "Unable to build `Dense` layer with non-floating point " "dtype %s" % (dtype,)
+            )
         last_dim = int(input_shape[-1])
         self.input_spec = InputSpec(min_ndim=2, axes={-1: last_dim})
         self.kernel = self.add_weight(
-            'kernel',
+            "kernel",
             shape=[last_dim, self.units],
             initializer=self.kernel_initializer,
             regularizer=self.kernel_regularizer,
             dtype=self.dtype,
-            trainable=True)
+            trainable=True,
+        )
         if self.use_bias:
             self.bias = self.add_weight(
-                'bias',
+                "bias",
                 shape=[self.units],
                 initializer=self.bias_initializer,
                 regularizer=self.bias_regularizer,
                 dtype=self.dtype,
-                trainable=True)
+                trainable=True,
+            )
         else:
             self.bias = None
         self.built = True
 
     def call(self, inputs):
-        outputs = math_ops.gemm(
-            [inputs, self.kernel] +
-            ([self.bias] if self.use_bias else []))
+        outputs = math_ops.gemm([inputs, self.kernel] + ([self.bias] if self.use_bias else []))
         if self.activation is not None:
             outputs = self.activation(outputs)
         return outputs
@@ -160,10 +160,9 @@ class Dropout(Layer):
         """
         super(Dropout, self).__init__(**kwargs)
         self.rate = rate
-        self.inplace = kwargs.get('inplace', False)
+        self.inplace = kwargs.get("inplace", False)
 
     def call(self, inputs, training=None):
         if training:
-            return activation_ops.dropout(
-                inputs, ratio=self.rate, inplace=self.inplace)
+            return activation_ops.dropout(inputs, ratio=self.rate, inplace=self.inplace)
         return inputs

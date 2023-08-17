@@ -41,7 +41,7 @@ def adaptive_avg_pool1d(input, output_size):
 
     """
     args = utils._get_adaptive_pool_args(input, utils._single(output_size))
-    return _pool('AVG', utils._single, input, **args)
+    return _pool("AVG", utils._single, input, **args)
 
 
 def adaptive_avg_pool2d(input, output_size):
@@ -65,7 +65,7 @@ def adaptive_avg_pool2d(input, output_size):
 
     """
     args = utils._get_adaptive_pool_args(input, utils._pair(output_size))
-    return _pool('AVG', utils._pair, input, **args)
+    return _pool("AVG", utils._pair, input, **args)
 
 
 def adaptive_avg_pool3d(input, output_size):
@@ -89,7 +89,7 @@ def adaptive_avg_pool3d(input, output_size):
 
     """
     args = utils._get_adaptive_pool_args(input, utils._triple(output_size))
-    return _pool('AVG', utils._triple, input, **args)
+    return _pool("AVG", utils._triple, input, **args)
 
 
 def adaptive_max_pool1d(input, output_size):
@@ -113,7 +113,7 @@ def adaptive_max_pool1d(input, output_size):
 
     """
     args = utils._get_adaptive_pool_args(input, utils._single(output_size))
-    return _pool('MAX', utils._single, input, **args)
+    return _pool("MAX", utils._single, input, **args)
 
 
 def adaptive_max_pool2d(input, output_size):
@@ -137,7 +137,7 @@ def adaptive_max_pool2d(input, output_size):
 
     """
     args = utils._get_adaptive_pool_args(input, utils._pair(output_size))
-    return _pool('MAX', utils._pair, input, **args)
+    return _pool("MAX", utils._pair, input, **args)
 
 
 def adaptive_max_pool3d(input, output_size):
@@ -161,7 +161,7 @@ def adaptive_max_pool3d(input, output_size):
 
     """
     args = utils._get_adaptive_pool_args(input, utils._triple(output_size))
-    return _pool('MAX', utils._triple, input, **args)
+    return _pool("MAX", utils._triple, input, **args)
 
 
 def affine(input, weight, bias=None, dim=-1, out=None):
@@ -193,9 +193,12 @@ def affine(input, weight, bias=None, dim=-1, out=None):
 
     """
     return Function.apply(
-        'Affine', input.device,
-        [input, weight] + ([bias] if bias else []), outputs=[out],
-        axes=nest.flatten(dim))
+        "Affine",
+        input.device,
+        [input, weight] + ([bias] if bias else []),
+        outputs=[out],
+        axes=nest.flatten(dim),
+    )
 
 
 def avg_pool1d(input, kernel_size, stride=1, padding=0, ceil_mode=False):
@@ -224,7 +227,7 @@ def avg_pool1d(input, kernel_size, stride=1, padding=0, ceil_mode=False):
     `torch.nn.AvgPool1d(...)`_
 
     """
-    return _pool('AVG', utils._single, **locals())
+    return _pool("AVG", utils._single, **locals())
 
 
 def avg_pool2d(input, kernel_size, stride=1, padding=0, ceil_mode=False):
@@ -253,7 +256,7 @@ def avg_pool2d(input, kernel_size, stride=1, padding=0, ceil_mode=False):
     `torch.nn.AvgPool2d(...)`_
 
     """
-    return _pool('AVG', utils._pair, **locals())
+    return _pool("AVG", utils._pair, **locals())
 
 
 def avg_pool3d(input, kernel_size, stride=1, padding=0, ceil_mode=False):
@@ -282,7 +285,7 @@ def avg_pool3d(input, kernel_size, stride=1, padding=0, ceil_mode=False):
     `torch.nn.AvgPool3d(...)`_
 
     """
-    return _pool('AVG', utils._triple, **locals())
+    return _pool("AVG", utils._triple, **locals())
 
 
 def batch_norm(
@@ -328,12 +331,14 @@ def batch_norm(
 
     """
     return Function.apply(
-        'BatchNorm', input.device,
+        "BatchNorm",
+        input.device,
         [input, weight, bias, running_mean, running_var],
-        axis=-1 if input.device.type == 'mlu' else 1,
+        axis=-1 if input.device.type == "mlu" else 1,
         epsilon=eps,
         use_stats=int(not training),
-        momentum=1.0 - momentum)
+        momentum=1.0 - momentum,
+    )
 
 
 def binary_cross_entropy_with_logits(
@@ -342,7 +347,7 @@ def binary_cross_entropy_with_logits(
     weight=None,
     size_average=None,
     reduce=None,
-    reduction='mean',
+    reduction="mean",
     pos_weight=None,
 ):
     """Compute sigmoid cross entropy.
@@ -379,11 +384,14 @@ def binary_cross_entropy_with_logits(
     else:
         reduction = reduction
     return Function.apply(
-        'SigmoidCrossEntropyLoss', input.device,
-        [input, target], reduction=reduction.upper())
+        "SigmoidCrossEntropyLoss",
+        input.device,
+        [input, target],
+        reduction=reduction.upper(),
+    )
 
 
-def channel_norm(input, mean, std, dim=-1, dtype='float32', dims=None):
+def channel_norm(input, mean, std, dim=-1, dtype="float32", dims=None):
     """Apply normalization to each channel of input.
 
     :attr:`dim` can be negative:
@@ -427,9 +435,16 @@ def channel_norm(input, mean, std, dim=-1, dtype='float32', dims=None):
 
     """
     return Function.apply(
-        'ChannelNorm', input.device, [input],
-        axis=dim, mean=mean, std=std, dtype=dtype,
-        ndim=len(dims) if dims is not None else 0, perm=dims)
+        "ChannelNorm",
+        input.device,
+        [input],
+        axis=dim,
+        mean=mean,
+        std=std,
+        dtype=dtype,
+        ndim=len(dims) if dims is not None else 0,
+        perm=dims,
+    )
 
 
 def channel_shuffle(input, groups, dim=1):
@@ -455,8 +470,7 @@ def channel_shuffle(input, groups, dim=1):
     `torch.nn.ChannelShuffle(...)`_
 
     """
-    return Function.apply(
-        'ChannelShuffle', input.device, [input], axis=dim, group=groups)
+    return Function.apply("ChannelShuffle", input.device, [input], axis=dim, group=groups)
 
 
 def conv1d(
@@ -497,7 +511,7 @@ def conv1d(
     `torch.nn.Conv1d(...)`_
 
     """
-    return _conv('Conv', utils._single, **locals())
+    return _conv("Conv", utils._single, **locals())
 
 
 def conv2d(
@@ -538,7 +552,7 @@ def conv2d(
     `torch.nn.Conv2d(...)`_
 
     """
-    return _conv('Conv', utils._pair, **locals())
+    return _conv("Conv", utils._pair, **locals())
 
 
 def conv3d(
@@ -579,7 +593,7 @@ def conv3d(
     `torch.nn.Conv3d(...)`_
 
     """
-    return _conv('Conv', utils._triple, **locals())
+    return _conv("Conv", utils._triple, **locals())
 
 
 def conv_transpose1d(
@@ -623,7 +637,7 @@ def conv_transpose1d(
     `torch.nn.ConvTranspose1d(...)`_
 
     """
-    return _conv_transpose('ConvTranspose', utils._single, **locals())
+    return _conv_transpose("ConvTranspose", utils._single, **locals())
 
 
 def conv_transpose2d(
@@ -667,7 +681,7 @@ def conv_transpose2d(
     `torch.nn.ConvTranspose2d(...)`_
 
     """
-    return _conv_transpose('ConvTranspose', utils._pair, **locals())
+    return _conv_transpose("ConvTranspose", utils._pair, **locals())
 
 
 def conv_transpose3d(
@@ -711,7 +725,7 @@ def conv_transpose3d(
     `torch.nn.ConvTranspose3d(...)`_
 
     """
-    return _conv_transpose('ConvTranspose', utils._triple, **locals())
+    return _conv_transpose("ConvTranspose", utils._triple, **locals())
 
 
 def cosine_similarity(x1, x2, dim=1, eps=1e-8):
@@ -751,7 +765,7 @@ def cross_entropy(
     size_average=None,
     ignore_index=None,
     reduce=None,
-    reduction='mean',
+    reduction="mean",
 ):
     """Compute softmax cross entropy with sparse target.
 
@@ -789,11 +803,16 @@ def cross_entropy(
     else:
         reduction = reduction
     return Function.apply(
-        'SoftmaxCrossEntropyLoss', input.device, [input, target],
-        axis=dim, ignore_index=ignore_index, reduction=reduction.upper())
+        "SoftmaxCrossEntropyLoss",
+        input.device,
+        [input, target],
+        axis=dim,
+        ignore_index=ignore_index,
+        reduction=reduction.upper(),
+    )
 
 
-def ctc_loss(input, target, padding_mask=-1, reduction='mean'):
+def ctc_loss(input, target, padding_mask=-1, reduction="mean"):
     """Compute ctc loss.
     `[Graves & Gomez, 2006] <http://www.cs.utoronto.ca/~graves/icml_2006.pdf>`_.
 
@@ -819,8 +838,12 @@ def ctc_loss(input, target, padding_mask=-1, reduction='mean'):
 
     """
     return Function.apply(
-        'CTCLoss', input.device, [input, target],
-        padding_mask=padding_mask, reduction=reduction.upper())
+        "CTCLoss",
+        input.device,
+        [input, target],
+        padding_mask=padding_mask,
+        reduction=reduction.upper(),
+    )
 
 
 def dropout(input, p=0.5, training=True, inplace=False):
@@ -851,8 +874,8 @@ def dropout(input, p=0.5, training=True, inplace=False):
     if not training or p <= 0:
         return input
     return Function.apply(
-        'Dropout', input.device, [input],
-        outputs=[input if inplace else None], ratio=p)
+        "Dropout", input.device, [input], outputs=[input if inplace else None], ratio=p
+    )
 
 
 def drop_block2d(input, p=0.5, block_size=1, training=True, inplace=False):
@@ -884,8 +907,13 @@ def drop_block2d(input, p=0.5, block_size=1, training=True, inplace=False):
     if not training or p <= 0:
         return input
     return Function.apply(
-        'DropBlock', input.device, [input],
-        outputs=[input if inplace else None], block_size=block_size, ratio=p)
+        "DropBlock",
+        input.device,
+        [input],
+        outputs=[input if inplace else None],
+        block_size=block_size,
+        ratio=p,
+    )
 
 
 def drop_path(input, p=0.2, training=True, inplace=False):
@@ -916,8 +944,8 @@ def drop_path(input, p=0.2, training=True, inplace=False):
     if not training or p <= 0:
         return input
     return Function.apply(
-        'DropPath', input.device, [input],
-        outputs=[input if inplace else None], ratio=p)
+        "DropPath", input.device, [input], outputs=[input if inplace else None], ratio=p
+    )
 
 
 def elu(input, alpha=1.0, inplace=False):
@@ -944,8 +972,12 @@ def elu(input, alpha=1.0, inplace=False):
 
     """
     return Function.apply(
-        'Elu', input.device, [input],
-        outputs=[input if inplace else None], alpha=float(alpha))
+        "Elu",
+        input.device,
+        [input],
+        outputs=[input if inplace else None],
+        alpha=float(alpha),
+    )
 
 
 def embedding(input, weight, padding_idx=None):
@@ -970,16 +1002,16 @@ def embedding(input, weight, padding_idx=None):
         num_embeddings = weight.size(0)
         if padding_idx > 0:
             if padding_idx >= num_embeddings:
-                raise ValueError('<padding_idx> must be within embedding matrix.')
+                raise ValueError("<padding_idx> must be within embedding matrix.")
         elif padding_idx < 0:
             if padding_idx < -num_embeddings:
-                raise ValueError('<padding_idx> must be within embedding matrix.')
+                raise ValueError("<padding_idx> must be within embedding matrix.")
             padding_idx = num_embeddings + padding_idx
         weight[padding_idx] = 0
     return weight[input]
 
 
-def gelu(input, approximate='none'):
+def gelu(input, approximate="none"):
     r"""Apply gaussian error linear unit to input.
     `[Clevert et.al, 2015] <https://arxiv.org/abs/1511.07289>`_.
 
@@ -1004,8 +1036,8 @@ def gelu(input, approximate='none'):
     `torch.nn.GELU(...)`_
 
     """
-    approximate = approximate == 'tanh'
-    return Function.apply('Gelu', input.device, [input], approximate=approximate)
+    approximate = approximate == "tanh"
+    return Function.apply("Gelu", input.device, [input], approximate=approximate)
 
 
 def group_norm(input, num_groups, weight, bias, eps=1e-5):
@@ -1036,9 +1068,13 @@ def group_norm(input, num_groups, weight, bias, eps=1e-5):
 
     """
     return Function.apply(
-        'GroupNorm', input.device, [input, weight, bias],
-        axis=-1 if input.device.type == 'mlu' else 1,
-        group=num_groups, epsilon=eps)
+        "GroupNorm",
+        input.device,
+        [input, weight, bias],
+        axis=-1 if input.device.type == "mlu" else 1,
+        group=num_groups,
+        epsilon=eps,
+    )
 
 
 def hardsigmoid(input, inplace=False):
@@ -1071,8 +1107,13 @@ def hardsigmoid(input, inplace=False):
 
     """
     return Function.apply(
-        'HardSigmoid', input.device, [input],
-        outputs=[input if inplace else None], alpha=1. / 6., beta=0.5)
+        "HardSigmoid",
+        input.device,
+        [input],
+        outputs=[input if inplace else None],
+        alpha=1.0 / 6.0,
+        beta=0.5,
+    )
 
 
 def hardswish(input):
@@ -1103,14 +1144,14 @@ def hardswish(input):
     `torch.nn.Hardswish(...)`_
 
     """
-    return Function.apply('HardSwish', input.device, [input])
+    return Function.apply("HardSwish", input.device, [input])
 
 
 def interpolate(
     input,
     size=None,
     scale_factor=None,
-    mode='nearest',
+    mode="nearest",
     align_corners=False,
 ):
     """Resize input via interpolating neighborhoods.
@@ -1165,15 +1206,20 @@ def interpolate(
     if scale_factor is not None:
         scale_factor = nest.flatten(scale_factor)
     mode = mode.upper()
-    mode = mode.replace('BILINEAR', 'LINEAR')
-    mode = mode.replace('TRILINEAR', 'LINEAR')
+    mode = mode.replace("BILINEAR", "LINEAR")
+    mode = mode.replace("TRILINEAR", "LINEAR")
     return Function.apply(
-        'Resize', input.device, [input],
-        mode=mode, align_corners=align_corners,
+        "Resize",
+        input.device,
+        [input],
+        mode=mode,
+        align_corners=align_corners,
         num_sizes=len(size) if size is not None else 0,
         num_scales=len(scale_factor) if scale_factor is not None else 0,
-        sizes=size, scales=scale_factor,
-        data_format='NHWC' if input.device.type == 'mlu' else 'NCHW')
+        sizes=size,
+        scales=scale_factor,
+        data_format="NHWC" if input.device.type == "mlu" else "NCHW",
+    )
 
 
 def kl_div(
@@ -1181,7 +1227,7 @@ def kl_div(
     target,
     size_average=None,
     reduce=None,
-    reduction='mean',
+    reduction="mean",
     log_target=False,
 ):
     """Compute Kullback-Leibler divergence.
@@ -1219,17 +1265,17 @@ def kl_div(
         out = target * (target.log() - input)
     else:
         out = target.exp() * (target - input)
-    if reduction == 'none':
+    if reduction == "none":
         return out
-    elif reduction == 'batchmean':
+    elif reduction == "batchmean":
         return out.sum() / input.size()[0]
-    elif reduction == 'mean':
+    elif reduction == "mean":
         return out.mean()
     else:
         return out.sum()
 
 
-def l1_loss(input, target, size_average=None, reduce=None, reduction='mean'):
+def l1_loss(input, target, size_average=None, reduce=None, reduction="mean"):
     """Compute element-wise absolute value difference.
 
     Parameters
@@ -1259,9 +1305,7 @@ def l1_loss(input, target, size_average=None, reduce=None, reduction='mean'):
         reduction = _reduction.legacy_get_string(size_average, reduce)
     else:
         reduction = reduction
-    return Function.apply(
-        'L1Loss', input.device, [input, target],
-        reduction=reduction.upper())
+    return Function.apply("L1Loss", input.device, [input, target], reduction=reduction.upper())
 
 
 def layer_norm(input, normalized_shape, weight, bias, eps=1e-5):
@@ -1292,8 +1336,12 @@ def layer_norm(input, normalized_shape, weight, bias, eps=1e-5):
 
     """
     return Function.apply(
-        'LayerNorm', input.device, [input, weight, bias],
-        axis=input.ndimension() - len(normalized_shape), epsilon=eps)
+        "LayerNorm",
+        input.device,
+        [input, weight, bias],
+        axis=input.ndimension() - len(normalized_shape),
+        epsilon=eps,
+    )
 
 
 def leaky_relu(input, negative_slope=0.01, inplace=False):
@@ -1328,8 +1376,12 @@ def leaky_relu(input, negative_slope=0.01, inplace=False):
 
     """
     return Function.apply(
-        'Relu', input.device, [input],
-        outputs=[input if inplace else None], alpha=float(negative_slope))
+        "Relu",
+        input.device,
+        [input],
+        outputs=[input if inplace else None],
+        alpha=float(negative_slope),
+    )
 
 
 def linear(input, weight, bias=None):
@@ -1357,12 +1409,15 @@ def linear(input, weight, bias=None):
 
     """
     return Function.apply(
-        'Gemm', input.device,
+        "Gemm",
+        input.device,
         [input, weight] + ([bias] if bias else []),
-        transA=False, transB=True)
+        transA=False,
+        transB=True,
+    )
 
 
-def local_response_norm(input, size, alpha=1e-4, beta=0.75, k=1.):
+def local_response_norm(input, size, alpha=1e-4, beta=0.75, k=1.0):
     r"""Apply local response normalization to input.
     `[Krizhevsky et.al, 2012] <http://www.cs.toronto.edu/~hinton/absps/imagenet.pdf>`_.
 
@@ -1397,8 +1452,14 @@ def local_response_norm(input, size, alpha=1e-4, beta=0.75, k=1.):
 
     """
     return Function.apply(
-        'LRN', input.device, [input],
-        size=size, alpha=float(alpha), beta=float(beta), bias=float(k))
+        "LRN",
+        input.device,
+        [input],
+        size=size,
+        alpha=float(alpha),
+        beta=float(beta),
+        bias=float(k),
+    )
 
 
 def log_softmax(input, dim, inplace=False):
@@ -1428,8 +1489,12 @@ def log_softmax(input, dim, inplace=False):
 
     """
     return Function.apply(
-        'LogSoftmax', input.device, [input],
-        outputs=[input if inplace else None], axis=dim)
+        "LogSoftmax",
+        input.device,
+        [input],
+        outputs=[input if inplace else None],
+        axis=dim,
+    )
 
 
 def lstm_cell(input, cx):
@@ -1452,7 +1517,7 @@ def lstm_cell(input, cx):
     `torch.nn.LSTMCell(...)`_
 
     """
-    return Function.apply('LSTMCell', input.device, [input, cx])
+    return Function.apply("LSTMCell", input.device, [input, cx])
 
 
 def max_pool1d(input, kernel_size, stride=1, padding=0, ceil_mode=False):
@@ -1481,7 +1546,7 @@ def max_pool1d(input, kernel_size, stride=1, padding=0, ceil_mode=False):
     `torch.nn.MaxPool1d(...)`_
 
     """
-    return _pool('MAX', utils._single, **locals())
+    return _pool("MAX", utils._single, **locals())
 
 
 def max_pool2d(input, kernel_size, stride=1, padding=0, ceil_mode=False):
@@ -1510,7 +1575,7 @@ def max_pool2d(input, kernel_size, stride=1, padding=0, ceil_mode=False):
     `torch.nn.MaxPool2d(...)`_
 
     """
-    return _pool('MAX', utils._pair, **locals())
+    return _pool("MAX", utils._pair, **locals())
 
 
 def max_pool3d(input, kernel_size, stride=1, padding=0, ceil_mode=False):
@@ -1539,10 +1604,10 @@ def max_pool3d(input, kernel_size, stride=1, padding=0, ceil_mode=False):
     `torch.nn.MaxPool3d(...)`_
 
     """
-    return _pool('MAX', utils._triple, **locals())
+    return _pool("MAX", utils._triple, **locals())
 
 
-def mse_loss(input, target, size_average=None, reduce=None, reduction='mean'):
+def mse_loss(input, target, size_average=None, reduce=None, reduction="mean"):
     """Compute element-wise squared error.
 
     Parameters
@@ -1572,9 +1637,7 @@ def mse_loss(input, target, size_average=None, reduce=None, reduction='mean'):
         reduction = _reduction.legacy_get_string(size_average, reduce)
     else:
         reduction = reduction
-    return Function.apply(
-        'L2Loss', input.device, [input, target],
-        reduction=reduction.upper())
+    return Function.apply("L2Loss", input.device, [input, target], reduction=reduction.upper())
 
 
 def multi_head_attention_forward(
@@ -1587,7 +1650,7 @@ def multi_head_attention_forward(
     in_proj_bias,
     out_proj_weight,
     out_proj_bias,
-    dropout_p=0.,
+    dropout_p=0.0,
     training=True,
     need_weights=True,
     key_padding_mask=None,
@@ -1686,26 +1749,26 @@ def multi_head_attention_forward(
         q_proj_bias = k_proj_bias = v_proj_bias = in_proj_bias
         if use_separate_proj_weight and q_proj_weight is None:
             q_proj_weight = in_proj_weight[:embed_dim, :]
-            k_proj_weight = in_proj_weight[embed_dim:embed_dim * 2, :]
-            v_proj_weight = in_proj_weight[embed_dim * 2:, :]
+            k_proj_weight = in_proj_weight[embed_dim : embed_dim * 2, :]
+            v_proj_weight = in_proj_weight[embed_dim * 2 :, :]
         if in_proj_bias is not None:
             q_proj_bias = in_proj_bias[:embed_dim]
-            k_proj_bias = in_proj_bias[embed_dim:embed_dim * 2]
-            v_proj_bias = in_proj_bias[embed_dim * 2:]
+            k_proj_bias = in_proj_bias[embed_dim : embed_dim * 2]
+            v_proj_bias = in_proj_bias[embed_dim * 2 :]
         q = to_qkv(query, q_proj_weight, q_proj_bias)
         k = to_qkv(key, k_proj_weight, k_proj_bias)
         v = to_qkv(value, v_proj_weight, v_proj_bias)
     attn = q @ (k.transpose(-2, -1).mul_(float(head_dim) ** -0.5))
     assert attn.size() == (bsz, num_heads, tgt_len, src_len)
     if attn_mask is not None:
-        if attn_mask.dtype == 'bool' or attn_mask.dtype == 'uint8':
-            attn.masked_fill_(attn_mask, float('-inf'))
+        if attn_mask.dtype == "bool" or attn_mask.dtype == "uint8":
+            attn.masked_fill_(attn_mask, float("-inf"))
         else:
             attn += attn_mask
     if key_padding_mask is not None:
         if key_padding_mask.size() != attn.size():
             key_padding_mask.reshape_((bsz, 1, 1, src_len))
-        attn.masked_fill_(key_padding_mask, float('-inf'))
+        attn.masked_fill_(key_padding_mask, float("-inf"))
     attn = softmax(attn, dim=-1, inplace=True)
     attn = dropout(attn, p=dropout_p, training=training)
     output = (attn @ v).permute(2, 0, 1, 3)
@@ -1722,7 +1785,7 @@ def nll_loss(
     size_average=None,
     ignore_index=None,
     reduce=None,
-    reduction='mean',
+    reduction="mean",
 ):
     """Compute negative likelihood loss.
 
@@ -1758,8 +1821,13 @@ def nll_loss(
     else:
         reduction = reduction
     return Function.apply(
-        'NLLLoss', input.device, [input, target],
-        axis=1, ignore_index=ignore_index, reduction=reduction.upper())
+        "NLLLoss",
+        input.device,
+        [input, target],
+        axis=1,
+        ignore_index=ignore_index,
+        reduction=reduction.upper(),
+    )
 
 
 def normalize(input, p=2, dim=1, end_dim=None, eps=1e-12, out=None):
@@ -1791,8 +1859,16 @@ def normalize(input, p=2, dim=1, end_dim=None, eps=1e-12, out=None):
 
     """
     return Function.apply(
-        'LpNorm', input.device, [input], outputs=[out],
-        p=p, axis=dim, end_axis=end_dim, epsilon=eps, reduction='SUM')
+        "LpNorm",
+        input.device,
+        [input],
+        outputs=[out],
+        p=p,
+        axis=dim,
+        end_axis=end_dim,
+        epsilon=eps,
+        reduction="SUM",
+    )
 
 
 def one_hot(tensor, num_classes, on_value=1, off_value=0):
@@ -1816,11 +1892,16 @@ def one_hot(tensor, num_classes, on_value=1, off_value=0):
 
     """
     return Function.apply(
-        'OneHot', tensor.device, [tensor], depth=num_classes,
-        on_value=float(on_value), off_value=float(off_value))
+        "OneHot",
+        tensor.device,
+        [tensor],
+        depth=num_classes,
+        on_value=float(on_value),
+        off_value=float(off_value),
+    )
 
 
-def pad(input, pad, mode='constant', value=0):
+def pad(input, pad, mode="constant", value=0):
     r"""Pad input according to the given sizes.
 
     The padded dimension is computed as:
@@ -1858,11 +1939,21 @@ def pad(input, pad, mode='constant', value=0):
     for i in range(len(pad) // 2):
         pads_begin[ndim - 1 - i] = pad[i * 2]
         pads_end[ndim - 1 - i] = pad[i * 2 + 1]
-    mode = {'constant': 'CONSTANT', 'reflect': 'REFLECT',
-            'replicate': 'EDGE', 'circular': 'EDGE'}[mode]
+    mode = {
+        "constant": "CONSTANT",
+        "reflect": "REFLECT",
+        "replicate": "EDGE",
+        "circular": "EDGE",
+    }[mode]
     return Function.apply(
-        'Pad', input.device, [input], mode=mode, value=float(value),
-        ndim=ndim, pads=pads_begin + pads_end)
+        "Pad",
+        input.device,
+        [input],
+        mode=mode,
+        value=float(value),
+        ndim=ndim,
+        pads=pads_begin + pads_end,
+    )
 
 
 def pixel_shuffle(input, upscale_factor, inplace=False):
@@ -1884,10 +1975,14 @@ def pixel_shuffle(input, upscale_factor, inplace=False):
 
     """
     return Function.apply(
-        'DepthToSpace', input.device, [input],
+        "DepthToSpace",
+        input.device,
+        [input],
         outputs=[input if inplace else None],
-        block_size=int(upscale_factor), mode='CRD',
-        data_format='NHWC' if input.device.type == 'mlu' else 'NCHW')
+        block_size=int(upscale_factor),
+        mode="CRD",
+        data_format="NHWC" if input.device.type == "mlu" else "NCHW",
+    )
 
 
 def pixel_unshuffle(input, downscale_factor, inplace=False):
@@ -1909,10 +2004,14 @@ def pixel_unshuffle(input, downscale_factor, inplace=False):
 
     """
     return Function.apply(
-        'SpaceToDepth', input.device, [input],
+        "SpaceToDepth",
+        input.device,
+        [input],
         outputs=[input if inplace else None],
-        block_size=int(downscale_factor), mode='CRD',
-        data_format='NHWC' if input.device.type == 'mlu' else 'NCHW')
+        block_size=int(downscale_factor),
+        mode="CRD",
+        data_format="NHWC" if input.device.type == "mlu" else "NCHW",
+    )
 
 
 def prelu(input, weight):
@@ -1945,7 +2044,7 @@ def prelu(input, weight):
     `torch.nn.PReLU(...)`_
 
     """
-    return Function.apply('PRelu', input.device, [input, weight])
+    return Function.apply("PRelu", input.device, [input, weight])
 
 
 def relu(input, inplace=False):
@@ -1979,8 +2078,8 @@ def relu(input, inplace=False):
 
     """
     return Function.apply(
-        'Relu', input.device, [input],
-        outputs=[input if inplace else None], alpha=0.)
+        "Relu", input.device, [input], outputs=[input if inplace else None], alpha=0.0
+    )
 
 
 def relu6(input, inplace=False):
@@ -2014,8 +2113,13 @@ def relu6(input, inplace=False):
 
     """
     return Function.apply(
-        'Relu', input.device, [input],
-        outputs=[input if inplace else None], alpha=0., max_value=6.)
+        "Relu",
+        input.device,
+        [input],
+        outputs=[input if inplace else None],
+        alpha=0.0,
+        max_value=6.0,
+    )
 
 
 def selu(input, inplace=False):
@@ -2049,8 +2153,13 @@ def selu(input, inplace=False):
 
     """
     return Function.apply(
-        'Selu', input.device, [input],
-        outputs=[input if inplace else None], alpha=1.67326, gamma=1.0507)
+        "Selu",
+        input.device,
+        [input],
+        outputs=[input if inplace else None],
+        alpha=1.67326,
+        gamma=1.0507,
+    )
 
 
 def sigmoid(input, inplace=False):
@@ -2077,21 +2186,19 @@ def sigmoid(input, inplace=False):
     `torch.nn.Sigmoid(...)`_
 
     """
-    return Function.apply(
-        'Sigmoid', input.device, [input],
-        outputs=[input if inplace else None])
+    return Function.apply("Sigmoid", input.device, [input], outputs=[input if inplace else None])
 
 
 def sigmoid_focal_loss(
     input,
     target,
     alpha=0.25,
-    gamma=2.,
+    gamma=2.0,
     weight=None,
     size_average=None,
     start_index=0,
     reduce=None,
-    reduction='mean',
+    reduction="mean",
 ):
     """Compute sigmoid focal loss.
     `[Lin et.al, 2017] <https://arxiv.org/abs/1708.02002>`__.
@@ -2132,9 +2239,15 @@ def sigmoid_focal_loss(
     else:
         reduction = reduction
     return Function.apply(
-        'SigmoidFocalLoss', input.device, [input, target],
-        axis=1, alpha=float(alpha), gamma=float(gamma),
-        start_index=start_index, reduction=reduction.upper())
+        "SigmoidFocalLoss",
+        input.device,
+        [input, target],
+        axis=1,
+        alpha=float(alpha),
+        gamma=float(gamma),
+        start_index=start_index,
+        reduction=reduction.upper(),
+    )
 
 
 def silu(input):
@@ -2160,7 +2273,7 @@ def silu(input):
     `torch.nn.SiLU(...)`_
 
     """
-    return Function.apply('Silu', input.device, [input])
+    return Function.apply("Silu", input.device, [input])
 
 
 def smooth_l1_loss(
@@ -2169,7 +2282,7 @@ def smooth_l1_loss(
     beta=1.0,
     size_average=None,
     reduce=None,
-    reduction='mean',
+    reduction="mean",
 ):
     r"""Compute element-wise error transited from L1 and L2.
     `[Girshick, 2015] <https://arxiv.org/abs/1504.08083>`_.
@@ -2213,8 +2326,12 @@ def smooth_l1_loss(
     else:
         reduction = reduction
     return Function.apply(
-        'SmoothL1Loss', input.device, [input, target],
-        beta=float(beta), reduction=reduction.upper())
+        "SmoothL1Loss",
+        input.device,
+        [input, target],
+        beta=float(beta),
+        reduction=reduction.upper(),
+    )
 
 
 def softmax(input, dim, inplace=False):
@@ -2244,8 +2361,8 @@ def softmax(input, dim, inplace=False):
 
     """
     return Function.apply(
-        'Softmax', input.device, [input],
-        outputs=[input if inplace else None], axis=dim)
+        "Softmax", input.device, [input], outputs=[input if inplace else None], axis=dim
+    )
 
 
 def sync_batch_norm(
@@ -2295,14 +2412,18 @@ def sync_batch_norm(
     """
     if process_group is None:
         kwargs = locals()
-        kwargs.pop('process_group')
+        kwargs.pop("process_group")
         return batch_norm(**kwargs)
     return Function.apply(
-        'SyncBatchNorm', input.device,
+        "SyncBatchNorm",
+        input.device,
         [input, weight, bias, running_mean, running_var],
-        axis=-1 if input.device.type == 'mlu' else 1,
-        epsilon=eps, use_stats=int(not training),
-        momentum=1.0 - momentum, **process_group.arguments)
+        axis=-1 if input.device.type == "mlu" else 1,
+        epsilon=eps,
+        use_stats=int(not training),
+        momentum=1.0 - momentum,
+        **process_group.arguments
+    )
 
 
 def tanh(input, inplace=False):
@@ -2329,9 +2450,7 @@ def tanh(input, inplace=False):
     `torch.nn.Tanh(...)`_
 
     """
-    return Function.apply(
-        'Tanh', input.device, [input],
-        outputs=[input if inplace else None])
+    return Function.apply("Tanh", input.device, [input], outputs=[input if inplace else None])
 
 
 def unfold(input, kernel_size, dilation=1, padding=0, stride=1):
@@ -2362,13 +2481,14 @@ def unfold(input, kernel_size, dilation=1, padding=0, stride=1):
     """
     nd_util = utils._ntuple(input.ndimension() - 2)
     out = Function.apply(
-        'Im2Col',
+        "Im2Col",
         input.device,
         [input],
         kernel_shape=nd_util(kernel_size),
         strides=nd_util(stride),
         pads=nd_util(padding),
-        dilations=nd_util(dilation))
+        dilations=nd_util(dilation),
+    )
     return out.flatten_(2)
 
 
@@ -2376,7 +2496,7 @@ def upsample(
     input,
     size=None,
     scale_factor=None,
-    mode='nearest',
+    mode="nearest",
     align_corners=False,
 ):
     """Upsample input via interpolating neighborhoods.
@@ -2459,7 +2579,7 @@ def upsample_bilinear(input, size=None, scale_factor=None):
     `torch.nn.UpsamplingBilinear2d(...)`_
 
     """
-    return interpolate(input, size, scale_factor, 'linear', align_corners=True)
+    return interpolate(input, size, scale_factor, "linear", align_corners=True)
 
 
 def upsample_nearest(input, size=None, scale_factor=None):
@@ -2492,7 +2612,7 @@ def upsample_nearest(input, size=None, scale_factor=None):
     `torch.nn.UpsamplingNearest2d(...)`_
 
     """
-    return interpolate(input, size, scale_factor, 'nearest')
+    return interpolate(input, size, scale_factor, "nearest")
 
 
 def _conv(
@@ -2522,7 +2642,7 @@ def _conv(
         bias=bias is not None,
         dtype=weight.dtype,
         input_shape=list(input.shape),
-        data_format='NHWC' if input.device.type == 'mlu' else 'NCHW',
+        data_format="NHWC" if input.device.type == "mlu" else "NCHW",
     )
 
 
@@ -2555,7 +2675,7 @@ def _conv_transpose(
         bias=bias is not None,
         dtype=weight.dtype,
         input_shape=list(input.shape),
-        data_format='NHWC' if input.device.type == 'mlu' else 'NCHW',
+        data_format="NHWC" if input.device.type == "mlu" else "NCHW",
     )
 
 
@@ -2570,7 +2690,7 @@ def _pool(
 ):
     """Apply a pool function."""
     return Function.apply(
-        'Pool',
+        "Pool",
         input.device,
         [input],
         kernel_shape=nd_util(kernel_size),
@@ -2578,5 +2698,5 @@ def _pool(
         pads=nd_util(padding),
         mode=pool_mode,
         ceil_mode=ceil_mode,
-        data_format='NHWC' if input.device.type == 'mlu' else 'NCHW',
+        data_format="NHWC" if input.device.type == "mlu" else "NCHW",
     )

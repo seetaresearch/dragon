@@ -50,7 +50,7 @@ class ELU(Module):
 
     """
 
-    def __init__(self, alpha=1., inplace=False):
+    def __init__(self, alpha=1.0, inplace=False):
         r"""Create a ``ELU`` module.
 
         Parameters
@@ -66,8 +66,8 @@ class ELU(Module):
         self.inplace = inplace
 
     def extra_repr(self):
-        inplace_str = ', inplace' if self.inplace else ''
-        return 'alpha={}{}'.format(self.alpha, inplace_str)
+        inplace_str = ", inplace" if self.inplace else ""
+        return "alpha={}{}".format(self.alpha, inplace_str)
 
     def forward(self, input):
         return functional.elu(input, self.alpha, self.inplace)
@@ -95,7 +95,7 @@ class GELU(Module):
 
     """
 
-    def __init__(self, approximate='none'):
+    def __init__(self, approximate="none"):
         """Create a ``GELU`` module.
 
         Parameters
@@ -108,7 +108,7 @@ class GELU(Module):
         self.approximate = approximate
 
     def extra_repr(self):
-        return 'approximate={}'.format(self.approximate)
+        return "approximate={}".format(self.approximate)
 
     def forward(self, input):
         return functional.gelu(input, approximate=self.approximate)
@@ -155,12 +155,11 @@ class GumbelSoftmax(Module):
         self.inplace = inplace
 
     def extra_repr(self):
-        inplace_str = ', inplace' if self.inplace else ''
-        return 'dim={}{}'.format(self.dim, inplace_str)
+        inplace_str = ", inplace" if self.inplace else ""
+        return "dim={}{}".format(self.dim, inplace_str)
 
     def forward(self, input):
-        u_dist = random_ops.rand(input.shape, dtype=input.dtype,
-                                 device=input.device)
+        u_dist = random_ops.rand(input.shape, dtype=input.dtype, device=input.device)
         gumbel = -((-(u_dist.log())).log())
         gumbel = (input + gumbel) / self.tau
         return functional.softmax(gumbel, self.dim, self.inplace)
@@ -205,7 +204,7 @@ class Hardsigmoid(Module):
         self.inplace = inplace
 
     def extra_repr(self):
-        inplace_str = 'inplace' if self.inplace else ''
+        inplace_str = "inplace" if self.inplace else ""
         return inplace_str
 
     def forward(self, input):
@@ -289,8 +288,8 @@ class LeakyReLU(Module):
         self.inplace = inplace
 
     def extra_repr(self):
-        inplace_str = ', inplace' if self.inplace else ''
-        return 'negative_slope={}{}'.format(self.negative_slope, inplace_str)
+        inplace_str = ", inplace" if self.inplace else ""
+        return "negative_slope={}{}".format(self.negative_slope, inplace_str)
 
     def forward(self, input):
         return functional.leaky_relu(input, self.negative_slope, self.inplace)
@@ -333,8 +332,8 @@ class LogSoftmax(Module):
         self.inplace = inplace
 
     def extra_repr(self):
-        inplace_str = ', inplace' if self.inplace else ''
-        return 'dim={}{}'.format(self.dim, inplace_str)
+        inplace_str = ", inplace" if self.inplace else ""
+        return "dim={}{}".format(self.dim, inplace_str)
 
     def forward(self, input):
         return functional.log_softmax(input, self.dim, self.inplace)
@@ -354,7 +353,7 @@ class MultiheadAttention(Module):
         self,
         embed_dim,
         num_heads,
-        dropout=0.,
+        dropout=0.0,
         bias=True,
         kdim=None,
         vdim=None,
@@ -386,21 +385,21 @@ class MultiheadAttention(Module):
         self.dropout = dropout
         self.head_dim = embed_dim // num_heads
         if self.head_dim * num_heads != self.embed_dim:
-            raise ValueError('<embed_dim> must be divisible by <num_heads>.')
+            raise ValueError("<embed_dim> must be divisible by <num_heads>.")
         if not self._qkv_same_embed_dim:
             self.q_proj_weight = Parameter(Tensor(embed_dim, embed_dim))
             self.k_proj_weight = Parameter(Tensor(embed_dim, self.kdim))
             self.v_proj_weight = Parameter(Tensor(embed_dim, self.vdim))
-            self.register_parameter('in_proj_weight', None)
+            self.register_parameter("in_proj_weight", None)
         else:
             self.in_proj_weight = Parameter(Tensor(3 * embed_dim, embed_dim))
-            self.register_parameter('q_proj_weight', None)
-            self.register_parameter('k_proj_weight', None)
-            self.register_parameter('v_proj_weight', None)
+            self.register_parameter("q_proj_weight", None)
+            self.register_parameter("k_proj_weight", None)
+            self.register_parameter("v_proj_weight", None)
         if bias:
             self.in_proj_bias = Parameter(Tensor(3 * embed_dim))
         else:
-            self.register_parameter('in_proj_bias', None)
+            self.register_parameter("in_proj_bias", None)
         self.out_proj = Linear(embed_dim, embed_dim, bias=bias)
         self.reset_parameters()
 
@@ -425,7 +424,9 @@ class MultiheadAttention(Module):
         attn_mask=None,
     ):
         return functional.multi_head_attention_forward(
-            query, key, value,
+            query,
+            key,
+            value,
             embed_dim_to_check=self.embed_dim,
             num_heads=self.num_heads,
             in_proj_weight=self.in_proj_weight,
@@ -493,7 +494,7 @@ class PReLU(Module):
         self.weight = Parameter(Tensor(num_parameters).fill_(init))
 
     def extra_repr(self):
-        return 'num_parameters={}'.format(self.num_parameters)
+        return "num_parameters={}".format(self.num_parameters)
 
     def forward(self, input):
         return functional.prelu(input, self.weight)
@@ -539,7 +540,7 @@ class ReLU(Module):
         self.inplace = inplace
 
     def extra_repr(self):
-        inplace_str = 'inplace' if self.inplace else ''
+        inplace_str = "inplace" if self.inplace else ""
         return inplace_str
 
     def forward(self, input):
@@ -586,7 +587,7 @@ class ReLU6(Module):
         self.inplace = inplace
 
     def extra_repr(self):
-        inplace_str = 'inplace' if self.inplace else ''
+        inplace_str = "inplace" if self.inplace else ""
         return inplace_str
 
     def forward(self, input):
@@ -633,7 +634,7 @@ class SELU(Module):
         self.inplace = inplace
 
     def extra_repr(self):
-        inplace_str = 'inplace' if self.inplace else ''
+        inplace_str = "inplace" if self.inplace else ""
         return inplace_str
 
     def forward(self, input):
@@ -674,7 +675,7 @@ class Sigmoid(Module):
         self.inplace = inplace
 
     def extra_repr(self):
-        inplace_str = 'inplace' if self.inplace else ''
+        inplace_str = "inplace" if self.inplace else ""
         return inplace_str
 
     def forward(self, input):
@@ -748,8 +749,8 @@ class Softmax(Module):
         self.inplace = inplace
 
     def extra_repr(self):
-        inplace_str = ', inplace' if self.inplace else ''
-        return 'dim={}{}'.format(self.dim, inplace_str)
+        inplace_str = ", inplace" if self.inplace else ""
+        return "dim={}{}".format(self.dim, inplace_str)
 
     def forward(self, input):
         return functional.softmax(input, self.dim, self.inplace)
@@ -789,7 +790,7 @@ class Tanh(Module):
         self.inplace = inplace
 
     def extra_repr(self):
-        inplace_str = 'inplace' if self.inplace else ''
+        inplace_str = "inplace" if self.inplace else ""
         return inplace_str
 
     def forward(self, input):

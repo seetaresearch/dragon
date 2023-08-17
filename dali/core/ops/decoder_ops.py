@@ -18,7 +18,8 @@ try:
     from nvidia.dali import ops
 except ImportError:
     from dragon.core.util import deprecation
-    ops = deprecation.not_installed('nvidia.dali')
+
+    ops = deprecation.not_installed("nvidia.dali")
 
 from dragon.core.util import six
 from dragon.vm.dali.core.framework import context
@@ -39,7 +40,7 @@ class ImageDecoder(object):
 
     def __new__(
         cls,
-        output_type='BGR',
+        output_type="BGR",
         host_memory_padding=8388608,
         device_memory_padding=16777216,
         **kwargs
@@ -91,10 +92,10 @@ class ImageDecoderRandomCrop(object):
 
     def __new__(
         cls,
-        output_type='BGR',
+        output_type="BGR",
         host_memory_padding=8388608,
         device_memory_padding=16777216,
-        random_area=(0.08, 1.),
+        random_area=(0.08, 1.0),
         random_aspect_ratio=(0.75, 1.33),
         num_attempts=10,
         **kwargs

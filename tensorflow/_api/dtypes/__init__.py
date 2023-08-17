@@ -44,4 +44,4 @@ from dragon.vm.tensorflow.core.framework.dtypes import uint8
 from dragon.vm.tensorflow.core.framework.dtypes import variant
 from dragon.vm.tensorflow.core.ops.math_ops import cast
 
-__all__ = [_s for _s in dir() if not _s.startswith('_')]
+__all__ = [_s for _s in dir() if not _s.startswith("_")]

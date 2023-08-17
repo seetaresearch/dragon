@@ -24,4 +24,4 @@ from dragon.core.ops.random_ops import random_uniform as uniform
 from dragon.core.ops.random_ops import random_uniform_like as uniform_like
 from dragon.core.ops.random_ops import truncated_normal
 
-__all__ = [_s for _s in dir() if not _s.startswith('_')]
+__all__ = [_s for _s in dir() if not _s.startswith("_")]

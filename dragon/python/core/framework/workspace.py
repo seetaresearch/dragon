@@ -40,15 +40,16 @@ class Workspace(object):
         def create(self, key):
             """Create a handle."""
             try:
-                return key + '_' + str(heapq.heappop(self._handles[key]))
+                return key + "_" + str(heapq.heappop(self._handles[key]))
             except IndexError:
                 return self._weak_parent().unique_name(
-                    name=key, namespace='WorkspaceHandle', zero_based=False)
+                    name=key, namespace="WorkspaceHandle", zero_based=False
+                )
 
         def release(self, handle):
             """Release a created handle."""
             try:
-                key, index = handle.rsplit('_', 1)
+                key, index = handle.rsplit("_", 1)
             except ValueError:
                 return
             try:
@@ -58,7 +59,7 @@ class Workspace(object):
 
     def __init__(self):
         """Create a ``Workspace``."""
-        self._impl = backend.Workspace('')
+        self._impl = backend.Workspace("")
         self._handle_pool = Workspace.HandlePool(self)
 
     def as_default(self):
@@ -84,11 +85,11 @@ class Workspace(object):
         """Create a graph."""
         cfg = config.config()
         if cfg.graph_verbosity == 2:
-            msg = '\n' + str(graph_def)[:-1]
-            logging.info('\ngraph {' + msg.replace('\n', '\n  ') + '\n}\n')
+            msg = "\n" + str(graph_def)[:-1]
+            logging.info("\ngraph {" + msg.replace("\n", "\n  ") + "\n}\n")
         return self._impl.CreateGraph(
-            serialization.serialize_proto(graph_def),
-            cfg.graph_verbosity == 1)
+            serialization.serialize_proto(graph_def), cfg.graph_verbosity == 1
+        )
 
     def create_handle(self, key):
         """Create a handle."""
@@ -104,7 +105,7 @@ class Workspace(object):
         """Return the tensor."""
         return self._impl.GetTensor(name)
 
-    def memory_allocated(self, device_type='cpu', device_index=0):
+    def memory_allocated(self, device_type="cpu", device_index=0):
         """Return the size of device memory used by tensors.
 
         Parameters
@@ -157,9 +158,9 @@ class Workspace(object):
 
     def run_graph(self, name, execution_stage=None):
         """Run a graph."""
-        stage_str = execution_stage if execution_stage else 'default'
+        stage_str = execution_stage if execution_stage else "default"
         exec_stage = _PREDEFINED_GRAPH_EXECUTING_STAGES[stage_str]
-        self._impl.RunGraph(name, exec_stage['include'], exec_stage['exclude'])
+        self._impl.RunGraph(name, exec_stage["include"], exec_stage["exclude"])
 
     def run_operator(self, op_def):
         """Run an operator."""
@@ -172,7 +173,7 @@ class Workspace(object):
         """Set an alias for the target."""
         self._impl.SetAlias(_stringify_object(target), alias)
 
-    def unique_name(self, name, suffix='', namespace='', zero_based=True):
+    def unique_name(self, name, suffix="", namespace="", zero_based=True):
         """Return an unique name."""
         return self._impl.UniqueName(name, suffix, namespace, zero_based)
 
@@ -195,13 +196,14 @@ def reset_workspace():
         raise AssertionError(
             "Do not use reset_workspace() to clear "
             "nested workspaces.\nIf you need a cleared workspace, "
-            "exit the nesting and create a new workspace.")
+            "exit the nesting and create a new workspace."
+        )
     _GLOBAL_DEFAULT_WORKSPACE_STACK.reset()
 
 
 def _stringify_object(obj):
     """Try to stringify a object."""
-    return obj.id if hasattr(obj, 'id') else obj
+    return obj.id if hasattr(obj, "id") else obj
 
 
 class _DefaultWorkspaceStack(tls.Stack):
@@ -231,8 +233,7 @@ class _DefaultWorkspaceStack(tls.Stack):
 
     @contextlib.contextmanager
     def get_controller(self, default):
-        with super(_DefaultWorkspaceStack, self) \
-                .get_controller(default) as g:
+        with super(_DefaultWorkspaceStack, self).get_controller(default) as g:
             yield g
 
 
@@ -241,8 +242,8 @@ _GLOBAL_DEFAULT_WORKSPACE_STACK = _DefaultWorkspaceStack()
 
 # Predefined graph executing stages.
 _PREDEFINED_GRAPH_EXECUTING_STAGES = {
-    'default': {'include': '', 'exclude': ''},
-    'forward': {'include': '', 'exclude': '.*Gradient.*'},
-    'backward': {'include': '.*Gradient.*', 'exclude': 'GradientFill'},
-    'backward_v2': {'include': '.*Gradient.*', 'exclude': ''},
+    "default": {"include": "", "exclude": ""},
+    "forward": {"include": "", "exclude": ".*Gradient.*"},
+    "backward": {"include": ".*Gradient.*", "exclude": "GradientFill"},
+    "backward_v2": {"include": ".*Gradient.*", "exclude": ""},
 }

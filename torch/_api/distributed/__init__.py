@@ -21,4 +21,4 @@ from dragon.vm.torch.core.ops.distributed_ops import broadcast
 from dragon.vm.torch.core.ops.distributed_ops import reduce_scatter
 from dragon.vm.torch.core.ops.distributed_ops import reduce_scatter_tensor
 
-__all__ = [_s for _s in dir() if not _s.startswith('_')]
+__all__ = [_s for _s in dir() if not _s.startswith("_")]

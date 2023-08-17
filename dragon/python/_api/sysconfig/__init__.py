@@ -17,4 +17,4 @@ from dragon.core.framework.sysconfig import get_build_info
 from dragon.core.framework.sysconfig import get_include
 from dragon.core.framework.sysconfig import get_lib
 
-__all__ = [_s for _s in dir() if not _s.startswith('_')]
+__all__ = [_s for _s in dir() if not _s.startswith("_")]

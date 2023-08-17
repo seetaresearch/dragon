@@ -14,15 +14,11 @@ from __future__ import division as _division
 from __future__ import print_function as _print_function
 
 import time
-try:
-    # Python 2.x
-    from StringIO import StringIO as BytesIO
-except ImportError:
-    # Python 3.x
-    from io import BytesIO
+from io import BytesIO
 
 import numpy as np
 import PIL.Image
+
 try:
     import tensorflow as tf
 except ImportError:
@@ -55,11 +51,10 @@ class TensorBoard(object):
 
         """
         if tf is None:
-            raise ImportError('Failed to import ``tensorflow`` package.')
+            raise ImportError("Failed to import ``tensorflow`` package.")
         if log_dir is None:
-            log_dir = './logs/' + time.strftime(
-                '%Y%m%d_%H%M%S', time.localtime(time.time()))
-        if tf.__version__ > '2.0':
+            log_dir = "./logs/" + time.strftime("%Y%m%d_%H%M%S", time.localtime(time.time()))
+        if tf.__version__ > "2.0":
             self.writer = tf.summary.create_file_writer(log_dir)
         else:
             self.writer = tf.summary.FileWriter(log_dir)
@@ -83,7 +78,7 @@ class TensorBoard(object):
             The number of buckets to use.
 
         """
-        if tf.__version__ > '2.0':
+        if tf.__version__ > "2.0":
             with self.writer.as_default():
                 tf.summary.histogram(tag, values, step, buckets=buckets)
         else:
@@ -93,7 +88,7 @@ class TensorBoard(object):
             hist.max = float(np.max(values))
             hist.num = int(np.prod(values.shape))
             hist.sum = float(np.sum(values))
-            hist.sum_squares = float(np.sum(values ** 2))
+            hist.sum_squares = float(np.sum(values**2))
             bin_edges = bin_edges[1:]
             for edge in bin_edges:
                 hist.bucket_limit.append(edge)
@@ -103,7 +98,7 @@ class TensorBoard(object):
             self.writer.add_summary(summary, step)
             self.writer.flush()
 
-    def image_summary(self, tag, images, step, order='BGR'):
+    def image_summary(self, tag, images, step, order="BGR"):
         """Write a list of images.
 
         Parameters
@@ -118,12 +113,12 @@ class TensorBoard(object):
             The color order of input images.
 
         """
-        if tf.__version__ > '2.0':
+        if tf.__version__ > "2.0":
             if isinstance(images, (tuple, list)):
                 images = np.stack(images)
             if len(images.shape) != 4:
-                raise ValueError('Images can not be packed to (N, H, W, C).')
-            if order == 'BGR':
+                raise ValueError("Images can not be packed to (N, H, W, C).")
+            if order == "BGR":
                 images = images[:, :, :, ::-1]
             with self.writer.as_default():
                 tf.summary.image(tag, images, step, max_outputs=images.shape[0])
@@ -131,18 +126,17 @@ class TensorBoard(object):
             img_summaries = []
             for i, img in enumerate(images):
                 if len(img.shape) != 3:
-                    raise ValueError('Excepted images in (H, W, C).')
+                    raise ValueError("Excepted images in (H, W, C).")
                 s = BytesIO()
-                if order == 'BGR':
+                if order == "BGR":
                     img = img[:, :, ::-1]
-                PIL.Image.fromarray(img).save(s, format='png')
+                PIL.Image.fromarray(img).save(s, format="png")
                 img_sum = tf.Summary.Image(
                     encoded_image_string=s.getvalue(),
                     height=img.shape[0],
                     width=img.shape[1],
                 )
-                img_summaries.append(tf.Summary.Value(
-                    tag='%s/%d' % (tag, i), image=img_sum))
+                img_summaries.append(tf.Summary.Value(tag="%s/%d" % (tag, i), image=img_sum))
             self.writer.add_summary(tf.Summary(value=img_summaries), step)
             self.writer.flush()
 
@@ -159,7 +153,7 @@ class TensorBoard(object):
             The global step.
 
         """
-        if tf.__version__ > '2.0':
+        if tf.__version__ > "2.0":
             with self.writer.as_default():
                 tf.summary.scalar(tag, value, step)
         else:

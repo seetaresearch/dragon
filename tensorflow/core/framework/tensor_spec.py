@@ -25,7 +25,7 @@ from dragon.vm.tensorflow.core.framework import tensor_shape
 class TensorSpec(object):
     """Spec to describe properties of a tensor."""
 
-    def __init__(self, shape, dtype='float32', name=None):
+    def __init__(self, shape, dtype="float32", name=None):
         """Create a TensorSpec.
 
         Parameters
@@ -87,6 +87,7 @@ class TensorSpec(object):
             ``True`` if compatible otherwise ``False``.
 
         """
+
         def dtype_is_compatible_with(other):
             return self.dtype == other.dtype
 
@@ -100,5 +101,4 @@ class TensorSpec(object):
                     return False
             return True
 
-        return (dtype_is_compatible_with(spec_or_tensor) and
-                shape_is_compatible_with(spec_or_tensor))
+        return dtype_is_compatible_with(spec_or_tensor) and shape_is_compatible_with(spec_or_tensor)

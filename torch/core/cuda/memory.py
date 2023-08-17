@@ -34,8 +34,8 @@ def memory_allocated(device=None):
         The total number of allocated bytes.
 
     """
-    device_index = device.index if hasattr(device, 'index') else device
+    device_index = device.index if hasattr(device, "index") else device
     if device_index is None:
         device_index = backend.cudaGetDevice()
     current_ws = workspace.get_workspace()
-    return current_ws.memory_allocated('cuda', device_index)
+    return current_ws.memory_allocated("cuda", device_index)

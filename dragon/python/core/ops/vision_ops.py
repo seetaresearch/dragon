@@ -21,7 +21,7 @@ from dragon.core.util import nest
 
 
 @OpSchema.num_inputs(2)
-def bias_add(inputs, data_format='NCHW', inplace=False, **kwargs):
+def bias_add(inputs, data_format="NCHW", inplace=False, **kwargs):
     """Add the bias across channels to input.
 
     Examples:
@@ -47,13 +47,16 @@ def bias_add(inputs, data_format='NCHW', inplace=False, **kwargs):
         The output tensor.
 
     """
-    if data_format not in ('NCHW', 'NHWC'):
-        raise ValueError('Unsupported data format: %s' % data_format)
+    if data_format not in ("NCHW", "NHWC"):
+        raise ValueError("Unsupported data format: %s" % data_format)
     if context.executing_eagerly():
         return OpLib.execute(
-            'BiasAdd', inputs, outputs=[inputs if inplace else None],
-            data_format=data_format)
-    return OpLib.add('BiasAdd', inputs, data_format=data_format, **kwargs)
+            "BiasAdd",
+            inputs,
+            outputs=[inputs if inplace else None],
+            data_format=data_format,
+        )
+    return OpLib.add("BiasAdd", inputs, data_format=data_format, **kwargs)
 
 
 @OpSchema.num_inputs(2, 3)
@@ -64,8 +67,8 @@ def conv(
     pads=0,
     dilations=1,
     group=1,
-    padding='VALID',
-    data_format='NCHW',
+    padding="VALID",
+    data_format="NCHW",
     **kwargs
 ):
     r"""Apply n-dimension convolution.
@@ -119,17 +122,17 @@ def conv(
         The output tensor.
 
     """
-    if padding not in ('VALID', 'SAME', 'SAME_UPPER', 'SAME_LOWER'):
-        raise ValueError('Unsupported padding algorithm: %s' % padding)
-    if data_format not in ('NCHW', 'NHWC'):
-        raise ValueError('Unsupported data format: %s' % data_format)
+    if padding not in ("VALID", "SAME", "SAME_UPPER", "SAME_LOWER"):
+        raise ValueError("Unsupported padding algorithm: %s" % padding)
+    if data_format not in ("NCHW", "NHWC"):
+        raise ValueError("Unsupported data format: %s" % data_format)
     strides = nest.flatten(strides)
     pads = nest.flatten(pads)
     dilations = nest.flatten(dilations)
     if context.executing_eagerly():
         weight_shape = inputs[1].shape
         return OpLib.execute(
-            'Conv',
+            "Conv",
             inputs,
             dim_in=weight_shape[1],
             dim_out=weight_shape[0],
@@ -142,16 +145,20 @@ def conv(
             data_format=data_format,
             bias=len(inputs) > 2,
             dtype=inputs[1].dtype,
-            input_shape=inputs[0].shape)
-    return OpLib.add('Conv', inputs,
-                     kernel_shape=kernel_shape,
-                     strides=strides,
-                     pads=pads,
-                     dilations=dilations,
-                     group=group,
-                     padding=padding,
-                     data_format=data_format,
-                     **kwargs)
+            input_shape=inputs[0].shape,
+        )
+    return OpLib.add(
+        "Conv",
+        inputs,
+        kernel_shape=kernel_shape,
+        strides=strides,
+        pads=pads,
+        dilations=dilations,
+        group=group,
+        padding=padding,
+        data_format=data_format,
+        **kwargs
+    )
 
 
 @OpSchema.num_inputs(2, 3)
@@ -162,8 +169,8 @@ def conv1d(
     pads=0,
     dilations=1,
     group=1,
-    padding='VALID',
-    data_format='NCHW',
+    padding="VALID",
+    data_format="NCHW",
     **kwargs
 ):
     r"""Apply 1d convolution.
@@ -236,8 +243,8 @@ def conv2d(
     pads=0,
     dilations=1,
     group=1,
-    padding='VALID',
-    data_format='NCHW',
+    padding="VALID",
+    data_format="NCHW",
     **kwargs
 ):
     r"""Apply 2d convolution.
@@ -310,8 +317,8 @@ def conv3d(
     pads=0,
     dilations=1,
     group=1,
-    padding='VALID',
-    data_format='NCHW',
+    padding="VALID",
+    data_format="NCHW",
     **kwargs
 ):
     r"""Apply 3d convolution.
@@ -360,7 +367,7 @@ def conv3d(
     dragon.Tensor
         The output tensor.
 
-    """
+    """  # noqa: E501
     return conv(
         inputs,
         kernel_shape=_normalize_tuple(kernel_shape, 3),
@@ -375,8 +382,8 @@ def conv3d(
 
 
 @OpSchema.num_inputs(2, 3)
-@OpSchema.convert_arg('output_padding')
-@OpSchema.convert_arg('output_shape')
+@OpSchema.convert_arg("output_padding")
+@OpSchema.convert_arg("output_shape")
 def conv_transpose(
     inputs,
     kernel_shape=(3, 3),
@@ -384,10 +391,10 @@ def conv_transpose(
     pads=0,
     dilations=1,
     group=1,
-    padding='VALID',
+    padding="VALID",
     output_padding=None,
     output_shape=None,
-    data_format='NCHW',
+    data_format="NCHW",
     **kwargs
 ):
     r"""Apply n-dimension deconvolution.
@@ -450,36 +457,37 @@ def conv_transpose(
 
     """
     args = OpSchema.parse_args(locals())
-    if padding not in ('VALID', 'SAME', 'SAME_UPPER', 'SAME_LOWER'):
-        raise ValueError('Unsupported padding algorithm: %s' % padding)
-    if data_format not in ('NCHW', 'NHWC'):
-        raise ValueError('Unsupported data format: %s' % data_format)
-    if 'SAME' in padding and output_shape is None:
-        raise ValueError('Excepted <output_shape> for same padding.')
-    if output_shape is not None and 'SAME' not in padding:
-        args['padding'] = 'SAME'
-    for k in ('strides', 'pads', 'dilations'):
+    if padding not in ("VALID", "SAME", "SAME_UPPER", "SAME_LOWER"):
+        raise ValueError("Unsupported padding algorithm: %s" % padding)
+    if data_format not in ("NCHW", "NHWC"):
+        raise ValueError("Unsupported data format: %s" % data_format)
+    if "SAME" in padding and output_shape is None:
+        raise ValueError("Excepted <output_shape> for same padding.")
+    if output_shape is not None and "SAME" not in padding:
+        args["padding"] = "SAME"
+    for k in ("strides", "pads", "dilations"):
         args[k] = nest.flatten(args[k])
     if context.executing_eagerly():
         weight_shape = inputs[1].shape
         return OpLib.execute(
-            'ConvTranspose',
+            "ConvTranspose",
             inputs,
             dim_in=weight_shape[0],
             dim_out=weight_shape[1],
-            kernel_shape=args['kernel_shape'],
-            strides=args['strides'],
-            pads=args['pads'],
-            dilations=args['dilations'],
+            kernel_shape=args["kernel_shape"],
+            strides=args["strides"],
+            pads=args["pads"],
+            dilations=args["dilations"],
             group=group,
-            padding=args['padding'],
-            output_padding=args['output_padding'],
-            output_shape=args['output_shape'],
+            padding=args["padding"],
+            output_padding=args["output_padding"],
+            output_shape=args["output_shape"],
             data_format=data_format,
             bias=len(inputs) > 2,
             dtype=inputs[1].dtype,
-            input_shape=inputs[0].shape)
-    return OpLib.add('ConvTranspose', **args)
+            input_shape=inputs[0].shape,
+        )
+    return OpLib.add("ConvTranspose", **args)
 
 
 @OpSchema.num_inputs(min_num=2, max_num=3)
@@ -490,10 +498,10 @@ def conv1d_transpose(
     pads=0,
     dilations=1,
     group=1,
-    padding='VALID',
+    padding="VALID",
     output_padding=None,
     output_shape=None,
-    data_format='NCHW',
+    data_format="NCHW",
     **kwargs
 ):
     r"""Apply 1d deconvolution.
@@ -576,10 +584,10 @@ def conv2d_transpose(
     pads=0,
     dilations=1,
     group=1,
-    padding='VALID',
+    padding="VALID",
     output_padding=None,
     output_shape=None,
-    data_format='NCHW',
+    data_format="NCHW",
     **kwargs
 ):
     r"""Apply 2d deconvolution.
@@ -662,10 +670,10 @@ def conv3d_transpose(
     pads=0,
     dilations=1,
     group=1,
-    padding='VALID',
+    padding="VALID",
     output_padding=None,
     output_shape=None,
-    data_format='NCHW',
+    data_format="NCHW",
     **kwargs
 ):
     r"""Apply 3d deconvolution.
@@ -724,7 +732,7 @@ def conv3d_transpose(
     dragon.Tensor
         The output tensor.
 
-    """
+    """  # noqa: E501
     return conv_transpose(
         inputs,
         kernel_shape=_normalize_tuple(kernel_shape, 3),
@@ -741,14 +749,7 @@ def conv3d_transpose(
 
 
 @OpSchema.num_inputs(1)
-def depth_to_space(
-    inputs,
-    block_size,
-    mode='DCR',
-    data_format='NCHW',
-    copy=True,
-    **kwargs
-):
+def depth_to_space(inputs, block_size, mode="DCR", data_format="NCHW", copy=True, **kwargs):
     """Rearrange depth data into spatial blocks.
 
     Examples:
@@ -781,15 +782,25 @@ def depth_to_space(
         The output tensor.
 
     """
-    if data_format not in ('NCHW', 'NHWC'):
-        raise ValueError('Unsupported data format: %s' % data_format)
+    if data_format not in ("NCHW", "NHWC"):
+        raise ValueError("Unsupported data format: %s" % data_format)
     if context.executing_eagerly():
         return OpLib.execute(
-            'DepthToSpace', inputs,
+            "DepthToSpace",
+            inputs,
             outputs=[None] if copy else inputs,
-            block_size=block_size, mode=mode.upper(), data_format=data_format)
-    return OpLib.add('DepthToSpace', inputs, block_size=block_size,
-                     mode=mode.upper(), data_format=data_format, **kwargs)
+            block_size=block_size,
+            mode=mode.upper(),
+            data_format=data_format,
+        )
+    return OpLib.add(
+        "DepthToSpace",
+        inputs,
+        block_size=block_size,
+        mode=mode.upper(),
+        data_format=data_format,
+        **kwargs
+    )
 
 
 @OpSchema.num_inputs(1)
@@ -799,8 +810,8 @@ def extract_patches(
     strides=1,
     pads=0,
     dilations=1,
-    padding='VALID',
-    data_format='NCHW',
+    padding="VALID",
+    data_format="NCHW",
     **kwargs
 ):
     r"""Extract the sliding patches from input.
@@ -849,14 +860,14 @@ def extract_patches(
         The output tensor.
 
     """
-    if padding not in ('VALID', 'SAME', 'SAME_UPPER', 'SAME_LOWER'):
-        raise ValueError('Unsupported padding algorithm: %s' % padding)
-    if data_format not in ('NCHW', 'NHWC'):
-        raise ValueError('Unsupported data format: %s' % data_format)
+    if padding not in ("VALID", "SAME", "SAME_UPPER", "SAME_LOWER"):
+        raise ValueError("Unsupported padding algorithm: %s" % padding)
+    if data_format not in ("NCHW", "NHWC"):
+        raise ValueError("Unsupported data format: %s" % data_format)
     kernel_shape = nest.flatten(kernel_shape)
     if context.executing_eagerly():
         return OpLib.execute(
-            'Im2Col',
+            "Im2Col",
             inputs,
             kernel_shape=kernel_shape,
             strides=_normalize_tuple(strides, len(kernel_shape)),
@@ -865,14 +876,17 @@ def extract_patches(
             padding=padding,
             data_format=data_format,
         )
-    return OpLib.add('Im2Col', inputs,
-                     kernel_shape=kernel_shape,
-                     strides=_normalize_tuple(strides, len(kernel_shape)),
-                     pads=_normalize_pads(pads, len(kernel_shape)),
-                     dilations=_normalize_tuple(dilations, len(kernel_shape)),
-                     padding=padding,
-                     data_format=data_format,
-                     **kwargs)
+    return OpLib.add(
+        "Im2Col",
+        inputs,
+        kernel_shape=kernel_shape,
+        strides=_normalize_tuple(strides, len(kernel_shape)),
+        pads=_normalize_pads(pads, len(kernel_shape)),
+        dilations=_normalize_tuple(dilations, len(kernel_shape)),
+        padding=padding,
+        data_format=data_format,
+        **kwargs
+    )
 
 
 @OpSchema.num_inputs(1)
@@ -881,11 +895,11 @@ def pool(
     kernel_shape,
     strides,
     pads=0,
-    padding='VALID',
-    mode='max',
+    padding="VALID",
+    mode="max",
     global_pool=False,
     ceil_mode=False,
-    data_format='NCHW',
+    data_format="NCHW",
     **kwargs
 ):
     r"""Apply n-dimension pooling.
@@ -943,17 +957,17 @@ def pool(
 
     """
     mode = mode.upper()
-    if mode not in ('MAX', 'AVG'):
-        raise ValueError('Unsupported pooling mode: %s' % mode)
-    if padding not in ('VALID', 'SAME', 'SAME_UPPER', 'SAME_LOWER'):
-        raise ValueError('Unsupported padding algorithm: %s' % padding)
-    if data_format not in ('NCHW', 'NHWC'):
-        raise ValueError('Unsupported data format: %s' % data_format)
+    if mode not in ("MAX", "AVG"):
+        raise ValueError("Unsupported pooling mode: %s" % mode)
+    if padding not in ("VALID", "SAME", "SAME_UPPER", "SAME_LOWER"):
+        raise ValueError("Unsupported padding algorithm: %s" % padding)
+    if data_format not in ("NCHW", "NHWC"):
+        raise ValueError("Unsupported data format: %s" % data_format)
     strides = nest.flatten(strides)
     pads = nest.flatten(pads)
     if context.executing_eagerly():
         return OpLib.execute(
-            'Pool',
+            "Pool",
             inputs,
             kernel_shape=kernel_shape,
             strides=strides,
@@ -962,17 +976,21 @@ def pool(
             ceil_mode=ceil_mode,
             mode=mode,
             data_format=data_format,
-            global_pool=global_pool)
-    return OpLib.add('Pool', inputs,
-                     kernel_shape=kernel_shape,
-                     strides=strides,
-                     pads=pads,
-                     padding=padding,
-                     ceil_mode=ceil_mode,
-                     mode=mode,
-                     data_format=data_format,
-                     global_pool=global_pool,
-                     **kwargs)
+            global_pool=global_pool,
+        )
+    return OpLib.add(
+        "Pool",
+        inputs,
+        kernel_shape=kernel_shape,
+        strides=strides,
+        pads=pads,
+        padding=padding,
+        ceil_mode=ceil_mode,
+        mode=mode,
+        data_format=data_format,
+        global_pool=global_pool,
+        **kwargs
+    )
 
 
 @OpSchema.num_inputs(1)
@@ -981,11 +999,11 @@ def pool1d(
     kernel_shape,
     strides,
     pads=0,
-    padding='VALID',
-    mode='max',
+    padding="VALID",
+    mode="max",
     global_pool=False,
     ceil_mode=False,
-    data_format='NCHW',
+    data_format="NCHW",
     **kwargs
 ):
     r"""Apply 1d pooling.
@@ -1048,7 +1066,8 @@ def pool1d(
         mode=mode,
         data_format=data_format,
         global_pool=global_pool,
-        **kwargs)
+        **kwargs
+    )
 
 
 @OpSchema.num_inputs(1)
@@ -1057,11 +1076,11 @@ def pool2d(
     kernel_shape,
     strides,
     pads=0,
-    padding='VALID',
-    mode='max',
+    padding="VALID",
+    mode="max",
     global_pool=False,
     ceil_mode=False,
-    data_format='NCHW',
+    data_format="NCHW",
     **kwargs
 ):
     r"""Apply 2d pooling.
@@ -1126,7 +1145,8 @@ def pool2d(
         mode=mode,
         data_format=data_format,
         global_pool=global_pool,
-        **kwargs)
+        **kwargs
+    )
 
 
 @OpSchema.num_inputs(1)
@@ -1135,11 +1155,11 @@ def pool3d(
     kernel_shape,
     strides,
     pads=0,
-    padding='VALID',
-    mode='max',
+    padding="VALID",
+    mode="max",
     global_pool=False,
     ceil_mode=False,
-    data_format='NCHW',
+    data_format="NCHW",
     **kwargs
 ):
     r"""Apply 3d pooling.
@@ -1204,19 +1224,20 @@ def pool3d(
         mode=mode,
         data_format=data_format,
         global_pool=global_pool,
-        **kwargs)
+        **kwargs
+    )
 
 
 @OpSchema.num_inputs(1)
-@OpSchema.convert_arg('sizes')
-@OpSchema.convert_arg('scales')
+@OpSchema.convert_arg("sizes")
+@OpSchema.convert_arg("scales")
 def resize(
     inputs,
     sizes=None,
     scales=None,
-    mode='linear',
+    mode="linear",
     align_corners=False,
-    data_format='NCHW',
+    data_format="NCHW",
     **kwargs
 ):
     r"""Resize input via interpolating neighborhoods.
@@ -1265,27 +1286,28 @@ def resize(
 
     """
     args = OpSchema.parse_args(locals())
-    args['mode'] = mode.upper()
+    args["mode"] = mode.upper()
     if sizes is None and scales is None:
-        raise ValueError('Specify either <sizes> or <scales>.')
-    if data_format not in ('NCHW', 'NHWC'):
-        raise ValueError('Unsupported data format: {}'.format(data_format))
+        raise ValueError("Specify either <sizes> or <scales>.")
+    if data_format not in ("NCHW", "NHWC"):
+        raise ValueError("Unsupported data format: {}".format(data_format))
     if context.executing_eagerly():
         if sizes is not None:
-            args['sizes'] = nest.flatten(args['sizes'])
+            args["sizes"] = nest.flatten(args["sizes"])
         if scales is not None:
-            args['scales'] = nest.flatten(args['scales'])
+            args["scales"] = nest.flatten(args["scales"])
         return OpLib.execute(
-            'Resize',
+            "Resize",
             inputs,
-            mode=args['mode'],
+            mode=args["mode"],
             align_corners=align_corners,
-            num_sizes=len(args['sizes']) if sizes is not None else 0,
-            num_scales=len(args['scales']) if scales is not None else 0,
+            num_sizes=len(args["sizes"]) if sizes is not None else 0,
+            num_scales=len(args["scales"]) if scales is not None else 0,
             data_format=data_format,
-            sizes=args['sizes'],
-            scales=args['scales'])
-    return OpLib.add('Resize', **args)
+            sizes=args["sizes"],
+            scales=args["scales"],
+        )
+    return OpLib.add("Resize", **args)
 
 
 @OpSchema.num_inputs(2)
@@ -1296,7 +1318,7 @@ def roi_align(
     spatial_scale=1.0,
     sampling_ratio=-1,
     aligned=False,
-    data_format='NCHW',
+    data_format="NCHW",
     **kwargs
 ):
     r"""Apply average roi align.
@@ -1338,36 +1360,34 @@ def roi_align(
 
     """
     spatial_scale = float(spatial_scale)
-    if data_format not in ('NCHW', 'NHWC'):
-        raise ValueError('Unsupported data format: {}'.format(data_format))
+    if data_format not in ("NCHW", "NHWC"):
+        raise ValueError("Unsupported data format: {}".format(data_format))
     if context.executing_eagerly():
         return OpLib.execute(
-            'RoiAlign',
+            "RoiAlign",
             inputs,
             pooled_h=pooled_h,
             pooled_w=pooled_w,
             spatial_scale=spatial_scale,
             sampling_ratio=sampling_ratio,
             aligned=aligned,
-            data_format=data_format)
-    return OpLib.add('RoiAlign', inputs,
-                     pooled_h=pooled_h,
-                     pooled_w=pooled_w,
-                     spatial_scale=spatial_scale,
-                     sampling_ratio=sampling_ratio,
-                     aligned=aligned,
-                     data_format=data_format,
-                     **kwargs)
+            data_format=data_format,
+        )
+    return OpLib.add(
+        "RoiAlign",
+        inputs,
+        pooled_h=pooled_h,
+        pooled_w=pooled_w,
+        spatial_scale=spatial_scale,
+        sampling_ratio=sampling_ratio,
+        aligned=aligned,
+        data_format=data_format,
+        **kwargs
+    )
 
 
 @OpSchema.num_inputs(2)
-def roi_pool(
-    inputs,
-    pooled_h,
-    pooled_w,
-    spatial_scale=1.0,
-    **kwargs
-):
+def roi_pool(inputs, pooled_h, pooled_w, spatial_scale=1.0, **kwargs):
     r"""Apply max roi pooling.
     `[Girshick, 2015] <https://arxiv.org/abs/1504.08083>`_.
 
@@ -1403,27 +1423,24 @@ def roi_pool(
     spatial_scale = float(spatial_scale)
     if context.executing_eagerly():
         return OpLib.execute(
-            'RoiPool',
+            "RoiPool",
             inputs,
             pooled_h=pooled_h,
             pooled_w=pooled_w,
-            spatial_scale=spatial_scale)
-    return OpLib.add('RoiPool', inputs,
-                     pooled_h=pooled_h,
-                     pooled_w=pooled_w,
-                     spatial_scale=spatial_scale,
-                     **kwargs)
+            spatial_scale=spatial_scale,
+        )
+    return OpLib.add(
+        "RoiPool",
+        inputs,
+        pooled_h=pooled_h,
+        pooled_w=pooled_w,
+        spatial_scale=spatial_scale,
+        **kwargs
+    )
 
 
 @OpSchema.num_inputs(1)
-def space_to_depth(
-    inputs,
-    block_size,
-    mode='DCR',
-    data_format='NCHW',
-    copy=True,
-    **kwargs
-):
+def space_to_depth(inputs, block_size, mode="DCR", data_format="NCHW", copy=True, **kwargs):
     """Rearrange blocks of spatial data into depth.
 
     Examples:
@@ -1456,15 +1473,25 @@ def space_to_depth(
         The output tensor.
 
     """
-    if data_format not in ('NCHW', 'NHWC'):
-        raise ValueError('Unsupported data format: %s' % data_format)
+    if data_format not in ("NCHW", "NHWC"):
+        raise ValueError("Unsupported data format: %s" % data_format)
     if context.executing_eagerly():
         return OpLib.execute(
-            'SpaceToDepth', inputs,
+            "SpaceToDepth",
+            inputs,
             outputs=[None] if copy else inputs,
-            block_size=block_size, mode=mode.upper(), data_format=data_format)
-    return OpLib.add('SpaceToDepth', inputs, block_size=block_size,
-                     mode=mode.upper(), data_format=data_format, **kwargs)
+            block_size=block_size,
+            mode=mode.upper(),
+            data_format=data_format,
+        )
+    return OpLib.add(
+        "SpaceToDepth",
+        inputs,
+        block_size=block_size,
+        mode=mode.upper(),
+        data_format=data_format,
+        **kwargs
+    )
 
 
 def _normalize_tuple(value, rank):
@@ -1473,8 +1500,7 @@ def _normalize_tuple(value, rank):
     if len(value) > rank:
         return [value[i] for i in range(rank)]
     else:
-        return [value[i] for i in range(len(value))] + \
-               [value[-1] for _ in range(len(value), rank)]
+        return [value[i] for i in range(len(value))] + [value[-1] for _ in range(len(value), rank)]
 
 
 def _normalize_pads(value, rank):

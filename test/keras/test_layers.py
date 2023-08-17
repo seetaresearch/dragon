@@ -27,17 +27,16 @@ class TestLayers(unittest.TestCase):
         _ = tf.keras.layers.ReLU(negative_slope=0.2)(x)
         _ = tf.keras.layers.SELU()(x)
         _ = tf.keras.layers.Softmax(axis=-1)(x)
-        for max_value, slope in ((1., None), (6.0, 0.2)):
+        for max_value, slope in ((1.0, None), (6.0, 0.2)):
             try:
-                _ = tf.keras.layers.ReLU(
-                    max_value=max_value, negative_slope=slope)(x)
+                _ = tf.keras.layers.ReLU(max_value=max_value, negative_slope=slope)(x)
             except ValueError:
                 pass
 
     def test_core_layers(self):
         x = tf.zeros((2, 3, 3))
-        _ = tf.keras.layers.Activation('relu')(x)
-        _ = tf.keras.layers.Activation('relu', inplace=True)(x)
+        _ = tf.keras.layers.Activation("relu")(x)
+        _ = tf.keras.layers.Activation("relu", inplace=True)(x)
         _ = tf.keras.layers.Dense(4)(x)
         _ = tf.keras.layers.Dense(4, use_bias=False)(x)
         _ = tf.keras.layers.Dropout(0.5)(x, training=True)
@@ -53,7 +52,7 @@ class TestLayers(unittest.TestCase):
         x3 = tf.zeros((2, 3, 4, 5, 6))
         _ = tf.keras.layers.Conv2D(3, 3, 1, padding=1, use_bias=False)(x2)
         _ = tf.keras.layers.Conv2DTranspose(3, 3, 1, padding=1, use_bias=False)(x2)
-        for conv_type in ('Conv{}D', 'Conv{}DTranspose'):
+        for conv_type in ("Conv{}D", "Conv{}DTranspose"):
             for num_axes in (1, 2, 3):
                 x = x1 if num_axes == 1 else (x2 if num_axes == 2 else x3)
                 conv_layer = getattr(tf.keras.layers, conv_type.format(num_axes), None)
@@ -62,7 +61,7 @@ class TestLayers(unittest.TestCase):
             _ = tf.keras.layers.Conv2D(3, 3, 1).build((None, 3, 3, None))
         except ValueError:
             pass
-        for conv in ('Conv2D', 'Conv2DTranspose'):
+        for conv in ("Conv2D", "Conv2DTranspose"):
             try:
                 _ = getattr(tf.keras.layers, conv)(3, 3, 1, groups=2)(x2)
             except ValueError:
@@ -112,10 +111,10 @@ class TestLayers(unittest.TestCase):
         x3 = tf.zeros((2, 3, 4, 5, 6))
         _ = tf.keras.layers.AvgPool2D(pool_size=3, strides=1, padding=1)(x2)
         self.assertEqual(_.shape, x2.shape)
-        for mode in ('Avg', 'Max', 'GlobalAvg', 'GlobalMax'):
+        for mode in ("Avg", "Max", "GlobalAvg", "GlobalMax"):
             for num_axes in (1, 2, 3):
                 x = x1 if num_axes == 1 else (x2 if num_axes == 2 else x3)
-                _ = getattr(tf.keras.layers, '{}Pool{}D'.format(mode, num_axes))()(x)
+                _ = getattr(tf.keras.layers, "{}Pool{}D".format(mode, num_axes))()(x)
 
     def test_reshaping_layers(self):
         x1 = tf.zeros((2, 3, 4))
@@ -124,11 +123,11 @@ class TestLayers(unittest.TestCase):
         _ = tf.keras.layers.Flatten()(x2)
         _ = tf.keras.layers.Permute((3, 1, 2))(x2)
         _ = tf.keras.layers.Reshape((-1,))(x2)
-        for data_format in ('channels_last', 'channels_first'):
+        for data_format in ("channels_last", "channels_first"):
             for num_axes in (1, 2, 3):
                 x = x1 if num_axes == 1 else (x2 if num_axes == 2 else x3)
-                padding_layer = getattr(tf.keras.layers, 'ZeroPadding{}D'.format(num_axes))
-                upsampling_layer = getattr(tf.keras.layers, 'UpSampling{}D'.format(num_axes))
+                padding_layer = getattr(tf.keras.layers, "ZeroPadding{}D".format(num_axes))
+                upsampling_layer = getattr(tf.keras.layers, "UpSampling{}D".format(num_axes))
                 _ = padding_layer(data_format=data_format)(x)
                 _ = upsampling_layer(data_format=data_format)(x)
         try:
@@ -137,5 +136,5 @@ class TestLayers(unittest.TestCase):
             pass
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     run_tests()

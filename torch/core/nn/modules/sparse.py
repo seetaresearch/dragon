@@ -43,10 +43,10 @@ class Embedding(Module):
         if padding_idx is not None:
             if padding_idx > 0:
                 if padding_idx >= self.num_embeddings:
-                    raise ValueError('<padding_idx> must be within <num_embeddings>.')
+                    raise ValueError("<padding_idx> must be within <num_embeddings>.")
             elif padding_idx < 0:
                 if padding_idx < -self.num_embeddings:
-                    raise ValueError('<padding_idx> must be within <num_embeddings>.')
+                    raise ValueError("<padding_idx> must be within <num_embeddings>.")
                 padding_idx = self.num_embeddings + padding_idx
         self.padding_idx = padding_idx
         self.weight = Parameter(Tensor(num_embeddings, embedding_dim))

@@ -26,4 +26,4 @@ from dragon.vm.torch.core.cuda.memory import memory_allocated
 from dragon.vm.torch.core.cuda.random import manual_seed
 from dragon.vm.torch.core.cuda.random import manual_seed_all
 
-__all__ = [_s for _s in dir() if not _s.startswith('_')]
+__all__ = [_s for _s in dir() if not _s.startswith("_")]

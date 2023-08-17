@@ -52,7 +52,7 @@ class GraphLib(object):
         graph_str = execute_ws._impl.PrepareONNXModel(model)
         graph_def = dragon_pb2.GraphDef()
         graph_def.ParseFromString(graph_str)
-        graph_def.name = 'Graph' if name is None else name
+        graph_def.name = "Graph" if name is None else name
         GraphLib._add_device(graph_def)
         GraphLib._add_optimization(graph_def)
         for input in graph_def.input:
@@ -64,7 +64,7 @@ class GraphLib(object):
     def from_outputs(outputs, name=None):
         """Create a graph from the output tensors."""
         outputs = nest.flatten(outputs)
-        name = 'Graph' if name is None else name
+        name = "Graph" if name is None else name
         execute_ws = workspace.get_workspace()
         graph_def = dragon_pb2.GraphDef(name=name)
         GraphLib._add_outputs(graph_def, outputs)
@@ -77,7 +77,7 @@ class GraphLib(object):
     @staticmethod
     def from_updates(grads_and_vars, optimizer, name=None):
         """Create a graph from the updates."""
-        name = 'Graph' if name is None else name
+        name = "Graph" if name is None else name
         execute_ws = workspace.get_workspace()
         graph_def = dragon_pb2.GraphDef(name=name)
         GraphLib._add_updates(graph_def, grads_and_vars, optimizer)
@@ -104,8 +104,7 @@ class GraphLib(object):
     def _add_device(graph_def):
         """Add device."""
         spec = context.get_device()
-        graph_def.device_option.CopyFrom(
-            proto_util.get_device_option(spec.type, spec.index))
+        graph_def.device_option.CopyFrom(proto_util.get_device_option(spec.type, spec.index))
 
     @staticmethod
     def _add_grads(graph_def, outputs):
@@ -113,9 +112,9 @@ class GraphLib(object):
         grad_tape = tapes.Tape()
         grad_outputs = []
         for i, output in enumerate(outputs):
-            if hasattr(output, '_grad_tape') and output._grad_tape:
+            if hasattr(output, "_grad_tape") and output._grad_tape:
                 if output._grad_tape != grad_tape and len(grad_outputs) > 0:
-                    raise RuntimeError('Create graph from multiple gradient tapes.')
+                    raise RuntimeError("Create graph from multiple gradient tapes.")
                 grad_tape = output._grad_tape
                 output._grad_tape = None
                 grad_outputs.append(output)
@@ -126,19 +125,23 @@ class GraphLib(object):
             return
         execute_ws = workspace.get_workspace()
         ys = [y.id for y in grad_outputs]
-        dys = [getattr(y._grad, 'id', '') for y in grad_outputs]
+        dys = [getattr(y._grad, "id", "") for y in grad_outputs]
         grad_defs = backend.GradientTape().CreateGradientDefs(
-            [op_def.SerializeToString() for op_def in op_defs], ys, dys)
+            [op_def.SerializeToString() for op_def in op_defs], ys, dys
+        )
         for serialized_str in grad_defs:
             grad_def = dragon_pb2.OperatorDef()
             grad_def.ParseFromString(serialized_str)
-            grad_def.name = execute_ws.create_handle('Op')
+            grad_def.name = execute_ws.create_handle("Op")
             graph_def.op.extend([grad_def])
         if len(grad_defs) > 0:
             xs = [x.id for x in grad_tape.get_sources()]
-            graph_def.arg.extend([
-                proto_util.make_argument('grad_sources', xs),
-                proto_util.make_argument('phase', 'TRAIN')])
+            graph_def.arg.extend(
+                [
+                    proto_util.make_argument("grad_sources", xs),
+                    proto_util.make_argument("phase", "TRAIN"),
+                ]
+            )
 
     @staticmethod
     def _add_optimization(graph_def, level=None):
@@ -146,8 +149,7 @@ class GraphLib(object):
         cfg = config.config()
         if level is None:
             level = cfg.graph_optimization
-        graph_def.arg.add().CopyFrom(
-            proto_util.make_argument('optimization', level))
+        graph_def.arg.add().CopyFrom(proto_util.make_argument("optimization", level))
         graph_def.type = cfg.graph_type
 
     @staticmethod
@@ -155,7 +157,7 @@ class GraphLib(object):
         group_vars = collections.defaultdict(list)
         group_grads = collections.defaultdict(list)
         for grad, var in grads_and_vars:
-            weight_decay = getattr(var, '_weight_decay', None)
+            weight_decay = getattr(var, "_weight_decay", None)
             if weight_decay is not None:
                 weight_decay = float(weight_decay)
             group_vars[weight_decay].append(var.id)
@@ -164,20 +166,26 @@ class GraphLib(object):
         dist_group = distributed.get_group()
         if dist_group:
             grads = list(itertools.chain(*group_grads.values()))
-            op_defs.append(proto_util.make_operator_def(
-                op_type='Collective',
-                inputs=grads,
-                outputs=grads,
-                name=optimizer._name,
-                operation='ALLREDUCE',
-                reduction='MEAN',
-                **dist_group.arguments))
+            op_defs.append(
+                proto_util.make_operator_def(
+                    op_type="Collective",
+                    inputs=grads,
+                    outputs=grads,
+                    name=optimizer._name,
+                    operation="ALLREDUCE",
+                    reduction="MEAN",
+                    **dist_group.arguments
+                )
+            )
         for weight_decay, vars in group_vars.items():
             grads = group_grads[weight_decay]
-            op_defs.append(proto_util.make_operator_def(
-                op_type=optimizer._op_type,
-                inputs=grads,
-                outputs=vars,
-                name=optimizer._name,
-                weight_decay=weight_decay))
+            op_defs.append(
+                proto_util.make_operator_def(
+                    op_type=optimizer._op_type,
+                    inputs=grads,
+                    outputs=vars,
+                    name=optimizer._name,
+                    weight_decay=weight_decay,
+                )
+            )
         graph_def.op.extend(op_defs)

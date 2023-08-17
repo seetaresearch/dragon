@@ -37,6 +37,7 @@ class _DecoratorContextManager(object):
         def decorate_context(*args, **kwargs):
             with self.__class__():
                 return func(*args, **kwargs)
+
         return decorate_context
 
     def _wrap_generator(self, func):
@@ -62,6 +63,7 @@ class _DecoratorContextManager(object):
                             response = gen.send(request)
             except StopIteration as e:
                 return e.value
+
         return generator_context
 
     def __enter__(self):
@@ -73,16 +75,16 @@ class _DecoratorContextManager(object):
 
 def make_decorator(target, decorator_func):
     decorator = _Decorator(target)
-    setattr(decorator_func, '_dragon_decorator', decorator)
-    if hasattr(target, '__name__'):
+    setattr(decorator_func, "_dragon_decorator", decorator)
+    if hasattr(target, "__name__"):
         decorator_func.__name__ = target.__name__
-    if hasattr(target, '__module__'):
+    if hasattr(target, "__module__"):
         decorator_func.__module__ = target.__module__
-    if hasattr(target, '__dict__'):
+    if hasattr(target, "__dict__"):
         for name in target.__dict__:
             if name not in decorator_func.__dict__:
                 decorator_func.__dict__[name] = target.__dict__[name]
-    if hasattr(target, '__doc__'):
+    if hasattr(target, "__doc__"):
         decorator_func.__doc__ = target.__doc__
     decorator_func.__wrapped__ = target
     decorator_func.__original_wrapped__ = target
@@ -96,12 +98,13 @@ def unwrap(maybe_decorator):
     while True:
         if isinstance(cur, _Decorator):
             decorators.append(cur)
-        elif (hasattr(cur, '_dragon_decorator') and
-                isinstance(getattr(cur, '_dragon_decorator'), _Decorator)):
-            decorators.append(getattr(cur, '_dragon_decorator'))
+        elif hasattr(cur, "_dragon_decorator") and isinstance(
+            getattr(cur, "_dragon_decorator"), _Decorator
+        ):
+            decorators.append(getattr(cur, "_dragon_decorator"))
         else:
             break
-        if not hasattr(decorators[-1], '_decorated_target'):
+        if not hasattr(decorators[-1], "_decorated_target"):
             break
         cur = decorators[-1]._decorated_target
     return decorators, cur

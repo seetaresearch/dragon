@@ -48,28 +48,28 @@ DT_UINT64 = 23
 
 # Mappings between string names and enum values.
 _STRING_TO_ENUM = {
-    'float16': DT_HALF,
-    'float32': DT_FLOAT,
-    'float64': DT_DOUBLE,
-    'int8': DT_INT8,
-    'uint8': DT_UINT8,
-    'int16': DT_INT16,
-    'uint16': DT_UINT16,
-    'int32': DT_INT32,
-    'uint32': DT_UINT32,
-    'int64': DT_INT64,
-    'uint64': DT_UINT64,
-    'string': DT_STRING,
-    'complex64': DT_COMPLEX64,
-    'complex128': DT_COMPLEX128,
-    'bool': DT_BOOL,
-    'qint8': DT_QINT8,
-    'quint8': DT_QUINT8,
-    'qint16': DT_QINT16,
-    'quint16': DT_QUINT16,
-    'qint32': DT_QINT32,
-    'bfloat16': DT_BFLOAT16,
-    'variant': DT_VARIANT,
+    "float16": DT_HALF,
+    "float32": DT_FLOAT,
+    "float64": DT_DOUBLE,
+    "int8": DT_INT8,
+    "uint8": DT_UINT8,
+    "int16": DT_INT16,
+    "uint16": DT_UINT16,
+    "int32": DT_INT32,
+    "uint32": DT_UINT32,
+    "int64": DT_INT64,
+    "uint64": DT_UINT64,
+    "string": DT_STRING,
+    "complex64": DT_COMPLEX64,
+    "complex128": DT_COMPLEX128,
+    "bool": DT_BOOL,
+    "qint8": DT_QINT8,
+    "quint8": DT_QUINT8,
+    "qint16": DT_QINT16,
+    "quint16": DT_QUINT16,
+    "qint32": DT_QINT32,
+    "bfloat16": DT_BFLOAT16,
+    "variant": DT_VARIANT,
 }
 
 
@@ -219,8 +219,7 @@ class DType(str):
             ``True`` if this is a floating type otherwise ``False``.
 
         """
-        return (self.is_numpy_compatible and
-                issubclass(self.as_numpy_dtype, np.floating))
+        return self.is_numpy_compatible and issubclass(self.as_numpy_dtype, np.floating)
 
     @property
     def is_integer(self):
@@ -232,9 +231,11 @@ class DType(str):
             ``True`` if this is a integer type otherwise ``False``.
 
         """
-        return (self.is_numpy_compatible and
-                not self.is_quantized and
-                issubclass(self.as_numpy_dtype, np.integer))
+        return (
+            self.is_numpy_compatible
+            and not self.is_quantized
+            and issubclass(self.as_numpy_dtype, np.integer)
+        )
 
     @property
     def is_quantized(self):
@@ -293,16 +294,20 @@ class DType(str):
             The max representable value.
 
         """
-        if (self.is_quantized or self.base_dtype in
-                (bool, string, complex64, complex128)):
-            raise TypeError('Cannot find maximum value of %s.' % self)
+        if self.is_quantized or self.base_dtype in (
+            bool,
+            string,
+            complex64,
+            complex128,
+        ):
+            raise TypeError("Cannot find maximum value of %s." % self)
         try:
             return np.finfo(self.as_numpy_dtype()).max
         except (TypeError, ValueError):
             try:
                 return np.iinfo(self.as_numpy_dtype()).max
             except (TypeError, ValueError):
-                raise TypeError('Cannot find maximum value of %s.' % self)
+                raise TypeError("Cannot find maximum value of %s." % self)
 
     @property
     def min(self):
@@ -314,8 +319,12 @@ class DType(str):
             The min representable value
 
         """
-        if (self.is_quantized or self.base_dtype in
-                (bool, string, complex64, complex128)):
+        if self.is_quantized or self.base_dtype in (
+            bool,
+            string,
+            complex64,
+            complex128,
+        ):
             raise TypeError("Cannot find minimum value of %s." % self)
         try:
             return np.finfo(self.as_numpy_dtype()).min
@@ -371,7 +380,9 @@ class DType(str):
         """
         other = as_dtype(other)
         return self._type_enum in (
-            other.as_datatype_enum, other.base_dtype.as_datatype_enum)
+            other.as_datatype_enum,
+            other.base_dtype.as_datatype_enum,
+        )
 
     def __eq__(self, other):
         try:
@@ -401,37 +412,37 @@ dtype_range = {
     np.uint16: (0, 65535),
     np.int8: (-128, 127),
     np.int16: (-32768, 32767),
-    np.int64: (-2 ** 63, 2 ** 63 - 1),
-    np.uint64: (0, 2 ** 64 - 1),
-    np.int32: (-2 ** 31, 2 ** 31 - 1),
-    np.uint32: (0, 2 ** 32 - 1),
+    np.int64: (-(2**63), 2**63 - 1),
+    np.uint64: (0, 2**64 - 1),
+    np.int32: (-(2**31), 2**31 - 1),
+    np.uint32: (0, 2**32 - 1),
     np.float32: (-1, 1),
     np.float64: (-1, 1),
 }
 
 # Define standard wrappers for the string name.
-float16 = half = DType('float16')
-float32 = DType('float32')
-float64 = double = DType('float64')
-int32 = DType('int32')
-uint8 = DType('uint8')
-uint16 = DType('uint16')
-uint64 = DType('uint32')
-uint32 = DType('uint64')
-int16 = DType('int16')
-int8 = DType('int8')
-string = DType('string')
-complex64 = DType('complex64')
-complex128 = DType('complex128')
-int64 = DType('int64')
-bool = DType('bool')
-qint8 = DType('qint8')
-quint8 = DType('quint8')
-qint16 = DType('qint16')
-quint16 = DType('quint16')
-qint32 = DType('qint32')
-bfloat16 = DType('bfloat16')
-variant = DType('variant')
+float16 = half = DType("float16")
+float32 = DType("float32")
+float64 = double = DType("float64")
+int32 = DType("int32")
+uint8 = DType("uint8")
+uint16 = DType("uint16")
+uint64 = DType("uint32")
+uint32 = DType("uint64")
+int16 = DType("int16")
+int8 = DType("int8")
+string = DType("string")
+complex64 = DType("complex64")
+complex128 = DType("complex128")
+int64 = DType("int64")
+bool = DType("bool")
+qint8 = DType("qint8")
+quint8 = DType("quint8")
+qint16 = DType("qint16")
+quint16 = DType("quint16")
+qint32 = DType("qint32")
+bfloat16 = DType("bfloat16")
+variant = DType("variant")
 
 # Numpy representation for quantized dtypes.
 _np_qint8 = np.dtype([("qint8", np.int8)])
@@ -512,9 +523,7 @@ _INTERN_TABLE = {
     DT_VARIANT: variant,
 }
 
-_STRING_TO_TF = {
-    key: _INTERN_TABLE[value] for key, value in _STRING_TO_ENUM.items()
-}
+_STRING_TO_TF = {key: _INTERN_TABLE[value] for key, value in _STRING_TO_ENUM.items()}
 
 _ANY_TO_TF = {}
 _ANY_TO_TF.update(_INTERN_TABLE)

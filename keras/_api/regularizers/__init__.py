@@ -25,4 +25,4 @@ from dragon.vm.keras.core.regularizers import Regularizer
 from dragon.vm.keras.core.regularizers import get
 from dragon.vm.keras.core.regularizers import l1_l2
 
-__all__ = [_s for _s in dir() if not _s.startswith('_')]
+__all__ = [_s for _s in dir() if not _s.startswith("_")]

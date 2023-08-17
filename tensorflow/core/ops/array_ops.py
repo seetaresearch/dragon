@@ -66,7 +66,7 @@ def broadcast_to(input, shape, name=None):
     return array_ops.broadcast_to(input, shape, name=name)
 
 
-def concat(values, axis, name='concat'):
+def concat(values, axis, name="concat"):
     r"""Concatenate the values along the given axis.
 
     All dimensions except the :attr:`axis` should be same:
@@ -103,7 +103,7 @@ def concat(values, axis, name='concat'):
     return array_ops.concat(values, axis=axis, name=name)
 
 
-def depth_to_space(input, block_size, data_format='NHWC', name=None):
+def depth_to_space(input, block_size, data_format="NHWC", name=None):
     """Rearrange depth data into spatial blocks.
 
     Examples:
@@ -211,8 +211,8 @@ def fill(dims, value=0, dtype=None, name=None):
     dtype = str(dtype) if dtype else dtype
     if dtype is None:
         dtype = str(numpy.array(value).dtype)
-        dtype = 'int32' if dtype == 'int64' else dtype
-        dtype = 'float32' if dtype == 'float64' else dtype
+        dtype = "int32" if dtype == "int64" else dtype
+        dtype = "float32" if dtype == "float64" else dtype
     return constant_ops.fill(shape=dims, value=value, dtype=dtype, name=name)
 
 
@@ -276,10 +276,10 @@ def identity(input, name=None):
         The output tensor.
 
     """
-    return array_ops.identity(input, name=name if name else 'Identity')
+    return array_ops.identity(input, name=name if name else "Identity")
 
 
-def ones(shape, dtype='float32', name=None):
+def ones(shape, dtype="float32", name=None):
     r"""Return a tensor filled with ones.
 
     .. math:: \text{out} \leftarrow 1
@@ -302,7 +302,7 @@ def ones(shape, dtype='float32', name=None):
     return constant_ops.fill(shape, value=1, dtype=dtype, name=name)
 
 
-def ones_like(input, dtype='float32', name=None):
+def ones_like(input, dtype="float32", name=None):
     r"""Return a tensor of ones with shape as the other.
 
     .. math:: \text{out} \leftarrow 1
@@ -388,7 +388,7 @@ def one_hot(
 def pad(
     tensor,
     paddings,
-    mode='CONSTANT',
+    mode="CONSTANT",
     constant_values=0,
     name=None,
 ):
@@ -437,8 +437,7 @@ def pad(
     return array_ops.pad(
         tensor,
         pads=paddings,
-        mode={'CONSTANT': 'constant',
-              'REFLECT': 'reflect'}[mode.upper()],
+        mode={"CONSTANT": "constant", "REFLECT": "reflect"}[mode.upper()],
         value=constant_values,
         name=name,
     )
@@ -644,7 +643,7 @@ def slice(input_, begin, size, name=None):
     return array_ops.slice(input_, starts=begin, sizes=size, name=name)
 
 
-def space_to_depth(input, block_size, data_format='NHWC', name=None):
+def space_to_depth(input, block_size, data_format="NHWC", name=None):
     """Rearrange blocks of spatial data into depth.
 
     Examples:
@@ -847,7 +846,7 @@ def unique(x, name=None, **kwargs):
         The inverse index tensor.
 
     """
-    kwargs.pop('out_idx', None)
+    kwargs.pop("out_idx", None)
     return array_ops.unique(x, return_inverse=True, name=name)
 
 
@@ -881,9 +880,8 @@ def unique_with_counts(x, name=None, **kwargs):
         The counts tensor.
 
     """
-    kwargs.pop('out_idx', None)
-    return array_ops.unique(
-        x, return_inverse=True, return_counts=True, name=name)
+    kwargs.pop("out_idx", None)
+    return array_ops.unique(x, return_inverse=True, return_counts=True, name=name)
 
 
 def unstack(value, num=None, axis=0, copy=True, name=None):
@@ -927,7 +925,7 @@ def unstack(value, num=None, axis=0, copy=True, name=None):
     return array_ops.unstack(value, axis, num=num, copy=copy, name=name)
 
 
-def zeros(shape, dtype='float32', name=None):
+def zeros(shape, dtype="float32", name=None):
     r"""Return a tensor filled with zeros.
 
     .. math:: \text{out} \leftarrow 0
@@ -947,10 +945,10 @@ def zeros(shape, dtype='float32', name=None):
 
     """
     dtype = str(dtype) if dtype else dtype
-    return constant_ops.fill(shape, value=0., dtype=dtype, name=name)
+    return constant_ops.fill(shape, value=0.0, dtype=dtype, name=name)
 
 
-def zeros_like(input, dtype='float32', name=None):
+def zeros_like(input, dtype="float32", name=None):
     r"""Return a tensor of zeros with shape as the other.
 
     .. math:: \text{out} \leftarrow 0

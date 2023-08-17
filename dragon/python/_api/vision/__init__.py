@@ -19,4 +19,4 @@ from dragon.core.ops.vision_ops import resize
 from dragon.core.ops.vision_ops import roi_align
 from dragon.core.ops.vision_ops import roi_pool
 
-__all__ = [_s for _s in dir() if not _s.startswith('_')]
+__all__ = [_s for _s in dir() if not _s.startswith("_")]

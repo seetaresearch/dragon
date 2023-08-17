@@ -40,17 +40,17 @@ def all_gather(inputs, group=None, **kwargs):
     if group is None:
         group = distributed.get_group()
     if group is None:
-        raise ValueError('<group> is required.')
+        raise ValueError("<group> is required.")
     coll_args = group.arguments.copy()
-    coll_args['operation'] = 'ALLGATHER'
+    coll_args["operation"] = "ALLGATHER"
     if context.executing_eagerly():
-        return OpLib.execute('Collective', inputs, **coll_args)
+        return OpLib.execute("Collective", inputs, **coll_args)
     kwargs.update(coll_args)
-    return OpLib.add('Collective', inputs, **kwargs)
+    return OpLib.add("Collective", inputs, **kwargs)
 
 
 @OpSchema.num_inputs(1)
-def all_reduce(inputs, reduction='sum', group=None, **kwargs):
+def all_reduce(inputs, reduction="sum", group=None, **kwargs):
     """Reduce input across all nodes.
 
     Parameters
@@ -72,16 +72,16 @@ def all_reduce(inputs, reduction='sum', group=None, **kwargs):
     if group is None:
         group = distributed.get_group()
     if group is None:
-        raise ValueError('<group> is required.')
-    if reduction not in ('MEAN', 'SUM'):
-        raise ValueError('Unsupported reduction: ' + reduction)
+        raise ValueError("<group> is required.")
+    if reduction not in ("MEAN", "SUM"):
+        raise ValueError("Unsupported reduction: " + reduction)
     coll_args = group.arguments.copy()
-    coll_args['operation'] = 'ALLREDUCE'
-    coll_args['reduction'] = reduction
+    coll_args["operation"] = "ALLREDUCE"
+    coll_args["reduction"] = reduction
     if context.executing_eagerly():
-        return OpLib.execute('Collective', inputs, **coll_args)
+        return OpLib.execute("Collective", inputs, **coll_args)
     kwargs.update(coll_args)
-    return OpLib.add('Collective', inputs, **kwargs)
+    return OpLib.add("Collective", inputs, **kwargs)
 
 
 @OpSchema.num_inputs(1)
@@ -107,18 +107,18 @@ def broadcast(inputs, root=0, group=None, **kwargs):
     if group is None:
         group = distributed.get_group()
     if group is None:
-        raise ValueError('<group> is required.')
+        raise ValueError("<group> is required.")
     coll_args = group.arguments.copy()
-    coll_args['root'] = root
-    coll_args['operation'] = 'BROADCAST'
+    coll_args["root"] = root
+    coll_args["operation"] = "BROADCAST"
     if context.executing_eagerly():
-        return OpLib.execute('Collective', inputs, **coll_args)
+        return OpLib.execute("Collective", inputs, **coll_args)
     kwargs.update(coll_args)
-    return OpLib.add('Collective', inputs, **kwargs)
+    return OpLib.add("Collective", inputs, **kwargs)
 
 
 @OpSchema.num_inputs(1)
-def reduce_scatter(inputs, reduction='sum', group=None, **kwargs):
+def reduce_scatter(inputs, reduction="sum", group=None, **kwargs):
     """Reduce and scatter input across all nodes.
 
     Parameters
@@ -140,13 +140,13 @@ def reduce_scatter(inputs, reduction='sum', group=None, **kwargs):
     if group is None:
         group = distributed.get_group()
     if group is None:
-        raise ValueError('<group> is required.')
-    if reduction not in ('SUM',):
-        raise ValueError('Unsupported reduction: ' + reduction)
+        raise ValueError("<group> is required.")
+    if reduction not in ("SUM",):
+        raise ValueError("Unsupported reduction: " + reduction)
     coll_args = group.arguments.copy()
-    coll_args['operation'] = 'REDUCESCATTER'
-    coll_args['reduction'] = reduction
+    coll_args["operation"] = "REDUCESCATTER"
+    coll_args["reduction"] = reduction
     if context.executing_eagerly():
-        return OpLib.execute('Collective', inputs, **coll_args)
+        return OpLib.execute("Collective", inputs, **coll_args)
     kwargs.update(coll_args)
-    return OpLib.add('Collective', inputs, **kwargs)
+    return OpLib.add("Collective", inputs, **kwargs)

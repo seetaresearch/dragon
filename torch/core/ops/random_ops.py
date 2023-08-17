@@ -42,15 +42,22 @@ def normal(mean, std, size, out=None):
         The output tensor.
 
     """
-    dtype = out.dtype if out else 'float32'
+    dtype = out.dtype if out else "float32"
     device = out.device if out else cpp.device()
     return Function.apply(
-        'RandomNormal', device, [], outputs=[out],
-        dtype=dtype, mean=float(mean), std=float(std),
-        ndim=len(size), dims=size)
+        "RandomNormal",
+        device,
+        [],
+        outputs=[out],
+        dtype=dtype,
+        mean=float(mean),
+        std=float(std),
+        ndim=len(size),
+        dims=size,
+    )
 
 
-def rand(*size, out=None, dtype='float32', device=None, requires_grad=False):
+def rand(*size, out=None, dtype="float32", device=None, requires_grad=False):
     """Return a tensor from the uniform distribution of U(0, 1).
 
     Parameters
@@ -75,13 +82,21 @@ def rand(*size, out=None, dtype='float32', device=None, requires_grad=False):
     size = nest.flatten(size)
     device = out.device if out else (device or cpp.device())
     out = Function.apply(
-        'RandomUniform', device, [], outputs=[out],
-        dtype=dtype, low=0.0, high=1.0, ndim=len(size), dims=size)
+        "RandomUniform",
+        device,
+        [],
+        outputs=[out],
+        dtype=dtype,
+        low=0.0,
+        high=1.0,
+        ndim=len(size),
+        dims=size,
+    )
     out._requires_grad = requires_grad
     return out
 
 
-def randn(*size, out=None, dtype='float32', device=None, requires_grad=False):
+def randn(*size, out=None, dtype="float32", device=None, requires_grad=False):
     """Return a tensor from the normal distribution of N(0, 1).
 
     Parameters
@@ -106,13 +121,21 @@ def randn(*size, out=None, dtype='float32', device=None, requires_grad=False):
     size = nest.flatten(size)
     device = out.device if out else (device or cpp.device())
     out = Function.apply(
-        'RandomNormal', device, [], outputs=[out],
-        dtype=dtype, mean=0.0, std=1.0, ndim=len(size), dims=size)
+        "RandomNormal",
+        device,
+        [],
+        outputs=[out],
+        dtype=dtype,
+        mean=0.0,
+        std=1.0,
+        ndim=len(size),
+        dims=size,
+    )
     out._requires_grad = requires_grad
     return out
 
 
-def randperm(n, out=None, dtype='int64', device=None, requires_grad=False):
+def randperm(n, out=None, dtype="int64", device=None, requires_grad=False):
     """Return a tensor with value in the permuted range.
 
     Specify ``n`` to determine an interval :math:`[0, n)`:
@@ -141,9 +164,7 @@ def randperm(n, out=None, dtype='int64', device=None, requires_grad=False):
 
     """
     device = out.device if out else (device or cpp.device())
-    out = Function.apply(
-        'Permutation', device, [], outputs=[out],
-        dtype=dtype, limit=n)
+    out = Function.apply("Permutation", device, [], outputs=[out], dtype=dtype, limit=n)
     out._requires_grad = requires_grad
     return out
 
@@ -170,9 +191,16 @@ def uniform(low, high, size, out=None):
         The output tensor.
 
     """
-    dtype = out.dtype if out else 'float32'
+    dtype = out.dtype if out else "float32"
     device = out.device if out else cpp.device()
     return Function.apply(
-        'RandomUniform', device, [], outputs=[out],
-        dtype=dtype, low=float(low), high=float(high),
-        ndim=len(size), dims=size)
+        "RandomUniform",
+        device,
+        [],
+        outputs=[out],
+        dtype=dtype,
+        low=float(low),
+        high=float(high),
+        ndim=len(size),
+        dims=size,
+    )

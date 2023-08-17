@@ -35,14 +35,15 @@ class _Merge(Layer):
 
     def build(self, input_shape):
         if not nest.is_sequence(input_shape[0]):
-            raise ValueError('Excepted a sequence of inputs for merge layer.')
+            raise ValueError("Excepted a sequence of inputs for merge layer.")
         if len(input_shape) < 2:
-            raise ValueError('Excepted at least 2 inputs. '
-                             'Got ' + str(len(input_shape)) + ' inputs.')
+            raise ValueError(
+                "Excepted at least 2 inputs. " "Got " + str(len(input_shape)) + " inputs."
+            )
 
     def call(self, inputs):
         if not nest.is_sequence(inputs):
-            raise ValueError('Excepted a sequence of inputs for merge layer.')
+            raise ValueError("Excepted a sequence of inputs for merge layer.")
         return self._merge_function(inputs)
 
 
@@ -188,9 +189,9 @@ class Subtract(_Merge):
     def build(self, input_shape):
         super(Subtract, self).build(input_shape)
         if len(input_shape) != 2:
-            raise ValueError('Exactly 2 inputs could subtract.')
+            raise ValueError("Exactly 2 inputs could subtract.")
 
     def _merge_function(self, inputs):
         if len(inputs) != 2:
-            raise ValueError('Exactly 2 inputs could subtract.')
+            raise ValueError("Exactly 2 inputs could subtract.")
         return inputs[0] - inputs[1]

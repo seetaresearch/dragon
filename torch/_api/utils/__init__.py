@@ -18,4 +18,4 @@ from __future__ import print_function as _print_function
 from dragon.vm.torch._api.utils import checkpoint
 from dragon.vm.torch._api.utils import dlpack
 
-__all__ = [_s for _s in dir() if not _s.startswith('_')]
+__all__ = [_s for _s in dir() if not _s.startswith("_")]

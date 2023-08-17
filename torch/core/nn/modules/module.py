@@ -42,12 +42,12 @@ class Module(object):
 
     """
 
-    class _IncompatibleKeys(collections.namedtuple(
-            'IncompatibleKeys', ['missing_keys', 'unexpected_keys'])):
-
+    class _IncompatibleKeys(
+        collections.namedtuple("IncompatibleKeys", ["missing_keys", "unexpected_keys"])
+    ):
         def __repr__(self):
             if not self.missing_keys and not self.unexpected_keys:
-                return '<All keys matched successfully>'
+                return "<All keys matched successfully>"
             return super(Module._IncompatibleKeys, self).__repr__()
 
         __str__ = __repr__
@@ -181,7 +181,7 @@ class Module(object):
         for k, v in state_dict.items():
             states = dict()
             # Pop the unpickable states.
-            for name in ('_tape', '_impl', '_deleter', '_wrapped_tensor'):
+            for name in ("_tape", "_impl", "_deleter", "_wrapped_tensor"):
                 if hasattr(v, name):
                     states[name] = getattr(v, name)
                     setattr(v, name, None)
@@ -196,7 +196,7 @@ class Module(object):
             v_new._impl = v_copy._impl
             v_new._deleter = v_copy._deleter
             v_copy._deleter = None  # Managed by new tensor.
-            if hasattr(v_new, '_wrapped_tensor'):
+            if hasattr(v_new, "_wrapped_tensor"):
                 v_new._wrapped_tensor = v_copy
         return new_module
 
@@ -226,7 +226,7 @@ class Module(object):
 
     def extra_repr(self):
         """Set the extra representation."""
-        return ''
+        return ""
 
     def float(self):
         """Switch the buffers and parameters to ``float32``.
@@ -298,30 +298,38 @@ class Module(object):
         unexpected_keys = []
         error_msgs = []
 
-        def load(module, prefix=''):
+        def load(module, prefix=""):
             module._load_from_state_dict(
-                state_dict, prefix, True,
-                missing_keys, unexpected_keys, error_msgs)
+                state_dict, prefix, True, missing_keys, unexpected_keys, error_msgs
+            )
             for name, child in module._modules.items():
                 if child is not None:
-                    load(child, prefix + name + '.')
+                    load(child, prefix + name + ".")
 
         load(self)
 
         if strict:
             if len(unexpected_keys) > 0:
                 error_msgs.insert(
-                    0, 'Unexpected key(s) in state_dict: {}. '
-                    .format(', '.join('"{}"'.format(k) for k in unexpected_keys)))
+                    0,
+                    "Unexpected key(s) in state_dict: {}. ".format(
+                        ", ".join('"{}"'.format(k) for k in unexpected_keys)
+                    ),
+                )
             if len(missing_keys) > 0:
                 error_msgs.insert(
-                    0, 'Missing key(s) in state_dict: {}. '
-                    .format(', '.join('"{}"'.format(k) for k in missing_keys)))
+                    0,
+                    "Missing key(s) in state_dict: {}. ".format(
+                        ", ".join('"{}"'.format(k) for k in missing_keys)
+                    ),
+                )
 
         if len(error_msgs) > 0:
             raise RuntimeError(
-                'Error(s) in loading state_dict for {}:\n\t{}'
-                .format(self.__class__.__name__, "\n\t".join(error_msgs)))
+                "Error(s) in loading state_dict for {}:\n\t{}".format(
+                    self.__class__.__name__, "\n\t".join(error_msgs)
+                )
+            )
 
         return self._IncompatibleKeys(missing_keys, unexpected_keys)
 
@@ -379,7 +387,7 @@ class Module(object):
             device = config.config().device_index
         return self._apply(lambda t: t.mps(device))
 
-    def named_buffers(self, prefix='', recurse=True):
+    def named_buffers(self, prefix="", recurse=True):
         """Return an iterator over all buffers.
 
         Parameters
@@ -396,8 +404,8 @@ class Module(object):
 
         """
         gen = self._named_members(
-            lambda module: module._buffers.items(),
-            prefix=prefix, recurse=recurse)
+            lambda module: module._buffers.items(), prefix=prefix, recurse=recurse
+        )
         for name, buffer in gen:
             yield name, buffer
 
@@ -414,7 +422,7 @@ class Module(object):
             if module is not None:
                 yield name, module
 
-    def named_modules(self, memo=None, prefix=''):
+    def named_modules(self, memo=None, prefix=""):
         """Return an iterator over all modules, yield as ``(name, module)``.
 
         Parameters
@@ -438,11 +446,11 @@ class Module(object):
             for name, module in self._modules.items():
                 if module is None:
                     continue
-                submodule_prefix = prefix + ('.' if prefix else '') + name
+                submodule_prefix = prefix + ("." if prefix else "") + name
                 for m in module.named_modules(memo, submodule_prefix):
                     yield m
 
-    def named_parameters(self, prefix='', recurse=True):
+    def named_parameters(self, prefix="", recurse=True):
         """Return an iterator over all parameters.
 
         Parameters
@@ -459,8 +467,8 @@ class Module(object):
 
         """
         gen = self._named_members(
-            lambda module: module._parameters.items(),
-            prefix=prefix, recurse=recurse)
+            lambda module: module._parameters.items(), prefix=prefix, recurse=recurse
+        )
         for name, param in gen:
             yield name, param
 
@@ -495,8 +503,7 @@ class Module(object):
         if hasattr(self, name) and name not in self._buffers:
             raise KeyError("Attribute '{}' already exists".format(name))
         elif tensor is not None and not isinstance(tensor, Tensor):
-            raise TypeError("Cannot assign '{}' object to buffer '{}'."
-                            .format(type(tensor), name))
+            raise TypeError("Cannot assign '{}' object to buffer '{}'.".format(type(tensor), name))
         else:
             self._buffers[name] = tensor
 
@@ -538,19 +545,20 @@ class Module(object):
             The tensor to be registered.
 
         """
-        if '_parameters' not in self.__dict__:
+        if "_parameters" not in self.__dict__:
             raise AttributeError("Cannot assign parameter before init.")
         if hasattr(self, name) and name not in self._parameters:
             raise KeyError("Attribute '{}' already exists.".format(name))
         if param is None:
             self._parameters[name] = None
         elif not isinstance(param, Parameter):
-            raise TypeError("Cannot assign '{}' object to parameter '{}'."
-                            .format(type(param), name))
+            raise TypeError(
+                "Cannot assign '{}' object to parameter '{}'.".format(type(param), name)
+            )
         else:
             self._parameters[name] = param
 
-    def state_dict(self, destination=None, prefix='', to_numpy=False):
+    def state_dict(self, destination=None, prefix="", to_numpy=False):
         """Return a dict stored the buffers and parameters.
 
         Usually, we will use this method to renew another module:
@@ -589,15 +597,13 @@ class Module(object):
             destination = collections.OrderedDict()
         for name, param in self._parameters.items():
             if param is not None:
-                destination[prefix + name] = \
-                    param.cpu().numpy().copy() if to_numpy else param
+                destination[prefix + name] = param.cpu().numpy().copy() if to_numpy else param
         for name, buf in self._buffers.items():
             if buf is not None:
-                destination[prefix + name] = \
-                    buf.cpu().numpy().copy() if to_numpy else buf
+                destination[prefix + name] = buf.cpu().numpy().copy() if to_numpy else buf
         for name, module in self._modules.items():
             if module is not None:
-                module.state_dict(destination, prefix + name + '.', to_numpy=to_numpy)
+                module.state_dict(destination, prefix + name + ".", to_numpy=to_numpy)
         return destination
 
     def to(self, *args, **kwargs):
@@ -609,8 +615,8 @@ class Module(object):
             The self.
 
         """
-        dtype = kwargs.get('dtype', None)
-        device = kwargs.get('device', None)
+        dtype = kwargs.get("dtype", None)
+        device = kwargs.get("device", None)
         for arg in args:
             if isinstance(arg, cpp.dtype):
                 dtype = arg
@@ -620,18 +626,18 @@ class Module(object):
                 dtype, device = arg.dtype, arg.device
                 break
             else:
-                raise ValueError('Unsupported conversion target.')
+                raise ValueError("Unsupported conversion target.")
         if device is not None:
-            if device.type == 'cpu':
+            if device.type == "cpu":
                 self.cpu()
             else:
-                {'cuda': self.cuda,
-                 'mps': self.mps,
-                 'mlu': self.mlu}[device.type](device.index)
+                {"cuda": self.cuda, "mps": self.mps, "mlu": self.mlu}[device.type](device.index)
         if dtype is not None:
-            return {'float16': self.half,
-                    'float32': self.float,
-                    'float64': self.double}[dtype]()
+            return {
+                "float16": self.half,
+                "float32": self.float,
+                "float64": self.double,
+            }[dtype]()
         return self
 
     def train(self, mode=True):
@@ -686,8 +692,7 @@ class Module(object):
         error_msgs,
     ):
         """Load buffers and parameters from the state dict for this module only."""
-        local_name_params = itertools.chain(
-            self._parameters.items(), self._buffers.items())
+        local_name_params = itertools.chain(self._parameters.items(), self._buffers.items())
         local_state = {k: v for k, v in local_name_params if v is not None}
 
         for name, param in local_state.items():
@@ -696,32 +701,33 @@ class Module(object):
                 input_param = state_dict[key]
                 if input_param.shape != param.shape:
                     error_msgs.append(
-                        'Size of param({}) is ({}), while load from: ({}).'
-                        .format(name, ', '.join(
-                            [str(d) for d in param.shape]),
-                            ', '.join([str(d) for d in input_param.shape])))
+                        "Size of param({}) is ({}), while load from: ({}).".format(
+                            name,
+                            ", ".join([str(d) for d in param.shape]),
+                            ", ".join([str(d) for d in input_param.shape]),
+                        )
+                    )
                 if isinstance(input_param, Tensor):
                     param.copy_(input_param)
                 elif isinstance(input_param, numpy.ndarray):
                     param._impl.FromNumpy(input_param.copy(), True)
                 else:
                     error_msgs.append(
-                        'Excepted the input param is either '
-                        'torch.Tensor or numpy.ndarray, got {}.'
-                        .format(type(input_param)))
+                        "Excepted the input param is either "
+                        "torch.Tensor or numpy.ndarray, got {}.".format(type(input_param))
+                    )
             elif strict:
                 missing_keys.append(key)
 
         if strict:
             for key in state_dict.keys():
                 if key.startswith(prefix):
-                    input_name = key[len(prefix):]
-                    input_name = input_name.split('.', 1)[0]
-                    if input_name not in self._modules \
-                            and input_name not in local_state:
+                    input_name = key[len(prefix) :]
+                    input_name = input_name.split(".", 1)[0]
+                    if input_name not in self._modules and input_name not in local_state:
                         unexpected_keys.append(key)
 
-    def _named_members(self, getter, prefix='', recurse=True):
+    def _named_members(self, getter, prefix="", recurse=True):
         """Return the named members."""
         memo = set()
         modules = self.named_modules(prefix=prefix) if recurse else [(prefix, self)]
@@ -731,7 +737,7 @@ class Module(object):
                 if v is None or v in memo:
                     continue
                 memo.add(v)
-                name = module_prefix + ('.' if module_prefix else '') + k
+                name = module_prefix + ("." if module_prefix else "") + k
                 yield name, v
 
     def __call__(self, *args, **kwargs):
@@ -744,71 +750,67 @@ class Module(object):
         return outputs
 
     def __getattr__(self, item):
-        if '_parameters' in self.__dict__:
-            _parameters = self.__dict__['_parameters']
+        if "_parameters" in self.__dict__:
+            _parameters = self.__dict__["_parameters"]
             if item in _parameters:
                 return _parameters[item]
-        if '_buffers' in self.__dict__:
-            _buffers = self.__dict__['_buffers']
+        if "_buffers" in self.__dict__:
+            _buffers = self.__dict__["_buffers"]
             if item in _buffers:
                 return _buffers[item]
-        if '_modules' in self.__dict__:
-            modules = self.__dict__['_modules']
+        if "_modules" in self.__dict__:
+            modules = self.__dict__["_modules"]
             if item in modules:
                 return modules[item]
-        raise AttributeError("'{}' object has no attribute '{}'"
-                             .format(type(self).__name__, item))
+        raise AttributeError("'{}' object has no attribute '{}'".format(type(self).__name__, item))
 
     def __repr__(self):
         """Return a debug string."""
         extra_lines = []
         extra_repr = self.extra_repr()
         if extra_repr:
-            extra_lines = extra_repr.split('\n')
+            extra_lines = extra_repr.split("\n")
         child_lines = []
         for key, module in self._modules.items():
             mod_str = repr(module)
             mod_str = string.add_indent(mod_str, 2)
-            child_lines.append('(' + key + '): ' + mod_str)
+            child_lines.append("(" + key + "): " + mod_str)
         lines = extra_lines + child_lines
-        main_str = self._get_name() + '('
+        main_str = self._get_name() + "("
         if lines:
             if len(extra_lines) == 1 and not child_lines:
                 main_str += extra_lines[0]
             else:
-                main_str += '\n  ' + '\n  '.join(lines) + '\n'
-        main_str += ')'
+                main_str += "\n  " + "\n  ".join(lines) + "\n"
+        main_str += ")"
         return main_str
 
     def __setattr__(self, key, value):
         """Override it for detecting functions."""
-        params = self.__dict__.get('_parameters')
+        params = self.__dict__.get("_parameters")
         if isinstance(value, Parameter):
             if params is None:
-                raise AttributeError('Cannot assign parameter before init.')
+                raise AttributeError("Cannot assign parameter before init.")
             return self.register_parameter(key, value)
         elif params is not None and key in params:
             if value is not None:
-                raise TypeError("Cannot assign '{}' as parameter '{}'."
-                                .format(type(value), key))
+                raise TypeError("Cannot assign '{}' as parameter '{}'.".format(type(value), key))
             return self.register_parameter(key, value)
-        modules = self.__dict__.get('_modules')
+        modules = self.__dict__.get("_modules")
         if isinstance(value, Module):
             if modules is None:
-                raise AttributeError('Cannot assign module before init.')
+                raise AttributeError("Cannot assign module before init.")
             modules[key] = value
             return
         elif modules is not None and key in modules:
             if value is not None:
-                raise TypeError("Cannot assign '{}' as child module '{}'."
-                                .format(type(value), key))
+                raise TypeError("Cannot assign '{}' as child module '{}'.".format(type(value), key))
             modules[key] = value
             return
-        buffers = self.__dict__.get('_buffers')
+        buffers = self.__dict__.get("_buffers")
         if buffers is not None and key in buffers:
             if value is not None and not isinstance(value, Tensor):
-                raise TypeError("Cannot assign '{}' as buffer '{}'."
-                                .format(type(value), key))
+                raise TypeError("Cannot assign '{}' as buffer '{}'.".format(type(value), key))
             buffers[key] = value
             return
         object.__setattr__(self, key, value)
@@ -816,5 +818,5 @@ class Module(object):
     def __setstate__(self, state):
         """Override to restore the module dict."""
         self.__dict__.update(state)
-        if '_forward_pre_hooks' not in self.__dict__:
+        if "_forward_pre_hooks" not in self.__dict__:
             self._forward_pre_hooks = collections.OrderedDict()

@@ -84,29 +84,31 @@ class Affine(Module):
         if not fix_weight:
             self.weight = Parameter(constant_ops.ones(num_features))
             if inplace:
-                raise ValueError('In-place operation requires fixed weight.')
+                raise ValueError("In-place operation requires fixed weight.")
         else:
-            self.register_buffer('weight', constant_ops.ones(num_features))
+            self.register_buffer("weight", constant_ops.ones(num_features))
         if bias:
             if not fix_bias:
                 self.bias = Parameter(constant_ops.zeros(num_features))
             else:
-                self.register_buffer('bias', constant_ops.zeros(num_features))
+                self.register_buffer("bias", constant_ops.zeros(num_features))
         else:
             self.bias = None
 
     def extra_repr(self):
-        s = '{num_features}, ' \
-            'inplace={inplace}'.format(**self.__dict__)
+        s = "{num_features}, " "inplace={inplace}".format(**self.__dict__)
         if self.bias is None:
-            s += ', bias=False'
+            s += ", bias=False"
         return s
 
     def forward(self, input):
         return functional.affine(
-            input, self.weight, self.bias,
-            dim=-1 if input.device.type == 'mlu' else 1,
-            out=input if self.inplace else None)
+            input,
+            self.weight,
+            self.bias,
+            dim=-1 if input.device.type == "mlu" else 1,
+            out=input if self.inplace else None,
+        )
 
 
 class Identity(Module):
@@ -175,14 +177,15 @@ class Linear(Module):
         self.reset_parameters()
 
     def extra_repr(self):
-        return ('in_features={}, out_features={}, bias={}'
-                .format(self.in_features, self.out_features, self.bias is not None))
+        return "in_features={}, out_features={}, bias={}".format(
+            self.in_features, self.out_features, self.bias is not None
+        )
 
     def forward(self, input):
         return functional.linear(input, self.weight, self.bias)
 
     def reset_parameters(self):
-        stddev = 1. / math.sqrt(self.weight.size(1))
+        stddev = 1.0 / math.sqrt(self.weight.size(1))
         self.weight.data.uniform_(-stddev, stddev)
         if self.bias is not None:
             self.bias.data.uniform_(-stddev, stddev)

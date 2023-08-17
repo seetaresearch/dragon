@@ -56,6 +56,6 @@ class SGD(optimizer.Optimizer):
 
         """
         super(SGD, self).__init__(**kwargs)
-        self._op_type = 'NesterovSGD' if nesterov else 'MomentumSGD'
-        self._set_hyper('lr', lr)
-        self._set_hyper('momentum', momentum)
+        self._op_type = "NesterovSGD" if nesterov else "MomentumSGD"
+        self._set_hyper("lr", lr)
+        self._set_hyper("momentum", momentum)

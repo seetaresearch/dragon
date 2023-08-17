@@ -88,8 +88,9 @@ class Permute(Layer):
         self.dims = nest.flatten(dims)
         if sorted(dims) != list(range(1, len(dims) + 1)):
             raise ValueError(
-                'Argument <dims> should be consecutive and start from 1.\n'
-                'Got {}'.format(str(dims)))
+                "Argument <dims> should be consecutive and start from 1.\n"
+                "Got {}".format(str(dims))
+            )
         self.input_spec = InputSpec(ndim=len(self.dims) + 1)
 
     def call(self, inputs):
@@ -139,12 +140,7 @@ class UpSampling(Layer):
     """Upsampling layer."""
 
     def __init__(
-        self,
-        rank,
-        size=2,
-        data_format='channels_last',
-        interpolation='nearest',
-        **kwargs
+        self, rank, size=2, data_format="channels_last", interpolation="nearest", **kwargs
     ):
         """Create an ``Upsampling`` Layer.
 
@@ -179,13 +175,7 @@ class UpSampling(Layer):
 class UpSampling1D(UpSampling):
     """1D upsampling layer."""
 
-    def __init__(
-        self,
-        size=2,
-        data_format='channels_last',
-        interpolation='nearest',
-        **kwargs
-    ):
+    def __init__(self, size=2, data_format="channels_last", interpolation="nearest", **kwargs):
         """Create an ``Upsampling1D`` Layer.
 
         Parameters
@@ -199,24 +189,14 @@ class UpSampling1D(UpSampling):
 
         """
         super(UpSampling1D, self).__init__(
-            rank=1,
-            size=size,
-            data_format=data_format,
-            interpolation=interpolation,
-            **kwargs
+            rank=1, size=size, data_format=data_format, interpolation=interpolation, **kwargs
         )
 
 
 class UpSampling2D(UpSampling):
     """2D upsampling layer."""
 
-    def __init__(
-        self,
-        size=2,
-        data_format='channels_last',
-        interpolation='nearest',
-        **kwargs
-    ):
+    def __init__(self, size=2, data_format="channels_last", interpolation="nearest", **kwargs):
         """Create an ``Upsampling2D`` Layer.
 
         Parameters
@@ -233,7 +213,7 @@ class UpSampling2D(UpSampling):
             rank=2,
             size=size,
             data_format=data_format,
-            interpolation=interpolation.replace('bilinear', 'linear'),
+            interpolation=interpolation.replace("bilinear", "linear"),
             **kwargs
         )
 
@@ -241,13 +221,7 @@ class UpSampling2D(UpSampling):
 class UpSampling3D(UpSampling):
     """3D upsampling layer."""
 
-    def __init__(
-        self,
-        size=2,
-        data_format='channels_last',
-        interpolation='nearest',
-        **kwargs
-    ):
+    def __init__(self, size=2, data_format="channels_last", interpolation="nearest", **kwargs):
         """Create an ``Upsampling3D`` Layer.
 
         Parameters
@@ -264,7 +238,7 @@ class UpSampling3D(UpSampling):
             rank=3,
             size=size,
             data_format=data_format,
-            interpolation=interpolation.replace('trilinear', 'linear'),
+            interpolation=interpolation.replace("trilinear", "linear"),
             **kwargs
         )
 
@@ -272,7 +246,7 @@ class UpSampling3D(UpSampling):
 class ZeroPadding(Layer):
     """Zero padding layer."""
 
-    def __init__(self, rank, padding=1, data_format='channels_last', **kwargs):
+    def __init__(self, rank, padding=1, data_format="channels_last", **kwargs):
         """Create a ``ZeroPadding`` Layer.
 
         Parameters
@@ -289,7 +263,7 @@ class ZeroPadding(Layer):
         self.rank = rank
         self.padding = conv_utils.normalize_paddings(padding, rank)
         self.data_format = conv_utils.normalize_data_format(data_format)
-        if self.data_format == 'channels_first':
+        if self.data_format == "channels_first":
             self.padding = conv_utils.normalize_paddings(0, 2) + self.padding
         else:
             self.padding = conv_utils.normalize_paddings(0, 1) + self.padding
@@ -303,7 +277,7 @@ class ZeroPadding(Layer):
 class ZeroPadding1D(ZeroPadding):
     """1D zero padding layer."""
 
-    def __init__(self, padding=1, data_format='channels_last', **kwargs):
+    def __init__(self, padding=1, data_format="channels_last", **kwargs):
         """Create a ``ZeroPadding1D`` Layer.
 
         Parameters
@@ -315,13 +289,14 @@ class ZeroPadding1D(ZeroPadding):
 
         """
         super(ZeroPadding1D, self).__init__(
-            rank=1, padding=padding, data_format=data_format, **kwargs)
+            rank=1, padding=padding, data_format=data_format, **kwargs
+        )
 
 
 class ZeroPadding2D(ZeroPadding):
     """2D zero padding layer."""
 
-    def __init__(self, padding=1, data_format='channels_last', **kwargs):
+    def __init__(self, padding=1, data_format="channels_last", **kwargs):
         """Create a ``ZeroPadding2D`` Layer.
 
         Parameters
@@ -333,13 +308,14 @@ class ZeroPadding2D(ZeroPadding):
 
         """
         super(ZeroPadding2D, self).__init__(
-            rank=2, padding=padding, data_format=data_format, **kwargs)
+            rank=2, padding=padding, data_format=data_format, **kwargs
+        )
 
 
 class ZeroPadding3D(ZeroPadding):
     """3D zero padding layer."""
 
-    def __init__(self, padding=1, data_format='channels_last', **kwargs):
+    def __init__(self, padding=1, data_format="channels_last", **kwargs):
         """Create an ``ZeroPadding3D`` Layer.
 
         Parameters
@@ -351,4 +327,5 @@ class ZeroPadding3D(ZeroPadding):
 
         """
         super(ZeroPadding3D, self).__init__(
-            rank=3, padding=padding, data_format=data_format, **kwargs)
+            rank=3, padding=padding, data_format=data_format, **kwargs
+        )

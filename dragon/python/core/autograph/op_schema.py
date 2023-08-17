@@ -35,10 +35,10 @@ class OpSchema(object):
     def parse_args(locals):
         """Parse all the arguments into a dict."""
         __all__ = locals
-        kwargs = __all__.pop('kwargs')
+        kwargs = __all__.pop("kwargs")
         desc_generators = {}
         for k, v in kwargs.items():
-            if k.startswith('gen_desc_'):
+            if k.startswith("gen_desc_"):
                 desc_generators[k] = v
         for k in desc_generators.keys():
             kwargs.pop(k)
@@ -54,20 +54,23 @@ class OpSchema(object):
         def decorated(inner_function):
             def wrapper(*args, **kwargs):
                 if len(args) == 0:
-                    raise ValueError('Excepted the first argument is <inputs>.')
+                    raise ValueError("Excepted the first argument is <inputs>.")
                 inputs = nest.flatten(args[0])
                 if len(inputs) < min_num or len(inputs) > max_num:
                     raise ValueError(
-                        'The number of <inputs> is {}, '
-                        'not in range: [min={}, max={}].'
-                        .format(len(inputs), min_num, max_num))
+                        "The number of <inputs> is {}, "
+                        "not in range: [min={}, max={}].".format(len(inputs), min_num, max_num)
+                    )
                 return inner_function(inputs, *args[1:], **kwargs)
+
             return decorator.make_decorator(inner_function, wrapper)
+
         return decorated
 
     @staticmethod
     def convert_arg(name, name_v2=None, as_target=True):
         """Convert argument to match the execution."""
+
         def decorated(inner_function):
             def wrapper(*args, **kwargs):
                 def generator(arguments):
@@ -78,12 +81,14 @@ class OpSchema(object):
                     if name_v2 is not None:
                         arguments[key] = arguments.pop(name)
                     if types.is_tensor(arg):
-                        OpSchema._convert_to_desc(
-                            arguments, key, arg, as_target)
+                        OpSchema._convert_to_desc(arguments, key, arg, as_target)
                     return arguments
-                kwargs.update({'gen_desc_{}'.format(name): generator})
+
+                kwargs.update({"gen_desc_{}".format(name): generator})
                 return inner_function(*args, **kwargs)
+
             return decorator.make_decorator(inner_function, wrapper)
+
         return decorated
 
     @staticmethod
@@ -93,10 +98,10 @@ class OpSchema(object):
             arguments[name] = arg.numpy().tolist()
             return arguments
         if as_target:
-            if 'extra_inputs' not in arguments:
-                arguments['extra_inputs'] = []
-            arguments['extra_inputs'] += [arg]
+            if "extra_inputs" not in arguments:
+                arguments["extra_inputs"] = []
+            arguments["extra_inputs"] += [arg]
         if name in arguments:
             arguments.pop(name)
-        arguments[name + '_desc'] = arg.id
+        arguments[name + "_desc"] = arg.id
         return arguments

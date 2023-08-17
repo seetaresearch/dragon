@@ -163,29 +163,29 @@ from dragon.vm.torch.core.serialization import load
 from dragon.vm.torch.core.serialization import save
 
 # Aliases
-bool = dtype('bool')
-int8 = dtype('int8')
-uint8 = dtype('uint8')
-int16 = short = dtype('int16')
-int32 = int = dtype('int32')
-int64 = long = dtype('int64')
-qint8 = dtype('qint8')
-quint8 = dtype('quint8')
-qint32 = dtype('qint32')
-bfloat16 = dtype('bfloat16')
-float16 = half = dtype('float16')
-float32 = float = dtype('float32')
-float64 = double = dtype('float64')
-complex32 = dtype('complex32')
-complex64 = dtype('complex64')
-complex128 = dtype('complex128')
+bool = dtype("bool")
+int8 = dtype("int8")
+uint8 = dtype("uint8")
+int16 = short = dtype("int16")
+int32 = int = dtype("int32")
+int64 = long = dtype("int64")
+qint8 = dtype("qint8")
+quint8 = dtype("quint8")
+qint32 = dtype("qint32")
+bfloat16 = dtype("bfloat16")
+float16 = half = dtype("float16")
+float32 = float = dtype("float32")
+float64 = double = dtype("float64")
+complex32 = dtype("complex32")
+complex64 = dtype("complex64")
+complex128 = dtype("complex128")
 
 # Attributes
 _API_MODULE = autograd
 _current_module = _sys.modules[__name__]
 _api_dir = _os.path.dirname(_os.path.dirname(_API_MODULE.__file__))
-if not hasattr(_current_module, '__path__'):
+if not hasattr(_current_module, "__path__"):
     __path__ = [_api_dir]
 elif _api_dir not in __path__:
     __path__.append(_api_dir)
-__all__ = [_s for _s in dir() if not _s.startswith('_')]
+__all__ = [_s for _s in dir() if not _s.startswith("_")]

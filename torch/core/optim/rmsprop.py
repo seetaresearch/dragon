@@ -36,7 +36,7 @@ class RMSprop(Optimizer):
                             \frac{g}{\sqrt{v_{t}} + \epsilon}
                 \end{cases}
 
-    """
+    """  # noqa: E501
 
     def __init__(
         self,
@@ -68,14 +68,20 @@ class RMSprop(Optimizer):
 
         """
         if not 0 <= lr:
-            raise ValueError('Invalid learning rate: {}'.format(lr))
+            raise ValueError("Invalid learning rate: {}".format(lr))
         if not 0 <= eps:
-            raise ValueError('Invalid epsilon: {}'.format(eps))
-        if momentum < 0.:
-            raise ValueError('Invalid momentum: {}'.format(momentum))
+            raise ValueError("Invalid epsilon: {}".format(eps))
+        if momentum < 0.0:
+            raise ValueError("Invalid momentum: {}".format(momentum))
         if not 0 <= alpha:
-            raise ValueError('Invalid alpha: {}'.format(alpha))
-        defaults = dict(lr=lr, momentum=momentum, alpha=alpha, eps=eps,
-                        centered=centered, weight_decay=weight_decay)
+            raise ValueError("Invalid alpha: {}".format(alpha))
+        defaults = dict(
+            lr=lr,
+            momentum=momentum,
+            alpha=alpha,
+            eps=eps,
+            centered=centered,
+            weight_decay=weight_decay,
+        )
         super(RMSprop, self).__init__(params, defaults, **kwargs)
-        self._hyper_dict.pop('centered')  # Unsupported.
+        self._hyper_dict.pop("centered")  # Unsupported.

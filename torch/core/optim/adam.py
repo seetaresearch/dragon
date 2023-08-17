@@ -40,14 +40,7 @@ class Adam(Optimizer):
     """
 
     def __init__(
-        self,
-        params,
-        lr=1e-3,
-        betas=(0.9, 0.999),
-        eps=1e-8,
-        weight_decay=0,
-        amsgrad=False,
-        **kwargs
+        self, params, lr=1e-3, betas=(0.9, 0.999), eps=1e-8, weight_decay=0, amsgrad=False, **kwargs
     ):
         r"""Create an ``Adam`` optimizer.
 
@@ -68,19 +61,25 @@ class Adam(Optimizer):
 
         """
         if not 0 <= lr:
-            raise ValueError('Invalid learning rate: {}'.format(lr))
+            raise ValueError("Invalid learning rate: {}".format(lr))
         if not 0 <= eps:
-            raise ValueError('Invalid epsilon: {}'.format(eps))
+            raise ValueError("Invalid epsilon: {}".format(eps))
         if not 0 <= betas[0] < 1:
-            raise ValueError('Invalid beta1: {}'.format(betas[0]))
+            raise ValueError("Invalid beta1: {}".format(betas[0]))
         if not 0 <= betas[1] < 1:
-            raise ValueError('Invalid beta2: {}'.format(betas[1]))
+            raise ValueError("Invalid beta2: {}".format(betas[1]))
         if amsgrad:
             raise NotImplementedError
-        defaults = dict(lr=lr, beta1=betas[0], beta2=betas[1], eps=eps,
-                        amsgrad=amsgrad, weight_decay=weight_decay)
+        defaults = dict(
+            lr=lr,
+            beta1=betas[0],
+            beta2=betas[1],
+            eps=eps,
+            amsgrad=amsgrad,
+            weight_decay=weight_decay,
+        )
         super(Adam, self).__init__(params, defaults, **kwargs)
-        self._hyper_dict.pop('amsgrad')  # Unsupported.
+        self._hyper_dict.pop("amsgrad")  # Unsupported.
 
 
 class AdamW(Adam):
@@ -130,5 +129,11 @@ class AdamW(Adam):
 
         """
         super(AdamW, self).__init__(
-            params, lr=lr, betas=betas, eps=eps,
-            weight_decay=weight_decay, amsgrad=amsgrad, **kwargs)
+            params,
+            lr=lr,
+            betas=betas,
+            eps=eps,
+            weight_decay=weight_decay,
+            amsgrad=amsgrad,
+            **kwargs
+        )

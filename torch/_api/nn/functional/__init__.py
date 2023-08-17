@@ -81,4 +81,4 @@ from dragon.vm.torch.core.nn.functional import upsample
 from dragon.vm.torch.core.nn.functional import upsample_bilinear
 from dragon.vm.torch.core.nn.functional import upsample_nearest
 
-__all__ = [_s for _s in dir() if not _s.startswith('_')]
+__all__ = [_s for _s in dir() if not _s.startswith("_")]

@@ -33,7 +33,7 @@ def from_dlpack(dlpack):
 
     """
     default_ws = workspace.get_workspace()
-    impl = default_ws.create_tensor(scope='DLPack').FromDLPack(dlpack)
+    impl = default_ws.create_tensor(scope="DLPack").FromDLPack(dlpack)
     return Tensor(impl=impl, deleter=default_ws._handle_pool)
 
 
