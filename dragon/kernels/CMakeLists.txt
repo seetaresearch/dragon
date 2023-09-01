@@ -8,25 +8,8 @@ add_subdirectory(sequence)
 add_subdirectory(training)
 add_subdirectory(vision)
 
-# ---[ CUDA Sources
-if (USE_CUDA)
-  if (MSVC)
-    set(_gen_file ${CMAKE_CURRENT_BINARY_DIR}/../kernels/op_kernels.cu)
-    file(WRITE ${_gen_file} "")
-    foreach(_file ${KERNEL_CUDA_SOURCES})
-      file(STRINGS ${_file} tmp NEWLINE_CONSUME)
-      file(APPEND ${_gen_file} ${tmp} "\n")
-    endforeach()
-    set(MODULE_CUDA_SOURCES ${MODULE_CUDA_SOURCES} ${_gen_file})
-  else()
-    set(MODULE_CUDA_SOURCES ${MODULE_CUDA_SOURCES} ${KERNEL_CUDA_SOURCES})
-  endif()
-endif()
-
-# ---[ MLU Sources
-if (USE_MLU)
-  set(MODULE_MLU_SOURCES ${MODULE_MLU_SOURCES} ${KERNEL_MLU_SOURCES})
-endif()
+set(MODULE_CUDA_SOURCES ${MODULE_CUDA_SOURCES} ${KERNEL_CUDA_SOURCES})
+set(MODULE_MLU_SOURCES ${MODULE_MLU_SOURCES} ${KERNEL_MLU_SOURCES})
 
 # Submit to the parent scope.
 set(MODULE_SOURCES ${MODULE_SOURCES} PARENT_SCOPE)

@@ -40,11 +40,6 @@ CONVERSIONS_DECL float16 To<float16, float16>(float16 val) {
 }
 
 template <>
-CONVERSIONS_DECL bfloat16 To<bfloat16, bfloat16>(bfloat16 val) {
-  return val;
-}
-
-template <>
 CONVERSIONS_DECL float16 To<float16, float>(float val) {
   float16 ret;
   unsigned int x, remainder, result;
@@ -82,6 +77,16 @@ CONVERSIONS_DECL float16 To<float16, float>(float val) {
 }
 
 template <>
+CONVERSIONS_DECL float16 To<float16, double>(double val) {
+  return To<float16>(static_cast<float>(val));
+}
+
+template <>
+CONVERSIONS_DECL bfloat16 To<bfloat16, bfloat16>(bfloat16 val) {
+  return val;
+}
+
+template <>
 CONVERSIONS_DECL bfloat16 To<bfloat16, float>(float val) {
   bfloat16 ret;
   unsigned int x, remainder;
@@ -98,6 +103,11 @@ CONVERSIONS_DECL bfloat16 To<bfloat16, float>(float val) {
     ret.x++;
   }
   return ret;
+}
+
+template <>
+CONVERSIONS_DECL bfloat16 To<bfloat16, double>(double val) {
+  return To<bfloat16>(static_cast<float>(val));
 }
 
 template <>
@@ -139,13 +149,13 @@ CONVERSIONS_DECL float To<float, bfloat16>(bfloat16 val) {
 }
 
 template <>
-CONVERSIONS_DECL float16 To<float16, double>(double val) {
-  return To<float16>(static_cast<float>(val));
+CONVERSIONS_DECL float16 To<float16, bfloat16>(bfloat16 val) {
+  return To<float16>(To<float>(val));
 }
 
 template <>
-CONVERSIONS_DECL bfloat16 To<bfloat16, double>(double val) {
-  return To<bfloat16>(static_cast<float>(val));
+CONVERSIONS_DECL bfloat16 To<bfloat16, float16>(float16 val) {
+  return To<bfloat16>(To<float>(val));
 }
 
 #if defined(__CUDACC__)

@@ -22,7 +22,7 @@ CUDA_SELECT_NVCC_ARCH_FLAGS(CUDA_ARCH ${CUDA_ARCH})
 set(CUDA_NVCC_FLAGS "${CUDA_NVCC_FLAGS} ${CUDA_ARCH} -Wno-deprecated-gpu-targets")
 if (MSVC)
   # Suppress all warnings for msvc compiler.
-  set(CUDA_NVCC_FLAGS "${CUDA_NVCC_FLAGS} -w")
+  set(CUDA_NVCC_FLAGS "${CUDA_NVCC_FLAGS} -w -std=c++14")
 else()
   set(CUDA_NVCC_FLAGS "${CUDA_NVCC_FLAGS} -std=c++14")
   set(CUDA_NVCC_FLAGS "${CUDA_NVCC_FLAGS} --compiler-options -Wno-attributes")

@@ -10,7 +10,9 @@ set ORIGINAL_DIR=%cd%
 set SOURCE_DIR=%~dp0%\..
 set BUILD_DIR=%~dp0%\..\build
 set THIRD_PARTY_DIR=%SOURCE_DIR%\third_party
-set CMAKE_GENERATOR="Visual Studio 16 2019"
+set CMAKE_GENERATOR="Ninja"
+call "%VS160COMNTOOLS%\VsDevCmd.bat" -arch=x64
+set NUM_PROCESSORS=%NUMBER_OF_PROCESSORS%
 
 :: Build Options
 set BUILD_PYTHON=ON
@@ -39,7 +41,6 @@ cd %BUILD_DIR%
 
 cmake %SOURCE_DIR%  ^
   -G%CMAKE_GENERATOR% ^
-  -Ax64 ^
   -DBUILD_PYTHON=%BUILD_PYTHON% ^
   -DBUILD_RUNTIME=%BUILD_RUNTIME% ^
   -DUSE_CUDA=%USE_CUDA% ^
@@ -54,7 +55,8 @@ cmake %SOURCE_DIR%  ^
   -DPYTHON_EXECUTABLE=%PYTHON_EXECUTABLE% ^
   || goto :label_error
 
-cmake --build . --target INSTALL --config Release -- /maxcpucount:%NUMBER_OF_PROCESSORS% || goto :label_error
+cmake --build . --config Release -j %NUM_PROCESSORS% || goto :label_error
+cmake --install . || goto :label_error
 cd %SOURCE_DIR% && pip install . | goto :label_error
 
 echo=
