@@ -57,7 +57,12 @@ vector<string> MPSObjects::GetDeviceFamily(int device_id) {
   }
 #if (MPS_OSX_VERSION_MAJOR >= 13)
   if ([device supportsFamily:MTLGPUFamilyApple8]) {
-    ret.push_back("Apple8"); // A15, M2
+    ret.push_back("Apple8"); // A15, A16, M2
+  }
+#endif
+#if (MPS_OSX_VERSION_MAJOR >= 14)
+  if ([device supportsFamily:MTLGPUFamilyApple9]) {
+    ret.push_back("Apple9"); // A17
   }
 #endif
   return ret;
@@ -79,11 +84,15 @@ MPSStream::MPSStream(int device_id) : device_id_(device_id) {
   auto* device = MPSContext::objects().devices_[device_id];
   command_queue_ = [device newCommandQueue];
   execution_desc_ = [MPSGraphExecutionDescriptor new];
+  compilation_desc_ = [MPSGraphCompilationDescriptor new];
+  compilation_desc_.optimizationLevel = MPSGraphOptimizationLevel0;
+  execution_desc_.compilationDescriptor = compilation_desc_;
 }
 
 MPSStream::~MPSStream() {
   [command_queue_ release];
   [execution_desc_ release];
+  [compilation_desc_ release];
   if (command_buffer_) CommitAndWait();
 }
 

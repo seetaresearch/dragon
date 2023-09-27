@@ -15,7 +15,6 @@ from __future__ import division
 from __future__ import print_function
 
 import collections
-import copy
 import itertools
 
 import numpy
@@ -167,38 +166,6 @@ class Module(object):
         if device is None:
             device = config.config().device_index
         return self._apply(lambda t: t.cuda(device))
-
-    def copy(self):
-        """Return a copy of this module.
-
-        Returns
-        -------
-        dragon.vm.torch.nn.Module
-            The new module.
-
-        """
-        memo, state_dict = dict(), self.state_dict()
-        for k, v in state_dict.items():
-            states = dict()
-            # Pop the unpickable states.
-            for name in ("_tape", "_impl", "_deleter", "_wrapped_tensor"):
-                if hasattr(v, name):
-                    states[name] = getattr(v, name)
-                    setattr(v, name, None)
-            memo[k] = states
-        new_module = copy.deepcopy(self)
-        new_state_dict = new_module.state_dict()
-        for k, v in state_dict.items():
-            for name, state in memo.pop(k).items():
-                setattr(v, name, state)
-            v_new = new_state_dict[k]
-            v_copy = v.new_empty(*v.size()).copy_(v)
-            v_new._impl = v_copy._impl
-            v_new._deleter = v_copy._deleter
-            v_copy._deleter = None  # Managed by new tensor.
-            if hasattr(v_new, "_wrapped_tensor"):
-                v_new._wrapped_tensor = v_copy
-        return new_module
 
     def double(self):
         """Switch the buffers and parameters to ``float64``.

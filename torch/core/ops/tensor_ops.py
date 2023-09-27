@@ -2060,7 +2060,7 @@ def nonzero(self):
     return array_ops.nonzero(self)
 
 
-def norm(self, p="fro", dim=None, keepdim=False, out=None, dtype=None):
+def norm(self, p="fro", dim=None, keepdim=False, dtype=None):
     """Return the norm of elements along the given dimension.
 
     Parameters

@@ -2260,7 +2260,7 @@ class Tensor(object):
 
         """
 
-    def norm(self, p="fro", dim=None, keepdim=False, out=None, dtype=None):
+    def norm(self, p="fro", dim=None, keepdim=False, dtype=None):
         """Return the norm of elements along the given dimension.
 
         Parameters
@@ -3475,6 +3475,7 @@ class Tensor(object):
         self._impl = default_ws.create_tensor(scope=var_scope)
         self._impl.FromNumpy(array, False)
         self._deleter = default_ws._handle_pool
+        return self
 
     def _from_shape(self, shape, dtype):
         """Create implementation from the shape."""
@@ -3483,6 +3484,7 @@ class Tensor(object):
         self._impl = default_ws.create_tensor(scope=var_scope)
         self._impl.FromShape(shape, dtype)
         self._deleter = default_ws._handle_pool
+        return self
 
     def __add__(self, other):
         """Compute element-wise addition.
@@ -3572,6 +3574,22 @@ class Tensor(object):
             The output tensor.
 
         """
+
+    def __getstate__(self):
+        """Return the serialization state.
+
+        Returns
+        -------
+        Dict
+            The state dict.
+
+        """
+        state = {"requires_grad": self.requires_grad}
+        device = self.__dict__.get("_save_device", self.device.copy())
+        state["device"] = cpp.device(device) if isinstance(device, str) else device
+        if self._impl is not None:
+            state["array"] = self._impl.ToNumpy(copy=True)
+        return state
 
     def __gt__(self, other):
         """Compute element-wise greater comparison.
@@ -3856,6 +3874,14 @@ class Tensor(object):
         """
 
     def __repr__(self):
+        """Return the representation string.
+
+        Returns
+        -------
+        str
+            The representation string.
+
+        """
         array = self.numpy()
         if len(array.shape) == 0:
             return str(array)
@@ -3930,6 +3956,22 @@ class Tensor(object):
 
     def __setitem__(self, key, value):
         """Set elements at the specific index."""
+
+    def __setstate__(self, state):
+        """Set the serialization state.
+
+        Parameters
+        ----------
+        state : Dict
+            The state dict.
+
+        """
+        self._tape = None
+        self._device = state.get("device", cpp.device())
+        self._requires_grad = state.get("requires_grad", False)
+        self._retains_grad = False
+        if "array" in state:
+            self._from_array(state["array"]).to(device=state["device"])
 
     def __sub__(self, other):
         """Compute element-wise subtraction.

@@ -15,6 +15,7 @@ from __future__ import division
 from __future__ import print_function
 
 import collections
+import copy
 import math
 import os
 import unittest
@@ -107,7 +108,7 @@ class TestModule(unittest.TestCase):
         self.assertEqual(m.bias.requires_grad, False)
         m.apply(lambda m: m.train())
         self.assertEqual(m.training, True)
-        mm = m.copy()
+        mm = copy.deepcopy(m)
         m.weight.data.add_(1)
         self.assertEqual(int(mm.weight), 1)
         logging.set_verbosity("FATAL")

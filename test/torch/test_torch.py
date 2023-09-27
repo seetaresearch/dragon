@@ -15,6 +15,7 @@ from __future__ import division
 from __future__ import print_function
 
 import collections
+import copy
 import io
 import os.path
 import tempfile
@@ -54,6 +55,7 @@ class TestTensor(unittest.TestCase):
         self.assertEqual(float(a.grad), 2.0)
         self.assertEqual(b.grad, None)
         self.assertEqual(int(a.detach()), 0)
+        self.assertEqual(int(copy.deepcopy(a + 233)), 233)
         self.assertEqual(torch.Tensor([0]).dim(), 1)
         self.assertEqual(float(torch.Tensor(1).one_()), 1.0)
         self.assertEqual(torch.tensor(2.333).item(), 2.333)
@@ -149,6 +151,7 @@ class TestSerialization(unittest.TestCase):
         )
         f = io.BytesIO()
         torch.save(state_dict, f)
+        torch.save(state_dict, f, map_location="cpu")
         f.seek(0)
         state_dict2 = torch.load(f)
         self.assertEqual(state_dict["b"], state_dict2["b"])
@@ -157,6 +160,7 @@ class TestSerialization(unittest.TestCase):
         self.assertEqual(state_dict["d"]["g"]["h"], state_dict2["d"]["g"]["h"])
         f = io.BytesIO()
         torch.save(torch.Tensor(2, 3), f)
+        torch.save(torch.Tensor(2, 3), f, map_location="cpu")
         f = io.BytesIO()
         torch.save([1, 2, 3], f)
         f = os.path.join(tempfile.gettempdir(), "test_dragon_vm_torch_save")

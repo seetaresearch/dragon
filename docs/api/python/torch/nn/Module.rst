@@ -26,10 +26,6 @@ children
 ########
 .. automethod:: dragon.vm.torch.nn.Module.children
 
-copy
-####
-.. automethod:: dragon.vm.torch.nn.Module.copy
-
 cpu
 ###
 .. automethod:: dragon.vm.torch.nn.Module.cpu

@@ -73,17 +73,14 @@ class TransformerDecoder(Module):
         """
         super(TransformerDecoder, self).__init__()
         self.layers = ModuleList(
-            [
-                TransformerDecoderLayer(
-                    d_model=d_model,
-                    nhead=nhead,
-                    dim_feedforward=dim_feedforward,
-                    dropout=dropout,
-                    activation=activation,
-                    norm_first=norm_first,
-                )
-                for _ in range(num_layers)
-            ]
+            TransformerDecoderLayer(
+                d_model=d_model,
+                nhead=nhead,
+                dim_feedforward=dim_feedforward,
+                dropout=dropout,
+                activation=activation,
+                norm_first=norm_first,
+            )
         )
         self.num_layers = num_layers
         self.norm = norm
@@ -285,17 +282,15 @@ class TransformerEncoder(Module):
         """
         super(TransformerEncoder, self).__init__()
         self.layers = ModuleList(
-            [
-                TransformerEncoderLayer(
-                    d_model=d_model,
-                    nhead=nhead,
-                    dim_feedforward=dim_feedforward,
-                    dropout=dropout,
-                    activation=activation,
-                    norm_first=norm_first,
-                )
-                for _ in range(num_layers)
-            ]
+            TransformerEncoderLayer(
+                d_model=d_model,
+                nhead=nhead,
+                dim_feedforward=dim_feedforward,
+                dropout=dropout,
+                activation=activation,
+                norm_first=norm_first,
+            )
+            for _ in range(num_layers)
         )
         self.num_layers = num_layers
         self.norm = norm

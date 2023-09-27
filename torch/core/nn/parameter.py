@@ -56,4 +56,31 @@ class Parameter(Tensor):
         self._wrapped_tensor = tensor
 
     def __repr__(self):
+        """Return the representation string.
+
+        Returns
+        -------
+        str
+            The representation string.
+
+        """
         return "Parameter containing:\n" + super(Parameter, self).__repr__()
+
+    def __setstate__(self, state):
+        """Set the serialization state.
+
+        Parameters
+        ----------
+        state : Dict
+            The state dict.
+
+        """
+        self._is_leaf = True
+        self._wrapped_tensor = Tensor()
+        self._wrapped_tensor.__setstate__(state)
+        state.pop("array", None)
+        super(Parameter, self).__setstate__(state)
+        self._impl = self._wrapped_tensor._impl
+        self._deleter = None
+
+

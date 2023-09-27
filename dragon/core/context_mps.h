@@ -71,6 +71,7 @@ class DRAGON_API MPSStream {
   MTLCommandQueue_t command_queue_ = nil;
   MPSCommandBuffer_t command_buffer_ = nil;
   MPSGraphExecutionDescriptor_t execution_desc_ = nil;
+  MPSGraphCompilationDescriptor_t compilation_desc_ = nil;
 };
 
 /*!
