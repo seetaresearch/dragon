@@ -70,41 +70,32 @@ __mlu_entry__ void _SmoothL1LossGrad(
 
 } // namespace
 
-#define DEFINE_KERNEL_LAUNCHER(name, T)                        \
-  template <>                                                  \
-  void name<T, MLUContext>(                                    \
-      const int N,                                             \
-      const float beta,                                        \
-      const T* input,                                          \
-      const T* target,                                         \
-      T* loss,                                                 \
-      MLUContext* ctx) {                                       \
-    _##name<<<                                                 \
-        MLU_BLOCKS(N, BLOCK_THREADS),                          \
-        CNRT_FUNC_TYPE_BLOCK,                                  \
-        ctx->mlu_stream()>>>(N, T(beta), input, target, loss); \
+#define DEFINE_KERNEL_LAUNCHER(name, T)                                \
+  template <>                                                          \
+  void name<T, MLUContext>(                                            \
+      const int N,                                                     \
+      const float beta,                                                \
+      const T* input,                                                  \
+      const T* target,                                                 \
+      T* loss,                                                         \
+      MLUContext* ctx) {                                               \
+    _##name<<<                                                         \
+        MLU_BLOCKS(N, BLOCK_THREADS),                                  \
+        CNRT_FUNC_TYPE_BLOCK,                                          \
+        ctx->mlu_stream()>>>(                                          \
+        N,                                                             \
+        math::Traits<T>::scalar_type(beta),                            \
+        reinterpret_cast<const math::Traits<T>::scalar_type*>(input),  \
+        reinterpret_cast<const math::Traits<T>::scalar_type*>(target), \
+        reinterpret_cast<math::Traits<T>::scalar_type*>(loss));        \
   }
 
 DEFINE_KERNEL_LAUNCHER(SmoothL1Loss, float);
-DEFINE_KERNEL_LAUNCHER(SmoothL1LossGrad, float);
-#undef DEFINE_KERNEL_LAUNCHER
-
-#define DEFINE_KERNEL_LAUNCHER(name, T)                                  \
-  template <>                                                            \
-  void name<T, MLUContext>(                                              \
-      const int N,                                                       \
-      const float beta,                                                  \
-      const T* input,                                                    \
-      const T* target,                                                   \
-      T* loss,                                                           \
-      MLUContext* ctx) {                                                 \
-    LOG(FATAL) << "Unsupported BANG type for <" << #name                 \
-               << "Kernel>: " << dtypes::to_string(TypeMeta::Make<T>()); \
-  }
-
 DEFINE_KERNEL_LAUNCHER(SmoothL1Loss, double);
+DEFINE_KERNEL_LAUNCHER(SmoothL1LossGrad, float);
 DEFINE_KERNEL_LAUNCHER(SmoothL1LossGrad, double);
 #undef DEFINE_KERNEL_LAUNCHER
+#undef BLOCK_THREADS
 
 } // namespace kernels
 

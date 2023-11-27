@@ -8,21 +8,33 @@ namespace dragon {
 MLUObjects::~MLUObjects() {
   for (int device_id = 0; device_id < MLU_MAX_DEVICES; ++device_id) {
     for (auto& iter : cncl_comms_[device_id]) {
-      if (iter.second) cnclDestroyComms(&iter.second, 1);
+      if (iter.second) CNCL_CHECK(cnclDestroyComms(&iter.second, 1));
     }
     for (auto& iter : cnrand_generators_[device_id]) {
-      if (iter.second) cnnlRandDestroyGenerator(iter.second);
+      if (iter.second) CNNL_CHECK(cnnlRandDestroyGenerator(iter.second));
     }
     for (auto& handle : cnnl_handles_[device_id]) {
-      if (handle) cnnlDestroy(handle);
+      if (handle) CNNL_CHECK(cnnlDestroy(handle));
     }
     for (auto& stream : streams_[device_id]) {
-      if (stream) cnrtQueueDestroy(stream);
+      if (stream) CNRT_CHECK(cnrtQueueDestroy(stream));
     }
     for (auto& workspace : workspaces_[device_id]) {
       if (workspace) delete workspace;
     }
   }
+}
+
+cnrtQueue_t MLUObjects::stream(int device_id, int stream_id) {
+  auto& streams = streams_[device_id];
+  if (streams.size() <= unsigned(stream_id)) {
+    streams.resize(stream_id + 1, nullptr);
+  }
+  if (!streams[stream_id]) {
+    MLUDeviceGuard guard(device_id);
+    CNRT_CHECK(cnrtQueueCreate(&streams[stream_id]));
+  }
+  return streams[stream_id];
 }
 
 cnnlHandle_t MLUObjects::cnnl_handle(int device_id, int stream_id) {

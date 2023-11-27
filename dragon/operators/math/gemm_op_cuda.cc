@@ -40,6 +40,7 @@ void CUDAGemmOp<Context>::DoRunWithType() {
 
   // Copy matrix C to Y if not fused.
   auto fuse_bias = beta_ == 1.f && InputSize() > 2;
+  Y_impl_.SetEpilogueAndBias(CUBLASLT_EPILOGUE_DEFAULT, (T*)nullptr_t);
   if (InputSize() > 2) {
     auto& C = Input(2);
     fuse_bias = fuse_bias && C.ndim() == 1 && C.count() == N;

@@ -50,7 +50,7 @@ class FunctionGuard(function_lib.FunctionGuard):
                 if isinstance(input, Tensor):
                     inputs[-1].copy_(input)
             with tapes.Tape() as function_tape:
-                function_tape._tracing = True
+                function_tape._tracing = f"{id(self)}/"
                 attributes["inputs"] = inputs
                 attributes["outputs"] = self._run_function(*inputs, **kwargs)
                 attributes["operators"] = function_tape.get_elements()
@@ -125,10 +125,10 @@ def trace(func=None, example_inputs=None):
     def decorated(inner_function):
         if example_inputs is not None:
             input_signatures = []
-            for inp in nest.flatten(example_inputs):
-                if inp is not None:
+            for input in nest.flatten(example_inputs):
+                if input is not None:
                     input_signatures.append(
-                        {"shape": inp.shape, "dtype": inp.dtype, "device": inp.device}
+                        {"shape": input.shape, "dtype": input.dtype, "device": input.device}
                     )
                 else:
                     input_signatures.append(None)

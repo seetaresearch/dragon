@@ -61,7 +61,7 @@ void CollectiveOp<Context>::DoRunWithType() {
         ctx());
   } else if (operation_ == "ALLGATHER") {
     auto dest_dims = src_tensor_->dims();
-    dest_dims[0] *= coll_impl_.comm_size();
+    dest_dims.insert(dest_dims.begin(), coll_impl_.comm_size());
     coll_impl_.AllGather(
         src_tensor_->template data<T, Context>(),
         dest_tensor_->Reshape(dest_dims)->template mutable_data<T, Context>(),
@@ -89,8 +89,6 @@ void CollectiveOp<Context>::DoRunWithType() {
 template <class Context>
 void CollectiveOp<Context>::RunOnDevice() {
   if (coll_impl_.comm_size() <= 1) return;
-  // Wait stream to finish the enqueued kernels.
-  ctx()->FinishDeviceComputation();
   // Enqueue collective kernels.
   for (src_index_ = 0; src_index_ < InputSize();) {
     src_tensor_ = &Input(src_index_), dest_tensor_ = Output(src_index_);

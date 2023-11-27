@@ -168,23 +168,28 @@ def eye(
     return out
 
 
-def from_numpy(ndarray):
+def from_numpy(ndarray, out=None):
     """Create a tensor converting from the given numpy array.
 
     Parameters
     ----------
     ndarray : numpy.ndarray
         The numpy array data.
+    out : dragon.vm.torch.Tensor, optional
+        The output tensor.
 
-    Return
-    ------
+    Returns
+    -------
     dragon.vm.torch.Tensor
-        The torch tensor.
+        The output tensor.
 
     """
     if not isinstance(ndarray, numpy.ndarray):
         raise TypeError("<ndarray> should be a numpy array.")
-    return Tensor(ndarray, copy=False)
+    if out is None:
+        return Tensor(ndarray, copy=False)
+    out._impl.FromNumpy(ndarray, copy=False)
+    return out
 
 
 def full(

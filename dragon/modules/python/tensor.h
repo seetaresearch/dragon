@@ -273,6 +273,7 @@ void RegisterModule_tensor(py::module& m) {
                 << "\nTensor(" << self->name() << ") "
                 << "does not initialize or had been reset.";
             self->memory()->SwitchToCUDADevice(device_id);
+            self->memory()->ToCUDA();
 #else
        CUDA_NOT_COMPILED;
 #endif
@@ -287,6 +288,7 @@ void RegisterModule_tensor(py::module& m) {
                 << "\nTensor(" << self->name() << ") "
                 << "does not initialize or had been reset.";
             self->memory()->SwitchToMPSDevice(device_id);
+            self->memory()->ToMPS();
 #else
        MPS_NOT_COMPILED;
 #endif
@@ -301,6 +303,7 @@ void RegisterModule_tensor(py::module& m) {
                 << "\nTensor(" << self->name() << ") "
                 << "does not initialize or had been reset.";
             self->memory()->SwitchToMLUDevice(device_id);
+            self->memory()->ToMLU();
 #else
        MLU_NOT_COMPILED;
 #endif

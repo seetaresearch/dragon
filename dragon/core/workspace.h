@@ -58,17 +58,13 @@ class DRAGON_API Workspace {
   Tensor* GetTensor(const string& name, bool external = true) const;
 
   /*! \brief Run the operator */
-  void RunOperator(const OperatorDef& def);
+  void RunOperator(const OperatorDef& def, int stream = 0);
 
   /*! \brief Create the graph */
   GraphBase* CreateGraph(const GraphDef& def);
 
   /*! \brief Run the graph */
-  void RunGraph(
-      const string& name,
-      const string& include = "",
-      const string& exclude = "",
-      int stream = 0);
+  void RunGraph(const string& name, int stream = 0);
 
   /*! \brief Return the workspace name */
   const string& name() {

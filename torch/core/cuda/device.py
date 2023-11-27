@@ -15,6 +15,7 @@ from __future__ import division
 from __future__ import print_function
 
 from dragon.core.framework import backend
+from dragon.core.framework import workspace
 
 
 def current_device():
@@ -109,7 +110,7 @@ def set_device(device):
 
 
 def synchronize(device=None):
-    """Synchronize all streams on a device.
+    """Synchronize the workspace stream on a device.
 
     If ``device`` is **None**, the current device will be selected.
 
@@ -121,4 +122,5 @@ def synchronize(device=None):
     """
     device = -1 if device is None else device
     device_index = device.index if hasattr(device, "index") else device
-    backend.cudaStreamSynchronize(device_index, 0)
+    stream_index = workspace.get_workspace().get_stream()
+    backend.cudaStreamSynchronize(device_index, stream_index)

@@ -47,7 +47,7 @@ def get_device_capability(device_index=None):
         The major and minor number.
 
     """
-    device_index = device_index if device_index else -1
+    device_index = -1 if device_index is None else device_index
     return backend.mluGetDeviceCapability(device_index)
 
 
@@ -79,7 +79,7 @@ def get_device_name(device_index=None):
         The device name.
 
     """
-    device_index = device_index if device_index else -1
+    device_index = -1 if device_index is None else device_index
     return backend.mluGetDeviceName(device_index)
 
 

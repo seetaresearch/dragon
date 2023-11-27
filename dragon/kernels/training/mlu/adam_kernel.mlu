@@ -132,48 +132,26 @@ __mlu_entry__ void _AdamW(
         CNRT_FUNC_TYPE_BLOCK,                                         \
         ctx->mlu_stream()>>>(                                         \
         N,                                                            \
-        T(lr),                                                        \
-        T(beta1),                                                     \
-        T(beta2),                                                     \
-        T(eps),                                                       \
-        T(wd),                                                        \
-        x,                                                            \
-        g,                                                            \
-        m,                                                            \
-        v,                                                            \
-        y,                                                            \
+        math::Traits<T>::scalar_type(lr),                             \
+        math::Traits<T>::scalar_type(beta1),                          \
+        math::Traits<T>::scalar_type(beta2),                          \
+        math::Traits<T>::scalar_type(eps),                            \
+        math::Traits<T>::scalar_type(wd),                             \
+        reinterpret_cast<const math::Traits<T>::scalar_type*>(x),     \
+        reinterpret_cast<const math::Traits<T>::scalar_type*>(g),     \
+        reinterpret_cast<math::Traits<T>::scalar_type*>(m),           \
+        reinterpret_cast<math::Traits<T>::scalar_type*>(v),           \
+        reinterpret_cast<math::Traits<T>::scalar_type*>(y),           \
         reinterpret_cast<math::Traits<CopyT>::scalar_type*>(y_copy)); \
   }
 
 DEFINE_KERNEL_LAUNCHER(Adam, float, float16);
 DEFINE_KERNEL_LAUNCHER(Adam, float, bfloat16);
 DEFINE_KERNEL_LAUNCHER(Adam, float, float);
+DEFINE_KERNEL_LAUNCHER(Adam, double, double);
 DEFINE_KERNEL_LAUNCHER(AdamW, float, float16);
 DEFINE_KERNEL_LAUNCHER(AdamW, float, bfloat16);
 DEFINE_KERNEL_LAUNCHER(AdamW, float, float);
-#undef DEFINE_KERNEL_LAUNCHER
-
-#define DEFINE_KERNEL_LAUNCHER(name, T, CopyT)                           \
-  template <>                                                            \
-  void name<T, CopyT, MLUContext>(                                       \
-      const int N,                                                       \
-      const float lr,                                                    \
-      const float beta1,                                                 \
-      const float beta2,                                                 \
-      const float eps,                                                   \
-      const float wd,                                                    \
-      const T* x,                                                        \
-      const T* g,                                                        \
-      T* m,                                                              \
-      T* v,                                                              \
-      T* y,                                                              \
-      CopyT* y_copy,                                                     \
-      MLUContext* ctx) {                                                 \
-    LOG(FATAL) << "Unsupported BANG type for <" << #name                 \
-               << "Kernel>: " << dtypes::to_string(TypeMeta::Make<T>()); \
-  }
-
-DEFINE_KERNEL_LAUNCHER(Adam, double, double);
 DEFINE_KERNEL_LAUNCHER(AdamW, double, double);
 #undef DEFINE_KERNEL_LAUNCHER
 #undef BLOCK_THREADS

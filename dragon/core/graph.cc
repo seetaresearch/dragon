@@ -71,15 +71,10 @@ Graph::Graph(const GraphDef& def, Workspace* ws) : GraphBase(def, ws) {
   Create(optimized_def);
 }
 
-bool Graph::Run(int stream, const string& include, const string& exclude) {
-  unique_ptr<std::regex> regex_incl, regex_excl;
-  if (!include.empty()) regex_incl.reset(new std::regex(include));
-  if (!exclude.empty()) regex_excl.reset(new std::regex(exclude));
+bool Graph::Run(int stream) {
   LOG(DEBUG) << "Run: " << name();
   for (size_t op_index = 0; op_index < operators_.size(); ++op_index) {
     auto* op_ptr = operators_[op_index].get();
-    if (regex_incl && !regex_match(op_ptr->type(), *regex_incl)) continue;
-    if (regex_excl && regex_match(op_ptr->type(), *regex_excl)) continue;
     op_ptr->SwitchToPhase(phase());
     LOG(DEBUG) << "Run: " << op_ptr->name();
     op_ptr->Run(stream, op_index == operators_.size() - 1);

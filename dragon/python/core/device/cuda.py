@@ -22,28 +22,44 @@ from dragon.core.framework import workspace
 class Stream(backend.CUDAStream):
     """The CUDA stream wrapper."""
 
-    def __init__(self, device_index):
+    def __init__(self, device_index=None):
         """Create a ``Stream``.
 
         Parameters
         ----------
-        device_index : int, required
-            The device index of stream.
+        device_index : int, optional
+            The device to create stream.
 
         """
+        device_index = current_device() if device_index is None else device_index
         super(Stream, self).__init__(device_index)
 
-    @property
-    def ptr(self):
-        """Return the stream pointer.
+    def as_default(self):
+        """Switch ``self`` as the default stream.
+
+        Call this method with the **with** keyword.
+
+        Once **with** is exited, the previous default will be set.
 
         Returns
         -------
-        int
-            The address of pointer.
+        dragon.cuda.Stream
+            The ``self``.
 
         """
-        return super(Stream, self).ptr
+        current_ws = workspace.get_workspace()
+        return current_ws._stream_stack.get_controller(self.index)
+
+    def query(self):
+        """Query the completion status.
+
+        Returns
+        -------
+        bool
+            ``True`` if stream is completed else ``False``.
+
+        """
+        return self.Query()
 
     def synchronize(self):
         """Wait for the dispatched kernels to complete."""
@@ -78,7 +94,7 @@ def get_device_capability(device_index=None):
         The major and minor number.
 
     """
-    device_index = device_index if device_index else -1
+    device_index = -1 if device_index is None else device_index
     return backend.cudaGetDeviceCapability(device_index)
 
 
@@ -110,7 +126,7 @@ def get_device_name(device_index=None):
         The device name.
 
     """
-    device_index = device_index if device_index else -1
+    device_index = -1 if device_index is None else device_index
     return backend.cudaGetDeviceName(device_index)
 
 

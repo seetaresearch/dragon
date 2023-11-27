@@ -82,5 +82,3 @@ class Parameter(Tensor):
         super(Parameter, self).__setstate__(state)
         self._impl = self._wrapped_tensor._impl
         self._deleter = None
-
-

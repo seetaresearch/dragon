@@ -57,10 +57,18 @@ class Workspace(object):
             except AttributeError:
                 pass
 
-    def __init__(self):
-        """Create a ``Workspace``."""
-        self._impl = backend.Workspace("")
+    def __init__(self, name=None):
+        """Create a ``Workspace``.
+
+        Parameters
+        ----------
+        name : str, optional
+            The workspace name.
+
+        """
+        self._impl = backend.Workspace(name if name is not None else "")
         self._handle_pool = Workspace.HandlePool(self)
+        self._stream_stack = tls.Stack(defaults=[0])
 
     def as_default(self):
         """Set as the default workspace.
@@ -71,8 +79,8 @@ class Workspace(object):
 
         Returns
         -------
-        dragon.Workspace
-            This workspace.
+        ContextManager
+            The context manager to set the default workspace.
 
         """
         return _GLOBAL_DEFAULT_WORKSPACE_STACK.get_controller(self)
@@ -100,6 +108,17 @@ class Workspace(object):
         if scope is not None:
             name = self.create_handle(scope)
         return self._impl.CreateTensor(name)
+
+    def get_stream(self):
+        """Return the stream for execution.
+
+        Returns
+        -------
+        int
+            The stream index.
+
+        """
+        return self._stream_stack.get_default()
 
     def get_tensor(self, name):
         """Return the tensor."""
@@ -147,34 +166,36 @@ class Workspace(object):
     def run_backward(self, op_defs, targets, grad_targets=None, sources=None):
         """Compute the gradients of operators."""
         cfg = config.config()
+        exec_stream = self._stream_stack.get_default()
         self._impl.RunBackward(
             op_defs,
             targets,
             grad_targets if grad_targets else [],
             sources if sources else [],
+            exec_stream,
             cfg.graph_optimization > 2,
             cfg.graph_verbosity > 0,
         )
 
-    def run_graph(self, name, execution_stage=None):
+    def run_graph(self, graph_name):
         """Run a graph."""
-        stage_str = execution_stage if execution_stage else "default"
-        exec_stage = _PREDEFINED_GRAPH_EXECUTING_STAGES[stage_str]
-        self._impl.RunGraph(name, exec_stage["include"], exec_stage["exclude"])
+        exec_stream = self._stream_stack.get_default()
+        self._impl.RunGraph(graph_name, exec_stream)
 
     def run_operator(self, op_def):
         """Run an operator."""
         cfg = config.config()
         if isinstance(op_def, dragon_pb2.OperatorDef):
             op_def = op_def.SerializePartialToString()
-        self._impl.RunOperator(op_def, cfg.graph_verbosity > 0)
+        exec_stream = self._stream_stack.get_default()
+        self._impl.RunOperator(op_def, exec_stream, cfg.graph_verbosity > 0)
 
     def set_alias(self, target, alias):
         """Set an alias for the target."""
         self._impl.SetAlias(_stringify_object(target), alias)
 
     def unique_name(self, name, suffix="", namespace="", zero_based=True):
-        """Return an unique name."""
+        """Return a unique name."""
         return self._impl.UniqueName(name, suffix, namespace, zero_based)
 
 
@@ -202,7 +223,7 @@ def reset_workspace():
 
 
 def _stringify_object(obj):
-    """Try to stringify a object."""
+    """Try to stringify an object."""
     return obj.id if hasattr(obj, "id") else obj
 
 
@@ -239,11 +260,3 @@ class _DefaultWorkspaceStack(tls.Stack):
 
 # Global stack to store the workspaces of current thread.
 _GLOBAL_DEFAULT_WORKSPACE_STACK = _DefaultWorkspaceStack()
-
-# Predefined graph executing stages.
-_PREDEFINED_GRAPH_EXECUTING_STAGES = {
-    "default": {"include": "", "exclude": ""},
-    "forward": {"include": "", "exclude": ".*Gradient.*"},
-    "backward": {"include": ".*Gradient.*", "exclude": "GradientFill"},
-    "backward_v2": {"include": ".*Gradient.*", "exclude": ""},
-}

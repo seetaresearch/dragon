@@ -39,7 +39,7 @@ class CheckpointFunction(object):
 
         # Run function.
         graph_tape = tapes.Tape()
-        graph_tape._tracing = True  # Enable tracing.
+        graph_tape._tracing = ""  # Enable tracing.
         graph_tape._checkpointing = True  # Enable checkpointing.
         graph_tape._original_variable_scope = original_variable_scope
         with grad_mode.no_grad(), graph_tape:

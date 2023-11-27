@@ -81,73 +81,54 @@ __mlu_entry__ void _SigmoidCrossEntropyGrad(
 
 } // namespace
 
-#define DEFINE_KERNEL_LAUNCHER(name, T)               \
-  template <>                                         \
-  void name<T, MLUContext>(                           \
-      const int N,                                    \
-      const T* input,                                 \
-      const T* target,                                \
-      T* loss,                                        \
-      MLUContext* ctx) {                              \
-    _##name<<<                                        \
-        MLU_BLOCKS(N, BLOCK_THREADS),                 \
-        CNRT_FUNC_TYPE_BLOCK,                         \
-        ctx->mlu_stream()>>>(N, input, target, loss); \
+#define DEFINE_KERNEL_LAUNCHER(name, T)                                \
+  template <>                                                          \
+  void name<T, MLUContext>(                                            \
+      const int N,                                                     \
+      const T* input,                                                  \
+      const T* target,                                                 \
+      T* loss,                                                         \
+      MLUContext* ctx) {                                               \
+    _##name<<<                                                         \
+        MLU_BLOCKS(N, BLOCK_THREADS),                                  \
+        CNRT_FUNC_TYPE_BLOCK,                                          \
+        ctx->mlu_stream()>>>(                                          \
+        N,                                                             \
+        reinterpret_cast<const math::Traits<T>::scalar_type*>(input),  \
+        reinterpret_cast<const math::Traits<T>::scalar_type*>(target), \
+        reinterpret_cast<math::Traits<T>::scalar_type*>(loss));        \
   }
 
 DEFINE_KERNEL_LAUNCHER(CrossEntropy, float);
-#undef DEFINE_KERNEL_LAUNCHER
-
-#define DEFINE_KERNEL_LAUNCHER(name, T)                                  \
-  template <>                                                            \
-  void name<T, MLUContext>(                                              \
-      const int N,                                                       \
-      const T* input,                                                    \
-      const T* target,                                                   \
-      T* loss,                                                           \
-      MLUContext* ctx) {                                                 \
-    LOG(FATAL) << "Unsupported BANG type for <" << #name                 \
-               << "Kernel>: " << dtypes::to_string(TypeMeta::Make<T>()); \
-  }
-
 DEFINE_KERNEL_LAUNCHER(CrossEntropy, double);
 #undef DEFINE_KERNEL_LAUNCHER
 
-#define DEFINE_KERNEL_LAUNCHER(name, T)                     \
-  template <>                                               \
-  void name<T, MLUContext>(                                 \
-      const int N,                                          \
-      const T* input,                                       \
-      const T* target,                                      \
-      T* loss,                                              \
-      T* mask,                                              \
-      MLUContext* ctx) {                                    \
-    _##name<<<                                              \
-        MLU_BLOCKS(N, BLOCK_THREADS),                       \
-        CNRT_FUNC_TYPE_BLOCK,                               \
-        ctx->mlu_stream()>>>(N, input, target, loss, mask); \
+#define DEFINE_KERNEL_LAUNCHER(name, T)                                \
+  template <>                                                          \
+  void name<T, MLUContext>(                                            \
+      const int N,                                                     \
+      const T* input,                                                  \
+      const T* target,                                                 \
+      T* loss,                                                         \
+      T* mask,                                                         \
+      MLUContext* ctx) {                                               \
+    _##name<<<                                                         \
+        MLU_BLOCKS(N, BLOCK_THREADS),                                  \
+        CNRT_FUNC_TYPE_BLOCK,                                          \
+        ctx->mlu_stream()>>>(                                          \
+        N,                                                             \
+        reinterpret_cast<const math::Traits<T>::scalar_type*>(input),  \
+        reinterpret_cast<const math::Traits<T>::scalar_type*>(target), \
+        reinterpret_cast<math::Traits<T>::scalar_type*>(loss),         \
+        reinterpret_cast<math::Traits<T>::scalar_type*>(mask));        \
   }
 
 DEFINE_KERNEL_LAUNCHER(SigmoidCrossEntropy, float);
-DEFINE_KERNEL_LAUNCHER(SigmoidCrossEntropyGrad, float);
-#undef DEFINE_KERNEL_LAUNCHER
-
-#define DEFINE_KERNEL_LAUNCHER(name, T)                                  \
-  template <>                                                            \
-  void name<T, MLUContext>(                                              \
-      const int N,                                                       \
-      const T* input,                                                    \
-      const T* target,                                                   \
-      T* loss,                                                           \
-      T* mask,                                                           \
-      MLUContext* ctx) {                                                 \
-    LOG(FATAL) << "Unsupported BANG type for <" << #name                 \
-               << "Kernel>: " << dtypes::to_string(TypeMeta::Make<T>()); \
-  }
-
 DEFINE_KERNEL_LAUNCHER(SigmoidCrossEntropy, double);
+DEFINE_KERNEL_LAUNCHER(SigmoidCrossEntropyGrad, float);
 DEFINE_KERNEL_LAUNCHER(SigmoidCrossEntropyGrad, double);
 #undef DEFINE_KERNEL_LAUNCHER
+#undef BLOCK_THREADS
 
 } // namespace kernels
 

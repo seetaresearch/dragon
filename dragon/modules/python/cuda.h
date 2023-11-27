@@ -21,49 +21,6 @@ namespace dragon {
 
 namespace python {
 
-class CUDAStream {
- public:
-  explicit CUDAStream(int device_id) : device_id_(device_id) {
-#ifdef USE_CUDA
-    CUDADeviceGuard guard(device_id);
-    CUDA_CHECK(cudaStreamCreateWithFlags(&stream_, cudaStreamNonBlocking));
-#endif
-  }
-
-  ~CUDAStream() {
-#ifdef USE_CUDA
-    CUDA_CHECK(cudaStreamDestroy(stream_));
-#endif
-  }
-
-  int device_id() {
-    return device_id_;
-  }
-
-  intptr_t ptr() {
-#ifdef USE_CUDA
-    return (intptr_t)stream_;
-#else
-    return (intptr_t) nullptr;
-#endif
-  }
-
-  void Synchronize() {
-#ifdef USE_CUDA
-    cudaStreamSynchronize(stream_);
-    auto error = cudaGetLastError();
-    CHECK_EQ(error, cudaSuccess)
-        << "\nCUDA Error: " << cudaGetErrorString(error);
-#endif
-  }
-
- protected:
-  int device_id_;
-#ifdef USE_CUDA
-  cudaStream_t stream_;
-#endif
-};
-
 void RegisterModule_cuda(py::module& m) {
   /*! \brief Return whether CUDA driver is sufficient */
   m.def("cudaIsDriverSufficient", []() {
@@ -183,14 +140,35 @@ void RegisterModule_cuda(py::module& m) {
       /*! \brief Default constructor */
       .def(py::init<int>())
 
-      /*! \brief Return the device index */
-      .def_property_readonly("device_id", &CUDAStream::device_id)
+      /*! \brief Return the stream index */
+      .def_property_readonly("index", &CUDAStream::stream_id)
 
       /*! \brief Return the stream pointer */
-      .def_property_readonly("ptr", &CUDAStream::ptr)
+      .def_property_readonly(
+          "ptr", [](CUDAStream* self) { return (intptr_t)self->impl(); })
 
-      /*! \brief Synchronize the stream */
+      /*! \brief Query the completion status */
+      .def("Query", &CUDAStream::Query)
+
+      /*! \brief Wait for the dispatched kernels to complete */
       .def("Synchronize", &CUDAStream::Synchronize);
+
+  /*! \brief CUDAGraph class */
+  py::class_<CUDAGraph>(m, "CUDAGraph")
+      /*! \brief Default constructor */
+      .def(py::init<>())
+
+      /*! \brief Begin the graph capture */
+      .def("BeginCapture", &CUDAGraph::BeginCapture)
+
+      /*! \brief End the graph capture */
+      .def("EndCapture", &CUDAGraph::EndCapture)
+
+      /*! \brief Launch graph on the captured stream */
+      .def("Launch", &CUDAGraph::Launch)
+
+      /*! \brief Reset the graph capture */
+      .def("Reset", &CUDAGraph::Reset);
 }
 
 } // namespace python

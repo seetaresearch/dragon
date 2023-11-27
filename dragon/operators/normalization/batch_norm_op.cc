@@ -40,7 +40,6 @@ void BatchNormOp<Context>::RunTraining() {
         params,
         params + C_,
         ctx());
-    ctx()->FinishDeviceComputation();
     coll_impl_.AllReduce(params, params, C_ * 2, ctx());
     // Compute D(X) = E(X^2) - E(X)^2
     math::Copy(C_, params, mu, ctx());
@@ -168,7 +167,6 @@ void BatchNormGradientOp<Context>::RunTraining() {
   int64_t N = N_; // Total batch size.
   if (sync_stats_ > 0) {
     coll_impl_.AllReduce(&N, &N, 1);
-    ctx()->FinishDeviceComputation();
     coll_impl_.AllReduce(params, params, C_ * 2, ctx());
   }
 

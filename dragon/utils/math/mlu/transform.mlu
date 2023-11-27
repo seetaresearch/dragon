@@ -1,5 +1,5 @@
-#include "dragon/utils/math/transform.h"
 #include "dragon/utils/math/reduce.h"
+#include "dragon/utils/math/transform.h"
 #include "dragon/utils/math/types.h"
 #include "dragon/utils/math/utils.h"
 
@@ -124,23 +124,10 @@ void DispatchAffine(
         ctx);                                                         \
   }
 
-template <>
-void Affine<double, MLUContext>(
-    const int num_dims,
-    const int64_t* dims,
-    const int num_axes,
-    const int64_t* axes,
-    const double* x,
-    const double* scale,
-    const double* bias,
-    double* y,
-    MLUContext* ctx) {
-  LOG(FATAL) << "Unsupported BANG type for <AffineKernel>: double";
-}
-
 DEFINE_AFFINE_FUNC(float16);
 DEFINE_AFFINE_FUNC(bfloat16);
 DEFINE_AFFINE_FUNC(float);
+DEFINE_AFFINE_FUNC(double);
 #undef DEFINE_AFFINE_FUNC
 #undef BLOCK_THREADS
 

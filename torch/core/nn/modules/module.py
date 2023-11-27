@@ -525,7 +525,7 @@ class Module(object):
         else:
             self._parameters[name] = param
 
-    def state_dict(self, destination=None, prefix="", to_numpy=False):
+    def state_dict(self, destination=None, prefix=""):
         """Return a dict stored the buffers and parameters.
 
         Usually, we will use this method to renew another module:
@@ -534,25 +534,12 @@ class Module(object):
         m2.load_state_dict(m1.state_dict())
         ```
 
-        Set ``to_numpy`` if you want to serialize these states:
-
-        ```python
-        # Currently, ``torch.Tensor`` is not supported to pickle
-        # Convert tensors to numpy arrays before pickling
-        np_states = m.state_dict(to_numpy=True)
-
-        with open('states.pkl', 'wb') as f:
-            pickle.dump(np_states, f, pickle.HIGHEST_PROTOCOL)
-        ```
-
         Parameters
         ----------
         destination : dict, optional
             The optional output dict.
         prefix : str, optional, default=''
             The prefix added to the name of states.
-        to_numpy : bool, optional, default=False
-            ``True`` to store the numpy array instead.
 
         Returns
         -------
@@ -564,13 +551,13 @@ class Module(object):
             destination = collections.OrderedDict()
         for name, param in self._parameters.items():
             if param is not None:
-                destination[prefix + name] = param.cpu().numpy().copy() if to_numpy else param
+                destination[prefix + name] = param
         for name, buf in self._buffers.items():
             if buf is not None:
-                destination[prefix + name] = buf.cpu().numpy().copy() if to_numpy else buf
+                destination[prefix + name] = buf
         for name, module in self._modules.items():
             if module is not None:
-                module.state_dict(destination, prefix + name + ".", to_numpy=to_numpy)
+                module.state_dict(destination, prefix + name + ".")
         return destination
 
     def to(self, *args, **kwargs):
@@ -602,6 +589,7 @@ class Module(object):
         if dtype is not None:
             return {
                 "float16": self.half,
+                "bfloat16": self.bfloat16,
                 "float32": self.float,
                 "float64": self.double,
             }[dtype]()
@@ -677,7 +665,7 @@ class Module(object):
                 if isinstance(input_param, Tensor):
                     param.copy_(input_param)
                 elif isinstance(input_param, numpy.ndarray):
-                    param._impl.FromNumpy(input_param.copy(), True)
+                    param._impl.FromNumpy(input_param, True)
                 else:
                     error_msgs.append(
                         "Excepted the input param is either "

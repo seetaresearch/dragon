@@ -128,6 +128,29 @@ class Traits<bfloat16> {
   }
 };
 
+template <>
+class Traits<double> {
+ public:
+#if defined(__mlu_func__)
+  using scalar_type = float;
+  using scalar2_type = float;
+#else
+  using scalar_type = double;
+  using scalar2_type = double;
+#endif
+  using eigen_type = double;
+  using accumulator_type = double;
+  static float Max() {
+    return std::numeric_limits<double>::max();
+  }
+  static float Lowest() {
+    return std::numeric_limits<double>::lowest();
+  }
+  static bool HasPack2() {
+    return false;
+  }
+};
+
 /*
  * Type Utilities.
  */

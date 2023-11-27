@@ -38,10 +38,7 @@ class DRAGON_API GraphBase {
   virtual bool Create(const GraphDef& def) = 0;
 
   /*! \brief Run graph on the given stream */
-  virtual bool Run(
-      int stream = 0,
-      const string& include = "",
-      const string& exclude = "") = 0;
+  virtual bool Run(int stream = 0) = 0;
 
   /*! \brief Return the graph name */
   const string& name() const {
@@ -112,10 +109,7 @@ class Graph : public GraphBase {
   bool Create(const GraphDef& def) override;
 
   /*! \brief Run graph on the given stream */
-  bool Run(
-      int stream = 0,
-      const string& include = "",
-      const string& exclude = "") override;
+  bool Run(int stream = 0) override;
 
  protected:
   /*! \brief The operators */

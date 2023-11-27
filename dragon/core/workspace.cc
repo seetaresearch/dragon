@@ -70,7 +70,7 @@ Tensor* Workspace::GetTensor(const string& name, bool external) const {
   return tensor_ptr;
 }
 
-void Workspace::RunOperator(const OperatorDef& def) {
+void Workspace::RunOperator(const OperatorDef& def, int stream) {
   string cache_key;
   OperatorBase* op_ptr = nullptr;
   if (!def.arg().empty()) {
@@ -89,7 +89,7 @@ void Workspace::RunOperator(const OperatorDef& def) {
     } else {
       op_ptr = iter->second.get();
     }
-    op_ptr->DeriveFrom(def)->Run();
+    op_ptr->DeriveFrom(def)->Run(stream);
   }
 }
 
@@ -103,14 +103,10 @@ GraphBase* Workspace::CreateGraph(const GraphDef& def) {
   return graph_ptr;
 }
 
-void Workspace::RunGraph(
-    const string& name,
-    const string& include,
-    const string& exclude,
-    int stream) {
+void Workspace::RunGraph(const string& name, int stream) {
   CHECK(graphs_.count(name))
-      << "\nGraph " << name << " is not in current workspace.";
-  graphs_[name]->Run(stream, include, exclude);
+      << "\nGraph ``" << name << "`` is not in current workspace.";
+  graphs_[name]->Run(stream);
 }
 
 string Workspace::UniqueName(

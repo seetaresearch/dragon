@@ -35,11 +35,31 @@ DEFINE_UNARY_KERNEL(Log, __bang_active_loghp);
 DEFINE_UNARY_KERNEL(Sqrt, __bang_active_sqrthp);
 DEFINE_UNARY_KERNEL(Rsqrt, __bang_active_rsqrthp);
 DEFINE_UNARY_KERNEL(Inv, __bang_active_reciphp);
-DEFINE_UNARY_KERNEL(Sin, __bang_active_sin);
-DEFINE_UNARY_KERNEL(Cos, __bang_active_cos);
+DEFINE_UNARY_KERNEL(Sin, __bang_sin);
+DEFINE_UNARY_KERNEL(Cos, __bang_cos);
 DEFINE_UNARY_KERNEL(Not, __bang_not);
 DEFINE_UNARY_KERNEL(BitwiseNot, __bang_bnot);
 #undef DEFINE_UNARY_KERNEL
+
+#define DEFINE_UNARY_KERNEL(name, T, AccT, VecFunc, SrcFunc, DstFunc) \
+  template <>                                                         \
+  __mlu_entry__ void _##name<T>(const int N, const T* x, T* y) {      \
+    __nram__ T Y[BLOCK_THREADS];                                      \
+    __nram__ AccT scratch[BLOCK_THREADS];                             \
+    MLU_1D_KERNEL_LOOP(i, N, BLOCK_THREADS) {                         \
+      const int N_ram = std::min(N - i, BLOCK_THREADS);               \
+      __memcpy(Y, x + i, N_ram * sizeof(T), GDRAM2NRAM);              \
+      SrcFunc(scratch, Y, N_ram);                                     \
+      VecFunc(scratch, scratch, N_ram);                               \
+      DstFunc(Y, scratch, N_ram);                                     \
+      __memcpy(y + i, Y, N_ram * sizeof(T), NRAM2GDRAM);              \
+    }                                                                 \
+  }
+
+// clang-format off
+DEFINE_UNARY_KERNEL(Sin, half, float, __bang_sin, __bang_half2float, __bang_float2half_rn);
+DEFINE_UNARY_KERNEL(Cos, half, float, __bang_cos, __bang_half2float, __bang_float2half_rn);
+#undef DEFINE_UNARY_KERNEL // clang-format on
 
 template <typename T>
 __mlu_entry__ void _Neg(const int N, const T* x, T* y) {
@@ -211,7 +231,7 @@ _Div<float>(const int N, const float* a, const float* b, float* y) {
       __memcpy(Y, a + i, N_ram * sizeof(T), GDRAM2NRAM);                     \
       __memcpy(X, b + i, N_ram * sizeof(T), GDRAM2NRAM);                     \
       Func(Y, Y, X, N_ram);                                                  \
-      convert::To(Y_cast, Y, N_ram);                                \
+      convert::To(Y_cast, Y, N_ram);                                         \
       __memcpy(y + i, Y_cast, N_ram, NRAM2GDRAM);                            \
     }                                                                        \
   }

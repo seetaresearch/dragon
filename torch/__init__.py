@@ -47,6 +47,7 @@ from dragon.vm.torch.core.tensor import HalfTensor
 from dragon.vm.torch.core.tensor import IntTensor
 from dragon.vm.torch.core.tensor import LongTensor
 from dragon.vm.torch.core.tensor import Tensor
+from dragon.vm.torch.core.tensor import set_default_tensor_type
 
 # Functions
 from dragon.vm.torch.core.ops import tensor_ops as _

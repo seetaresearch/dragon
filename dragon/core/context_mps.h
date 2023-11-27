@@ -115,6 +115,9 @@ class DRAGON_API MPSObjects {
   /*! \brief Return the family set that given device supports */
   vector<string> GetDeviceFamily(int device_id);
 
+  /*! \brief Return the specified mps stream */
+  MPSStream* stream(int device_id, int stream_id);
+
   /*! \brief Return the default mps stream of current device */
   MPSStream* default_stream() {
     return stream(device_id_, 0);
@@ -123,18 +126,6 @@ class DRAGON_API MPSObjects {
   /*! \brief Return the default mps stream of given device */
   MPSStream* default_stream(int device_id) {
     return stream(device_id, 0);
-  }
-
-  /*! \brief Return the specified mps stream */
-  MPSStream* stream(int device_id, int stream_id) {
-    auto& streams = streams_[device_id];
-    if (streams.size() <= unsigned(stream_id)) {
-      streams.resize(stream_id + 1, nullptr);
-    }
-    if (!streams[stream_id]) {
-      streams[stream_id] = new MPSStream(device_id);
-    }
-    return streams[stream_id];
   }
 
   /*! \brief Return the workspace of specified mps stream */

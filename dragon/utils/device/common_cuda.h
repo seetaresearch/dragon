@@ -22,6 +22,8 @@
 #include <device_launch_parameters.h>
 #else
 typedef struct CUstream_st* cudaStream_t;
+typedef struct CUgraph_st* cudaGraph_t;
+typedef struct CUgraphExec_st* cudaGraphExec_t;
 #endif
 
 #include "dragon/core/common.h"

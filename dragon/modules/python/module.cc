@@ -16,7 +16,7 @@ namespace python {
 
 #define REGISTER_MODULE(module_name) RegisterModule_##module_name(m)
 
-inline string GetVerboseDef(const string& def_str, const string& type) {
+inline string GetDebugDef(const string& def_str, const string& type) {
   auto s = string("\n") + def_str;
   s.pop_back();
   return type + " {" + str::replace_all(s, "\n", "\n  ") + "\n}\n";
@@ -49,7 +49,7 @@ PYBIND11_MODULE(libdragon_python, m) {
       /*! \brief Return an unique name */
       .def("UniqueName", &Workspace::UniqueName)
 
-      /*! \brief Create the tensor */
+      /*! \brief Create a tensor */
       .def(
           "CreateTensor",
           &Workspace::CreateTensor,
@@ -80,44 +80,44 @@ PYBIND11_MODULE(libdragon_python, m) {
             return size;
           })
 
-      /*! \brief Run the operator */
+      /*! \brief Run an operator */
       .def(
           "RunOperator",
-          [](Workspace* self, OperatorDef* def, bool verbose) {
+          [](Workspace* self, OperatorDef* def, int stream, bool verbose) {
             py::gil_scoped_release g;
-            if (verbose) {
-              PRINT(INFO) << GetVerboseDef(def->DebugString(), "op");
-            }
-            self->RunOperator(*def);
+            if (verbose) PRINT(INFO) << GetDebugDef(def->DebugString(), "op");
+            self->RunOperator(*def, stream);
           })
 
-      /*! \brief Run the operators */
+      /*! \brief Run a list of operators */
       .def(
           "RunOperator",
-          [](Workspace* self, vector<OperatorDef*>& defs, bool verbose) {
+          [](Workspace* self,
+             vector<OperatorDef*>& defs,
+             int stream,
+             bool verbose) {
             py::gil_scoped_release g;
             for (auto* def : defs) {
-              if (verbose) {
-                PRINT(INFO) << GetVerboseDef(def->DebugString(), "op");
-              }
-              self->RunOperator(*def);
+              if (verbose) PRINT(INFO) << GetDebugDef(def->DebugString(), "op");
+              self->RunOperator(*def, stream);
             }
           })
 
-      /*! \brief Run the operator from serialized def */
+      /*! \brief Run a serialized operator */
       .def(
           "RunOperator",
-          [](Workspace* self, const string& serialized, bool verbose) {
+          [](Workspace* self,
+             const string& serialized,
+             int stream,
+             bool verbose) {
             OperatorDef def;
             CHECK(def.ParseFromString(serialized));
             py::gil_scoped_release g;
-            if (verbose) {
-              PRINT(INFO) << GetVerboseDef(def.DebugString(), "op");
-            }
-            self->RunOperator(def);
+            if (verbose) PRINT(INFO) << GetDebugDef(def.DebugString(), "op");
+            self->RunOperator(def, stream);
           })
 
-      /*! \brief Create the graph */
+      /*! \brief Create a graph */
       .def(
           "CreateGraph",
           [](Workspace* self, const string& serialized, bool verbose) {
@@ -134,7 +134,7 @@ PYBIND11_MODULE(libdragon_python, m) {
                 }
               }
               if (could_be_serialized) {
-                PRINT(INFO) << GetVerboseDef(def.DebugString(), "graph");
+                PRINT(INFO) << GetDebugDef(def.DebugString(), "graph");
               }
             }
             // Return the graph name may be different from the def.
@@ -142,18 +142,15 @@ PYBIND11_MODULE(libdragon_python, m) {
             return graph->name();
           })
 
-      /*! \brief Run the graph */
+      /*! \brief Run a graph */
       .def(
           "RunGraph",
-          [](Workspace* self,
-             const string& name,
-             const string& include,
-             const string& exclude) {
+          [](Workspace* self, const string& name, int stream) {
             py::gil_scoped_release g;
-            self->RunGraph(name, include, exclude);
+            self->RunGraph(name, stream);
           })
 
-      /*! \brief Run the backward */
+      /*! \brief Run a backward pass */
       .def(
           "RunBackward",
           [](Workspace* self,
@@ -161,6 +158,7 @@ PYBIND11_MODULE(libdragon_python, m) {
              const vector<string>& targets,
              const vector<string>& grad_grads,
              const vector<string>& sources,
+             int stream,
              bool optimize,
              bool verbose) {
             GradientTape tape;
@@ -168,10 +166,8 @@ PYBIND11_MODULE(libdragon_python, m) {
             py::gil_scoped_release g;
             if (optimize) tape.Optimize(sources);
             for (const auto& op : tape.def().op()) {
-              if (verbose) {
-                PRINT(INFO) << GetVerboseDef(op.DebugString(), "op");
-              }
-              self->RunOperator(op);
+              if (verbose) PRINT(INFO) << GetDebugDef(op.DebugString(), "op");
+              self->RunOperator(op, stream);
             }
           })
 

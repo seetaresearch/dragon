@@ -59,7 +59,7 @@ def get_device_family(device_index=None):
         The supported families.
 
     """
-    device_index = device_index if device_index else -1
+    device_index = -1 if device_index is None else device_index
     return backend.mpsGetDeviceFamily(device_index)
 
 
@@ -79,7 +79,7 @@ def get_device_name(device_index=None):
         The device name.
 
     """
-    device_index = device_index if device_index else -1
+    device_index = -1 if device_index is None else device_index
     return backend.mpsGetDeviceName(device_index)
 
 

@@ -49,16 +49,6 @@ _LeakyRelu(const int N, const float alpha, const T* x, T* y) {
 
 } // namespace
 
-template <>
-void Relu<double, MLUContext>(
-    const int N,
-    const float alpha,
-    const double* x,
-    double* y,
-    MLUContext* ctx) {
-  LOG(FATAL) << "Unsupported BANG type for <ReluKernel>: double";
-}
-
 #define DEFINE_KERNEL_LAUNCHER(T)                                          \
   template <>                                                              \
   void Relu<T, MLUContext>(                                                \
@@ -86,17 +76,8 @@ void Relu<double, MLUContext>(
 DEFINE_KERNEL_LAUNCHER(float16);
 DEFINE_KERNEL_LAUNCHER(bfloat16);
 DEFINE_KERNEL_LAUNCHER(float);
+DEFINE_KERNEL_LAUNCHER(double);
 #undef DEFINE_KERNEL_LAUNCHER
-
-template <>
-void ReluN<double, MLUContext>(
-    const int N,
-    const float max_value,
-    const double* x,
-    double* y,
-    MLUContext* ctx) {
-  LOG(FATAL) << "Unsupported BANG type for <ReluNKernel>: double";
-}
 
 #define DEFINE_KERNEL_LAUNCHER(T)                                              \
   template <>                                                                  \
@@ -115,6 +96,7 @@ void ReluN<double, MLUContext>(
 DEFINE_KERNEL_LAUNCHER(float16);
 DEFINE_KERNEL_LAUNCHER(bfloat16);
 DEFINE_KERNEL_LAUNCHER(float);
+DEFINE_KERNEL_LAUNCHER(double);
 #undef DEFINE_KERNEL_LAUNCHER
 #undef BLOCK_THREADS
 

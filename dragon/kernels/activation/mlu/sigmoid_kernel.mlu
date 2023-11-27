@@ -52,19 +52,9 @@ _HardSigmoidGrad(const int N, const T alpha, const T* dy, const T* y, T* dx) {
 DEFINE_GRAD_KERNEL_LAUNCHER(float16);
 DEFINE_GRAD_KERNEL_LAUNCHER(bfloat16);
 DEFINE_GRAD_KERNEL_LAUNCHER(float);
+DEFINE_GRAD_KERNEL_LAUNCHER(double);
 #undef DEFINE_GRAD_KERNEL_LAUNCHER
 #undef BLOCK_THREADS
-
-template <>
-void HardSigmoidGrad<double, MLUContext>(
-    const int N,
-    const float alpha,
-    const double* dy,
-    const double* y,
-    double* dx,
-    MLUContext* ctx) {
-  LOG(FATAL) << "Unsupported BANG type for <HardSigmoidGradKernel>: double";
-}
 
 } // namespace kernels
 

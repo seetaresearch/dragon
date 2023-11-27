@@ -69,6 +69,9 @@ class DRAGON_API CUDAObjects {
                                           : DEFAULT_RNG_SEED;
   }
 
+  /*! \brief Return the specified cuda stream */
+  cudaStream_t stream(int device_id, int stream_id);
+
   /*! \brief Return the specified cublas handle */
   cublasHandle_t cublas_handle(int device_id, int stream_id);
 
@@ -98,20 +101,6 @@ class DRAGON_API CUDAObjects {
   /*! \brief Return the default cuda stream of given device */
   cudaStream_t default_stream(int device_id) {
     return stream(device_id, 0);
-  }
-
-  /*! \brief Return the specified cuda stream */
-  cudaStream_t stream(int device_id, int stream_id) {
-    auto& streams = streams_[device_id];
-    if (streams.size() <= unsigned(stream_id)) {
-      streams.resize(stream_id + 1, nullptr);
-    }
-    if (!streams[stream_id]) {
-      CUDADeviceGuard guard(device_id);
-      auto flags = stream_id == 0 ? cudaStreamDefault : cudaStreamNonBlocking;
-      CUDA_CHECK(cudaStreamCreateWithFlags(&streams[stream_id], flags));
-    }
-    return streams[stream_id];
   }
 
   /*! \brief Return the workspace of specified cuda stream */
@@ -343,6 +332,140 @@ class DRAGON_API CUDAContext {
 };
 
 #endif // USE_CUDA
+
+/*!
+ * \brief The cuda stream wrapper.
+ */
+class DRAGON_API CUDAStream {
+ public:
+  /*! \brief Constructor */
+  explicit CUDAStream(int device_id) : device_id_(device_id) {
+#ifdef USE_CUDA
+    auto& objects = CUDAContext::objects();
+    stream_id_ = objects.streams_[device_id].size();
+    impl_ = objects.stream(device_id, stream_id_);
+#endif
+  }
+
+  /*! \brief Constructor with a given stream */
+  explicit CUDAStream(cudaStream_t impl = nullptr)
+      : device_id_(-1), stream_id_(-1), impl_(impl) {}
+
+  /*! \brief Query the completion status */
+  bool Query() {
+#ifdef USE_CUDA
+    return cudaStreamQuery(impl_) == cudaSuccess;
+#else
+    return true;
+#endif
+  }
+
+  /*! \brief Wait for the dispatched kernels to complete */
+  void Synchronize() {
+#ifdef USE_CUDA
+    cudaStreamSynchronize(impl_);
+    auto err = cudaGetLastError();
+    CHECK_EQ(err, cudaSuccess) << "\nCUDA Error: " << cudaGetErrorString(err);
+#endif
+  }
+
+  /*! \brief Return the stream implementation */
+  cudaStream_t impl() const {
+    return impl_;
+  }
+
+  /*! \brief Return the device index */
+  int device_id() const {
+    return device_id_;
+  }
+
+  /*! \brief Return the stream index */
+  int stream_id() const {
+    return stream_id_;
+  }
+
+ private:
+  /*! \brief The device index */
+  int device_id_;
+
+  /*! \brief The stream index */
+  int stream_id_;
+
+  /*! \brief The stream implementation */
+  cudaStream_t impl_;
+};
+
+/*!
+ * \brief The cuda graph wrapper.
+ */
+class DRAGON_API CUDAGraph {
+ public:
+  /*! \brief Constructor */
+  CUDAGraph() : def_(nullptr), exec_(nullptr) {}
+
+  /*! \brief Destructor */
+  ~CUDAGraph() {
+    Reset();
+  }
+
+  /*! \brief Begin the graph capture */
+  void BeginCapture(int device_id, int stream_id, const string& mode = "") {
+#ifdef USE_CUDA
+    CHECK(def_ == nullptr) << "\nCUDAGraph has captured.";
+    auto m = cudaStreamCaptureModeGlobal;
+    if (mode == "global") m = cudaStreamCaptureModeGlobal;
+    if (mode == "thread_local") m = cudaStreamCaptureModeThreadLocal;
+    if (mode == "relaxed") m = cudaStreamCaptureModeRelaxed;
+    stream_ = CUDAContext::objects().stream(device_id, stream_id);
+    CUDA_CHECK(cudaStreamBeginCapture(stream_, m));
+#endif
+  }
+
+  /*! \brief End the graph capture */
+  void EndCapture() {
+#ifdef USE_CUDA
+    CHECK(def_ == nullptr) << "\nCUDAGraph has captured.";
+    CUDA_CHECK(cudaStreamEndCapture(stream_, &def_));
+#if CUDA_VERSION >= 11040
+    const unsigned long long flags = cudaGraphInstantiateFlagAutoFreeOnLaunch;
+    CUDA_CHECK(cudaGraphInstantiateWithFlags(&exec_, def_, flags));
+#else // CUDA < 11.4
+    CUDA_CHECK(cudaGraphInstantiate(&exec_, def_, NULL, NULL, 0));
+#endif
+#endif
+  }
+
+  /*! \brief Launch graph on the captured stream */
+  void Launch() {
+#ifdef USE_CUDA
+    CHECK(def_ != nullptr) << "\nCUDAGraph is not captured.";
+    CUDADeviceGuard guard(device_id_);
+    CUDA_CHECK(cudaGraphLaunch(exec_, stream_));
+#endif
+  }
+
+  /*! \brief Reset the graph capture */
+  void Reset() {
+#ifdef USE_CUDA
+    if (def_) CUDA_CHECK(cudaGraphDestroy(def_));
+    if (exec_) CUDA_CHECK(cudaGraphExecDestroy(exec_));
+    def_ = nullptr, exec_ = nullptr;
+#endif
+  }
+
+ private:
+  /*! \brief The graph definition */
+  cudaGraph_t def_;
+
+  /*! \brief The graph execution */
+  cudaGraphExec_t exec_;
+
+  /*! \brief The captured stream */
+  cudaStream_t stream_;
+
+  /*! \brief The captured device */
+  int device_id_;
+};
 
 } // namespace dragon
 

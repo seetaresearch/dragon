@@ -36,6 +36,17 @@ MPSObjects::~MPSObjects() {
   }
 }
 
+MPSStream* MPSObjects::stream(int device_id, int stream_id) {
+  auto& streams = streams_[device_id];
+  if (streams.size() <= unsigned(stream_id)) {
+    streams.resize(stream_id + 1, nullptr);
+  }
+  if (!streams[stream_id]) {
+    streams[stream_id] = new MPSStream(device_id);
+  }
+  return streams[stream_id];
+}
+
 string MPSObjects::GetDeviceName(int device_id) {
   if (device_id >= devices_.size()) return "";
   const auto device = devices_[device_id];

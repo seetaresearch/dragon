@@ -14,8 +14,7 @@ CUDAObjects::~CUDAObjects() {
 #endif
 #ifdef USE_CUDNN
     for (auto& handle : cudnn_handles_[device_id]) {
-      // Temporarily disable destroying to avoid segmentation fault.
-      // if (handle) CUDNN_CHECK(cudnnDestroy(handle));
+      if (handle) CUDNN_CHECK(cudnnDestroy(handle));
     }
 #endif
     for (auto& handle : cublas_handles_[device_id]) {
@@ -25,13 +24,25 @@ CUDAObjects::~CUDAObjects() {
       if (iter.second) CURAND_CHECK(curandDestroyGenerator(iter.second));
     }
     for (auto& stream : streams_[device_id]) {
-      // Do not check the stream destroying.
-      if (stream) cudaStreamDestroy(stream);
+      if (stream) CUDA_CHECK(cudaStreamDestroy(stream));
     }
     for (auto& workspace : workspaces_[device_id]) {
       if (workspace) delete workspace;
     }
   }
+}
+
+cudaStream_t CUDAObjects::stream(int device_id, int stream_id) {
+  auto& streams = streams_[device_id];
+  if (streams.size() <= unsigned(stream_id)) {
+    streams.resize(stream_id + 1, nullptr);
+  }
+  if (!streams[stream_id]) {
+    CUDADeviceGuard guard(device_id);
+    const unsigned int flags = cudaStreamNonBlocking;
+    CUDA_CHECK(cudaStreamCreateWithFlags(&streams[stream_id], flags));
+  }
+  return streams[stream_id];
 }
 
 cublasHandle_t CUDAObjects::cublas_handle(int device_id, int stream_id) {
@@ -64,8 +75,8 @@ CUDAObjects::curand_generator(int device_id, int stream_id, int seed) {
   auto find_iter = generators.find(key);
   if (find_iter != generators.end()) return find_iter->second;
   CUDADeviceGuard guard(device_id);
-  CURAND_CHECK(
-      curandCreateGenerator(&generators[key], CURAND_RNG_PSEUDO_DEFAULT));
+  const auto rng_type = CURAND_RNG_PSEUDO_DEFAULT;
+  CURAND_CHECK(curandCreateGenerator(&generators[key], rng_type));
   auto& generator = generators[key];
   CURAND_CHECK(curandSetPseudoRandomGeneratorSeed(generator, seed));
   CURAND_CHECK(curandSetStream(generator, stream(device_id, stream_id)));

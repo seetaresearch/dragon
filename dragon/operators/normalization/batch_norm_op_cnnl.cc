@@ -215,7 +215,6 @@ void CNNLBatchNormGradientOp<Context>::RunTraining() {
         true,
         true,
         true));
-    ctx()->FinishDeviceComputation();
     coll_impl_.AllReduce(buffer, buffer, C_ * 2, ctx());
     CNNL_CHECK(cnnlSyncBatchNormBackwardElemtV2(
         ctx()->cnnl_handle(),

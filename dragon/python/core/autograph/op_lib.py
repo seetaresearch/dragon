@@ -176,7 +176,7 @@ class OpLib(object):
             if graph_tape and (input.requires_grad or graph_tape.is_target(id(input))):
                 enable_grad = True
 
-        # Unify grad modes.
+        # Mege grad modes.
         no_grad = run_config["no_grad"]
         enable_grad = enable_grad and not no_grad
         if hasattr(graph_tape, "_exporting"):

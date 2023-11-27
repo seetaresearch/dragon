@@ -129,22 +129,10 @@ __mlu_entry__ void _DropPathGrad(
         mask);                                                    \
   }
 
-template <>
-void Dropout<double, MLUContext>(
-    const int N,
-    const float ratio,
-    const float scale,
-    const float* r,
-    const double* x,
-    double* y,
-    uint8_t* mask,
-    MLUContext* ctx) {
-  LOG(FATAL) << "Unsupported BANG type for <DropoutKernel>: double";
-}
-
 DEFINE_KERNEL_LAUNCHER(float16);
 DEFINE_KERNEL_LAUNCHER(bfloat16);
 DEFINE_KERNEL_LAUNCHER(float);
+DEFINE_KERNEL_LAUNCHER(double);
 #undef DEFINE_KERNEL_LAUNCHER
 
 #define DEFINE_KERNEL_LAUNCHER(T)                                         \
@@ -170,23 +158,10 @@ DEFINE_KERNEL_LAUNCHER(float);
         mask);                                                            \
   }
 
-template <>
-void DropPath<double, MLUContext>(
-    const int N,
-    const int C,
-    const float ratio,
-    const float scale,
-    const float* r,
-    const double* x,
-    double* y,
-    uint8_t* mask,
-    MLUContext* ctx) {
-  LOG(FATAL) << "Unsupported BANG type for <DropPathKernel>: double";
-}
-
 DEFINE_KERNEL_LAUNCHER(float16);
 DEFINE_KERNEL_LAUNCHER(bfloat16);
 DEFINE_KERNEL_LAUNCHER(float);
+DEFINE_KERNEL_LAUNCHER(double);
 #undef DEFINE_KERNEL_LAUNCHER
 
 #define DEFINE_GRAD_KERNEL_LAUNCHER(T)                                        \
@@ -208,21 +183,10 @@ DEFINE_KERNEL_LAUNCHER(float);
         reinterpret_cast<math::Traits<T>::scalar_type*>(dx));                 \
   }
 
-template <>
-void DropPathGrad<double, MLUContext>(
-    const int N,
-    const int C,
-    const float scale,
-    const uint8_t* mask,
-    const double* dy,
-    double* dx,
-    MLUContext* ctx) {
-  LOG(FATAL) << "Unsupported BANG type for <DropPathGradKernel>: double";
-}
-
 DEFINE_GRAD_KERNEL_LAUNCHER(float16);
 DEFINE_GRAD_KERNEL_LAUNCHER(bfloat16);
 DEFINE_GRAD_KERNEL_LAUNCHER(float);
+DEFINE_GRAD_KERNEL_LAUNCHER(double);
 #undef DEFINE_GRAD_KERNEL_LAUNCHER
 #undef BLOCK_THREADS
 

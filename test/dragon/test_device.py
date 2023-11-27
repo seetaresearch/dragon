@@ -29,9 +29,11 @@ class TestCUDA(unittest.TestCase):
 
     def test_stream(self):
         stream = dragon.cuda.Stream(device_index=0)
-        self.assertGreater(stream.ptr, 0 if TEST_CUDA else -1)
         stream.synchronize()
         dragon.cuda.synchronize()
+        self.assertEqual(stream.query(), True)
+        with stream.as_default():
+            self.assertEqual(stream.index, dragon.get_workspace().get_stream())
 
     def test_cublas(self):
         dragon.cuda.set_cublas_flags()

@@ -86,28 +86,18 @@ __mlu_entry__ void _CosGrad(const int N, const T* dy, const T* x, T* dx) {
 DEFINE_GRAD_KERNEL_LAUNCHER(Reciprocal, float16);
 DEFINE_GRAD_KERNEL_LAUNCHER(Reciprocal, bfloat16);
 DEFINE_GRAD_KERNEL_LAUNCHER(Reciprocal, float);
+DEFINE_GRAD_KERNEL_LAUNCHER(Reciprocal, double);
 DEFINE_GRAD_KERNEL_LAUNCHER(Rsqrt, float16);
 DEFINE_GRAD_KERNEL_LAUNCHER(Rsqrt, bfloat16);
 DEFINE_GRAD_KERNEL_LAUNCHER(Rsqrt, float);
+DEFINE_GRAD_KERNEL_LAUNCHER(Rsqrt, double);
 DEFINE_GRAD_KERNEL_LAUNCHER(Sin, float16);
 DEFINE_GRAD_KERNEL_LAUNCHER(Sin, bfloat16);
 DEFINE_GRAD_KERNEL_LAUNCHER(Sin, float);
+DEFINE_GRAD_KERNEL_LAUNCHER(Sin, double);
 DEFINE_GRAD_KERNEL_LAUNCHER(Cos, float16);
 DEFINE_GRAD_KERNEL_LAUNCHER(Cos, bfloat16);
 DEFINE_GRAD_KERNEL_LAUNCHER(Cos, float);
-#undef DEFINE_GRAD_KERNEL_LAUNCHER
-
-#define DEFINE_GRAD_KERNEL_LAUNCHER(name, T)                                 \
-  template <>                                                                \
-  void name##Grad<T, MLUContext>(                                            \
-      const int N, const T* dy, const T* x, T* dx, MLUContext* ctx) {        \
-    LOG(FATAL) << "Unsupported BANG type for <" << #name                     \
-               << "GradKernel>: " << dtypes::to_string(TypeMeta::Make<T>()); \
-  }
-
-DEFINE_GRAD_KERNEL_LAUNCHER(Reciprocal, double);
-DEFINE_GRAD_KERNEL_LAUNCHER(Rsqrt, double);
-DEFINE_GRAD_KERNEL_LAUNCHER(Sin, double);
 DEFINE_GRAD_KERNEL_LAUNCHER(Cos, double);
 #undef DEFINE_GRAD_KERNEL_LAUNCHER
 #undef BLOCK_THREADS

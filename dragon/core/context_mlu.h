@@ -62,6 +62,9 @@ class DRAGON_API MLUObjects {
                                          : DEFAULT_RNG_SEED;
   }
 
+  /*! \brief Return the specified mlu stream */
+  cnrtQueue_t stream(int device_id, int stream_id);
+
   /*! \brief Return the specified cnnl handle */
   cnnlHandle_t cnnl_handle(int device_id, int stream_id);
 
@@ -85,19 +88,6 @@ class DRAGON_API MLUObjects {
   /*! \brief Return the default mlu stream of given device */
   cnrtQueue_t default_stream(int device_id) {
     return stream(device_id, 0);
-  }
-
-  /*! \brief Return the specified mlu stream */
-  cnrtQueue_t stream(int device_id, int stream_id) {
-    auto& streams = streams_[device_id];
-    if (streams.size() <= unsigned(stream_id)) {
-      streams.resize(stream_id + 1, nullptr);
-    }
-    if (!streams[stream_id]) {
-      MLUDeviceGuard guard(device_id);
-      CNRT_CHECK(cnrtQueueCreate(&streams[stream_id]));
-    }
-    return streams[stream_id];
   }
 
   /*! \brief Return the workspace of specified mlu stream */

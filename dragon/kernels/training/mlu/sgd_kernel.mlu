@@ -100,42 +100,23 @@ __mlu_entry__ void _NesterovSGD(
         CNRT_FUNC_TYPE_BLOCK,                                         \
         ctx->mlu_stream()>>>(                                         \
         N,                                                            \
-        T(lr),                                                        \
-        T(momentum),                                                  \
-        T(wd),                                                        \
-        x,                                                            \
-        g,                                                            \
-        m,                                                            \
-        y,                                                            \
+        math::Traits<T>::scalar_type(lr),                             \
+        math::Traits<T>::scalar_type(momentum),                       \
+        math::Traits<T>::scalar_type(wd),                             \
+        reinterpret_cast<const math::Traits<T>::scalar_type*>(x),     \
+        reinterpret_cast<const math::Traits<T>::scalar_type*>(g),     \
+        reinterpret_cast<math::Traits<T>::scalar_type*>(m),           \
+        reinterpret_cast<math::Traits<T>::scalar_type*>(y),           \
         reinterpret_cast<math::Traits<CopyT>::scalar_type*>(y_copy)); \
   }
 
 DEFINE_KERNEL_LAUNCHER(MomentumSGD, float, float16);
 DEFINE_KERNEL_LAUNCHER(MomentumSGD, float, bfloat16);
 DEFINE_KERNEL_LAUNCHER(MomentumSGD, float, float);
+DEFINE_KERNEL_LAUNCHER(MomentumSGD, double, double);
 DEFINE_KERNEL_LAUNCHER(NesterovSGD, float, float16);
 DEFINE_KERNEL_LAUNCHER(NesterovSGD, float, bfloat16);
 DEFINE_KERNEL_LAUNCHER(NesterovSGD, float, float);
-#undef DEFINE_KERNEL_LAUNCHER
-
-#define DEFINE_KERNEL_LAUNCHER(name, T, CopyT)                           \
-  template <>                                                            \
-  void name<T, CopyT, MLUContext>(                                       \
-      const int N,                                                       \
-      const float lr,                                                    \
-      const float momentum,                                              \
-      const float wd,                                                    \
-      const T* x,                                                        \
-      const T* g,                                                        \
-      T* m,                                                              \
-      T* y,                                                              \
-      CopyT* y_copy,                                                     \
-      MLUContext* ctx) {                                                 \
-    LOG(FATAL) << "Unsupported BANG type for <" << #name                 \
-               << "Kernel>: " << dtypes::to_string(TypeMeta::Make<T>()); \
-  }
-
-DEFINE_KERNEL_LAUNCHER(MomentumSGD, double, double);
 DEFINE_KERNEL_LAUNCHER(NesterovSGD, double, double);
 #undef DEFINE_KERNEL_LAUNCHER
 #undef BLOCK_THREADS

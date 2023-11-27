@@ -119,6 +119,7 @@ class TestTensor(unittest.TestCase):
     def test_numpy_converter(self):
         data = np.array([0.0, 1.0, 2.0], "float32")
         x = torch.from_numpy(data)
+        x = torch.from_numpy(data, out=x)
         self.assertEqual(x.shape, data.shape)
         self.assertEqual(x.dtype, str(data.dtype))
         self.assertLessEqual(np.abs(x.numpy() - data).max(), 1e-5)

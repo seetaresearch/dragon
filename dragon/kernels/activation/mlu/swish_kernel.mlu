@@ -49,18 +49,9 @@ __mlu_entry__ void _HardSwishGrad(const int N, const T* dy, const T* x, T* dx) {
 DEFINE_GRAD_KERNEL_LAUNCHER(float16);
 DEFINE_GRAD_KERNEL_LAUNCHER(bfloat16);
 DEFINE_GRAD_KERNEL_LAUNCHER(float);
+DEFINE_GRAD_KERNEL_LAUNCHER(double);
 #undef DEFINE_GRAD_KERNEL_LAUNCHER
 #undef BLOCK_THREADS
-
-template <>
-void HardSwishGrad<double, MLUContext>(
-    const int N,
-    const double* dy,
-    const double* x,
-    double* dx,
-    MLUContext* ctx) {
-  LOG(FATAL) << "Unsupported BANG type for <HardSwishGradKernel>: double";
-}
 
 } // namespace kernels
 

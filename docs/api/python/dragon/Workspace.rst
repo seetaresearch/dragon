@@ -18,6 +18,10 @@ clear
 #####
 .. automethod:: dragon.Workspace.clear
 
+get_stream
+##########
+.. automethod:: dragon.Workspace.get_stream
+
 memory_allocated
 ################
 .. automethod:: dragon.Workspace.memory_allocated

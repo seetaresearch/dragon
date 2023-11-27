@@ -59,9 +59,7 @@ class OpTestCase(unittest.TestCase):
             if isinstance(input, torch.Tensor):
                 inputs[i] = input.numpy()
         first = inputs[:num_first] if num_first > 1 else inputs[0]
-        second = (
-            inputs[num_first : len(inputs)] if num_second > 1 else inputs[num_first]
-        )
+        second = inputs[num_first : len(inputs)] if num_second > 1 else inputs[num_first]
         if isinstance(first, np.ndarray) and isinstance(second, np.ndarray):
             super(OpTestCase, self).assertEqual(first.shape, second.shape)
             if first.dtype == bool and second.dtype == bool:
@@ -114,7 +112,6 @@ class TestModule(unittest.TestCase):
         logging.set_verbosity("FATAL")
         m.load_state_dict(m.state_dict())
         logging.set_verbosity("INFO")
-        m.load_state_dict(m.state_dict(to_numpy=True))
         try:
             m.load_state_dict({"!@#$%^&*()": 1})
         except RuntimeError:
@@ -314,11 +311,7 @@ class TestModules(OpTestCase):
             data = arange((2, 8))
             g, k = group, data.shape[axis] // group
             shape = data.shape[:axis] + (g, k) + data.shape[axis + 1 :]
-            perm = (
-                list(range(0, axis))
-                + [axis + 1, axis]
-                + list(range(axis + 2, len(shape)))
-            )
+            perm = list(range(0, axis)) + [axis + 1, axis] + list(range(axis + 2, len(shape)))
             x = new_tensor(data)
             m = torch.nn.ChannelShuffle(group)
             y, _ = m(x), repr(m)
@@ -738,14 +731,8 @@ class TestModules(OpTestCase):
             data2, data3 = arange(w_shape, 1) * 0.1, arange(w_shape) * 0.1
             x = new_tensor(data1)
             w, b = new_tensor(data2.flatten()), new_tensor(data3.flatten())
-            _ = torch.nn.GroupNorm(
-                num_groups=group, num_channels=4, eps=eps, affine=False
-            )
-            m = (
-                torch.nn.GroupNorm(num_groups=group, num_channels=4, eps=eps)
-                .half()
-                .float()
-            )
+            _ = torch.nn.GroupNorm(num_groups=group, num_channels=4, eps=eps, affine=False)
+            m = torch.nn.GroupNorm(num_groups=group, num_channels=4, eps=eps).half().float()
             m.weight.copy_(w)
             m.bias.copy_(b)
             y, _ = m(x), repr(m)
@@ -1072,9 +1059,7 @@ class TestModules(OpTestCase):
         x = new_tensor(data)
         m = torch.nn.SELU(inplace=True)
         y, _ = m(x), repr(m)
-        result = gamma * (
-            np.maximum(data, 0.0) + alpha * (np.exp(np.minimum(data, 0.0)) - 1.0)
-        )
+        result = gamma * (np.maximum(data, 0.0) + alpha * (np.exp(np.minimum(data, 0.0)) - 1.0))
         self.assertEqual(y, result)
 
     def test_smooth_l1_loss(self):
@@ -1111,9 +1096,7 @@ class TestModules(OpTestCase):
             data2 = -np.log(1.0 / data1 - 1.0)
             data3 = np.array([0, 1, 0], "int64")
             a, b = new_tensor(data2), new_tensor(data3)
-            m = torch.nn.SigmoidFocalLoss(
-                alpha=pos_alpha, gamma=gamma, reduction=reduction
-            )
+            m = torch.nn.SigmoidFocalLoss(alpha=pos_alpha, gamma=gamma, reduction=reduction)
             y, _ = m(a, b), repr(m)
             pos_term = np.power((1.0 - data1), gamma) * np.log(data1)
             pos_term *= -pos_alpha * np.eye(2, dtype="float32")[data3]
@@ -1162,9 +1145,7 @@ class TestModules(OpTestCase):
                 ],
             ]
         ]
-        for (x_shape, kernel_shape, strides, pads, dilations), result in zip(
-            entries, results
-        ):
+        for (x_shape, kernel_shape, strides, pads, dilations), result in zip(entries, results):
             data = arange(x_shape) * 0.1
             x = new_tensor(data)
             m = torch.nn.Unfold(kernel_shape, dilations, pads, strides)
@@ -1280,9 +1261,7 @@ class TestReduction(unittest.TestCase):
         ]
         logging.set_verbosity("FATAL")
         for size_average, reduce, reduction in entries:
-            self.assertEqual(
-                _reduction.legacy_get_string(size_average, reduce), reduction
-            )
+            self.assertEqual(_reduction.legacy_get_string(size_average, reduce), reduction)
         logging.set_verbosity("INFO")
 
 

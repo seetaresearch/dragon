@@ -67,6 +67,8 @@ class Tensor(object):
 
     """
 
+    DEFAULT_DTYPE = "float32"
+
     def __init__(self, *args, **kwargs):
         self._tape = None
         self._device = kwargs.get("device", cpp.device())
@@ -76,7 +78,7 @@ class Tensor(object):
         self._retains_grad = False
         if len(args) == 1:
             if isinstance(args[0], (list, tuple)):
-                dtype = kwargs.get("dtype", "float32")
+                dtype = kwargs.get("dtype", self.DEFAULT_DTYPE)
                 self._from_array(numpy.array(args[0], dtype))
             elif isinstance(args[0], numpy.ndarray):
                 dtype = kwargs.get("dtype", None)
@@ -84,11 +86,11 @@ class Tensor(object):
             else:
                 if not isinstance(args[0], six.integer_types):
                     raise ValueError("Excepted an integer as size.")
-                self._from_shape([args[0]], kwargs.get("dtype", "float32"))
+                self._from_shape([args[0]], kwargs.get("dtype", self.DEFAULT_DTYPE))
         elif len(args) > 1:
             if not all(isinstance(arg, six.integer_types) for arg in args):
                 raise ValueError("Excepted integer(s) as sizes.")
-            self._from_shape(args, kwargs.get("dtype", "float32"))
+            self._from_shape(args, kwargs.get("dtype", self.DEFAULT_DTYPE))
 
     @property
     def data(self):
@@ -4006,71 +4008,69 @@ class Tensor(object):
         return self.bitwise_xor(other)
 
 
-class BFloat16Tensor(object):
+class _TypedTensorBase(object):
+    """Base class to create typed tensor."""
+
+    DEFAULT_DTYPE = "float32"
+
+    def __new__(cls, *args, **kwargs):
+        kwargs["dtype"] = cls.DEFAULT_DTYPE
+        return Tensor(*args, **kwargs)
+
+
+class BFloat16Tensor(_TypedTensorBase, Tensor):
     """The bfloat16 tensor."""
 
-    def __new__(cls, *args, **kwargs):
-        kwargs["dtype"] = "bfloat16"
-        return Tensor(*args, **kwargs)
+    DEFAULT_DTYPE = "bfloat16"
 
 
-class BoolTensor(object):
+class BoolTensor(_TypedTensorBase, Tensor):
     """The bool tensor."""
 
-    def __new__(cls, *args, **kwargs):
-        kwargs["dtype"] = "bool"
-        return Tensor(*args, **kwargs)
+    DEFAULT_DTYPE = "bool"
 
 
-class ByteTensor(object):
+class ByteTensor(_TypedTensorBase, Tensor):
     """The uint8 tensor."""
 
-    def __new__(cls, *args, **kwargs):
-        kwargs["dtype"] = "uint8"
-        return Tensor(*args, **kwargs)
+    DEFAULT_DTYPE = "uint8"
 
 
-class CharTensor(object):
+class CharTensor(_TypedTensorBase, Tensor):
     """The int8 tensor."""
 
-    def __new__(cls, *args, **kwargs):
-        kwargs["dtype"] = "int8"
-        return Tensor(*args, **kwargs)
+    DEFAULT_DTYPE = "int8"
 
 
-class DoubleTensor(object):
+class DoubleTensor(_TypedTensorBase, Tensor):
     """The float64 tensor."""
 
-    def __new__(cls, *args, **kwargs):
-        kwargs["dtype"] = "float64"
-        return Tensor(*args, **kwargs)
+    DEFAULT_DTYPE = "float64"
 
 
-class FloatTensor(object):
+class FloatTensor(_TypedTensorBase, Tensor):
     """The float32 tensor."""
 
-    def __new__(cls, *args, **kwargs):
-        kwargs["dtype"] = "float32"
-        return Tensor(*args, **kwargs)
+    DEFAULT_DTYPE = "float32"
 
 
-class HalfTensor(object):
+class HalfTensor(_TypedTensorBase, Tensor):
     """The float16 tensor."""
 
-    def __new__(cls, *args, **kwargs):
-        kwargs["dtype"] = "float16"
-        return Tensor(*args, **kwargs)
+    DEFAULT_DTYPE = "float16"
 
 
-class IntTensor(object):
+class IntTensor(_TypedTensorBase, Tensor):
     """The int32 tensor."""
 
-    def __new__(cls, *args, **kwargs):
-        kwargs["dtype"] = "int32"
-        return Tensor(*args, **kwargs)
+    DEFAULT_DTYPE = "int32"
 
 
-class LongTensor(object):
-    def __new__(cls, *args, **kwargs):
-        kwargs["dtype"] = "int64"
-        return Tensor(*args, **kwargs)
+class LongTensor(_TypedTensorBase, Tensor):
+
+    DEFAULT_DTYPE = "int64"
+
+
+def set_default_tensor_type(t):
+    """Set the default ``torch.Tensor`` type."""
+    Tensor.DEFAULT_DTYPE = getattr(t, "DEFAULT_DTYPE", "float32")

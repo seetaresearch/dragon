@@ -125,7 +125,7 @@ def export(
 
     # Run the model to get the outputs.
     graph_tape = tapes.Tape()
-    graph_tape._tracing = True  # Enable tracing.
+    graph_tape._tracing = ""  # Enable tracing.
     graph_tape._exporting = True  # Enable exporting.
     with graph_tape:
         outputs = model(*args)

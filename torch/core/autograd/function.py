@@ -158,7 +158,7 @@ class Function(object):
                     "element {} of input tensors. ({} vs. {})".format(i, device, input._device)
                 )
 
-        # Unify grad modes.
+        # Merge grad modes.
         no_grad = run_config["no_grad"]
         no_grad = no_grad or not grad_mode.is_grad_enabled()
         enable_grad = enable_grad and not no_grad
@@ -193,13 +193,14 @@ class Function(object):
 
         # Specialize def for given inputs and outputs.
         op_name = ""  # Optional operator name.
+        trace_scope = getattr(graph_tape, "_tracing", "")
         op_def = run_config["def"].DeriveTo(inputs_id, outputs_id)
 
         # Record def if grad is enabled.
         if len(inputs) > 0 and not no_grad:
             if enable_grad:
                 op_tape = tapes.OrderedTape()
-                op_name = execute_ws.create_handle(op_def.type)
+                op_name = execute_ws.create_handle(trace_scope + op_def.type)
                 op_def.name = op_name
                 op_tape.add_element(op_def)
                 op_tape.add_handle(op_name)
@@ -217,7 +218,7 @@ class Function(object):
         # Ensure the named operator for the tracing graph.
         if hasattr(graph_tape, "_tracing"):
             if not op_name:
-                op_name = execute_ws.create_handle(op_def.type)
+                op_name = execute_ws.create_handle(trace_scope + op_def.type)
             op_def.name = op_name
             graph_tape.add_element(op_def)
             graph_tape.add_handle(op_name)

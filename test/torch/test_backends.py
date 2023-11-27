@@ -47,6 +47,12 @@ class TestCUDA(unittest.TestCase):
         torch.cuda.manual_seed_all(1337)
         self.assertGreaterEqual(torch.cuda.memory_allocated(), 0)
 
+    def test_graph(self):
+        for graph_type in (torch.cuda.TraceGraph, torch.cuda.CUDAGraph):
+            with torch.cuda.graph(graph_type()) as builder:
+                builder.cuda_graph.replay()
+            builder.cuda_graph.reset()
+
 
 class TestCuDNN(unittest.TestCase):
     """Test CuDNN backend."""
