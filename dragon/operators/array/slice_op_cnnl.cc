@@ -61,13 +61,13 @@ void CNNLSliceOp<Context>::DoRunWithType() {
 
   CNNLSetTensorDesc<T>(input_desc_, X.dims());
   CNNLSetTensorDesc<T>(output_desc_, Y_dims);
-  CNNL_CHECK(cnnlStridedSlice(
+  CNNL_CHECK(cnnlStridedSlice_v2(
       ctx()->cnnl_handle(),
       input_desc_,
       X.template data<T, Context>(),
-      vec32_t({X_starts.begin(), X_starts.end()}).data(),
-      vec32_t({X_ends.begin(), X_ends.end()}).data(),
-      vec32_t(X_starts.size(), 1).data(),
+      X_starts.data(),
+      X_ends.data(),
+      vec64_t(X_starts.size(), 1).data(),
       output_desc_,
       Y->template mutable_data<T, Context>()));
 }

@@ -1,6 +1,6 @@
-project(dragon)
 cmake_minimum_required(VERSION 3.0.2)
 cmake_policy(SET CMP0054 NEW)
+project(dragon)
 
 # ---[ Build Options
 option(BUILD_PYTHON "Build Python binding library" ON)

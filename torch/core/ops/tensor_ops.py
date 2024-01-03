@@ -709,6 +709,48 @@ def cos(self):
     return math_ops.cos(self)
 
 
+def cummax(self, dim):
+    """Return a tensor with the cumulative maximum of elements.
+
+    Parameters
+    ----------
+    dim : int
+        The cumulative dimension.
+
+    Returns
+    -------
+    dragon.vm.torch.Tensor
+        The output tensor.
+
+    See Also
+    --------
+    `torch.cummax(...)`_
+
+    """
+    return math_ops.cummax(self, dim)
+
+
+def cummin(self, dim):
+    """Return a tensor with the cumulative minimum of elements.
+
+    Parameters
+    ----------
+    dim : int
+        The cumulative dimension.
+
+    Returns
+    -------
+    dragon.vm.torch.Tensor
+        The output tensor.
+
+    See Also
+    --------
+    `torch.cummin(...)`_
+
+    """
+    return math_ops.cummin(self, dim)
+
+
 def cumsum(self, dim):
     """Return a tensor with the cumulative sum of elements.
 
@@ -3310,6 +3352,8 @@ Tensor.chunk = chunk
 Tensor.clamp = clamp
 Tensor.clamp_ = clamp_
 Tensor.cos = cos
+Tensor.cummax = cummax
+Tensor.cummin = cummin
 Tensor.cumsum = cumsum
 Tensor.div = div
 Tensor.div_ = div_

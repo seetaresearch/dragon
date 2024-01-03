@@ -50,7 +50,8 @@ class TestCUDA(unittest.TestCase):
     def test_graph(self):
         for graph_type in (torch.cuda.TraceGraph, torch.cuda.CUDAGraph):
             with torch.cuda.graph(graph_type()) as builder:
-                builder.cuda_graph.replay()
+                pass
+            builder.cuda_graph.replay()
             builder.cuda_graph.reset()
 
 

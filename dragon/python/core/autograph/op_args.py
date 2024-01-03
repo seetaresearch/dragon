@@ -136,7 +136,7 @@ def conv_transpose_args(**kwargs):
     }
 
 
-@register("CumSum")
+@register(["CumSum", "CumMax", "CumMin"])
 def cum_reduce_args(**kwargs):
     return {
         "axis": kwargs.get("axis", None),

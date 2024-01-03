@@ -76,13 +76,13 @@ void CNNLAssignOp<Context>::DoRunWithType() {
 
   CNNLSetTensorDesc<T>(input_desc_, X_dims);
   CNNLSetTensorDesc<T>(output_desc_, Y->dims());
-  CNNL_CHECK(cnnlStridedSlice(
+  CNNL_CHECK(cnnlStridedSlice_v2(
       ctx()->cnnl_handle(),
       output_desc_,
       Y_ref.template data<T, Context>(),
-      vec32_t({X_starts.begin(), X_starts.end()}).data(),
-      vec32_t({X_ends.begin(), X_ends.end()}).data(),
-      vec32_t(X_starts.size(), 1).data(),
+      X_starts.data(),
+      X_ends.data(),
+      vec64_t(X_starts.size(), 1).data(),
       input_desc_,
       y_slice));
   math::Sub(X_ref.count(), data, y_slice, y_slice, ctx());

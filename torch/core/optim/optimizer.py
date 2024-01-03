@@ -53,7 +53,7 @@ class Optimizer(object):
         params : Sequence[dragon.vm.torch.nn.Parameter]
             The parameters to optimize.
         defaults : dict
-            The pre-defined default hyper-parameters.
+            The default values of optimization.
 
         """
         if isinstance(params, Tensor):
@@ -159,6 +159,8 @@ class Optimizer(object):
                     params_with_grad.append(p)
             grads_all.append(grads)
             params_all.append(params_with_grad)
+        if self._update_pre_hook is not None:
+            self._update_pre_hook(sum(grads_all, []))
         if dist_group is not None:
             # Reduce grads in the distribution group.
             reduce_grads_all = collections.defaultdict(list)
@@ -173,7 +175,7 @@ class Optimizer(object):
                     outputs=grads,
                     operation="ALLREDUCE",
                     reduction="SUM",
-                    **dist_group.arguments
+                    **dist_group.arguments,
                 )
         for idx, group in enumerate(self.param_groups):
             self._update_group(group, params_all[idx], grads_all[idx])
@@ -278,8 +280,6 @@ class Optimizer(object):
                 new_value = new_value / group.pop("dist_size", 1)
             group_dict[group_name].FromNumpy(numpy.array(new_value, "float32"), False)
         # Apply update.
-        if self._update_pre_hook is not None:
-            self._update_pre_hook(grads)
         Function.apply(
             self._op_type,
             params[0].device,

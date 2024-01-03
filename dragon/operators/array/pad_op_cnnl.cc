@@ -78,13 +78,13 @@ void CNNLPadGradientOp<Context>::DoRunWithType() {
   CNNLSetTensorDesc<T>(output_desc_, X_dims);
 
   if (mode_ == "CONSTANT") {
-    CNNL_CHECK(cnnlStridedSlice(
+    CNNL_CHECK(cnnlStridedSlice_v2(
         ctx()->cnnl_handle(),
         input_desc_,
         dY.template data<T, Context>(),
-        vec32_t({X_pads.begin(), X_pads.end()}).data(),
-        vec32_t({X_ends.begin(), X_ends.end()}).data(),
-        vec32_t(num_dims, 1).data(),
+        X_pads.data(),
+        X_ends.data(),
+        vec64_t(num_dims, 1).data(),
         output_desc_,
         dX->Reshape(X_dims)->template mutable_data<T, Context>()));
   } else {

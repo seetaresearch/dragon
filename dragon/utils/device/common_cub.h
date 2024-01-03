@@ -17,6 +17,7 @@
 
 #include <cub/block/block_radix_sort.cuh>
 #include <cub/block/block_reduce.cuh>
+#include <cub/block/block_scan.cuh>
 #include <cub/device/device_reduce.cuh>
 #include <cub/device/device_select.cuh>
 #include <cub/iterator/cache_modified_output_iterator.cuh>
@@ -31,6 +32,9 @@ namespace dragon {
 #if defined(__CUDACC__)
 template <typename T>
 using BlockReduce = cub::BlockReduce<T, CUDA_THREADS>;
+
+template <typename T>
+using BlockScan = cub::BlockScan<T, CUDA_THREADS>;
 
 template <typename T, typename Reducer, int kThreadsPerWarp>
 __inline__ __device__ T WarpReduce(T val) {

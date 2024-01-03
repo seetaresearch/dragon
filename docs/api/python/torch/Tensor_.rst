@@ -189,6 +189,14 @@ cuda
 ####
 .. automethod:: dragon.vm.torch.Tensor.cuda
 
+cummax
+######
+.. automethod:: dragon.vm.torch.Tensor.cummax
+
+cummin
+######
+.. automethod:: dragon.vm.torch.Tensor.cummin
+
 cumsum
 ######
 .. automethod:: dragon.vm.torch.Tensor.cumsum
@@ -741,6 +749,8 @@ zero\_
 .. _torch.ceil(...): ceil.html
 .. _torch.clamp(...): clamp.html
 .. _torch.cos(...): cos.html
+.. _torch.cummax(...): cummax.html
+.. _torch.cummin(...): cummin.html
 .. _torch.cumsum(...): cumsum.html
 .. _torch.div(...): div.html
 .. _torch.empty(...): empty.html

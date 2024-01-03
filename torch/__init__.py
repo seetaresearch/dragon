@@ -108,6 +108,8 @@ from dragon.vm.torch.core.ops.math_ops import bmm
 from dragon.vm.torch.core.ops.math_ops import ceil
 from dragon.vm.torch.core.ops.math_ops import clamp
 from dragon.vm.torch.core.ops.math_ops import cos
+from dragon.vm.torch.core.ops.math_ops import cummax
+from dragon.vm.torch.core.ops.math_ops import cummin
 from dragon.vm.torch.core.ops.math_ops import cumsum
 from dragon.vm.torch.core.ops.math_ops import div
 from dragon.vm.torch.core.ops.math_ops import eq

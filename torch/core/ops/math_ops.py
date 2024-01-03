@@ -491,6 +491,66 @@ def cos(input, out=None):
     return _unary_func(input, "Cos", out)
 
 
+def cummax(input, dim, out=None):
+    """Compute the cumulative maximum of elements along the given dimension.
+
+    :attr:`dim` could be negative:
+
+    ```python
+    # A negative dimension is the last-k dimension
+    x = torch.tensor([[2, 3, 1], [6, 5, 4]])
+    print(torch.cummax(x, dim=1))  # [[2, 3, 3], [6, 6, 6]]
+    print(torch.cummax(x, dim=-1))  # Equivalent
+    ```
+
+    Parameters
+    ----------
+    input : dragon.vm.torch.Tensor
+        The input tensor.
+    dim : int
+        The cumulative dimension.
+    out : dragon.vm.torch.Tensor, optional
+        The output tensor.
+
+    Returns
+    -------
+    dragon.vm.torch.Tensor
+        The output tensor.
+
+    """
+    return Function.apply("CumMax", input.device, [input], outputs=[out], axis=dim)
+
+
+def cummin(input, dim, out=None):
+    """Compute the cumulative minimum of elements along the given dimension.
+
+    :attr:`dim` could be negative:
+
+    ```python
+    # A negative dimension is the last-k dimension
+    x = torch.tensor([[1, 2, 3], [4, 5, 6]])
+    print(torch.cummin(x, dim=1))  # [[1, 1, 1], [4, 4, 4]]
+    print(torch.cummin(x, dim=-1))  # Equivalent
+    ```
+
+    Parameters
+    ----------
+    input : dragon.vm.torch.Tensor
+        The input tensor.
+    dim : int
+        The cumulative dimension.
+    out : dragon.vm.torch.Tensor, optional
+        The output tensor.
+
+    Returns
+    -------
+    dragon.vm.torch.Tensor
+        The output tensor.
+
+    """
+    return Function.apply("CumMin", input.device, [input], outputs=[out], axis=dim)
+
+
 def cumsum(input, dim, out=None):
     """Compute the cumulative sum of elements along the given dimension.
 

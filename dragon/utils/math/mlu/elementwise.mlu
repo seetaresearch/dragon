@@ -7,6 +7,7 @@ namespace dragon {
 namespace math {
 
 #define BLOCK_THREADS 40960
+#define FALLBACK_BLOCK_THREADS 36864
 
 namespace {
 
@@ -167,9 +168,9 @@ __mlu_entry__ void _ApplyMask(
   template <typename T>                                                   \
   __mlu_entry__ void _##name##_fallback(                                  \
       const int N, const T* a, const T* b, T* y) {                        \
-    __nram__ T X[BLOCK_THREADS], Y[BLOCK_THREADS];                        \
-    MLU_1D_KERNEL_LOOP(i, N, BLOCK_THREADS) {                             \
-      const int N_ram = std::min(N - i, BLOCK_THREADS);                   \
+    __nram__ T X[FALLBACK_BLOCK_THREADS], Y[FALLBACK_BLOCK_THREADS];      \
+    MLU_1D_KERNEL_LOOP(i, N, FALLBACK_BLOCK_THREADS) {                    \
+      const int N_ram = std::min(N - i, FALLBACK_BLOCK_THREADS);          \
       __memcpy(Y, a + i, N_ram * sizeof(T), GDRAM2NRAM);                  \
       __memcpy(X, b + i, N_ram * sizeof(T), GDRAM2NRAM);                  \
       for (int j = 0; j < N_ram; ++j)                                     \
@@ -653,6 +654,7 @@ DEFINE_BINARY_FUNC(GreaterEqual, int64_t, bool);
 DEFINE_BINARY_FUNC(GreaterEqual, double, bool);
 #undef DEFINE_BINARY_FUNC
 #undef BLOCK_THREADS
+#undef FALLBACK_BLOCK_THREADS
 
 } // namespace math
 

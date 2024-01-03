@@ -24,6 +24,8 @@ from dragon.core.ops.math_ops import atan2
 from dragon.core.ops.math_ops import ceil
 from dragon.core.ops.math_ops import clip
 from dragon.core.ops.math_ops import cos
+from dragon.core.ops.math_ops import cummax
+from dragon.core.ops.math_ops import cummin
 from dragon.core.ops.math_ops import cumsum
 from dragon.core.ops.math_ops import div
 from dragon.core.ops.math_ops import equal

@@ -87,6 +87,12 @@ vm.torch
   `cos(...) <torch/cos.html>`_
   : Compute the cos of input.
 
+  `cummax(...) <torch/cummax.html>`_
+  : Compute the cumulative maximum of elements along the given dimension.
+
+  `cummin(...) <torch/cummin.html>`_
+  : Compute the cumulative minimum of elements along the given dimension.
+
   `cumsum(...) <torch/cumsum.html>`_
   : Compute the cumulative sum of elements along the given dimension.
 
@@ -372,6 +378,8 @@ vm.torch
   torch/chunk
   torch/clamp
   torch/cos
+  torch/cummax
+  torch/cummin
   torch/cumsum
   torch/device
   torch/div

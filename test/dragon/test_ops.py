@@ -2663,6 +2663,56 @@ class TestMathOps(OpTestCase):
         with dragon.device("mlu"):
             self.test_cos(prec=1e-2)
 
+    def test_cummax(self):
+        entries = [
+            (0, False, False),
+            (0, True, False),
+            (0, False, True),
+            (0, True, True),
+        ]
+        for execution in ("EAGER_MODE", "GRAPH_MODE"):
+            with execution_context().mode(execution):
+                for axis, exclusive, reverse in entries:
+                    data = arange((6,), 1)
+                    x = new_tensor(data)
+                    y = dragon.math.cummax(x, axis, exclusive, reverse)
+                    data = np.flipud(data) if reverse else data
+                    fp_inf = np.finfo(data.dtype).max
+                    data = np.array([-fp_inf] + data[:-1].tolist(), data.dtype) if exclusive else data
+                    result = np.maximum.accumulate(data, axis)
+                    result = np.flipud(result) if reverse else result
+                    self.assertEqual(y, result)
+
+    @unittest.skipIf(not TEST_CUDA, "CUDA unavailable")
+    def test_cummax_cuda(self):
+        with dragon.device("cuda"):
+            self.test_cummax()
+
+    def test_cummin(self):
+        entries = [
+            (0, False, False),
+            (0, True, False),
+            (0, False, True),
+            (0, True, True),
+        ]
+        for execution in ("EAGER_MODE", "GRAPH_MODE"):
+            with execution_context().mode(execution):
+                for axis, exclusive, reverse in entries:
+                    data = arange((6,), 1)
+                    x = new_tensor(data)
+                    y = dragon.math.cummin(x, axis, exclusive, reverse)
+                    data = np.flipud(data) if reverse else data
+                    fp_inf = np.finfo(data.dtype).max
+                    data = np.array([fp_inf] + data[:-1].tolist(), data.dtype) if exclusive else data
+                    result = np.minimum.accumulate(data, axis)
+                    result = np.flipud(result) if reverse else result
+                    self.assertEqual(y, result)
+
+    @unittest.skipIf(not TEST_CUDA, "CUDA unavailable")
+    def test_cummin_cuda(self):
+        with dragon.device("cuda"):
+            self.test_cummin()
+
     def test_cumsum(self):
         entries = [
             (0, False, False),
@@ -2684,8 +2734,8 @@ class TestMathOps(OpTestCase):
                     else:
                         grad = np.flipud(grad)
                     if exclusive:
-                        data = np.array([0] + data[:-1].tolist(), "float32")
-                        grad = np.array([0] + grad[:-1].tolist(), "float32")
+                        data = np.array([0] + data[:-1].tolist(), data.dtype)
+                        grad = np.array([0] + grad[:-1].tolist(), data.dtype)
                     result = np.cumsum(data, axis)
                     grad = np.cumsum(grad, axis)
                     if reverse:
@@ -2697,6 +2747,12 @@ class TestMathOps(OpTestCase):
     @unittest.skipIf(not TEST_CUDA, "CUDA unavailable")
     def test_cumsum_cuda(self):
         with dragon.device("cuda"):
+            self.test_cumsum()
+
+    @unittest.skipIf(not TEST_MLU, "MLU unavailable")
+    def test_cumsum_cnnl(self):
+        dragon.mlu.set_cnnl_flags(True)
+        with dragon.device("mlu"), self.cnnl_ws.as_default():
             self.test_cumsum()
 
     def test_div(self, test_shapes=None):

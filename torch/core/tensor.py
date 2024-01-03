@@ -898,6 +898,44 @@ class Tensor(object):
         self._device = cpp.device("cuda", device)
         return self
 
+    def cummax(self, dim):
+        """Return a tensor with the cumulative maximum of elements.
+
+        Parameters
+        ----------
+        dim : int
+            The cumulative dimension.
+
+        Returns
+        -------
+        dragon.vm.torch.Tensor
+            The output tensor.
+
+        See Also
+        --------
+        `torch.cummax(...)`_
+
+        """
+
+    def cummin(self, dim):
+        """Return a tensor with the cumulative minimum of elements.
+
+        Parameters
+        ----------
+        dim : int
+            The cumulative dimension.
+
+        Returns
+        -------
+        dragon.vm.torch.Tensor
+            The output tensor.
+
+        See Also
+        --------
+        `torch.cummin(...)`_
+
+        """
+
     def cumsum(self, dim):
         """Return a tensor with the cumulative sum of elements.
 

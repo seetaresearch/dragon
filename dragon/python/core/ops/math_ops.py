@@ -423,6 +423,108 @@ def cos(inputs, **kwargs):
 
 
 @OpSchema.num_inputs(1)
+def cummax(inputs, axis=0, exclusive=False, reverse=False, **kwargs):
+    """Compute the cumulative maximum of elements along the given axis.
+
+    :attr:`axis` could be negative:
+
+    ```python
+    # A negative axis is the last-k axis
+    x = dragon.constant([[2, 3, 1], [6, 5, 4]])
+    print(dragon.math.cummax(x, axis=1))   # [[2, 3, 3], [6, 6, 6]]
+    print(dragon.math.cummax(x, axis=-1))  # Equivalent
+    ```
+
+    Use :attr:`exclusive` to exclude the top element:
+
+    ```python
+    x = dragon.constant([1, 2, 3])
+    print(dragon.math.cummax(x, exclusive=True))  # [-2**63-1, 1, 2]
+    ```
+
+    Use :attr:`reverse` to reverse the cumulative direction:
+
+    ```python
+    x = dragon.constant([1, 2, 3])
+    print(dragon.math.cummax(x))  # [1, 2, 3]
+    print(dragon.math.cummax(x, reverse=True))  # [3, 3, 3]
+    print(dragon.math.cummax(x, exclusive=True, reverse=True))  # [3, 3, -2**63-1]
+    ```
+
+    Parameters
+    ----------
+    inputs : dragon.Tensor
+        The input tensor.
+    axis : int, optional, default=0
+        The axis to cumulate.
+    exclusive : bool, optional, default=False
+        ``True`` to exclude the top element.
+    reverse : bool, optional, default=False
+        ``True`` to cumulate in a reverse direction.
+
+    Returns
+    -------
+    dragon.Tensor
+        The output tensor.
+
+    """
+    if context.executing_eagerly():
+        return OpLib.execute("CumMax", inputs, axis=axis, exclusive=exclusive, reverse=reverse)
+    return OpLib.add("CumMax", inputs, axis=axis, exclusive=exclusive, reverse=reverse, **kwargs)
+
+
+@OpSchema.num_inputs(1)
+def cummin(inputs, axis=0, exclusive=False, reverse=False, **kwargs):
+    """Compute the cumulative minimum of elements along the given axis.
+
+    :attr:`axis` could be negative:
+
+    ```python
+    # A negative axis is the last-k axis
+    x = dragon.constant([[1, 2, 3], [4, 5, 6]])
+    print(dragon.math.cummin(x, axis=1))   # [[1, 1, 1], [4, 4, 4]]
+    print(dragon.math.cummin(x, axis=-1))  # Equivalent
+    ```
+
+    Use :attr:`exclusive` to exclude the top element:
+
+    ```python
+    x = dragon.constant([1, 2, 3])
+    print(dragon.math.cummin(x, exclusive=True))  # [2**63-1, 1, 1]
+    ```
+
+    Use :attr:`reverse` to reverse the cumulative direction:
+
+    ```python
+    x = dragon.constant([1, 2, 3])
+    print(dragon.math.cummin(x))  # [1, 1, 1]
+    print(dragon.math.cummin(x, reverse=True))  # [1, 2, 3]
+    print(dragon.math.cummin(x, exclusive=True, reverse=True))  # [2, 3, 2**63-1]
+    ```
+
+    Parameters
+    ----------
+    inputs : dragon.Tensor
+        The input tensor.
+    axis : int, optional, default=0
+        The axis to cumulate.
+    exclusive : bool, optional, default=False
+        ``True`` to exclude the top element.
+    reverse : bool, optional, default=False
+        ``True`` to cumulate in a reverse direction.
+
+    Returns
+    -------
+    dragon.Tensor
+        The output tensor.
+
+    """
+    if context.executing_eagerly():
+        return OpLib.execute("CumMin", inputs, axis=axis, exclusive=exclusive, reverse=reverse)
+    return OpLib.add("CumMin", inputs, axis=axis, exclusive=exclusive, reverse=reverse, **kwargs)
+
+
+@OpSchema.num_inputs(1)
 def cumsum(inputs, axis=0, exclusive=False, reverse=False, **kwargs):
     """Compute the cumulative sum of elements along the given axis.
 

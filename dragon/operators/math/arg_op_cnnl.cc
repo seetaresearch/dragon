@@ -10,14 +10,12 @@ template <typename T>
 void CNNLArgMaxOp<Context>::DoRunWithType() {
   auto &X = Input(0), *Y = Output(0);
   GET_OP_AXIS_ARG(axis, X.ndim(), 0);
-
   auto Y_dims = X.dims();
   if (!keep_dims_) {
     Y_dims.erase(Y_dims.begin() + axis);
   } else {
     Y_dims[axis] = 1;
   }
-
   impl_.Setup<T>(X.dims(), {axis}, ctx());
   impl_.ComputeIndex<T>(
       X.template data<T, Context>(),
@@ -31,14 +29,12 @@ template <typename T>
 void CNNLArgMinOp<Context>::DoRunWithType() {
   auto &X = Input(0), *Y = Output(0);
   GET_OP_AXIS_ARG(axis, X.ndim(), 0);
-
   auto Y_dims = X.dims();
   if (!keep_dims_) {
     Y_dims.erase(Y_dims.begin() + axis);
   } else {
     Y_dims[axis] = 1;
   }
-
   impl_.Setup<T>(X.dims(), {axis}, ctx());
   impl_.ComputeIndex<T>(
       X.template data<T, Context>(),

@@ -56,9 +56,7 @@ class OpTestCase(unittest.TestCase):
             if isinstance(x, torch.Tensor):
                 inputs[i] = x.numpy()
         first = inputs[:num_first] if num_first > 1 else inputs[0]
-        second = (
-            inputs[num_first : len(inputs)] if num_second > 1 else inputs[num_first]
-        )
+        second = inputs[num_first : len(inputs)] if num_second > 1 else inputs[num_first]
         if isinstance(first, np.ndarray) and isinstance(second, np.ndarray):
             super(OpTestCase, self).assertEqual(first.shape, second.shape)
             if first.dtype == bool and second.dtype == bool:
@@ -229,7 +227,17 @@ class TestTensorOps(OpTestCase):
         x = new_tensor(data)
         self.assertEqual(x.cos(), np.cos(data))
 
-    def test_cum_sum(self):
+    def test_cummax(self):
+        data = arange((6,), 1)
+        x = new_tensor(data)
+        self.assertEqual(x.cummax(0), np.maximum.accumulate(data, 0))
+
+    def test_cummin(self):
+        data = arange((6,), 1)
+        x = new_tensor(data)
+        self.assertEqual(x.cummin(0), np.minimum.accumulate(data, 0))
+
+    def test_cumsum(self):
         data = arange((6,), 1)
         x = new_tensor(data)
         self.assertEqual(x.cumsum(0), np.cumsum(data, 0))
@@ -383,9 +391,7 @@ class TestTensorOps(OpTestCase):
             x = new_tensor(data)
             x_index = new_tensor(index, False)
             y = x.index_select(axis, x_index)
-            self.assertEqual(
-                y, np.take(data.reshape(flatten_shape), index, axis=axes[0])
-            )
+            self.assertEqual(y, np.take(data.reshape(flatten_shape), index, axis=axes[0]))
 
     def test_isfinite(self):
         data = np.array([0.0, float("nan"), float("inf")])
@@ -719,9 +725,7 @@ class TestTensorOps(OpTestCase):
     def test_scatter(self):
         for axis in range(0, 1):
             data1 = arange((4, 4))
-            data2 = np.array(
-                [[0, 1, 2, 3], [1, 2, 3, 0], [2, 3, 0, 1], [3, 0, 1, 2]], "int64"
-            )
+            data2 = np.array([[0, 1, 2, 3], [1, 2, 3, 0], [2, 3, 0, 1], [3, 0, 1, 2]], "int64")
             data3 = arange((4, 4), 100)
             x, index = new_tensor(data1), new_tensor(data2)
             v = new_tensor(data3)
@@ -757,9 +761,7 @@ class TestTensorOps(OpTestCase):
     def test_scatter_mul(self):
         for axis in range(0, 1):
             data1 = arange((4, 4))
-            data2 = np.array(
-                [[0, 1, 2, 3], [1, 2, 3, 0], [2, 3, 0, 1], [3, 0, 1, 2]], "int64"
-            )
+            data2 = np.array([[0, 1, 2, 3], [1, 2, 3, 0], [2, 3, 0, 1], [3, 0, 1, 2]], "int64")
             x, index = new_tensor(data1), new_tensor(data2)
             result = data1.copy()
             for i, j in itertools.product(*[range(d) for d in data2.shape]):
@@ -970,11 +972,7 @@ class TestTensorOps(OpTestCase):
             data = arange((2, 3))
             num = data.shape[axis]
             grad = np.ones(data.shape, "float32")
-            grad[
-                tuple(
-                    slice(0, 1) if i == axis else slice(None) for i in range(data.ndim)
-                )
-            ] = 0
+            grad[tuple(slice(0, 1) if i == axis else slice(None) for i in range(data.ndim))] = 0
             x = new_tensor(data)
             y = x.unbind(axis)
             result = [x.squeeze(axis) for x in np.split(data, num, axis)]
@@ -990,12 +988,8 @@ class TestTensorOps(OpTestCase):
         entries = [(False, False), (True, False), (False, True), (True, True)]
         for return_inverse, return_counts in entries:
             x = new_tensor(data)
-            y = x.unique(
-                return_inverse=return_inverse, return_counts=return_counts, sorted=True
-            )
-            result = np.unique(
-                data, return_inverse=return_inverse, return_counts=return_counts
-            )
+            y = x.unique(return_inverse=return_inverse, return_counts=return_counts, sorted=True)
+            result = np.unique(data, return_inverse=return_inverse, return_counts=return_counts)
             self.assertEqual(y, result)
 
     def test_unsqueeze(self):

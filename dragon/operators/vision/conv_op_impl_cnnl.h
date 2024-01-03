@@ -126,6 +126,10 @@ class CNNLConvOpImpl<cnnlConvolutionForwardAlgo_t> {
     CNNLSetTensorDesc<T>(W_desc_, W_dims_v2, data_format);
     CNNLSetTensorDesc<T>(B_desc_, vec64_t({W_dims[0]}), data_format);
     CNNLSetTensorDesc<T>(Y_desc_, Y_dims, data_format);
+  }
+
+  template <typename T>
+  void GetAlgo(const T* X, const T* W, const T* B, T* Y, MLUContext* ctx) {
     CNNL_CHECK(cnnlGetConvolutionForwardAlgorithm(
         ctx->cnnl_handle(),
         conv_desc_,
@@ -133,7 +137,7 @@ class CNNLConvOpImpl<cnnlConvolutionForwardAlgo_t> {
         W_desc_,
         Y_desc_,
         CNNL_CONVOLUTION_FWD_FASTEST,
-        &algo_));
+        &perf_.algo));
     CNNL_CHECK(cnnlGetConvolutionForwardWorkspaceSize(
         ctx->cnnl_handle(),
         X_desc_,
@@ -141,16 +145,17 @@ class CNNLConvOpImpl<cnnlConvolutionForwardAlgo_t> {
         Y_desc_,
         B_desc_,
         conv_desc_,
-        algo_,
+        perf_.algo,
         &workspace_size_));
   }
 
   template <typename T>
   void Compute(const T* X, const T* W, const T* B, T* Y, MLUContext* ctx) {
+    GetAlgo(X, W, B, Y, ctx);
     CNNL_CHECK(cnnlConvolutionForward(
         ctx->cnnl_handle(),
         conv_desc_,
-        algo_,
+        perf_.algo,
         nullptr, // alpha
         X_desc_,
         X,
@@ -166,7 +171,7 @@ class CNNLConvOpImpl<cnnlConvolutionForwardAlgo_t> {
   }
 
   size_t workspace_size_;
-  cnnlConvolutionForwardAlgo_t algo_;
+  cnnlConvolutionFwdAlgoPerf_t perf_;
   cnnlConvolutionDescriptor_t conv_desc_;
   cnnlTensorDescriptor_t X_desc_, W_desc_, B_desc_, Y_desc_;
 };

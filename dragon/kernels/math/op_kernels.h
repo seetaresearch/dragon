@@ -73,6 +73,28 @@ void CumSum(
     T* y,
     Context* ctx);
 
+template <typename T, class Context>
+void CumMax(
+    const int N,
+    const int S,
+    const int C,
+    const bool exclusive,
+    const bool reverse,
+    const T* x,
+    T* y,
+    Context* ctx);
+
+template <typename T, class Context>
+void CumMin(
+    const int N,
+    const int S,
+    const int C,
+    const bool exclusive,
+    const bool reverse,
+    const T* x,
+    T* y,
+    Context* ctx);
+
 template <typename IndexT, class Context>
 void Flagged(
     const int N,

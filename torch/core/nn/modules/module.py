@@ -28,6 +28,17 @@ from dragon.vm.torch.core.tensor import Tensor
 from dragon.vm.torch.core.utils import hooks
 
 
+class _IncompatibleKeys(
+    collections.namedtuple("IncompatibleKeys", ["missing_keys", "unexpected_keys"])
+):
+    def __repr__(self):
+        if not self.missing_keys and not self.unexpected_keys:
+            return "<All keys matched successfully>"
+        return super(Module._IncompatibleKeys, self).__repr__()
+
+    __str__ = __repr__
+
+
 class Module(object):
     """The base class of modules.
 
@@ -40,16 +51,6 @@ class Module(object):
     ```
 
     """
-
-    class _IncompatibleKeys(
-        collections.namedtuple("IncompatibleKeys", ["missing_keys", "unexpected_keys"])
-    ):
-        def __repr__(self):
-            if not self.missing_keys and not self.unexpected_keys:
-                return "<All keys matched successfully>"
-            return super(Module._IncompatibleKeys, self).__repr__()
-
-        __str__ = __repr__
 
     def __init__(self):
         """Create a ``Module``."""
@@ -274,31 +275,28 @@ class Module(object):
                     load(child, prefix + name + ".")
 
         load(self)
-
         if strict:
             if len(unexpected_keys) > 0:
                 error_msgs.insert(
                     0,
-                    "Unexpected key(s) in state_dict: {}. ".format(
+                    "Unexpected key(s) in state dict: {}.".format(
                         ", ".join('"{}"'.format(k) for k in unexpected_keys)
                     ),
                 )
             if len(missing_keys) > 0:
                 error_msgs.insert(
                     0,
-                    "Missing key(s) in state_dict: {}. ".format(
+                    "Missing key(s) in state dict: {}.".format(
                         ", ".join('"{}"'.format(k) for k in missing_keys)
                     ),
                 )
-
         if len(error_msgs) > 0:
             raise RuntimeError(
-                "Error(s) in loading state_dict for {}:\n\t{}".format(
+                "Error(s) in loading state dict for {}:\n\t{}".format(
                     self.__class__.__name__, "\n\t".join(error_msgs)
                 )
             )
-
-        return self._IncompatibleKeys(missing_keys, unexpected_keys)
+        return _IncompatibleKeys(missing_keys, unexpected_keys)
 
     def mlu(self, device=None):
         """Switch the buffers and parameters to mlu device.

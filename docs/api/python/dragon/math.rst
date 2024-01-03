@@ -33,6 +33,12 @@ dragon.math
   `cos(...) <math/cos.html>`_
   : Compute the cos of input.
 
+  `cummax(...) <math/cummax.html>`_
+  : Compute the cumulative maximum of elements along the given axis.
+
+  `cummin(...) <math/cummin.html>`_
+  : Compute the cumulative minimum of elements along the given axis.
+
   `cumsum(...) <math/cumsum.html>`_
   : Compute the cumulative sum of elements along the given axis.
 
@@ -174,6 +180,8 @@ dragon.math
   math/ceil
   math/clip
   math/cos
+  math/cummax
+  math/cummin
   math/cumsum
   math/div
   math/equal

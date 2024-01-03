@@ -116,7 +116,7 @@ void CNNLBatchNormOp<Context>::DoRunWithType() {
     size_t scratch_size = 0;
     CNNL_CHECK(cnnlGetBatchNormForwardWorkspaceSize(
         ctx()->cnnl_handle(), input_desc_, &scratch_size));
-    CNNL_CHECK(cnnlBatchNormForwardTrainingV2(
+    CNNL_CHECK(cnnlBatchNormForwardTraining_v2(
         ctx()->cnnl_handle(),
         act_desc_,
         bn_mode_,
