@@ -24,7 +24,7 @@ CUDAObjects::~CUDAObjects() {
       if (iter.second) CURAND_CHECK(curandDestroyGenerator(iter.second));
     }
     for (auto& stream : streams_[device_id]) {
-      if (stream) CUDA_CHECK(cudaStreamDestroy(stream));
+      if (stream) cudaStreamDestroy(stream);
     }
     for (auto& workspace : workspaces_[device_id]) {
       if (workspace) delete workspace;
