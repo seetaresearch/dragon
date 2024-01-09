@@ -1,22 +1,22 @@
-# ------------------------------------------------------------
-# Copyright (c) 2017-present, SeetaTech, Co.,Ltd.
+# ------------------------------------------------------------------------
+# Copyright (c) 2017-present, SeetaTech. All Rights Reserved.
 #
-# Licensed under the BSD 2-Clause License.
-# You should have received a copy of the BSD 2-Clause License
-# along with the software. If not, See,
+# Licensed under the BSD 2-Clause License,
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
 #
-#     <https://opensource.org/licenses/BSD-2-Clause>
+#    https://opensource.org/licenses/BSD-2-Clause
 #
-# ------------------------------------------------------------
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+# ------------------------------------------------------------------------
 """NN functions."""
-
-from __future__ import absolute_import
-from __future__ import division
-from __future__ import print_function
 
 from dragon.core.util import nest
 from dragon.vm.torch.core.autograd.function import Function
-from dragon.vm.torch.core.nn import _reduction
 from dragon.vm.torch.core.nn.modules import utils
 
 
@@ -379,10 +379,7 @@ def binary_cross_entropy_with_logits(
     `torch.nn.BCEWithLogitsLoss(...)`_
 
     """
-    if size_average is not None or reduce is not None:
-        reduction = _reduction.legacy_get_string(size_average, reduce)
-    else:
-        reduction = reduction
+    reduction = utils._get_loss_reduction(size_average, reduce, reduction)
     return Function.apply(
         "SigmoidCrossEntropyLoss",
         input.device,
@@ -798,10 +795,7 @@ def cross_entropy(
     `torch.nn.CrossEntropyLoss(...)`_
 
     """
-    if size_average is not None or reduce is not None:
-        reduction = _reduction.legacy_get_string(size_average, reduce)
-    else:
-        reduction = reduction
+    reduction = utils._get_loss_reduction(size_average, reduce, reduction)
     return Function.apply(
         "SoftmaxCrossEntropyLoss",
         input.device,
@@ -1257,10 +1251,7 @@ def kl_div(
     `torch.nn.KLDivLoss(...)`_
 
     """
-    if size_average is not None or reduce is not None:
-        reduction = _reduction.legacy_get_string(size_average, reduce)
-    else:
-        reduction = reduction
+    reduction = utils._get_loss_reduction(size_average, reduce, reduction)
     if not log_target:
         out = target * (target.log() - input)
     else:
@@ -1301,10 +1292,7 @@ def l1_loss(input, target, size_average=None, reduce=None, reduction="mean"):
     `torch.nn.L1Loss(...)`_
 
     """
-    if size_average is not None or reduce is not None:
-        reduction = _reduction.legacy_get_string(size_average, reduce)
-    else:
-        reduction = reduction
+    reduction = utils._get_loss_reduction(size_average, reduce, reduction)
     return Function.apply("L1Loss", input.device, [input, target], reduction=reduction.upper())
 
 
@@ -1633,10 +1621,7 @@ def mse_loss(input, target, size_average=None, reduce=None, reduction="mean"):
     `torch.nn.MSELoss(...)`_
 
     """
-    if size_average is not None or reduce is not None:
-        reduction = _reduction.legacy_get_string(size_average, reduce)
-    else:
-        reduction = reduction
+    reduction = utils._get_loss_reduction(size_average, reduce, reduction)
     return Function.apply("L2Loss", input.device, [input, target], reduction=reduction.upper())
 
 
@@ -1816,10 +1801,7 @@ def nll_loss(
     `torch.nn.NLLLoss(...)`_
 
     """
-    if size_average is not None or reduce is not None:
-        reduction = _reduction.legacy_get_string(size_average, reduce)
-    else:
-        reduction = reduction
+    reduction = utils._get_loss_reduction(size_average, reduce, reduction)
     return Function.apply(
         "NLLLoss",
         input.device,
@@ -2234,10 +2216,7 @@ def sigmoid_focal_loss(
     `torch.nn.SigmoidFocalLoss(...)`_
 
     """
-    if size_average is not None or reduce is not None:
-        reduction = _reduction.legacy_get_string(size_average, reduce)
-    else:
-        reduction = reduction
+    reduction = utils._get_loss_reduction(size_average, reduce, reduction)
     return Function.apply(
         "SigmoidFocalLoss",
         input.device,
@@ -2308,7 +2287,7 @@ def smooth_l1_loss(
         Whether to average the loss.
     reduce : bool, optional
         Whether to reduce the loss.
-    reduction : {'batch_size', 'sum', mean'}, optional
+    reduction : {'batch_size', 'sum', 'mean'}, optional
         The reduce method.
 
     Returns
@@ -2321,10 +2300,7 @@ def smooth_l1_loss(
     `torch.nn.SmoothL1Loss(...)`_
 
     """
-    if size_average is not None or reduce is not None:
-        reduction = _reduction.legacy_get_string(size_average, reduce)
-    else:
-        reduction = reduction
+    reduction = utils._get_loss_reduction(size_average, reduce, reduction)
     return Function.apply(
         "SmoothL1Loss",
         input.device,

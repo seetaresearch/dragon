@@ -1,21 +1,19 @@
-# ------------------------------------------------------------
-# Copyright (c) 2017-present, SeetaTech, Co.,Ltd.
+# ------------------------------------------------------------------------
+# Copyright (c) 2017-present, SeetaTech. All Rights Reserved.
 #
-# Licensed under the BSD 2-Clause License.
-# You should have received a copy of the BSD 2-Clause License
-# along with the software. If not, See,
+# Licensed under the BSD 2-Clause License,
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
 #
-#     <https://opensource.org/licenses/BSD-2-Clause>
+#    https://opensource.org/licenses/BSD-2-Clause
 #
-# Codes are based on:
-#
-#     <https://github.com/onnx/onnx-tensorrt/blob/master/onnx_tensorrt/tensorrt_engine.py>
-#
-# ------------------------------------------------------------
-
-from __future__ import absolute_import
-from __future__ import division
-from __future__ import print_function
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+# ------------------------------------------------------------------------
+"""Python engine."""
 
 import numpy
 
@@ -39,7 +37,6 @@ from dragon.core.framework import device_spec
 from dragon.core.framework import workspace
 from dragon.core.framework.tensor import Tensor
 from dragon.core.util import logging
-from dragon.core.util import six
 
 
 class Binding(object):
@@ -63,7 +60,7 @@ class Binding(object):
         self._device_id = device_id
         self._context = execution_context
 
-        if isinstance(idx_or_name, six.string_types):
+        if isinstance(idx_or_name, str):
             self._name = idx_or_name
             self._index = cuda_engine.get_binding_index(self._name)
             if self._index == -1:
@@ -155,7 +152,7 @@ class Binding(object):
 
         Returns
         -------
-        numpy.array
+        numpy.ndarray
             The numpy array taking the data.
 
         """
@@ -240,7 +237,7 @@ class Binding(object):
 
         Returns
         -------
-        numpy.array
+        numpy.ndarray
             The numpy array taking the data.
 
         """
@@ -398,7 +395,7 @@ class Engine(object):
         for binding in self.outputs:
             binding._set_shape()
 
-        # Setup the context before executing.
+        # Set the context before executing.
         if optimization_profile is not None:
             self._context.active_optimization_profile = optimization_profile
 

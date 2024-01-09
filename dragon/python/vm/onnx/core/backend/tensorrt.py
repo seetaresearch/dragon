@@ -1,18 +1,19 @@
-# ------------------------------------------------------------
-# Copyright (c) 2017-present, SeetaTech, Co.,Ltd.
+# ------------------------------------------------------------------------
+# Copyright (c) 2017-present, SeetaTech. All Rights Reserved.
 #
-# Licensed under the BSD 2-Clause License.
-# You should have received a copy of the BSD 2-Clause License
-# along with the software. If not, See,
+# Licensed under the BSD 2-Clause License,
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
 #
-#     <https://opensource.org/licenses/BSD-2-Clause>
+#    https://opensource.org/licenses/BSD-2-Clause
 #
-# ------------------------------------------------------------
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+# ------------------------------------------------------------------------
 """TensorRT ONNX backend."""
-
-from __future__ import absolute_import
-from __future__ import division
-from __future__ import print_function
 
 import numpy
 
@@ -32,7 +33,6 @@ except ImportError:
     DeviceType = deprecation.NotInstalled("onnx")
 
 from dragon.core.device import cuda
-from dragon.core.util import six
 from dragon.vm.onnx.core import helper as onnx_helper
 from dragon.vm.tensorrt.core import engine
 from dragon.vm.tensorrt.core.engine import trt
@@ -80,13 +80,13 @@ class BackendRep(ONNXBackendRep):
         )
         self._parser = trt.OnnxParser(self._network, self._logger)
 
-        if not isinstance(model, six.string_types):
+        if not isinstance(model, str):
             model_str = model.SerializeToString()
         else:
             model_str = model
 
         if not trt.init_libnvinfer_plugins(TRT_LOGGER, ""):
-            msg = "Failed to initialize TensorRT's plugin library."
+            msg = "Failed to initialize TensorRT plugin library."
             raise RuntimeError(msg)
 
         if not self._parser.parse(model_str):
@@ -104,7 +104,7 @@ class BackendRep(ONNXBackendRep):
         if max_workspace_size is None:
             max_workspace_size = 1 << 28
 
-        # Setup the builder.
+        # Set builder.
         self._builder.max_batch_size = max_batch_size
         self._builder.max_workspace_size = max_workspace_size
         self._add_optimization_profiles(optimization_profiles)

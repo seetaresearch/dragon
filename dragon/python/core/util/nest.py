@@ -1,20 +1,21 @@
-# ------------------------------------------------------------
-# Copyright (c) 2017-present, SeetaTech, Co.,Ltd.
+# ------------------------------------------------------------------------
+# Copyright (c) 2017-present, SeetaTech. All Rights Reserved.
 #
-# Licensed under the BSD 2-Clause License.
-# You should have received a copy of the BSD 2-Clause License
-# along with the software. If not, See,
+# Licensed under the BSD 2-Clause License,
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
 #
-#     <https://opensource.org/licenses/BSD-2-Clause>
+#    https://opensource.org/licenses/BSD-2-Clause
 #
-# ------------------------------------------------------------
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+# ------------------------------------------------------------------------
 """Nest utility."""
 
-from __future__ import absolute_import
-from __future__ import division
-from __future__ import print_function
-
-from dragon.core.util import six
+import collections
 
 
 def is_nested(input):
@@ -48,9 +49,7 @@ def is_sequence(input):
         ``True`` if input is a sequence otherwise ``False``.
 
     """
-    return isinstance(input, six.collections_abc.Sequence) and not isinstance(
-        input, six.string_types
-    )
+    return isinstance(input, collections.abc.Sequence) and not isinstance(input, str)
 
 
 def flatten(input):
@@ -139,7 +138,7 @@ def _yield_flatten_up_to(shallow_tree, input_tree, is_seq, path=()):
 
 def _yield_sorted_items(iterable):
     """Return the sorted iterable."""
-    if isinstance(iterable, six.collections_abc.Mapping):
+    if isinstance(iterable, collections.abc.Mapping):
         for key in sorted(iterable):
             yield key, iterable[key]
     else:

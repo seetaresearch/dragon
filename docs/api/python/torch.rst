@@ -15,6 +15,9 @@ vm.torch
   `class enable_grad <torch/enable_grad.html>`_
   : Context-manager to enable gradient calculation.
 
+  `class inference_mode <torch/inference_mode.html>`_
+  : Context-manager to enable or disable inference mode.
+
   `class no_grad <torch/no_grad.html>`_
   : Context-manager to disable gradient calculation.
 
@@ -50,6 +53,9 @@ vm.torch
 
   `argsort(...) <torch/argsort.html>`_
   : Return the index of sorted elements along the given dimension.
+
+  `as_tensor(...) <torch/as_tensor.html>`_
+  : Create a tensor sharing the given data.
 
   `atan2(...) <torch/atan2.html>`_
   : Compute element-wise arc-tangent of two arguments.
@@ -366,6 +372,7 @@ vm.torch
   torch/argmax
   torch/argmin
   torch/argsort
+  torch/as_tensor
   torch/atan2
   torch/baddbmm
   torch/bitwise_and
@@ -401,6 +408,7 @@ vm.torch
   torch/ge
   torch/gt
   torch/index_select
+  torch/inference_mode
   torch/isfinite
   torch/isinf
   torch/isnan

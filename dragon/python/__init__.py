@@ -1,23 +1,22 @@
-# ------------------------------------------------------------
-# Copyright (c) 2017-present, SeetaTech, Co.,Ltd.
+# ------------------------------------------------------------------------
+# Copyright (c) 2017-present, SeetaTech. All Rights Reserved.
 #
-# Licensed under the BSD 2-Clause License.
-# You should have received a copy of the BSD 2-Clause License
-# along with the software. If not, See,
+# Licensed under the BSD 2-Clause License,
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
 #
-#     <https://opensource.org/licenses/BSD-2-Clause>
+#    https://opensource.org/licenses/BSD-2-Clause
 #
-# ------------------------------------------------------------
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+# ------------------------------------------------------------------------
 """A Computation Graph Virtual Machine Based Deep Learning Framework."""
 
-from __future__ import absolute_import as _absolute_import
-from __future__ import division as _division
-from __future__ import print_function as _print_function
-
 import os as _os
-import sys as _sys
 
-# Modules
 from dragon._api import autograph
 from dragon._api import bitwise
 from dragon._api import cuda
@@ -35,13 +34,11 @@ from dragon._api import random
 from dragon._api import sysconfig
 from dragon._api import vision
 
-# Classes
 from dragon.core.autograph.backprop import GradientTape
 from dragon.core.framework.device_spec import DeviceSpec
 from dragon.core.framework.tensor import Tensor
 from dragon.core.framework.workspace import Workspace
 
-# Functions
 from dragon.core.autograph.context import eager_mode
 from dragon.core.autograph.context import graph_mode
 from dragon.core.autograph.function_lib import function
@@ -99,16 +96,8 @@ from dragon.core.ops.framework_ops import stop_gradient
 from dragon.core.ops.math_ops import cast
 from dragon.core.ops.sort_ops import argsort
 from dragon.core.ops.sort_ops import sort
+from dragon.version import __version__
 
-# Version
-from dragon.version import version as __version__
-
-# Attributes
-_API_MODULE = autograph
-_current_module = _sys.modules[__name__]
-_api_dir = _os.path.dirname(_os.path.dirname(_API_MODULE.__file__))
-if not hasattr(_current_module, "__path__"):
-    __path__ = [_api_dir]
-elif _api_dir not in __path__:
-    __path__.append(_api_dir)
+_api_dir = _os.path.dirname(_os.path.dirname(autograph.__file__))
+__path__.append(_api_dir) if _api_dir not in __path__ else None
 __all__ = [_s for _s in dir() if not _s.startswith("_")]

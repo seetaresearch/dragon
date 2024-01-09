@@ -37,7 +37,7 @@ void CNNLCumSumGradientOp<Context>::DoRunWithType() {
   size_t scratch_size;
   CNNL_CHECK(cnnlGetCumsumWorkspaceSize(
       ctx()->cnnl_handle(), input_desc_, axis, &scratch_size));
-  CNNL_CHECK(cnnlCumsum(
+  CNNL_CHECK(cnnlCumsum_v2(
       ctx()->cnnl_handle(),
       input_desc_,
       dY.template data<T, Context>(),

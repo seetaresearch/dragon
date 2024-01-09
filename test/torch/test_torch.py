@@ -1,18 +1,19 @@
-# ------------------------------------------------------------
-# Copyright (c) 2017-present, SeetaTech, Co.,Ltd.
+# ------------------------------------------------------------------------
+# Copyright (c) 2017-present, SeetaTech. All Rights Reserved.
 #
-# Licensed under the BSD 2-Clause License.
-# You should have received a copy of the BSD 2-Clause License
-# along with the software. If not, See,
+# Licensed under the BSD 2-Clause License,
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
 #
-#     <https://opensource.org/licenses/BSD-2-Clause>
+#    https://opensource.org/licenses/BSD-2-Clause
 #
-# ------------------------------------------------------------
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+# ------------------------------------------------------------------------
 """Test torch module."""
-
-from __future__ import absolute_import
-from __future__ import division
-from __future__ import print_function
 
 import collections
 import copy
@@ -45,6 +46,10 @@ class TestTensor(unittest.TestCase):
         c = a + b
         c.retain_grad()
         c.backward()
+        self.assertEqual(float(torch.tensor(a)), 0.0)
+        self.assertNotEqual(id(torch.tensor(a)), id(a))
+        self.assertEqual(id(torch.as_tensor(a)), id(a))
+        self.assertEqual(float(torch.as_tensor(2.0)), 2.0)
         self.assertEqual(a.is_leaf, True)
         self.assertEqual(a.is_floating_point(), True)
         self.assertEqual(a.is_contiguous(), True)
@@ -74,7 +79,6 @@ class TestTensor(unittest.TestCase):
         self.assertEqual(torch.HalfTensor(1).dtype, "float16")
         self.assertEqual(torch.IntTensor(1).dtype, "int32")
         self.assertEqual(torch.LongTensor(1).dtype, "int64")
-        self.assertEqual(torch.autograd.Variable(torch.Tensor(1)).requires_grad, False)
         try:
             _ = torch.Tensor(5.0)
         except ValueError:

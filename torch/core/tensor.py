@@ -1,18 +1,19 @@
-# ------------------------------------------------------------
-# Copyright (c) 2017-present, SeetaTech, Co.,Ltd.
+# ------------------------------------------------------------------------
+# Copyright (c) 2017-present, SeetaTech. All Rights Reserved.
 #
-# Licensed under the BSD 2-Clause License.
-# You should have received a copy of the BSD 2-Clause License
-# along with the software. If not, See,
+# Licensed under the BSD 2-Clause License,
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
 #
-#     <https://opensource.org/licenses/BSD-2-Clause>
+#    https://opensource.org/licenses/BSD-2-Clause
 #
-# ------------------------------------------------------------
-"""Tensor class."""
-
-from __future__ import absolute_import
-from __future__ import division
-from __future__ import print_function
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+# ------------------------------------------------------------------------
+"""Tensor."""
 
 import numpy
 
@@ -20,7 +21,6 @@ from dragon.core.framework import config
 from dragon.core.framework import context
 from dragon.core.framework import workspace
 from dragon.core.util import nest
-from dragon.core.util import six
 from dragon.core.util import string
 from dragon.vm.torch.core import cpp
 
@@ -84,11 +84,11 @@ class Tensor(object):
                 dtype = kwargs.get("dtype", None)
                 self._from_array(numpy.array(args[0], dtype, copy=kwargs.get("copy", True)))
             else:
-                if not isinstance(args[0], six.integer_types):
+                if not isinstance(args[0], int):
                     raise ValueError("Excepted an integer as size.")
                 self._from_shape([args[0]], kwargs.get("dtype", self.DEFAULT_DTYPE))
         elif len(args) > 1:
-            if not all(isinstance(arg, six.integer_types) for arg in args):
+            if not all(isinstance(arg, int) for arg in args):
                 raise ValueError("Excepted integer(s) as sizes.")
             self._from_shape(args, kwargs.get("dtype", self.DEFAULT_DTYPE))
 

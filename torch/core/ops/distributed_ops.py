@@ -1,20 +1,21 @@
-# ------------------------------------------------------------
-# Copyright (c) 2017-present, SeetaTech, Co.,Ltd.
+# ------------------------------------------------------------------------
+# Copyright (c) 2017-present, SeetaTech. All Rights Reserved.
 #
-# Licensed under the BSD 2-Clause License.
-# You should have received a copy of the BSD 2-Clause License
-# along with the software. If not, See,
+# Licensed under the BSD 2-Clause License,
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
 #
-#     <https://opensource.org/licenses/BSD-2-Clause>
+#    https://opensource.org/licenses/BSD-2-Clause
 #
-# ------------------------------------------------------------
-"""Distributed ops."""
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+# ------------------------------------------------------------------------
+"""Distributed operators."""
 
-from __future__ import absolute_import
-from __future__ import division
-from __future__ import print_function
-
-from dragon.core import distributed
+from dragon.core.distributed import backend as dist_backend
 from dragon.vm.torch.core.autograd.function import Function
 
 
@@ -36,7 +37,7 @@ def all_gather(tensor_list, tensor, group=None):
         The output tensor list.
 
     """
-    group = group or distributed.get_group()
+    group = group or dist_backend.get_group()
     if group is None:
         return tensor
     output_tensor = Function.apply(
@@ -73,7 +74,7 @@ def all_gather_into_tensor(output_tensor, input_tensor, group=None):
         The output tensor.
 
     """
-    group = group or distributed.get_group()
+    group = group or dist_backend.get_group()
     if group is None:
         return input_tensor
     return Function.apply(
@@ -104,7 +105,7 @@ def all_reduce(tensor, op="sum", group=None):
         The output tensor.
 
     """
-    group = group or distributed.get_group()
+    group = group or dist_backend.get_group()
     if group is None:
         return tensor
     op = op.upper()
@@ -139,7 +140,7 @@ def broadcast(tensor, src=0, group=None):
         The output tensor.
 
     """
-    group = group or distributed.get_group()
+    group = group or dist_backend.get_group()
     if group is None:
         return tensor
     return Function.apply(
@@ -173,7 +174,7 @@ def reduce_scatter(output, input_list, op="sum", group=None):
         The output tensor.
 
     """
-    group = group or distributed.get_group()
+    group = group or dist_backend.get_group()
     if group is None:
         return input_list
     op = op.upper()
@@ -214,7 +215,7 @@ def reduce_scatter_tensor(output, input, op="sum", group=None):
         The output tensor.
 
     """
-    group = group or distributed.get_group()
+    group = group or dist_backend.get_group()
     if group is None:
         return input
     op = op.upper()

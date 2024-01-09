@@ -1,18 +1,19 @@
-# ------------------------------------------------------------
-# Copyright (c) 2017-present, SeetaTech, Co.,Ltd.
+# ------------------------------------------------------------------------
+# Copyright (c) 2017-present, SeetaTech. All Rights Reserved.
 #
-# Licensed under the BSD 2-Clause License.
-# You should have received a copy of the BSD 2-Clause License
-# along with the software. If not, See,
+# Licensed under the BSD 2-Clause License,
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
 #
-#     <https://opensource.org/licenses/BSD-2-Clause>
+#    https://opensource.org/licenses/BSD-2-Clause
 #
-# ------------------------------------------------------------
-"""Constant ops."""
-
-from __future__ import absolute_import
-from __future__ import division
-from __future__ import print_function
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+# ------------------------------------------------------------------------
+"""Constant operators."""
 
 import numpy
 
@@ -91,6 +92,36 @@ def arange(
     )
     out._requires_grad = requires_grad
     return out
+
+
+def as_tensor(data, dtype=None, device=None, out=None):
+    """Create a tensor sharing the given data.
+
+    Parameters
+    ----------
+    data : array_like
+        The data to initialize from.
+    dtype : str, optional
+        The optional data type.
+    device : dragon.vm.torch.device, optional
+        The optional device of returned tensor.
+    out : dragon.vm.torch.Tensor, optional
+        The output tensor.
+
+    Returns
+    -------
+    dragon.vm.torch.Tensor
+        The output tensor.
+
+    """
+    if not isinstance(data, (numpy.ndarray, Tensor)):
+        data = numpy.array(data, copy=True)
+    if isinstance(data, numpy.ndarray):
+        data = data.astype(dtype, copy=False) if dtype else data
+        return from_numpy(data, out).to(device=device)
+    dtype = None if dtype and dtype == data.dtype else dtype
+    device = None if device and device == data.device else device
+    return data.to(dtype=dtype, device=device)
 
 
 def empty(*size, dtype=None, device=None, requires_grad=False):
@@ -451,17 +482,15 @@ def tensor(data, dtype=None, device=None, requires_grad=False):
         The output tensor.
 
     """
-    array_data = numpy.array(data, copy=True)
-    if dtype is None:
-        dtype = str(array_data.dtype)
-    else:
-        array_data = array_data.astype(dtype)
-    return Tensor(
-        array_data,
-        dtype=dtype,
-        device=cpp.device() if device is None else device,
-        requires_grad=requires_grad,
-    )
+    if not isinstance(data, (numpy.ndarray, Tensor)):
+        data = numpy.array(data, copy=True)
+    if isinstance(data, numpy.ndarray):
+        data = data.astype(dtype, copy=False) if dtype else data
+        dtype, device = str(data.dtype), device if device else cpp.device()
+        return Tensor(data, dtype=dtype, device=device, requires_grad=requires_grad)
+    dtype = dtype if dtype else data.dtype
+    device = device if device else data.device
+    return Tensor(0, dtype=dtype, device=device, requires_grad=requires_grad).copy_(data)
 
 
 def zeros(*size, out=None, dtype="float32", device=None, requires_grad=False):

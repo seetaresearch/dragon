@@ -1,18 +1,19 @@
-# ------------------------------------------------------------
-# Copyright (c) 2017-present, SeetaTech, Co.,Ltd.
+# ------------------------------------------------------------------------
+# Copyright (c) 2017-present, SeetaTech. All Rights Reserved.
 #
-# Licensed under the BSD 2-Clause License.
-# You should have received a copy of the BSD 2-Clause License
-# along with the software. If not, See,
+# Licensed under the BSD 2-Clause License,
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
 #
-#     <https://opensource.org/licenses/BSD-2-Clause>
+#    https://opensource.org/licenses/BSD-2-Clause
 #
-# ------------------------------------------------------------
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+# ------------------------------------------------------------------------
 """Image ops."""
-
-from __future__ import absolute_import
-from __future__ import division
-from __future__ import print_function
 
 try:
     from nvidia.dali import ops
@@ -21,7 +22,6 @@ except ImportError:
 
     ops = deprecation.not_installed("nvidia.dali")
 
-from dragon.core.util import six
 from dragon.vm.dali.core.framework import context
 from dragon.vm.dali.core.framework import types
 
@@ -104,9 +104,9 @@ class ColorSpaceConversion(object):
             The operator.
 
         """
-        if isinstance(image_type, six.string_types):
+        if isinstance(image_type, str):
             image_type = getattr(types, image_type)
-        if isinstance(output_type, six.string_types):
+        if isinstance(output_type, str):
             output_type = getattr(types, output_type)
         return ops.ColorSpaceConversion(
             image_type=image_type,
@@ -226,9 +226,9 @@ class CropMirrorNormalize(object):
             The operator.
 
         """
-        if isinstance(dtype, six.string_types):
+        if isinstance(dtype, str):
             dtype = getattr(types, dtype.upper())
-        if isinstance(output_layout, six.string_types):
+        if isinstance(output_layout, str):
             output_layout = output_layout.upper()
         return ops.CropMirrorNormalize(
             crop=crop,
@@ -273,7 +273,7 @@ class GaussianBlur(object):
             The operator.
 
         """
-        if isinstance(dtype, six.string_types):
+        if isinstance(dtype, str):
             dtype = getattr(types, dtype.upper())
         return ops.GaussianBlur(
             sigma=sigma,
@@ -497,11 +497,11 @@ class RandomResizedCrop(object):
             The operator.
 
         """
-        if isinstance(interp_type, six.string_types):
+        if isinstance(interp_type, str):
             interp_type = getattr(types, "INTERP_" + interp_type.upper())
-        if isinstance(mag_filter, six.string_types):
+        if isinstance(mag_filter, str):
             mag_filter = getattr(types, "INTERP_" + mag_filter.upper())
-        if isinstance(min_filter, six.string_types):
+        if isinstance(min_filter, str):
             min_filter = getattr(types, "INTERP_" + min_filter.upper())
         return ops.RandomResizedCrop(
             size=size,
@@ -570,11 +570,11 @@ class Resize(object):
             The operator.
 
         """
-        if isinstance(interp_type, six.string_types):
+        if isinstance(interp_type, str):
             interp_type = getattr(types, "INTERP_" + interp_type.upper())
-        if isinstance(mag_filter, six.string_types):
+        if isinstance(mag_filter, str):
             mag_filter = getattr(types, "INTERP_" + mag_filter.upper())
-        if isinstance(min_filter, six.string_types):
+        if isinstance(min_filter, str):
             min_filter = getattr(types, "INTERP_" + min_filter.upper())
         return ops.Resize(
             size=size,
@@ -619,7 +619,7 @@ class Rotate(object):
             The operator.
 
         """
-        if isinstance(interp_type, six.string_types):
+        if isinstance(interp_type, str):
             interp_type = getattr(types, "INTERP_" + interp_type.upper())
         return ops.Rotate(
             fill_value=fill_value,
@@ -658,7 +658,7 @@ class WarpAffine(object):
             The operator.
 
         """
-        if isinstance(interp_type, six.string_types):
+        if isinstance(interp_type, str):
             interp_type = getattr(types, "INTERP_" + interp_type.upper())
         return ops.WarpAffine(
             fill_value=fill_value,

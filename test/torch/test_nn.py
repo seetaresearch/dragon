@@ -1,18 +1,19 @@
-# ------------------------------------------------------------
-# Copyright (c) 2017-present, SeetaTech, Co.,Ltd.
+# ------------------------------------------------------------------------
+# Copyright (c) 2017-present, SeetaTech. All Rights Reserved.
 #
-# Licensed under the BSD 2-Clause License.
-# You should have received a copy of the BSD 2-Clause License
-# along with the software. If not, See,
+# Licensed under the BSD 2-Clause License,
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
 #
-#     <https://opensource.org/licenses/BSD-2-Clause>
+#    https://opensource.org/licenses/BSD-2-Clause
 #
-# ------------------------------------------------------------
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+# ------------------------------------------------------------------------
 """Test nn module."""
-
-from __future__ import absolute_import
-from __future__ import division
-from __future__ import print_function
 
 import collections
 import copy
@@ -26,7 +27,6 @@ from dragon.core.util import logging
 from dragon.core.util import nest
 from dragon.core.testing.unittest.common_utils import run_tests
 from dragon.vm import torch
-from dragon.vm.torch.core.nn import _reduction
 
 # Fix the duplicate linked omp runtime
 os.environ["KMP_DUPLICATE_LIB_OK"] = "TRUE"
@@ -1247,7 +1247,9 @@ class TestNNInit(OpTestCase):
 class TestReduction(unittest.TestCase):
     """Test reduction utility."""
 
-    def test_legacy_string(self):
+    def test_mode(self):
+        from dragon.vm.torch.core.nn.modules.utils import _get_loss_reduction
+
         entries = [
             (None, None, "mean"),
             (None, False, "none"),
@@ -1259,10 +1261,8 @@ class TestReduction(unittest.TestCase):
             (True, False, "none"),
             (True, True, "mean"),
         ]
-        logging.set_verbosity("FATAL")
         for size_average, reduce, reduction in entries:
-            self.assertEqual(_reduction.legacy_get_string(size_average, reduce), reduction)
-        logging.set_verbosity("INFO")
+            self.assertEqual(_get_loss_reduction(size_average, reduce, reduction), reduction)
 
 
 def arange(shape, start=0, dtype="float32"):

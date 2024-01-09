@@ -1,25 +1,26 @@
-# ------------------------------------------------------------
-# Copyright (c) 2017-present, SeetaTech, Co.,Ltd.
+# ------------------------------------------------------------------------
+# Copyright (c) 2017-present, SeetaTech. All Rights Reserved.
 #
-# Licensed under the BSD 2-Clause License.
-# You should have received a copy of the BSD 2-Clause License
-# along with the software. If not, See,
+# Licensed under the BSD 2-Clause License,
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
 #
-#     <https://opensource.org/licenses/BSD-2-Clause>
+#    https://opensource.org/licenses/BSD-2-Clause
 #
-# ------------------------------------------------------------
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+# ------------------------------------------------------------------------
 """Graph library."""
-
-from __future__ import absolute_import
-from __future__ import division
-from __future__ import print_function
 
 import collections
 import copy
 import itertools
 import weakref
 
-from dragon.core import distributed
+from dragon.core.distributed import backend as dist_backend
 from dragon.core.framework import backend
 from dragon.core.framework import config
 from dragon.core.framework import context
@@ -163,7 +164,7 @@ class GraphLib(object):
             group_vars[weight_decay].append(var.id)
             group_grads[weight_decay].append(grad.id)
         op_defs = []
-        dist_group = distributed.get_group()
+        dist_group = dist_backend.get_group()
         if dist_group:
             grads = list(itertools.chain(*group_grads.values()))
             op_defs.append(

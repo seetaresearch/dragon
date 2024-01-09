@@ -1,18 +1,19 @@
-# ------------------------------------------------------------
-# Copyright (c) 2017-present, SeetaTech, Co.,Ltd.
+# ------------------------------------------------------------------------
+# Copyright (c) 2017-present, SeetaTech. All Rights Reserved.
 #
-# Licensed under the BSD 2-Clause License.
-# You should have received a copy of the BSD 2-Clause License
-# along with the software. If not, See,
+# Licensed under the BSD 2-Clause License,
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
 #
-#     <https://opensource.org/licenses/BSD-2-Clause>
+#    https://opensource.org/licenses/BSD-2-Clause
 #
-# ------------------------------------------------------------
-"""RNN ops."""
-
-from __future__ import absolute_import
-from __future__ import division
-from __future__ import print_function
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+# ------------------------------------------------------------------------
+"""RNN operators."""
 
 import itertools
 import math
@@ -22,7 +23,6 @@ from dragon.core.framework.tensor import Tensor
 from dragon.core.autograph.op_lib import OpLib
 from dragon.core.autograph.op_lib import OpSchema
 from dragon.core.ops import random_ops
-from dragon.core.util import math_util
 from dragon.core.util import nest
 
 
@@ -87,14 +87,14 @@ class RNNModule(object):
         weight_count = 0
         self._weight_shapes = matrix_shapes + bias_shapes
         for shape in self._weight_shapes:
-            weight_count += math_util.prod(shape)
+            weight_count += math.prod(shape)
         weight = Tensor([weight_count])
         weight.requires_grad = True
         return weight
 
     def _initialize_weights(self):
         """Initialize the weights."""
-        stddev = 1.0 / math.sqrt(self.hidden_size)
+        stddev = 1.0 / self.hidden_size**0.5
         for layer_id, param_id in itertools.product(
             range(self.num_layers * (self.bidirectional + 1)),
             range(self._num_gates * 2),

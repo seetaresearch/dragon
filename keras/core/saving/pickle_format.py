@@ -1,34 +1,32 @@
-# ------------------------------------------------------------
-# Copyright (c) 2017-present, SeetaTech, Co.,Ltd.
+# ------------------------------------------------------------------------
+# Copyright (c) 2017-present, SeetaTech. All Rights Reserved.
 #
-# Licensed under the BSD 2-Clause License.
-# You should have received a copy of the BSD 2-Clause License
-# along with the software. If not, See,
+# Licensed under the BSD 2-Clause License,
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
 #
-#     <https://opensource.org/licenses/BSD-2-Clause>
+#    https://opensource.org/licenses/BSD-2-Clause
 #
-# Codes are based on:
-#
-#     <https://github.com/tensorflow/tensorflow/blob/master/tensorflow/python/keras/saving/hdf5_format.py>
-#
-# ------------------------------------------------------------
-
-from __future__ import absolute_import
-from __future__ import division
-from __future__ import print_function
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+# ------------------------------------------------------------------------
+"""Pickle utilities."""
 
 import collections
+import pickle
 
 from dragon.core.framework import workspace
 from dragon.core.util import logging
-from dragon.core.util import six
 
 PICKLE_DEFAULT_PROTOCOL = 2
 
 
 def load_weights_from_pickle(f, layer, verbose=False):
     default_ws = workspace.get_workspace()
-    weight_dict = six.moves.pickle.load(f)
+    weight_dict = pickle.load(f)
     for weight in layer.weights:
         name = weight.name
         if name in weight_dict:
@@ -66,5 +64,4 @@ def save_weights_to_pickle(f, layer):
         weight_impl = default_ws.get_tensor(weight.id)
         if weight_impl is not None:
             weight_dict[weight.name] = weight_impl.ToNumpy()
-    pickle = six.moves.pickle
     pickle.dump(weight_dict, f, PICKLE_DEFAULT_PROTOCOL)

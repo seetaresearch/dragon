@@ -1,25 +1,20 @@
-# ------------------------------------------------------------
-# Copyright (c) 2017-present, SeetaTech, Co.,Ltd.
+# ------------------------------------------------------------------------
+# Copyright (c) 2017-present, SeetaTech. All Rights Reserved.
 #
-# Licensed under the BSD 2-Clause License.
-# You should have received a copy of the BSD 2-Clause License
-# along with the software. If not, See,
+# Licensed under the BSD 2-Clause License,
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
 #
-#     <https://opensource.org/licenses/BSD-2-Clause>
+#    https://opensource.org/licenses/BSD-2-Clause
 #
-# ------------------------------------------------------------
-"""CUDA module."""
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+# ------------------------------------------------------------------------
+"""CUDA API."""
 
-from __future__ import absolute_import as _absolute_import
-from __future__ import division as _division
-from __future__ import print_function as _print_function
-
-# Classes
-from dragon.vm.torch.core.cuda.graphs import CUDAGraph
-from dragon.vm.torch.core.cuda.graphs import TraceGraph
-from dragon.vm.torch.core.cuda.graphs import graph
-
-# Functions
 from dragon.vm.torch.core.cuda.device import current_device
 from dragon.vm.torch.core.cuda.device import device_count
 from dragon.vm.torch.core.cuda.device import get_device_capability
@@ -27,8 +22,9 @@ from dragon.vm.torch.core.cuda.device import get_device_name
 from dragon.vm.torch.core.cuda.device import is_available
 from dragon.vm.torch.core.cuda.device import set_device
 from dragon.vm.torch.core.cuda.device import synchronize
+from dragon.vm.torch.core.cuda.graphs import CUDAGraph
+from dragon.vm.torch.core.cuda.graphs import TraceGraph
+from dragon.vm.torch.core.cuda.graphs import graph
 from dragon.vm.torch.core.cuda.memory import memory_allocated
 from dragon.vm.torch.core.cuda.random import manual_seed
 from dragon.vm.torch.core.cuda.random import manual_seed_all
-
-__all__ = [_s for _s in dir() if not _s.startswith("_")]

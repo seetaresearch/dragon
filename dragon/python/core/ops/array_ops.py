@@ -1,18 +1,19 @@
-# ------------------------------------------------------------
-# Copyright (c) 2017-present, SeetaTech, Co.,Ltd.
+# ------------------------------------------------------------------------
+# Copyright (c) 2017-present, SeetaTech. All Rights Reserved.
 #
-# Licensed under the BSD 2-Clause License.
-# You should have received a copy of the BSD 2-Clause License
-# along with the software. If not, See,
+# Licensed under the BSD 2-Clause License,
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
 #
-#     <https://opensource.org/licenses/BSD-2-Clause>
+#    https://opensource.org/licenses/BSD-2-Clause
 #
-# ------------------------------------------------------------
-"""Array ops."""
-
-from __future__ import absolute_import
-from __future__ import division
-from __future__ import print_function
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+# ------------------------------------------------------------------------
+"""Array operators."""
 
 from dragon.core.autograph import context
 from dragon.core.autograph.op_lib import OpLib
@@ -20,7 +21,6 @@ from dragon.core.autograph.op_lib import OpSchema
 from dragon.core.framework import types
 from dragon.core.ops import constant_ops
 from dragon.core.util import nest
-from dragon.core.util import six
 
 
 @OpSchema.num_inputs(2)
@@ -35,9 +35,9 @@ def assign(inputs, starts=None, sizes=None, copy=False, **kwargs):
     ----------
     inputs : Sequence[dragon.Tensor]
         The input and value tensor.
-    starts : Union[Sequence[int], dragon.Tensor]], optional
+    starts : Union[Sequence[int], dragon.Tensor], optional
         The start location for each dimension.
-    sizes : Union[Sequence[int], dragon.Tensor]], optional
+    sizes : Union[Sequence[int], dragon.Tensor], optional
         The number of elements from start.
     copy : bool, optional, default=False
         Return a new tensor or call in-place.
@@ -682,7 +682,7 @@ def roll(inputs, shift, axis=None, **kwargs):
     """
     args = OpSchema.parse_args(locals())
     axes = nest.flatten(axis) if axis is not None else axis
-    if isinstance(shift, six.integer_types):
+    if isinstance(shift, int):
         args["shifts"] = nest.flatten(shift)
     if context.executing_eagerly():
         return OpLib.execute(
@@ -1026,7 +1026,7 @@ def tile(inputs, repeats, **kwargs):
     ----------
     inputs : dragon.Tensor
         The input tensor.
-    repeats : Union[Sequence[int], dragon.Tensor]]
+    repeats : Union[Sequence[int], dragon.Tensor]
         The repetition for each axis.
 
     Returns
@@ -1061,7 +1061,7 @@ def transpose(inputs, perm=None, copy=True, **kwargs):
     ----------
     inputs : dragon.Tensor
         The input tensor.
-    perm : Union[Sequence[int], dragon.Tensor]], optional
+    perm : Union[Sequence[int], dragon.Tensor], optional
         The output permutation.
     copy : bool, optional, default=True
         Return a new tensor or call in-place.

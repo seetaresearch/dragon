@@ -1,24 +1,23 @@
-# ------------------------------------------------------------
-# Copyright (c) 2017-present, SeetaTech, Co.,Ltd.
+# ------------------------------------------------------------------------
+# Copyright (c) 2017-present, SeetaTech. All Rights Reserved.
 #
-# Licensed under the BSD 2-Clause License.
-# You should have received a copy of the BSD 2-Clause License
-# along with the software. If not, See,
+# Licensed under the BSD 2-Clause License,
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
 #
-#     <https://opensource.org/licenses/BSD-2-Clause>
+#    https://opensource.org/licenses/BSD-2-Clause
 #
-# ------------------------------------------------------------
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+# ------------------------------------------------------------------------
+"""NN API."""
 
-from __future__ import absolute_import as _absolute_import
-from __future__ import division as _division
-from __future__ import print_function as _print_function
-
-# Classes
 from dragon.core.ops.rnn_ops import GRU
 from dragon.core.ops.rnn_ops import LSTM
 from dragon.core.ops.rnn_ops import RNN
-
-# Functions
 from dragon.core.ops.activation_ops import dropout
 from dragon.core.ops.activation_ops import drop_block
 from dragon.core.ops.activation_ops import drop_path
@@ -59,5 +58,3 @@ from dragon.core.ops.vision_ops import pool1d
 from dragon.core.ops.vision_ops import pool2d
 from dragon.core.ops.vision_ops import pool3d
 from dragon.core.ops.vision_ops import space_to_depth
-
-__all__ = [_s for _s in dir() if not _s.startswith("_")]

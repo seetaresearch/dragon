@@ -1,18 +1,19 @@
-# ------------------------------------------------------------
-# Copyright (c) 2017-present, SeetaTech, Co.,Ltd.
+# ------------------------------------------------------------------------
+# Copyright (c) 2017-present, SeetaTech. All Rights Reserved.
 #
-# Licensed under the BSD 2-Clause License.
-# You should have received a copy of the BSD 2-Clause License
-# along with the software. If not, See,
+# Licensed under the BSD 2-Clause License,
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
 #
-#     <https://opensource.org/licenses/BSD-2-Clause>
+#    https://opensource.org/licenses/BSD-2-Clause
 #
-# ------------------------------------------------------------
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+# ------------------------------------------------------------------------
 """NN ops."""
-
-from __future__ import absolute_import
-from __future__ import division
-from __future__ import print_function
 
 import functools
 
@@ -24,7 +25,6 @@ from dragon.core.ops import normalization_ops
 from dragon.core.ops import sort_ops
 from dragon.core.ops import vision_ops
 from dragon.core.util import nest
-from dragon.core.util import six
 
 
 def avg_pool(
@@ -340,7 +340,7 @@ def convolution(
     input : dragon.Tensor
        The input tensor.
     filters : dragon.Tensor
-       The filters tensor.
+       The filter tensor.
     strides : Union[int, Sequence[int]], optional, default=1
         The stride of convolution window.
     padding : Union[int, Sequence[int], str], optional, default='VALID'
@@ -426,7 +426,7 @@ def conv_transpose(
     input : dragon.Tensor
        The input tensor.
     filters : dragon.Tensor
-       The filters tensor.
+       The filter tensor.
     output_shape : Union[Sequence[int], dragon.Tensor], optional
         The optional output shape.
     strides : Union[int, Sequence[int]], default=1
@@ -520,7 +520,7 @@ def conv1d(
     input : dragon.Tensor
        The input tensor.
     filters : dragon.Tensor
-       The filters tensor.
+       The filter tensor.
     strides : Union[int, Sequence[int]], optional, default=1
         The stride of convolution window.
     padding : Union[int, Sequence[int], str], optional, default='VALID'
@@ -578,7 +578,7 @@ def conv2d(
     input : dragon.Tensor
        The input tensor.
     filters : dragon.Tensor
-       The filters tensor.
+       The filter tensor.
     strides : Union[int, Sequence[int]], optional, default=1
         The stride of convolution window.
     padding : Union[int, Sequence[int], str], optional, default='VALID'
@@ -696,7 +696,7 @@ def conv1d_transpose(
     input : dragon.Tensor
        The input tensor.
     filters : dragon.Tensor
-       The filters tensor.
+       The filter tensor.
     output_shape : Union[Sequence[int], dragon.Tensor], optional
         The optional output shape.
     strides : Union[int, Sequence[int]], default=1
@@ -760,7 +760,7 @@ def conv2d_transpose(
     input : dragon.Tensor
        The input tensor.
     filters : dragon.Tensor
-       The filters tensor.
+       The filter tensor.
     output_shape : Union[Sequence[int], dragon.Tensor], optional
         The optional output shape.
     strides : Union[int, Sequence[int]], default=1
@@ -1698,7 +1698,7 @@ def softmax(logits, axis=-1, name=None, **kwargs):
 
 
 def softmax_cross_entropy_with_logits(labels, logits, name=None):
-    """Compute oftmax cross entropy.
+    """Compute softmax cross entropy.
 
     Examples:
 
@@ -1809,7 +1809,7 @@ def _normalize_spatial_args(
                 return defaults
             return values
     elif name == "padding":
-        if isinstance(values, six.string_types):
+        if isinstance(values, str):
             padding, pads = values.upper(), 0
         else:
             padding_tuple = nest.flatten(values)

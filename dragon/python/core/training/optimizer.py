@@ -1,25 +1,26 @@
-# ------------------------------------------------------------
-# Copyright (c) 2017-present, SeetaTech, Co.,Ltd.
+# ------------------------------------------------------------------------
+# Copyright (c) 2017-present, SeetaTech. All Rights Reserved.
 #
-# Licensed under the BSD 2-Clause License.
-# You should have received a copy of the BSD 2-Clause License
-# along with the software. If not, See,
+# Licensed under the BSD 2-Clause License,
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
 #
-#     <https://opensource.org/licenses/BSD-2-Clause>
+#    https://opensource.org/licenses/BSD-2-Clause
 #
-# ------------------------------------------------------------
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+# ------------------------------------------------------------------------
 """Basic optimizers."""
-
-from __future__ import absolute_import
-from __future__ import division
-from __future__ import print_function
 
 import collections
 import itertools
 
 import numpy
 
-from dragon.core import distributed
+from dragon.core.distributed import backend as dist_backend
 from dragon.core.autograph import context
 from dragon.core.autograph.op_lib import OpLib
 from dragon.core.autograph.graph_lib import GraphLib
@@ -33,7 +34,7 @@ class Optimizer(object):
         """Create a ``Optimizer``."""
         self._name = workspace.get_workspace().create_handle("Optimizer")
         self._op_type = self.__class__.__name__
-        self._process_group = distributed.get_group()
+        self._process_group = dist_backend.get_group()
         self._hyper_dict = {}
         self._set_hyper("grad_scale", kwargs.pop("grad_scale", 1))
         self._set_hyper("weight_decay", kwargs.pop("weight_decay", 0))
@@ -67,7 +68,7 @@ class Optimizer(object):
                 group_grads[weight_decay].append(grad)
 
         # Reduce grads in the distribution group.
-        dist_group = distributed.get_group()
+        dist_group = dist_backend.get_group()
         if dist_group is not None:
             grads = list(itertools.chain(*group_grads.values()))
             OpLib.execute(

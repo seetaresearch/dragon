@@ -1,23 +1,20 @@
-# ------------------------------------------------------------
-# Copyright (c) 2017-present, SeetaTech, Co.,Ltd.
+# ------------------------------------------------------------------------
+# Copyright (c) 2017-present, SeetaTech. All Rights Reserved.
 #
-# Licensed under the BSD 2-Clause License.
-# You should have received a copy of the BSD 2-Clause License
-# along with the software. If not, See,
+# Licensed under the BSD 2-Clause License,
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
 #
-#     <https://opensource.org/licenses/BSD-2-Clause>
+#    https://opensource.org/licenses/BSD-2-Clause
 #
-# Codes are based on:
-#
-#     <https://github.com/tensorflow/tensorflow/blob/master/tensorflow/python/keras/engine/input_layer.py>
-#
-# ------------------------------------------------------------
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+# ------------------------------------------------------------------------
+"""Input layer."""
 
-from __future__ import absolute_import
-from __future__ import division
-from __future__ import print_function
-
-from dragon.core.util import six
 from dragon.core.framework import workspace
 from dragon.vm.tensorflow.core.framework import tensor_shape
 from dragon.vm.tensorflow.core.ops import array_ops
@@ -68,7 +65,7 @@ def Input(shape=None, batch_size=None, name=None, dtype=None, tensor=None, **kwa
         if shape is not None:
             if isinstance(shape, tensor_shape.TensorShape):
                 shape = tuple(shape.as_list())
-            elif isinstance(shape, six.integer_types):
+            elif isinstance(shape, int):
                 shape = (shape,)
             shape = (batch_size,) + tuple(shape)
     if dtype is None:

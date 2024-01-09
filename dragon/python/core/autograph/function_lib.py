@@ -1,22 +1,19 @@
-# ------------------------------------------------------------
-# Copyright (c) 2017-present, SeetaTech, Co.,Ltd.
+# ------------------------------------------------------------------------
+# Copyright (c) 2017-present, SeetaTech. All Rights Reserved.
 #
-# Licensed under the BSD 2-Clause License.
-# You should have received a copy of the BSD 2-Clause License
-# along with the software. If not, See,
+# Licensed under the BSD 2-Clause License,
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
 #
-#     <https://opensource.org/licenses/BSD-2-Clause>
+#    https://opensource.org/licenses/BSD-2-Clause
 #
-# Codes are based on:
-#
-#     <https://github.com/tensorflow/tensorflow/blob/master/tensorflow/python/eager/def_function.py>
-#
-# ------------------------------------------------------------
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+# ------------------------------------------------------------------------
 """Function library."""
-
-from __future__ import absolute_import
-from __future__ import division
-from __future__ import print_function
 
 import collections
 import types
@@ -32,11 +29,10 @@ from dragon.core.framework.tensor import Tensor
 from dragon.core.util import decorator
 from dragon.core.util import inspect
 from dragon.core.util import nest
-from dragon.core.util import six
 
 
 class MethodTarget(object):
-    """Class to wrap the target into a instance method."""
+    """Class to wrap the target into an instance method."""
 
     def __init__(self, target, original_function):
         self.weakrefself_target__ = target
@@ -48,15 +44,13 @@ class MethodTarget(object):
 
     def call(self, args, kwargs):
         wrapped_fn = self.weakrefself_func__()
-        if inspect.ismethod(wrapped_fn):
-            wrapped_fn = six.get_unbound_function(wrapped_fn)
         return wrapped_fn(self.weakrefself_target__(), *args, **kwargs)
 
 
 def class_method_to_instance_method(original_function, instance):
     """Patch a class method to an instance method.
 
-    This function is required when an bound target has
+    This function is required when a bound target has
     turned to unbound due to the unpack of decorator.
 
     """
@@ -71,8 +65,6 @@ def class_method_to_instance_method(original_function, instance):
         wrapped_fn = strong_bound_method_wrapper.__wrapped__
         if wrapped_fn is strong_bound_method_wrapper.__original_wrapped__:
             wrapped_fn = unbound_method
-            if inspect.ismethod(wrapped_fn):
-                wrapped_fn = six.get_unbound_function(wrapped_fn)
             return wrapped_fn(weak_instance(), *args, **kwargs)
         return wrapped_fn(*args, **kwargs)
 

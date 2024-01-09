@@ -1,18 +1,19 @@
-# ------------------------------------------------------------
-# Copyright (c) 2017-present, SeetaTech, Co.,Ltd.
+# ------------------------------------------------------------------------
+# Copyright (c) 2017-present, SeetaTech. All Rights Reserved.
 #
-# Licensed under the BSD 2-Clause License.
-# You should have received a copy of the BSD 2-Clause License
-# along with the software. If not, See,
+# Licensed under the BSD 2-Clause License,
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
 #
-#     <https://opensource.org/licenses/BSD-2-Clause>
+#    https://opensource.org/licenses/BSD-2-Clause
 #
-# ------------------------------------------------------------
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+# ------------------------------------------------------------------------
 """Test ops module."""
-
-from __future__ import absolute_import
-from __future__ import division
-from __future__ import print_function
 
 import itertools
 import math
@@ -2678,7 +2679,8 @@ class TestMathOps(OpTestCase):
                     y = dragon.math.cummax(x, axis, exclusive, reverse)
                     data = np.flipud(data) if reverse else data
                     fp_inf = np.finfo(data.dtype).max
-                    data = np.array([-fp_inf] + data[:-1].tolist(), data.dtype) if exclusive else data
+                    if exclusive:
+                        data = np.array([-fp_inf] + data[:-1].tolist(), data.dtype)
                     result = np.maximum.accumulate(data, axis)
                     result = np.flipud(result) if reverse else result
                     self.assertEqual(y, result)
@@ -2703,7 +2705,8 @@ class TestMathOps(OpTestCase):
                     y = dragon.math.cummin(x, axis, exclusive, reverse)
                     data = np.flipud(data) if reverse else data
                     fp_inf = np.finfo(data.dtype).max
-                    data = np.array([fp_inf] + data[:-1].tolist(), data.dtype) if exclusive else data
+                    if exclusive:
+                        data = np.array([fp_inf] + data[:-1].tolist(), data.dtype)
                     result = np.minimum.accumulate(data, axis)
                     result = np.flipud(result) if reverse else result
                     self.assertEqual(y, result)

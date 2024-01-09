@@ -1,18 +1,19 @@
-# ------------------------------------------------------------
-# Copyright (c) 2017-present, SeetaTech, Co.,Ltd.
+# ------------------------------------------------------------------------
+# Copyright (c) 2017-present, SeetaTech. All Rights Reserved.
 #
-# Licensed under the BSD 2-Clause License.
-# You should have received a copy of the BSD 2-Clause License
-# along with the software. If not, See,
+# Licensed under the BSD 2-Clause License,
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
 #
-#    <https://opensource.org/licenses/BSD-2-Clause>
+#    https://opensource.org/licenses/BSD-2-Clause
 #
-# ------------------------------------------------------------
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+# ------------------------------------------------------------------------
 """Python setup script."""
-
-from __future__ import absolute_import
-from __future__ import division
-from __future__ import print_function
 
 import argparse
 import os
@@ -90,11 +91,9 @@ class BuildPyCommand(setuptools.command.build_py.build_py):
         shutil.copytree("torchvision", self.build_lib + "/dragon/vm/torchvision")
         with open(self.build_lib + "/dragon/version.py", "w") as f:
             f.write(
-                "from __future__ import absolute_import\n"
-                "from __future__ import division\n"
-                "from __future__ import print_function\n\n"
-                "version = '{}'\n"
-                "git_version = '{}'\n".format(args.version, args.git_version)
+                'version = "{}"\n'
+                'git_version = "{}"\n'
+                "__version__ = version\n".format(args.version, args.git_version)
             )
 
     def build_package_data(self):
@@ -105,10 +104,7 @@ class BuildPyCommand(setuptools.command.build_py.build_py):
             if os.path.exists(src):
                 shutil.copy(src, dest)
             else:
-                print(
-                    "ERROR: Unable to find the library at <%s>.\n"
-                    "Build it before installing to package." % src
-                )
+                print("ERROR: Unable to find the library at <%s>." % src)
                 sys.exit()
 
 

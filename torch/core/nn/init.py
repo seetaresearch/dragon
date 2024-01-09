@@ -1,26 +1,22 @@
-# ------------------------------------------------------------
-# Copyright (c) 2017-present, SeetaTech, Co.,Ltd.
+# ------------------------------------------------------------------------
+# Copyright (c) 2017-present, SeetaTech. All Rights Reserved.
 #
-# Licensed under the BSD 2-Clause License.
-# You should have received a copy of the BSD 2-Clause License
-# along with the software. If not, See,
+# Licensed under the BSD 2-Clause License,
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
 #
-#     <https://opensource.org/licenses/BSD-2-Clause>
+#    https://opensource.org/licenses/BSD-2-Clause
 #
-# Codes are based on:
-#
-#     <https://github.com/pytorch/pytorch/blob/master/torch/nn/init.py>
-#
-# ------------------------------------------------------------
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+# ------------------------------------------------------------------------
 """NN init functions."""
-
-from __future__ import absolute_import
-from __future__ import division
-from __future__ import print_function
 
 import math
 
-from dragon.core.util import math_util
 from dragon.vm.torch.core.autograd import grad_mode
 from dragon.vm.torch.core.autograd.function import Function
 from dragon.vm.torch.core.ops import constant_ops
@@ -56,16 +52,13 @@ def calculate_gain(nonlinearity, param=None):
     elif nonlinearity == "tanh":
         return 5.0 / 3
     elif nonlinearity == "relu":
-        return math.sqrt(2.0)
+        return 2.0**0.5
     elif nonlinearity == "leaky_relu":
         if param is None:
             negative_slope = 0.01
         else:
-            try:
-                negative_slope = float(param)
-            except ValueError:
-                raise ValueError("Negative slope {} is not a valid number".format(param))
-        return math.sqrt(2.0 / (1 + negative_slope**2))
+            negative_slope = float(param)
+        return (2.0 / (1 + negative_slope**2))**0.5
     else:
         raise ValueError("Unsupported nonlinearity: " + nonlinearity)
 
@@ -177,7 +170,7 @@ def kaiming_normal_(tensor, a=0, mode="fan_in", nonlinearity="leaky_relu"):
     """
     fan = _calculate_correct_fan(tensor, mode)
     gain = calculate_gain(nonlinearity, a)
-    std = gain / math.sqrt(fan)
+    std = gain / fan**0.5
     with grad_mode.no_grad():
         return tensor.normal_(0, std)
 
@@ -209,8 +202,8 @@ def kaiming_uniform_(tensor, a=0, mode="fan_in", nonlinearity="leaky_relu"):
     """
     fan = _calculate_correct_fan(tensor, mode)
     gain = calculate_gain(nonlinearity, a)
-    std = gain / math.sqrt(fan)
-    bound = math.sqrt(3.0) * std
+    std = gain / fan**0.5
+    bound = (3.0**0.5) * std
     with grad_mode.no_grad():
         return tensor.uniform_(-bound, bound)
 
@@ -269,7 +262,7 @@ def normal_(tensor, mean=0, std=1):
     tensor : dragon.vm.torch.Tensor
         The input tensor.
     mean : number, optional, default=0
-        The value to :math:`\mu`.
+        The value to :math:`\mu`.`
     std : number, optional, default=1
         The value to :math:`\sigma`.
 
@@ -325,7 +318,7 @@ def trunc_normal_(tensor, mean=0, std=1, a=-2, b=2):
 
 
 def uniform_(tensor, a=0, b=1):
-    r"""Fill tensor from an uniform distribution.
+    r"""Fill tensor from a uniform distribution.
 
     .. math:: \text{tensor} \sim \mathcal{U}(\alpha, \beta)
 
@@ -370,7 +363,7 @@ def xavier_normal_(tensor, gain=1):
 
     """
     fan_in, fan_out = _calculate_fan_in_and_fan_out(tensor)
-    std = gain * math.sqrt(2.0 / (fan_in + fan_out))
+    std = gain * ((2.0 / (fan_in + fan_out))**0.5)
     with grad_mode.no_grad():
         return tensor.normal_(0, std)
 
@@ -397,8 +390,8 @@ def xavier_uniform_(tensor, gain=1):
 
     """
     fan_in, fan_out = _calculate_fan_in_and_fan_out(tensor)
-    std = gain * math.sqrt(2.0 / (fan_in + fan_out))
-    a = math.sqrt(3.0) * std
+    std = gain * ((2.0 / (fan_in + fan_out))**0.5)
+    a = (3.0**0.5) * std
     with grad_mode.no_grad():
         return tensor.uniform_(-a, a)
 
@@ -436,7 +429,7 @@ def _calculate_fan_in_and_fan_out(tensor):
         num_output = tensor.size(0)
         receptive_field_size = 1
         if tensor.dim() > 2:
-            receptive_field_size = math_util.prod(tensor.shape[2:])
+            receptive_field_size = math.prod(tensor.shape[2:])
         fan_in = num_input * receptive_field_size
         fan_out = num_output * receptive_field_size
     return fan_in, fan_out
