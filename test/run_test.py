@@ -35,6 +35,7 @@ TESTS_AND_SOURCES = [
     ("tensorflow/test_framework", "dragon.vm.tensorflow.core"),
     ("tensorflow/test_module", "dragon.vm.tensorflow.core"),
     ("tensorflow/test_ops", "dragon.vm.tensorflow.core"),
+    ("torch/test_amp", "dragon.vm.torch.core"),
     ("torch/test_autograd", "dragon.vm.torch.core"),
     ("torch/test_backends", "dragon.vm.torch.core"),
     ("torch/test_jit", "dragon.vm.torch.core"),

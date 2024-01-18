@@ -231,6 +231,9 @@ Modules
   `Module vm.torch <torch.html>`_
   : Virtual API for ``torch`` namespace.
 
+  `Module vm.torch.amp <torch/amp.html>`_
+  : Virtual API for ``torch.amp`` namespace.
+
   `Module vm.torch.autograd <torch/autograd.html>`_
   : Virtual API for ``torch.autograd`` namespace.
 
@@ -309,6 +312,7 @@ Modules
   tensorrt
   tensorrt/onnx
   torch
+  torch/amp
   torch/autograd
   torch/backends
   torch/cuda

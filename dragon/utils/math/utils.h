@@ -98,11 +98,24 @@ inline bool IsInf(const float16 x) {
   return std::isinf(convert::To<float>(x));
 }
 
+inline bool IsInf(const bfloat16 x) {
+  return std::isinf(convert::To<float>(x));
+}
+
 inline bool IsNaN(float16 x) {
   return std::isnan(convert::To<float>(x));
 }
 
+inline bool IsNaN(bfloat16 x) {
+  return std::isnan(convert::To<float>(x));
+}
+
 inline bool IsFinite(float16 x) {
+  const float v = convert::To<float>(x);
+  return !(std::isinf(v) || std::isnan(v));
+}
+
+inline bool IsFinite(bfloat16 x) {
   const float v = convert::To<float>(x);
   return !(std::isinf(v) || std::isnan(v));
 }

@@ -60,6 +60,25 @@ class GradientGatherOp final : public Operator<Context> {
 };
 
 template <class Context>
+class GradientCheckOp final : public Operator<Context> {
+ public:
+  SIMPLE_CTOR_DTOR(GradientCheckOp);
+  USE_OPERATOR_FUNCTIONS;
+
+  void RunOnDevice() override {
+    for (input_index_ = 0; input_index_ < InputSize(); ++input_index_) {
+      DispatchHelper<dtypes::Floating>::Call(this, Input(input_index_));
+    }
+  }
+
+  template <typename T>
+  void DoRunWithType();
+
+ protected:
+  int input_index_;
+};
+
+template <class Context>
 class GradientStopOp final : public Operator<Context> {
  public:
   SIMPLE_CTOR_DTOR(GradientStopOp);

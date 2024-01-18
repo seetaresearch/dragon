@@ -61,7 +61,6 @@ class Optimizer(object):
                 "clip_value": kwargs.pop("clip_value", 0),
             }
         )
-        self._update_pre_hook = kwargs.pop("update_pre_hook", None)
         if kwargs:
             raise ValueError("Unexpected arguments: " + ",".join(v for v in kwargs))
         self.defaults = defaults
@@ -76,6 +75,7 @@ class Optimizer(object):
         self._op_type = self.__class__.__name__
         self._hyper_dict = dict((k, dict()) for k in self.defaults.keys())
         self._sums_grad = False
+        self._handle_custom_step = False
 
     def add_param_group(self, param_group):
         """Add a new param group into the optimizer.
@@ -155,8 +155,6 @@ class Optimizer(object):
                     params_with_grad.append(p)
             grads_all.append(grads)
             params_all.append(params_with_grad)
-        if self._update_pre_hook is not None:
-            self._update_pre_hook(sum(grads_all, []))
         if dist_group is not None:
             # Reduce grads in the distribution group.
             reduce_grads_all = collections.defaultdict(list)
@@ -173,9 +171,11 @@ class Optimizer(object):
                     reduction="SUM",
                     **dist_group.arguments,
                 )
+        self._sums_grad = False
+        if self._handle_custom_step:
+            return params_all, grads_all
         for idx, group in enumerate(self.param_groups):
             self._update_group(group, params_all[idx], grads_all[idx])
-        self._sums_grad = False
 
     def sum_grad(self):
         """Sum the gradients of all parameters.

@@ -44,12 +44,23 @@ void GradientGatherOp<Context>::DoRunWithType() {
   }
 }
 
+template <class Context>
+template <typename T>
+void GradientCheckOp<Context>::DoRunWithType() {
+  auto &X = Input(input_index_), *Y = Output(0)->Reshape({});
+  auto* isinf = Y->template mutable_data<float, Context>();
+  if (input_index_ == 0) math::Set(1, 0.f, isinf, ctx());
+  kernels::CheckFinite(X.count(), X.template data<T, Context>(), isinf, ctx());
+}
+
 DEPLOY_CPU_OPERATOR(GradientFill);
 DEPLOY_CPU_OPERATOR(GradientGather);
+DEPLOY_CPU_OPERATOR(GradientCheck);
 DEPLOY_CPU_OPERATOR(GradientStop);
 #ifdef USE_CUDA
 DEPLOY_CUDA_OPERATOR(GradientFill);
 DEPLOY_CUDA_OPERATOR(GradientGather);
+DEPLOY_CUDA_OPERATOR(GradientCheck);
 DEPLOY_CUDA_OPERATOR(GradientStop);
 #endif
 #ifdef USE_MPS
@@ -60,16 +71,19 @@ DEPLOY_MPS_OPERATOR(GradientStop, GradientStop);
 #ifdef USE_MLU
 DEPLOY_MLU_OPERATOR(GradientFill);
 DEPLOY_MLU_OPERATOR(GradientGather);
+DEPLOY_MLU_OPERATOR(GradientCheck);
 DEPLOY_MLU_OPERATOR(GradientStop);
 #endif
 
+OPERATOR_SCHEMA(GradientCheck).NumInputs(1, INT_MAX).NumOutputs(1);
 OPERATOR_SCHEMA(GradientFill).NumInputs(1, INT_MAX).NumOutputs(1, INT_MAX);
-OPERATOR_SCHEMA(StopGradient).NumInputs(1).NumOutputs(1).AllowInplace({{0, 0}});
+OPERATOR_SCHEMA(GradientStop).NumInputs(1).NumOutputs(1).AllowInplace({{0, 0}});
 OPERATOR_SCHEMA(GradientGather)
     .NumInputs(1, INT_MAX)
     .NumOutputs(1)
     .AllowInplace([](int, int) -> bool { return true; });
 
 NO_GRADIENT(GradientStop);
+NO_GRADIENT(GradientCheck);
 
 } // namespace dragon

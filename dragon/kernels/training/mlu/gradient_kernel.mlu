@@ -1,0 +1,52 @@
+#include "dragon/kernels/training/op_kernels.h"
+#include "dragon/utils/math_functions.h"
+
+namespace dragon {
+
+namespace kernels {
+
+namespace {
+
+#define BLOCK_THREADS 40960
+
+template <typename T>
+__mlu_func__ bool __bang_isfinite(T* X, T* scratch, int N) {
+  __bang_band_scalar(scratch, X, T(INFINITY), N);
+  __bang_eq_scalar(scratch, scratch, T(INFINITY), N);
+  *((uint32_t*)scratch) = __bang_findfirst1(scratch, N);
+  return (*(uint32_t*)scratch) == -1;
+}
+
+template <typename T>
+__mlu_entry__ void _CheckFinite(const int N, const T* g, float* isinf) {
+  __nram__ T X[BLOCK_THREADS], scratch[BLOCK_THREADS];
+  MLU_1D_KERNEL_LOOP(i, N, BLOCK_THREADS) {
+    const int N_ram = std::min(N - i, BLOCK_THREADS);
+    __memcpy(X, g + i, N_ram * sizeof(T), GDRAM2NRAM);
+    if (!__bang_isfinite(X, scratch, N)) *isinf = 1.f;
+  }
+}
+
+} // namespace
+
+#define DEFINE_KERNEL_LAUNCHER(name, T)                                      \
+  template <>                                                                \
+  void name<T, MLUContext>(                                                  \
+      const int N, const T* g, float* isinf, MLUContext* ctx) {              \
+    _##name<<<                                                               \
+        MLU_BLOCKS(N, BLOCK_THREADS),                                        \
+        CNRT_FUNC_TYPE_BLOCK,                                                \
+        ctx->mlu_stream()>>>(                                                \
+        N, reinterpret_cast<const math::Traits<T>::scalar_type*>(g), isinf); \
+  }
+
+DEFINE_KERNEL_LAUNCHER(CheckFinite, float16);
+DEFINE_KERNEL_LAUNCHER(CheckFinite, bfloat16);
+DEFINE_KERNEL_LAUNCHER(CheckFinite, float);
+DEFINE_KERNEL_LAUNCHER(CheckFinite, double);
+#undef DEFINE_KERNEL_LAUNCHER
+#undef BLOCK_THREADS
+
+} // namespace kernels
+
+} // namespace dragon

@@ -22,6 +22,9 @@ namespace dragon {
 
 namespace kernels {
 
+template <typename T, class Context>
+void CheckFinite(const int N, const T* g, float* isinf, Context* ctx);
+
 template <typename T, typename CopyT, class Context>
 void Adam(
     const int N,

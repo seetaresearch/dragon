@@ -3,9 +3,6 @@ vm.torch.autograd
 
 .. only:: html
 
-  Classes
-  -------
-
   Functions
   ---------
 

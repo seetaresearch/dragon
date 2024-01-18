@@ -15,6 +15,7 @@
 # ------------------------------------------------------------------------
 """CUDA API."""
 
+from dragon.vm.torch._api.cuda import amp
 from dragon.vm.torch.core.cuda.device import current_device
 from dragon.vm.torch.core.cuda.device import device_count
 from dragon.vm.torch.core.cuda.device import get_device_capability

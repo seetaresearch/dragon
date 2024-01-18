@@ -8,6 +8,9 @@ namespace dragon {
 template <class Context>
 template <typename T>
 void CuDNNDropoutOp<Context>::DoRunWithType() {
+  if (TypeMeta::Id<T>() == TypeMeta::Id<bfloat16>()) {
+    return DropoutOp<Context>::template DoRunWithType<T>();
+  }
   auto &X = Input(0), *Y = Output(0, {0});
   if (phase() == "TEST") {
     Y->ReshapeLike(X)->CopyFrom(X, ctx());
@@ -37,6 +40,9 @@ void CuDNNDropoutOp<Context>::DoRunWithType() {
 template <class Context>
 template <typename T>
 void CuDNNDropoutGradientOp<Context>::DoRunWithType() {
+  if (TypeMeta::Id<T>() == TypeMeta::Id<bfloat16>()) {
+    return DropoutGradientOp<Context>::template DoRunWithType<T>();
+  }
   auto &dY = Input(0), *dX = Output(0);
   if (phase() == "TRAIN") {
     const auto drop_ratio = this->ratio();
