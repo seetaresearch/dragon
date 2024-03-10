@@ -80,7 +80,7 @@ class OpExec(object):
                 device_option=device.to_proto(False),
                 cache_key=cache_key,
                 to_impl=True,
-                **def_args
+                **def_args,
             )
             config = {
                 "def": op_def,
@@ -172,15 +172,9 @@ class Function(object):
         output_specs = kwargs.get("outputs", [None])
         for i, spec in enumerate(output_specs):
             if spec is None:
-                outputs.append(
-                    Tensor(
-                        device=device.copy(),
-                        impl=execute_ws.create_tensor(
-                            scope=context.get_variable_scope(enable_grad)
-                        ),
-                        deleter=execute_ws._handle_pool,
-                    )
-                )
+                deleter = execute_ws._handle_pool
+                impl = execute_ws.create_tensor(scope=context.get_variable_scope(enable_grad))
+                outputs.append(Tensor(device=device.copy(), impl=impl, deleter=deleter))
                 outputs_id.append(outputs[i].id)
             else:
                 if isinstance(spec, Tensor):
@@ -193,7 +187,6 @@ class Function(object):
                     raise RuntimeError("Output tensor should be in inputs if requires grad.")
 
         # Specialize def for given inputs and outputs.
-        op_name = ""  # Optional operator name.
         trace_scope = getattr(graph_tape, "_tracing", "")
         op_def = run_config["def"].DeriveTo(inputs_id, outputs_id)
 
@@ -201,10 +194,9 @@ class Function(object):
         if len(inputs) > 0 and not no_grad:
             if enable_grad:
                 op_tape = tapes.OrderedTape()
-                op_name = execute_ws.create_handle(trace_scope + op_def.type)
-                op_def.name = op_name
+                op_def.name = execute_ws.create_handle(trace_scope + op_def.type)
                 op_tape.add_element(op_def)
-                op_tape.add_handle(op_name)
+                op_tape.add_handle(op_def.name)
                 for input in inputs:
                     op_tape.add_source(input)
                 for output in outputs:
@@ -218,11 +210,10 @@ class Function(object):
 
         # Ensure the named operator for the tracing graph.
         if hasattr(graph_tape, "_tracing"):
-            if not op_name:
-                op_name = execute_ws.create_handle(trace_scope + op_def.type)
-            op_def.name = op_name
+            if not op_def.name:
+                op_def.name = execute_ws.create_handle(trace_scope + op_def.type)
             graph_tape.add_element(op_def)
-            graph_tape.add_handle(op_name)
+            graph_tape.add_handle(op_def.name)
 
         # Save inputs for the checkpointing graph.
         if hasattr(graph_tape, "_checkpointing"):
@@ -235,7 +226,7 @@ class Function(object):
 
         # Emit to dispatch this execution.
         for feed_key, value_type in run_config["feed_dict"].items():
-            dest = execute_ws.create_tensor(op_name + "/" + feed_key)
+            dest = execute_ws.create_tensor(op_def.name + "/" + feed_key)
             dest.FromNumpy(numpy.array(kwargs[feed_key], value_type), True)
         execute_ws.run_operator(op_def)
 

@@ -6,35 +6,32 @@ namespace dragon {
 
 template <class Context>
 template <typename T>
-void CollectiveOp<Context>::CopyTensors(bool done) {
-  int64_t count = 0, num = 0;
-  for (int i = 0; i + src_index_ < InputSize(); ++i) {
-    num += 1;
-    count += Input(src_index_ + i).count();
-    if (count * sizeof(T) > buffer_size_) break;
-  }
-  if (num == 1) {
-    if (done) src_index_ += 1;
+void CollectiveOp<Context>::CopyBuffer(bool cat) { // clang-format off
+  if (bucket_size_ == 0) { src_index_ += cat ? 0 : 1; return; }
+  int64_t bucket_count = 0, input_count = 0;
+  for (; input_count + src_index_ < InputSize(); ++input_count) {
+    bucket_count += Input(src_index_ + input_count).count();
+    if (bucket_count * sizeof(T) > bucket_size_) break;
+  } 
+  if (input_count == 1) { if (!cat) src_index_ += 1; return; }
+  auto* B = ctx()->workspace()->CreateTensor("BufferShared");
+  if (cat) { // clang-format on
+    src_tensor_ = dest_tensor_ = B;
+    auto* buf = B->Reshape({bucket_count})->template mutable_data<T, Context>();
+    for (int i = 0; i < input_count; ++i) {
+      auto& X = Input(src_index_ + i);
+      math::Copy(X.count(), X.template data<T, Context>(), buf, ctx());
+      buf += X.count();
+    }
     return;
   }
-  auto* Y = Output("Y");
-  if (!done) {
-    src_tensor_ = Y;
-    auto* data = Y->Reshape({count})->template mutable_data<T, Context>();
-    for (int i = 0; i < num; ++i) {
-      auto& X = Input(src_index_ + i);
-      math::Copy(X.count(), X.template data<T, Context>(), data, ctx());
-      data += X.count();
-    }
-  } else {
-    auto* data = Y->template data<T, Context>();
-    for (int i = 0; i < num; ++i) {
-      auto& X = Input(src_index_ + i);
-      math::Copy(X.count(), data, X.template mutable_data<T, Context>(), ctx());
-      data += X.count();
-    }
-    src_index_ += num;
+  auto* buf = B->template data<T, Context>();
+  for (int i = 0; i < input_count; ++i) {
+    auto* Y = Output(src_index_ + i);
+    math::Copy(Y->count(), buf, Y->template mutable_data<T, Context>(), ctx());
+    buf += Y->count();
   }
+  src_index_ += input_count;
 }
 
 template <class Context>
@@ -52,11 +49,11 @@ void CollectiveOp<Context>::DoRunWithType() {
     }
     return;
   }
-  CopyTensors<T>(/* done = */ false); // Concat tensors.
+  CopyBuffer<T>(/* cat = */ true); // Concat tensors.
   if (operation_ == "ALLREDUCE") {
     coll_impl_.AllReduce(
         src_tensor_->template data<T, Context>(),
-        src_tensor_->template mutable_data<T, Context>(),
+        dest_tensor_->template mutable_data<T, Context>(),
         src_tensor_->count(),
         ctx());
   } else if (operation_ == "ALLGATHER") {
@@ -76,14 +73,15 @@ void CollectiveOp<Context>::DoRunWithType() {
         src_tensor_->count() / coll_impl_.comm_size(),
         ctx());
   } else if (operation_ == "BROADCAST") {
-    coll_impl_.Bcast(
-        src_tensor_->template mutable_data<T, Context>(),
+    coll_impl_.Broadcast(
+        src_tensor_->template data<T, Context>(),
+        dest_tensor_->template mutable_data<T, Context>(),
         src_tensor_->count(),
         ctx());
   } else {
     LOG(FATAL) << "Unsupported operation: " << operation_;
   }
-  CopyTensors<T>(/* done = */ true); // Split tensors.
+  CopyBuffer<T>(/* done = */ false); // Split tensors.
 }
 
 template <class Context>

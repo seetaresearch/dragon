@@ -510,7 +510,7 @@ class Tensor(types.TensorBase):
             The float value.
 
         """
-        return float(self.numpy())
+        return float(self.numpy().reshape([]))
 
     def __ge__(self, other):
         """Compute element-wise greater-equal comparison.
@@ -649,7 +649,7 @@ class Tensor(types.TensorBase):
             The integer value.
 
         """
-        return int(self.numpy())
+        return int(self.numpy().reshape([]))
 
     def __invert__(self):
         """Compute element-wise NOT bitwise operation.

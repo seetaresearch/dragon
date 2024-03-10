@@ -21,7 +21,8 @@ namespace dragon {
 
 class DRAGON_API NCCLCollectiveOpImpl {
  public:
-  NCCLCollectiveOpImpl() : comm_size_(0), comm_rank_(0), comm_root_(0) {}
+  NCCLCollectiveOpImpl()
+      : comm_size_(0), comm_rank_(0), comm_root_(0), reduction_("SUM") {}
 
   void SetComm(
       const int64_t mpi_comm,
@@ -29,27 +30,32 @@ class DRAGON_API NCCLCollectiveOpImpl {
       const vec64_t ranks,
       const int64_t root = 0);
 
-  template <typename T>
-  void Bcast(T* buf, int count, cudaStream_t stream);
+  void SetReduction(const string& reduction) {
+    reduction_ = reduction;
+  }
 
   template <typename T>
-  void AllReduce(const T* sendbuf, T* recvbuf, int count, cudaStream_t stream);
+  void Broadcast(const T* x, T* y, int N, cudaStream_t stream);
 
   template <typename T>
-  void
-  AllGather(const T* sendbuf, T* recvbuf, int sendcount, cudaStream_t stream);
+  void AllReduce(const T* x, T* y, int N, cudaStream_t stream);
 
   template <typename T>
-  void ReduceScatter(
-      const T* sendbuf,
-      T* recvbuf,
-      int recvcount,
-      cudaStream_t stream);
+  void ReduceScatter(const T* x, T* y, int N, cudaStream_t stream);
+
+  template <typename T>
+  void AllGather(const T* x, T* y, int N, cudaStream_t stream);
 
   template <typename T>
   ncclDataType_t data_type();
 
+  ncclRedOp_t reduction();
+
   ncclComm_t nccl_comm();
+
+  const int comm_rank() const {
+    return comm_rank_;
+  }
 
   const int comm_size() const {
     return comm_size_;
@@ -61,7 +67,7 @@ class DRAGON_API NCCLCollectiveOpImpl {
   int comm_root_;
   MPI_Comm mpi_comm_;
   MPI_Group mpi_group_;
-  string group_str_;
+  string group_str_, reduction_;
 };
 
 } // namespace dragon

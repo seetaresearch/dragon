@@ -24,7 +24,7 @@ class GradScaler(object):
 
     def __init__(
         self,
-        init_scale=16384,
+        init_scale=65536,
         growth_factor=2.0,
         backoff_factor=0.5,
         growth_interval=2000,
@@ -34,7 +34,7 @@ class GradScaler(object):
 
         Parameters
         ----------
-        init_scale : number, optional, default=16384
+        init_scale : number, optional, default=65536
             The initial scale factor.
         growth_factor : float, optional, default=2.0
             The multiplier to scale for growth.
@@ -187,13 +187,18 @@ class GradScaler(object):
         params_all, grads_all = optimizer.step()
         optimizer._handle_custom_step = False
         grads = sum(grads_all, [])
-        Function.apply("GradientCheck", grads[0].device, grads, outputs=[self._found_inf])
+        if len(grads) > 0:
+            Function.apply("GradientCheck", grads[0].device, grads, outputs=[self._found_inf])
+        else:
+            self._found_inf.zero_()
         self._found_inf_value = float(self._found_inf)
         if self._found_inf_value:
             return
         for idx, group in enumerate(optimizer.param_groups):
+            group["found_inf"] = self._found_inf
             group["grad_scale"] = 1.0 / self.get_scale()
             optimizer._update_group(group, params_all[idx], grads_all[idx])
+        self._found_inf_value = self._found_inf_value if len(grads) > 0 else float(self._found_inf)
 
     def update(self, new_scale=None):
         """Update the scale factor.

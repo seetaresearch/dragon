@@ -37,10 +37,7 @@ class UpdateOpBase : public Operator<Context> {
   void RunOnDevice() override;
 
   template <typename T>
-  void DoRunWithTensor(Tensor* dX, Tensor* X) {
-    TransformGrad<T>(dX);
-    ApplyUpdate(dX, X, nullptr);
-  }
+  void DoRunWithTensor(Tensor* dX, Tensor* X);
 
   template <typename T>
   void DoRunWithTensor(Tensor* dX, Tensor* X, Tensor* Y);

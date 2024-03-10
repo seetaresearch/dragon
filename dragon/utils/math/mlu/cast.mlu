@@ -29,7 +29,7 @@ __mlu_entry__ void _Cast(const int N, const InputT* x, OutputT* y) {
   DRAGON_API void Cast<InputT, OutputT, MLUContext>(                        \
       const int N, const InputT* x, OutputT* y, MLUContext* ctx) {          \
     if (std::is_same<InputT, OutputT>::value) {                             \
-      if ((void*)x != (void*)x) {                                           \
+      if ((void*)x != (void*)y) {                                           \
         CNRT_CHECK(cnrtMemcpyAsync(                                         \
             y,                                                              \
             const_cast<InputT*>(x),                                         \

@@ -30,6 +30,10 @@ is_leaf
 #######
 .. autoattribute:: dragon.vm.torch.Tensor.is_leaf
 
+nbytes
+######
+.. autoattribute:: dragon.vm.torch.Tensor.nbytes
+
 requires_grad
 #############
 .. autoattribute:: dragon.vm.torch.Tensor.requires_grad
@@ -224,6 +228,10 @@ double
 double\_
 ########
 .. automethod:: dragon.vm.torch.Tensor.double_
+
+element_size
+############
+.. automethod:: dragon.vm.torch.Tensor.element_size
 
 eq
 ###

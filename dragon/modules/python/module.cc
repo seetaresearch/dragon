@@ -32,7 +32,8 @@ PYBIND11_MODULE(libdragon_python, m) {
       .def_property_readonly("name", &Workspace::name)
 
       /*! \brief Return the name of stored tensors */
-      .def_property_readonly("tensors", &Workspace::tensors)
+      .def_property_readonly(
+          "tensors", [](Workspace* self) { return self->tensors(); })
 
       /*! \brief Return the name of stored graphs */
       .def_property_readonly("graphs", &Workspace::graphs)

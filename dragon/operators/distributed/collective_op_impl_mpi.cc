@@ -12,132 +12,78 @@ void MPICollectiveOpImpl::SetComm(
   // The given group should be created before.
   mpi_comm_ = (MPI_Comm)mpi_comm;
   mpi_group_ = (MPI_Group)mpi_group;
-  CHECK(mpi_group != 0) << "\nFailed to initialize an invalid mpi group.";
+  CHECK(mpi_group != 0) << "\nSet comm from an invalid MPI group.";
   // Collect comm and rank information.
   MPI_Comm_size(mpi_comm_, &comm_size_);
   MPI_Comm_rank(mpi_comm_, &comm_rank_);
   // Translate the world root into the group.
-  MPI_Group world_group;
-  MPI_Comm_group(MPI_COMM_WORLD, &world_group);
+  MPI_Group world;
+  MPI_Comm_group(MPI_COMM_WORLD, &world);
   auto world_root = int(ranks[root]);
-  MPI_Group_translate_ranks(
-      world_group, 1, &world_root, mpi_group_, &comm_root_);
-  CHECK(comm_root_ != MPI_UNDEFINED) << "\nRoot is not in the MPI group.";
+  MPI_Group_translate_ranks(world, 1, &world_root, mpi_group_, &comm_root_);
+  CHECK(comm_root_ != MPI_UNDEFINED) << "\nComm root is not in the MPI group.";
+#else
+  MPI_NOT_COMPILED;
+#endif
+}
+
+// clang-format off
+template <typename T>
+void MPICollectiveOpImpl::Send(const T* x, int N, int peer) {
+#ifdef USE_MPI
+  MPI_Send(x, N, data_type<T>(), peer, 0, mpi_comm_);
 #else
   MPI_NOT_COMPILED;
 #endif
 }
 
 template <typename T>
-void MPICollectiveOpImpl::Recv(T* buf, int count, int from) {
+void MPICollectiveOpImpl::Recv(T* y, int N, int peer) {
 #ifdef USE_MPI
-  MPI_Recv(buf, count, data_type<T>(), from, 0, mpi_comm_, MPI_STATUS_IGNORE);
+  MPI_Recv(y, N, data_type<T>(), peer, 0, mpi_comm_, MPI_STATUS_IGNORE);
 #else
   MPI_NOT_COMPILED;
 #endif
 }
 
 template <typename T>
-void MPICollectiveOpImpl::IRecv(T* buf, int count, int from, MPI_Request* req) {
+void MPICollectiveOpImpl::Broadcast(const T* x, T* y, int N) {
+  CHECK(x == y) << "\nUnsupported non-inplace MPI broadcast.";
 #ifdef USE_MPI
-  MPI_Irecv(buf, count, data_type<T>(), from, 0, mpi_comm_, req);
+  MPI_Bcast(y, N, data_type<T>(), comm_root_, mpi_comm_);
 #else
   MPI_NOT_COMPILED;
 #endif
 }
 
 template <typename T>
-void MPICollectiveOpImpl::Send(const T* buf, int count, int to) {
+void MPICollectiveOpImpl::AllReduce(const T* x, T* y, int N) {
 #ifdef USE_MPI
-  MPI_Send(buf, count, data_type<T>(), to, 0, mpi_comm_);
+  MPI_Allreduce(x == y ? MPI_IN_PLACE : x, y, N, data_type<T>(), reduction(), mpi_comm_);
 #else
   MPI_NOT_COMPILED;
 #endif
 }
 
 template <typename T>
-void MPICollectiveOpImpl::SendRecv(
-    const T* sendbuf,
-    int sendcount,
-    int to,
-    T* recvbuf,
-    int recvcount,
-    int from) {
+void MPICollectiveOpImpl::ReduceScatter(const T* x, T* y, int N) {
 #ifdef USE_MPI
-  MPI_Sendrecv(
-      sendbuf,
-      sendcount,
-      data_type<T>(),
-      to,
-      0,
-      recvbuf,
-      recvcount,
-      data_type<T>(),
-      from,
-      0,
-      mpi_comm_,
-      MPI_STATUS_IGNORE);
+  vector<int> counts(comm_size_, N);
+  MPI_Reduce_scatter(x, y, counts.data(), data_type<T>(), reduction(), mpi_comm_);
 #else
   MPI_NOT_COMPILED;
 #endif
 }
 
 template <typename T>
-void MPICollectiveOpImpl::Bcast(T* buf, int count) {
+void MPICollectiveOpImpl::AllGather(const T* x, T* y, int N) {
 #ifdef USE_MPI
-  MPI_Bcast(buf, count, data_type<T>(), comm_root_, mpi_comm_);
+  MPI_Allgather(x, N, data_type<T>(), y, N, data_type<T>(), mpi_comm_);
 #else
   MPI_NOT_COMPILED;
 #endif
 }
-
-template <typename T>
-void MPICollectiveOpImpl::AllReduce(const T* sendbuf, T* recvbuf, int count) {
-#ifdef USE_MPI
-  MPI_Allreduce(
-      sendbuf == recvbuf ? MPI_IN_PLACE : sendbuf,
-      recvbuf,
-      count,
-      data_type<T>(),
-      MPI_SUM,
-      mpi_comm_);
-#else
-  MPI_NOT_COMPILED;
-#endif
-}
-
-template <typename T>
-void MPICollectiveOpImpl::AllGather(
-    const T* sendbuf,
-    T* recvbuf,
-    int sendcount) {
-#ifdef USE_MPI
-  MPI_Allgather(
-      sendbuf,
-      sendcount,
-      data_type<T>(),
-      recvbuf,
-      sendcount,
-      data_type<T>(),
-      mpi_comm_);
-#else
-  MPI_NOT_COMPILED;
-#endif
-}
-
-template <typename T>
-void MPICollectiveOpImpl::ReduceScatter(
-    const T* sendbuf,
-    T* recvbuf,
-    int recvcount) {
-#ifdef USE_MPI
-  vector<int> recvcounts(comm_size_, recvcount);
-  MPI_Reduce_scatter(
-      sendbuf, recvbuf, recvcounts.data(), data_type<T>(), MPI_SUM, mpi_comm_);
-#else
-  MPI_NOT_COMPILED;
-#endif
-}
+// clang-format on
 
 template <typename T>
 MPI_Datatype MPICollectiveOpImpl::data_type() {
@@ -162,19 +108,32 @@ MPI_Datatype MPICollectiveOpImpl::data_type() {
 #endif
 }
 
+MPI_Op MPICollectiveOpImpl::reduction() {
+#ifdef USE_MPI
+  static Map<string, MPI_Op> m{
+      {"SUM", MPI_SUM},
+      {"PROD", MPI_PROD},
+      {"MIN", MPI_MIN},
+      {"MAX", MPI_MAX},
+  };
+  auto it = m.find(reduction_);
+  CHECK(it != m.end()) << "\nUnsupported MPI reduction: " << reduction_;
+  return it->second;
+#else
+  MPI_NOT_COMPILED;
+  return nullptr;
+#endif
+}
+
 #define INSTANTIATE_API(T)                                                    \
   template DRAGON_API MPI_Datatype MPICollectiveOpImpl::data_type<T>();       \
   template DRAGON_API void MPICollectiveOpImpl::Send(const T*, int, int);     \
   template DRAGON_API void MPICollectiveOpImpl::Recv(T*, int, int);           \
-  template DRAGON_API void MPICollectiveOpImpl::IRecv(                        \
-      T*, int, int, MPI_Request*);                                            \
-  template DRAGON_API void MPICollectiveOpImpl::Bcast(T*, int);               \
+  template DRAGON_API void MPICollectiveOpImpl::Broadcast(const T*, T*, int); \
   template DRAGON_API void MPICollectiveOpImpl::AllReduce(const T*, T*, int); \
   template DRAGON_API void MPICollectiveOpImpl::AllGather(const T*, T*, int); \
   template DRAGON_API void MPICollectiveOpImpl::ReduceScatter(                \
-      const T*, T*, int);                                                     \
-  template DRAGON_API void MPICollectiveOpImpl::SendRecv(                     \
-      const T*, int, int, T*, int, int);
+      const T*, T*, int);
 
 INSTANTIATE_API(bool);
 INSTANTIATE_API(int8_t);

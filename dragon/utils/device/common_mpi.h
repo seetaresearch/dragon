@@ -26,6 +26,7 @@ typedef struct ompi_communicator_t* MPI_Comm;
 typedef struct ompi_datatype_t* MPI_Datatype;
 typedef struct ompi_group_t* MPI_Group;
 typedef struct ompi_request_t* MPI_Request;
+typedef struct ompi_op_t* MPI_Op;
 #define MPI_NOT_COMPILED LOG(FATAL) << "MPI library is not built with."
 #endif
 

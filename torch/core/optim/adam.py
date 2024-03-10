@@ -16,6 +16,7 @@
 """Adam optimizers."""
 
 from dragon.vm.torch.core.optim.optimizer import Optimizer
+from dragon.vm.torch.core.optim.zero import ZeroOptimizer
 
 
 class Adam(Optimizer):
@@ -37,7 +38,14 @@ class Adam(Optimizer):
     """
 
     def __init__(
-        self, params, lr=1e-3, betas=(0.9, 0.999), eps=1e-8, weight_decay=0, amsgrad=False, **kwargs
+        self,
+        params,
+        lr=1e-3,
+        betas=(0.9, 0.999),
+        eps=1e-8,
+        weight_decay=0,
+        amsgrad=False,
+        **kwargs,
     ):
         r"""Create an ``Adam`` optimizer.
 
@@ -105,7 +113,7 @@ class AdamW(Adam):
         eps=1e-8,
         weight_decay=0.01,
         amsgrad=False,
-        **kwargs
+        **kwargs,
     ):
         r"""Create an ``AdamW`` optimizer.
 
@@ -132,5 +140,61 @@ class AdamW(Adam):
             eps=eps,
             weight_decay=weight_decay,
             amsgrad=amsgrad,
-            **kwargs
+            **kwargs,
         )
+
+
+class ZeroAdamW(ZeroOptimizer):
+    r"""The optimizer to apply AdamW algorithm with ZeRO.
+    `[Loshchilov & Hutter, 2017] <https://arxiv.org/abs/1711.05101>`_.
+
+    The **AdamW** update is defined as:
+
+    .. math::
+        \text{AdamW}(g, p) = \text{lr} * (\frac{\text{correction} * m_{t}}
+                                               {\sqrt{v_{t}} + \epsilon} + \lambda p) \\
+            \quad \\ \text{where}\quad
+                \begin{cases}
+                    \text{correction} = \sqrt{1 - \beta_{2}^{t}} / (1 - \beta_{1}^{t}) \\
+                    m_{t} = \beta_{1} * m_{t-1} + (1 - \beta_{1}) * g \\
+                    v_{t} = \beta_{2} * v_{t-1} + (1 - \beta_{2}) * g^{2} \\
+                \end{cases}
+
+    """
+
+    def __init__(
+        self,
+        params,
+        lr=1e-3,
+        betas=(0.9, 0.999),
+        eps=1e-8,
+        weight_decay=0.01,
+        amsgrad=False,
+        **kwargs,
+    ):
+        r"""Create an ``ZeroAdamW`` optimizer.
+
+        Parameters
+        ----------
+        params : Sequence[dragon.vm.torch.nn.Parameter]
+            The parameters to optimize.
+        lr : float, required
+            The initial value to :math:`\text{lr}`.
+        betas : Tuple[float, float], optional, default=(0.9, 0.999)
+            The initial value to :math:`\beta_{1}` and :math:`\beta_{2}`.
+        eps : float, optional, default=1e-8
+            The initial value to :math:`\epsilon`.
+        weight_decay : float, optional, default=0.01
+            The initial value to :math:`\lambda`.
+        amsgrad : bool, optional, default=False
+            ``True`` to switch to **AMSGrad** optimizer.
+
+        """
+        defaults = dict(
+            lr=lr,
+            beta1=betas[0],
+            beta2=betas[1],
+            eps=eps,
+            weight_decay=weight_decay,
+        )
+        super(ZeroAdamW, self).__init__(params, defaults, **kwargs)

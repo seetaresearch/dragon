@@ -27,6 +27,7 @@
 typedef struct cnrtQueue* cnrtQueue_t;
 typedef struct cnclComm* cnclComm_t;
 typedef int cnclDataType_t;
+typedef int cnclReduceOp_t;
 #endif
 
 #include "dragon/core/common.h"

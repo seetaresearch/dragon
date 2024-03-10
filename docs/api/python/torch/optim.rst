@@ -28,6 +28,10 @@ vm.torch.optim
   `class SGD <optim/SGD.html>`_
   : The optimizer to apply SGD algorithm.
 
+  `class ZeroAdamW <optim/ZeroAdamW.html>`_
+  : The optimizer to apply AdamW algorithm with ZeRO.
+  `[Loshchilov & Hutter, 2017] <https://arxiv.org/abs/1711.05101>`_.
+
 .. toctree::
   :hidden:
 
@@ -37,6 +41,7 @@ vm.torch.optim
   optim/Optimizer
   optim/RMSprop
   optim/SGD
+  optim/ZeroAdamW
 
 .. raw:: html
 

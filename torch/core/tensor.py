@@ -174,6 +174,18 @@ class Tensor(object):
         return not self._tape or not self._requires_grad
 
     @property
+    def nbytes(self):
+        """Return the total bytes of this tensor.
+
+        Returns
+        -------
+        int
+            The size in bytes.
+
+        """
+        return self._impl.nbytes
+
+    @property
     def requires_grad(self):
         """Return whether the gradient will be recorded.
 
@@ -1038,6 +1050,17 @@ class Tensor(object):
             The output tensor.
 
         """
+
+    def element_size(self):
+        """Return the size in bytes of single element.
+
+        Returns
+        -------
+        int
+            The size in bytes.
+
+        """
+        return self._impl.itemsize
 
     def eq(self, other):
         r"""Compute element-wise equal comparison.
@@ -3587,7 +3610,7 @@ class Tensor(object):
             The float value.
 
         """
-        return float(self.numpy())
+        return float(self.numpy().reshape([]))
 
     def __ge__(self, other):
         """Compute element-wise greater-equal comparison.
@@ -3708,7 +3731,7 @@ class Tensor(object):
             The integer value.
 
         """
-        return int(self.numpy())
+        return int(self.numpy().reshape([]))
 
     def __invert__(self):
         """Compute element-wise NOT bitwise operation.

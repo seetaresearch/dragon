@@ -26,6 +26,7 @@
   } while (0)
 #else
 typedef int ncclDataType_t;
+typedef int ncclRedOp_t;
 typedef struct ncclComm* ncclComm_t;
 #define NCCL_NOT_COMPILED LOG(FATAL) << "NCCL library is not built with."
 #endif // USE_NCCL

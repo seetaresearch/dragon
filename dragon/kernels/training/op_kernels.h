@@ -58,6 +58,23 @@ void AdamW(
     Context* ctx);
 
 template <typename T, typename CopyT, class Context>
+void AdamW(
+    const int N,
+    const float lr,
+    const float beta1,
+    const float beta2,
+    const float eps,
+    const float wd,
+    const T* lrs,
+    const T* x,
+    const T* g,
+    T* m,
+    T* v,
+    T* y,
+    CopyT* y_copy,
+    Context* ctx);
+
+template <typename T, typename CopyT, class Context>
 void MomentumSGD(
     const int N,
     const float lr,

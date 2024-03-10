@@ -20,7 +20,8 @@ namespace dragon {
 
 class DRAGON_API MPICollectiveOpImpl {
  public:
-  MPICollectiveOpImpl() : comm_size_(0), comm_rank_(0), comm_root_(0) {}
+  MPICollectiveOpImpl()
+      : comm_size_(0), comm_rank_(0), comm_root_(0), reduction_("SUM") {}
 
   void SetComm(
       const int64_t mpi_comm,
@@ -28,38 +29,36 @@ class DRAGON_API MPICollectiveOpImpl {
       const vec64_t ranks,
       const int64_t root = 0);
 
-  template <typename T>
-  void Recv(T* buf, int count, int from);
+  void SetReduction(const string& reduction) {
+    reduction_ = reduction;
+  }
 
   template <typename T>
-  void IRecv(T* buf, int count, int from, MPI_Request* req);
+  void Send(const T* x, int N, int peer);
 
   template <typename T>
-  void Send(const T* buf, int count, int to);
+  void Recv(T* y, int N, int peer);
 
   template <typename T>
-  void SendRecv(
-      const T* sendbuf,
-      int sendcount,
-      int to,
-      T* recvbuf,
-      int recvcount,
-      int from);
+  void Broadcast(const T* x, T* y, int N);
 
   template <typename T>
-  void Bcast(T* buf, int count);
+  void AllReduce(const T* x, T* y, int N);
 
   template <typename T>
-  void AllReduce(const T* sendbuf, T* recvbuf, int count);
+  void ReduceScatter(const T* x, T* y, int N);
 
   template <typename T>
-  void AllGather(const T* sendbuf, T* recvbuf, int sendcount);
-
-  template <typename T>
-  void ReduceScatter(const T* sendbuf, T* recvbuf, int recvcount);
+  void AllGather(const T* x, T* y, int N);
 
   template <typename T>
   MPI_Datatype data_type();
+
+  MPI_Op reduction();
+
+  const int comm_rank() const {
+    return comm_rank_;
+  }
 
   const int comm_size() const {
     return comm_size_;
@@ -71,6 +70,7 @@ class DRAGON_API MPICollectiveOpImpl {
   int comm_root_;
   MPI_Comm mpi_comm_;
   MPI_Group mpi_group_;
+  string reduction_;
 };
 
 } // namespace dragon

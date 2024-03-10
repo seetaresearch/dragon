@@ -99,8 +99,8 @@ def clip_args(**kwargs):
 def collective_args(**kwargs):
     return {
         "operation": kwargs.get("operation", ""),
-        "reduction": kwargs.get("reduction", "MEAN"),
-        "root": kwargs.get("root", 0),
+        "reduction": kwargs.get("reduction", "SUM"),
+        "bucket_size": kwargs.get("bucket_size", 0),
         "comm": kwargs.get("comm", 0),
         "group": kwargs.get("group", 0),
         "backend": kwargs.get("backend", "MPI"),
@@ -660,3 +660,18 @@ def unsqueeze_args(**kwargs):
 @register(["Adam", "AdamW", "RMSprop", "MomentumSGD", "NesterovSGD", "LARS"])
 def update_args(**kwargs):
     return {"no_grad": True, "weight_decay": kwargs.get("weight_decay", None)}
+
+
+@register(["ZeroAdamW"])
+def zero_update_args(**kwargs):
+    return {
+        "no_grad": True,
+        "backend": kwargs.get("backend", "MPI"),
+        "comm": kwargs.get("comm", 0),
+        "group": kwargs.get("group", 0),
+        "ranks": kwargs.get("ranks", None),
+        "bucket_name": kwargs.get("bucket_name", ""),
+        "weight_decay": kwargs.get("weight_decay", None),
+        "use_lr_scales": kwargs.get("use_lr_scales", False),
+        "lr_scales_desc": "float32",
+    }

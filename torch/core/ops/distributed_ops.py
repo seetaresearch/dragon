@@ -83,7 +83,7 @@ def all_gather_into_tensor(output_tensor, input_tensor, group=None):
         [input_tensor],
         outputs=[output_tensor],
         operation="ALLGATHER",
-        **group.arguments
+        **group.arguments,
     )
 
 
@@ -108,17 +108,14 @@ def all_reduce(tensor, op="sum", group=None):
     group = group or dist_backend.get_group()
     if group is None:
         return tensor
-    op = op.upper()
-    if op not in ("MEAN", "SUM"):
-        raise ValueError("Unsupported reduction: " + op)
     return Function.apply(
         "Collective",
         tensor.device,
         [tensor],
         outputs=[tensor],
         operation="ALLREDUCE",
-        reduction=op,
-        **group.arguments
+        reduction=op.upper(),
+        **group.arguments,
     )
 
 
@@ -150,7 +147,7 @@ def broadcast(tensor, src=0, group=None):
         outputs=[tensor],
         operation="BROADCAST",
         root=src,
-        **group.arguments
+        **group.arguments,
     )
 
 
@@ -177,9 +174,6 @@ def reduce_scatter(output, input_list, op="sum", group=None):
     group = group or dist_backend.get_group()
     if group is None:
         return input_list
-    op = op.upper()
-    if op not in ("SUM",):
-        raise ValueError("Unsupported reduction: " + op)
     if len(input_list) > 0:
         input = Function.apply("Concat", input_list[0].device, input_list)
     else:
@@ -190,8 +184,8 @@ def reduce_scatter(output, input_list, op="sum", group=None):
         [input],
         outputs=[output],
         operation="REDUCESCATTER",
-        reduction=op,
-        **group.arguments
+        reduction=op.upper(),
+        **group.arguments,
     )
 
 
@@ -218,15 +212,12 @@ def reduce_scatter_tensor(output, input, op="sum", group=None):
     group = group or dist_backend.get_group()
     if group is None:
         return input
-    op = op.upper()
-    if op not in ("SUM",):
-        raise ValueError("Unsupported reduction: " + op)
     return Function.apply(
         "Collective",
         input.device,
         [input],
         outputs=[output],
         operation="REDUCESCATTER",
-        reduction=op,
-        **group.arguments
+        reduction=op.upper(),
+        **group.arguments,
     )

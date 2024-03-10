@@ -28,6 +28,12 @@ class CollectiveOpImpl {
     backend_ = backend;
   }
 
+  void SetReduction(const string& reduction) {
+    mpi_coll_.SetReduction(reduction);
+    nccl_coll_.SetReduction(reduction);
+    cncl_coll_.SetReduction(reduction);
+  }
+
   void SetComm(
       const int64_t mpi_comm,
       const int64_t mpi_group,
@@ -65,76 +71,79 @@ class CollectiveOpImpl {
   }
 
   template <typename T>
-  void Bcast(T* buf, int count) {
-    mpi_coll_.Bcast(buf, count);
+  void Broadcast(const T* x, T* y, int N) {
+    mpi_coll_.Broadcast(x, y, N);
   }
 
   template <typename T, class Context>
-  void Bcast(T* buf, int count, Context* ctx) {
+  void Broadcast(const T* x, T* y, int N, Context* ctx) {
     cudaStream_t cuda_stream;
     cnrtQueue_t mlu_stream;
     if (PreferNCCL(cuda_stream, ctx)) {
-      nccl_coll_.Bcast(buf, count, cuda_stream);
+      nccl_coll_.Broadcast(x, y, N, cuda_stream);
     } else if (PreferCNCL(mlu_stream, ctx)) {
-      cncl_coll_.Bcast(buf, count, mlu_stream);
+      cncl_coll_.Broadcast(x, y, N, mlu_stream);
     } else {
-      mpi_coll_.Bcast(buf, count);
+      mpi_coll_.Broadcast(x, y, N);
     }
   }
 
   template <typename T>
-  void AllReduce(const T* sendbuf, T* recvbuf, int count) {
-    mpi_coll_.AllReduce(sendbuf, recvbuf, count);
+  void AllReduce(const T* x, T* y, int N) {
+    mpi_coll_.AllReduce(x, y, N);
   }
 
   template <typename T, class Context>
-  void AllReduce(const T* sendbuf, T* recvbuf, int count, Context* ctx) {
+  void AllReduce(const T* x, T* y, int N, Context* ctx) {
     cudaStream_t cuda_stream;
     cnrtQueue_t mlu_stream;
     if (PreferNCCL(cuda_stream, ctx)) {
-      nccl_coll_.AllReduce(sendbuf, recvbuf, count, cuda_stream);
+      nccl_coll_.AllReduce(x, y, N, cuda_stream);
     } else if (PreferCNCL(mlu_stream, ctx)) {
-      cncl_coll_.AllReduce(sendbuf, recvbuf, count, mlu_stream);
+      cncl_coll_.AllReduce(x, y, N, mlu_stream);
     } else {
-      mpi_coll_.AllReduce(sendbuf, recvbuf, count);
+      mpi_coll_.AllReduce(x, y, N);
     }
   }
 
   template <typename T>
-  void AllGather(const T* sendbuf, T* recvbuf, int sendcount) {
-    mpi_coll_.AllGather(sendbuf, recvbuf, sendcount);
+  void ReduceScatter(const T* x, T* y, int N) {
+    mpi_coll_.ReduceScatter(x, y, N);
   }
 
   template <typename T, class Context>
-  void AllGather(const T* sendbuf, T* recvbuf, int sendcount, Context* ctx) {
+  void ReduceScatter(const T* x, T* y, int N, Context* ctx) {
     cudaStream_t cuda_stream;
     cnrtQueue_t mlu_stream;
     if (PreferNCCL(cuda_stream, ctx)) {
-      nccl_coll_.AllGather(sendbuf, recvbuf, sendcount, cuda_stream);
+      nccl_coll_.ReduceScatter(x, y, N, cuda_stream);
     } else if (PreferCNCL(mlu_stream, ctx)) {
-      cncl_coll_.AllGather(sendbuf, recvbuf, sendcount, mlu_stream);
+      cncl_coll_.ReduceScatter(x, y, N, mlu_stream);
     } else {
-      mpi_coll_.AllGather(sendbuf, recvbuf, sendcount);
+      mpi_coll_.ReduceScatter(x, y, N);
     }
   }
 
   template <typename T>
-  void ReduceScatter(const T* sendbuf, T* recvbuf, int recvcount) {
-    mpi_coll_.ReduceScatter(sendbuf, recvbuf, recvcount);
+  void AllGather(const T* x, T* y, int N) {
+    mpi_coll_.AllGather(x, y, N);
   }
 
   template <typename T, class Context>
-  void
-  ReduceScatter(const T* sendbuf, T* recvbuf, int recvcount, Context* ctx) {
+  void AllGather(const T* x, T* y, int N, Context* ctx) {
     cudaStream_t cuda_stream;
     cnrtQueue_t mlu_stream;
     if (PreferNCCL(cuda_stream, ctx)) {
-      nccl_coll_.ReduceScatter(sendbuf, recvbuf, recvcount, cuda_stream);
+      nccl_coll_.AllGather(x, y, N, cuda_stream);
     } else if (PreferCNCL(mlu_stream, ctx)) {
-      cncl_coll_.ReduceScatter(sendbuf, recvbuf, recvcount, mlu_stream);
+      cncl_coll_.AllGather(x, y, N, mlu_stream);
     } else {
-      mpi_coll_.ReduceScatter(sendbuf, recvbuf, recvcount);
+      mpi_coll_.AllGather(x, y, N);
     }
+  }
+
+  const int comm_rank() const {
+    return mpi_coll_.comm_rank();
   }
 
   const int comm_size() const {

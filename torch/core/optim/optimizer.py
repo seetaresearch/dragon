@@ -16,7 +16,6 @@
 """Basic optimizer."""
 
 import collections
-
 import numpy
 
 from dragon.core.distributed import backend as dist_backend
@@ -54,13 +53,10 @@ class Optimizer(object):
         """
         if isinstance(params, Tensor):
             raise TypeError("<params> should be a sequence of tensors.")
-        defaults.update(
-            {
-                "grad_scale": kwargs.pop("grad_scale", 1),
-                "clip_norm": kwargs.pop("clip_norm", 0),
-                "clip_value": kwargs.pop("clip_value", 0),
-            }
-        )
+        defaults["grad_scale"] = kwargs.pop("grad_scale", 1)
+        defaults["clip_norm"] = kwargs.pop("clip_norm", 0)
+        defaults["clip_value"] = kwargs.pop("clip_value", 0)
+        self.bucket_size = kwargs.pop("bucket_size", 536870912)
         if kwargs:
             raise ValueError("Unexpected arguments: " + ",".join(v for v in kwargs))
         self.defaults = defaults
@@ -104,18 +100,12 @@ class Optimizer(object):
             param_group["params"] = list(params)
         for param in param_group["params"]:
             if not isinstance(param, Tensor):
-                raise TypeError(
-                    "Optimizer can only optimize Tensors, "
-                    "but one of the params is " + str(type(param))
-                )
+                raise TypeError("Can only optimize tensors, but one is " + str(type(param)))
             if not param.is_leaf:
                 raise ValueError("Optimize a non-leaf Tensor.")
         for name, default in self.defaults.items():
             if default is required and name not in param_group:
-                raise ValueError(
-                    "Parameter group didn't specify a value of "
-                    "required optimization parameter: " + name
-                )
+                raise ValueError("Parameter group didn't specify a required value: {}".format(name))
             else:
                 param_group.setdefault(name, default)
         if "name" not in param_group:
@@ -144,33 +134,29 @@ class Optimizer(object):
         execute_ws = workspace.get_workspace()
         dist_group = dist_backend.get_group()
         params_all, grads_all = [], []
+        reduce_grads_all = collections.defaultdict(list)
         for group in self.param_groups:
+            group.setdefault("dist_size", dist_group.size) if dist_group else None
             params_with_grad, grads = [], []
-            if dist_group is not None:
-                group["dist_size"] = dist_group.size
             for p in group["params"]:
                 g = self._get_grad(execute_ws, p, self._sums_grad)
                 if g is not None:
                     grads.append(g)
                     params_with_grad.append(p)
+                    reduce_grads_all[g.dtype].append(g) if dist_group else None
             grads_all.append(grads)
             params_all.append(params_with_grad)
-        if dist_group is not None:
-            # Reduce grads in the distribution group.
-            reduce_grads_all = collections.defaultdict(list)
-            for grads in grads_all:
-                for g in grads:
-                    reduce_grads_all[g.dtype].append(g)
-            for grads in reduce_grads_all.values():
-                Function.apply(
-                    "Collective",
-                    grads[0].device,
-                    grads,
-                    outputs=grads,
-                    operation="ALLREDUCE",
-                    reduction="SUM",
-                    **dist_group.arguments,
-                )
+        for grads in reduce_grads_all.values():
+            Function.apply(
+                "Collective",
+                grads[0].device,
+                grads,
+                outputs=grads,
+                operation="ALLREDUCE",
+                reduction="SUM",
+                bucket_size=self.bucket_size,
+                **dist_group.arguments,
+            )
         self._sums_grad = False
         if self._handle_custom_step:
             return params_all, grads_all

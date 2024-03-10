@@ -11,78 +11,56 @@ void NCCLCollectiveOpImpl::SetComm(
   if (mpi_comm == 0) return;
 #ifdef USE_MPI
   // The given group should be created before.
+  group_str_ = str::to(ranks);
   mpi_comm_ = (MPI_Comm)mpi_comm;
   mpi_group_ = (MPI_Group)mpi_group;
-  CHECK(mpi_group != 0) << "\nFailed to initialize an invalid mpi group.";
+  CHECK(mpi_group != 0) << "\nSet comm from an invalid MPI group.";
   // Collect comm and rank information.
   MPI_Comm_size(mpi_comm_, &comm_size_);
   MPI_Comm_rank(mpi_comm_, &comm_rank_);
   // Translate the world root into the group.
-  MPI_Group world_group;
-  MPI_Comm_group(MPI_COMM_WORLD, &world_group);
+  MPI_Group world;
+  MPI_Comm_group(MPI_COMM_WORLD, &world);
   auto world_root = int(ranks[root]);
-  group_str_ = str::to(ranks);
-  MPI_Group_translate_ranks(
-      world_group, 1, &world_root, mpi_group_, &comm_root_);
-  CHECK(comm_root_ != MPI_UNDEFINED) << "\nRoot is not in the MPI group.";
+  MPI_Group_translate_ranks(world, 1, &world_root, mpi_group_, &comm_root_);
+  CHECK(comm_root_ != MPI_UNDEFINED) << "\nComm root is not in the MPI group.";
 #else
   MPI_NOT_COMPILED;
 #endif
 }
 
+// clang-format off
 template <typename T>
-void NCCLCollectiveOpImpl::Bcast(T* buf, int count, cudaStream_t stream) {
+void NCCLCollectiveOpImpl::Broadcast(const T* x, T* y, int N, cudaStream_t stream) {
 #ifdef USE_NCCL
-  NCCL_CHECK(
-      ncclBcast(buf, count, data_type<T>(), comm_root_, nccl_comm(), stream));
+  NCCL_CHECK(ncclBroadcast(x, y, N, data_type<T>(), comm_root_, nccl_comm(), stream));
 #else
   NCCL_NOT_COMPILED;
 #endif
 }
 
 template <typename T>
-void NCCLCollectiveOpImpl::AllReduce(
-    const T* sendbuf,
-    T* recvbuf,
-    int count,
-    cudaStream_t stream) {
+void NCCLCollectiveOpImpl::AllReduce(const T* x, T* y, int N, cudaStream_t stream) {
 #ifdef USE_NCCL
-  NCCL_CHECK(ncclAllReduce(
-      sendbuf, recvbuf, count, data_type<T>(), ncclSum, nccl_comm(), stream));
+  NCCL_CHECK(ncclAllReduce(x, y, N, data_type<T>(), reduction(), nccl_comm(), stream));
 #else
   NCCL_NOT_COMPILED;
 #endif
 }
 
 template <typename T>
-void NCCLCollectiveOpImpl::AllGather(
-    const T* sendbuf,
-    T* recvbuf,
-    int sendcount,
-    cudaStream_t stream) {
+void NCCLCollectiveOpImpl::ReduceScatter(const T* x, T* y, int N, cudaStream_t stream) {
 #ifdef USE_NCCL
-  NCCL_CHECK(ncclAllGather(
-      sendbuf, recvbuf, sendcount, data_type<T>(), nccl_comm(), stream));
+  NCCL_CHECK(ncclReduceScatter(x, y, N, data_type<T>(), reduction(), nccl_comm(), stream));
 #else
   NCCL_NOT_COMPILED;
 #endif
 }
 
 template <typename T>
-void NCCLCollectiveOpImpl::ReduceScatter(
-    const T* sendbuf,
-    T* recvbuf,
-    int recvcount,
-    cudaStream_t stream) {
+void NCCLCollectiveOpImpl::AllGather(const T* x, T* y, int N, cudaStream_t stream) {
 #ifdef USE_NCCL
-  NCCL_CHECK(ncclReduceScatter(
-      sendbuf,
-      recvbuf,
-      recvcount,
-      data_type<T>(),
-      ncclSum,
-      nccl_comm(),
-      stream));
+  NCCL_CHECK(ncclAllGather(x, y, N, data_type<T>(), nccl_comm(), stream));
 #else
   NCCL_NOT_COMPILED;
 #endif
@@ -95,16 +73,9 @@ ncclComm_t NCCLCollectiveOpImpl::nccl_comm() {
   auto ret = ctx.nccl_comm(device, group_str_, nullptr, comm_size_, comm_rank_);
   if (ret == nullptr) {
     ncclUniqueId comm_uuid;
-    if (comm_rank_ == comm_root_) {
-      NCCL_CHECK(ncclGetUniqueId(&comm_uuid));
-    }
+    if (comm_rank_ == comm_root_) NCCL_CHECK(ncclGetUniqueId(&comm_uuid));
 #ifdef USE_MPI
-    MPI_Bcast(
-        (uint8_t*)&comm_uuid,
-        sizeof(comm_uuid),
-        MPI_UNSIGNED_CHAR,
-        comm_root_,
-        mpi_comm_);
+    MPI_Bcast((uint8_t*)&comm_uuid, sizeof(comm_uuid), MPI_UNSIGNED_CHAR, comm_root_, mpi_comm_);
 #else
     MPI_NOT_COMPILED;
 #endif
@@ -116,6 +87,7 @@ ncclComm_t NCCLCollectiveOpImpl::nccl_comm() {
   return nullptr;
 #endif
 }
+// clang-format on
 
 template <typename T>
 ncclDataType_t NCCLCollectiveOpImpl::data_type() {
@@ -140,14 +112,32 @@ ncclDataType_t NCCLCollectiveOpImpl::data_type() {
 #endif
 }
 
-#define INSTANTIATE_API(T)                                                     \
-  template DRAGON_API ncclDataType_t NCCLCollectiveOpImpl::data_type<T>();     \
-  template DRAGON_API void NCCLCollectiveOpImpl::Bcast(T*, int, cudaStream_t); \
-  template DRAGON_API void NCCLCollectiveOpImpl::AllReduce(                    \
-      const T*, T*, int, cudaStream_t);                                        \
-  template DRAGON_API void NCCLCollectiveOpImpl::AllGather(                    \
-      const T*, T*, int, cudaStream_t);                                        \
-  template DRAGON_API void NCCLCollectiveOpImpl::ReduceScatter(                \
+ncclRedOp_t NCCLCollectiveOpImpl::reduction() {
+#ifdef USE_NCCL
+  static Map<string, ncclRedOp_t> m{
+      {"SUM", ncclSum},
+      {"PROD", ncclProd},
+      {"MIN", ncclMin},
+      {"MAX", ncclMax},
+  };
+  auto it = m.find(reduction_);
+  CHECK(it != m.end()) << "\nUnsupported NCCL reduction: " << reduction_;
+  return it->second;
+#else
+  NCCL_NOT_COMPILED;
+  return 0;
+#endif
+}
+
+#define INSTANTIATE_API(T)                                                 \
+  template DRAGON_API ncclDataType_t NCCLCollectiveOpImpl::data_type<T>(); \
+  template DRAGON_API void NCCLCollectiveOpImpl::Broadcast(                \
+      const T*, T*, int, cudaStream_t);                                    \
+  template DRAGON_API void NCCLCollectiveOpImpl::AllReduce(                \
+      const T*, T*, int, cudaStream_t);                                    \
+  template DRAGON_API void NCCLCollectiveOpImpl::ReduceScatter(            \
+      const T*, T*, int, cudaStream_t);                                    \
+  template DRAGON_API void NCCLCollectiveOpImpl::AllGather(                \
       const T*, T*, int, cudaStream_t);
 
 INSTANTIATE_API(bool);

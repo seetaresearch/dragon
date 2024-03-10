@@ -109,6 +109,59 @@ __mlu_entry__ void _AdamW(
   }
 }
 
+template <typename T, typename CopyT>
+__mlu_entry__ void _AdamW(
+    const int N,
+    const T lr,
+    const T beta1,
+    const T beta2,
+    const T eps,
+    const T wd,
+    const T* lrs,
+    const T* x,
+    const T* g,
+    T* m,
+    T* v,
+    T* y,
+    CopyT* y_copy) {
+  __nram__ T X[BLOCK_THREADS], Y[BLOCK_THREADS];
+  __nram__ T scratch[BLOCK_THREADS];
+  MLU_1D_KERNEL_LOOP(i, N, BLOCK_THREADS) {
+    const int N_ram = std::min(N - i, BLOCK_THREADS);
+    __memcpy(Y, g + i, N_ram * sizeof(T), GDRAM2NRAM);
+    // Update "v".
+    __bang_square(X, Y, N_ram);
+    __bang_mul_scalar(X, X, T(1) - beta2, N_ram);
+    __memcpy(scratch, v + i, N_ram * sizeof(T), GDRAM2NRAM);
+    __bang_fusion(FUSION_FMA, X, scratch, beta2, X, N_ram, N_ram);
+    __memcpy(v + i, X, N_ram * sizeof(T), NRAM2GDRAM);
+    __bang_active_sqrthp(X, X, N_ram);
+    __bang_add_scalar(X, X, eps, N_ram);
+    __bang_active_reciphp(X, X, N_ram);
+    // Update "m".
+    __bang_mul_scalar(Y, Y, T(1) - beta1, N_ram);
+    __memcpy(scratch, m + i, N_ram * sizeof(T), GDRAM2NRAM);
+    __bang_fusion(FUSION_FMA, Y, scratch, beta1, Y, N_ram, N_ram);
+    __memcpy(m + i, Y, N_ram * sizeof(T), NRAM2GDRAM);
+    // Update "y".
+    __bang_mul(Y, Y, X, N_ram);
+    if (wd > T(0)) {
+      __memcpy(scratch, x + i, N_ram * sizeof(T), GDRAM2NRAM);
+      __bang_fusion(FUSION_FMA, Y, scratch, wd / lr, Y, N_ram, N_ram);
+    }
+    __memcpy(scratch, lrs + i, N_ram * sizeof(T), GDRAM2NRAM);
+    __bang_mul(Y, Y, scratch, N_ram);
+    __memcpy(scratch, y + i, N_ram * sizeof(T), GDRAM2NRAM);
+    __bang_fusion(FUSION_FMA, Y, Y, -lr, scratch, N_ram, N_ram);
+    __memcpy(y + i, Y, N_ram * sizeof(T), NRAM2GDRAM);
+    // Update "y_copy".
+    if (y_copy != nullptr) {
+      convert::To((CopyT*)scratch, Y, N_ram);
+      __memcpy(y_copy + i, scratch, N_ram * sizeof(CopyT), NRAM2GDRAM);
+    }
+  }
+}
+
 } // namespace
 
 #define DEFINE_KERNEL_LAUNCHER(name, T, CopyT)                        \
@@ -149,6 +202,48 @@ DEFINE_KERNEL_LAUNCHER(Adam, float, float16);
 DEFINE_KERNEL_LAUNCHER(Adam, float, bfloat16);
 DEFINE_KERNEL_LAUNCHER(Adam, float, float);
 DEFINE_KERNEL_LAUNCHER(Adam, double, double);
+DEFINE_KERNEL_LAUNCHER(AdamW, float, float16);
+DEFINE_KERNEL_LAUNCHER(AdamW, float, bfloat16);
+DEFINE_KERNEL_LAUNCHER(AdamW, float, float);
+DEFINE_KERNEL_LAUNCHER(AdamW, double, double);
+#undef DEFINE_KERNEL_LAUNCHER
+
+#define DEFINE_KERNEL_LAUNCHER(name, T, CopyT)                        \
+  template <>                                                         \
+  void name<T, CopyT, MLUContext>(                                    \
+      const int N,                                                    \
+      const float lr,                                                 \
+      const float beta1,                                              \
+      const float beta2,                                              \
+      const float eps,                                                \
+      const float wd,                                                 \
+      const T* lrs,                                                   \
+      const T* x,                                                     \
+      const T* g,                                                     \
+      T* m,                                                           \
+      T* v,                                                           \
+      T* y,                                                           \
+      CopyT* y_copy,                                                  \
+      MLUContext* ctx) {                                              \
+    _##name<<<                                                        \
+        MLU_BLOCKS(N, BLOCK_THREADS),                                 \
+        CNRT_FUNC_TYPE_BLOCK,                                         \
+        ctx->mlu_stream()>>>(                                         \
+        N,                                                            \
+        math::Traits<T>::scalar_type(lr),                             \
+        math::Traits<T>::scalar_type(beta1),                          \
+        math::Traits<T>::scalar_type(beta2),                          \
+        math::Traits<T>::scalar_type(eps),                            \
+        math::Traits<T>::scalar_type(wd),                             \
+        reinterpret_cast<const math::Traits<T>::scalar_type*>(lrs),   \
+        reinterpret_cast<const math::Traits<T>::scalar_type*>(x),     \
+        reinterpret_cast<const math::Traits<T>::scalar_type*>(g),     \
+        reinterpret_cast<math::Traits<T>::scalar_type*>(m),           \
+        reinterpret_cast<math::Traits<T>::scalar_type*>(v),           \
+        reinterpret_cast<math::Traits<T>::scalar_type*>(y),           \
+        reinterpret_cast<math::Traits<CopyT>::scalar_type*>(y_copy)); \
+  }
+
 DEFINE_KERNEL_LAUNCHER(AdamW, float, float16);
 DEFINE_KERNEL_LAUNCHER(AdamW, float, bfloat16);
 DEFINE_KERNEL_LAUNCHER(AdamW, float, float);
